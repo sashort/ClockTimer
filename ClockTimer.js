@@ -2182,21 +2182,164 @@
             }
         }
 
-        #captureDisplacedRangeAttributes(
+        #setRangeTiming(
+            range,
+            start,
+            end,
+            preserveRangeLength = false
+        ) {
+            range.setAttribute(
+                "start-time",
+                this.#formatTimelineTime(
+                    start
+                )
+            );
+
+            range.setAttribute(
+                "end-time",
+                this.#formatTimelineTime(
+                    end
+                )
+            );
+
+            if (
+                preserveRangeLength
+            ) {
+                range.setAttribute(
+                    "range-length",
+                    this.#formatStandardTime(
+                        end - start
+                    )
+                );
+            }
+            else {
+                range.removeAttribute(
+                    "range-length"
+                );
+            }
+
+            range.dataset.clockTimerStart =
+                String(start);
+
+            range.dataset.clockTimerEnd =
+                String(end);
+        }
+
+        #replaceRangeWithSegments(
+            range,
+            spans
+        ) {
+            const preservedAttributes =
+                this.#getPreservedAttributes(
+                    range
+                );
+
+            const preserveRangeLength =
+                range.hasAttribute(
+                    "range-length"
+                );
+
+            range.remove();
+
+            let firstSegment =
+                true;
+
+            for (
+                const [
+                    spanStart,
+                    spanEnd
+                ] of spans
+            ) {
+                if (
+                    !Number.isFinite(spanStart) ||
+                    !Number.isFinite(spanEnd) ||
+                    spanEnd <= spanStart
+                ) {
+                    continue;
+                }
+
+                let cursor =
+                    spanStart;
+
+                while (
+                    cursor < spanEnd
+                ) {
+                    const ringIndex =
+                        this.#getRingIndex(
+                            cursor
+                        );
+
+                    const ringEnd =
+                        this.#getRingStart(
+                            ringIndex
+                        ) +
+                        ClockTimer.#HOUR;
+
+                    const segmentEnd =
+                        Math.min(
+                            spanEnd,
+                            ringEnd
+                        );
+
+                    const segment =
+                        firstSegment
+                            ? range
+                            : document.createElement(
+                                "time-range"
+                            );
+
+                    if (
+                        !firstSegment
+                    ) {
+                        this.#applyPreservedAttributes(
+                            segment,
+                            preservedAttributes
+                        );
+                    }
+
+                    this.#setRangeTiming(
+                        segment,
+                        cursor,
+                        segmentEnd,
+                        preserveRangeLength
+                    );
+
+                    const ring =
+                        this.#ensureRing(
+                            ringIndex
+                        );
+
+                    ring.appendChild(
+                        segment
+                    );
+
+                    firstSegment =
+                        false;
+
+                    cursor =
+                        segmentEnd;
+                }
+            }
+        }
+
+        #shiftExistingTimeRanges(
             cutoff,
             delta
         ) {
-            const snapshots = [];
-
-            for (
-                const range of
+            const ranges =
+                Array.from(
                     this.querySelectorAll(
                         ':scope > ring-container[data-clock-timer-ring] > time-range:not([data-clock-timer-inserted])'
                     )
+                );
+
+            for (
+                const range of ranges
             ) {
                 if (
-                    range.getAttribute("type") ===
-                        "elapsed"
+                    range.getAttribute(
+                        "type"
+                    ) === "elapsed"
                 ) {
                     continue;
                 }
@@ -2213,89 +2356,68 @@
 
                 if (
                     !Number.isFinite(start) ||
-                    !Number.isFinite(end)
+                    !Number.isFinite(end) ||
+                    end <= cutoff
                 ) {
                     continue;
                 }
 
-                snapshots.push({
-                    start:
-                        start >= cutoff
-                            ? start + delta
-                            : start,
-                    end:
-                        end > cutoff
-                            ? end + delta
-                            : end,
-                    attributes:
-                        this.#getPreservedAttributes(
-                            range
-                        )
-                });
-            }
+                if (
+                    start >= cutoff
+                ) {
+                    this.#replaceRangeWithSegments(
+                        range,
+                        [[
+                            start + delta,
+                            end + delta
+                        ]]
+                    );
 
-            return snapshots;
+                    continue;
+                }
+
+                this.#replaceRangeWithSegments(
+                    range,
+                    [
+                        [
+                            start,
+                            cutoff
+                        ],
+                        [
+                            cutoff + delta,
+                            end + delta
+                        ]
+                    ]
+                );
+            }
         }
 
-        #restoreDisplacedRangeAttributes(
-            snapshots
-        ) {
-            if (
-                !snapshots ||
-                snapshots.length === 0
-            ) {
-                return;
-            }
-
-            const ranges =
-                Array.from(
-                    this.querySelectorAll(
-                        ':scope > ring-container[data-clock-timer-ring] > time-range:not([data-clock-timer-inserted])'
-                    )
-                );
+        #rebuildOvertimeRangeMap() {
+            this.#overtimeRanges.clear();
 
             for (
-                const snapshot of
-                    snapshots
+                const range of
+                    this.querySelectorAll(
+                        ':scope > ring-container[data-clock-timer-ring] > time-range[data-clock-timer-overtime]'
+                    )
             ) {
-                for (
-                    const range of
-                        ranges
-                ) {
-                    const start =
-                        Number(
-                            range.dataset.clockTimerStart
-                        );
-
-                    const end =
-                        Number(
-                            range.dataset.clockTimerEnd
-                        );
-
-                    if (
-                        !Number.isFinite(start) ||
-                        !Number.isFinite(end) ||
-                        end <= snapshot.start ||
-                        start >= snapshot.end
-                    ) {
-                        continue;
-                    }
-
-                    const snapshotType =
-                        snapshot.attributes.type;
-
-                    if (
-                        snapshotType !== undefined &&
-                        range.getAttribute("type") !== snapshotType
-                    ) {
-                        continue;
-                    }
-
-                    this.#applyPreservedAttributes(
-                        range,
-                        snapshot.attributes
+                const start =
+                    Number(
+                        range.dataset.clockTimerStart
                     );
+
+                if (
+                    !Number.isFinite(start)
+                ) {
+                    continue;
                 }
+
+                this.#overtimeRanges.set(
+                    this.#getRingIndex(
+                        start
+                    ),
+                    range
+                );
             }
         }
 
@@ -2615,11 +2737,10 @@
 
             this.#captureInsertedAttributes();
 
-            const displacedAttributes =
-                this.#captureDisplacedRangeAttributes(
-                    cutoff,
-                    delta
-                );
+            this.#shiftExistingTimeRanges(
+                cutoff,
+                delta
+            );
 
             for (
                 const record of
@@ -2685,17 +2806,19 @@
                     cutoff,
                     delta
                 );
-
-                this.#removePlannedRanges();
-                this.#removeOvertimeRanges();
-                this.#buildPlannedRanges();
-
-                this.#restoreDisplacedRangeAttributes(
-                    displacedAttributes
-                );
             }
 
+            this.#rebuildOvertimeRangeMap();
+            this.#removeEmptyRings();
             this.#renderAllInsertedRanges();
+
+            if (
+                this.#started
+            ) {
+                this.#reorderRings(
+                    this.#getCurrentTimelineTime()
+                );
+            }
         }
 
         #updateOpenEndedRange(
