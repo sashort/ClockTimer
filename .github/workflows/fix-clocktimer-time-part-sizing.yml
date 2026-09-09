@@ -1,0 +1,37 @@
+name: Fix ClockTimer time part sizing
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-clocktimer-time-part-sizing.yml'
+      - '.github/scripts/fix_clocktimer_time_part_sizing.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused patch
+        run: python .github/scripts/fix_clocktimer_time_part_sizing.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify time part sizing
+        run: |
+          grep -Fq 'width:' ClockTimer.js
+          grep -Fq 'fit-content;' ClockTimer.js
+          grep -Fq 'place-self:' ClockTimer.js
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Keep ClockTimer time part content-sized" || exit 0
+          git push origin main
