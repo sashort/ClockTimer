@@ -3762,7 +3762,7 @@
 
             ring.setAttribute(
                 "width",
-                "var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))"
+                "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))"
             );
 
             this.#rings.set(
@@ -3825,7 +3825,7 @@
                         [a],
                         [b]
                     ) =>
-                        a - b
+                        b - a
                 )
                 .map(
                     ([
@@ -3849,9 +3849,9 @@
                 const width =
                     active
                         ?
-                        "var(--clock-timer-active-ring-width, clamp(4px, 2.5cqi, 12px))"
+                        "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))"
                         :
-                        "var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))";
+                        "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
                 if (
                     ring.getAttribute(
@@ -3891,9 +3891,9 @@
             }
 
             const order = [
-                ...inactive,
-                borderRing,
                 activeRing,
+                borderRing,
+                ...inactive,
                 handRing,
                 numberRing
             ];
