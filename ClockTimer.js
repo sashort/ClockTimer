@@ -244,8 +244,62 @@
                 "time"
             );
 
+            this.#handLayer =
+                document.createElement(
+                    "div"
+                );
+
+            this.#handLayer.dataset.clockTimerHandLayer =
+                "";
+
+            this.#handLayer.style.position =
+                "absolute";
+
+            this.#handLayer.style.inset =
+                "0";
+
+            this.#handLayer.style.width =
+                "100%";
+
+            this.#handLayer.style.height =
+                "100%";
+
+            this.#handLayer.style.boxSizing =
+                "border-box";
+
+            this.#handLayer.style.pointerEvents =
+                "none";
+
+            this.#handLayer.style.overflow =
+                "visible";
+
+            this.#handLayer.style.zIndex =
+                "30";
+
+            this.#hourHand =
+                this.#createHand(
+                    "hour"
+                );
+
+            this.#minuteHand =
+                this.#createHand(
+                    "minute"
+                );
+
+            this.#secondHand =
+                this.#createHand(
+                    "second"
+                );
+
+            this.#handLayer.append(
+                this.#hourHand,
+                this.#minuteHand,
+                this.#secondHand
+            );
+
             clockFace.append(
                 ringLayer,
+                this.#handLayer,
                 this.#timeElement
             );
 
@@ -1339,68 +1393,8 @@
             ring.filterRamp =
                 false;
 
-            const handLayer =
-                document.createElement(
-                    "div"
-                );
-
-            handLayer.dataset.clockTimerHandLayer =
-                "";
-
-            handLayer.style.position =
-                "absolute";
-
-            handLayer.style.inset =
-                "0";
-
-            handLayer.style.width =
-                "100%";
-
-            handLayer.style.height =
-                "100%";
-
-            handLayer.style.boxSizing =
-                "border-box";
-
-            handLayer.style.pointerEvents =
-                "none";
-
-            handLayer.style.overflow =
-                "visible";
-
-            handLayer.style.zIndex =
-                "30";
-
-            this.#hourHand =
-                this.#createHand(
-                    "hour"
-                );
-
-            this.#minuteHand =
-                this.#createHand(
-                    "minute"
-                );
-
-            this.#secondHand =
-                this.#createHand(
-                    "second"
-                );
-
-            handLayer.append(
-                this.#hourHand,
-                this.#minuteHand,
-                this.#secondHand
-            );
-
-            ring.appendChild(
-                handLayer
-            );
-
             this.#handRing =
                 ring;
-
-            this.#handLayer =
-                handLayer;
 
             this.appendChild(
                 ring
@@ -1422,6 +1416,11 @@
 
             hand.className =
                 `${type}-hand`;
+
+            hand.setAttribute(
+                "part",
+                `${type}-hand`
+            );
 
             hand.style.position =
                 "absolute";
