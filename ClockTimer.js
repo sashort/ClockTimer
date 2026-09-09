@@ -4027,74 +4027,6 @@
                 false;
         }
 
-        #getHandTransform(
-            hand,
-            angle
-        ) {
-            const handRect =
-                hand.getBoundingClientRect();
-
-            const layerRect =
-                this.#handLayer.getBoundingClientRect();
-
-            const view =
-                this.ownerDocument
-                    ?.defaultView;
-
-            const devicePixelRatio =
-                Number.isFinite(
-                    view?.devicePixelRatio
-                ) &&
-                view.devicePixelRatio > 0
-                    ? view.devicePixelRatio
-                    : 1;
-
-            const center =
-                layerRect.left +
-                layerRect.width / 2;
-
-            const physicalWidth =
-                Math.max(
-                    1,
-                    Math.round(
-                        handRect.width *
-                        devicePixelRatio
-                    )
-                );
-
-            const phase =
-                physicalWidth % 2 === 0
-                    ? 0
-                    : 0.5;
-
-            const physicalCenter =
-                center *
-                devicePixelRatio;
-
-            const snappedCenter =
-                Math.round(
-                    physicalCenter -
-                    phase
-                ) +
-                phase;
-
-            const centerAdjustment =
-                (
-                    snappedCenter -
-                    physicalCenter
-                ) /
-                devicePixelRatio;
-
-            const translateX =
-                -handRect.width / 2 +
-                centerAdjustment;
-
-            return (
-                `translate(${translateX}px, -100%) ` +
-                `rotate(${angle}deg)`
-            );
-        }
-
         #synchronizeHands() {
             if (
                 this.#handsStarted
@@ -4152,29 +4084,20 @@
                     1000 +
                 milliseconds;
 
-            const createKeyframes =
-                hand => [
-                    {
-                        transform:
-                            this.#getHandTransform(
-                                hand,
-                                0
-                            )
-                    },
-                    {
-                        transform:
-                            this.#getHandTransform(
-                                hand,
-                                360
-                            )
-                    }
-                ];
+            const keyframes = [
+                {
+                    transform:
+                        "translate(-50%, -100%) rotate(0deg)"
+                },
+                {
+                    transform:
+                        "translate(-50%, -100%) rotate(360deg)"
+                }
+            ];
 
             this.#hourHandAnimation =
                 this.#hourHand.animate(
-                    createKeyframes(
-                        this.#hourHand
-                    ),
+                    keyframes,
                     {
                         duration:
                             12 *
@@ -4192,9 +4115,7 @@
 
             this.#minuteHandAnimation =
                 this.#minuteHand.animate(
-                    createKeyframes(
-                        this.#minuteHand
-                    ),
+                    keyframes,
                     {
                         duration:
                             60 *
@@ -4211,9 +4132,7 @@
 
             this.#secondHandAnimation =
                 this.#secondHand.animate(
-                    createKeyframes(
-                        this.#secondHand
-                    ),
+                    keyframes,
                     {
                         duration:
                             60 *
