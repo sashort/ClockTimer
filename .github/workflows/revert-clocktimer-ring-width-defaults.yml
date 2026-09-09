@@ -1,0 +1,36 @@
+name: Revert ClockTimer ring width defaults
+
+on:
+  push:
+    paths:
+      - '.github/workflows/revert-clocktimer-ring-width-defaults.yml'
+      - '.github/scripts/revert_clocktimer_ring_width_defaults.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/revert_clocktimer_ring_width_defaults.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify reverted defaults
+        run: |
+          grep -Fq 'var(--clock-timer-active-ring-width, clamp(4px, 2.5cqi, 12px))' ClockTimer.js
+          grep -Fq 'var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))' ClockTimer.js
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Revert ClockTimer ring width default swap" || exit 0
+          git push origin main
