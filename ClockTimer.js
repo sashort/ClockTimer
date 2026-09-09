@@ -4027,6 +4027,74 @@
                 false;
         }
 
+        #getHandTransform(
+            hand,
+            angle
+        ) {
+            const handRect =
+                hand.getBoundingClientRect();
+
+            const layerRect =
+                this.#handLayer.getBoundingClientRect();
+
+            const view =
+                this.ownerDocument
+                    ?.defaultView;
+
+            const devicePixelRatio =
+                Number.isFinite(
+                    view?.devicePixelRatio
+                ) &&
+                view.devicePixelRatio > 0
+                    ? view.devicePixelRatio
+                    : 1;
+
+            const center =
+                layerRect.left +
+                layerRect.width / 2;
+
+            const physicalWidth =
+                Math.max(
+                    1,
+                    Math.round(
+                        handRect.width *
+                        devicePixelRatio
+                    )
+                );
+
+            const phase =
+                physicalWidth % 2 === 0
+                    ? 0
+                    : 0.5;
+
+            const physicalCenter =
+                center *
+                devicePixelRatio;
+
+            const snappedCenter =
+                Math.round(
+                    physicalCenter -
+                    phase
+                ) +
+                phase;
+
+            const centerAdjustment =
+                (
+                    snappedCenter -
+                    physicalCenter
+                ) /
+                devicePixelRatio;
+
+            const translateX =
+                -handRect.width / 2 +
+                centerAdjustment;
+
+            return (
+                `translate(${translateX}px, -100%) ` +
+                `rotate(${angle}deg)`
+            );
+        }
+
         #synchronizeHands() {
             if (
                 this.#handsStarted
@@ -4084,20 +4152,29 @@
                     1000 +
                 milliseconds;
 
-            const keyframes = [
-                {
-                    transform:
-                        "translate(-50%, -100%) rotate(0deg)"
-                },
-                {
-                    transform:
-                        "translate(-50%, -100%) rotate(360deg)"
-                }
-            ];
+            const createKeyframes =
+                hand => [
+                    {
+                        transform:
+                            this.#getHandTransform(
+                                hand,
+                                0
+                            )
+                    },
+                    {
+                        transform:
+                            this.#getHandTransform(
+                                hand,
+                                360
+                            )
+                    }
+                ];
 
             this.#hourHandAnimation =
                 this.#hourHand.animate(
-                    keyframes,
+                    createKeyframes(
+                        this.#hourHand
+                    ),
                     {
                         duration:
                             12 *
@@ -4115,7 +4192,9 @@
 
             this.#minuteHandAnimation =
                 this.#minuteHand.animate(
-                    keyframes,
+                    createKeyframes(
+                        this.#minuteHand
+                    ),
                     {
                         duration:
                             60 *
@@ -4132,7 +4211,9 @@
 
             this.#secondHandAnimation =
                 this.#secondHand.animate(
-                    keyframes,
+                    createKeyframes(
+                        this.#secondHand
+                    ),
                     {
                         duration:
                             60 *
@@ -4661,7 +4742,7 @@
                 );
             }
 
-            return /^h:mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?$/.test(
+            return /^(?:hh:mm(?::ss)?|(?:h|0h):mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?)$/.test(
                 value
             );
         }
@@ -4683,11 +4764,6 @@
             const rawHours =
                 now.getHours();
 
-            const hours =
-                military
-                    ? rawHours
-                    : rawHours % 12 || 12;
-
             const minutes =
                 String(
                     now.getMinutes()
@@ -4707,7 +4783,7 @@
             if (military) {
                 const hourText =
                     String(
-                        hours
+                        rawHours
                     ).padStart(
                         2,
                         "0"
@@ -4721,46 +4797,69 @@
                 return;
             }
 
-            const hasSeconds =
+            const militaryHour =
                 format.startsWith(
-                    "h:mm:ss"
+                    "hh:"
+                );
+
+            const padHour =
+                militaryHour ||
+                format.startsWith(
+                    "0h:"
+                );
+
+            const hourValue =
+                militaryHour
+                    ? rawHours
+                    : rawHours % 12 || 12;
+
+            const hourText =
+                padHour
+                    ? String(hourValue).padStart(2, "0")
+                    : String(hourValue);
+
+            const hasSeconds =
+                /:ss(?: |$)/.test(
+                    format
                 );
 
             let result =
-                `${hours}:${minutes}`;
+                `${hourText}:${minutes}`;
 
             if (hasSeconds) {
                 result +=
                     `:${seconds}`;
             }
 
-            const suffixMatch =
-                format.match(
-                    /^(?:h:mm|h:mm:ss)( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
-                );
+            if (!militaryHour) {
+                const suffixMatch =
+                    format.match(
+                        /^(?:h|0h):mm(?::ss)?( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
+                    );
 
-            if (suffixMatch) {
-                const space =
-                    suffixMatch[1];
+                if (suffixMatch) {
+                    const space =
+                        suffixMatch[1];
 
-                const style =
-                    suffixMatch[2];
+                    const style =
+                        suffixMatch[2];
 
-                const pm =
-                    rawHours >= 12;
+                    const pm =
+                        rawHours >= 12;
 
-                const suffixes = {
-                    "a/p": pm ? "p" : "a",
-                    "A/P": pm ? "P" : "A",
-                    "AM/PM": pm ? "PM" : "AM",
-                    "A.M./P.M.": pm ? "P.M." : "A.M.",
-                    "am/pm": pm ? "pm" : "am",
-                    "a.m./p.m.": pm ? "p.m." : "a.m."
-                };
+                    const suffixes = {
+                        "a/p": pm ? "p" : "a",
+                        "A/P": pm ? "P" : "A",
+                        "AM/PM": pm ? "PM" : "AM",
+                        "A.M./P.M.": pm ? "P.M." : "A.M.",
+                        "am/pm": pm ? "pm" : "am",
+                        "a.m./p.m.": pm ? "p.m." : "a.m."
+                    };
 
-                result +=
-                    space +
-                    suffixes[style];
+                    result +=
+                        space +
+                        suffixes[style];
+                }
             }
 
             this.#timeElement.textContent =
