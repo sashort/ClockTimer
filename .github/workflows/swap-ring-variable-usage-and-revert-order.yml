@@ -1,0 +1,42 @@
+name: Swap ring variable usage and revert order
+
+on:
+  push:
+    paths:
+      - '.github/workflows/swap-ring-variable-usage-and-revert-order.yml'
+      - '.github/scripts/swap_ring_variable_usage_and_revert_order.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused patch
+        run: python .github/scripts/swap_ring_variable_usage_and_revert_order.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify variable swap and order revert
+        run: |
+          grep -Fq 'var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))' ClockTimer.js
+          grep -Fq 'var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))' ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          t = Path('ClockTimer.js').read_text()
+          assert '                        b - a\n' in t
+          assert '''            const order = [\n                activeRing,\n                borderRing,\n                ...inactive,\n                handRing,\n                numberRing\n            ];''' in t
+          PY
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Swap ring width variable usage and restore ring order" || exit 0
+          git push origin main
