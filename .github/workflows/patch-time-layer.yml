@@ -1,0 +1,27 @@
+name: Patch time layer
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_clocktimer_time_layer.py'
+      - '.github/workflows/patch-time-layer.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python .github/scripts/patch_clocktimer_time_layer.py
+      - run: node --check ClockTimer.js
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add ClockTimer.js
+          git diff --cached --quiet || git commit -m 'Render ClockTimer time above hands'
+          git push origin main
