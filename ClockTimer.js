@@ -1360,7 +1360,7 @@
 
             ring.setAttribute(
                 "width",
-                "var(--clock-timer-border-width, 1px)"
+                "var(--clock-timer-border-width, clamp(2px, 1.5cqi, 7px))"
             );
 
             const borderFill =
