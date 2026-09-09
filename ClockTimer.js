@@ -196,7 +196,7 @@
                         none;
                 }
 
-                #time {
+                #time-layer {
                     position: absolute;
 
                     inset: 0;
@@ -207,6 +207,26 @@
                         center;
 
                     z-index: 100;
+
+                    pointer-events:
+                        none;
+                }
+
+                #time {
+                    display:
+                        inline-block;
+
+                    box-sizing:
+                        border-box;
+
+                    width:
+                        max-content;
+
+                    max-width:
+                        100%;
+
+                    background:
+                        transparent;
 
                     font-family:
                         var(
@@ -258,6 +278,14 @@
                 ringSlot
             );
 
+            const timeLayer =
+                document.createElement(
+                    "div"
+                );
+
+            timeLayer.id =
+                "time-layer";
+
             this.#timeElement =
                 document.createElement(
                     "div"
@@ -269,6 +297,10 @@
             this.#timeElement.setAttribute(
                 "part",
                 "time"
+            );
+
+            timeLayer.appendChild(
+                this.#timeElement
             );
 
             this.#handLayer =
@@ -327,7 +359,7 @@
             clockFace.append(
                 ringLayer,
                 this.#handLayer,
-                this.#timeElement
+                timeLayer
             );
 
             this.#shadowRoot.append(
