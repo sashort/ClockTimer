@@ -1503,7 +1503,7 @@
 
             ring.setAttribute(
                 "outer-margin",
-                "var(--clock-timer-number-inset, .25rem)"
+                "var(--clock-timer-number-inset, clamp(4px, 3cqi, 16px))"
             );
 
             ring.resizeFilter =
