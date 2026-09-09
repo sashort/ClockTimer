@@ -41,6 +41,10 @@
 
         #hoursRenderFrame;
 
+        #fontSizingFrame;
+
+        #sizeObserver;
+
         #handsStarted =
             false;
 
@@ -132,6 +136,9 @@
                     isolation:
                         isolate;
 
+                    container-type:
+                        size;
+
                     clip-path:
                         ellipse(
                             50% 50%
@@ -200,6 +207,26 @@
                         center;
 
                     z-index: 100;
+
+                    font-family:
+                        var(
+                            --clock-timer-time-font,
+                            inherit
+                        );
+
+                    font-size:
+                        var(
+                            --clock-timer-time-font-size,
+                            var(
+                                --clock-timer-auto-time-font-size,
+                                1rem
+                            )
+                        );
+
+                    line-height: 1;
+
+                    white-space:
+                        nowrap;
 
                     pointer-events:
                         none;
@@ -344,6 +371,8 @@
 
             this.#startHandAnimations();
 
+            this.#startSizeObserver();
+
             this.#scheduleHourRender();
 
             this.#startDisplayTimer();
@@ -361,6 +390,8 @@
             this.#stopDisplayTimer();
 
             this.#stopHandAnimations();
+
+            this.#stopSizeObserver();
 
             if (
                 this.#handStartTimeout !==
@@ -1652,8 +1683,196 @@
                         }
 
                         this.#renderHours();
+
+                        this.#scheduleFontSizing();
                     }
                 );
+        }
+
+        #startSizeObserver() {
+            this.#stopSizeObserver();
+
+            if (
+                typeof ResizeObserver ===
+                    "function"
+            ) {
+                this.#sizeObserver =
+                    new ResizeObserver(
+                        () => {
+                            this.#scheduleFontSizing();
+                        }
+                    );
+
+                this.#sizeObserver.observe(
+                    this
+                );
+            }
+
+            this.#scheduleFontSizing();
+        }
+
+        #stopSizeObserver() {
+            this.#sizeObserver
+                ?.disconnect();
+
+            this.#sizeObserver =
+                undefined;
+
+            if (
+                this.#fontSizingFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#fontSizingFrame
+                );
+
+                this.#fontSizingFrame =
+                    undefined;
+            }
+        }
+
+        #scheduleFontSizing() {
+            if (
+                this.#fontSizingFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#fontSizingFrame
+                );
+            }
+
+            this.#fontSizingFrame =
+                requestAnimationFrame(
+                    () => {
+                        this.#fontSizingFrame =
+                            undefined;
+
+                        if (
+                            !this.isConnected
+                        ) {
+                            return;
+                        }
+
+                        this.#updateResponsiveFontSizes();
+                    }
+                );
+        }
+
+        #updateResponsiveFontSizes() {
+            const rect =
+                this.getBoundingClientRect();
+
+            const diameter =
+                Math.min(
+                    rect.width,
+                    rect.height
+                );
+
+            if (
+                !Number.isFinite(diameter) ||
+                diameter <= 0
+            ) {
+                return;
+            }
+
+            const hourSize =
+                Math.max(
+                    9,
+                    Math.min(
+                        22,
+                        diameter * 0.06
+                    )
+                );
+
+            this.style.setProperty(
+                "--clock-timer-auto-hour-font-size",
+                `${hourSize}px`
+            );
+
+            const text =
+                this.#timeElement.textContent ??
+                "";
+
+            if (!text) {
+                return;
+            }
+
+            const computed =
+                getComputedStyle(
+                    this.#timeElement
+                );
+
+            const currentSize =
+                Number.parseFloat(
+                    computed.fontSize
+                );
+
+            if (
+                !Number.isFinite(currentSize) ||
+                currentSize <= 0
+            ) {
+                return;
+            }
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+            const context =
+                canvas.getContext(
+                    "2d"
+                );
+
+            if (!context) {
+                return;
+            }
+
+            context.font =
+                computed.font;
+
+            const measuredWidth =
+                context.measureText(
+                    text
+                ).width;
+
+            if (
+                !Number.isFinite(measuredWidth) ||
+                measuredWidth <= 0
+            ) {
+                return;
+            }
+
+            const targetWidth =
+                diameter * 0.66;
+
+            const minimumSize =
+                Math.max(
+                    10,
+                    diameter * 0.08
+                );
+
+            const maximumSize =
+                Math.max(
+                    minimumSize,
+                    diameter * 0.18
+                );
+
+            const fittedSize =
+                Math.max(
+                    minimumSize,
+                    Math.min(
+                        maximumSize,
+                        currentSize *
+                            targetWidth /
+                            measuredWidth
+                    )
+                );
+
+            this.style.setProperty(
+                "--clock-timer-auto-time-font-size",
+                `${fittedSize}px`
+            );
         }
 
         #handlePercentGoalChange() {
@@ -4713,6 +4932,8 @@
                         ? `${hourText}${minutes}${seconds}`
                         : `${hourText}${minutes}`;
 
+                this.#scheduleFontSizing();
+
                 return;
             }
 
@@ -4783,6 +5004,8 @@
 
             this.#timeElement.textContent =
                 result;
+
+            this.#scheduleFontSizing();
         }
 
         #renderHours() {
@@ -4889,6 +5112,12 @@
 
                 element.style.lineHeight =
                     "1";
+
+                element.style.fontFamily =
+                    "var(--clock-timer-hour-font, inherit)";
+
+                element.style.fontSize =
+                    "var(--clock-timer-hour-font-size, var(--clock-timer-auto-hour-font-size, 1rem))";
 
                 element.style.pointerEvents =
                     "none";
