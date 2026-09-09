@@ -14,10 +14,4 @@ if old not in text:
     raise SystemExit('hour inline typography block not found')
 text = text.replace(old, '', 1)
 
-old = '''                this.#timeElement.textContent =\n                    format === "hhmmss"\n                        ? `${hourText}${minutes}${seconds}`\n                        : `${hourText}${minutes}`;\n\n                return;\n'''
-new = '''                this.#timeElement.textContent =\n                    format === "hhmmss"\n                        ? `${hourText}${minutes}${seconds}`\n                        : `${hourText}${minutes}`;\n\n                this.#scheduleFontSizing();\n\n                return;\n'''
-if old not in text:
-    raise SystemExit('military display return block not found')
-text = text.replace(old, new, 1)
-
 path.write_text(text)
