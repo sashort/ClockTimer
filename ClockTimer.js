@@ -220,10 +220,19 @@
                         border-box;
 
                     width:
-                        max-content;
+                        fit-content;
+
+                    height:
+                        fit-content;
 
                     max-width:
                         100%;
+
+                    max-height:
+                        100%;
+
+                    place-self:
+                        center;
 
                     background:
                         transparent;
