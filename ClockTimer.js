@@ -148,6 +148,9 @@
                     width: 100%;
                     height: 100%;
 
+                    isolation:
+                        isolate;
+
                     pointer-events:
                         none;
                 }
@@ -160,7 +163,10 @@
                     width: 100%;
                     height: 100%;
 
-                    z-index: 10;
+                    z-index: 0;
+
+                    isolation:
+                        isolate;
 
                     pointer-events:
                         none;
@@ -193,7 +199,7 @@
                     place-items:
                         center;
 
-                    z-index: 40;
+                    z-index: 100;
 
                     pointer-events:
                         none;
