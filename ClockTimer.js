@@ -1553,6 +1553,12 @@
             numberLayer.style.zIndex =
                 "20";
 
+            numberLayer.style.fontFamily =
+                "var(--clock-timer-hour-font, inherit)";
+
+            numberLayer.style.fontSize =
+                "var(--clock-timer-hour-font-size, var(--clock-timer-auto-hour-font-size, 1rem))";
+
             ring.appendChild(
                 numberLayer
             );
@@ -5112,12 +5118,6 @@
 
                 element.style.lineHeight =
                     "1";
-
-                element.style.fontFamily =
-                    "var(--clock-timer-hour-font, inherit)";
-
-                element.style.fontSize =
-                    "var(--clock-timer-hour-font-size, var(--clock-timer-auto-hour-font-size, 1rem))";
 
                 element.style.pointerEvents =
                     "none";
