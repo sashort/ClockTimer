@@ -3562,6 +3562,147 @@
             });
         }
 
+        close() {
+            const openInsert =
+                this.#openEndedRange;
+
+            const openOverwrite =
+                this.#openOverwriteRange;
+
+            if (!openInsert && !openOverwrite) {
+                throw new Error(
+                    "close() requires an open-ended insert or overwrite."
+                );
+            }
+
+            const nowDate =
+                new Date();
+
+            const now =
+                this.#getCurrentTimelineTime(
+                    nowDate
+                );
+
+            if (openInsert) {
+                const start =
+                    this.#dateToTimelineTime(
+                        openInsert.startDate
+                    );
+
+                const previous =
+                    Number.isFinite(
+                        this.#openEndedLastTick
+                    )
+                        ? this.#openEndedLastTick
+                        : start;
+
+                if (now > previous) {
+                    const delta =
+                        now - previous;
+
+                    this.#extendCalculatedEndTime(
+                        delta,
+                        openInsert.type
+                    );
+
+                    this.#shiftRangesAfter(
+                        previous,
+                        delta,
+                        openInsert
+                    );
+                }
+
+                openInsert.openEnded =
+                    false;
+
+                openInsert.endDate =
+                    new Date(
+                        nowDate.getTime()
+                    );
+
+                openInsert.rangeLength =
+                    Math.max(
+                        0,
+                        now - start
+                    );
+
+                this.#openEndedRange =
+                    undefined;
+
+                this.#openEndedLastTick =
+                    undefined;
+
+                this.#renderAllInsertedRanges();
+            }
+
+            if (openOverwrite) {
+                const previous =
+                    Number.isFinite(
+                        this.#openOverwriteLastTick
+                    )
+                        ? this.#openOverwriteLastTick
+                        : openOverwrite.start;
+
+                if (now > previous) {
+                    const net =
+                        this.#getOverwriteCalculatedEndDelta(
+                            previous,
+                            now,
+                            openOverwrite.type
+                        );
+
+                    this.#adjustCalculatedEndTime(
+                        net
+                    );
+
+                    this.#applyOverwriteMask(
+                        previous,
+                        now
+                    );
+
+                    this.#renderOverwriteRecord({
+                        ...openOverwrite,
+                        start: previous,
+                        end: now,
+                        openEnded: false
+                    });
+                }
+
+                openOverwrite.openEnded =
+                    false;
+
+                openOverwrite.end =
+                    Math.max(
+                        openOverwrite.start,
+                        now
+                    );
+
+                this.#openOverwriteRange =
+                    undefined;
+
+                this.#openOverwriteLastTick =
+                    undefined;
+            }
+
+            this.#tickAlignmentMilliseconds =
+                nowDate.getMilliseconds();
+
+            this.#stopTickTimer();
+
+            if (this.#needsTick()) {
+                this.#scheduleNextTick();
+            }
+
+            this.#refreshRingLayout(
+                this.#started
+                    ? now
+                    : undefined,
+                { refreshTickMarks: true }
+            );
+
+            return this;
+        }
+
         closeOpenRange() {
             if (
                 this.#updatesSuspended &&
