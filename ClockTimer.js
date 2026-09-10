@@ -108,6 +108,13 @@
 
         #standardDuration;
 
+        #originalStartArguments;
+
+        #startResetState;
+
+        #restoringStartState =
+            false;
+
         #percentGoal =
             1;
 
@@ -964,6 +971,26 @@
                     }
                     break;
             }
+        }
+
+        get originalStandardTime() {
+            return this.#originalStartArguments
+                ?.standardTime;
+        }
+
+        get originalCreationTime() {
+            return this.#originalStartArguments
+                ?.creationTime;
+        }
+
+        get originalScheduledStart() {
+            return this.#originalStartArguments
+                ?.scheduledStart;
+        }
+
+        get originalStartTime() {
+            return this.#originalStartArguments
+                ?.startTime;
         }
 
         get standardTime() {
@@ -2068,6 +2095,10 @@
                             this.overwrite(operation.args);
                             break;
 
+                        case "reset":
+                            this.reset();
+                            break;
+
                         case "replaceWithNext":
                             this.replaceWithNext();
                             break;
@@ -2135,6 +2166,13 @@
             startTime,
             scheduledStart
         } = {}) {
+            const suppliedStartArguments = {
+                standardTime,
+                creationTime,
+                startTime,
+                scheduledStart
+            };
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
@@ -2328,6 +2366,146 @@
 
             this.#stopTickTimer();
             this.#scheduleNextTick();
+
+            if (!this.#restoringStartState) {
+                this.#originalStartArguments = {
+                    ...suppliedStartArguments
+                };
+
+                this.#startResetState = {
+                    args: {
+                        standardTime:
+                            this.#standardTime,
+                        creationTime:
+                            this.#creationTime,
+                        startTime:
+                            this.#formatTimelineTime(
+                                startTimeMilliseconds
+                            ),
+                        scheduledStart:
+                            this.#scheduledStart
+                    },
+                    startedAtEpoch:
+                        this.#startedAtEpoch,
+                    tickAlignmentMilliseconds:
+                        this.#tickAlignmentMilliseconds,
+                    percentGoal:
+                        this.getAttribute(
+                            "percent-goal"
+                        ),
+                    insertedRanges:
+                        this.#cloneInsertedRecords(
+                            this.#insertedRanges
+                        ),
+                    openEndedRangeId:
+                        this.#openEndedRange?.id,
+                    openEndedLastTick:
+                        this.#openEndedLastTick
+                };
+            }
+
+            return this;
+        }
+
+        #cloneInsertedRecords(records) {
+            return records.map(record => ({
+                ...record,
+                startDate:
+                    new Date(
+                        record.startDate.getTime()
+                    ),
+                endDate:
+                    record.endDate
+                        ? new Date(
+                            record.endDate.getTime()
+                        )
+                        : undefined,
+                otherAttributes: {
+                    ...(record.otherAttributes ?? {})
+                },
+                preservedAttributes:
+                    (record.preservedAttributes ?? [])
+                        .map(snapshot => ({
+                            ...snapshot,
+                            attributes: {
+                                ...(snapshot.attributes ?? {})
+                            }
+                        }))
+            }));
+        }
+
+        reset() {
+            if (!this.#startResetState) {
+                throw new Error(
+                    "reset() cannot be called before start() or after clear()."
+                );
+            }
+
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#queueAsyncOperation({
+                    type: "reset"
+                });
+
+                return this;
+            }
+
+            const baseline =
+                this.#startResetState;
+
+            this.#insertedRanges =
+                this.#cloneInsertedRecords(
+                    baseline.insertedRanges
+                );
+
+            this.#openEndedRange =
+                baseline.openEndedRangeId
+                    ? this.#insertedRanges.find(
+                        record =>
+                            record.id ===
+                                baseline.openEndedRangeId
+                    )
+                    : undefined;
+
+            this.#openEndedLastTick =
+                baseline.openEndedLastTick;
+
+            if (baseline.percentGoal === null) {
+                this.removeAttribute(
+                    "percent-goal"
+                );
+            }
+            else {
+                this.setAttribute(
+                    "percent-goal",
+                    baseline.percentGoal
+                );
+            }
+
+            this.#restoringStartState =
+                true;
+
+            try {
+                this.start({
+                    ...baseline.args
+                });
+
+                this.#startedAtEpoch =
+                    baseline.startedAtEpoch;
+
+                this.#tickAlignmentMilliseconds =
+                    baseline.tickAlignmentMilliseconds;
+
+                this.#stopTickTimer();
+                this.#tick();
+                this.#scheduleNextTick();
+            }
+            finally {
+                this.#restoringStartState =
+                    false;
+            }
 
             return this;
         }
@@ -3795,6 +3973,14 @@
 
             this.#standardDuration =
                 undefined;
+
+            if (!this.#restoringStartState) {
+                this.#originalStartArguments =
+                    undefined;
+
+                this.#startResetState =
+                    undefined;
+            }
 
             this.#startedAtEpoch =
                 undefined;
