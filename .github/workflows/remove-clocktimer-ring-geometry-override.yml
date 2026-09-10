@@ -1,0 +1,46 @@
+name: Remove ClockTimer ring geometry override
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-clocktimer-ring-geometry-override.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer CSS fix
+        run: python .github/scripts/remove_clocktimer_ring_geometry_override.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify RingContainer geometry ownership
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          start = text.index('::slotted(ring-container) {')
+          end = text.index('}', start)
+          block = text[start:end]
+          assert 'inset: 0;' not in block
+          assert 'width: 100%;' not in block
+          assert 'height: 100%;' not in block
+          assert 'position: absolute;' in block
+          assert 'display: block;' in block
+          assert 'var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))' in text
+          assert 'var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))' in text
+          PY
+      - name: Commit ClockTimer fix and cleanup
+        run: |
+          rm -f .github/scripts/remove_clocktimer_ring_geometry_override.py
+          rm -f .github/workflows/remove-clocktimer-ring-geometry-override.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/remove_clocktimer_ring_geometry_override.py .github/workflows/remove-clocktimer-ring-geometry-override.yml
+          git commit -m "Let RingContainer own ring geometry"
+          git push origin main
