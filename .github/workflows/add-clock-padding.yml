@@ -1,0 +1,28 @@
+name: Add ClockTimer edge padding
+on:
+  push:
+    paths:
+      - .github/workflows/add-clock-padding.yml
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply padding
+        run: python .github/scripts/add-clock-padding.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Targeted checks
+        run: |
+          grep -A3 'padding:' ClockTimer.js | grep -q '1px'
+          grep -A20 'aspect-ratio:' ClockTimer.js | grep -q 'padding:'
+      - name: Commit change and cleanup
+        run: |
+          rm .github/scripts/add-clock-padding.py .github/workflows/add-clock-padding.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/add-clock-padding.py .github/workflows/add-clock-padding.yml
+          git commit -m 'Add ClockTimer edge padding'
+          git push
