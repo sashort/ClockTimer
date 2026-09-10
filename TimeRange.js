@@ -219,25 +219,32 @@ class TimeRange extends HTMLElement {
 
             :host([type="elapsed"]) #elapsed-wave {
                 display: block;
-                animation: elapsed-wave-sweep 4s linear infinite;
+                animation: elapsed-wave-sweep 4.5s linear infinite;
             }
 
             @keyframes elapsed-wave-sweep {
                 0% {
-                    opacity: 1;
+                    opacity: 0;
                     transform: rotate(
                         var(--elapsed-wave-start-angle, 0deg)
                     );
                 }
 
-                25% {
+                3% {
                     opacity: 1;
+                }
+
+                30.333% {
+                    opacity: 1;
+                }
+
+                33.333% {
+                    opacity: 0;
                     transform: rotate(
                         var(--elapsed-wave-end-angle, 360deg)
                     );
                 }
 
-                25.01%,
                 100% {
                     opacity: 0;
                     transform: rotate(
@@ -2656,10 +2663,10 @@ class TimeRange extends HTMLElement {
         this.#elapsedWaveLayer.style.backgroundImage =
             `conic-gradient(from 0deg at 50% 50%, ` +
             `${rgba(strength)} 0deg, ` +
-            `${rgba(shoulder)} 13deg, ` +
-            `transparent 38deg, ` +
-            `transparent 322deg, ` +
-            `${rgba(shoulder)} 347deg, ` +
+            `${rgba(shoulder)} var(--elapsed-wave-shoulder, 4deg), ` +
+            `transparent var(--elapsed-wave-width, 12deg), ` +
+            `transparent calc(360deg - var(--elapsed-wave-width, 12deg)), ` +
+            `${rgba(shoulder)} calc(360deg - var(--elapsed-wave-shoulder, 4deg)), ` +
             `${rgba(strength)} 360deg)`;
     }
 
@@ -2828,14 +2835,26 @@ class TimeRange extends HTMLElement {
                 this.getAttribute("type") ===
                     "elapsed"
             ) {
+                const waveWidth = 38;
+
+                this.#elapsedWaveLayer.style.setProperty(
+                    "--elapsed-wave-width",
+                    `${waveWidth}deg`
+                );
+
+                this.#elapsedWaveLayer.style.setProperty(
+                    "--elapsed-wave-shoulder",
+                    `${waveWidth * 0.35}deg`
+                );
+
                 this.#elapsedWaveLayer.style.setProperty(
                     "--elapsed-wave-start-angle",
-                    "0deg"
+                    `${-waveWidth}deg`
                 );
 
                 this.#elapsedWaveLayer.style.setProperty(
                     "--elapsed-wave-end-angle",
-                    "360deg"
+                    `${360 + waveWidth}deg`
                 );
             }
 
@@ -2873,14 +2892,39 @@ class TimeRange extends HTMLElement {
                     ? endAngle + 360
                     : endAngle;
 
+            const sweepAngle =
+                Math.max(
+                    0,
+                    sweepEndAngle - startAngle
+                );
+
+            const waveWidth =
+                Math.max(
+                    1.5,
+                    Math.min(
+                        38,
+                        sweepAngle * 0.4
+                    )
+                );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-width",
+                `${waveWidth}deg`
+            );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-shoulder",
+                `${Math.max(0.5, waveWidth * 0.35)}deg`
+            );
+
             this.#elapsedWaveLayer.style.setProperty(
                 "--elapsed-wave-start-angle",
-                `${startAngle}deg`
+                `${startAngle - waveWidth}deg`
             );
 
             this.#elapsedWaveLayer.style.setProperty(
                 "--elapsed-wave-end-angle",
-                `${sweepEndAngle}deg`
+                `${sweepEndAngle + waveWidth}deg`
             );
         }
 
