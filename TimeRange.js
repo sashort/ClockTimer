@@ -12,6 +12,7 @@ class TimeRange extends HTMLElement {
     #styleElement;
     #geometryStyleElement;
     #contourLayer;
+    #elapsedBaseLayer;
     #elapsedWaveLayer;
     #appearanceObserver;
     #appearanceRefreshFrame;
@@ -200,13 +201,17 @@ class TimeRange extends HTMLElement {
                 display: none;
             }
 
+            #elapsed-base,
             #elapsed-wave {
                 position: absolute;
                 inset: 0;
                 display: none;
                 pointer-events: none;
-                transform-origin: 50% 50%;
                 background-repeat: no-repeat;
+            }
+
+            #elapsed-wave {
+                transform-origin: 50% 50%;
                 will-change: transform;
             }
 
@@ -217,8 +222,12 @@ class TimeRange extends HTMLElement {
                 background-image: none !important;
             }
 
+            :host([type="elapsed"]) #elapsed-base,
             :host([type="elapsed"]) #elapsed-wave {
                 display: block;
+            }
+
+            :host([type="elapsed"]) #elapsed-wave {
                 animation: elapsed-wave-sweep 4.5s linear infinite;
             }
 
@@ -262,6 +271,14 @@ class TimeRange extends HTMLElement {
         this.#contourLayer.id =
             "contour";
 
+        this.#elapsedBaseLayer =
+            document.createElement(
+                "div"
+            );
+
+        this.#elapsedBaseLayer.id =
+            "elapsed-base";
+
         this.#elapsedWaveLayer =
             document.createElement(
                 "div"
@@ -285,6 +302,7 @@ class TimeRange extends HTMLElement {
             this.#geometryStyleElement,
             this.#styleElement,
             this.#contourLayer,
+            this.#elapsedBaseLayer,
             this.#elapsedWaveLayer
         );
     }
@@ -2509,7 +2527,10 @@ class TimeRange extends HTMLElement {
     }
 
     #updateElapsedWaveAppearance() {
-        if (!this.#elapsedWaveLayer) {
+        if (
+            !this.#elapsedBaseLayer ||
+            !this.#elapsedWaveLayer
+        ) {
             return;
         }
 
@@ -2517,6 +2538,9 @@ class TimeRange extends HTMLElement {
             this.getAttribute("type") !==
                 "elapsed"
         ) {
+            this.#elapsedBaseLayer.style.background =
+                "transparent";
+
             this.#elapsedWaveLayer.style.backgroundImage =
                 "none";
 
@@ -2649,6 +2673,23 @@ class TimeRange extends HTMLElement {
                     strength
                 )
             );
+
+        const baseStrength =
+            Math.min(
+                0.16,
+                Math.max(
+                    0.08,
+                    0.09 +
+                        contrastRange * 0.04 +
+                        (1 - strongestOpacity) * 0.03
+                )
+            );
+
+        this.#elapsedBaseLayer.style.mixBlendMode =
+            "screen";
+
+        this.#elapsedBaseLayer.style.background =
+            `rgba(255, 255, 255, ${baseStrength.toFixed(3)})`;
 
         const shoulder =
             strength * 0.38;
