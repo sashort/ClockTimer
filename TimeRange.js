@@ -3,6 +3,7 @@ class TimeRange extends HTMLElement {
     static #percentGoal = 1;
     static #calculatedEndTime;
     static #reordering = false;
+    static #animationDuration = 1000;
 
     #startTime;
     #endTime;
@@ -11,6 +12,17 @@ class TimeRange extends HTMLElement {
     #styleElement;
     #contourLayer;
     #syncing = 0;
+    #suspendAnimations = false;
+    #renderStartTime;
+    #renderEndTime;
+    #animationFrame;
+    #animationStartedAt;
+    #animationFromStart;
+    #animationFromEnd;
+    #animationTargetStart;
+    #animationTargetEnd;
+    #pendingRemoval = false;
+    #removeAfterAnimation = false;
 
     static get observedAttributes() {
         return [
@@ -23,6 +35,22 @@ class TimeRange extends HTMLElement {
 
     static get percentGoal() {
         return TimeRange.#percentGoal;
+    }
+
+    static get animationDuration() {
+        return TimeRange.#animationDuration;
+    }
+
+    static set animationDuration(value) {
+        const duration = Number(value);
+
+        if (
+            Number.isFinite(duration) &&
+            duration >= 0
+        ) {
+            TimeRange.#animationDuration =
+                duration;
+        }
     }
 
     static set percentGoal(value) {
@@ -196,7 +224,13 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        this.#suspendAnimations =
+            true;
+
         this.#initializeFromAttributes();
+
+        this.#suspendAnimations =
+            false;
 
         this.#syncing++;
 
@@ -222,12 +256,45 @@ class TimeRange extends HTMLElement {
             this.#removeOverlaps();
         }
 
-        TimeRange.#updateParentClipPaths(
-            this.parentElement
-        );
         TimeRange.#reorderParent(
             this.parentElement
         );
+
+        if (
+            this.hasAttribute(
+                "data-time-range-full-entry"
+            )
+        ) {
+            this.removeAttribute(
+                "data-time-range-full-entry"
+            );
+
+            this.#renderStartTime =
+                this.#cloneDate(
+                    this.#startTime
+                );
+
+            this.#renderEndTime =
+                this.#cloneDate(
+                    this.#endTime
+                );
+
+            this.#updateClipPath();
+            this.#animateOpacityIn();
+        }
+        else {
+            this.#renderStartTime =
+                this.#cloneDate(
+                    this.#startTime
+                );
+
+            this.#renderEndTime =
+                this.#cloneDate(
+                    this.#startTime
+                );
+
+            this.#animateToLogicalTiming();
+        }
     }
 
     disconnectedCallback() {
@@ -236,6 +303,19 @@ class TimeRange extends HTMLElement {
         ) {
             return;
         }
+
+        if (
+            this.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#animationFrame
+            );
+
+            this.#animationFrame =
+                undefined;
+        }
+
         const index =
             TimeRange.#instances.indexOf(
                 this
@@ -523,9 +603,24 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            TimeRange.#updateParentClipPaths(
-                this.parentElement
-            );
+            if (
+                this.#suspendAnimations
+            ) {
+                this.#renderStartTime =
+                    this.#cloneDate(
+                        this.#startTime
+                    );
+
+                this.#renderEndTime =
+                    this.#cloneDate(
+                        this.#endTime
+                    );
+
+                this.#updateClipPath();
+            }
+            else {
+                this.#animateToLogicalTiming();
+            }
         }
     }
 
@@ -599,9 +694,24 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            TimeRange.#updateParentClipPaths(
-                this.parentElement
-            );
+            if (
+                this.#suspendAnimations
+            ) {
+                this.#renderStartTime =
+                    this.#cloneDate(
+                        this.#startTime
+                    );
+
+                this.#renderEndTime =
+                    this.#cloneDate(
+                        this.#endTime
+                    );
+
+                this.#updateClipPath();
+            }
+            else {
+                this.#animateToLogicalTiming();
+            }
         }
     }
 
@@ -675,9 +785,24 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            TimeRange.#updateParentClipPaths(
-                this.parentElement
-            );
+            if (
+                this.#suspendAnimations
+            ) {
+                this.#renderStartTime =
+                    this.#cloneDate(
+                        this.#startTime
+                    );
+
+                this.#renderEndTime =
+                    this.#cloneDate(
+                        this.#endTime
+                    );
+
+                this.#updateClipPath();
+            }
+            else {
+                this.#animateToLogicalTiming();
+            }
         }
     }
 
@@ -1497,6 +1622,310 @@ class TimeRange extends HTMLElement {
             );
     }
 
+    #cloneDate(value) {
+        return value instanceof Date
+            ? new Date(
+                value.getTime()
+            )
+            : undefined;
+    }
+
+    #getVisualTiming() {
+        return {
+            start:
+                this.#cloneDate(
+                    this.#renderStartTime ??
+                    this.#startTime
+                ),
+            end:
+                this.#cloneDate(
+                    this.#renderEndTime ??
+                    this.#endTime
+                )
+        };
+    }
+
+    #animateToLogicalTiming() {
+        if (
+            !this.isConnected ||
+            !(this.#startTime instanceof Date) ||
+            !(this.#endTime instanceof Date)
+        ) {
+            return;
+        }
+
+        const visual =
+            this.#getVisualTiming();
+
+        this.#startTimingAnimation(
+            visual.start ?? this.#startTime,
+            visual.end ?? this.#startTime,
+            this.#startTime,
+            this.#endTime,
+            false
+        );
+    }
+
+    #startTimingAnimation(
+        fromStart,
+        fromEnd,
+        targetStart,
+        targetEnd,
+        removeAfter = false
+    ) {
+        if (
+            !(fromStart instanceof Date) ||
+            !(fromEnd instanceof Date) ||
+            !(targetStart instanceof Date) ||
+            !(targetEnd instanceof Date)
+        ) {
+            return;
+        }
+
+        if (
+            this.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#animationFrame
+            );
+        }
+
+        this.#animationFromStart =
+            this.#cloneDate(fromStart);
+
+        this.#animationFromEnd =
+            this.#cloneDate(fromEnd);
+
+        this.#animationTargetStart =
+            this.#cloneDate(targetStart);
+
+        this.#animationTargetEnd =
+            this.#cloneDate(targetEnd);
+
+        this.#animationStartedAt =
+            performance.now();
+
+        this.#removeAfterAnimation =
+            removeAfter;
+
+        const duration =
+            TimeRange.#animationDuration;
+
+        if (
+            duration <= 0
+        ) {
+            this.#renderStartTime =
+                this.#cloneDate(targetStart);
+
+            this.#renderEndTime =
+                this.#cloneDate(targetEnd);
+
+            this.#updateClipPath();
+            this.#finishTimingAnimation();
+            return;
+        }
+
+        const step =
+            timestamp => {
+                const progress =
+                    Math.min(
+                        1,
+                        Math.max(
+                            0,
+                            (
+                                timestamp -
+                                this.#animationStartedAt
+                            ) /
+                            duration
+                        )
+                    );
+
+                const fromStartMs =
+                    this.#animationFromStart.getTime();
+
+                const fromEndMs =
+                    this.#animationFromEnd.getTime();
+
+                const targetStartMs =
+                    this.#animationTargetStart.getTime();
+
+                const targetEndMs =
+                    this.#animationTargetEnd.getTime();
+
+                this.#renderStartTime =
+                    new Date(
+                        fromStartMs +
+                        (
+                            targetStartMs -
+                            fromStartMs
+                        ) *
+                        progress
+                    );
+
+                this.#renderEndTime =
+                    new Date(
+                        fromEndMs +
+                        (
+                            targetEndMs -
+                            fromEndMs
+                        ) *
+                        progress
+                    );
+
+                this.#updateClipPath();
+
+                if (
+                    progress >= 1
+                ) {
+                    this.#animationFrame =
+                        undefined;
+
+                    this.#finishTimingAnimation();
+                    return;
+                }
+
+                this.#animationFrame =
+                    requestAnimationFrame(
+                        step
+                    );
+            };
+
+        this.#animationFrame =
+            requestAnimationFrame(
+                step
+            );
+    }
+
+    #finishTimingAnimation() {
+        const removeAfter =
+            this.#removeAfterAnimation;
+
+        this.#removeAfterAnimation =
+            false;
+
+        if (removeAfter) {
+            this.#pendingRemoval =
+                false;
+
+            HTMLElement.prototype.remove.call(
+                this
+            );
+        }
+    }
+
+    #animateOpacityIn() {
+        const duration =
+            TimeRange.#animationDuration;
+
+        if (
+            duration <= 0 ||
+            typeof this.animate !==
+                "function"
+        ) {
+            return;
+        }
+
+        this.animate(
+            [
+                { opacity: 0 },
+                { opacity: 1 }
+            ],
+            {
+                duration,
+                easing: "linear"
+            }
+        );
+    }
+
+    removeAnimated({
+        collapseTo = "end",
+        targetStart,
+        targetEnd
+    } = {}) {
+        if (
+            this.#pendingRemoval
+        ) {
+            return;
+        }
+
+        if (!this.isConnected) {
+            HTMLElement.prototype.remove.call(
+                this
+            );
+            return;
+        }
+
+        this.#pendingRemoval =
+            true;
+
+        this.setAttribute(
+            "data-time-range-exiting",
+            ""
+        );
+
+        const instanceIndex =
+            TimeRange.#instances.indexOf(
+                this
+            );
+
+        if (
+            instanceIndex !== -1
+        ) {
+            TimeRange.#instances.splice(
+                instanceIndex,
+                1
+            );
+        }
+
+        const visual =
+            this.#getVisualTiming();
+
+        let finalStart =
+            targetStart instanceof Date
+                ? targetStart
+                : undefined;
+
+        let finalEnd =
+            targetEnd instanceof Date
+                ? targetEnd
+                : undefined;
+
+        if (
+            !(finalStart instanceof Date) ||
+            !(finalEnd instanceof Date)
+        ) {
+            const collapseDate =
+                collapseTo === "start"
+                    ? (
+                        visual.start ??
+                        this.#startTime
+                    )
+                    : (
+                        visual.end ??
+                        this.#endTime
+                    );
+
+            finalStart =
+                this.#cloneDate(collapseDate);
+
+            finalEnd =
+                this.#cloneDate(collapseDate);
+        }
+
+        this.#startTimingAnimation(
+            visual.start ?? finalStart,
+            visual.end ?? finalEnd,
+            finalStart,
+            finalEnd,
+            true
+        );
+    }
+
+    get isExiting() {
+        return this.#pendingRemoval;
+    }
+
     #getRingOriginTime() {
         const parent =
             this.parentElement;
@@ -1907,9 +2336,19 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        const renderStart =
+            this.#renderStartTime instanceof Date
+                ? this.#renderStartTime
+                : this.#startTime;
+
+        const renderEnd =
+            this.#renderEndTime instanceof Date
+                ? this.#renderEndTime
+                : this.#endTime;
+
         const duration =
-            this.#endTime.getTime() -
-            this.#startTime.getTime();
+            renderEnd.getTime() -
+            renderStart.getTime();
 
         if (
             duration >=
@@ -1929,13 +2368,13 @@ class TimeRange extends HTMLElement {
 
         const startAngle =
             TimeRange.#calculateTimeAngle(
-                this.#startTime,
+                renderStart,
                 ringOrigin
             );
 
         const endAngle =
             TimeRange.#calculateTimeAngle(
-                this.#endTime,
+                renderEnd,
                 ringOrigin
             );
 
@@ -2024,7 +2463,8 @@ class TimeRange extends HTMLElement {
             ).filter(
                 child =>
                     child instanceof
-                        TimeRange
+                        TimeRange &&
+                    !child.#pendingRemoval
             );
 
         if (
@@ -2160,7 +2600,8 @@ class TimeRange extends HTMLElement {
                     this.parentElement ||
                 existing.hasAttribute(
                     "overlapping"
-                )
+                ) ||
+                existing.#pendingRemoval
             ) {
                 continue;
             }
@@ -2194,7 +2635,16 @@ class TimeRange extends HTMLElement {
                 addedEnd >=
                     existingEnd
             ) {
-                existing.remove();
+                existing.removeAnimated({
+                    targetStart:
+                        this.#cloneDate(
+                            newStart
+                        ),
+                    targetEnd:
+                        this.#cloneDate(
+                            newEnd
+                        )
+                });
 
                 continue;
             }

@@ -1152,6 +1152,14 @@
                         ":scope > time-range"
                     )
             ) {
+                if (
+                    range.hasAttribute(
+                        "data-time-range-exiting"
+                    )
+                ) {
+                    continue;
+                }
+
                 let start =
                     Number(
                         range.dataset.clockTimerStart
@@ -1284,6 +1292,9 @@
                 if (
                     range.hasAttribute(
                         "overlapping"
+                    ) ||
+                    range.hasAttribute(
+                        "data-time-range-exiting"
                     )
                 ) {
                     continue;
@@ -1354,6 +1365,11 @@
                         dynamic: true
                     }
                 );
+
+            replacement.setAttribute(
+                "data-time-range-full-entry",
+                ""
+            );
 
             ring.insertBefore(
                 replacement,
@@ -1462,7 +1478,55 @@
                         ":scope > ring-container[data-clock-timer-ring]"
                     )
                 ) {
-                    ring.remove();
+                    ring.removeAttribute(
+                        "data-clock-timer-ring"
+                    );
+
+                    ring.setAttribute(
+                        "data-clock-timer-exiting-ring",
+                        ""
+                    );
+
+                    const ranges =
+                        Array.from(
+                            ring.querySelectorAll(
+                                ":scope > time-range"
+                            )
+                        );
+
+                    for (
+                        const range of ranges
+                    ) {
+                        if (
+                            typeof range.removeAnimated ===
+                                "function"
+                        ) {
+                            range.removeAnimated({
+                                collapseTo: "start"
+                            });
+                        }
+                        else {
+                            range.remove();
+                        }
+                    }
+
+                    const TimeRangeClass =
+                        customElements.get(
+                            "time-range"
+                        );
+
+                    const duration =
+                        TimeRangeClass
+                            ? TimeRangeClass.animationDuration
+                            : 0;
+
+                    setTimeout(
+                        () => ring.remove(),
+                        Math.max(
+                            0,
+                            duration
+                        )
+                    );
                 }
 
                 this.#ensureBorderRing();
@@ -3591,7 +3655,17 @@
                         ':scope > ring-container > time-range[data-clock-timer-inserted]'
                     )
             ) {
-                range.remove();
+                if (
+                    typeof range.removeAnimated ===
+                        "function"
+                ) {
+                    range.removeAnimated({
+                        collapseTo: "start"
+                    });
+                }
+                else {
+                    range.remove();
+                }
             }
         }
 
