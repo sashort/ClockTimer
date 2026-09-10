@@ -146,12 +146,36 @@ class TimeRange extends HTMLElement {
                 mode: "open"
             });
 
+        const bevelStyle =
+            document.createElement(
+                "style"
+            );
+
+        bevelStyle.textContent = `
+            :host:not([overlapping]) {
+                filter:
+                    drop-shadow(
+                        -0.75px -0.75px 0
+                        rgba(255, 255, 255, 0.55)
+                    )
+                    drop-shadow(
+                        0.75px 0.75px 0
+                        rgba(0, 0, 0, 0.35)
+                    );
+            }
+
+            :host([overlapping]) {
+                filter: none;
+            }
+        `;
+
         this.#styleElement =
             document.createElement(
                 "style"
             );
 
-        this.#shadowRoot.appendChild(
+        this.#shadowRoot.append(
+            bevelStyle,
             this.#styleElement
         );
     }
