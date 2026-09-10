@@ -10,6 +10,7 @@ class TimeRange extends HTMLElement {
     #rangeLength;
     #shadowRoot;
     #styleElement;
+    #geometryStyleElement;
     #contourLayer;
     #syncing = 0;
     #suspendAnimations = false;
@@ -210,8 +211,14 @@ class TimeRange extends HTMLElement {
                 "style"
             );
 
+        this.#geometryStyleElement =
+            document.createElement(
+                "style"
+            );
+
         this.#shadowRoot.append(
             contourStyle,
+            this.#geometryStyleElement,
             this.#styleElement,
             this.#contourLayer
         );
@@ -2419,19 +2426,22 @@ class TimeRange extends HTMLElement {
                 "width"
             );
 
-        this.#contourLayer.style.setProperty(
-            "--time-range-ring-inset",
+        const effectiveRingInset =
             ringInset &&
                 ringInset !== "auto"
                 ? ringInset
-                : "0px"
-        );
+                : "0px";
 
-        this.#contourLayer.style.setProperty(
-            "--time-range-ring-width",
+        const effectiveRingWidth =
             ringWidth ||
-                "0px"
-        );
+                "0px";
+
+        this.#geometryStyleElement.textContent = `
+            :host {
+                --time-range-ring-inset: ${effectiveRingInset};
+                --time-range-ring-width: ${effectiveRingWidth};
+            }
+        `;
 
         if (
             width <= 0 ||
