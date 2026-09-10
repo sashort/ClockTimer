@@ -2784,12 +2784,13 @@ class TimeRange extends HTMLElement {
 
         this.#elapsedWaveLayer.style.backgroundImage =
             `conic-gradient(from 0deg at 50% 50%, ` +
-            `${rgba(strength)} 0deg, ` +
-            `${rgba(shoulder)} var(--elapsed-wave-shoulder, 4deg), ` +
-            `transparent var(--elapsed-wave-width, 12deg), ` +
-            `transparent calc(360deg - var(--elapsed-wave-width, 12deg)), ` +
-            `${rgba(shoulder)} calc(360deg - var(--elapsed-wave-shoulder, 4deg)), ` +
-            `${rgba(strength)} 360deg)`;
+            `transparent 0deg, ` +
+            `transparent calc(180deg - var(--elapsed-wave-width, 12deg)), ` +
+            `${rgba(shoulder)} calc(180deg - var(--elapsed-wave-shoulder, 4deg)), ` +
+            `${rgba(strength)} 180deg, ` +
+            `${rgba(shoulder)} calc(180deg + var(--elapsed-wave-shoulder, 4deg)), ` +
+            `transparent calc(180deg + var(--elapsed-wave-width, 12deg)), ` +
+            `transparent 360deg)`;
     }
 
     #updateContour() {
@@ -2985,12 +2986,12 @@ class TimeRange extends HTMLElement {
 
                 this.#elapsedWaveLayer.style.setProperty(
                     "--elapsed-wave-start-angle",
-                    `${-waveWidth}deg`
+                    `${-waveWidth - 180}deg`
                 );
 
                 this.#elapsedWaveLayer.style.setProperty(
                     "--elapsed-wave-end-angle",
-                    `${360 + waveWidth}deg`
+                    `${360 + waveWidth - 180}deg`
                 );
             }
 
@@ -3055,12 +3056,12 @@ class TimeRange extends HTMLElement {
 
             this.#elapsedWaveLayer.style.setProperty(
                 "--elapsed-wave-start-angle",
-                `${startAngle - waveWidth}deg`
+                `${startAngle - waveWidth - 180}deg`
             );
 
             this.#elapsedWaveLayer.style.setProperty(
                 "--elapsed-wave-end-angle",
-                `${sweepEndAngle + waveWidth}deg`
+                `${sweepEndAngle + waveWidth - 180}deg`
             );
         }
 
