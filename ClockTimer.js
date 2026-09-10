@@ -2891,6 +2891,13 @@
             const goal =
                 this.#getPercentGoal();
 
+            const previousGoal =
+                this.#percentGoal;
+
+            const counterclockwiseOvertimeRemoval =
+                previousGoal < 1 &&
+                goal >= 1;
+
             this.#percentGoal =
                 goal;
 
@@ -2900,7 +2907,9 @@
                 return;
             }
 
-            this.#reconcilePlannedRanges();
+            this.#reconcilePlannedRanges({
+                counterclockwiseOvertimeRemoval
+            });
 
             this.#removeOvertimeRanges();
 
@@ -3083,7 +3092,9 @@
             return segments;
         }
 
-        #reconcilePlannedRanges() {
+        #reconcilePlannedRanges({
+            counterclockwiseOvertimeRemoval = false
+        } = {}) {
             const desired =
                 this.#getPlannedSegments();
 
@@ -3197,7 +3208,12 @@
                         "function"
                 ) {
                     range.removeAnimated({
-                        collapseTo: "end"
+                        collapseTo:
+                            counterclockwiseOvertimeRemoval &&
+                            range.getAttribute("type") ===
+                                "overtime"
+                                ? "start"
+                                : "end"
                     });
                 }
                 else {
