@@ -1129,6 +1129,9 @@
 
                 this.#elapsedRange.clockTimerEnd =
                     String(stopTime);
+
+                this.#elapsedRange.stopElapsedAnimation
+                    ?.();
             }
 
             for (

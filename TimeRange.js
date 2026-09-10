@@ -729,6 +729,21 @@ class TimeRange extends HTMLElement {
         }
     }
 
+    stopElapsedAnimation() {
+        if (
+            this.getAttribute(
+                "type"
+            ) !== "elapsed"
+        ) {
+            return this;
+        }
+
+        this.#elapsedWaveLayer.style.animationPlayState =
+            "paused";
+
+        return this;
+    }
+
     transitionTo({
         startTime,
         endTime
