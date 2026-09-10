@@ -1,0 +1,31 @@
+name: Restore TimeRange gradient
+on:
+  push:
+    paths:
+      - '.github/workflows/restore-timerange-gradient.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply gradient restoration
+        run: python .github/scripts/restore-timerange-gradient.py
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Targeted checks
+        run: |
+          grep -n '#geometryStyleElement' TimeRange.js
+          grep -n -- '--time-range-ring-inset' TimeRange.js
+          grep -n -- '--time-range-ring-width' TimeRange.js
+          ! grep -n 'this\.style\.setProperty' TimeRange.js
+      - name: Commit change and cleanup
+        run: |
+          rm -f .github/workflows/restore-timerange-gradient.yml
+          rm -f .github/scripts/restore-timerange-gradient.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add TimeRange.js .github
+          git commit -m 'Restore TimeRange gradient geometry'
+          git push
