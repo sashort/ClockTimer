@@ -9,6 +9,7 @@ class TimeRange extends HTMLElement {
     #rangeLength;
     #shadowRoot;
     #styleElement;
+    #contourLayer;
     #syncing = 0;
 
     static get observedAttributes() {
@@ -152,23 +153,29 @@ class TimeRange extends HTMLElement {
             );
 
         contourStyle.textContent = `
-            :host:not([overlapping]) {
-                background-image:
-                    radial-gradient(
-                        circle at center,
-                        rgba(0, 0, 0, 0.22)
-                            calc(50% - var(--time-range-ring-inset) - (var(--time-range-ring-width) / 2)),
-                        rgba(255, 255, 255, 0.30)
-                            calc(50% - var(--time-range-ring-inset)),
-                        rgba(0, 0, 0, 0.20)
-                            calc(50% - var(--time-range-ring-inset) + (var(--time-range-ring-width) / 2))
-                    ) !important;
+            :host {
+                position: relative;
             }
 
-            :host([overlapping]) {
-                background-image: none !important;
+            #contour {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                background-repeat: no-repeat;
+            }
+
+            :host([overlapping]) #contour {
+                display: none;
             }
         `;
+
+        this.#contourLayer =
+            document.createElement(
+                "div"
+            );
+
+        this.#contourLayer.id =
+            "contour";
 
         this.#styleElement =
             document.createElement(
@@ -177,7 +184,8 @@ class TimeRange extends HTMLElement {
 
         this.#shadowRoot.append(
             contourStyle,
-            this.#styleElement
+            this.#styleElement,
+            this.#contourLayer
         );
     }
 
@@ -1573,6 +1581,257 @@ class TimeRange extends HTMLElement {
         }
     }
 
+    #getRingInnerMargin(
+        ring
+    ) {
+        if (
+            ring.hasAttribute(
+                "inner-margin"
+            )
+        ) {
+            return (
+                ring.getAttribute(
+                    "inner-margin"
+                ) ??
+                "0px"
+            );
+        }
+
+        return (
+            ring.getAttribute(
+                "margin"
+            ) ??
+            "0px"
+        );
+    }
+
+    #getRingOuterMargin(
+        ring
+    ) {
+        if (
+            ring.hasAttribute(
+                "outer-margin"
+            )
+        ) {
+            return (
+                ring.getAttribute(
+                    "outer-margin"
+                ) ??
+                "0px"
+            );
+        }
+
+        return (
+            ring.getAttribute(
+                "margin"
+            ) ??
+            "0px"
+        );
+    }
+
+    #collapseRingMargins(
+        first,
+        second
+    ) {
+        return `calc(max(0px, ${first}, ${second}) + min(0px, ${first}, ${second}))`;
+    }
+
+    #getPreviousRingContainer(
+        ring
+    ) {
+        let sibling =
+            ring.previousElementSibling;
+
+        while (sibling) {
+            if (
+                sibling.localName ===
+                    "ring-container"
+            ) {
+                return sibling;
+            }
+
+            sibling =
+                sibling.previousElementSibling;
+        }
+
+        return null;
+    }
+
+    #getEffectiveRingInset(
+        ring
+    ) {
+        const inset =
+            ring.getAttribute(
+                "inset"
+            );
+
+        if (
+            inset !== null &&
+            inset.trim().toLowerCase() !==
+                "auto"
+        ) {
+            return inset;
+        }
+
+        const width =
+            ring.getAttribute(
+                "width"
+            ) ??
+            "0px";
+
+        const previous =
+            this.#getPreviousRingContainer(
+                ring
+            );
+
+        if (!previous) {
+            return `calc(${this.#getRingOuterMargin(ring)} + (${width} / 2))`;
+        }
+
+        const previousInset =
+            this.#getEffectiveRingInset(
+                previous
+            );
+
+        const previousWidth =
+            previous.getAttribute(
+                "width"
+            ) ??
+            "0px";
+
+        const adjoiningMargin =
+            this.#collapseRingMargins(
+                this.#getRingInnerMargin(
+                    previous
+                ),
+                this.#getRingOuterMargin(
+                    ring
+                )
+            );
+
+        return `calc((0px + ${previousInset}) + (${previousWidth} / 2) + ${adjoiningMargin} + (${width} / 2))`;
+    }
+
+    #resolveLength(
+        value
+    ) {
+        const measure =
+            document.createElement(
+                "div"
+            );
+
+        measure.style.position =
+            "absolute";
+
+        measure.style.visibility =
+            "hidden";
+
+        measure.style.pointerEvents =
+            "none";
+
+        measure.style.width =
+            value;
+
+        measure.style.height =
+            "0";
+
+        this.#shadowRoot.appendChild(
+            measure
+        );
+
+        const pixels =
+            measure.getBoundingClientRect()
+                .width;
+
+        measure.remove();
+
+        return Number.isFinite(
+            pixels
+        )
+            ? pixels
+            : 0;
+    }
+
+    #updateContour() {
+        const parent =
+            this.parentElement;
+
+        if (
+            !parent ||
+            parent.localName !==
+                "ring-container" ||
+            !this.#contourLayer
+        ) {
+            return;
+        }
+
+        const width =
+            parent.clientWidth;
+
+        const height =
+            parent.clientHeight;
+
+        if (
+            width <= 0 ||
+            height <= 0
+        ) {
+            this.#contourLayer.style.backgroundImage =
+                "none";
+
+            return;
+        }
+
+        const ringWidth =
+            this.#resolveLength(
+                parent.getAttribute(
+                    "width"
+                ) ??
+                "0px"
+            );
+
+        const ringInset =
+            this.#resolveLength(
+                this.#getEffectiveRingInset(
+                    parent
+                )
+            );
+
+        const radius =
+            Math.min(
+                width,
+                height
+            ) / 2;
+
+        const innerRadius =
+            Math.max(
+                0,
+                radius -
+                    ringInset -
+                    ringWidth / 2
+            );
+
+        const centerRadius =
+            Math.max(
+                0,
+                radius -
+                    ringInset
+            );
+
+        const outerRadius =
+            Math.max(
+                0,
+                radius -
+                    ringInset +
+                    ringWidth / 2
+            );
+
+        this.#contourLayer.style.backgroundImage =
+            `radial-gradient(circle at center, ` +
+            `rgba(0, 0, 0, 0.28) ${innerRadius}px, ` +
+            `rgba(255, 255, 255, 0.34) ${centerRadius}px, ` +
+            `rgba(0, 0, 0, 0.22) ${outerRadius}px)`;
+    }
+
     #updateClipPath() {
         const parent =
             this.parentElement;
@@ -1582,6 +1841,8 @@ class TimeRange extends HTMLElement {
         ) {
             return;
         }
+
+        this.#updateContour();
 
         const width =
             parent.clientWidth;
