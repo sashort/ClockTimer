@@ -1,0 +1,27 @@
+name: Add ClockTimer close
+on:
+  push:
+    paths:
+      - '.github/workflows/add-close.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply patch
+        run: python .github/scripts/add-close.py
+      - name: Check syntax
+        run: node --check ClockTimer.js
+      - name: Commit and self-clean
+        run: |
+          rm .github/workflows/add-close.yml
+          rm .github/scripts/add-close.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js .github/workflows/add-close.yml .github/scripts/add-close.py
+          git commit -m "Add ClockTimer close method"
+          git push origin HEAD:main
