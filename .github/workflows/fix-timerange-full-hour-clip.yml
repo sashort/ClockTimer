@@ -38,3 +38,5 @@ jobs:
           git add TimeRange.js .github/workflows/fix-timerange-full-hour-clip.yml .github/scripts/fix_timerange_full_hour_clip.py
           git commit -m 'Render complete and multi-corner TimeRanges' || exit 0
           git push
+
+# retry after patch escaping fix
