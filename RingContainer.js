@@ -2070,7 +2070,7 @@ class RingContainer extends HTMLElement {
             else {
                 this.setAttribute(
                     name,
-                    RingContainer.#isFixedLength(
+                    RingContainer.#isSimpleLength(
                         original
                     )
                         ? original
@@ -2105,7 +2105,7 @@ class RingContainer extends HTMLElement {
         this.#afterLengthValueChange();
     }
 
-    static #isFixedLength(
+    static #isSimpleLength(
         value
     ) {
         if (
@@ -2115,9 +2115,24 @@ class RingContainer extends HTMLElement {
             return false;
         }
 
-        return /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:px|in|cm)$/i
-            .test(
-                String(value).trim()
+        const length =
+            String(value).trim();
+
+        if (!length) {
+            return false;
+        }
+
+        let remaining =
+            length.replace(
+                /var\(\s*--[A-Za-z0-9_-]+(?:\s*,[^()]*)?\s*\)/g,
+                ""
+            );
+
+        return !/[()\[\]{}+*\/]/.test(
+            remaining
+        ) &&
+            !/(?:^|\s)-(?:\s|$)/.test(
+                remaining
             );
     }
 
@@ -2230,7 +2245,7 @@ class RingContainer extends HTMLElement {
                 }
 
                 const reflected =
-                    RingContainer.#isFixedLength(
+                    RingContainer.#isSimpleLength(
                         original
                     )
                         ? original
