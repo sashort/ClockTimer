@@ -1,0 +1,38 @@
+name: Apply approved ClockTimer tick style
+on:
+  push:
+    paths:
+      - '.github/workflows/perfect-tick-style.yml'
+      - '.github/scripts/perfect_tick_style.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/perfect_tick_style.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify approved defaults
+        run: |
+          grep -Fq 'clamp(5px, 2cqi, 10px);' ClockTimer.js
+          grep -Fq 'clamp(1px, 0.35cqi, 1.5px);' ClockTimer.js
+          grep -Fq 'clamp(4px, 1.6cqi, 7px);' ClockTimer.js
+          grep -Fq 'clamp(1.5px, 0.55cqi, 2.5px);' ClockTimer.js
+          grep -Fq 'clamp(8px, 3cqi, 13px);' ClockTimer.js
+          grep -Fq '0 0 1px rgb(0 0 0 / 35%);' ClockTimer.js
+          grep -Fq 'clamp(0px, 0.15cqi, 1px);' ClockTimer.js
+      - name: Commit
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Make approved tick styling the shadow DOM default" || exit 0
+          git push origin main
