@@ -1,0 +1,27 @@
+name: Fix face background host paint v2
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-face-background-host-paint-v2.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/fix-face-background-host-paint-v2.py
+      - run: node --check ClockTimer.js
+      - run: |
+          grep -q 'this.style.setProperty' ClockTimer.js
+          ! grep -q 'hostBackgroundOverride' ClockTimer.js
+      - run: |
+          rm -f .github/scripts/fix-face-background-host-paint.py
+          rm -f .github/workflows/fix-face-background-host-paint.yml
+          rm -f .github/scripts/fix-face-background-host-paint-v2.py
+          rm -f .github/workflows/fix-face-background-host-paint-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Keep host background out of timer ring'
+          git push
