@@ -1175,10 +1175,6 @@
         }
 
         #runSpin(rotations, duration) {
-            if (!this.#clockFace) {
-                return;
-            }
-
             const perRotationDuration =
                 this.#getSpinDurationMilliseconds(
                     duration
@@ -1188,13 +1184,13 @@
                 ?.cancel();
 
             this.#spinAnimation =
-                this.#clockFace.animate(
+                this.animate(
                     [
                         {
-                            transform: "rotateY(0deg)"
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
                         },
                         {
-                            transform: `rotateY(${rotations * 360}deg)`
+                            transform: `perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(${rotations * 360}deg)`
                         }
                     ],
                     {
