@@ -126,7 +126,7 @@ new_method = '''    #getCornersBetweenAngles(
 
 '''
 
-text, count = method_pattern.subn(new_method, text, count=1)
+text, count = method_pattern.subn(lambda _: new_method, text, count=1)
 if count != 1:
     raise SystemExit("Could not replace #getCornerBetweenAngles")
 
@@ -219,7 +219,7 @@ new_tail = '''        const corners =
 
 '''
 
-text, count = clip_tail_pattern.subn(new_tail, text, count=1)
+text, count = clip_tail_pattern.subn(lambda _: new_tail, text, count=1)
 if count != 1:
     raise SystemExit("Could not replace clip-path tail")
 
