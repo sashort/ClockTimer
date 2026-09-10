@@ -36,15 +36,15 @@ class RingContainer extends HTMLElement {
     #inset;
     #outerMargin;
     #innerMargin;
-    #filter;
-    #filterRamp;
-    #filterRampDuration;
-    #filterRampConnect;
-    #filterRampDisconnect;
-    #resizeFilter;
-    #reorderFilter;
-    #connectFilter;
-    #disconnectFilter;
+    #instanceFilter;
+    #instanceFilterRamp;
+    #instanceFilterRampDuration;
+    #instanceFilterRampConnect;
+    #instanceFilterRampDisconnect;
+    #instanceResizeFilter;
+    #instanceReorderFilter;
+    #instanceConnectFilter;
+    #instanceDisconnectFilter;
 
     static get observedAttributes() {
         return [
@@ -182,11 +182,11 @@ class RingContainer extends HTMLElement {
     }
 
     get filter() {
-        return this.#filter ?? RingContainer.filter;
+        return this.#instanceFilter ?? RingContainer.filter;
     }
 
     set filter(value) {
-        this.#filter =
+        this.#instanceFilter =
             RingContainer.#normalizeFilter(
                 value,
                 RingContainer.filter
@@ -194,20 +194,20 @@ class RingContainer extends HTMLElement {
     }
 
     get filterRamp() {
-        return this.#filterRamp ?? RingContainer.filterRamp;
+        return this.#instanceFilterRamp ?? RingContainer.filterRamp;
     }
 
     set filterRamp(value) {
-        this.#filterRamp =
+        this.#instanceFilterRamp =
             Boolean(value);
     }
 
     get filterRampDuration() {
-        return this.#filterRampDuration ?? RingContainer.filterRampDuration;
+        return this.#instanceFilterRampDuration ?? RingContainer.filterRampDuration;
     }
 
     set filterRampDuration(value) {
-        this.#filterRampDuration =
+        this.#instanceFilterRampDuration =
             RingContainer.#normalizeDuration(
                 value,
                 RingContainer.filterRampDuration
@@ -215,29 +215,29 @@ class RingContainer extends HTMLElement {
     }
 
     get filterRampConnect() {
-        return this.#filterRampConnect ?? RingContainer.filterRampConnect;
+        return this.#instanceFilterRampConnect ?? RingContainer.filterRampConnect;
     }
 
     set filterRampConnect(value) {
-        this.#filterRampConnect =
+        this.#instanceFilterRampConnect =
             Boolean(value);
     }
 
     get filterRampDisconnect() {
-        return this.#filterRampDisconnect ?? RingContainer.filterRampDisconnect;
+        return this.#instanceFilterRampDisconnect ?? RingContainer.filterRampDisconnect;
     }
 
     set filterRampDisconnect(value) {
-        this.#filterRampDisconnect =
+        this.#instanceFilterRampDisconnect =
             Boolean(value);
     }
 
     get resizeFilter() {
-        return this.#resizeFilter ?? RingContainer.resizeFilter;
+        return this.#instanceResizeFilter ?? RingContainer.resizeFilter;
     }
 
     set resizeFilter(value) {
-        this.#resizeFilter =
+        this.#instanceResizeFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
@@ -245,11 +245,11 @@ class RingContainer extends HTMLElement {
     }
 
     get reorderFilter() {
-        return this.#reorderFilter ?? RingContainer.reorderFilter;
+        return this.#instanceReorderFilter ?? RingContainer.reorderFilter;
     }
 
     set reorderFilter(value) {
-        this.#reorderFilter =
+        this.#instanceReorderFilter =
             RingContainer.#normalizeFilter(
                 value,
                 "opacity(75%)"
@@ -257,11 +257,11 @@ class RingContainer extends HTMLElement {
     }
 
     get connectFilter() {
-        return this.#connectFilter ?? RingContainer.connectFilter;
+        return this.#instanceConnectFilter ?? RingContainer.connectFilter;
     }
 
     set connectFilter(value) {
-        this.#connectFilter =
+        this.#instanceConnectFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
@@ -269,11 +269,11 @@ class RingContainer extends HTMLElement {
     }
 
     get disconnectFilter() {
-        return this.#disconnectFilter ?? RingContainer.disconnectFilter;
+        return this.#instanceDisconnectFilter ?? RingContainer.disconnectFilter;
     }
 
     set disconnectFilter(value) {
-        this.#disconnectFilter =
+        this.#instanceDisconnectFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
