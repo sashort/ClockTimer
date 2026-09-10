@@ -225,16 +225,8 @@
                         none;
                 }
 
-                #tick-marks {
-                    position: absolute;
-
-                    inset: 0;
-
-                    z-index: 10;
-
-                    pointer-events:
-                        none;
-
+                #tick-marks,
+                #hand-layer {
                     transition-property:
                         inset;
 
@@ -245,6 +237,17 @@
 
                     transition-timing-function:
                         linear;
+                }
+
+                #tick-marks {
+                    position: absolute;
+
+                    inset: 0;
+
+                    z-index: 10;
+
+                    pointer-events:
+                        none;
                 }
 
                 .tick-mark-track {
@@ -449,6 +452,9 @@
                     "div"
                 );
 
+            this.#handLayer.id =
+                "hand-layer";
+
             this.#handLayer.dataset.clockTimerHandLayer =
                 "";
 
@@ -544,6 +550,8 @@
                         false;
                 }
             }
+
+            this.#syncHandGeometry();
 
             this.#startHandAnimations();
 
@@ -1729,7 +1737,9 @@
             return ring;
         }
 
-        #getTickInset() {
+        #getRingInset(
+            targetRing
+        ) {
             let outerInset =
                 "0px";
 
@@ -1763,7 +1773,7 @@
 
                 if (
                     ring ===
-                        this.#tickRing
+                        targetRing
                 ) {
                     return outerInset;
                 }
@@ -1776,6 +1786,27 @@
             }
 
             return "0px";
+        }
+
+        #getTickInset() {
+            return this.#getRingInset(
+                this.#tickRing
+            );
+        }
+
+        #syncHandGeometry() {
+            this.#ensureHandRing();
+
+            this.#handLayer.style.inset =
+                this.#getRingInset(
+                    this.#handRing
+                );
+
+            this.#handLayer.style.width =
+                "";
+
+            this.#handLayer.style.height =
+                "";
         }
 
         #syncTickMarkGeometry() {
@@ -2568,6 +2599,8 @@
                         ) {
                             return;
                         }
+
+                        this.#syncHandGeometry();
 
                         this.#renderHours();
 
