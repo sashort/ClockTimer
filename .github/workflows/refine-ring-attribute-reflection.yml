@@ -18,6 +18,7 @@ jobs:
         run: |
           grep -n 'static #isFixedLength' RingContainer.js
           grep -n ': "calculated"' RingContainer.js
+          grep -n 'new ResizeObserver' RingContainer.js
       - name: Commit and cleanup
         run: |
           rm -f .github/workflows/refine-ring-attribute-reflection.yml
