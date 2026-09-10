@@ -1006,10 +1006,27 @@
             return this;
         }
 
-        stop() {
-            const stopTime =
-                this.#dateToTimelineTime(
-                    new Date()
+        stop(stopTime) {
+            const parsedStop =
+                stopTime === undefined
+                    ? this.#dateToStandardTime(
+                        new Date()
+                    )
+                    : stopTime;
+
+            const parsed =
+                this.#parseStandardTime(
+                    parsedStop,
+                    {
+                        duration: false,
+                        name: "stopTime"
+                    }
+                );
+
+            stopTime =
+                this.#resolveNear(
+                    parsed.total,
+                    this.#getCurrentTimelineTime()
                 );
 
             this.#stopTickTimer();
