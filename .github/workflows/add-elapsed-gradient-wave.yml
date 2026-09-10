@@ -1,0 +1,43 @@
+name: Add elapsed gradient wave
+on:
+  push:
+    paths:
+      - '.github/workflows/add-elapsed-gradient-wave.yml'
+      - '.github/scripts/add_elapsed_gradient_wave.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply elapsed gradient wave patch
+        run: python .github/scripts/add_elapsed_gradient_wave.py
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Verify elapsed wave behavior
+        run: |
+          grep -Fq '#elapsed-wave' TimeRange.js
+          grep -Fq 'animation: elapsed-wave-rotation 4s linear infinite;' TimeRange.js
+          grep -Fq ':host([type="elapsed"]) {' TimeRange.js
+          grep -Fq 'animation: none !important;' TimeRange.js
+          grep -Fq '#updateElapsedWaveAppearance()' TimeRange.js
+          grep -Fq 'MutationObserver' TimeRange.js
+          grep -Fq 'computed.backgroundColor' TimeRange.js
+          grep -Fq 'computed.opacity' TimeRange.js
+          grep -Fq 'computed.backgroundImage' TimeRange.js
+          grep -Fq 'computed.filter' TimeRange.js
+      - name: Commit change and cleanup
+        run: |
+          rm -f .github/scripts/add_elapsed_gradient_wave.py
+          rm -f .github/workflows/add-elapsed-gradient-wave.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TimeRange.js .github/scripts/add_elapsed_gradient_wave.py .github/workflows/add-elapsed-gradient-wave.yml
+          git commit -m "Replace elapsed pulse with adaptive gradient wave"
+          git push origin main
