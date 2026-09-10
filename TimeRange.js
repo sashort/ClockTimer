@@ -1558,7 +1558,24 @@ class TimeRange extends HTMLElement {
             }
         }
 
-        return earliest;
+        if (
+            !(earliest instanceof Date)
+        ) {
+            return undefined;
+        }
+
+        const hourOrigin =
+            new Date(
+                earliest.getTime()
+            );
+
+        hourOrigin.setMinutes(
+            0,
+            0,
+            0
+        );
+
+        return hourOrigin;
     }
 
     static #updateParentClipPaths(
