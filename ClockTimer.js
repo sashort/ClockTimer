@@ -476,7 +476,7 @@
             this.#handLayer.id =
                 "hand-layer";
 
-            this.#handLayer.dataset.clockTimerHandLayer =
+            this.#handLayer.clockTimerHandLayer =
                 "";
 
             this.#handLayer.style.position =
@@ -1172,16 +1172,15 @@
                     )
             ) {
                 if (
-                    range.hasAttribute(
-                        "data-time-range-exiting"
-                    )
+                    range.timeRangeExiting ===
+                        true
                 ) {
                     continue;
                 }
 
                 let start =
                     Number(
-                        range.dataset.clockTimerStart
+                        range.clockTimerStart
                     );
 
                 if (
@@ -1312,21 +1311,20 @@
                     range.hasAttribute(
                         "overlapping"
                     ) ||
-                    range.hasAttribute(
-                        "data-time-range-exiting"
-                    )
+                    range.timeRangeExiting ===
+                        true
                 ) {
                     continue;
                 }
 
                 const start =
                     Number(
-                        range.dataset.clockTimerStart
+                        range.clockTimerStart
                     );
 
                 const end =
                     Number(
-                        range.dataset.clockTimerEnd
+                        range.clockTimerEnd
                     );
 
                 if (
@@ -1496,9 +1494,7 @@
 
                 for (
                     const ring of
-                    this.querySelectorAll(
-                        ":scope > ring-container[data-clock-timer-ring]"
-                    )
+                        this.#getTimerRings()
                 ) {
                     for (
                         const range of
@@ -1514,14 +1510,10 @@
                         }
                     }
 
-                    ring.removeAttribute(
-                        "data-clock-timer-ring"
-                    );
+                    delete ring.clockTimerRing;
 
-                    ring.setAttribute(
-                        "data-clock-timer-exiting-ring",
-                        ""
-                    );
+                    ring.clockTimerExitingRing =
+                        true;
 
                     ring.resizeDuration =
                         `${duration}ms`;
@@ -1619,7 +1611,7 @@
                     "ring-container"
                 );
 
-            ring.dataset.clockTimerBorder =
+            ring.clockTimerBorder =
                 "";
 
             ring.setAttribute(
@@ -1632,7 +1624,7 @@
                     "div"
                 );
 
-            borderFill.dataset.clockTimerBorderFill =
+            borderFill.clockTimerBorderFill =
                 "";
 
             borderFill.style.position =
@@ -1692,7 +1684,7 @@
                     "ring-container"
                 );
 
-            ring.dataset.clockTimerHands =
+            ring.clockTimerHands =
                 "";
 
             ring.setAttribute(
@@ -1738,7 +1730,7 @@
                     "div"
                 );
 
-            hand.dataset.clockTimerHand =
+            hand.clockTimerHand =
                 type;
 
             hand.className =
@@ -1784,7 +1776,7 @@
                     "ring-container"
                 );
 
-            ring.dataset.clockTimerTicks =
+            ring.clockTimerTicks =
                 "";
 
             ring.setAttribute(
@@ -2007,7 +1999,7 @@
                     "ring-container"
                 );
 
-            ring.dataset.clockTimerNumbers =
+            ring.clockTimerNumbers =
                 "";
 
             ring.setAttribute(
@@ -2045,7 +2037,7 @@
                     "div"
                 );
 
-            numberLayer.dataset.clockTimerNumberLayer =
+            numberLayer.clockTimerNumberLayer =
                 "";
 
             numberLayer.style.position =
@@ -2115,9 +2107,8 @@
                     child =>
                         child.localName ===
                             "ring-container" &&
-                        child.hasAttribute(
-                            "data-clock-timer-ring"
-                        )
+                        child.clockTimerRing !==
+                            undefined
                 );
 
             if (
@@ -2412,7 +2403,7 @@
             track.className =
                 "tick-mark-track";
 
-            track.dataset.clockTimerTickSecond =
+            track.clockTimerTickSecond =
                 String(
                     second
                 );
@@ -2469,7 +2460,7 @@
         #fadeTickMarkOut(
             track
         ) {
-            track.dataset.clockTimerTickExiting =
+            track.clockTimerTickExiting =
                 "";
 
             const opacity =
@@ -2565,7 +2556,7 @@
                 }
 
                 const second =
-                    track.dataset.clockTimerTickSecond;
+                    track.clockTimerTickSecond;
 
                 if (
                     second !== undefined
@@ -2794,7 +2785,7 @@
                     )
                 );
 
-            this.style.setProperty(
+            this.#hourLayer.style.setProperty(
                 "--clock-timer-auto-hour-font-size",
                 `${hourSize}px`
             );
@@ -2879,7 +2870,7 @@
                     )
                 );
 
-            this.style.setProperty(
+            this.#timeElement.style.setProperty(
                 "--clock-timer-auto-time-font-size",
                 `${fittedSize}px`
             );
@@ -3086,11 +3077,14 @@
                 this.#getPlannedSegments();
 
             const existing =
-                Array.from(
-                    this.querySelectorAll(
-                        ':scope > ring-container > time-range[data-clock-timer-planned]:not([data-time-range-exiting])'
-                    )
-                );
+                this.#getManagedTimeRanges()
+                    .filter(
+                        range =>
+                            range.clockTimerPlanned !==
+                                undefined &&
+                            range.timeRangeExiting !==
+                                true
+                    );
 
             const unused =
                 new Set(existing);
@@ -3112,7 +3106,7 @@
                     const candidateRing =
                         Number(
                             candidate.parentElement
-                                ?.dataset.clockTimerRingIndex
+                                ?.clockTimerRingIndex
                         );
 
                     if (
@@ -3124,12 +3118,12 @@
 
                     const oldStart =
                         Number(
-                            candidate.dataset.clockTimerStart
+                            candidate.clockTimerStart
                         );
 
                     const oldEnd =
                         Number(
-                            candidate.dataset.clockTimerEnd
+                            candidate.clockTimerEnd
                         );
 
                     const overlap =
@@ -3204,9 +3198,7 @@
         #snapTimerRangeAngles() {
             for (
                 const range of
-                    this.querySelectorAll(
-                        ":scope > ring-container[data-clock-timer-ring] > time-range"
-                    )
+                    this.#getTimerRanges()
             ) {
                 if (
                     typeof range.snapToLogicalTiming ===
@@ -3222,11 +3214,7 @@
                 this.#getRangeAnimationDuration();
 
             const rings =
-                Array.from(
-                    this.querySelectorAll(
-                        ":scope > ring-container[data-clock-timer-ring]"
-                    )
-                );
+                this.#getTimerRings();
 
             if (rings.length === 0) {
                 return;
@@ -3243,7 +3231,7 @@
                             `${duration}ms`;
 
                         const targetWidth =
-                            ring.dataset.clockTimerTargetWidth;
+                            ring.clockTimerTargetWidth;
 
                         if (targetWidth) {
                             ring.setAttribute(
@@ -3251,11 +3239,67 @@
                                 targetWidth
                             );
 
-                            delete ring.dataset.clockTimerTargetWidth;
+                            delete ring.clockTimerTargetWidth;
                         }
                     }
                 }
             );
+        }
+
+
+        #getManagedTimeRanges() {
+            const ranges = [];
+
+            for (const child of this.children) {
+                if (
+                    child.localName !==
+                        "ring-container"
+                ) {
+                    continue;
+                }
+
+                for (const range of child.children) {
+                    if (
+                        range.localName ===
+                            "time-range"
+                    ) {
+                        ranges.push(range);
+                    }
+                }
+            }
+
+            return ranges;
+        }
+
+        #getTimerRings() {
+            return Array.from(
+                this.children
+            ).filter(
+                child =>
+                    child.localName ===
+                        "ring-container" &&
+                    child.clockTimerRing !==
+                        undefined
+            );
+        }
+
+        #getTimerRanges() {
+            const ranges = [];
+
+            for (const ring of
+                this.#getTimerRings()
+            ) {
+                for (const range of ring.children) {
+                    if (
+                        range.localName ===
+                            "time-range"
+                    ) {
+                        ranges.push(range);
+                    }
+                }
+            }
+
+            return ranges;
         }
 
         #getPercentGoal() {
@@ -3650,9 +3694,7 @@
                 if (
                     name === "start-time" ||
                     name === "end-time" ||
-                    name === "range-length" ||
-                    name === "data-clock-timer-start" ||
-                    name === "data-clock-timer-end"
+                    name === "range-length"
                 ) {
                     continue;
                 }
@@ -3680,9 +3722,7 @@
                 if (
                     normalizedName === "start-time" ||
                     normalizedName === "end-time" ||
-                    normalizedName === "range-length" ||
-                    normalizedName === "data-clock-timer-start" ||
-                    normalizedName === "data-clock-timer-end"
+                    normalizedName === "range-length"
                 ) {
                     continue;
                 }
@@ -3700,12 +3740,15 @@
 
             for (
                 const range of
-                    this.querySelectorAll(
-                        ':scope > ring-container > time-range[data-clock-timer-inserted]'
-                    )
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerInserted !==
+                                    undefined
+                        )
             ) {
                 const id =
-                    range.dataset.clockTimerInserted;
+                    range.clockTimerInserted;
 
                 if (!id) {
                     continue;
@@ -3717,12 +3760,12 @@
 
                 const start =
                     Number(
-                        range.dataset.clockTimerStart
+                        range.clockTimerStart
                     );
 
                 const end =
                     Number(
-                        range.dataset.clockTimerEnd
+                        range.clockTimerEnd
                     );
 
                 grouped.get(id).push({
@@ -3805,10 +3848,10 @@
                 );
             }
 
-            range.dataset.clockTimerStart =
+            range.clockTimerStart =
                 String(start);
 
-            range.dataset.clockTimerEnd =
+            range.clockTimerEnd =
                 String(end);
         }
 
@@ -3953,11 +3996,12 @@
             delta
         ) {
             const ranges =
-                Array.from(
-                    this.querySelectorAll(
-                        ':scope > ring-container[data-clock-timer-ring] > time-range:not([data-clock-timer-inserted])'
-                    )
-                );
+                this.#getTimerRanges()
+                    .filter(
+                        range =>
+                            range.clockTimerInserted ===
+                                undefined
+                    );
 
             for (
                 const range of ranges
@@ -3972,12 +4016,12 @@
 
                 const start =
                     Number(
-                        range.dataset.clockTimerStart
+                        range.clockTimerStart
                     );
 
                 const end =
                     Number(
-                        range.dataset.clockTimerEnd
+                        range.clockTimerEnd
                     );
 
                 if (
@@ -4023,13 +4067,16 @@
 
             for (
                 const range of
-                    this.querySelectorAll(
-                        ':scope > ring-container[data-clock-timer-ring] > time-range[data-clock-timer-overtime]'
-                    )
+                    this.#getTimerRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerOvertime !==
+                                    undefined
+                        )
             ) {
                 const start =
                     Number(
-                        range.dataset.clockTimerStart
+                        range.clockTimerStart
                     );
 
                 if (
@@ -4050,9 +4097,12 @@
         #removeInsertedSegments() {
             for (
                 const range of
-                    this.querySelectorAll(
-                        ':scope > ring-container > time-range[data-clock-timer-inserted]'
-                    )
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerInserted !==
+                                    undefined
+                        )
             ) {
                 if (
                     typeof range.removeAnimated ===
@@ -4129,16 +4179,14 @@
                 );
 
                 if (this.#starting) {
-                    range.setAttribute(
-                        "data-time-range-full-entry",
-                        ""
-                    );
+                    range.timeRangeFullEntry =
+                        true;
                 }
 
-                range.dataset.clockTimerStart =
+                range.clockTimerStart =
                     String(start);
 
-                range.dataset.clockTimerInserted =
+                range.clockTimerInserted =
                     record.id;
 
                 this.#applyOtherAttributes(
@@ -4189,9 +4237,9 @@
                         }
                     );
 
-                delete range.dataset.clockTimerDynamic;
+                delete range.clockTimerDynamic;
 
-                range.dataset.clockTimerInserted =
+                range.clockTimerInserted =
                     record.id;
 
                 this.#applyOtherAttributes(
@@ -4218,15 +4266,12 @@
                 this.#renderInsertedRecord(record);
 
                 const rendered =
-                    Array.from(
-                        this.querySelectorAll(
-                            ':scope > ring-container > time-range[data-clock-timer-inserted]'
-                        )
-                    ).filter(
-                        range =>
-                            range.dataset.clockTimerInserted ===
-                                record.id
-                    );
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerInserted ===
+                                    record.id
+                        );
 
                 const snapshots =
                     record.preservedAttributes ?? [];
@@ -4237,12 +4282,12 @@
                 ) {
                     const start =
                         Number(
-                            range.dataset.clockTimerStart
+                            range.clockTimerStart
                         );
 
                     const end =
                         Number(
-                            range.dataset.clockTimerEnd
+                            range.clockTimerEnd
                         );
 
                     let best;
@@ -4828,12 +4873,12 @@
                 )
             );
 
-            range.dataset.clockTimerStart =
+            range.clockTimerStart =
                 String(
                     start
                 );
 
-            range.dataset.clockTimerEnd =
+            range.clockTimerEnd =
                 String(
                     end
                 );
@@ -4841,11 +4886,11 @@
             if (
                 dynamic
             ) {
-                range.dataset.clockTimerDynamic =
+                range.clockTimerDynamic =
                     type;
             }
             else {
-                range.dataset.clockTimerPlanned =
+                range.clockTimerPlanned =
                     "";
             }
 
@@ -4901,7 +4946,7 @@
                         }
                     );
 
-                this.#elapsedRange.dataset.clockTimerElapsed =
+                this.#elapsedRange.clockTimerElapsed =
                     "";
 
                 ring.appendChild(
@@ -5003,12 +5048,12 @@
                         candidate => {
                             const start =
                                 Number(
-                                    candidate.dataset.clockTimerStart
+                                    candidate.clockTimerStart
                                 );
 
                             const end =
                                 Number(
-                                    candidate.dataset.clockTimerEnd
+                                    candidate.clockTimerEnd
                                 );
 
                             return (
@@ -5032,7 +5077,7 @@
                             candidate => {
                                 const start =
                                     Number(
-                                        candidate.dataset.clockTimerStart
+                                        candidate.clockTimerStart
                                     );
 
                                 return (
@@ -5057,7 +5102,7 @@
                             }
                         );
 
-                    range.dataset.clockTimerOvertime =
+                    range.clockTimerOvertime =
                         "";
 
                     ring.appendChild(
@@ -5067,12 +5112,12 @@
                 else {
                     const existingStart =
                         Number(
-                            range.dataset.clockTimerStart
+                            range.clockTimerStart
                         );
 
                     const existingEnd =
                         Number(
-                            range.dataset.clockTimerEnd
+                            range.clockTimerEnd
                         );
 
                     if (
@@ -5102,7 +5147,7 @@
                     }
                 }
 
-                range.dataset.clockTimerOvertime =
+                range.clockTimerOvertime =
                     "";
 
                 this.#overtimeRanges.set(
@@ -5133,7 +5178,7 @@
                 );
             }
 
-            range.dataset.clockTimerStart =
+            range.clockTimerStart =
                 String(
                     milliseconds
                 );
@@ -5160,7 +5205,7 @@
                 );
             }
 
-            range.dataset.clockTimerEnd =
+            range.clockTimerEnd =
                 String(
                     milliseconds
                 );
@@ -5192,10 +5237,10 @@
                     "ring-container"
                 );
 
-            ring.dataset.clockTimerRing =
+            ring.clockTimerRing =
                 "";
 
-            ring.dataset.clockTimerRingIndex =
+            ring.clockTimerRingIndex =
                 String(
                     ringIndex
                 );
@@ -5204,7 +5249,7 @@
                 "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
             if (this.#starting) {
-                ring.dataset.clockTimerTargetWidth =
+                ring.clockTimerTargetWidth =
                     initialWidth;
 
                 ring.setAttribute(
@@ -5314,7 +5359,7 @@
                         "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
                 if (this.#starting) {
-                    ring.dataset.clockTimerTargetWidth =
+                    ring.clockTimerTargetWidth =
                         width;
 
                     if (
@@ -5482,9 +5527,12 @@
         #removePlannedRanges() {
             for (
                 const range of
-                    this.querySelectorAll(
-                        ":scope > ring-container > time-range[data-clock-timer-planned]"
-                    )
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerPlanned !==
+                                    undefined
+                        )
             ) {
                 range.remove();
             }
@@ -6625,7 +6673,7 @@
                         label
                     );
 
-                element.dataset.clockTimerHour =
+                element.clockTimerHour =
                     String(
                         physicalHour
                     );

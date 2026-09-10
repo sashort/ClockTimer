@@ -261,13 +261,10 @@ class TimeRange extends HTMLElement {
         );
 
         if (
-            this.hasAttribute(
-                "data-time-range-full-entry"
-            )
+            this.timeRangeFullEntry ===
+                true
         ) {
-            this.removeAttribute(
-                "data-time-range-full-entry"
-            );
+            delete this.timeRangeFullEntry;
 
             this.#renderStartTime =
                 this.#cloneDate(
@@ -1978,10 +1975,8 @@ class TimeRange extends HTMLElement {
         this.#pendingRemoval =
             true;
 
-        this.setAttribute(
-            "data-time-range-exiting",
-            ""
-        );
+        this.timeRangeExiting =
+            true;
 
         const instanceIndex =
             TimeRange.#instances.indexOf(
@@ -2053,9 +2048,8 @@ class TimeRange extends HTMLElement {
             !parent ||
             parent.localName !==
                 "ring-container" ||
-            !parent.hasAttribute(
-                "data-clock-timer-ring"
-            )
+            parent.clockTimerRing ===
+                undefined
         ) {
             return undefined;
         }
@@ -2425,7 +2419,7 @@ class TimeRange extends HTMLElement {
                 "width"
             );
 
-        this.style.setProperty(
+        this.#contourLayer.style.setProperty(
             "--time-range-ring-inset",
             ringInset &&
                 ringInset !== "auto"
@@ -2433,7 +2427,7 @@ class TimeRange extends HTMLElement {
                 : "0px"
         );
 
-        this.style.setProperty(
+        this.#contourLayer.style.setProperty(
             "--time-range-ring-width",
             ringWidth ||
                 "0px"
