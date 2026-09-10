@@ -2061,10 +2061,7 @@ class RingContainer extends HTMLElement {
 
         try {
             if (
-                original === undefined ||
-                !RingContainer.#isFixedLength(
-                    original
-                )
+                original === undefined
             ) {
                 this.removeAttribute(
                     name
@@ -2073,7 +2070,11 @@ class RingContainer extends HTMLElement {
             else {
                 this.setAttribute(
                     name,
-                    original
+                    RingContainer.#isFixedLength(
+                        original
+                    )
+                        ? original
+                        : "calculated"
                 );
             }
 
@@ -2228,31 +2229,20 @@ class RingContainer extends HTMLElement {
                     continue;
                 }
 
-                if (
-                    !RingContainer.#isFixedLength(
+                const reflected =
+                    RingContainer.#isFixedLength(
                         original
                     )
-                ) {
-                    if (
-                        this.hasAttribute(
-                            name
-                        )
-                    ) {
-                        this.removeAttribute(
-                            name
-                        );
-                    }
-
-                    continue;
-                }
+                        ? original
+                        : "calculated";
 
                 if (
                     this.getAttribute(name) !==
-                        original
+                        reflected
                 ) {
                     this.setAttribute(
                         name,
-                        original
+                        reflected
                     );
                 }
             }
@@ -2275,8 +2265,6 @@ class RingContainer extends HTMLElement {
         this.#sizeObserver =
             new ResizeObserver(
                 () => {
-                    this.#refreshNormalizedLengthAttributes();
-
                     this.#updateProperties(
                         false
                     );
