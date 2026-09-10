@@ -2968,18 +2968,6 @@
                 return;
             }
 
-            if (!this.#hostBackgroundOverride) {
-                this.#hostBackgroundInlineValue =
-                    this.style.getPropertyValue(
-                        "background-color"
-                    );
-
-                this.#hostBackgroundInlinePriority =
-                    this.style.getPropertyPriority(
-                        "background-color"
-                    );
-            }
-
             this.#syncFaceBackgroundFromExternalCSS();
         }
 
@@ -2988,19 +2976,9 @@
                 return;
             }
 
-            if (this.#hostBackgroundOverride) {
-                this.style.removeProperty(
-                    "background-color"
-                );
-
-                if (this.#hostBackgroundInlineValue) {
-                    this.style.setProperty(
-                        "background-color",
-                        this.#hostBackgroundInlineValue,
-                        this.#hostBackgroundInlinePriority
-                    );
-                }
-            }
+            this.style.removeProperty(
+                "background-color"
+            );
 
             const backgroundColor =
                 getComputedStyle(this).backgroundColor;
@@ -3013,11 +2991,7 @@
                 "transparent",
                 "important"
             );
-
-            this.#hostBackgroundOverride =
-                true;
         }
-
         #syncFaceBackgroundGeometry() {
             if (!this.#faceBackground || !this.#borderRing) {
                 return;
@@ -3062,22 +3036,9 @@
                 this.#faceBackgroundFrame = undefined;
             }
 
-            if (this.#hostBackgroundOverride) {
-                this.style.removeProperty(
-                    "background-color"
-                );
-
-                if (this.#hostBackgroundInlineValue) {
-                    this.style.setProperty(
-                        "background-color",
-                        this.#hostBackgroundInlineValue,
-                        this.#hostBackgroundInlinePriority
-                    );
-                }
-
-                this.#hostBackgroundOverride =
-                    false;
-            }
+            this.style.removeProperty(
+                "background-color"
+            );
         }
 
         #ensureNumberRing() {
