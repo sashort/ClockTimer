@@ -1,4 +1,4 @@
-name: Add stopTime
+name: Add stopTime corrected
 on:
   push:
     paths:
