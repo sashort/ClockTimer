@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 path = Path("RingContainer.js")
 text = path.read_text(encoding="utf-8")
@@ -24,16 +25,12 @@ for old_name, new_name in instance_private_names.items():
         raise RuntimeError(f"Could not find instance private field {field}")
     text = text.replace(field, replacement, 1)
 
-# Replace instance references only; static RingContainer.#... references remain.
-text = text.replace("this.#filterRampDisconnect", "this.#instanceFilterRampDisconnect")
-text = text.replace("this.#filterRampConnect", "this.#instanceFilterRampConnect")
-text = text.replace("this.#filterRampDuration", "this.#instanceFilterRampDuration")
-text = text.replace("this.#filterRamp", "this.#instanceFilterRamp")
-text = text.replace("this.#resizeFilter", "this.#instanceResizeFilter")
-text = text.replace("this.#reorderFilter", "this.#instanceReorderFilter")
-text = text.replace("this.#connectFilter", "this.#instanceConnectFilter")
-text = text.replace("this.#disconnectFilter", "this.#instanceDisconnectFilter")
-text = text.replace("this.#filter", "this.#instanceFilter")
+    pattern = rf"this\.#{re.escape(old_name)}(?![A-Za-z0-9_$])"
+    text = re.sub(
+        pattern,
+        f"this.#{new_name}",
+        text
+    )
 
 old = """    #pendingResize;\n    #pendingReorder;\n"""
 new = """    #pendingResize;\n    #resizeTarget;\n    #pendingReorder;\n"""
@@ -78,7 +75,6 @@ text = text.replace(old, new, 1)
 
 old = """                        this.#resizeAnimation =\n                            undefined;\n"""
 new = """                        this.#resizeTarget =\n                            undefined;\n\n                        this.#resizeAnimation =\n                            undefined;\n"""
-# Limit to the occurrence inside #animateResize, not other animation cleanup.
 start = text.find("    #animateResize(")
 index = text.find(old, start)
 if index == -1:
