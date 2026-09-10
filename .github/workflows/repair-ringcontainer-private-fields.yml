@@ -1,0 +1,39 @@
+name: Repair RingContainer private fields
+on:
+  push:
+    paths:
+      - '.github/workflows/repair-ringcontainer-private-fields.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Repair RingContainer private fields
+        run: python .github/scripts/repair_ringcontainer_private_fields.py
+      - name: Syntax check
+        run: node --check RingContainer.js
+      - name: Verify rollback behavior retained
+        run: |
+          grep -Fq '#instanceFilter;' RingContainer.js
+          grep -Fq '#instanceResizeFilter;' RingContainer.js
+          grep -Fq 'ring.getAttribute(' RingContainer.js
+          if grep -Fq '#resizeTarget' RingContainer.js; then exit 1; fi
+      - name: Commit repair and cleanup
+        run: |
+          rm -f \
+            .github/workflows/repair-ringcontainer-private-fields.yml \
+            .github/scripts/repair_ringcontainer_private_fields.py
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add RingContainer.js \
+            .github/workflows/repair-ringcontainer-private-fields.yml \
+            .github/scripts/repair_ringcontainer_private_fields.py
+          git commit -m "Repair RingContainer private fields"
+          git push origin main
