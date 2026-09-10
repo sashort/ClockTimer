@@ -25,7 +25,14 @@
 
         #faceBackgroundFrame;
 
-        #hostBackgroundOverride;
+        #hostBackgroundOverride =
+            false;
+
+        #hostBackgroundInlineValue =
+            "";
+
+        #hostBackgroundInlinePriority =
+            "";
 
         #timeElement;
 
@@ -2962,14 +2969,15 @@
             }
 
             if (!this.#hostBackgroundOverride) {
-                const override =
-                    document.createElement("style");
+                this.#hostBackgroundInlineValue =
+                    this.style.getPropertyValue(
+                        "background-color"
+                    );
 
-                override.textContent =
-                    ":host { background-color: transparent !important; }";
-
-                this.#shadowRoot.appendChild(override);
-                this.#hostBackgroundOverride = override;
+                this.#hostBackgroundInlinePriority =
+                    this.style.getPropertyPriority(
+                        "background-color"
+                    );
             }
 
             this.#syncFaceBackgroundFromExternalCSS();
@@ -2980,22 +2988,34 @@
                 return;
             }
 
-            const override =
-                this.#hostBackgroundOverride;
+            if (this.#hostBackgroundOverride) {
+                this.style.removeProperty(
+                    "background-color"
+                );
 
-            if (override) {
-                override.disabled = true;
+                if (this.#hostBackgroundInlineValue) {
+                    this.style.setProperty(
+                        "background-color",
+                        this.#hostBackgroundInlineValue,
+                        this.#hostBackgroundInlinePriority
+                    );
+                }
             }
 
             const backgroundColor =
                 getComputedStyle(this).backgroundColor;
 
-            if (override) {
-                override.disabled = false;
-            }
-
             this.#faceBackground.style.backgroundColor =
                 backgroundColor;
+
+            this.style.setProperty(
+                "background-color",
+                "transparent",
+                "important"
+            );
+
+            this.#hostBackgroundOverride =
+                true;
         }
 
         #syncFaceBackgroundGeometry() {
@@ -3043,8 +3063,20 @@
             }
 
             if (this.#hostBackgroundOverride) {
-                this.#hostBackgroundOverride.remove();
-                this.#hostBackgroundOverride = undefined;
+                this.style.removeProperty(
+                    "background-color"
+                );
+
+                if (this.#hostBackgroundInlineValue) {
+                    this.style.setProperty(
+                        "background-color",
+                        this.#hostBackgroundInlineValue,
+                        this.#hostBackgroundInlinePriority
+                    );
+                }
+
+                this.#hostBackgroundOverride =
+                    false;
             }
         }
 
