@@ -982,9 +982,7 @@ class RingContainer extends HTMLElement {
                     false;
             }
 
-            throw new TypeError(
-                `"calculated" is reserved for RingContainer internal attribute reflection and cannot be assigned to ${name}.`
-            );
+            return;
         }
 
         switch (name) {
@@ -2017,9 +2015,7 @@ class RingContainer extends HTMLElement {
                 original.toLowerCase() ===
                     "calculated"
             ) {
-                throw new TypeError(
-                    `"calculated" is reserved for RingContainer internal attribute reflection and cannot be assigned to ${name}.`
-                );
+                return;
             }
 
             if (
@@ -2065,7 +2061,10 @@ class RingContainer extends HTMLElement {
 
         try {
             if (
-                original === undefined
+                original === undefined ||
+                !RingContainer.#isFixedLength(
+                    original
+                )
             ) {
                 this.removeAttribute(
                     name
@@ -2074,9 +2073,7 @@ class RingContainer extends HTMLElement {
             else {
                 this.setAttribute(
                     name,
-                    this.#getReflectedLengthValue(
-                        original
-                    )
+                    original
                 );
             }
 
@@ -2107,21 +2104,20 @@ class RingContainer extends HTMLElement {
         this.#afterLengthValueChange();
     }
 
-    #getReflectedLengthValue(
-        original
+    static #isFixedLength(
+        value
     ) {
         if (
-            original === "auto" ||
-            RingContainer.#isCalculatedLength(
-                original
-            )
+            value === undefined ||
+            value === null
         ) {
-            return "calculated";
+            return false;
         }
 
-        return this.#normalizeLengthToPixels(
-            original
-        );
+        return /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:px|in|cm)$/i
+            .test(
+                String(value).trim()
+            );
     }
 
     #afterLengthValueChange() {
@@ -2232,18 +2228,31 @@ class RingContainer extends HTMLElement {
                     continue;
                 }
 
-                const normalized =
-                    this.#getReflectedLengthValue(
+                if (
+                    !RingContainer.#isFixedLength(
                         original
-                    );
+                    )
+                ) {
+                    if (
+                        this.hasAttribute(
+                            name
+                        )
+                    ) {
+                        this.removeAttribute(
+                            name
+                        );
+                    }
+
+                    continue;
+                }
 
                 if (
                     this.getAttribute(name) !==
-                        normalized
+                        original
                 ) {
                     this.setAttribute(
                         name,
-                        normalized
+                        original
                     );
                 }
             }
