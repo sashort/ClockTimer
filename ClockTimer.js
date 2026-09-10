@@ -379,9 +379,10 @@
                     height: max-content;
                     line-height: 1;
                     font-size: var(--clock-timer-indicator-symbol-size, 12px);
-                    color: currentColor;
-                    transform: translate(-50%, -100%);
-                    transform-origin: 50% 100%;
+                    color: var(--clock-timer-indicator-symbol-color, white);
+                    text-shadow: var(--clock-timer-indicator-symbol-shadow, 0 0 2px rgb(0 0 0 / 50%));
+                    transform: translate(-50%, -50%);
+                    transform-origin: 50% 50%;
                     pointer-events: none;
                 }
 
