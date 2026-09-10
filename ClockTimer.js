@@ -161,6 +161,21 @@
 
                     display: block;
 
+                    inline-size:
+                        min(100cqw, 100cqh);
+
+                    block-size:
+                        min(100cqw, 100cqh);
+
+                    aspect-ratio:
+                        1 / 1;
+
+                    place-self:
+                        center;
+
+                    margin:
+                        auto;
+
                     box-sizing:
                         border-box;
 
