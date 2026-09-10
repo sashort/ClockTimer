@@ -36,6 +36,7 @@ class RingContainer extends HTMLElement {
     #inset;
     #outerMargin;
     #innerMargin;
+    #layoutInsetTarget;
     #instanceFilter;
     #instanceFilterRamp;
     #instanceFilterRampDuration;
@@ -744,10 +745,14 @@ class RingContainer extends HTMLElement {
             const targetInset =
                 `calc(${outerInset} + ${outerMargin})`;
 
-            if (
+            const currentInset =
+                ring.#layoutInsetTarget ??
                 ring.getAttribute(
                     "inset"
-                ) !==
+                );
+
+            if (
+                currentInset !==
                     targetInset
             ) {
                 const current =
@@ -758,6 +763,9 @@ class RingContainer extends HTMLElement {
                     inset:
                         targetInset
                 };
+
+                ring.#layoutInsetTarget =
+                    targetInset;
 
                 ring.#animateResize(
                     current,
@@ -879,6 +887,20 @@ class RingContainer extends HTMLElement {
 
                 pointer-events:
                     none;
+            }
+
+            ::slotted(time-range) {
+                position: absolute;
+
+                inset: 0;
+
+                display: block;
+
+                width: 100%;
+                height: 100%;
+
+                box-sizing:
+                    border-box;
             }
 
             ::slotted(*) {
@@ -1226,6 +1248,9 @@ class RingContainer extends HTMLElement {
                 }
             );
 
+        const resizeAnimation =
+            this.#resizeAnimation;
+
         if (
             this.filterRamp
         ) {
@@ -1237,11 +1262,18 @@ class RingContainer extends HTMLElement {
         }
 
         this.#pendingResize =
-            this.#resizeAnimation.finished
+            resizeAnimation.finished
                 .catch(() => {})
                 .finally(
                     () => {
                         animationStyle.remove();
+
+                        if (
+                            this.#resizeAnimation !==
+                                resizeAnimation
+                        ) {
+                            return;
+                        }
 
                         if (
                             commitAttributes
@@ -1267,6 +1299,14 @@ class RingContainer extends HTMLElement {
                         this.#updateStyle(
                             targetGeometry
                         );
+
+                        if (
+                            this.#layoutInsetTarget ===
+                                targetGeometry.inset
+                        ) {
+                            this.#layoutInsetTarget =
+                                undefined;
+                        }
 
                         this.#resizeAnimation =
                             undefined;
