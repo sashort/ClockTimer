@@ -146,26 +146,27 @@ class TimeRange extends HTMLElement {
                 mode: "open"
             });
 
-        const bevelStyle =
+        const contourStyle =
             document.createElement(
                 "style"
             );
 
-        bevelStyle.textContent = `
+        contourStyle.textContent = `
             :host:not([overlapping]) {
-                filter:
-                    drop-shadow(
-                        -0.75px -0.75px 0
-                        rgba(255, 255, 255, 0.55)
-                    )
-                    drop-shadow(
-                        0.75px 0.75px 0
-                        rgba(0, 0, 0, 0.35)
-                    );
+                background-image:
+                    radial-gradient(
+                        circle at center,
+                        rgba(0, 0, 0, 0.22)
+                            calc(50% - var(--time-range-ring-inset) - (var(--time-range-ring-width) / 2)),
+                        rgba(255, 255, 255, 0.30)
+                            calc(50% - var(--time-range-ring-inset)),
+                        rgba(0, 0, 0, 0.20)
+                            calc(50% - var(--time-range-ring-inset) + (var(--time-range-ring-width) / 2))
+                    ) !important;
             }
 
             :host([overlapping]) {
-                filter: none;
+                background-image: none !important;
             }
         `;
 
@@ -175,7 +176,7 @@ class TimeRange extends HTMLElement {
             );
 
         this.#shadowRoot.append(
-            bevelStyle,
+            contourStyle,
             this.#styleElement
         );
     }
@@ -1587,6 +1588,30 @@ class TimeRange extends HTMLElement {
 
         const height =
             parent.clientHeight;
+
+        const ringInset =
+            parent.getAttribute(
+                "inset"
+            );
+
+        const ringWidth =
+            parent.getAttribute(
+                "width"
+            );
+
+        this.style.setProperty(
+            "--time-range-ring-inset",
+            ringInset &&
+                ringInset !== "auto"
+                ? ringInset
+                : "0px"
+        );
+
+        this.style.setProperty(
+            "--time-range-ring-width",
+            ringWidth ||
+                "0px"
+        );
 
         if (
             width <= 0 ||
