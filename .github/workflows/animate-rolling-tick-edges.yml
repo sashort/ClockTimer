@@ -1,0 +1,34 @@
+name: Animate rolling tick edges
+on:
+  push:
+    paths:
+      - '.github/workflows/animate-rolling-tick-edges.yml'
+      - '.github/scripts/animate_rolling_tick_edges.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/animate_rolling_tick_edges.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify fade durations
+        run: |
+          test "$(grep -F 'duration: 1000 / 3' ClockTimer.js | wc -l)" -ge 2
+          grep -Fq '{ opacity: 0 }' ClockTimer.js
+          grep -Fq '{ opacity: 1 }' ClockTimer.js
+      - name: Commit
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fade rolling tick marks at window edges" || exit 0
+          git push origin main
