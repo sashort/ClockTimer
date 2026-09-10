@@ -129,26 +129,25 @@
             style.textContent = `
                 :host {
                     --clock-timer-tick-inset:
-                        clamp(8px, 4cqi, 20px);
+                        clamp(5px, 2cqi, 10px);
 
                     --clock-timer-tick-width:
-                        clamp(1px, 0.45cqi, 2px);
+                        clamp(1px, 0.35cqi, 1.5px);
 
                     --clock-timer-tick-length:
-                        clamp(5px, 2.5cqi, 11px);
+                        clamp(4px, 1.6cqi, 7px);
 
                     --clock-timer-major-tick-width:
-                        clamp(2px, 0.75cqi, 3px);
+                        clamp(1.5px, 0.55cqi, 2.5px);
 
                     --clock-timer-major-tick-length:
-                        clamp(9px, 4cqi, 18px);
+                        clamp(8px, 3cqi, 13px);
 
                     --clock-timer-tick-color:
                         currentColor;
 
                     --clock-timer-tick-shadow:
-                        0 0 1px rgb(0 0 0 / 75%),
-                        0 0 2px rgb(0 0 0 / 45%);
+                        0 0 1px rgb(0 0 0 / 35%);
 
                     position: relative;
 
@@ -271,7 +270,7 @@
                         );
 
                     border-radius:
-                        999px;
+                        clamp(0px, 0.15cqi, 1px);
 
                     background:
                         var(
