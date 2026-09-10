@@ -29,7 +29,6 @@ class RingContainer extends HTMLElement {
     #disconnecting = false;
     #committing = false;
     #pendingResize;
-    #resizeTarget;
     #pendingReorder;
     #pendingConnect;
     #pendingDisconnect;
@@ -37,15 +36,15 @@ class RingContainer extends HTMLElement {
     #inset;
     #outerMargin;
     #innerMargin;
-    #instanceFilter;
-    #instanceFilterRamp;
-    #instanceFilterRampDuration;
-    #instanceFilterRampConnect;
-    #instanceFilterRampDisconnect;
-    #instanceResizeFilter;
-    #instanceReorderFilter;
-    #instanceConnectFilter;
-    #instanceDisconnectFilter;
+    #filter;
+    #filterRamp;
+    #filterRampDuration;
+    #filterRampConnect;
+    #filterRampDisconnect;
+    #resizeFilter;
+    #reorderFilter;
+    #connectFilter;
+    #disconnectFilter;
 
     static get observedAttributes() {
         return [
@@ -183,11 +182,11 @@ class RingContainer extends HTMLElement {
     }
 
     get filter() {
-        return this.#instanceFilter ?? RingContainer.filter;
+        return this.#filter ?? RingContainer.filter;
     }
 
     set filter(value) {
-        this.#instanceFilter =
+        this.#filter =
             RingContainer.#normalizeFilter(
                 value,
                 RingContainer.filter
@@ -195,20 +194,20 @@ class RingContainer extends HTMLElement {
     }
 
     get filterRamp() {
-        return this.#instanceFilterRamp ?? RingContainer.filterRamp;
+        return this.#filterRamp ?? RingContainer.filterRamp;
     }
 
     set filterRamp(value) {
-        this.#instanceFilterRamp =
+        this.#filterRamp =
             Boolean(value);
     }
 
     get filterRampDuration() {
-        return this.#instanceFilterRampDuration ?? RingContainer.filterRampDuration;
+        return this.#filterRampDuration ?? RingContainer.filterRampDuration;
     }
 
     set filterRampDuration(value) {
-        this.#instanceFilterRampDuration =
+        this.#filterRampDuration =
             RingContainer.#normalizeDuration(
                 value,
                 RingContainer.filterRampDuration
@@ -216,29 +215,29 @@ class RingContainer extends HTMLElement {
     }
 
     get filterRampConnect() {
-        return this.#instanceFilterRampConnect ?? RingContainer.filterRampConnect;
+        return this.#filterRampConnect ?? RingContainer.filterRampConnect;
     }
 
     set filterRampConnect(value) {
-        this.#instanceFilterRampConnect =
+        this.#filterRampConnect =
             Boolean(value);
     }
 
     get filterRampDisconnect() {
-        return this.#instanceFilterRampDisconnect ?? RingContainer.filterRampDisconnect;
+        return this.#filterRampDisconnect ?? RingContainer.filterRampDisconnect;
     }
 
     set filterRampDisconnect(value) {
-        this.#instanceFilterRampDisconnect =
+        this.#filterRampDisconnect =
             Boolean(value);
     }
 
     get resizeFilter() {
-        return this.#instanceResizeFilter ?? RingContainer.resizeFilter;
+        return this.#resizeFilter ?? RingContainer.resizeFilter;
     }
 
     set resizeFilter(value) {
-        this.#instanceResizeFilter =
+        this.#resizeFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
@@ -246,11 +245,11 @@ class RingContainer extends HTMLElement {
     }
 
     get reorderFilter() {
-        return this.#instanceReorderFilter ?? RingContainer.reorderFilter;
+        return this.#reorderFilter ?? RingContainer.reorderFilter;
     }
 
     set reorderFilter(value) {
-        this.#instanceReorderFilter =
+        this.#reorderFilter =
             RingContainer.#normalizeFilter(
                 value,
                 "opacity(75%)"
@@ -258,11 +257,11 @@ class RingContainer extends HTMLElement {
     }
 
     get connectFilter() {
-        return this.#instanceConnectFilter ?? RingContainer.connectFilter;
+        return this.#connectFilter ?? RingContainer.connectFilter;
     }
 
     set connectFilter(value) {
-        this.#instanceConnectFilter =
+        this.#connectFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
@@ -270,11 +269,11 @@ class RingContainer extends HTMLElement {
     }
 
     get disconnectFilter() {
-        return this.#instanceDisconnectFilter ?? RingContainer.disconnectFilter;
+        return this.#disconnectFilter ?? RingContainer.disconnectFilter;
     }
 
     set disconnectFilter(value) {
-        this.#instanceDisconnectFilter =
+        this.#disconnectFilter =
             RingContainer.#normalizeFilter(
                 value,
                 this.filter
@@ -745,18 +744,10 @@ class RingContainer extends HTMLElement {
             const targetInset =
                 `calc(${outerInset} + ${outerMargin})`;
 
-            const pendingInset =
-                ring.#resizeTarget
-                    ?.inset;
-
-            const currentInset =
-                pendingInset ??
+            if (
                 ring.getAttribute(
                     "inset"
-                );
-
-            if (
-                currentInset !==
+                ) !==
                     targetInset
             ) {
                 const current =
@@ -1159,9 +1150,6 @@ class RingContainer extends HTMLElement {
             ...to
         };
 
-        this.#resizeTarget =
-            targetGeometry;
-
         const animationStyle =
             document.createElement(
                 "style"
@@ -1238,9 +1226,6 @@ class RingContainer extends HTMLElement {
                 }
             );
 
-        const resizeAnimation =
-            this.#resizeAnimation;
-
         if (
             this.filterRamp
         ) {
@@ -1252,18 +1237,11 @@ class RingContainer extends HTMLElement {
         }
 
         this.#pendingResize =
-            resizeAnimation.finished
+            this.#resizeAnimation.finished
                 .catch(() => {})
                 .finally(
                     () => {
                         animationStyle.remove();
-
-                        if (
-                            this.#resizeAnimation !==
-                                resizeAnimation
-                        ) {
-                            return;
-                        }
 
                         if (
                             commitAttributes
@@ -1289,9 +1267,6 @@ class RingContainer extends HTMLElement {
                         this.#updateStyle(
                             targetGeometry
                         );
-
-                        this.#resizeTarget =
-                            undefined;
 
                         this.#resizeAnimation =
                             undefined;
