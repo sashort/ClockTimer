@@ -1,0 +1,41 @@
+name: Bake ClockTimer tick defaults
+
+on:
+  push:
+    paths:
+      - '.github/workflows/bake-tick-mark-defaults.yml'
+      - '.github/scripts/bake_tick_mark_defaults.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused patch
+        run: python .github/scripts/bake_tick_mark_defaults.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify shadow defaults
+        run: |
+          grep -Fq -- '--clock-timer-tick-inset:' ClockTimer.js
+          grep -Fq -- '--clock-timer-tick-width:' ClockTimer.js
+          grep -Fq -- '--clock-timer-tick-length:' ClockTimer.js
+          grep -Fq -- '--clock-timer-major-tick-width:' ClockTimer.js
+          grep -Fq -- '--clock-timer-major-tick-length:' ClockTimer.js
+          grep -Fq -- '--clock-timer-tick-color:' ClockTimer.js
+          grep -Fq 'var(' ClockTimer.js
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Bake ClockTimer tick mark defaults into shadow styles" || exit 0
+          git push origin main
