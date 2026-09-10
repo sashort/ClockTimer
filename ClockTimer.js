@@ -1839,19 +1839,13 @@
                     rings
             ) {
                 const width =
-                    ring.getAttribute(
-                        "width"
-                    ) ?? "0px";
+                    ring.width ?? "0px";
 
                 const outerMargin =
-                    ring.getAttribute(
-                        "outer-margin"
-                    ) ?? "0px";
+                    ring.outerMargin ?? "0px";
 
                 const innerMargin =
-                    ring.getAttribute(
-                        "inner-margin"
-                    ) ?? "0px";
+                    ring.innerMargin ?? "0px";
 
                 if (
                     ring ===
@@ -5380,9 +5374,7 @@
                         width;
 
                     if (
-                        ring.getAttribute(
-                            "width"
-                        ) !== "0px"
+                        ring.width !== "0px"
                     ) {
                         ring.setAttribute(
                             "width",
@@ -5391,9 +5383,7 @@
                     }
                 }
                 else if (
-                    ring.getAttribute(
-                        "width"
-                    ) !==
+                    ring.width !==
                         width
                 ) {
                     ring.setAttribute(
