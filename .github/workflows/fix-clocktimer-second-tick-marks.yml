@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/fix-clocktimer-second-tick-marks.yml'
       - '.github/scripts/fix_clocktimer_second_tick_marks.py'
+      - '.github/scripts/test_second_tick_math.js'
 
 permissions:
   contents: write
