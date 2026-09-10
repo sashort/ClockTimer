@@ -5,6 +5,11 @@ class RingContainer extends HTMLElement {
 
     #inset;
     #width;
+    #margin;
+    #innerMargin;
+    #outerMargin;
+
+    #sizeObserver;
 
     #resizeDuration;
 
@@ -95,6 +100,21 @@ class RingContainer extends HTMLElement {
                 "width"
             );
 
+        this.#margin =
+            this.getAttribute(
+                "margin"
+            );
+
+        this.#innerMargin =
+            this.getAttribute(
+                "inner-margin"
+            );
+
+        this.#outerMargin =
+            this.getAttribute(
+                "outer-margin"
+            );
+
         this.#shadowRoot =
             this.attachShadow({
                 mode: "closed"
@@ -130,6 +150,8 @@ class RingContainer extends HTMLElement {
             this.#container
         );
 
+        this.#refreshNormalizedLengthAttributes();
+
         this.#updateStyle();
 
         this.#updateDuration();
@@ -156,7 +178,7 @@ class RingContainer extends HTMLElement {
             return;
         }
 
-        this.#normalizeMarginAttributes();
+        this.#refreshNormalizedLengthAttributes();
 
         this.#cancelAnimation();
 
@@ -177,6 +199,8 @@ class RingContainer extends HTMLElement {
 
         this.#updateDuration();
 
+        this.#startSizeObserver();
+
         RingContainer.#recalculateParent(
             this.#parent,
             "connect",
@@ -194,6 +218,8 @@ class RingContainer extends HTMLElement {
         const parent =
             this.#parent;
 
+        this.#stopSizeObserver();
+
         this.#cancelAnimation();
 
         RingContainer.#instances.delete(
@@ -206,6 +232,61 @@ class RingContainer extends HTMLElement {
         RingContainer.#recalculateParent(
             parent,
             "disconnect"
+        );
+    }
+
+    get inset() {
+        return this.#inset;
+    }
+
+    set inset(value) {
+        this.#setLengthValue(
+            "inset",
+            value
+        );
+    }
+
+    get width() {
+        return this.#width;
+    }
+
+    set width(value) {
+        this.#setLengthValue(
+            "width",
+            value
+        );
+    }
+
+    get margin() {
+        return this.#margin;
+    }
+
+    set margin(value) {
+        this.#setLengthValue(
+            "margin",
+            value
+        );
+    }
+
+    get innerMargin() {
+        return this.#innerMargin;
+    }
+
+    set innerMargin(value) {
+        this.#setLengthValue(
+            "inner-margin",
+            value
+        );
+    }
+
+    get outerMargin() {
+        return this.#outerMargin;
+    }
+
+    set outerMargin(value) {
+        this.#setLengthValue(
+            "outer-margin",
+            value
         );
     }
 
@@ -879,70 +960,54 @@ class RingContainer extends HTMLElement {
         }
 
         if (
-            name === "inset"
+            newValue?.trim().toLowerCase() ===
+                "calculated"
         ) {
-            this.#inset =
-                newValue;
-        }
+            this.#syncingAttribute =
+                true;
 
-        if (
-            name === "width"
-        ) {
-            this.#width =
-                newValue;
-        }
-
-        if (
-            name === "margin" ||
-            name === "inner-margin" ||
-            name === "outer-margin"
-        ) {
-            this.#handleMarginAttributeChange(
-                name,
-                newValue
-            );
-        }
-
-        if (
-            !this.isConnected
-        ) {
-            this.#cancelAnimation();
-
-            this.#resizePending =
-                false;
-
-            this.#reorderPending =
-                false;
-
-            this.#pendingLifecycleAction =
-                undefined;
-
-            this.#updateProperties(
-                false
-            );
-
-            return;
-        }
-
-        if (
-            this.#parentHasPendingReorder()
-        ) {
-            this.#markParentRingsPending();
-
-            if (
-                !RingContainer.#batchResizing
-            ) {
-                RingContainer.#flushResizeBatch();
+            try {
+                if (oldValue === null) {
+                    this.removeAttribute(name);
+                }
+                else {
+                    this.setAttribute(
+                        name,
+                        oldValue
+                    );
+                }
+            }
+            finally {
+                this.#syncingAttribute =
+                    false;
             }
 
-            return;
+            throw new TypeError(
+                `"calculated" is reserved for RingContainer internal attribute reflection and cannot be assigned to ${name}.`
+            );
         }
 
-        this.#scheduleResize();
+        switch (name) {
+            case "inset":
+                this.inset = newValue;
+                break;
 
-        this.#updateAutomaticFollowingRings(
-            true
-        );
+            case "width":
+                this.width = newValue;
+                break;
+
+            case "margin":
+                this.margin = newValue;
+                break;
+
+            case "inner-margin":
+                this.innerMargin = newValue;
+                break;
+
+            case "outer-margin":
+                this.outerMargin = newValue;
+                break;
+        }
     }
 
     static #recalculateParent(
@@ -1845,21 +1910,13 @@ class RingContainer extends HTMLElement {
     }
 
     #usesAutomaticInset() {
-        if (
-            !this.hasAttribute(
-                "inset"
-            )
-        ) {
-            return true;
-        }
-
         return (
-            this.getAttribute(
-                "inset"
-            )
-                ?.trim()
+            this.#inset === null ||
+            this.#inset === undefined ||
+            this.#inset
+                .trim()
                 .toLowerCase() ===
-            "auto"
+                "auto"
         );
     }
 
@@ -1940,30 +1997,99 @@ class RingContainer extends HTMLElement {
         }
     }
 
-    #handleMarginAttributeChange(
+    #setLengthValue(
         name,
-        newValue
+        value
     ) {
+        const allowAuto =
+            name === "inset";
+
+        let original;
+
+        if (
+            value !== null &&
+            value !== undefined
+        ) {
+            original =
+                String(value).trim();
+
+            if (
+                original.toLowerCase() ===
+                    "calculated"
+            ) {
+                throw new TypeError(
+                    `"calculated" is reserved for RingContainer internal attribute reflection and cannot be assigned to ${name}.`
+                );
+            }
+
+            if (
+                allowAuto &&
+                original.toLowerCase() ===
+                    "auto"
+            ) {
+                original = "auto";
+            }
+            else if (
+                !RingContainer.#isValidLength(
+                    original
+                )
+            ) {
+                original = "0px";
+            }
+        }
+
+        switch (name) {
+            case "inset":
+                this.#inset = original;
+                break;
+
+            case "width":
+                this.#width = original;
+                break;
+
+            case "margin":
+                this.#margin = original;
+                break;
+
+            case "inner-margin":
+                this.#innerMargin = original;
+                break;
+
+            case "outer-margin":
+                this.#outerMargin = original;
+                break;
+        }
+
         this.#syncingAttribute =
             true;
 
         try {
             if (
-                newValue !== null &&
-                !RingContainer.#isValidLength(
-                    newValue
-                )
+                original === undefined
             ) {
+                this.removeAttribute(
+                    name
+                );
+            }
+            else {
                 this.setAttribute(
                     name,
-                    "0px"
+                    this.#getReflectedLengthValue(
+                        original
+                    )
                 );
             }
 
             if (
                 name === "margin" &&
-                newValue !== null
+                original !== undefined
             ) {
+                this.#innerMargin =
+                    undefined;
+
+                this.#outerMargin =
+                    undefined;
+
                 this.removeAttribute(
                     "inner-margin"
                 );
@@ -1977,41 +2103,147 @@ class RingContainer extends HTMLElement {
             this.#syncingAttribute =
                 false;
         }
+
+        this.#afterLengthValueChange();
     }
 
-    #normalizeMarginAttributes() {
+    #getReflectedLengthValue(
+        original
+    ) {
+        if (
+            original === "auto" ||
+            RingContainer.#isCalculatedLength(
+                original
+            )
+        ) {
+            return "calculated";
+        }
+
+        return this.#normalizeLengthToPixels(
+            original
+        );
+    }
+
+    #afterLengthValueChange() {
+        if (
+            !this.isConnected
+        ) {
+            this.#cancelAnimation();
+
+            this.#resizePending =
+                false;
+
+            this.#reorderPending =
+                false;
+
+            this.#pendingLifecycleAction =
+                undefined;
+
+            this.#updateProperties(
+                false
+            );
+
+            return;
+        }
+
+        if (
+            this.#parentHasPendingReorder()
+        ) {
+            this.#markParentRingsPending();
+
+            if (
+                !RingContainer.#batchResizing
+            ) {
+                RingContainer.#flushResizeBatch();
+            }
+
+            return;
+        }
+
+        this.#scheduleResize();
+
+        this.#updateAutomaticFollowingRings(
+            true
+        );
+    }
+
+    #normalizeLengthToPixels(
+        value
+    ) {
+        const measure =
+            document.createElement(
+                "div"
+            );
+
+        measure.style.position =
+            "absolute";
+
+        measure.style.visibility =
+            "hidden";
+
+        measure.style.pointerEvents =
+            "none";
+
+        measure.style.marginLeft =
+            value;
+
+        this.#shadowRoot.appendChild(
+            measure
+        );
+
+        const resolved =
+            Number.parseFloat(
+                getComputedStyle(
+                    measure
+                ).marginLeft
+            );
+
+        measure.remove();
+
+        const pixels =
+            Number.isFinite(resolved)
+                ? resolved
+                : 0;
+
+        return `${pixels}px`;
+    }
+
+    #refreshNormalizedLengthAttributes() {
         this.#syncingAttribute =
             true;
 
         try {
+            const values = [
+                ["inset", this.#inset],
+                ["width", this.#width],
+                ["margin", this.#margin],
+                ["inner-margin", this.#innerMargin],
+                ["outer-margin", this.#outerMargin]
+            ];
+
             for (
-                const name of [
-                    "margin",
-                    "inner-margin",
-                    "outer-margin"
-                ]
+                const [name, original] of
+                    values
             ) {
                 if (
-                    !this.hasAttribute(
-                        name
-                    )
+                    original === null ||
+                    original === undefined
                 ) {
                     continue;
                 }
 
-                const value =
-                    this.getAttribute(
-                        name
+                const normalized =
+                    this.#getReflectedLengthValue(
+                        original
                     );
 
                 if (
-                    !RingContainer.#isValidLength(
-                        value
-                    )
+                    this.getAttribute(name) !==
+                        normalized
                 ) {
                     this.setAttribute(
                         name,
-                        "0px"
+                        normalized
                     );
                 }
             }
@@ -2020,6 +2252,50 @@ class RingContainer extends HTMLElement {
             this.#syncingAttribute =
                 false;
         }
+    }
+
+    #startSizeObserver() {
+        if (
+            this.#sizeObserver ||
+            typeof ResizeObserver ===
+                "undefined"
+        ) {
+            return;
+        }
+
+        this.#sizeObserver =
+            new ResizeObserver(
+                () => {
+                    this.#refreshNormalizedLengthAttributes();
+
+                    this.#updateProperties(
+                        false
+                    );
+
+                    this.#updateAutomaticFollowingRings(
+                        false
+                    );
+
+                    this.#refreshChildVisualGeometry();
+                }
+            );
+
+        this.#sizeObserver.observe(
+            this
+        );
+    }
+
+    #stopSizeObserver() {
+        if (
+            !this.#sizeObserver
+        ) {
+            return;
+        }
+
+        this.#sizeObserver.disconnect();
+
+        this.#sizeObserver =
+            undefined;
     }
 
     #updateProperties(
@@ -2109,44 +2385,32 @@ class RingContainer extends HTMLElement {
 
     #getInnerMargin() {
         if (
-            this.hasAttribute(
-                "inner-margin"
-            )
+            this.#innerMargin !==
+                null &&
+            this.#innerMargin !==
+                undefined
         ) {
-            return (
-                this.getAttribute(
-                    "inner-margin"
-                ) ??
-                "0px"
-            );
+            return this.#innerMargin;
         }
 
         return (
-            this.getAttribute(
-                "margin"
-            ) ??
+            this.#margin ??
             "0px"
         );
     }
 
     #getOuterMargin() {
         if (
-            this.hasAttribute(
-                "outer-margin"
-            )
+            this.#outerMargin !==
+                null &&
+            this.#outerMargin !==
+                undefined
         ) {
-            return (
-                this.getAttribute(
-                    "outer-margin"
-                ) ??
-                "0px"
-            );
+            return this.#outerMargin;
         }
 
         return (
-            this.getAttribute(
-                "margin"
-            ) ??
+            this.#margin ??
             "0px"
         );
     }
@@ -2353,6 +2617,15 @@ class RingContainer extends HTMLElement {
         }
 
         return filter;
+    }
+
+    static #isCalculatedLength(
+        value
+    ) {
+        return /(?:^|\W)(?:calc|min|max|clamp|var)\(/i
+            .test(
+                String(value)
+            );
     }
 
     static #isValidLength(
