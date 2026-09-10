@@ -1,0 +1,35 @@
+name: Redesign indicator symbol
+on:
+  push:
+    paths:
+      - '.github/workflows/redesign-indicator-symbol.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply patch
+        run: python .github/scripts/redesign-indicator-symbol.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify indicator redesign
+        run: |
+          grep -q '#getIndicatorBottomInset' ClockTimer.js
+          grep -q 'activeMetrics.outer + outerGap' ClockTimer.js
+          grep -q 'childElementCount > 0' ClockTimer.js
+          grep -q 'this.#indicatorSymbol.style.fontSize' ClockTimer.js
+          grep -q 'this.#scheduleIndicatorSymbolUpdate();' ClockTimer.js
+          grep -q '? "▲"' ClockTimer.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/workflows/redesign-indicator-symbol.yml .github/scripts/redesign-indicator-symbol.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/workflows/redesign-indicator-symbol.yml .github/scripts/redesign-indicator-symbol.py
+          git commit -m 'Redesign indicator symbol radial placement'
+          git push
