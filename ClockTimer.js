@@ -132,8 +132,6 @@
 
             style.textContent = `
                 :host {
-                    --clock-timer-tick-inset:
-                        clamp(5px, 2cqi, 10px);
 
                     --clock-timer-tick-width:
                         clamp(1px, 0.35cqi, 1.5px);
@@ -1684,11 +1682,6 @@
                 "0px"
             );
 
-            ring.setAttribute(
-                "outer-margin",
-                "var(--clock-timer-tick-inset, clamp(5px, 2cqi, 10px))"
-            );
-
             ring.resizeFilter =
                 "none";
 
@@ -1717,9 +1710,6 @@
         #getTickInset() {
             let outerInset =
                 "0px";
-
-            let timerRingCount =
-                0;
 
             const rings =
                 Array.from(
@@ -1753,17 +1743,7 @@
                     ring ===
                         this.#tickRing
                 ) {
-                    return timerRingCount > 1
-                        ? outerInset
-                        : `calc(${outerInset} + ${outerMargin})`;
-                }
-
-                if (
-                    ring.hasAttribute(
-                        "data-clock-timer-ring"
-                    )
-                ) {
-                    timerRingCount++;
+                    return outerInset;
                 }
 
                 const inset =
