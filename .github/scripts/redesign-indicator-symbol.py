@@ -8,10 +8,9 @@ def rep(old,new,count=1):
         raise SystemExit('missing anchor: '+old[:120])
     s=s.replace(old,new,count)
 
-rep('''                    line-height: 1;\n                    font-size: var(--clock-timer-indicator-symbol-size, 12px);''','''                    line-height: 1;\n                    font-size: var(--clock-timer-indicator-symbol-size, 12px);''')
 rep('''                    transform: translate(-50%, -50%);\n                    transform-origin: 50% 50%;''','''                    transform: translateX(-50%);\n                    transform-origin: 50% 0;''')
 
-old='''                    new ResizeObserver(\n                        () => {\n                            this.#scheduleFontSizing();\n\n                            this.#refreshTimeRangeVisualGeometry();\n                        }\n                    );'''
+old='''                    new ResizeObserver(\n                        () => {\n                            this.#scheduleFontSizing();\n                        \n\n                    this.#refreshTimeRangeVisualGeometry();}\n                    );'''
 new='''                    new ResizeObserver(\n                        () => {\n                            this.#scheduleFontSizing();\n                            this.#scheduleIndicatorSymbolUpdate();\n\n                            this.#refreshTimeRangeVisualGeometry();\n                        }\n                    );'''
 rep(old,new)
 
