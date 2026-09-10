@@ -128,6 +128,24 @@
 
             style.textContent = `
                 :host {
+                    --clock-timer-tick-inset:
+                        clamp(8px, 4cqi, 20px);
+
+                    --clock-timer-tick-width:
+                        clamp(1px, 0.45cqi, 2px);
+
+                    --clock-timer-tick-length:
+                        clamp(5px, 2.5cqi, 11px);
+
+                    --clock-timer-major-tick-width:
+                        clamp(2px, 0.75cqi, 3px);
+
+                    --clock-timer-major-tick-length:
+                        clamp(9px, 4cqi, 18px);
+
+                    --clock-timer-tick-color:
+                        currentColor;
+
                     position: relative;
 
                     display: block;
@@ -206,8 +224,7 @@
 
                     inset:
                         var(
-                            --clock-timer-tick-inset,
-                            clamp(8px, 4cqi, 20px)
+                            --clock-timer-tick-inset
                         );
 
                     z-index: 10;
@@ -241,14 +258,12 @@
 
                     width:
                         var(
-                            --clock-timer-tick-width,
-                            clamp(1px, 0.45cqi, 2px)
+                            --clock-timer-tick-width
                         );
 
                     height:
                         var(
-                            --clock-timer-tick-length,
-                            clamp(5px, 2.5cqi, 11px)
+                            --clock-timer-tick-length
                         );
 
                     border-radius:
@@ -256,8 +271,7 @@
 
                     background:
                         var(
-                            --clock-timer-tick-color,
-                            currentColor
+                            --clock-timer-tick-color
                         );
 
                     transform:
@@ -273,14 +287,12 @@
                 .tick-mark.major {
                     width:
                         var(
-                            --clock-timer-major-tick-width,
-                            clamp(2px, 0.75cqi, 3px)
+                            --clock-timer-major-tick-width
                         );
 
                     height:
                         var(
-                            --clock-timer-major-tick-length,
-                            clamp(9px, 4cqi, 18px)
+                            --clock-timer-major-tick-length
                         );
                 }
 
