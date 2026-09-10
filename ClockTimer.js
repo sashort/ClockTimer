@@ -842,6 +842,10 @@
                         refreshTickMarks: true
                     }
                 );
+
+                this.#tick();
+
+                this.#snapTimerRangeAngles();
             }
             finally {
                 this.#starting =
@@ -850,7 +854,8 @@
 
             this.#animateStartedRingWidths();
 
-            this.#startTickTimer();
+            this.#stopTickTimer();
+            this.#scheduleNextTick();
 
             return this;
         }
@@ -1495,6 +1500,20 @@
                         ":scope > ring-container[data-clock-timer-ring]"
                     )
                 ) {
+                    for (
+                        const range of
+                            ring.querySelectorAll(
+                                ":scope > time-range"
+                            )
+                    ) {
+                        if (
+                            typeof range.snapToLogicalTiming ===
+                                "function"
+                        ) {
+                            range.snapToLogicalTiming();
+                        }
+                    }
+
                     ring.removeAttribute(
                         "data-clock-timer-ring"
                     );
@@ -3165,6 +3184,22 @@
             }
         }
 
+        #snapTimerRangeAngles() {
+            for (
+                const range of
+                    this.querySelectorAll(
+                        ":scope > ring-container[data-clock-timer-ring] > time-range"
+                    )
+            ) {
+                if (
+                    typeof range.snapToLogicalTiming ===
+                        "function"
+                ) {
+                    range.snapToLogicalTiming();
+                }
+            }
+        }
+
         #animateStartedRingWidths() {
             const duration =
                 this.#getRangeAnimationDuration();
@@ -4762,13 +4797,6 @@
                     end
                 )
             );
-
-            if (this.#starting) {
-                range.setAttribute(
-                    "data-time-range-full-entry",
-                    ""
-                );
-            }
 
             range.dataset.clockTimerStart =
                 String(

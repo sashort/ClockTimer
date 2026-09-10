@@ -1889,6 +1889,37 @@ class TimeRange extends HTMLElement {
         );
     }
 
+    snapToLogicalTiming() {
+        if (
+            this.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#animationFrame
+            );
+
+            this.#animationFrame =
+                undefined;
+        }
+
+        this.#removeAfterAnimation =
+            false;
+
+        this.#renderStartTime =
+            this.#cloneDate(
+                this.#startTime
+            );
+
+        this.#renderEndTime =
+            this.#cloneDate(
+                this.#endTime
+            );
+
+        this.#updateClipPath();
+
+        return this;
+    }
+
     removeAnimated({
         collapseTo = "end",
         targetStart,
