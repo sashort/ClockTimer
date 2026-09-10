@@ -25,3 +25,4 @@ jobs:
           git add ClockTimer.js .github/workflows/add-reset.yml .github/scripts/add-reset.py
           git commit -m "Preserve ClockTimer start state and add reset"
           git push origin HEAD:main
+# retry
