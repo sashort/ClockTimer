@@ -1,0 +1,22 @@
+name: Fix whole ClockTimer spin
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-spin-whole-clock.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/fix-spin-whole-clock.py
+      - run: node --check ClockTimer.js
+      - name: Commit patch and self-clean
+        run: |
+          rm .github/scripts/fix-spin-whole-clock.py .github/workflows/fix-spin-whole-clock.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github
+          git commit -m 'Spin entire ClockTimer host'
+          git push
