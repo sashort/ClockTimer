@@ -8,7 +8,8 @@
             "tick-marks",
             "indicator-symbol",
             "grayscale",
-            "grayscale-ramp"
+            "grayscale-ramp",
+            "background-color"
         ];
 
         static #HOUR =
@@ -713,6 +714,7 @@
 
         connectedCallback() {
             this.#captureFaceBackground();
+            this.#syncFaceBackgroundColor();
 
             this.#ensureAttributes();
 
@@ -942,6 +944,10 @@
                     else {
                         this.#runGrayscale();
                     }
+                    break;
+
+                case "background-color":
+                    this.#syncFaceBackgroundColor();
                     break;
             }
         }
@@ -2531,6 +2537,38 @@
                     refreshTickMarks: true
                 }
             );
+        }
+
+        #syncFaceBackgroundColor() {
+            if (!this.#faceBackground) {
+                return;
+            }
+
+            const raw =
+                this.getAttribute(
+                    "background-color"
+                );
+
+            const value =
+                typeof raw === "string"
+                    ? raw.trim()
+                    : "";
+
+            if (
+                value &&
+                CSS.supports(
+                    "color",
+                    value
+                )
+            ) {
+                this.#faceBackground.style.backgroundColor =
+                    value;
+            }
+            else {
+                this.#faceBackground.style.removeProperty(
+                    "background-color"
+                );
+            }
         }
 
         #ensureAttributes() {
