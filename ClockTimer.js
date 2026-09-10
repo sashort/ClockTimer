@@ -973,6 +973,23 @@
             }
         }
 
+        get status() {
+            if (!this.#hasStartProperties()) {
+                return "ready";
+            }
+
+            if (
+                this.#openEndedRange ||
+                this.#openOverwriteRange
+            ) {
+                return "open";
+            }
+
+            return this.#started
+                ? "running"
+                : "stopped";
+        }
+
         get originalStandardTime() {
             return this.#originalStartArguments
                 ?.standardTime;
