@@ -1718,6 +1718,9 @@
             let outerInset =
                 "0px";
 
+            let timerRingCount =
+                0;
+
             const rings =
                 Array.from(
                     this.children
@@ -1734,30 +1737,37 @@
                 const width =
                     ring.getAttribute(
                         "width"
-                    ) ??
-                    "0px";
+                    ) ?? "0px";
 
                 const outerMargin =
                     ring.getAttribute(
                         "outer-margin"
-                    ) ??
-                    "0px";
+                    ) ?? "0px";
 
                 const innerMargin =
                     ring.getAttribute(
                         "inner-margin"
-                    ) ??
-                    "0px";
-
-                const inset =
-                    `calc(${outerInset} + ${outerMargin})`;
+                    ) ?? "0px";
 
                 if (
                     ring ===
                         this.#tickRing
                 ) {
-                    return inset;
+                    return timerRingCount > 1
+                        ? outerInset
+                        : `calc(${outerInset} + ${outerMargin})`;
                 }
+
+                if (
+                    ring.hasAttribute(
+                        "data-clock-timer-ring"
+                    )
+                ) {
+                    timerRingCount++;
+                }
+
+                const inset =
+                    `calc(${outerInset} + ${outerMargin})`;
 
                 outerInset =
                     `calc(${inset} + ${width} + ${innerMargin})`;
