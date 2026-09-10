@@ -179,6 +179,9 @@
                     box-sizing:
                         border-box;
 
+                    padding:
+                        1px;
+
                     overflow:
                         hidden;
 
