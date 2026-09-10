@@ -21,8 +21,8 @@ jobs:
           grep -q 'transitionTo({' TimeRange.js
           grep -q '#reconcilePlannedRanges()' ClockTimer.js
           grep -q '#animateStartedRingWidths()' ClockTimer.js
-          grep -q 'data-clock-timer-target-width' ClockTimer.js
-          grep -q 'ring.setAttribute(' ClockTimer.js
+          grep -q 'clockTimerTargetWidth' ClockTimer.js
+          grep -q '#getRangeAnimationDuration()' ClockTimer.js
           grep -q '"0px"' ClockTimer.js
       - name: Commit change and cleanup
         run: |
