@@ -1916,37 +1916,37 @@
                 mode === "5"
             ) {
                 for (
-                    let minute = 0;
-                    minute < 60;
-                    minute += 5
+                    let second = 0;
+                    second < 60;
+                    second += 5
                 ) {
                     fragment.appendChild(
                         this.#createTickMark(
-                            minute * 6,
+                            second * 6,
                             true
                         )
                     );
                 }
             }
             else {
-                const minute =
-                    now.getMinutes();
+                const second =
+                    now.getSeconds();
 
                 for (
                     let offset = -5;
                     offset <= 5;
                     offset++
                 ) {
-                    const tickMinute =
+                    const tickSecond =
                         (
-                            minute +
+                            second +
                             offset +
                             60
                         ) % 60;
 
                     fragment.appendChild(
                         this.#createTickMark(
-                            tickMinute * 6,
+                            tickSecond * 6,
                             offset === 0
                         )
                     );
@@ -1961,13 +1961,11 @@
                 mode === "+/-5" &&
                 this.isConnected
             ) {
-                const millisecondsToNextMinute =
-                    60 * 1000 -
-                    (
-                        now.getSeconds() *
-                            1000 +
-                        now.getMilliseconds()
-                    );
+                const millisecondsToNextSecond =
+                    now.getMilliseconds() === 0
+                        ? 1000
+                        : 1000 -
+                            now.getMilliseconds();
 
                 this.#tickMarkTimeout =
                     setTimeout(
@@ -1979,7 +1977,7 @@
                                 new Date()
                             );
                         },
-                        millisecondsToNextMinute
+                        millisecondsToNextSecond
                     );
             }
         }
