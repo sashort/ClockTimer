@@ -22,6 +22,7 @@ jobs:
           grep -n '#normalizeLengthToPixels' RingContainer.js
           grep -n '#refreshNormalizedLengthAttributes' RingContainer.js
           grep -n 'new ResizeObserver' RingContainer.js
+          grep -n '"calculated" is reserved' RingContainer.js
       - name: Commit change and cleanup
         run: |
           rm -f .github/workflows/normalize-ring-attributes.yml
