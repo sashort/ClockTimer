@@ -154,6 +154,9 @@
                     --clock-timer-tick-shadow:
                         0 0 1px rgb(0 0 0 / 35%);
 
+                    --clock-timer-ring-resize-duration:
+                        333ms;
+
                     position: relative;
 
                     display: block;
@@ -231,6 +234,17 @@
 
                     pointer-events:
                         none;
+
+                    transition-property:
+                        inset;
+
+                    transition-duration:
+                        var(
+                            --clock-timer-ring-resize-duration
+                        );
+
+                    transition-timing-function:
+                        linear;
                 }
 
                 .tick-mark-track {
