@@ -17,6 +17,8 @@
 
         #shadowRoot;
 
+        #clockFace;
+
         #timeElement;
 
         #hourLayer;
@@ -131,6 +133,24 @@
         #starting =
             false;
 
+        #updatesSuspended =
+            false;
+
+        #asyncOperationBuffer =
+            [];
+
+        #pendingTickAlignmentMilliseconds;
+
+        #resumeTickAlignmentMilliseconds;
+
+        #asyncResumePending =
+            false;
+
+        #processingAsyncBatch =
+            false;
+
+        #spinAnimation;
+
         constructor() {
             super();
 
@@ -145,6 +165,12 @@
                 );
 
             style.textContent = `
+                @property --clock-timer-spin-duration {
+                    syntax: "<time>";
+                    inherits: true;
+                    initial-value: 750ms;
+                }
+
                 :host {
 
                     --clock-timer-tick-inset:
@@ -202,6 +228,9 @@
                     isolation:
                         isolate;
 
+                    perspective:
+                        var(--clock-timer-spin-perspective, 800px);
+
                     container-type:
                         size;
 
@@ -215,6 +244,8 @@
 
                 #clock-face {
                     position: absolute;
+
+                    transform-style: preserve-3d;
 
                     inset: 0;
 
@@ -461,6 +492,9 @@
                     "div"
                 );
 
+            this.#clockFace =
+                clockFace;
+
             clockFace.id =
                 "clock-face";
 
@@ -695,6 +729,12 @@
 
             this.#stopSizeObserver();
 
+            this.#spinAnimation
+                ?.cancel();
+
+            this.#spinAnimation =
+                undefined;
+
             if (this.#indicatorFrame !== undefined) {
                 cancelAnimationFrame(this.#indicatorFrame);
                 this.#indicatorFrame = undefined;
@@ -744,7 +784,17 @@
 
             switch (name) {
                 case "percent-goal":
-                    this.#handlePercentGoalChange();
+                    if (
+                        this.#updatesSuspended &&
+                        !this.#processingAsyncBatch
+                    ) {
+                        this.#queueAsyncOperation({
+                            type: "percent-goal"
+                        });
+                    }
+                    else {
+                        this.#handlePercentGoalChange();
+                    }
                     break;
 
                 case "military-time":
@@ -784,12 +834,416 @@
             }
         }
 
+        suspendUpdate() {
+            this.#updatesSuspended =
+                true;
+
+            return this;
+        }
+
+        resumeUpdate() {
+            if (!this.#updatesSuspended) {
+                return this;
+            }
+
+            if (
+                Number.isFinite(
+                    this.#pendingTickAlignmentMilliseconds
+                )
+            ) {
+                this.#tickAlignmentMilliseconds =
+                    this.#millisecondsComponent(
+                        this.#pendingTickAlignmentMilliseconds
+                    );
+
+                this.#resumeTickAlignmentMilliseconds =
+                    this.#tickAlignmentMilliseconds;
+            }
+            else {
+                this.#resumeTickAlignmentMilliseconds =
+                    undefined;
+            }
+
+            this.#pendingTickAlignmentMilliseconds =
+                undefined;
+
+            this.#updatesSuspended =
+                false;
+
+            this.#asyncResumePending =
+                this.#asyncOperationBuffer.length > 0;
+
+            this.#stopTickTimer();
+            this.#scheduleNextTick();
+
+            return this;
+        }
+
+        spin(rotations = 1, duration) {
+            const normalizedRotations =
+                Number(rotations);
+
+            if (
+                !Number.isFinite(normalizedRotations) ||
+                normalizedRotations <= 0
+            ) {
+                throw new RangeError(
+                    "rotations must be a finite number greater than zero."
+                );
+            }
+
+            if (duration !== undefined) {
+                this.#parseCSSTimeMilliseconds(
+                    duration,
+                    {
+                        throwOnInvalid: true
+                    }
+                );
+            }
+
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#queueAsyncOperation({
+                    type: "spin",
+                    rotations: normalizedRotations,
+                    duration
+                });
+
+                return this;
+            }
+
+            this.#runSpin(
+                normalizedRotations,
+                duration
+            );
+
+            return this;
+        }
+
+        #queueAsyncOperation(operation) {
+            if (operation.type === "spin") {
+                this.#asyncOperationBuffer =
+                    this.#asyncOperationBuffer.filter(
+                        item =>
+                            item.type !== "spin"
+                    );
+            }
+
+            if (operation.type === "percent-goal") {
+                this.#asyncOperationBuffer =
+                    this.#asyncOperationBuffer.filter(
+                        item =>
+                            item.type !== "percent-goal"
+                    );
+            }
+
+            this.#asyncOperationBuffer.push(
+                operation
+            );
+        }
+
+        #recordPendingTickAlignment(milliseconds) {
+            if (
+                Number.isFinite(milliseconds)
+            ) {
+                this.#pendingTickAlignmentMilliseconds =
+                    this.#millisecondsComponent(
+                        milliseconds
+                    );
+            }
+        }
+
+        #recordStartTickAlignment(args = {}) {
+            const value =
+                args.scheduledStart ??
+                args.creationTime;
+
+            if (value === undefined) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+                return;
+            }
+
+            try {
+                const parsed =
+                    this.#parseStandardTime(
+                        value,
+                        {
+                            duration: false,
+                            name: "scheduledStart"
+                        }
+                    );
+
+                this.#recordPendingTickAlignment(
+                    parsed.total
+                );
+            }
+            catch {
+            }
+        }
+
+        #recordInsertTickAlignment(startTime) {
+            if (startTime === undefined) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+                return;
+            }
+
+            try {
+                const parsed =
+                    this.#parseInsertDateTime(
+                        startTime,
+                        "startTime"
+                    );
+
+                this.#recordPendingTickAlignment(
+                    parsed.getMilliseconds()
+                );
+            }
+            catch {
+            }
+        }
+
+        #parseCSSTimeMilliseconds(value, { throwOnInvalid = false } = {}) {
+            if (typeof value !== "string") {
+                if (throwOnInvalid) {
+                    throw new TypeError(
+                        "duration must be a CSS time string."
+                    );
+                }
+
+                return undefined;
+            }
+
+            const text =
+                value.trim();
+
+            const match =
+                text.match(
+                    /^([+]?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$/i
+                );
+
+            if (!match) {
+                if (throwOnInvalid) {
+                    throw new TypeError(
+                        "duration must be a valid CSS time using ms or s."
+                    );
+                }
+
+                return undefined;
+            }
+
+            const amount =
+                Number(match[1]);
+
+            const milliseconds =
+                match[2].toLowerCase() === "s"
+                    ? amount * 1000
+                    : amount;
+
+            if (
+                !Number.isFinite(milliseconds) ||
+                milliseconds <= 0
+            ) {
+                if (throwOnInvalid) {
+                    throw new RangeError(
+                        "duration must be greater than zero."
+                    );
+                }
+
+                return undefined;
+            }
+
+            return milliseconds;
+        }
+
+        #getSpinDurationMilliseconds(duration) {
+            if (duration !== undefined) {
+                return this.#parseCSSTimeMilliseconds(
+                    duration,
+                    {
+                        throwOnInvalid: true
+                    }
+                );
+            }
+
+            const computed =
+                getComputedStyle(this)
+                    .getPropertyValue(
+                        "--clock-timer-spin-duration"
+                    )
+                    .trim();
+
+            return this.#parseCSSTimeMilliseconds(
+                computed
+            ) ?? 750;
+        }
+
+        #runSpin(rotations, duration) {
+            if (!this.#clockFace) {
+                return;
+            }
+
+            const perRotationDuration =
+                this.#getSpinDurationMilliseconds(
+                    duration
+                );
+
+            this.#spinAnimation
+                ?.cancel();
+
+            this.#spinAnimation =
+                this.#clockFace.animate(
+                    [
+                        {
+                            transform: "rotateY(0deg)"
+                        },
+                        {
+                            transform: `rotateY(${rotations * 360}deg)`
+                        }
+                    ],
+                    {
+                        duration:
+                            perRotationDuration *
+                            rotations,
+                        easing: "ease-in-out"
+                    }
+                );
+
+            this.#spinAnimation.finished
+                .catch(() => {})
+                .finally(() => {
+                    this.#spinAnimation =
+                        undefined;
+                });
+        }
+
+        #flushAsyncOperations() {
+            if (!this.#asyncResumePending) {
+                return;
+            }
+
+            const operations =
+                this.#asyncOperationBuffer.splice(0);
+
+            this.#asyncResumePending =
+                false;
+
+            const resumeAlignment =
+                this.#resumeTickAlignmentMilliseconds;
+
+            this.#processingAsyncBatch =
+                true;
+
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
+
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
+            }
+
+            try {
+                for (const operation of operations) {
+                    switch (operation.type) {
+                        case "start":
+                            this.start(operation.args);
+                            break;
+
+                        case "insert":
+                            this.insert(operation.args);
+                            break;
+
+                        case "replaceWithNext":
+                            this.replaceWithNext();
+                            break;
+
+                        case "replaceToNext":
+                            this.replaceToNext(operation.value);
+                            break;
+
+                        case "closeOpenRange":
+                            this.closeOpenRange();
+                            break;
+
+                        case "clear":
+                            this.clear();
+                            break;
+
+                        case "percent-goal":
+                            this.#handlePercentGoalChange();
+                            break;
+
+                        case "spin":
+                            this.#runSpin(
+                                operation.rotations,
+                                operation.duration
+                            );
+                            break;
+                    }
+
+                    if (RingContainerClass) {
+                        RingContainerClass.batchResizing =
+                            true;
+                    }
+                }
+            }
+            finally {
+                if (
+                    Number.isFinite(
+                        resumeAlignment
+                    )
+                ) {
+                    this.#tickAlignmentMilliseconds =
+                        resumeAlignment;
+                }
+
+                this.#resumeTickAlignmentMilliseconds =
+                    undefined;
+
+                this.#processingAsyncBatch =
+                    false;
+
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
+                }
+            }
+        }
+
         start({
             standardTime,
             creationTime,
             startTime,
             scheduledStart
         } = {}) {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                const args = {
+                    standardTime,
+                    creationTime,
+                    startTime,
+                    scheduledStart
+                };
+
+                this.#recordStartTickAlignment(args);
+
+                this.#queueAsyncOperation({
+                    type: "start",
+                    args
+                });
+
+                return this;
+            }
+
             this.#preserveInsertedOnClear =
                 true;
 
@@ -951,7 +1405,9 @@
                     }
                 );
 
-                this.#tick();
+                if (!this.#processingAsyncBatch) {
+                    this.#tick();
+                }
 
                 this.#snapTimerRangeAngles();
             }
@@ -986,6 +1442,28 @@
             rangeLength,
             otherAttributes
         } = {}) {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                const args = {
+                    type,
+                    startTime,
+                    endTime,
+                    rangeLength,
+                    otherAttributes
+                };
+
+                this.#recordInsertTickAlignment(startTime);
+
+                this.#queueAsyncOperation({
+                    type: "insert",
+                    args
+                });
+
+                return true;
+            }
+
             if (
                 typeof type !==
                     "string" ||
@@ -1190,6 +1668,21 @@
         }
 
         closeOpenRange() {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+
+                this.#queueAsyncOperation({
+                    type: "closeOpenRange"
+                });
+
+                return true;
+            }
+
             const record =
                 this.#openEndedRange;
 
@@ -1252,6 +1745,21 @@
         }
 
         replaceWithNext() {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+
+                this.#queueAsyncOperation({
+                    type: "replaceWithNext"
+                });
+
+                return true;
+            }
+
             if (
                 !this.#started
             ) {
@@ -1380,6 +1888,22 @@
         replaceToNext(
             type
         ) {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+
+                this.#queueAsyncOperation({
+                    type: "replaceToNext",
+                    value: type
+                });
+
+                return true;
+            }
+
             if (
                 typeof type !==
                     "string" ||
@@ -1525,6 +2049,17 @@
         }
 
         clear() {
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#queueAsyncOperation({
+                    type: "clear"
+                });
+
+                return;
+            }
+
             this.#stopTickTimer();
             this.#setIndicatorSymbolVisible(false);
 
@@ -5972,6 +6507,10 @@
         }
 
         #startTickTimer() {
+            if (this.#processingAsyncBatch) {
+                return;
+            }
+
             this.#stopTickTimer();
 
             if (
@@ -5986,8 +6525,13 @@
         }
 
         #scheduleNextTick() {
+            if (this.#processingAsyncBatch) {
+                return;
+            }
+
             if (
-                !this.#needsTick()
+                !this.#needsTick() &&
+                !this.#asyncResumePending
             ) {
                 return;
             }
@@ -6022,7 +6566,8 @@
                             undefined;
 
                         if (
-                            !this.#needsTick()
+                            !this.#needsTick() &&
+                            !this.#asyncResumePending
                         ) {
                             return;
                         }
@@ -6050,6 +6595,8 @@
         }
 
         #tick() {
+            this.#flushAsyncOperations();
+
             if (
                 !this.#needsTick()
             ) {
