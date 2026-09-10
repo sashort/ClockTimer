@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/adjust-tick-inactive-gap.yml'
+      - '.github/scripts/adjust_tick_inactive_gap.py'
 permissions:
   contents: write
 jobs:
@@ -15,91 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Update tick inset logic
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('ClockTimer.js')
-          text = path.read_text()
-
-          replacement = '''        #getTickInset() {
-            let outerInset =
-                "0px";
-
-            let timerRingCount =
-                0;
-
-            const rings =
-                Array.from(
-                    this.children
-                ).filter(
-                    element =>
-                        element.localName ===
-                            "ring-container"
-                );
-
-            for (
-                const ring of
-                    rings
-            ) {
-                const width =
-                    ring.getAttribute(
-                        "width"
-                    ) ?? "0px";
-
-                const outerMargin =
-                    ring.getAttribute(
-                        "outer-margin"
-                    ) ?? "0px";
-
-                const innerMargin =
-                    ring.getAttribute(
-                        "inner-margin"
-                    ) ?? "0px";
-
-                if (
-                    ring ===
-                        this.#tickRing
-                ) {
-                    return timerRingCount > 1
-                        ? outerInset
-                        : `calc(${outerInset} + ${outerMargin})`;
-                }
-
-                if (
-                    ring.hasAttribute(
-                        "data-clock-timer-ring"
-                    )
-                ) {
-                    timerRingCount++;
-                }
-
-                const inset =
-                    `calc(${outerInset} + ${outerMargin})`;
-
-                outerInset =
-                    `calc(${inset} + ${width} + ${innerMargin})`;
-            }
-
-            return "0px";
-        }
-
-'''
-
-          pattern = re.compile(
-              r'        #getTickInset\(\) \{.*?\n        \}\n\n(?=        #syncTickMarkGeometry\(\))',
-              re.S,
-          )
-
-          updated, count = pattern.subn(replacement, text, count=1)
-          if count != 1:
-              raise SystemExit(f'Expected one #getTickInset method, replaced {count}')
-
-          path.write_text(updated)
-          PY
+      - name: Apply tick inset patch
+        run: python .github/scripts/adjust_tick_inactive_gap.py
       - name: Syntax check
         run: node --check ClockTimer.js
       - name: Verify targeted behavior
@@ -109,9 +27,10 @@ jobs:
           grep -Fq 'data-clock-timer-ring' ClockTimer.js
       - name: Commit update and cleanup
         run: |
+          rm -f .github/scripts/adjust_tick_inactive_gap.py
           rm -f .github/workflows/adjust-tick-inactive-gap.yml
           git config user.name "sashort"
           git config user.email "95879519+sashort@users.noreply.github.com"
-          git add ClockTimer.js .github/workflows/adjust-tick-inactive-gap.yml
+          git add ClockTimer.js .github/scripts/adjust_tick_inactive_gap.py .github/workflows/adjust-tick-inactive-gap.yml
           git commit -m "Place ticks against innermost inactive ring"
           git push origin main
