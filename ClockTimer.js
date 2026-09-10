@@ -4832,9 +4832,18 @@
                 return;
             }
 
-            const ringStart = this.#getRingStart(ringIndex);
-            const angle = ((end - ringStart) / ClockTimer.#HOUR) * 360;
-            const normalizedAngle = (angle % 360 + 360) % 360;
+            const millisecondsIntoHour =
+                (
+                    end % ClockTimer.#HOUR +
+                    ClockTimer.#HOUR
+                ) % ClockTimer.#HOUR;
+
+            const normalizedAngle =
+                (
+                    millisecondsIntoHour /
+                    ClockTimer.#HOUR
+                ) * 360;
+
             const inset = ring.renderedInset ?? ring.inset ?? "0px";
 
             this.#indicatorRing.style.inset = inset;
