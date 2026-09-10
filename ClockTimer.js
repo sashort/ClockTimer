@@ -2997,8 +2997,13 @@
                 return;
             }
 
-            const inset = Number(this.#borderRing.renderedInset);
-            const width = Number(this.#borderRing.renderedWidth);
+            const inset = Number.parseFloat(
+                this.#borderRing.renderedInset
+            );
+
+            const width = Number.parseFloat(
+                this.#borderRing.renderedWidth
+            );
 
             if (!Number.isFinite(inset) || !Number.isFinite(width)) {
                 return;
