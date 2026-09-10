@@ -381,8 +381,8 @@
                     font-size: var(--clock-timer-indicator-symbol-size, 12px);
                     color: var(--clock-timer-indicator-symbol-color, white);
                     text-shadow: var(--clock-timer-indicator-symbol-shadow, 0 0 2px rgb(0 0 0 / 50%));
-                    transform: translate(-50%, -50%);
-                    transform-origin: 50% 50%;
+                    transform: translateX(-50%);
+                    transform-origin: 50% 0;
                     pointer-events: none;
                 }
 
@@ -2830,9 +2830,10 @@
                     new ResizeObserver(
                         () => {
                             this.#scheduleFontSizing();
-                        
+                            this.#scheduleIndicatorSymbolUpdate();
 
-                    this.#refreshTimeRangeVisualGeometry();}
+                            this.#refreshTimeRangeVisualGeometry();
+                        }
                     );
 
                 this.#sizeObserver.observe(
@@ -4807,6 +4808,102 @@
             });
         }
 
+        #getIndicatorRingMetrics(ring) {
+            if (!ring || ring.localName !== "ring-container") {
+                return undefined;
+            }
+
+            const inset = Number.parseFloat(
+                ring.renderedInset ?? ring.inset ?? "0"
+            );
+
+            const width = Number.parseFloat(
+                ring.renderedWidth ?? ring.width ?? "0"
+            );
+
+            if (!Number.isFinite(inset) || !Number.isFinite(width)) {
+                return undefined;
+            }
+
+            return {
+                inset,
+                width,
+                outer: inset - width / 2,
+                inner: inset + width / 2
+            };
+        }
+
+        #isIndicatorReferenceRingVisible(ring) {
+            const metrics = this.#getIndicatorRingMetrics(ring);
+
+            if (!metrics || metrics.width <= 0) {
+                return false;
+            }
+
+            const style = getComputedStyle(ring);
+
+            return style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                Number.parseFloat(style.opacity || "1") > 0;
+        }
+
+        #getIndicatorBottomInset(activeRing, activeMetrics) {
+            if (
+                this.#borderRing &&
+                this.#borderRing !== activeRing &&
+                this.#isIndicatorReferenceRingVisible(this.#borderRing)
+            ) {
+                const metrics = this.#getIndicatorRingMetrics(this.#borderRing);
+
+                if (metrics) {
+                    return metrics.inner;
+                }
+            }
+
+            const inactiveMetrics = this.#getTimerRings()
+                .filter(ring =>
+                    ring !== activeRing &&
+                    !ring.hasAttribute("active") &&
+                    !ring.clockTimerExitingRing
+                )
+                .map(ring => this.#getIndicatorRingMetrics(ring))
+                .filter(Boolean)
+                .sort((a, b) => a.outer - b.outer);
+
+            if (inactiveMetrics.length > 0) {
+                return inactiveMetrics[0].outer;
+            }
+
+            if (
+                this.hasAttribute("tick-marks") &&
+                this.#tickMarkLayer &&
+                this.#tickMarkLayer.childElementCount > 0
+            ) {
+                const inset = Number.parseFloat(this.#getTickInset());
+
+                if (Number.isFinite(inset)) {
+                    return inset;
+                }
+            }
+
+            if (
+                this.#hourLayer &&
+                this.#hourLayer.childElementCount > 0 &&
+                this.#numberRing
+            ) {
+                const inset = Number.parseFloat(
+                    this.#numberRing.renderedInset ??
+                    this.#getRingInset(this.#numberRing)
+                );
+
+                if (Number.isFinite(inset)) {
+                    return inset;
+                }
+            }
+
+            return activeMetrics.inner;
+        }
+
         #updateIndicatorSymbol() {
             if (!this.#indicatorRing || !this.#indicatorTrack || !this.#indicatorSymbol) {
                 return;
@@ -4844,9 +4941,41 @@
                     ClockTimer.#HOUR
                 ) * 360;
 
-            const inset = ring.renderedInset ?? ring.inset ?? "0px";
+            const activeMetrics =
+                this.#getIndicatorRingMetrics(ring);
 
-            this.#indicatorRing.style.inset = inset;
+            if (!activeMetrics) {
+                this.#setIndicatorSymbolVisible(false);
+                return;
+            }
+
+            const outerGap = 1;
+            const topInset = Math.max(
+                0,
+                activeMetrics.outer + outerGap
+            );
+
+            let bottomInset =
+                this.#getIndicatorBottomInset(
+                    ring,
+                    activeMetrics
+                );
+
+            if (
+                !Number.isFinite(bottomInset) ||
+                bottomInset <= topInset
+            ) {
+                bottomInset = activeMetrics.inner;
+            }
+
+            const radialSpan = Math.max(
+                1,
+                bottomInset - topInset
+            );
+
+            this.#indicatorRing.style.inset = `${topInset}px`;
+            this.#indicatorSymbol.style.height = `${radialSpan}px`;
+            this.#indicatorSymbol.style.fontSize = `${radialSpan}px`;
             this.#indicatorTrack.style.transform = `rotate(${normalizedAngle}deg)`;
             this.#setIndicatorSymbolVisible(!this.#starting);
         }
