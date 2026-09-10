@@ -131,6 +131,8 @@
 
         #calculatedEnd;
 
+        #calculatedEndTime;
+
         #toleranceEnd;
 
         #started =
@@ -1223,6 +1225,58 @@
 
             this.#stopTickTimer();
 
+            const openRecord =
+                this.#openEndedRange;
+
+            if (openRecord) {
+                const openStart =
+                    this.#dateToTimelineTime(
+                        openRecord.startDate
+                    );
+
+                if (
+                    Number.isFinite(openStart) &&
+                    stopTime >= openStart
+                ) {
+                    const previous =
+                        Number.isFinite(
+                            this.#openEndedLastTick
+                        )
+                            ? this.#openEndedLastTick
+                            : openStart;
+
+                    if (stopTime > previous) {
+                        this.#extendCalculatedEndTime(
+                            stopTime - previous,
+                            openRecord.type
+                        );
+                    }
+
+                    openRecord.openEnded =
+                        false;
+
+                    openRecord.rangeLength =
+                        Math.max(
+                            0,
+                            stopTime - openStart
+                        );
+
+                    openRecord.endDate =
+                        new Date(
+                            openRecord.startDate.getTime() +
+                            openRecord.rangeLength
+                        );
+
+                    this.#openEndedRange =
+                        undefined;
+
+                    this.#openEndedLastTick =
+                        undefined;
+
+                    this.#renderAllInsertedRanges();
+                }
+            }
+
             this.#started =
                 false;
 
@@ -2144,6 +2198,10 @@
             this.#standardDuration =
                 standard.total;
 
+            this.#calculatedEndTime =
+                this.#scheduledStartMilliseconds +
+                this.#standardDuration;
+
             this.#percentGoal =
                 this.#getPercentGoal();
 
@@ -2208,6 +2266,38 @@
             this.#scheduleNextTick();
 
             return this;
+        }
+
+        #typeExtendsCalculatedEndTime(type) {
+            return !new Set([
+                "trip",
+                "earlystart",
+                "prestart",
+                "overtime"
+            ]).has(
+                String(type).trim()
+            );
+        }
+
+        #extendCalculatedEndTime(
+            duration,
+            type
+        ) {
+            if (
+                !Number.isFinite(
+                    this.#calculatedEndTime
+                ) ||
+                !Number.isFinite(duration) ||
+                duration <= 0 ||
+                !this.#typeExtendsCalculatedEndTime(
+                    type
+                )
+            ) {
+                return;
+            }
+
+            this.#calculatedEndTime +=
+                duration;
         }
 
         insert({
@@ -2417,6 +2507,17 @@
             this.#insertedRanges.push(
                 record
             );
+
+            if (
+                Number.isFinite(
+                    record.rangeLength
+                )
+            ) {
+                this.#extendCalculatedEndTime(
+                    record.rangeLength,
+                    record.type
+                );
+            }
 
             if (
                 record.openEnded
@@ -2643,6 +2744,13 @@
                 return false;
             }
 
+            this.#extendCalculatedEndTime(
+                nextStart - now,
+                nextRange.getAttribute(
+                    "type"
+                )
+            );
+
             this.#setRangeStart(
                 nextRange,
                 now
@@ -2791,9 +2899,17 @@
                 now
             );
 
+            const replacementType =
+                type.trim();
+
+            this.#extendCalculatedEndTime(
+                nextStart - now,
+                replacementType
+            );
+
             const replacement =
                 this.#createTimeRange(
-                    type.trim(),
+                    replacementType,
                     now,
                     nextStart,
                     {
@@ -2869,6 +2985,9 @@
                 undefined;
 
             this.#calculatedEnd =
+                undefined;
+
+            this.#calculatedEndTime =
                 undefined;
 
             this.#toleranceEnd =
@@ -6075,6 +6194,11 @@
 
             const delta =
                 now - previous;
+
+            this.#extendCalculatedEndTime(
+                delta,
+                record.type
+            );
 
             this.#openEndedLastTick =
                 now;
