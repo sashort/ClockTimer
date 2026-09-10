@@ -386,7 +386,7 @@
                 }
 
                 #indicator-symbol::before {
-                    content: var(--clock-timer-indicator-symbol-content, "▼");
+                    content: none;
                 }
 
                 #time-layer {
@@ -521,6 +521,8 @@
                 "part",
                 "indicator-symbol"
             );
+
+            this.#syncIndicatorSymbolContent();
 
             this.#indicatorTrack.appendChild(
                 this.#indicatorSymbol
@@ -775,6 +777,7 @@
                     break;
 
                 case "indicator-symbol":
+                    this.#syncIndicatorSymbolContent();
                     this.#scheduleIndicatorSymbolUpdate();
                     break;
             }
@@ -4765,6 +4768,23 @@
             }
 
             this.#syncTickMarkGeometry();
+        }
+
+        #syncIndicatorSymbolContent() {
+            if (!this.#indicatorSymbol) {
+                return;
+            }
+
+            const symbol =
+                this.getAttribute(
+                    "indicator-symbol"
+                );
+
+            this.#indicatorSymbol.textContent =
+                symbol === null ||
+                symbol === ""
+                    ? "▲"
+                    : symbol;
         }
 
         #setIndicatorSymbolVisible(visible) {
