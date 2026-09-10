@@ -2690,6 +2690,21 @@
                 );
         }
 
+
+        #refreshTimeRangeVisualGeometry() {
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    typeof range.refreshVisualGeometry ===
+                        "function"
+                ) {
+                    range.refreshVisualGeometry();
+                }
+            }
+        }
+
         #startSizeObserver() {
             this.#stopSizeObserver();
 
@@ -2701,7 +2716,9 @@
                     new ResizeObserver(
                         () => {
                             this.#scheduleFontSizing();
-                        }
+                        
+
+                    this.#refreshTimeRangeVisualGeometry();}
                     );
 
                 this.#sizeObserver.observe(
