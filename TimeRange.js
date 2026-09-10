@@ -212,6 +212,9 @@ class TimeRange extends HTMLElement {
 
             :host([type="elapsed"]) {
                 animation: none !important;
+                background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
             }
 
             :host([type="elapsed"]) #elapsed-wave {
@@ -2408,7 +2411,9 @@ class TimeRange extends HTMLElement {
             this.#appearanceObserver.observe(
                 parent,
                 {
-                    attributes: true
+                    attributes: true,
+                    childList: true,
+                    subtree: true
                 }
             );
         }
@@ -2497,99 +2502,142 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        const computed =
-            getComputedStyle(this);
+        const parent =
+            this.parentElement;
 
-        const color =
-            this.#parseComputedColor(
-                computed.backgroundColor
-            );
+        let darkestLuminance = 1;
+        let lightestLuminance = 0;
+        let hasUnderlay = false;
+        let strongestOpacity = 0;
 
-        const opacityValue =
-            Number.parseFloat(
-                computed.opacity
-            );
+        const channel =
+            value => {
+                const normalized =
+                    value / 255;
 
-        const hostOpacity =
-            Number.isFinite(opacityValue)
-                ? Math.min(1, Math.max(0, opacityValue))
-                : 1;
+                return normalized <= 0.04045
+                    ? normalized / 12.92
+                    : Math.pow(
+                        (normalized + 0.055) / 1.055,
+                        2.4
+                    );
+            };
 
-        const backgroundAlpha =
-            color?.alpha ?? 1;
+        if (parent) {
+            for (
+                const range of
+                    parent.children
+            ) {
+                if (
+                    range === this ||
+                    range.localName !==
+                        "time-range" ||
+                    range.getAttribute("type") ===
+                        "elapsed"
+                ) {
+                    continue;
+                }
 
-        const effectiveOpacity =
-            hostOpacity *
-            backgroundAlpha;
+                const style =
+                    getComputedStyle(range);
 
-        let luminance =
-            0.5;
+                const color =
+                    this.#parseComputedColor(
+                        style.backgroundColor
+                    );
 
-        if (color) {
-            const channel =
-                value => {
-                    const normalized =
-                        value / 255;
+                const opacityValue =
+                    Number.parseFloat(
+                        style.opacity
+                    );
 
-                    return normalized <= 0.04045
-                        ? normalized / 12.92
-                        : Math.pow(
-                            (normalized + 0.055) / 1.055,
-                            2.4
+                const opacity =
+                    Number.isFinite(opacityValue)
+                        ? Math.min(
+                            1,
+                            Math.max(
+                                0,
+                                opacityValue
+                            )
+                        )
+                        : 1;
+
+                if (color) {
+                    const luminance =
+                        0.2126 * channel(color.red) +
+                        0.7152 * channel(color.green) +
+                        0.0722 * channel(color.blue);
+
+                    darkestLuminance =
+                        Math.min(
+                            darkestLuminance,
+                            luminance
                         );
-                };
 
-            luminance =
-                0.2126 * channel(color.red) +
-                0.7152 * channel(color.green) +
-                0.0722 * channel(color.blue);
+                    lightestLuminance =
+                        Math.max(
+                            lightestLuminance,
+                            luminance
+                        );
+
+                    strongestOpacity =
+                        Math.max(
+                            strongestOpacity,
+                            opacity * color.alpha
+                        );
+
+                    hasUnderlay =
+                        true;
+                }
+                else if (
+                    style.backgroundImage !==
+                        "none"
+                ) {
+                    hasUnderlay =
+                        true;
+
+                    strongestOpacity =
+                        Math.max(
+                            strongestOpacity,
+                            opacity
+                        );
+                }
+            }
         }
 
-        const useDarkWave =
-            luminance > 0.58;
-
-        const waveChannel =
-            useDarkWave ? 0 : 255;
+        const contrastRange =
+            hasUnderlay
+                ? lightestLuminance -
+                    darkestLuminance
+                : 0;
 
         let strength =
-            0.42 +
-            (1 - effectiveOpacity) *
-                0.38;
-
-        if (
-            computed.backgroundImage !==
-                "none"
-        ) {
-            strength += 0.08;
-        }
-
-        if (
-            computed.filter !== "none" ||
-            computed.mixBlendMode !== "normal"
-        ) {
-            strength += 0.05;
-        }
+            hasUnderlay
+                ? 0.48 +
+                    (1 - strongestOpacity) *
+                        0.18 +
+                    contrastRange *
+                        0.16
+                : 0.58;
 
         strength =
             Math.min(
-                0.9,
+                0.82,
                 Math.max(
-                    0.38,
+                    0.46,
                     strength
                 )
             );
 
         const shoulder =
-            strength * 0.34;
+            strength * 0.38;
 
         const rgba =
             alpha =>
-                `rgba(${waveChannel}, ${waveChannel}, ${waveChannel}, ${alpha.toFixed(3)})`;
+                `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
 
         this.#elapsedWaveLayer.style.mixBlendMode =
-            useDarkWave
-                ? "multiply"
-                : "screen";
+            "screen";
 
         this.#elapsedWaveLayer.style.backgroundImage =
             `conic-gradient(from 0deg at 50% 50%, ` +
