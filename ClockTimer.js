@@ -4,7 +4,8 @@
             "percent-goal",
             "military-time",
             "format",
-            "visible-hours"
+            "visible-hours",
+            "tick-marks"
         ];
 
         static #HOUR =
@@ -20,6 +21,10 @@
         #hourLayer;
 
         #numberRing;
+
+        #tickMarkLayer;
+
+        #tickMarkTimeout;
 
         #handLayer;
 
@@ -196,6 +201,89 @@
                         none;
                 }
 
+                #tick-marks {
+                    position: absolute;
+
+                    inset:
+                        var(
+                            --clock-timer-tick-inset,
+                            clamp(8px, 4cqi, 20px)
+                        );
+
+                    z-index: 10;
+
+                    pointer-events:
+                        none;
+                }
+
+                .tick-mark-track {
+                    position: absolute;
+
+                    inset: 0;
+
+                    transform:
+                        rotate(
+                            var(--clock-timer-tick-angle)
+                        );
+
+                    transform-origin:
+                        50% 50%;
+
+                    pointer-events:
+                        none;
+                }
+
+                .tick-mark {
+                    position: absolute;
+
+                    top: 0;
+                    left: 50%;
+
+                    width:
+                        var(
+                            --clock-timer-tick-width,
+                            clamp(1px, 0.45cqi, 2px)
+                        );
+
+                    height:
+                        var(
+                            --clock-timer-tick-length,
+                            clamp(5px, 2.5cqi, 11px)
+                        );
+
+                    border-radius:
+                        999px;
+
+                    background:
+                        var(
+                            --clock-timer-tick-color,
+                            currentColor
+                        );
+
+                    transform:
+                        translateX(-50%);
+
+                    transform-origin:
+                        50% 0;
+
+                    pointer-events:
+                        none;
+                }
+
+                .tick-mark.major {
+                    width:
+                        var(
+                            --clock-timer-major-tick-width,
+                            clamp(2px, 0.75cqi, 3px)
+                        );
+
+                    height:
+                        var(
+                            --clock-timer-major-tick-length,
+                            clamp(9px, 4cqi, 18px)
+                        );
+                }
+
                 #time-layer {
                     position: absolute;
 
@@ -287,6 +375,19 @@
                 ringSlot
             );
 
+            this.#tickMarkLayer =
+                document.createElement(
+                    "div"
+                );
+
+            this.#tickMarkLayer.id =
+                "tick-marks";
+
+            this.#tickMarkLayer.setAttribute(
+                "part",
+                "tick-marks"
+            );
+
             const timeLayer =
                 document.createElement(
                     "div"
@@ -367,6 +468,7 @@
 
             clockFace.append(
                 ringLayer,
+                this.#tickMarkLayer,
                 this.#handLayer,
                 timeLayer
             );
@@ -416,6 +518,8 @@
 
             this.#scheduleHourRender();
 
+            this.#updateTickMarks();
+
             this.#startDisplayTimer();
 
             if (
@@ -429,6 +533,8 @@
             this.#stopTickTimer();
 
             this.#stopDisplayTimer();
+
+            this.#stopTickMarkTimer();
 
             this.#stopHandAnimations();
 
@@ -500,6 +606,10 @@
 
                 case "visible-hours":
                     this.#scheduleHourRender();
+                    break;
+
+                case "tick-marks":
+                    this.#updateTickMarks();
                     break;
             }
         }
@@ -1705,6 +1815,177 @@
             this.append(
                 ...order
             );
+        }
+
+        #getTickMarkMode() {
+            const value =
+                this.getAttribute(
+                    "tick-marks"
+                );
+
+            if (
+                value === null
+            ) {
+                return undefined;
+            }
+
+            const normalized =
+                value.trim();
+
+            if (
+                normalized === "5" ||
+                normalized === "+/-5"
+            ) {
+                return normalized;
+            }
+
+            return undefined;
+        }
+
+        #createTickMark(
+            angle,
+            major = false
+        ) {
+            const track =
+                document.createElement(
+                    "div"
+                );
+
+            track.className =
+                "tick-mark-track";
+
+            track.style.setProperty(
+                "--clock-timer-tick-angle",
+                `${angle}deg`
+            );
+
+            const mark =
+                document.createElement(
+                    "div"
+                );
+
+            mark.className =
+                major
+                    ? "tick-mark major"
+                    : "tick-mark";
+
+            mark.setAttribute(
+                "part",
+                major
+                    ? "tick-mark major-tick-mark"
+                    : "tick-mark"
+            );
+
+            track.appendChild(
+                mark
+            );
+
+            return track;
+        }
+
+        #updateTickMarks(
+            now = new Date()
+        ) {
+            this.#stopTickMarkTimer();
+
+            this.#tickMarkLayer.replaceChildren();
+
+            const mode =
+                this.#getTickMarkMode();
+
+            if (!mode) {
+                return;
+            }
+
+            const fragment =
+                document.createDocumentFragment();
+
+            if (
+                mode === "5"
+            ) {
+                for (
+                    let minute = 0;
+                    minute < 60;
+                    minute += 5
+                ) {
+                    fragment.appendChild(
+                        this.#createTickMark(
+                            minute * 6,
+                            true
+                        )
+                    );
+                }
+            }
+            else {
+                const minute =
+                    now.getMinutes();
+
+                for (
+                    let offset = -5;
+                    offset <= 5;
+                    offset++
+                ) {
+                    const tickMinute =
+                        (
+                            minute +
+                            offset +
+                            60
+                        ) % 60;
+
+                    fragment.appendChild(
+                        this.#createTickMark(
+                            tickMinute * 6,
+                            offset === 0
+                        )
+                    );
+                }
+            }
+
+            this.#tickMarkLayer.appendChild(
+                fragment
+            );
+
+            if (
+                mode === "+/-5" &&
+                this.isConnected
+            ) {
+                const millisecondsToNextMinute =
+                    60 * 1000 -
+                    (
+                        now.getSeconds() *
+                            1000 +
+                        now.getMilliseconds()
+                    );
+
+                this.#tickMarkTimeout =
+                    setTimeout(
+                        () => {
+                            this.#tickMarkTimeout =
+                                undefined;
+
+                            this.#updateTickMarks(
+                                new Date()
+                            );
+                        },
+                        millisecondsToNextMinute
+                    );
+            }
+        }
+
+        #stopTickMarkTimer() {
+            if (
+                this.#tickMarkTimeout ===
+                    undefined
+            ) {
+                return;
+            }
+
+            clearTimeout(
+                this.#tickMarkTimeout
+            );
+
+            this.#tickMarkTimeout =
+                undefined;
         }
 
         #scheduleHourRender() {
