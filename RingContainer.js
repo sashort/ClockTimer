@@ -2280,6 +2280,14 @@ class RingContainer extends HTMLElement {
         this.#sizeObserver =
             new ResizeObserver(
                 () => {
+                    if (
+                        this.#animationPhase !==
+                            "idle"
+                    ) {
+                        this.#refreshChildVisualGeometry();
+                        return;
+                    }
+
                     this.#updateProperties(
                         false
                     );
