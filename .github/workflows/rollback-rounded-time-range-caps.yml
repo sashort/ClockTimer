@@ -1,0 +1,30 @@
+name: Rollback rounded TimeRange caps
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rollback-rounded-time-range-caps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore TimeRange before rounded caps
+        run: |
+          git checkout c59e46e167a33f8a5479d81422563715002fa5e2 -- TimeRange.js
+          rm -f .github/scripts/round-elapsed-time-range-mask.py
+          rm -f .github/workflows/rollback-rounded-time-range-caps.yml
+          node --check TimeRange.js
+      - name: Commit rollback
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rollback rounded TimeRange caps"
+          git push
