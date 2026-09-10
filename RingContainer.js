@@ -1,428 +1,859 @@
 class RingContainer extends HTMLElement {
-    static #instances = [];
-    static #batchResizing = false;
-    static #filter = "opacity(75%)";
-    static #filterRamp = true;
-    static #filterRampDuration = 125;
-    static #filterRampConnect = true;
-    static #filterRampDisconnect = true;
-    static #resizeFilter = "opacity(75%)";
-    static #reorderFilter = "opacity(75%)";
-    static #connectFilter = "opacity(75%)";
-    static #disconnectFilter = "opacity(75%)";
-
     #shadowRoot;
-    #styleElement;
-    #contentElement;
-    #resizeAnimation;
-    #resizeFilterAnimation;
-    #reorderAnimation;
-    #reorderFilterAnimation;
-    #connectAnimation;
-    #connectFilterAnimation;
-    #disconnectAnimation;
-    #disconnectFilterAnimation;
-    #resizeObserver;
-    #parentObserver;
-    #parentElement;
-    #connected = false;
-    #disconnecting = false;
-    #committing = false;
-    #pendingResize;
-    #pendingReorder;
-    #pendingConnect;
-    #pendingDisconnect;
-    #width;
+
+    #parent;
+
     #inset;
-    #outerMargin;
-    #innerMargin;
-    #layoutInsetTarget;
-    #instanceFilter;
-    #instanceFilterRamp;
-    #instanceFilterRampDuration;
-    #instanceFilterRampConnect;
-    #instanceFilterRampDisconnect;
-    #instanceResizeFilter;
-    #instanceReorderFilter;
-    #instanceConnectFilter;
-    #instanceDisconnectFilter;
+    #width;
 
-    static get observedAttributes() {
-        return [
-            "width",
-            "inset",
-            "outer-margin",
-            "inner-margin",
-            "geometry-only"
-        ];
-    }
+    #resizeDuration;
 
-    static get instances() {
-        return [...RingContainer.#instances];
-    }
+    #reorderFilter;
+    #resizeFilter;
 
-    static get batchResizing() {
-        return RingContainer.#batchResizing;
-    }
+    #connectFilter;
+    #disconnectFilter;
 
-    static set batchResizing(value) {
-        const next = Boolean(value);
+    #filterRamp;
+    #filterRampFront;
+    #filterRampEnd;
 
-        if (
-            RingContainer.#batchResizing ===
-            next
-        ) {
-            return;
-        }
+    #filterRampConnect;
+    #filterRampDisconnect;
 
-        RingContainer.#batchResizing =
-            next;
+    #style;
+    #container;
 
-        if (!next) {
-            RingContainer.#recalculateAll();
-        }
-    }
+    #resizePending = false;
+    #reorderPending = false;
 
-    static get filter() {
-        return RingContainer.#filter;
-    }
+    #pendingLifecycleAction;
 
-    static set filter(value) {
-        RingContainer.#filter =
-            RingContainer.#normalizeFilter(
-                value,
-                "opacity(75%)"
-            );
-    }
+    #resizeActive = false;
+    #reorderActive = false;
 
-    static get filterRamp() {
-        return RingContainer.#filterRamp;
-    }
+    #syncingAttribute = false;
 
-    static set filterRamp(value) {
-        RingContainer.#filterRamp =
-            Boolean(value);
-    }
+    #animationPhase = "idle";
+    #animationToken = 0;
+    #phaseTimer;
 
-    static get filterRampDuration() {
-        return RingContainer.#filterRampDuration;
-    }
+    #animationResize = false;
+    #animationReorder = false;
 
-    static set filterRampDuration(value) {
-        RingContainer.#filterRampDuration =
-            RingContainer.#normalizeDuration(
-                value,
-                125
-            );
-    }
+    #animationTargetInset;
+    #animationTargetWidth;
 
-    static get filterRampConnect() {
-        return RingContainer.#filterRampConnect;
-    }
+    #animationGeometryChanged = false;
 
-    static set filterRampConnect(value) {
-        RingContainer.#filterRampConnect =
-            Boolean(value);
-    }
+    #animationFilter = "none";
+    #animationFrontRamp = "0ms";
+    #animationEndRamp = "0ms";
 
-    static get filterRampDisconnect() {
-        return RingContainer.#filterRampDisconnect;
-    }
+    static #batchResizing = false;
+    static #propertiesRegistered = false;
+    static #instances = new Set();
+    static #reordering = false;
 
-    static set filterRampDisconnect(value) {
-        RingContainer.#filterRampDisconnect =
-            Boolean(value);
-    }
+    static #globalResizeDuration;
 
-    static get resizeFilter() {
-        return RingContainer.#resizeFilter;
-    }
+    static #globalReorderFilter;
+    static #globalResizeFilter;
 
-    static set resizeFilter(value) {
-        RingContainer.#resizeFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                RingContainer.#filter
-            );
-    }
+    static #globalConnectFilter;
+    static #globalDisconnectFilter;
 
-    static get reorderFilter() {
-        return RingContainer.#reorderFilter;
-    }
+    static #globalFilterRamp;
+    static #globalFilterRampFront;
+    static #globalFilterRampEnd;
 
-    static set reorderFilter(value) {
-        RingContainer.#reorderFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                "opacity(75%)"
-            );
-    }
+    static #globalFilterRampConnect;
+    static #globalFilterRampDisconnect;
 
-    static get connectFilter() {
-        return RingContainer.#connectFilter;
-    }
-
-    static set connectFilter(value) {
-        RingContainer.#connectFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                RingContainer.#filter
-            );
-    }
-
-    static get disconnectFilter() {
-        return RingContainer.#disconnectFilter;
-    }
-
-    static set disconnectFilter(value) {
-        RingContainer.#disconnectFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                RingContainer.#filter
-            );
-    }
-
-    get filter() {
-        return this.#instanceFilter ?? RingContainer.filter;
-    }
-
-    set filter(value) {
-        this.#instanceFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                RingContainer.filter
-            );
-    }
-
-    get filterRamp() {
-        return this.#instanceFilterRamp ?? RingContainer.filterRamp;
-    }
-
-    set filterRamp(value) {
-        this.#instanceFilterRamp =
-            Boolean(value);
-    }
-
-    get filterRampDuration() {
-        return this.#instanceFilterRampDuration ?? RingContainer.filterRampDuration;
-    }
-
-    set filterRampDuration(value) {
-        this.#instanceFilterRampDuration =
-            RingContainer.#normalizeDuration(
-                value,
-                RingContainer.filterRampDuration
-            );
-    }
-
-    get filterRampConnect() {
-        return this.#instanceFilterRampConnect ?? RingContainer.filterRampConnect;
-    }
-
-    set filterRampConnect(value) {
-        this.#instanceFilterRampConnect =
-            Boolean(value);
-    }
-
-    get filterRampDisconnect() {
-        return this.#instanceFilterRampDisconnect ?? RingContainer.filterRampDisconnect;
-    }
-
-    set filterRampDisconnect(value) {
-        this.#instanceFilterRampDisconnect =
-            Boolean(value);
-    }
-
-    get resizeFilter() {
-        return this.#instanceResizeFilter ?? RingContainer.resizeFilter;
-    }
-
-    set resizeFilter(value) {
-        this.#instanceResizeFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                this.filter
-            );
-    }
-
-    get reorderFilter() {
-        return this.#instanceReorderFilter ?? RingContainer.reorderFilter;
-    }
-
-    set reorderFilter(value) {
-        this.#instanceReorderFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                "opacity(75%)"
-            );
-    }
-
-    get connectFilter() {
-        return this.#instanceConnectFilter ?? RingContainer.connectFilter;
-    }
-
-    set connectFilter(value) {
-        this.#instanceConnectFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                this.filter
-            );
-    }
-
-    get disconnectFilter() {
-        return this.#instanceDisconnectFilter ?? RingContainer.disconnectFilter;
-    }
-
-    set disconnectFilter(value) {
-        this.#instanceDisconnectFilter =
-            RingContainer.#normalizeFilter(
-                value,
-                this.filter
-            );
-    }
+    static observedAttributes = [
+        "inset",
+        "width",
+        "margin",
+        "inner-margin",
+        "outer-margin"
+    ];
 
     constructor() {
         super();
+
+        RingContainer.#registerProperties();
+
+        this.#inset =
+            this.getAttribute(
+                "inset"
+            );
+
+        this.#width =
+            this.getAttribute(
+                "width"
+            );
 
         this.#shadowRoot =
             this.attachShadow({
                 mode: "closed"
             });
 
-        this.#styleElement =
+        this.#style =
             document.createElement(
                 "style"
             );
 
-        this.#contentElement =
+        this.#container =
             document.createElement(
                 "div"
             );
 
-        this.#contentElement.id =
-            "content";
+        this.#container.id =
+            "container";
 
         const slot =
             document.createElement(
                 "slot"
             );
 
-        this.#contentElement.appendChild(
+        this.#container.appendChild(
             slot
         );
 
-        this.#shadowRoot.append(
-            this.#styleElement,
-            this.#contentElement
+        this.#shadowRoot.appendChild(
+            this.#style
+        );
+
+        this.#shadowRoot.appendChild(
+            this.#container
         );
 
         this.#updateStyle();
+
+        this.#updateDuration();
+
+        this.#updateProperties(
+            false
+        );
+
+        this.#container.style.filter =
+            "none";
     }
 
     connectedCallback() {
-        if (
-            this.#disconnecting
-        ) {
-            this.#disconnecting =
-                false;
-
-            this.#pendingDisconnect =
-                undefined;
-
-            this.#disconnectAnimation
-                ?.cancel();
-
-            this.#disconnectFilterAnimation
-                ?.cancel();
-        }
-
-        if (
-            !RingContainer.#instances.includes(
-                this
-            )
-        ) {
-            RingContainer.#instances.push(
-                this
-            );
-        }
-
-        this.#connected =
-            true;
-
-        this.#parentElement =
+        this.#parent =
             this.parentElement;
 
-        this.#readGeometryAttributes();
-
-        this.#observeParent();
-
-        this.#observeSize();
-
-        this.#updateStyle();
+        RingContainer.#instances.add(
+            this
+        );
 
         if (
-            !RingContainer.#batchResizing
+            RingContainer.#reordering
         ) {
-            this.#handleConnected();
-
-            RingContainer.#recalculateParent(
-                this.parentElement
-            );
+            return;
         }
+
+        this.#normalizeMarginAttributes();
+
+        this.#cancelAnimation();
+
+        this.#resizePending =
+            false;
+
+        this.#reorderPending =
+            false;
+
+        this.#pendingLifecycleAction =
+            undefined;
+
+        this.#resizeActive =
+            false;
+
+        this.#reorderActive =
+            false;
+
+        this.#updateDuration();
+
+        RingContainer.#recalculateParent(
+            this.#parent,
+            "connect",
+            this
+        );
     }
 
     disconnectedCallback() {
-        this.#connected =
-            false;
-
-        this.#resizeObserver
-            ?.disconnect();
-
-        this.#resizeObserver =
-            undefined;
-
-        this.#parentObserver
-            ?.disconnect();
-
-        this.#parentObserver =
-            undefined;
+        if (
+            RingContainer.#reordering
+        ) {
+            return;
+        }
 
         const parent =
-            this.#parentElement;
+            this.#parent;
+
+        this.#cancelAnimation();
+
+        RingContainer.#instances.delete(
+            this
+        );
+
+        this.#parent =
+            null;
+
+        RingContainer.#recalculateParent(
+            parent,
+            "disconnect"
+        );
+    }
+
+    static get batchResizing() {
+        return RingContainer.#batchResizing;
+    }
+
+    static set batchResizing(
+        value
+    ) {
+        const batchResizing =
+            Boolean(value);
 
         if (
-            !this.#disconnecting &&
-            !RingContainer.#batchResizing
+            batchResizing ===
+            RingContainer.#batchResizing
         ) {
-            this.#handleDisconnected(
+            return;
+        }
+
+        RingContainer.#batchResizing =
+            batchResizing;
+
+        if (!batchResizing) {
+            RingContainer.#flushResizeBatch();
+        }
+    }
+
+    static get resizeDuration() {
+        return (
+            RingContainer
+                .#globalResizeDuration ??
+            "333.333ms"
+        );
+    }
+
+    static set resizeDuration(
+        value
+    ) {
+        RingContainer.#globalResizeDuration =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+
+        RingContainer.#updateInstanceDurations();
+    }
+
+    static get reorderFilter() {
+        return (
+            RingContainer
+                .#globalReorderFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    static set reorderFilter(
+        value
+    ) {
+        RingContainer.#globalReorderFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    static get resizeFilter() {
+        return (
+            RingContainer
+                .#globalResizeFilter ??
+            "none"
+        );
+    }
+
+    static set resizeFilter(
+        value
+    ) {
+        RingContainer.#globalResizeFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    static get connectFilter() {
+        return (
+            RingContainer
+                .#globalConnectFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    static set connectFilter(
+        value
+    ) {
+        RingContainer.#globalConnectFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    static get disconnectFilter() {
+        return (
+            RingContainer
+                .#globalDisconnectFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    static set disconnectFilter(
+        value
+    ) {
+        RingContainer.#globalDisconnectFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    static get filterRamp() {
+        return (
+            RingContainer
+                .#globalFilterRamp ??
+            true
+        );
+    }
+
+    static set filterRamp(
+        value
+    ) {
+        RingContainer.#globalFilterRamp =
+            RingContainer.#normalizeOptionalBoolean(
+                value
+            );
+    }
+
+    static get filterRampFront() {
+        return (
+            RingContainer
+                .#globalFilterRampFront ??
+            "125ms"
+        );
+    }
+
+    static set filterRampFront(
+        value
+    ) {
+        RingContainer.#globalFilterRampFront =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    static get filterRampEnd() {
+        return (
+            RingContainer
+                .#globalFilterRampEnd ??
+            "125ms"
+        );
+    }
+
+    static set filterRampEnd(
+        value
+    ) {
+        RingContainer.#globalFilterRampEnd =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    static get filterRampConnect() {
+        return (
+            RingContainer
+                .#globalFilterRampConnect ??
+            "125ms"
+        );
+    }
+
+    static set filterRampConnect(
+        value
+    ) {
+        RingContainer.#globalFilterRampConnect =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    static get filterRampDisconnect() {
+        return (
+            RingContainer
+                .#globalFilterRampDisconnect ??
+            "125ms"
+        );
+    }
+
+    static set filterRampDisconnect(
+        value
+    ) {
+        RingContainer.#globalFilterRampDisconnect =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    get resizeDuration() {
+        if (
+            RingContainer
+                .#globalResizeDuration !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalResizeDuration;
+        }
+
+        return (
+            this.#resizeDuration ??
+            "333.333ms"
+        );
+    }
+
+    set resizeDuration(
+        value
+    ) {
+        this.#resizeDuration =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+
+        this.#updateDuration();
+    }
+
+    get reorderFilter() {
+        if (
+            RingContainer
+                .#globalReorderFilter !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalReorderFilter;
+        }
+
+        return (
+            this.#reorderFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    set reorderFilter(
+        value
+    ) {
+        this.#reorderFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    get resizeFilter() {
+        if (
+            RingContainer
+                .#globalResizeFilter !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalResizeFilter;
+        }
+
+        return (
+            this.#resizeFilter ??
+            "none"
+        );
+    }
+
+    set resizeFilter(
+        value
+    ) {
+        this.#resizeFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    get connectFilter() {
+        if (
+            RingContainer
+                .#globalConnectFilter !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalConnectFilter;
+        }
+
+        return (
+            this.#connectFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    set connectFilter(
+        value
+    ) {
+        this.#connectFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    get disconnectFilter() {
+        if (
+            RingContainer
+                .#globalDisconnectFilter !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalDisconnectFilter;
+        }
+
+        return (
+            this.#disconnectFilter ??
+            "opacity(75%)"
+        );
+    }
+
+    set disconnectFilter(
+        value
+    ) {
+        this.#disconnectFilter =
+            RingContainer.#normalizeOptionalFilter(
+                value
+            );
+    }
+
+    get filterRamp() {
+        if (
+            RingContainer
+                .#globalFilterRamp !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalFilterRamp;
+        }
+
+        return (
+            this.#filterRamp ??
+            true
+        );
+    }
+
+    set filterRamp(
+        value
+    ) {
+        this.#filterRamp =
+            RingContainer.#normalizeOptionalBoolean(
+                value
+            );
+    }
+
+    get filterRampFront() {
+        if (
+            RingContainer
+                .#globalFilterRampFront !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalFilterRampFront;
+        }
+
+        return (
+            this.#filterRampFront ??
+            "125ms"
+        );
+    }
+
+    set filterRampFront(
+        value
+    ) {
+        this.#filterRampFront =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    get filterRampEnd() {
+        if (
+            RingContainer
+                .#globalFilterRampEnd !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalFilterRampEnd;
+        }
+
+        return (
+            this.#filterRampEnd ??
+            "125ms"
+        );
+    }
+
+    set filterRampEnd(
+        value
+    ) {
+        this.#filterRampEnd =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    get filterRampConnect() {
+        if (
+            RingContainer
+                .#globalFilterRampConnect !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalFilterRampConnect;
+        }
+
+        return (
+            this.#filterRampConnect ??
+            "125ms"
+        );
+    }
+
+    set filterRampConnect(
+        value
+    ) {
+        this.#filterRampConnect =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    get filterRampDisconnect() {
+        if (
+            RingContainer
+                .#globalFilterRampDisconnect !==
+            undefined
+        ) {
+            return RingContainer
+                .#globalFilterRampDisconnect;
+        }
+
+        return (
+            this.#filterRampDisconnect ??
+            "125ms"
+        );
+    }
+
+    set filterRampDisconnect(
+        value
+    ) {
+        this.#filterRampDisconnect =
+            RingContainer.#normalizeOptionalTime(
+                value
+            );
+    }
+
+    static reorder(
+        ...ringContainers
+    ) {
+        if (
+            ringContainers.length < 2
+        ) {
+            return;
+        }
+
+        const unique =
+            new Set(
+                ringContainers
+            );
+
+        if (
+            unique.size !==
+            ringContainers.length
+        ) {
+            throw new TypeError(
+                "RingContainer.reorder() cannot contain duplicate RingContainers."
+            );
+        }
+
+        for (
+            const ring of
+            ringContainers
+        ) {
+            if (
+                !(ring instanceof
+                    RingContainer)
+            ) {
+                throw new TypeError(
+                    "RingContainer.reorder() arguments must be RingContainer instances."
+                );
+            }
+
+            if (
+                !ring.parentElement
+            ) {
+                throw new Error(
+                    "Every RingContainer passed to reorder() must have a parent."
+                );
+            }
+        }
+
+        const parent =
+            ringContainers[0]
+                .parentElement;
+
+        for (
+            const ring of
+            ringContainers
+        ) {
+            if (
+                ring.parentElement !==
+                parent
+            ) {
+                throw new Error(
+                    "Every RingContainer passed to reorder() must have the same parent."
+                );
+            }
+        }
+
+        const parentRings =
+            RingContainer.#getParentRings(
                 parent
             );
+
+        const startingGeometry =
+            new Map();
+
+        for (
+            const ring of
+            parentRings
+        ) {
+            ring.#freezeCurrentGeometry();
+
+            startingGeometry.set(
+                ring,
+                ring.#getRenderedGeometry()
+            );
         }
 
-        const index =
-            RingContainer.#instances.indexOf(
-                this
+        const ringSet =
+            new Set(
+                ringContainers
             );
 
-        if (
-            index !== -1
-        ) {
-            RingContainer.#instances.splice(
-                index,
-                1
+        const ringsInDomOrder =
+            Array.from(
+                parent.children
+            ).filter(
+                element =>
+                    ringSet.has(
+                        element
+                    )
             );
+
+        RingContainer.#reordering =
+            true;
+
+        try {
+            const placeholders =
+                ringsInDomOrder.map(
+                    ring => {
+                        const placeholder =
+                            document.createComment(
+                                "ring-container-reorder"
+                            );
+
+                        ring.replaceWith(
+                            placeholder
+                        );
+
+                        return placeholder;
+                    }
+                );
+
+            for (
+                let index = 0;
+                index <
+                ringContainers.length;
+                index++
+            ) {
+                placeholders[
+                    index
+                ].replaceWith(
+                    ringContainers[
+                        index
+                    ]
+                );
+            }
+        }
+        finally {
+            RingContainer.#reordering =
+                false;
         }
 
-        if (
-            !RingContainer.#batchResizing
-        ) {
-            RingContainer.#recalculateParent(
+        const reorderedRings =
+            RingContainer.#getParentRings(
                 parent
             );
+
+        for (
+            const ring of
+            reorderedRings
+        ) {
+            ring.#parent =
+                parent;
         }
 
-        this.#parentElement =
-            undefined;
+        for (
+            const ring of
+            reorderedRings
+        ) {
+            const geometry =
+                startingGeometry.get(
+                    ring
+                );
+
+            if (geometry) {
+                ring.#applyGeometryInstant(
+                    geometry.inset,
+                    geometry.width
+                );
+            }
+        }
+
+        if (
+            RingContainer.#batchResizing
+        ) {
+            for (
+                const ring of
+                reorderedRings
+            ) {
+                ring.#resizePending =
+                    true;
+
+                ring.#reorderPending =
+                    true;
+
+                ring.#pendingLifecycleAction =
+                    undefined;
+            }
+
+            return;
+        }
+
+        for (
+            const ring of
+            reorderedRings
+        ) {
+            ring.#startConfiguredAnimation(
+                ring.#calculateEffectiveInset(),
+                ring.#width ?? "0px",
+                "reorder"
+            );
+        }
     }
 
     attributeChangedCallback(
@@ -431,489 +862,845 @@ class RingContainer extends HTMLElement {
         newValue
     ) {
         if (
-            oldValue ===
-            newValue ||
-            this.#committing
+            oldValue === newValue ||
+            this.#syncingAttribute
         ) {
             return;
         }
 
         if (
-            name ===
-                "geometry-only"
+            name === "inset"
         ) {
-            this.#updateStyle();
-            return;
+            this.#inset =
+                newValue;
         }
-
-        const oldGeometry =
-            this.#getGeometry();
-
-        this.#readGeometryAttributes();
-
-        const newGeometry =
-            this.#getGeometry();
-
-        this.#updateStyle();
 
         if (
-            !this.isConnected ||
-            RingContainer.#batchResizing
+            name === "width"
         ) {
-            return;
+            this.#width =
+                newValue;
         }
 
-        this.#animateResize(
-            oldGeometry,
-            newGeometry,
-            {
-                commitAttributes: false
-            }
-        );
-
-        RingContainer.#recalculateParent(
-            this.parentElement
-        );
-    }
-
-    resize({
-        width,
-        inset,
-        outerMargin,
-        innerMargin,
-        duration = 1000,
-        easing = "ease"
-    } = {}) {
-        const current =
-            this.#getGeometry();
-
-        const target = {
-            width:
-                width === undefined
-                    ? current.width
-                    : String(width),
-
-            inset:
-                inset === undefined
-                    ? current.inset
-                    : String(inset),
-
-            outerMargin:
-                outerMargin === undefined
-                    ? current.outerMargin
-                    : String(outerMargin),
-
-            innerMargin:
-                innerMargin === undefined
-                    ? current.innerMargin
-                    : String(innerMargin)
-        };
-
-        return this.#animateResize(
-            current,
-            target,
-            {
-                duration,
-                easing,
-                commitAttributes: true
-            }
-        );
-    }
-
-    static reorder(
-        ...rings
-    ) {
         if (
-            rings.length ===
-                1 &&
-            Array.isArray(
-                rings[0]
-            )
+            name === "margin" ||
+            name === "inner-margin" ||
+            name === "outer-margin"
         ) {
-            rings =
-                rings[0];
-        }
-
-        rings =
-            rings.filter(
-                ring =>
-                    ring instanceof
-                        RingContainer
+            this.#handleMarginAttributeChange(
+                name,
+                newValue
             );
+        }
 
         if (
-            rings.length ===
-                0
+            !this.isConnected
         ) {
-            return Promise.resolve();
-        }
+            this.#cancelAnimation();
 
-        const parent =
-            rings[0].parentElement;
-
-        if (!parent) {
-            return Promise.resolve();
-        }
-
-        for (
-            const ring of
-                rings
-        ) {
-            if (
-                ring.parentElement !==
-                    parent
-            ) {
-                throw new Error(
-                    "All RingContainer elements passed to reorder() must share the same parent."
-                );
-            }
-        }
-
-        const before =
-            RingContainer.#captureRects(
-                rings
-            );
-
-        RingContainer.#batchResizing =
-            true;
-
-        try {
-            for (
-                const ring of
-                    rings
-            ) {
-                parent.appendChild(
-                    ring
-                );
-            }
-        }
-        finally {
-            RingContainer.#batchResizing =
+            this.#resizePending =
                 false;
-        }
 
-        const after =
-            RingContainer.#captureRects(
-                rings
+            this.#reorderPending =
+                false;
+
+            this.#pendingLifecycleAction =
+                undefined;
+
+            this.#updateProperties(
+                false
             );
 
-        const promises = [];
-
-        for (
-            const ring of
-                rings
-        ) {
-            promises.push(
-                ring.#animateReorder(
-                    before.get(ring),
-                    after.get(ring)
-                )
-            );
+            return;
         }
-
-        RingContainer.#recalculateParent(
-            parent
-        );
-
-        return Promise.all(
-            promises
-        );
-    }
-
-    static #captureRects(
-        rings
-    ) {
-        const map =
-            new Map();
-
-        for (
-            const ring of
-                rings
-        ) {
-            map.set(
-                ring,
-                ring.getBoundingClientRect()
-            );
-        }
-
-        return map;
-    }
-
-    static #normalizeFilter(
-        value,
-        fallback
-    ) {
-        if (
-            value === undefined ||
-            value === null
-        ) {
-            return fallback;
-        }
-
-        const text =
-            String(value).trim();
-
-        return text || fallback;
-    }
-
-    static #normalizeDuration(
-        value,
-        fallback
-    ) {
-        const number =
-            Number(value);
 
         if (
-            !Number.isFinite(number) ||
-            number < 0
+            this.#parentHasPendingReorder()
         ) {
-            return fallback;
-        }
+            this.#markParentRingsPending();
 
-        return number;
-    }
-
-    static #recalculateAll() {
-        const parents =
-            new Set();
-
-        for (
-            const ring of
-                RingContainer.#instances
-        ) {
             if (
-                ring.parentElement
+                !RingContainer.#batchResizing
             ) {
-                parents.add(
-                    ring.parentElement
-                );
+                RingContainer.#flushResizeBatch();
             }
+
+            return;
         }
 
-        for (
-            const parent of
-                parents
-        ) {
-            RingContainer.#recalculateParent(
-                parent
-            );
-        }
+        this.#scheduleResize();
+
+        this.#updateAutomaticFollowingRings(
+            true
+        );
     }
 
     static #recalculateParent(
-        parent
+        parent,
+        action,
+        changedRing
     ) {
         if (!parent) {
             return;
         }
 
         const rings =
-            Array.from(
-                parent.children
-            ).filter(
-                child =>
-                    child instanceof
-                        RingContainer
+            RingContainer.#getParentRings(
+                parent
             );
 
+        for (
+            const ring of rings
+        ) {
+            ring.#parent =
+                parent;
+
+            if (
+                RingContainer.#batchResizing
+            ) {
+                ring.#resizePending =
+                    true;
+
+                ring.#reorderPending =
+                    false;
+
+                ring.#pendingLifecycleAction =
+                    action;
+
+                continue;
+            }
+
+            const force =
+                action === "connect" &&
+                ring === changedRing;
+
+            ring.#startConfiguredAnimation(
+                ring.#calculateEffectiveInset(),
+                ring.#width ?? "0px",
+                action,
+                force
+            );
+        }
+    }
+
+    static #getParentRings(
+        parent
+    ) {
+        if (!parent) {
+            return [];
+        }
+
+        return Array.from(
+            parent.children
+        ).filter(
+            element =>
+                element instanceof
+                RingContainer
+        );
+    }
+
+    #scheduleResize() {
         if (
-            rings.length ===
-                0
+            RingContainer.#batchResizing
+        ) {
+            this.#resizePending =
+                true;
+
+            this.#pendingLifecycleAction =
+                undefined;
+
+            return;
+        }
+
+        this.#resizePending =
+            false;
+
+        this.#pendingLifecycleAction =
+            undefined;
+
+        this.#startConfiguredAnimation(
+            this.#calculateEffectiveInset(),
+            this.#width ?? "0px",
+            "resize"
+        );
+    }
+
+    #startConfiguredAnimation(
+        targetInset,
+        targetWidth,
+        type,
+        force = false
+    ) {
+        if (
+            type === "resize" &&
+            this.#animationPhase !==
+                "idle" &&
+            this.#animationResize &&
+            this.#animationTargetInset ===
+                targetInset &&
+            this.#animationTargetWidth ===
+                targetWidth
         ) {
             return;
         }
 
-        let outerInset =
-            "0px";
+        let filter =
+            "none";
 
-        for (
-            const ring of
-                rings
-        ) {
-            const geometry =
-                ring.#getGeometry();
+        let frontRamp =
+            "0ms";
 
-            const width =
-                geometry.width;
+        let endRamp =
+            "0ms";
 
-            const outerMargin =
-                geometry.outerMargin;
+        let resize =
+            false;
 
-            const innerMargin =
-                geometry.innerMargin;
+        let reorder =
+            false;
 
-            const targetInset =
-                `calc(${outerInset} + ${outerMargin})`;
+        switch (type) {
+            case "resize":
+                resize = true;
 
-            const currentInset =
-                ring.#layoutInsetTarget ??
-                ring.getAttribute(
-                    "inset"
-                );
+                filter =
+                    this.resizeFilter;
 
-            if (
-                currentInset !==
-                    targetInset
-            ) {
-                const current =
-                    ring.#getGeometry();
+                if (
+                    this.filterRamp
+                ) {
+                    frontRamp =
+                        this.filterRampFront;
 
-                const target = {
-                    ...current,
-                    inset:
-                        targetInset
-                };
+                    endRamp =
+                        this.filterRampEnd;
+                }
 
-                ring.#layoutInsetTarget =
-                    targetInset;
+                break;
 
-                ring.#animateResize(
-                    current,
-                    target,
-                    {
-                        commitAttributes: true
-                    }
-                );
+            case "reorder":
+                resize = true;
+                reorder = true;
+
+                filter =
+                    RingContainer.#combineFilters(
+                        this.resizeFilter,
+                        this.reorderFilter
+                    );
+
+                if (
+                    this.filterRamp
+                ) {
+                    frontRamp =
+                        this.filterRampFront;
+
+                    endRamp =
+                        this.filterRampEnd;
+                }
+
+                break;
+
+            case "connect":
+                resize = true;
+
+                filter =
+                    this.connectFilter;
+
+                frontRamp =
+                    this.filterRampConnect;
+
+                endRamp =
+                    this.filterRampConnect;
+
+                break;
+
+            case "disconnect":
+                resize = true;
+
+                filter =
+                    this.disconnectFilter;
+
+                frontRamp =
+                    this.filterRampDisconnect;
+
+                endRamp =
+                    this.filterRampDisconnect;
+
+                break;
+
+            default:
+                return;
+        }
+
+        this.#startAnimation(
+            targetInset,
+            targetWidth,
+            {
+                filter,
+                frontRamp,
+                endRamp,
+                resize,
+                reorder,
+                force
             }
+        );
+    }
 
-            outerInset =
-                `calc(${targetInset} + ${width} + ${innerMargin})`;
+    #startAnimation(
+        targetInset,
+        targetWidth,
+        options
+    ) {
+        const current =
+            this.#getRenderedGeometry();
+
+        const geometryChanged =
+            current.inset !==
+                targetInset ||
+            current.width !==
+                targetWidth;
+
+        this.#cancelAnimation(
+            false
+        );
+
+        this.#animationTargetInset =
+            targetInset;
+
+        this.#animationTargetWidth =
+            targetWidth;
+
+        this.#animationGeometryChanged =
+            geometryChanged;
+
+        this.#animationResize =
+            options.resize;
+
+        this.#animationReorder =
+            options.reorder;
+
+        this.#animationFilter =
+            options.filter ??
+            "none";
+
+        this.#animationFrontRamp =
+            options.frontRamp ??
+            "0ms";
+
+        this.#animationEndRamp =
+            options.endRamp ??
+            "0ms";
+
+        this.#resizePending =
+            false;
+
+        this.#reorderPending =
+            false;
+
+        this.#pendingLifecycleAction =
+            undefined;
+
+        if (
+            !geometryChanged &&
+            !options.force
+        ) {
+            this.#finishAnimation();
+
+            return;
+        }
+
+        if (
+            this.#animationFilter !==
+            "none" &&
+            RingContainer.#timeToMilliseconds(
+                this.#animationFrontRamp
+            ) > 0
+        ) {
+            this.#startFrontRamp();
+
+            return;
+        }
+
+        this.#container.style.filter =
+            this.#animationFilter;
+
+        this.#startGeometryAnimation();
+    }
+
+    #startFrontRamp() {
+        clearTimeout(
+            this.#phaseTimer
+        );
+
+        const token =
+            ++this.#animationToken;
+
+        this.#animationPhase =
+            "front-ramp";
+
+        this.#resizeActive =
+            false;
+
+        this.#reorderActive =
+            false;
+
+        const duration =
+            this.#animationFrontRamp;
+
+        const milliseconds =
+            RingContainer.#timeToMilliseconds(
+                duration
+            );
+
+        this.#setTransition(
+            "none",
+            "0ms"
+        );
+
+        this.#container.style.filter =
+            "none";
+
+        this.#container
+            .getBoundingClientRect();
+
+        this.#setTransition(
+            "filter",
+            duration
+        );
+
+        this.#container.style.filter =
+            this.#animationFilter;
+
+        if (
+            milliseconds <= 0
+        ) {
+            this.#startGeometryAnimation();
+
+            return;
+        }
+
+        this.#phaseTimer =
+            setTimeout(
+                () => {
+                    if (
+                        token !==
+                        this.#animationToken
+                    ) {
+                        return;
+                    }
+
+                    this.#startGeometryAnimation();
+                },
+                milliseconds
+            );
+    }
+
+    #startGeometryAnimation() {
+        clearTimeout(
+            this.#phaseTimer
+        );
+
+        const token =
+            ++this.#animationToken;
+
+        this.#animationPhase =
+            "geometry";
+
+        this.#resizeActive =
+            this.#animationResize;
+
+        this.#reorderActive =
+            this.#animationReorder;
+
+        if (
+            !this.#animationGeometryChanged
+        ) {
+            this.#startEndRamp();
+
+            return;
+        }
+
+        const duration =
+            this.resizeDuration;
+
+        const milliseconds =
+            RingContainer.#timeToMilliseconds(
+                duration
+            );
+
+        this.#setTransition(
+            "--ring-container-inset, --ring-container-width",
+            duration
+        );
+
+        this.#container.style.setProperty(
+            "--ring-container-inset",
+            this.#animationTargetInset
+        );
+
+        this.#container.style.setProperty(
+            "--ring-container-width",
+            this.#animationTargetWidth
+        );
+
+        if (
+            milliseconds <= 0
+        ) {
+            this.#startEndRamp();
+
+            return;
+        }
+
+        this.#phaseTimer =
+            setTimeout(
+                () => {
+                    if (
+                        token !==
+                        this.#animationToken
+                    ) {
+                        return;
+                    }
+
+                    this.#startEndRamp();
+                },
+                milliseconds
+            );
+    }
+
+    #startEndRamp() {
+        clearTimeout(
+            this.#phaseTimer
+        );
+
+        this.#resizeActive =
+            false;
+
+        this.#reorderActive =
+            false;
+
+        if (
+            this.#animationFilter ===
+            "none"
+        ) {
+            this.#finishAnimation();
+
+            return;
+        }
+
+        const milliseconds =
+            RingContainer.#timeToMilliseconds(
+                this.#animationEndRamp
+            );
+
+        if (
+            milliseconds <= 0
+        ) {
+            this.#finishAnimation();
+
+            return;
+        }
+
+        const token =
+            ++this.#animationToken;
+
+        this.#animationPhase =
+            "end-ramp";
+
+        this.#setTransition(
+            "filter",
+            this.#animationEndRamp
+        );
+
+        this.#container.style.filter =
+            this.#animationFilter;
+
+        this.#container
+            .getBoundingClientRect();
+
+        this.#container.style.filter =
+            "none";
+
+        this.#phaseTimer =
+            setTimeout(
+                () => {
+                    if (
+                        token !==
+                        this.#animationToken
+                    ) {
+                        return;
+                    }
+
+                    this.#finishAnimation(
+                        token
+                    );
+                },
+                milliseconds
+            );
+    }
+
+    #finishAnimation(
+        expectedToken
+    ) {
+        if (
+            expectedToken !==
+                undefined &&
+            expectedToken !==
+                this.#animationToken
+        ) {
+            return;
+        }
+
+        clearTimeout(
+            this.#phaseTimer
+        );
+
+        ++this.#animationToken;
+
+        this.#animationPhase =
+            "idle";
+
+        this.#resizeActive =
+            false;
+
+        this.#reorderActive =
+            false;
+
+        this.#animationResize =
+            false;
+
+        this.#animationReorder =
+            false;
+
+        this.#animationGeometryChanged =
+            false;
+
+        this.#animationTargetInset =
+            undefined;
+
+        this.#animationTargetWidth =
+            undefined;
+
+        this.#animationFilter =
+            "none";
+
+        this.#animationFrontRamp =
+            "0ms";
+
+        this.#animationEndRamp =
+            "0ms";
+
+        this.#container.style.filter =
+            "none";
+
+        this.#setTransition(
+            "--ring-container-inset, --ring-container-width",
+            this.resizeDuration
+        );
+    }
+
+    #cancelAnimation(
+        resetFilter = true
+    ) {
+        clearTimeout(
+            this.#phaseTimer
+        );
+
+        ++this.#animationToken;
+
+        this.#animationPhase =
+            "idle";
+
+        this.#resizeActive =
+            false;
+
+        this.#reorderActive =
+            false;
+
+        this.#animationResize =
+            false;
+
+        this.#animationReorder =
+            false;
+
+        this.#animationGeometryChanged =
+            false;
+
+        this.#animationTargetInset =
+            undefined;
+
+        this.#animationTargetWidth =
+            undefined;
+
+        this.#animationFilter =
+            "none";
+
+        this.#animationFrontRamp =
+            "0ms";
+
+        this.#animationEndRamp =
+            "0ms";
+
+        if (
+            resetFilter
+        ) {
+            this.#setTransition(
+                "none",
+                "0ms"
+            );
+
+            this.#container.style.filter =
+                "none";
+
+            this.#container
+                .getBoundingClientRect();
+
+            this.#setTransition(
+                "--ring-container-inset, --ring-container-width",
+                this.resizeDuration
+            );
         }
     }
 
-    #readGeometryAttributes() {
-        this.#width =
-            this.getAttribute(
-                "width"
-            ) ??
-            "0px";
+    #freezeCurrentGeometry() {
+        const geometry =
+            this.#getRenderedGeometry();
 
-        this.#inset =
-            this.getAttribute(
-                "inset"
-            ) ??
-            "0px";
+        this.#cancelAnimation();
 
-        this.#outerMargin =
-            this.getAttribute(
-                "outer-margin"
-            ) ??
-            "0px";
-
-        this.#innerMargin =
-            this.getAttribute(
-                "inner-margin"
-            ) ??
-            "0px";
+        this.#applyGeometryInstant(
+            geometry.inset,
+            geometry.width
+        );
     }
 
-    #getGeometry() {
+    #getRenderedGeometry() {
+        const computedStyle =
+            getComputedStyle(
+                this.#container
+            );
+
         return {
-            width:
-                this.#width ??
-                this.getAttribute(
-                    "width"
-                ) ??
-                "0px",
-
             inset:
-                this.#inset ??
-                this.getAttribute(
-                    "inset"
-                ) ??
+                computedStyle
+                    .getPropertyValue(
+                        "--ring-container-inset"
+                    )
+                    .trim() ||
                 "0px",
 
-            outerMargin:
-                this.#outerMargin ??
-                this.getAttribute(
-                    "outer-margin"
-                ) ??
-                "0px",
-
-            innerMargin:
-                this.#innerMargin ??
-                this.getAttribute(
-                    "inner-margin"
-                ) ??
+            width:
+                computedStyle
+                    .getPropertyValue(
+                        "--ring-container-width"
+                    )
+                    .trim() ||
                 "0px"
         };
     }
 
-    #updateStyle(
-        geometry = this.#getGeometry()
+    #applyGeometryInstant(
+        inset,
+        width
     ) {
-        const geometryOnly =
-            this.hasAttribute(
-                "geometry-only"
-            );
+        const transitionProperty =
+            this.#container.style
+                .transitionProperty;
 
-        this.#styleElement.textContent = `
-            :host {
-                position: absolute;
+        const transitionDuration =
+            this.#container.style
+                .transitionDuration;
 
-                inset:
-                    ${geometry.inset};
+        const transitionTimingFunction =
+            this.#container.style
+                .transitionTimingFunction;
 
-                display: block;
+        this.#container.style
+            .transitionProperty =
+            "none";
 
-                box-sizing:
-                    border-box;
+        this.#container.style
+            .transitionDuration =
+            "0ms";
 
-                pointer-events:
-                    none;
+        this.#container.style.setProperty(
+            "--ring-container-inset",
+            inset
+        );
 
-                ${
-                    geometryOnly
-                        ? ""
-                        : `
-                            border:
-                                ${geometry.width}
-                                solid
-                                transparent;
-                        `
-                }
-            }
+        this.#container.style.setProperty(
+            "--ring-container-width",
+            width
+        );
 
-            #content {
-                position: absolute;
+        this.#container
+            .getBoundingClientRect();
 
-                inset: 0;
+        this.#container.style
+            .transitionProperty =
+            transitionProperty;
 
-                width: 100%;
-                height: 100%;
+        this.#container.style
+            .transitionDuration =
+            transitionDuration;
 
-                box-sizing:
-                    border-box;
-
-                pointer-events:
-                    none;
-            }
-
-            ::slotted(time-range) {
-                position: absolute;
-
-                inset: 0;
-
-                display: block;
-
-                width: 100%;
-                height: 100%;
-
-                box-sizing:
-                    border-box;
-            }
-
-            ::slotted(*) {
-                pointer-events:
-                    none;
-            }
-        `;
+        this.#container.style
+            .transitionTimingFunction =
+            transitionTimingFunction;
     }
 
-    #observeParent() {
-        this.#parentObserver
-            ?.disconnect();
+    #setTransition(
+        property,
+        duration
+    ) {
+        this.#container.style
+            .transitionProperty =
+            property;
 
+        this.#container.style
+            .transitionDuration =
+            duration;
+
+        this.#container.style
+            .transitionTimingFunction =
+            "linear";
+    }
+
+    #updateDuration() {
+        this.#container.style.setProperty(
+            "--ring-container-resize-duration",
+            this.resizeDuration
+        );
+
+        if (
+            this.#animationPhase ===
+            "idle"
+        ) {
+            this.#setTransition(
+                "--ring-container-inset, --ring-container-width",
+                this.resizeDuration
+            );
+        }
+    }
+
+    #parentHasPendingReorder() {
+        const parent =
+            this.parentElement;
+
+        if (!parent) {
+            return false;
+        }
+
+        return Array.from(
+            parent.children
+        ).some(
+            child =>
+                child instanceof
+                    RingContainer &&
+                child.#reorderPending
+        );
+    }
+
+    #markParentRingsPending() {
         const parent =
             this.parentElement;
 
@@ -921,657 +1708,933 @@ class RingContainer extends HTMLElement {
             return;
         }
 
-        this.#parentObserver =
-            new MutationObserver(
-                mutations => {
-                    if (
-                        RingContainer.#batchResizing
-                    ) {
-                        return;
-                    }
-
-                    let changed =
-                        false;
-
-                    for (
-                        const mutation of
-                            mutations
-                    ) {
-                        if (
-                            mutation.type !==
-                                "childList"
-                        ) {
-                            continue;
-                        }
-
-                        if (
-                            mutation.addedNodes.length > 0 ||
-                            mutation.removedNodes.length > 0
-                        ) {
-                            changed =
-                                true;
-                            break;
-                        }
-                    }
-
-                    if (changed) {
-                        RingContainer.#recalculateParent(
-                            parent
-                        );
-                    }
-                }
-            );
-
-        this.#parentObserver.observe(
-            parent,
-            {
-                childList: true
+        for (
+            const child of
+            parent.children
+        ) {
+            if (
+                child instanceof
+                RingContainer
+            ) {
+                child.#resizePending =
+                    true;
             }
-        );
+        }
     }
 
-    #observeSize() {
-        this.#resizeObserver
-            ?.disconnect();
+    #updateAutomaticFollowingRings(
+        animate = true
+    ) {
+        let ring =
+            this.#getNextRingContainer();
 
-        if (
-            typeof ResizeObserver !==
-                "function"
-        ) {
-            return;
-        }
+        while (ring) {
+            if (
+                ring.#usesAutomaticInset()
+            ) {
+                if (
+                    RingContainer.#batchResizing
+                ) {
+                    ring.#resizePending =
+                        true;
 
-        this.#resizeObserver =
-            new ResizeObserver(
-                () => {
-                    if (
-                        RingContainer.#batchResizing
-                    ) {
-                        return;
-                    }
-
-                    RingContainer.#recalculateParent(
-                        this.parentElement
+                    ring.#pendingLifecycleAction =
+                        undefined;
+                }
+                else if (
+                    animate
+                ) {
+                    ring.#startConfiguredAnimation(
+                        ring.#calculateEffectiveInset(),
+                        ring.#width ?? "0px",
+                        "resize"
                     );
                 }
-            );
-
-        this.#resizeObserver.observe(
-            this
-        );
-    }
-
-    #handleConnected() {
-        const parent =
-            this.parentElement;
-
-        if (!parent) {
-            return;
-        }
-
-        const rect =
-            this.getBoundingClientRect();
-
-        const keyframes = [
-            {
-                opacity: 0,
-                transform:
-                    "scale(.98)"
-            },
-            {
-                opacity: 1,
-                transform:
-                    "scale(1)"
-            }
-        ];
-
-        const options = {
-            duration: 250,
-            easing: "ease-out",
-            fill: "both"
-        };
-
-        this.#connectAnimation
-            ?.cancel();
-
-        this.#connectAnimation =
-            this.animate(
-                keyframes,
-                options
-            );
-
-        if (
-            this.filterRampConnect
-        ) {
-            this.#connectFilterAnimation =
-                this.#animateFilterRamp(
-                    this.connectFilter,
-                    this.#connectAnimation
-                );
-        }
-
-        this.#pendingConnect =
-            this.#connectAnimation.finished
-                .catch(() => {})
-                .finally(
-                    () => {
-                        this.#connectAnimation =
-                            undefined;
-
-                        this.#connectFilterAnimation =
-                            undefined;
-
-                        this.#pendingConnect =
-                            undefined;
-
-                        RingContainer.#recalculateParent(
-                            parent
-                        );
-                    }
-                );
-
-        return this.#pendingConnect;
-    }
-
-    #handleDisconnected(
-        parent
-    ) {
-        if (
-            this.#disconnecting
-        ) {
-            return this.#pendingDisconnect;
-        }
-
-        this.#disconnecting =
-            true;
-
-        const keyframes = [
-            {
-                opacity: 1,
-                transform:
-                    "scale(1)"
-            },
-            {
-                opacity: 0,
-                transform:
-                    "scale(.98)"
-            }
-        ];
-
-        const options = {
-            duration: 250,
-            easing: "ease-in",
-            fill: "both"
-        };
-
-        this.#disconnectAnimation
-            ?.cancel();
-
-        this.#disconnectAnimation =
-            this.animate(
-                keyframes,
-                options
-            );
-
-        if (
-            this.filterRampDisconnect
-        ) {
-            this.#disconnectFilterAnimation =
-                this.#animateFilterRamp(
-                    this.disconnectFilter,
-                    this.#disconnectAnimation
-                );
-        }
-
-        this.#pendingDisconnect =
-            this.#disconnectAnimation.finished
-                .catch(() => {})
-                .finally(
-                    () => {
-                        this.#disconnectAnimation =
-                            undefined;
-
-                        this.#disconnectFilterAnimation =
-                            undefined;
-
-                        this.#pendingDisconnect =
-                            undefined;
-
-                        this.#disconnecting =
-                            false;
-
-                        RingContainer.#recalculateParent(
-                            parent
-                        );
-                    }
-                );
-
-        return this.#pendingDisconnect;
-    }
-
-    #animateResize(
-        from,
-        to,
-        {
-            duration = 1000,
-            easing = "ease",
-            commitAttributes = false
-        } = {}
-    ) {
-        this.#resizeAnimation
-            ?.cancel();
-
-        this.#resizeFilterAnimation
-            ?.cancel();
-
-        const oldGeometry = {
-            ...from
-        };
-
-        const targetGeometry = {
-            ...to
-        };
-
-        const animationStyle =
-            document.createElement(
-                "style"
-            );
-
-        animationStyle.dataset.ringContainerResize =
-            "";
-
-        const animationName =
-            `ring-container-resize-${Math.random().toString(36).slice(2)}`;
-
-        animationStyle.textContent = `
-            @keyframes ${animationName} {
-                from {
-                    inset:
-                        ${oldGeometry.inset};
-
-                    ${
-                        this.hasAttribute(
-                            "geometry-only"
-                        )
-                            ? ""
-                            : `
-                                border-width:
-                                    ${oldGeometry.width};
-                            `
-                    }
-                }
-
-                to {
-                    inset:
-                        ${targetGeometry.inset};
-
-                    ${
-                        this.hasAttribute(
-                            "geometry-only"
-                        )
-                            ? ""
-                            : `
-                                border-width:
-                                    ${targetGeometry.width};
-                            `
-                    }
+                else {
+                    ring.#updateProperties(
+                        false
+                    );
                 }
             }
 
-            :host {
-                animation:
-                    ${animationName}
-                    ${duration}ms
-                    ${easing}
-                    both;
-            }
-        `;
-
-        this.#shadowRoot.appendChild(
-            animationStyle
-        );
-
-        this.#resizeAnimation =
-            this.animate(
-                [
-                    {
-                        opacity: 1
-                    },
-                    {
-                        opacity: 1
-                    }
-                ],
-                {
-                    duration,
-                    easing,
-                    fill: "both"
-                }
-            );
-
-        const resizeAnimation =
-            this.#resizeAnimation;
-
-        if (
-            this.filterRamp
-        ) {
-            this.#resizeFilterAnimation =
-                this.#animateFilterRamp(
-                    this.resizeFilter,
-                    this.#resizeAnimation
-                );
+            ring =
+                ring.#getNextRingContainer();
         }
-
-        this.#pendingResize =
-            resizeAnimation.finished
-                .catch(() => {})
-                .finally(
-                    () => {
-                        animationStyle.remove();
-
-                        if (
-                            this.#resizeAnimation !==
-                                resizeAnimation
-                        ) {
-                            return;
-                        }
-
-                        if (
-                            commitAttributes
-                        ) {
-                            this.#commitGeometryAttributes(
-                                targetGeometry
-                            );
-                        }
-                        else {
-                            this.#width =
-                                targetGeometry.width;
-
-                            this.#inset =
-                                targetGeometry.inset;
-
-                            this.#outerMargin =
-                                targetGeometry.outerMargin;
-
-                            this.#innerMargin =
-                                targetGeometry.innerMargin;
-                        }
-
-                        this.#updateStyle(
-                            targetGeometry
-                        );
-
-                        if (
-                            this.#layoutInsetTarget ===
-                                targetGeometry.inset
-                        ) {
-                            this.#layoutInsetTarget =
-                                undefined;
-                        }
-
-                        this.#resizeAnimation =
-                            undefined;
-
-                        this.#resizeFilterAnimation =
-                            undefined;
-
-                        this.#pendingResize =
-                            undefined;
-                    }
-                );
-
-        return this.#pendingResize;
     }
 
-    #animateReorder(
-        before,
-        after
-    ) {
+    #usesAutomaticInset() {
         if (
-            !before ||
-            !after
-        ) {
-            return Promise.resolve();
-        }
-
-        this.#reorderAnimation
-            ?.cancel();
-
-        this.#reorderFilterAnimation
-            ?.cancel();
-
-        const deltaX =
-            before.left -
-            after.left;
-
-        const deltaY =
-            before.top -
-            after.top;
-
-        const scaleX =
-            after.width === 0
-                ? 1
-                : before.width /
-                    after.width;
-
-        const scaleY =
-            after.height === 0
-                ? 1
-                : before.height /
-                    after.height;
-
-        this.#reorderAnimation =
-            this.animate(
-                [
-                    {
-                        transformOrigin:
-                            "top left",
-
-                        transform:
-                            `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`
-                    },
-                    {
-                        transformOrigin:
-                            "top left",
-
-                        transform:
-                            "translate(0px, 0px) scale(1, 1)"
-                    }
-                ],
-                {
-                    duration: 1000,
-                    easing: "ease",
-                    fill: "both"
-                }
-            );
-
-        if (
-            this.filterRamp
-        ) {
-            this.#reorderFilterAnimation =
-                this.#animateFilterRamp(
-                    this.reorderFilter,
-                    this.#reorderAnimation
-                );
-        }
-
-        this.#pendingReorder =
-            this.#reorderAnimation.finished
-                .catch(() => {})
-                .finally(
-                    () => {
-                        this.#reorderAnimation =
-                            undefined;
-
-                        this.#reorderFilterAnimation =
-                            undefined;
-
-                        this.#pendingReorder =
-                            undefined;
-                    }
-                );
-
-        return this.#pendingReorder;
-    }
-
-    #animateFilterRamp(
-        filter,
-        primaryAnimation
-    ) {
-        const duration =
-            this.filterRampDuration;
-
-        if (
-            !this.filterRamp ||
-            duration <= 0 ||
-            !primaryAnimation
-        ) {
-            return undefined;
-        }
-
-        const primaryDuration =
-            Number(
-                primaryAnimation.effect
-                    ?.getTiming()
-                    ?.duration
-            );
-
-        const totalDuration =
-            Number.isFinite(
-                primaryDuration
+            !this.hasAttribute(
+                "inset"
             )
-                ? primaryDuration
-                : 0;
-
-        const ramp =
-            Math.min(
-                duration,
-                totalDuration /
-                    2
-            );
-
-        if (
-            ramp <= 0
         ) {
-            return undefined;
+            return true;
         }
 
-        const middleStart =
-            ramp /
-            totalDuration;
-
-        const middleEnd =
-            1 -
-            middleStart;
-
-        return this.animate(
-            [
-                {
-                    filter: "none",
-                    offset: 0
-                },
-                {
-                    filter,
-                    offset:
-                        middleStart
-                },
-                {
-                    filter,
-                    offset:
-                        middleEnd
-                },
-                {
-                    filter: "none",
-                    offset: 1
-                }
-            ],
-            {
-                duration:
-                    totalDuration,
-
-                easing:
-                    "linear",
-
-                fill:
-                    "both"
-            }
+        return (
+            this.getAttribute(
+                "inset"
+            )
+                ?.trim()
+                .toLowerCase() ===
+            "auto"
         );
     }
 
-    #commitGeometryAttributes(
-        geometry
+    static #flushResizeBatch() {
+        const rings =
+            [
+                ...RingContainer.#instances
+            ].filter(
+                ring =>
+                    ring.isConnected &&
+                    ring.#resizePending
+            );
+
+        const targets =
+            rings.map(
+                ring => ({
+                    ring,
+
+                    inset:
+                        ring.#calculateEffectiveInset(),
+
+                    width:
+                        ring.#width ??
+                        "0px",
+
+                    reorder:
+                        ring.#reorderPending,
+
+                    lifecycle:
+                        ring.#pendingLifecycleAction
+                })
+            );
+
+        for (
+            const target of
+            targets
+        ) {
+            const {
+                ring,
+                inset,
+                width,
+                reorder,
+                lifecycle
+            } =
+                target;
+
+            ring.#resizePending =
+                false;
+
+            ring.#reorderPending =
+                false;
+
+            ring.#pendingLifecycleAction =
+                undefined;
+
+            if (
+                lifecycle ===
+                    "connect" ||
+                lifecycle ===
+                    "disconnect"
+            ) {
+                ring.#startConfiguredAnimation(
+                    inset,
+                    width,
+                    lifecycle
+                );
+
+                continue;
+            }
+
+            ring.#startConfiguredAnimation(
+                inset,
+                width,
+                reorder
+                    ? "reorder"
+                    : "resize"
+            );
+        }
+    }
+
+    #handleMarginAttributeChange(
+        name,
+        newValue
     ) {
-        this.#committing =
+        this.#syncingAttribute =
             true;
 
         try {
-            this.#setOrRemoveAttribute(
-                "width",
-                geometry.width
-            );
+            if (
+                newValue !== null &&
+                !RingContainer.#isValidLength(
+                    newValue
+                )
+            ) {
+                this.setAttribute(
+                    name,
+                    "0px"
+                );
+            }
 
-            this.#setOrRemoveAttribute(
-                "inset",
-                geometry.inset
-            );
+            if (
+                name === "margin" &&
+                newValue !== null
+            ) {
+                this.removeAttribute(
+                    "inner-margin"
+                );
 
-            this.#setOrRemoveAttribute(
-                "outer-margin",
-                geometry.outerMargin
-            );
-
-            this.#setOrRemoveAttribute(
-                "inner-margin",
-                geometry.innerMargin
-            );
+                this.removeAttribute(
+                    "outer-margin"
+                );
+            }
         }
         finally {
-            this.#committing =
+            this.#syncingAttribute =
                 false;
         }
-
-        this.#width =
-            geometry.width;
-
-        this.#inset =
-            geometry.inset;
-
-        this.#outerMargin =
-            geometry.outerMargin;
-
-        this.#innerMargin =
-            geometry.innerMargin;
     }
 
-    #setOrRemoveAttribute(
-        name,
+    #normalizeMarginAttributes() {
+        this.#syncingAttribute =
+            true;
+
+        try {
+            for (
+                const name of [
+                    "margin",
+                    "inner-margin",
+                    "outer-margin"
+                ]
+            ) {
+                if (
+                    !this.hasAttribute(
+                        name
+                    )
+                ) {
+                    continue;
+                }
+
+                const value =
+                    this.getAttribute(
+                        name
+                    );
+
+                if (
+                    !RingContainer.#isValidLength(
+                        value
+                    )
+                ) {
+                    this.setAttribute(
+                        name,
+                        "0px"
+                    );
+                }
+            }
+        }
+        finally {
+            this.#syncingAttribute =
+                false;
+        }
+    }
+
+    #updateProperties(
+        animate = true
+    ) {
+        const inset =
+            this.#calculateEffectiveInset();
+
+        const width =
+            this.#width ??
+            "0px";
+
+        if (
+            animate
+        ) {
+            this.#startConfiguredAnimation(
+                inset,
+                width,
+                "resize"
+            );
+
+            return;
+        }
+
+        this.#applyGeometryInstant(
+            inset,
+            width
+        );
+    }
+
+    #calculateEffectiveInset() {
+        const inset =
+            this.#inset;
+
+        if (
+            inset !== null &&
+            inset
+                .trim()
+                .toLowerCase() !==
+                "auto"
+        ) {
+            return inset;
+        }
+
+        const currentWidth =
+            this.#width ??
+            "0px";
+
+        const previous =
+            this.#getPreviousRingContainer();
+
+        if (!previous) {
+            return `
+                calc(
+                    ${this.#getOuterMargin()}
+                    +
+                    (${currentWidth} / 2)
+                )
+            `;
+        }
+
+        const previousInset =
+            previous.#calculateEffectiveInset();
+
+        const previousWidth =
+            previous.#width ??
+            "0px";
+
+        const adjoiningMargin =
+            RingContainer.#collapseMargins(
+                previous.#getInnerMargin(),
+                this.#getOuterMargin()
+            );
+
+        return `
+            calc(
+                (0px + ${previousInset})
+                +
+                (${previousWidth} / 2)
+                +
+                ${adjoiningMargin}
+                +
+                (${currentWidth} / 2)
+            )
+        `;
+    }
+
+    #getInnerMargin() {
+        if (
+            this.hasAttribute(
+                "inner-margin"
+            )
+        ) {
+            return (
+                this.getAttribute(
+                    "inner-margin"
+                ) ??
+                "0px"
+            );
+        }
+
+        return (
+            this.getAttribute(
+                "margin"
+            ) ??
+            "0px"
+        );
+    }
+
+    #getOuterMargin() {
+        if (
+            this.hasAttribute(
+                "outer-margin"
+            )
+        ) {
+            return (
+                this.getAttribute(
+                    "outer-margin"
+                ) ??
+                "0px"
+            );
+        }
+
+        return (
+            this.getAttribute(
+                "margin"
+            ) ??
+            "0px"
+        );
+    }
+
+    static #collapseMargins(
+        first,
+        second
+    ) {
+        return `
+            calc(
+                max(
+                    0px,
+                    ${first},
+                    ${second}
+                )
+                +
+                min(
+                    0px,
+                    ${first},
+                    ${second}
+                )
+            )
+        `;
+    }
+
+    #getPreviousRingContainer() {
+        let sibling =
+            this.previousElementSibling;
+
+        while (sibling) {
+            if (
+                sibling instanceof
+                    RingContainer
+            ) {
+                return sibling;
+            }
+
+            sibling =
+                sibling
+                    .previousElementSibling;
+        }
+
+        return null;
+    }
+
+    #getNextRingContainer() {
+        let sibling =
+            this.nextElementSibling;
+
+        while (sibling) {
+            if (
+                sibling instanceof
+                    RingContainer
+            ) {
+                return sibling;
+            }
+
+            sibling =
+                sibling
+                    .nextElementSibling;
+        }
+
+        return null;
+    }
+
+    static #updateInstanceDurations() {
+        for (
+            const ring of
+            RingContainer.#instances
+        ) {
+            if (
+                ring.isConnected
+            ) {
+                ring.#updateDuration();
+            }
+        }
+    }
+
+    static #combineFilters(
+        ...filters
+    ) {
+        const result =
+            filters
+                .filter(
+                    filter =>
+                        filter &&
+                        filter !==
+                            "none"
+                );
+
+        if (
+            result.length === 0
+        ) {
+            return "none";
+        }
+
+        return result.join(
+            " "
+        );
+    }
+
+    static #normalizeOptionalBoolean(
         value
     ) {
         if (
             value === undefined ||
-            value === null ||
-            value === ""
+            value === null
         ) {
-            this.removeAttribute(
-                name
+            return undefined;
+        }
+
+        return Boolean(
+            value
+        );
+    }
+
+    static #normalizeOptionalTime(
+        value
+    ) {
+        if (
+            value === undefined ||
+            value === null
+        ) {
+            return undefined;
+        }
+
+        const time =
+            String(value).trim();
+
+        if (
+            !time ||
+            !CSS.supports(
+                "animation-duration",
+                time
+            )
+        ) {
+            return undefined;
+        }
+
+        if (
+            !/^(?:\d+(?:\.\d+)?|\.\d+)(?:ms|s)$/i
+                .test(time)
+        ) {
+            return undefined;
+        }
+
+        return time;
+    }
+
+    static #timeToMilliseconds(
+        value
+    ) {
+        const time =
+            String(value)
+                .trim()
+                .toLowerCase();
+
+        const match =
+            time.match(
+                /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/
             );
 
+        if (!match) {
+            return 0;
+        }
+
+        const number =
+            Number(
+                match[1]
+            );
+
+        if (
+            match[2] === "s"
+        ) {
+            return (
+                number * 1000
+            );
+        }
+
+        return number;
+    }
+
+    static #normalizeOptionalFilter(
+        value
+    ) {
+        if (
+            value === undefined ||
+            value === null
+        ) {
+            return undefined;
+        }
+
+        const filter =
+            String(value).trim();
+
+        if (
+            !filter ||
+            !CSS.supports(
+                "filter",
+                filter
+            )
+        ) {
+            return undefined;
+        }
+
+        return filter;
+    }
+
+    static #isValidLength(
+        value
+    ) {
+        if (
+            value === undefined ||
+            value === null
+        ) {
+            return false;
+        }
+
+        const length =
+            String(value).trim();
+
+        if (!length) {
+            return false;
+        }
+
+        if (
+            length
+                .toLowerCase() ===
+            "auto"
+        ) {
+            return false;
+        }
+
+        return CSS.supports(
+            "margin-left",
+            length
+        );
+    }
+
+    #updateStyle() {
+        this.#style.textContent = `
+            :host {
+                display: block;
+                position: relative;
+
+                width: 100%;
+                height: 100%;
+
+                min-width: 0;
+                min-height: 0;
+
+                box-sizing: border-box;
+                overflow: hidden;
+
+                background:
+                    transparent !important;
+            }
+
+            #container {
+                position: absolute;
+                inset: 0;
+
+                display: grid;
+
+                width: 100%;
+                height: 100%;
+
+                min-width: 0;
+                min-height: 0;
+
+                box-sizing: border-box;
+
+                background:
+                    transparent !important;
+
+                grid-template-columns:
+                    minmax(0, 1fr);
+
+                grid-template-rows:
+                    minmax(0, 1fr);
+
+                transition-property:
+                    --ring-container-inset,
+                    --ring-container-width;
+
+                transition-duration:
+                    var(
+                        --ring-container-resize-duration
+                    );
+
+                transition-timing-function:
+                    linear;
+
+                filter: none;
+
+                clip-path:
+                    ${RingContainer.#calculateDonutShape(
+                        "var(--ring-container-inset)",
+                        "var(--ring-container-width)"
+                    )};
+            }
+
+            :host([geometry-only]) {
+                overflow: visible;
+            }
+
+            :host([geometry-only]) #container {
+                inset:
+                    calc(
+                        var(--ring-container-inset)
+                        +
+                        (
+                            var(--ring-container-width)
+                            /
+                            2
+                        )
+                    );
+
+                width: auto;
+                height: auto;
+
+                overflow: visible;
+                clip-path: none;
+            }
+
+            ::slotted(*) {
+                grid-row: 1;
+                grid-column: 1;
+
+                min-width: 0;
+                min-height: 0;
+            }
+        `;
+    }
+
+    static #registerProperties() {
+        if (
+            RingContainer
+                .#propertiesRegistered
+        ) {
             return;
         }
 
-        this.setAttribute(
-            name,
-            String(value)
-        );
+        try {
+            CSS.registerProperty({
+                name:
+                    "--ring-container-inset",
+
+                syntax:
+                    "<length-percentage>",
+
+                inherits:
+                    false,
+
+                initialValue:
+                    "0px"
+            });
+        }
+        catch (error) {
+            if (
+                error.name !==
+                "InvalidModificationError"
+            ) {
+                throw error;
+            }
+        }
+
+        try {
+            CSS.registerProperty({
+                name:
+                    "--ring-container-width",
+
+                syntax:
+                    "<length-percentage>",
+
+                inherits:
+                    false,
+
+                initialValue:
+                    "0px"
+            });
+        }
+        catch (error) {
+            if (
+                error.name !==
+                "InvalidModificationError"
+            ) {
+                throw error;
+            }
+        }
+
+        RingContainer.#propertiesRegistered =
+            true;
+    }
+
+    static #calculateDonutShape(
+        inset,
+        width
+    ) {
+        const insetValue =
+            inset ??
+            "0px";
+
+        const widthValue =
+            width ??
+            "0px";
+
+        const outerHorizontalRadius = `
+            calc(
+                50% -
+                ${insetValue} +
+                (${widthValue} / 2)
+            )
+        `;
+
+        const outerVerticalRadius = `
+            calc(
+                50% -
+                ${insetValue} +
+                (${widthValue} / 2)
+            )
+        `;
+
+        const innerHorizontalRadius = `
+            calc(
+                50% -
+                ${insetValue} -
+                (${widthValue} / 2)
+            )
+        `;
+
+        const innerVerticalRadius = `
+            calc(
+                50% -
+                ${insetValue} -
+                (${widthValue} / 2)
+            )
+        `;
+
+        const outerX = `
+            calc(
+                ${outerHorizontalRadius}
+                * 0.5
+            )
+        `;
+
+        const outerY = `
+            calc(
+                ${outerVerticalRadius}
+                * 0.8660254037844386
+            )
+        `;
+
+        const innerX = `
+            calc(
+                ${innerHorizontalRadius}
+                * 0.5
+            )
+        `;
+
+        const innerY = `
+            calc(
+                ${innerVerticalRadius}
+                * 0.8660254037844386
+            )
+        `;
+
+        return `
+            shape(
+                evenodd from
+                    calc(
+                        50% -
+                        ${outerHorizontalRadius}
+                    )
+                    50%,
+
+                arc to
+                    calc(
+                        50% +
+                        ${outerX}
+                    )
+                    calc(
+                        50% -
+                        ${outerY}
+                    )
+                    of
+                    ${outerHorizontalRadius}
+                    ${outerVerticalRadius}
+                    small cw,
+
+                arc to
+                    calc(
+                        50% +
+                        ${outerX}
+                    )
+                    calc(
+                        50% +
+                        ${outerY}
+                    )
+                    of
+                    ${outerHorizontalRadius}
+                    ${outerVerticalRadius}
+                    small cw,
+
+                arc to
+                    calc(
+                        50% -
+                        ${outerHorizontalRadius}
+                    )
+                    50%
+                    of
+                    ${outerHorizontalRadius}
+                    ${outerVerticalRadius}
+                    small cw,
+
+                close,
+
+                move to
+                    calc(
+                        50% -
+                        ${innerHorizontalRadius}
+                    )
+                    50%,
+
+                arc to
+                    calc(
+                        50% +
+                        ${innerX}
+                    )
+                    calc(
+                        50% +
+                        ${innerY}
+                    )
+                    of
+                    ${innerHorizontalRadius}
+                    ${innerVerticalRadius}
+                    small ccw,
+
+                arc to
+                    calc(
+                        50% +
+                        ${innerX}
+                    )
+                    calc(
+                        50% -
+                        ${innerY}
+                    )
+                    of
+                    ${innerHorizontalRadius}
+                    ${innerVerticalRadius}
+                    small ccw,
+
+                arc to
+                    calc(
+                        50% -
+                        ${innerHorizontalRadius}
+                    )
+                    50%
+                    of
+                    ${innerHorizontalRadius}
+                    ${innerVerticalRadius}
+                    small ccw,
+
+                close
+            )
+        `;
     }
 }
 
-if (
-    !customElements.get(
-        "ring-container"
-    )
-) {
-    customElements.define(
-        "ring-container",
-        RingContainer
-    );
-}
+customElements.define(
+    "ring-container",
+    RingContainer
+);
