@@ -41,6 +41,11 @@
 
         #indicatorStartFrame;
 
+        #indicatorHandoffFrozen =
+            false;
+
+        #indicatorHandoffTimeout;
+
         #tickMarkTimeout;
 
         #handLayer;
@@ -744,6 +749,21 @@
                 cancelAnimationFrame(this.#indicatorStartFrame);
                 this.#indicatorStartFrame = undefined;
             }
+
+            if (
+                this.#indicatorHandoffTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#indicatorHandoffTimeout
+                );
+
+                this.#indicatorHandoffTimeout =
+                    undefined;
+            }
+
+            this.#indicatorHandoffFrozen =
+                false;
 
             if (
                 this.#handStartTimeout !==
@@ -5439,8 +5459,114 @@
             return activeMetrics.inner;
         }
 
+        #freezeIndicatorForRingHandoff(
+            now
+        ) {
+            if (
+                this.#indicatorHandoffFrozen ||
+                !this.hasAttribute(
+                    "indicator-symbol"
+                ) ||
+                !this.#started ||
+                !this.#elapsedRange ||
+                !Number.isFinite(now)
+            ) {
+                return;
+            }
+
+            const currentRing =
+                this.#elapsedRange.parentElement;
+
+            if (
+                !currentRing ||
+                currentRing.localName !==
+                    "ring-container" ||
+                !currentRing.hasAttribute(
+                    "active"
+                )
+            ) {
+                return;
+            }
+
+            const currentRingIndex =
+                Number(
+                    currentRing.clockTimerRingIndex
+                );
+
+            const nextRingIndex =
+                this.#getRingIndex(
+                    now
+                );
+
+            if (
+                !Number.isFinite(
+                    currentRingIndex
+                ) ||
+                currentRingIndex ===
+                    nextRingIndex
+            ) {
+                return;
+            }
+
+            const millisecondsIntoHour =
+                (
+                    now % ClockTimer.#HOUR +
+                    ClockTimer.#HOUR
+                ) % ClockTimer.#HOUR;
+
+            const boundaryAngle =
+                (
+                    millisecondsIntoHour /
+                    ClockTimer.#HOUR
+                ) * 360;
+
+            this.#indicatorTrack.style.transform =
+                `rotate(${boundaryAngle}deg)`;
+
+            this.#setIndicatorSymbolVisible(
+                true
+            );
+
+            this.#indicatorHandoffFrozen =
+                true;
+
+            if (
+                this.#indicatorHandoffTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#indicatorHandoffTimeout
+                );
+            }
+
+            const duration =
+                this.#getRangeAnimationDuration();
+
+            this.#indicatorHandoffTimeout =
+                setTimeout(
+                    () => {
+                        this.#indicatorHandoffTimeout =
+                            undefined;
+
+                        this.#indicatorHandoffFrozen =
+                            false;
+
+                        this.#updateIndicatorSymbol();
+                    },
+                    Math.max(
+                        0,
+                        duration
+                    )
+                );
+        }
+
         #updateIndicatorSymbol() {
             if (!this.#indicatorRing || !this.#indicatorTrack || !this.#indicatorSymbol) {
+                return;
+            }
+
+            if (this.#indicatorHandoffFrozen) {
+                this.#setIndicatorSymbolVisible(true);
                 return;
             }
 
@@ -6622,6 +6748,10 @@
                 this.#getCurrentTimelineTime(
                     nowDate
                 );
+
+            this.#freezeIndicatorForRingHandoff(
+                now
+            );
 
             this.#ensureRing(
                 this.#getRingIndex(
