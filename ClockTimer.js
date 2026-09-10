@@ -21,6 +21,12 @@
 
         #clockFace;
 
+        #faceBackground;
+
+        #faceBackgroundFrame;
+
+        #hostBackgroundOverride;
+
         #timeElement;
 
         #hourLayer;
@@ -282,6 +288,14 @@
                         none;
                 }
 
+                #face-background {
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 50%;
+                    z-index: -1;
+                    pointer-events: none;
+                }
+
                 #rings {
                     position: absolute;
 
@@ -524,6 +538,14 @@
             clockFace.id =
                 "clock-face";
 
+            this.#faceBackground =
+                document.createElement(
+                    "div"
+                );
+
+            this.#faceBackground.id =
+                "face-background";
+
             const ringLayer =
                 document.createElement(
                     "div"
@@ -675,6 +697,7 @@
             );
 
             clockFace.append(
+                this.#faceBackground,
                 ringLayer,
                 this.#tickMarkLayer,
                 this.#indicatorRing,
@@ -689,6 +712,8 @@
         }
 
         connectedCallback() {
+            this.#captureFaceBackground();
+
             this.#ensureAttributes();
 
             const RingContainerClass =
@@ -725,6 +750,8 @@
 
             this.#syncHandGeometry();
 
+            this.#startFaceBackgroundTracking();
+
             this.#startHandAnimations();
 
             this.#startSizeObserver();
@@ -754,6 +781,8 @@
             this.#stopHandAnimations();
 
             this.#stopSizeObserver();
+
+            this.#stopFaceBackgroundTracking();
 
             this.#spinAnimation
                 ?.cancel();
@@ -2925,6 +2954,80 @@
             this.#tickMarkLayer.style.removeProperty(
                 "inset"
             );
+        }
+
+        #captureFaceBackground() {
+            if (!this.#faceBackground) {
+                return;
+            }
+
+            if (this.#hostBackgroundOverride) {
+                this.#hostBackgroundOverride.remove();
+                this.#hostBackgroundOverride = undefined;
+            }
+
+            const backgroundColor =
+                getComputedStyle(this).backgroundColor;
+
+            this.#faceBackground.style.backgroundColor =
+                backgroundColor;
+
+            const override =
+                document.createElement("style");
+
+            override.textContent =
+                ":host { background-color: transparent !important; }";
+
+            this.#shadowRoot.appendChild(override);
+            this.#hostBackgroundOverride = override;
+        }
+
+        #syncFaceBackgroundGeometry() {
+            if (!this.#faceBackground || !this.#borderRing) {
+                return;
+            }
+
+            const inset = Number(this.#borderRing.renderedInset);
+            const width = Number(this.#borderRing.renderedWidth);
+
+            if (!Number.isFinite(inset) || !Number.isFinite(width)) {
+                return;
+            }
+
+            const innerEdge = Math.max(0, inset + width / 2);
+            this.#faceBackground.style.inset = `${innerEdge}px`;
+        }
+
+        #startFaceBackgroundTracking() {
+            if (this.#faceBackgroundFrame !== undefined) {
+                return;
+            }
+
+            const update = () => {
+                this.#faceBackgroundFrame = undefined;
+
+                if (!this.isConnected) {
+                    return;
+                }
+
+                this.#syncFaceBackgroundGeometry();
+                this.#faceBackgroundFrame = requestAnimationFrame(update);
+            };
+
+            this.#syncFaceBackgroundGeometry();
+            this.#faceBackgroundFrame = requestAnimationFrame(update);
+        }
+
+        #stopFaceBackgroundTracking() {
+            if (this.#faceBackgroundFrame !== undefined) {
+                cancelAnimationFrame(this.#faceBackgroundFrame);
+                this.#faceBackgroundFrame = undefined;
+            }
+
+            if (this.#hostBackgroundOverride) {
+                this.#hostBackgroundOverride.remove();
+                this.#hostBackgroundOverride = undefined;
+            }
         }
 
         #ensureNumberRing() {
