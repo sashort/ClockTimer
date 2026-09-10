@@ -378,7 +378,14 @@
                     width: max-content;
                     height: max-content;
                     line-height: 1;
-                    font-size: var(--clock-timer-indicator-symbol-size, 12px);
+                    font-size:
+                        var(
+                            --clock-timer-indicator-symbol-size,
+                            var(
+                                --clock-timer-auto-indicator-symbol-size,
+                                10px
+                            )
+                        );
                     color: var(--clock-timer-indicator-symbol-color, white);
                     text-shadow: var(--clock-timer-indicator-symbol-shadow, 0 0 2px rgb(0 0 0 / 50%));
                     transform: translate(-50%, -50%);
@@ -2830,9 +2837,10 @@
                     new ResizeObserver(
                         () => {
                             this.#scheduleFontSizing();
-                        
+                            this.#scheduleIndicatorSymbolUpdate();
 
-                    this.#refreshTimeRangeVisualGeometry();}
+                            this.#refreshTimeRangeVisualGeometry();
+                        }
                     );
 
                 this.#sizeObserver.observe(
@@ -4844,7 +4852,30 @@
                     ClockTimer.#HOUR
                 ) * 360;
 
-            const inset = ring.renderedInset ?? ring.inset ?? "0px";
+            const inset =
+                ring.renderedInset ??
+                ring.inset ??
+                "0px";
+
+            const renderedWidth =
+                Number.parseFloat(
+                    ring.renderedWidth ??
+                    ring.width ??
+                    "0px"
+                );
+
+            if (
+                Number.isFinite(renderedWidth) &&
+                renderedWidth > 0
+            ) {
+                const symbolSize =
+                    renderedWidth * 0.8;
+
+                this.#indicatorSymbol.style.setProperty(
+                    "--clock-timer-auto-indicator-symbol-size",
+                    `${symbolSize}px`
+                );
+            }
 
             this.#indicatorRing.style.inset = inset;
             this.#indicatorTrack.style.transform = `rotate(${normalizedAngle}deg)`;
