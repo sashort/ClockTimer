@@ -1,0 +1,29 @@
+name: Refine RingContainer calculated reflection
+on:
+  push:
+    paths:
+      - .github/workflows/refine-ring-attribute-reflection.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply reflection update
+        run: python .github/scripts/refine-ring-attribute-reflection.py
+      - name: Syntax check
+        run: node --check RingContainer.js
+      - name: Targeted checks
+        run: |
+          grep -n 'static #isFixedLength' RingContainer.js
+          grep -n ': "calculated"' RingContainer.js
+      - name: Commit and cleanup
+        run: |
+          rm -f .github/workflows/refine-ring-attribute-reflection.yml
+          rm -f .github/scripts/refine-ring-attribute-reflection.py
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add RingContainer.js .github
+          git commit -m 'Reflect dynamic RingContainer lengths as calculated'
+          git push
