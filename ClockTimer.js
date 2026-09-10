@@ -1845,18 +1845,186 @@
                 value.trim();
 
             if (
-                normalized === "5" ||
                 normalized === "+/-5"
             ) {
-                return normalized;
+                return {
+                    type: "rolling-offset",
+                    value: 5
+                };
+            }
+
+            if (
+                normalized === ""
+            ) {
+                return {
+                    type: "fixed",
+                    value: 1
+                };
+            }
+
+            const rollingMatch =
+                normalized.match(
+                    /^(\[|\()(\d+)(\]|\))$/
+                );
+
+            if (rollingMatch) {
+                const value =
+                    Number(
+                        rollingMatch[2]
+                    );
+
+                if (
+                    Number.isInteger(value) &&
+                    value > 0
+                ) {
+                    return {
+                        type: "rolling-groups",
+                        value,
+                        includeBoundaries:
+                            rollingMatch[1] === "[" &&
+                            rollingMatch[3] === "]"
+                    };
+                }
+
+                return undefined;
+            }
+
+            if (
+                /^\d+$/.test(
+                    normalized
+                )
+            ) {
+                const value =
+                    Number(
+                        normalized
+                    );
+
+                if (
+                    Number.isInteger(value) &&
+                    value >= 1 &&
+                    value <= 60
+                ) {
+                    return {
+                        type: "fixed",
+                        value
+                    };
+                }
             }
 
             return undefined;
         }
 
+        #getTickMarkSeconds(
+            mode,
+            now
+        ) {
+            if (
+                mode.type === "fixed"
+            ) {
+                const seconds = [];
+
+                for (
+                    let second = 0;
+                    second < 60;
+                    second += mode.value
+                ) {
+                    seconds.push(
+                        second
+                    );
+                }
+
+                return seconds;
+            }
+
+            const currentSecond =
+                now.getSeconds();
+
+            if (
+                mode.type === "rolling-offset"
+            ) {
+                const seconds = [];
+
+                for (
+                    let offset = -mode.value;
+                    offset <= mode.value;
+                    offset++
+                ) {
+                    seconds.push(
+                        (
+                            currentSecond +
+                            offset +
+                            60
+                        ) % 60
+                    );
+                }
+
+                return seconds;
+            }
+
+            const groupCount =
+                Math.max(
+                    1,
+                    Math.ceil(
+                        mode.value /
+                        5
+                    )
+                );
+
+            const currentGroup =
+                Math.floor(
+                    currentSecond /
+                    5
+                );
+
+            const startGroup =
+                currentGroup -
+                Math.floor(
+                    (
+                        groupCount -
+                        1
+                    ) /
+                    2
+                );
+
+            const startSecond =
+                startGroup *
+                5;
+
+            const endSecond =
+                startSecond +
+                groupCount *
+                5;
+
+            const firstSecond =
+                mode.includeBoundaries
+                    ? startSecond
+                    : startSecond + 1;
+
+            const lastSecond =
+                mode.includeBoundaries
+                    ? endSecond
+                    : endSecond - 1;
+
+            const seconds = [];
+
+            for (
+                let second = firstSecond;
+                second <= lastSecond;
+                second++
+            ) {
+                seconds.push(
+                    (
+                        second % 60 +
+                        60
+                    ) % 60
+                );
+            }
+
+            return seconds;
+        }
+
         #createTickMark(
-            angle,
-            major = false
+            second
         ) {
             const track =
                 document.createElement(
@@ -1866,15 +2034,24 @@
             track.className =
                 "tick-mark-track";
 
+            track.dataset.clockTimerTickSecond =
+                String(
+                    second
+                );
+
             track.style.setProperty(
                 "--clock-timer-tick-angle",
-                `${angle}deg`
+                `${second * 6}deg`
             );
 
             const mark =
                 document.createElement(
                     "div"
                 );
+
+            const major =
+                second % 5 ===
+                    0;
 
             mark.className =
                 major
@@ -1895,129 +2072,182 @@
             return track;
         }
 
+        #fadeTickMarkIn(
+            track
+        ) {
+            track.animate(
+                [
+                    { opacity: 0 },
+                    { opacity: 1 }
+                ],
+                {
+                    duration: 1000 / 3,
+                    easing: "linear",
+                    fill: "both"
+                }
+            );
+        }
+
+        #fadeTickMarkOut(
+            track
+        ) {
+            track.dataset.clockTimerTickExiting =
+                "";
+
+            const opacity =
+                getComputedStyle(
+                    track
+                ).opacity;
+
+            track.animate(
+                [
+                    { opacity },
+                    { opacity: 0 }
+                ],
+                {
+                    duration: 1000 / 3,
+                    easing: "linear",
+                    fill: "forwards"
+                }
+            ).finished
+                .finally(
+                    () => track.remove()
+                );
+        }
+
         #updateTickMarks(
             now = new Date()
         ) {
             this.#stopTickMarkTimer();
 
-            const previousTrailing =
-                this.#tickMarkLayer.firstElementChild;
-
             const mode =
                 this.#getTickMarkMode();
 
             if (!mode) {
+                this.#tickMarkLayer.replaceChildren();
                 return;
             }
 
-            const fragment =
-                document.createDocumentFragment();
+            const seconds =
+                this.#getTickMarkSeconds(
+                    mode,
+                    now
+                );
 
-            if (
-                mode === "5"
-            ) {
+            const rolling =
+                mode.type !== "fixed";
+
+            if (!rolling) {
+                const fragment =
+                    document.createDocumentFragment();
+
                 for (
-                    let second = 0;
-                    second < 60;
-                    second += 5
+                    const second of seconds
                 ) {
                     fragment.appendChild(
                         this.#createTickMark(
-                            second * 6,
-                            true
+                            second
                         )
                     );
                 }
-            }
-            else {
-                const second =
-                    now.getSeconds();
 
-                for (
-                    let offset = -5;
-                    offset <= 5;
-                    offset++
-                ) {
-                    const tickSecond =
-                        (
-                            second +
-                            offset +
-                            60
-                        ) % 60;
+                this.#tickMarkLayer.replaceChildren(
+                    fragment
+                );
 
-                    fragment.appendChild(
-                        this.#createTickMark(
-                            tickSecond * 6,
-                            tickSecond % 5 === 0
-                        )
-                    );
-                }
+                return;
             }
 
-            if (
-                mode === "+/-5"
-            ) {
-                const tracks =
+            const desired =
+                new Set(
+                    seconds.map(
+                        second =>
+                            String(second)
+                    )
+                );
+
+            const existing =
+                new Map();
+
+            for (
+                const track of
                     Array.from(
-                        fragment.children
-                    );
-
-                const leading =
-                    tracks.at(-1);
-
-                if (leading) {
-                    leading.animate(
-                        [
-                            { opacity: 0 },
-                            { opacity: 1 }
-                        ],
-                        {
-                            duration: 1000 / 3,
-                            easing: "linear",
-                            fill: "both"
-                        }
-                    );
+                        this.#tickMarkLayer.children
+                    )
+            ) {
+                if (
+                    track.hasAttribute(
+                        "data-clock-timer-tick-exiting"
+                    )
+                ) {
+                    continue;
                 }
 
-                if (previousTrailing) {
-                    const clone =
-                        previousTrailing.cloneNode(
-                            true
-                        );
+                const second =
+                    track.dataset.clockTimerTickSecond;
 
-                    this.#tickMarkLayer.replaceChildren(
-                        clone
+                if (
+                    second !== undefined
+                ) {
+                    existing.set(
+                        second,
+                        track
+                    );
+                }
+            }
+
+            for (
+                const [second, track] of
+                    existing
+            ) {
+                if (
+                    !desired.has(
+                        second
+                    )
+                ) {
+                    existing.delete(
+                        second
                     );
 
-                    clone.animate(
-                        [
-                            { opacity: 1 },
-                            { opacity: 0 }
-                        ],
-                        {
-                            duration: 1000 / 3,
-                            easing: "linear",
-                            fill: "forwards"
-                        }
-                    ).finished
-                        .finally(
-                            () => clone.remove()
+                    this.#fadeTickMarkOut(
+                        track
+                    );
+                }
+            }
+
+            for (
+                const second of seconds
+            ) {
+                const key =
+                    String(second);
+
+                let track =
+                    existing.get(
+                        key
+                    );
+
+                if (!track) {
+                    track =
+                        this.#createTickMark(
+                            second
                         );
+
+                    this.#tickMarkLayer.appendChild(
+                        track
+                    );
+
+                    this.#fadeTickMarkIn(
+                        track
+                    );
                 }
                 else {
-                    this.#tickMarkLayer.replaceChildren();
+                    this.#tickMarkLayer.appendChild(
+                        track
+                    );
                 }
             }
-            else {
-                this.#tickMarkLayer.replaceChildren();
-            }
-
-            this.#tickMarkLayer.appendChild(
-                fragment
-            );
 
             if (
-                mode === "+/-5" &&
                 this.isConnected
             ) {
                 const millisecondsToNextSecond =
