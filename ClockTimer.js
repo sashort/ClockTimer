@@ -1900,7 +1900,8 @@
         ) {
             this.#stopTickMarkTimer();
 
-            this.#tickMarkLayer.replaceChildren();
+            const previousTrailing =
+                this.#tickMarkLayer.firstElementChild;
 
             const mode =
                 this.#getTickMarkMode();
@@ -1951,6 +1952,64 @@
                         )
                     );
                 }
+            }
+
+            if (
+                mode === "+/-5"
+            ) {
+                const tracks =
+                    Array.from(
+                        fragment.children
+                    );
+
+                const leading =
+                    tracks.at(-1);
+
+                if (leading) {
+                    leading.animate(
+                        [
+                            { opacity: 0 },
+                            { opacity: 1 }
+                        ],
+                        {
+                            duration: 1000 / 3,
+                            easing: "linear",
+                            fill: "both"
+                        }
+                    );
+                }
+
+                if (previousTrailing) {
+                    const clone =
+                        previousTrailing.cloneNode(
+                            true
+                        );
+
+                    this.#tickMarkLayer.replaceChildren(
+                        clone
+                    );
+
+                    clone.animate(
+                        [
+                            { opacity: 1 },
+                            { opacity: 0 }
+                        ],
+                        {
+                            duration: 1000 / 3,
+                            easing: "linear",
+                            fill: "forwards"
+                        }
+                    ).finished
+                        .finally(
+                            () => clone.remove()
+                        );
+                }
+                else {
+                    this.#tickMarkLayer.replaceChildren();
+                }
+            }
+            else {
+                this.#tickMarkLayer.replaceChildren();
             }
 
             this.#tickMarkLayer.appendChild(
