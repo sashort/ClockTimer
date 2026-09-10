@@ -4323,7 +4323,7 @@
                     this.#startTimeMilliseconds
             ) {
                 spans.push({
-                    type: "early-start",
+                    type: "earlystart",
                     start: this.#startTimeMilliseconds,
                     end: this.#scheduledStartMilliseconds
                 });
