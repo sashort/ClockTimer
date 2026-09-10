@@ -1,0 +1,40 @@
+name: Expand ClockTimer tick mark modes
+on:
+  push:
+    paths:
+      - '.github/workflows/expand-tick-mark-modes.yml'
+      - '.github/scripts/expand_tick_mark_modes.py'
+      - '.github/scripts/test_tick_mark_modes.js'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/expand_tick_mark_modes.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Run tick mode tests
+        run: node .github/scripts/test_tick_mark_modes.js
+      - name: Verify parser and rolling behavior
+        run: |
+          grep -Fq 'type: "fixed"' ClockTimer.js
+          grep -Fq 'type: "rolling-groups"' ClockTimer.js
+          grep -Fq 'includeBoundaries' ClockTimer.js
+          grep -Fq 'mode.value /' ClockTimer.js
+          grep -Fq 'this.#fadeTickMarkIn(' ClockTimer.js
+          grep -Fq 'this.#fadeTickMarkOut(' ClockTimer.js
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Expand ClockTimer tick mark modes" || exit 0
+          git push origin main
