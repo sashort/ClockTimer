@@ -1,0 +1,36 @@
+name: Allow decimal rolling offset
+on:
+  push:
+    paths:
+      - '.github/workflows/allow-decimal-rolling-offset.yml'
+      - '.github/scripts/allow_decimal_rolling_offset.py'
+      - '.github/scripts/test_decimal_rolling_offset.js'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/allow_decimal_rolling_offset.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Test decimal rolling offset
+        run: node .github/scripts/test_decimal_rolling_offset.js
+      - name: Verify parser
+        run: |
+          grep -Fq 'rollingOffsetMatch' ClockTimer.js
+          grep -Fq 'wholeSecondRadius' ClockTimer.js
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Allow decimal rolling tick offsets" || exit 0
+          git push origin main
