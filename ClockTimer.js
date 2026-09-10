@@ -22,6 +22,10 @@
 
         #numberRing;
 
+        #tickRing;
+
+        #tickGeometryFrame;
+
         #tickMarkLayer;
 
         #tickMarkTimeout;
@@ -225,10 +229,7 @@
                 #tick-marks {
                     position: absolute;
 
-                    inset:
-                        var(
-                            --clock-timer-tick-inset
-                        );
+                    inset: 0;
 
                     z-index: 10;
 
@@ -517,6 +518,8 @@
             try {
                 this.#ensureBorderRing();
 
+                this.#ensureTickRing();
+
                 this.#ensureHandRing();
 
                 this.#ensureNumberRing();
@@ -555,6 +558,8 @@
             this.#stopDisplayTimer();
 
             this.#stopTickMarkTimer();
+
+            this.#stopTickGeometryTracking();
 
             this.#stopHandAnimations();
 
@@ -1421,6 +1426,8 @@
 
                 this.#ensureBorderRing();
 
+                this.#ensureTickRing();
+
                 this.#ensureHandRing();
 
                 this.#ensureNumberRing();
@@ -1645,6 +1652,169 @@
             return hand;
         }
 
+        #ensureTickRing() {
+            if (
+                this.#tickRing &&
+                this.#tickRing.parentElement ===
+                    this
+            ) {
+                return this.#tickRing;
+            }
+
+            const ring =
+                document.createElement(
+                    "ring-container"
+                );
+
+            ring.dataset.clockTimerTicks =
+                "";
+
+            ring.setAttribute(
+                "geometry-only",
+                ""
+            );
+
+            ring.setAttribute(
+                "width",
+                "0px"
+            );
+
+            ring.setAttribute(
+                "outer-margin",
+                "var(--clock-timer-tick-inset, clamp(5px, 2cqi, 10px))"
+            );
+
+            ring.resizeFilter =
+                "none";
+
+            ring.reorderFilter =
+                "none";
+
+            ring.connectFilter =
+                "none";
+
+            ring.disconnectFilter =
+                "none";
+
+            ring.filterRamp =
+                false;
+
+            this.#tickRing =
+                ring;
+
+            this.appendChild(
+                ring
+            );
+
+            return ring;
+        }
+
+        #syncTickMarkGeometry() {
+            const ring =
+                this.#ensureTickRing();
+
+            const hostRect =
+                this.getBoundingClientRect();
+
+            const ringRect =
+                ring.getBoundingClientRect();
+
+            const left =
+                ringRect.left -
+                hostRect.left;
+
+            const top =
+                ringRect.top -
+                hostRect.top;
+
+            this.#tickMarkLayer.style.inset =
+                "auto";
+
+            this.#tickMarkLayer.style.left =
+                `${left}px`;
+
+            this.#tickMarkLayer.style.top =
+                `${top}px`;
+
+            this.#tickMarkLayer.style.width =
+                `${ringRect.width}px`;
+
+            this.#tickMarkLayer.style.height =
+                `${ringRect.height}px`;
+        }
+
+        #startTickGeometryTracking() {
+            if (
+                this.#tickGeometryFrame !==
+                    undefined
+            ) {
+                return;
+            }
+
+            const update =
+                () => {
+                    this.#tickGeometryFrame =
+                        undefined;
+
+                    if (
+                        !this.isConnected ||
+                        !this.hasAttribute(
+                            "tick-marks"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    this.#syncTickMarkGeometry();
+
+                    this.#tickGeometryFrame =
+                        requestAnimationFrame(
+                            update
+                        );
+                };
+
+            this.#syncTickMarkGeometry();
+
+            this.#tickGeometryFrame =
+                requestAnimationFrame(
+                    update
+                );
+        }
+
+        #stopTickGeometryTracking() {
+            if (
+                this.#tickGeometryFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#tickGeometryFrame
+                );
+
+                this.#tickGeometryFrame =
+                    undefined;
+            }
+
+            this.#tickMarkLayer.style.removeProperty(
+                "left"
+            );
+
+            this.#tickMarkLayer.style.removeProperty(
+                "top"
+            );
+
+            this.#tickMarkLayer.style.removeProperty(
+                "width"
+            );
+
+            this.#tickMarkLayer.style.removeProperty(
+                "height"
+            );
+
+            this.#tickMarkLayer.style.removeProperty(
+                "inset"
+            );
+        }
+
         #ensureNumberRing() {
             if (
                 this.#numberRing &&
@@ -1751,6 +1921,9 @@
             const borderRing =
                 this.#ensureBorderRing();
 
+            const tickRing =
+                this.#ensureTickRing();
+
             const handRing =
                 this.#ensureHandRing();
 
@@ -1778,6 +1951,7 @@
 
             const order = [
                 borderRing,
+                tickRing,
                 handRing,
                 numberRing
             ];
@@ -2151,8 +2325,11 @@
 
             if (!mode) {
                 this.#tickMarkLayer.replaceChildren();
+                this.#stopTickGeometryTracking();
                 return;
             }
+
+            this.#startTickGeometryTracking();
 
             const seconds =
                 this.#getTickMarkSeconds(
@@ -4348,6 +4525,8 @@
 
             this.#ensureBorderRing();
 
+            this.#ensureTickRing();
+
             this.#ensureHandRing();
 
             const numberRing =
@@ -4389,6 +4568,9 @@
         ) {
             const borderRing =
                 this.#ensureBorderRing();
+
+            const tickRing =
+                this.#ensureTickRing();
 
             const handRing =
                 this.#ensureHandRing();
@@ -4500,6 +4682,7 @@
                 activeRing,
                 borderRing,
                 ...inactive,
+                tickRing,
                 handRing,
                 numberRing
             ];
