@@ -1844,13 +1844,26 @@
             const normalized =
                 value.trim();
 
-            if (
-                normalized === "+/-5"
-            ) {
-                return {
-                    type: "rolling-offset",
-                    value: 5
-                };
+            const rollingOffsetMatch =
+                normalized.match(
+                    /^\+\/-(\d+(?:\.\d+)?)$/
+                );
+
+            if (rollingOffsetMatch) {
+                const value =
+                    Number(
+                        rollingOffsetMatch[1]
+                    );
+
+                if (
+                    Number.isFinite(value) &&
+                    value > 0
+                ) {
+                    return {
+                        type: "rolling-offset",
+                        value
+                    };
+                }
             }
 
             if (
@@ -1944,9 +1957,14 @@
             ) {
                 const seconds = [];
 
+                const wholeSecondRadius =
+                    Math.floor(
+                        mode.value
+                    );
+
                 for (
-                    let offset = -mode.value;
-                    offset <= mode.value;
+                    let offset = -wholeSecondRadius;
+                    offset <= wholeSecondRadius;
                     offset++
                 ) {
                     seconds.push(
