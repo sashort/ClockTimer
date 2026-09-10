@@ -5,7 +5,8 @@
             "military-time",
             "format",
             "visible-hours",
-            "tick-marks"
+            "tick-marks",
+            "indicator-symbol"
         ];
 
         static #HOUR =
@@ -27,6 +28,16 @@
         #tickGeometryFrame;
 
         #tickMarkLayer;
+
+        #indicatorRing;
+
+        #indicatorTrack;
+
+        #indicatorSymbol;
+
+        #indicatorFrame;
+
+        #indicatorStartFrame;
 
         #tickMarkTimeout;
 
@@ -247,7 +258,8 @@
                 }
 
                 #tick-marks,
-                #hand-layer {
+                #hand-layer,
+                #indicator-ring {
                     transition-property:
                         inset;
 
@@ -337,6 +349,44 @@
                         var(
                             --clock-timer-major-tick-length
                         );
+                }
+
+                #indicator-ring {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 25;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition-property: opacity;
+                    transition-duration: var(--clock-timer-ring-resize-duration);
+                    transition-timing-function: linear;
+                }
+
+                #indicator-track {
+                    position: absolute;
+                    inset: 0;
+                    transform: rotate(0deg);
+                    transform-origin: 50% 50%;
+                    pointer-events: none;
+                }
+
+                #indicator-symbol {
+                    position: absolute;
+                    top: 0;
+                    left: 50%;
+                    display: block;
+                    width: max-content;
+                    height: max-content;
+                    line-height: 1;
+                    font-size: var(--clock-timer-indicator-symbol-size, 12px);
+                    color: currentColor;
+                    transform: translate(-50%, -100%);
+                    transform-origin: 50% 100%;
+                    pointer-events: none;
+                }
+
+                #indicator-symbol::before {
+                    content: var(--clock-timer-indicator-symbol-content, "▼");
                 }
 
                 #time-layer {
@@ -443,6 +493,43 @@
                 "tick-marks"
             );
 
+            this.#indicatorRing =
+                document.createElement(
+                    "div"
+                );
+
+            this.#indicatorRing.id =
+                "indicator-ring";
+
+            this.#indicatorTrack =
+                document.createElement(
+                    "div"
+                );
+
+            this.#indicatorTrack.id =
+                "indicator-track";
+
+            this.#indicatorSymbol =
+                document.createElement(
+                    "span"
+                );
+
+            this.#indicatorSymbol.id =
+                "indicator-symbol";
+
+            this.#indicatorSymbol.setAttribute(
+                "part",
+                "indicator-symbol"
+            );
+
+            this.#indicatorTrack.appendChild(
+                this.#indicatorSymbol
+            );
+
+            this.#indicatorRing.appendChild(
+                this.#indicatorTrack
+            );
+
             const timeLayer =
                 document.createElement(
                     "div"
@@ -527,6 +614,7 @@
             clockFace.append(
                 ringLayer,
                 this.#tickMarkLayer,
+                this.#indicatorRing,
                 this.#handLayer,
                 timeLayer
             );
@@ -604,6 +692,16 @@
 
             this.#stopSizeObserver();
 
+            if (this.#indicatorFrame !== undefined) {
+                cancelAnimationFrame(this.#indicatorFrame);
+                this.#indicatorFrame = undefined;
+            }
+
+            if (this.#indicatorStartFrame !== undefined) {
+                cancelAnimationFrame(this.#indicatorStartFrame);
+                this.#indicatorStartFrame = undefined;
+            }
+
             if (
                 this.#handStartTimeout !==
                     undefined
@@ -674,6 +772,10 @@
 
                 case "tick-marks":
                     this.#updateTickMarks();
+                    break;
+
+                case "indicator-symbol":
+                    this.#scheduleIndicatorSymbolUpdate();
                     break;
             }
         }
@@ -828,6 +930,8 @@
                     );
             }
 
+            this.#setIndicatorSymbolVisible(false);
+
             this.#starting =
                 true;
 
@@ -853,6 +957,17 @@
             }
 
             this.#animateStartedRingWidths();
+
+            if (this.#indicatorStartFrame !== undefined) {
+                cancelAnimationFrame(this.#indicatorStartFrame);
+            }
+
+            this.#indicatorStartFrame = requestAnimationFrame(() => {
+                this.#indicatorStartFrame = requestAnimationFrame(() => {
+                    this.#indicatorStartFrame = undefined;
+                    this.#updateIndicatorSymbol();
+                });
+            });
 
             this.#stopTickTimer();
             this.#scheduleNextTick();
@@ -1407,6 +1522,7 @@
 
         clear() {
             this.#stopTickTimer();
+            this.#setIndicatorSymbolVisible(false);
 
             this.#creationTime =
                 undefined;
@@ -4628,6 +4744,7 @@
             }
 
             this.#scheduleHourRender();
+            this.#scheduleIndicatorSymbolUpdate();
 
             if (
                 !this.hasAttribute(
@@ -4648,6 +4765,60 @@
             }
 
             this.#syncTickMarkGeometry();
+        }
+
+        #setIndicatorSymbolVisible(visible) {
+            if (!this.#indicatorRing) {
+                return;
+            }
+
+            this.#indicatorRing.style.opacity = visible ? "1" : "0";
+        }
+
+        #scheduleIndicatorSymbolUpdate() {
+            if (this.#indicatorFrame !== undefined) {
+                cancelAnimationFrame(this.#indicatorFrame);
+            }
+
+            this.#indicatorFrame = requestAnimationFrame(() => {
+                this.#indicatorFrame = undefined;
+                this.#updateIndicatorSymbol();
+            });
+        }
+
+        #updateIndicatorSymbol() {
+            if (!this.#indicatorRing || !this.#indicatorTrack || !this.#indicatorSymbol) {
+                return;
+            }
+
+            if (!this.hasAttribute("indicator-symbol") || !this.#started || !this.#elapsedRange) {
+                this.#setIndicatorSymbolVisible(false);
+                return;
+            }
+
+            const ring = this.#elapsedRange.parentElement;
+
+            if (!ring || ring.localName !== "ring-container" || !ring.hasAttribute("active")) {
+                this.#setIndicatorSymbolVisible(false);
+                return;
+            }
+
+            const end = Number(this.#elapsedRange.clockTimerEnd);
+            const ringIndex = Number(ring.clockTimerRingIndex);
+
+            if (!Number.isFinite(end) || !Number.isFinite(ringIndex)) {
+                this.#setIndicatorSymbolVisible(false);
+                return;
+            }
+
+            const ringStart = this.#getRingStart(ringIndex);
+            const angle = ((end - ringStart) / ClockTimer.#HOUR) * 360;
+            const normalizedAngle = (angle % 360 + 360) % 360;
+            const inset = ring.renderedInset ?? ring.inset ?? "0px";
+
+            this.#indicatorRing.style.inset = inset;
+            this.#indicatorTrack.style.transform = `rotate(${normalizedAngle}deg)`;
+            this.#setIndicatorSymbolVisible(!this.#starting);
         }
 
         #needsTick() {
