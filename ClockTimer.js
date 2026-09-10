@@ -6,7 +6,9 @@
             "format",
             "visible-hours",
             "tick-marks",
-            "indicator-symbol"
+            "indicator-symbol",
+            "grayscale",
+            "grayscale-ramp"
         ];
 
         static #HOUR =
@@ -158,6 +160,8 @@
 
         #spinAnimation;
 
+        #grayscaleAnimation;
+
         constructor() {
             super();
 
@@ -176,6 +180,18 @@
                     syntax: "<time>";
                     inherits: true;
                     initial-value: 750ms;
+                }
+
+                @property --clock-timer-grayscale {
+                    syntax: "<percentage>";
+                    inherits: true;
+                    initial-value: 100%;
+                }
+
+                @property --clock-timer-grayscale-ramp {
+                    syntax: "<time>";
+                    inherits: true;
+                    initial-value: 333ms;
                 }
 
                 :host {
@@ -745,6 +761,12 @@
             this.#spinAnimation =
                 undefined;
 
+            this.#grayscaleAnimation
+                ?.cancel();
+
+            this.#grayscaleAnimation =
+                undefined;
+
             if (this.#indicatorFrame !== undefined) {
                 cancelAnimationFrame(this.#indicatorFrame);
                 this.#indicatorFrame = undefined;
@@ -877,6 +899,21 @@
                     this.#syncIndicatorSymbolContent();
                     this.#scheduleIndicatorSymbolUpdate();
                     break;
+
+                case "grayscale":
+                case "grayscale-ramp":
+                    if (
+                        this.#updatesSuspended &&
+                        !this.#processingAsyncBatch
+                    ) {
+                        this.#queueAsyncOperation({
+                            type: "grayscale"
+                        });
+                    }
+                    else {
+                        this.#runGrayscale();
+                    }
+                    break;
             }
         }
 
@@ -982,6 +1019,14 @@
                     this.#asyncOperationBuffer.filter(
                         item =>
                             item.type !== "percent-goal"
+                    );
+            }
+
+            if (operation.type === "grayscale") {
+                this.#asyncOperationBuffer =
+                    this.#asyncOperationBuffer.filter(
+                        item =>
+                            item.type !== "grayscale"
                     );
             }
 
@@ -1168,6 +1213,208 @@
                 });
         }
 
+        #parseGrayscalePercentage(value) {
+            if (typeof value !== "string") {
+                return undefined;
+            }
+
+            const text =
+                value.trim();
+
+            const match =
+                text.match(
+                    /^([+]?(?:\d+(?:\.\d+)?|\.\d+))%$/
+                );
+
+            if (!match) {
+                return undefined;
+            }
+
+            const percentage =
+                Number(match[1]);
+
+            if (
+                !Number.isFinite(percentage) ||
+                percentage < 0 ||
+                percentage > 100
+            ) {
+                return undefined;
+            }
+
+            return percentage;
+        }
+
+        #parseGrayscaleRampMilliseconds(value) {
+            if (typeof value !== "string") {
+                return undefined;
+            }
+
+            const text =
+                value.trim();
+
+            const match =
+                text.match(
+                    /^([+]?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$/i
+                );
+
+            if (!match) {
+                return undefined;
+            }
+
+            const amount =
+                Number(match[1]);
+
+            const milliseconds =
+                match[2].toLowerCase() === "s"
+                    ? amount * 1000
+                    : amount;
+
+            if (
+                !Number.isFinite(milliseconds) ||
+                milliseconds < 0
+            ) {
+                return undefined;
+            }
+
+            return milliseconds;
+        }
+
+        #getGrayscalePercentage() {
+            if (!this.hasAttribute("grayscale")) {
+                return 0;
+            }
+
+            const attributeValue =
+                this.#parseGrayscalePercentage(
+                    this.getAttribute("grayscale")
+                );
+
+            if (attributeValue !== undefined) {
+                return attributeValue;
+            }
+
+            const cssValue =
+                getComputedStyle(this)
+                    .getPropertyValue(
+                        "--clock-timer-grayscale"
+                    )
+                    .trim();
+
+            return this.#parseGrayscalePercentage(
+                cssValue
+            ) ?? 100;
+        }
+
+        #getGrayscaleRampMilliseconds() {
+            const attributeValue =
+                this.#parseGrayscaleRampMilliseconds(
+                    this.getAttribute("grayscale-ramp")
+                );
+
+            if (attributeValue !== undefined) {
+                return attributeValue;
+            }
+
+            const cssValue =
+                getComputedStyle(this)
+                    .getPropertyValue(
+                        "--clock-timer-grayscale-ramp"
+                    )
+                    .trim();
+
+            return this.#parseGrayscaleRampMilliseconds(
+                cssValue
+            ) ?? 333;
+        }
+
+        #runGrayscale() {
+            if (!this.#clockFace) {
+                return;
+            }
+
+            const percentage =
+                this.#getGrayscalePercentage();
+
+            const targetFilter =
+                `grayscale(${percentage}%)`;
+
+            if (!this.isConnected) {
+                this.#grayscaleAnimation
+                    ?.cancel();
+
+                this.#grayscaleAnimation =
+                    undefined;
+
+                this.#clockFace.style.filter =
+                    targetFilter;
+
+                return;
+            }
+
+            const duration =
+                this.#getGrayscaleRampMilliseconds();
+
+            const currentFilter =
+                getComputedStyle(
+                    this.#clockFace
+                ).filter || "none";
+
+            this.#grayscaleAnimation
+                ?.cancel();
+
+            this.#clockFace.style.filter =
+                currentFilter;
+
+            if (duration <= 0) {
+                this.#grayscaleAnimation =
+                    undefined;
+
+                this.#clockFace.style.filter =
+                    targetFilter;
+
+                return;
+            }
+
+            const animation =
+                this.#clockFace.animate(
+                    [
+                        {
+                            filter: currentFilter
+                        },
+                        {
+                            filter: targetFilter
+                        }
+                    ],
+                    {
+                        duration,
+                        easing: "linear",
+                        fill: "forwards"
+                    }
+                );
+
+            this.#grayscaleAnimation =
+                animation;
+
+            animation.finished
+                .then(() => {
+                    if (
+                        this.#grayscaleAnimation !==
+                            animation
+                    ) {
+                        return;
+                    }
+
+                    this.#clockFace.style.filter =
+                        targetFilter;
+
+                    animation.cancel();
+
+                    this.#grayscaleAnimation =
+                        undefined;
+                })
+                .catch(() => {});
+        }
+
         #flushAsyncOperations() {
             if (!this.#asyncResumePending) {
                 return;
@@ -1231,6 +1478,10 @@
                                 operation.rotations,
                                 operation.duration
                             );
+                            break;
+
+                        case "grayscale":
+                            this.#runGrayscale();
                             break;
                     }
 
