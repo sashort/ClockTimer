@@ -8,8 +8,7 @@
             "tick-marks",
             "indicator-symbol",
             "grayscale",
-            "grayscale-ramp",
-            "background-color"
+            "grayscale-ramp"
         ];
 
         static #HOUR =
@@ -714,7 +713,6 @@
 
         connectedCallback() {
             this.#captureFaceBackground();
-            this.#syncFaceBackgroundColor();
 
             this.#ensureAttributes();
 
@@ -944,10 +942,6 @@
                     else {
                         this.#runGrayscale();
                     }
-                    break;
-
-                case "background-color":
-                    this.#syncFaceBackgroundColor();
                     break;
             }
         }
@@ -2539,38 +2533,6 @@
             );
         }
 
-        #syncFaceBackgroundColor() {
-            if (!this.#faceBackground) {
-                return;
-            }
-
-            const raw =
-                this.getAttribute(
-                    "background-color"
-                );
-
-            const value =
-                typeof raw === "string"
-                    ? raw.trim()
-                    : "";
-
-            if (
-                value &&
-                CSS.supports(
-                    "color",
-                    value
-                )
-            ) {
-                this.#faceBackground.style.backgroundColor =
-                    value;
-            }
-            else {
-                this.#faceBackground.style.removeProperty(
-                    "background-color"
-                );
-            }
-        }
-
         #ensureAttributes() {
             if (
                 !this.hasAttribute(
@@ -2999,25 +2961,41 @@
                 return;
             }
 
-            if (this.#hostBackgroundOverride) {
-                this.#hostBackgroundOverride.remove();
-                this.#hostBackgroundOverride = undefined;
+            if (!this.#hostBackgroundOverride) {
+                const override =
+                    document.createElement("style");
+
+                override.textContent =
+                    ":host { background-color: transparent !important; }";
+
+                this.#shadowRoot.appendChild(override);
+                this.#hostBackgroundOverride = override;
+            }
+
+            this.#syncFaceBackgroundFromExternalCSS();
+        }
+
+        #syncFaceBackgroundFromExternalCSS() {
+            if (!this.#faceBackground) {
+                return;
+            }
+
+            const override =
+                this.#hostBackgroundOverride;
+
+            if (override) {
+                override.disabled = true;
             }
 
             const backgroundColor =
                 getComputedStyle(this).backgroundColor;
 
+            if (override) {
+                override.disabled = false;
+            }
+
             this.#faceBackground.style.backgroundColor =
                 backgroundColor;
-
-            const override =
-                document.createElement("style");
-
-            override.textContent =
-                ":host { background-color: transparent !important; }";
-
-            this.#shadowRoot.appendChild(override);
-            this.#hostBackgroundOverride = override;
         }
 
         #syncFaceBackgroundGeometry() {
@@ -3048,10 +3026,12 @@
                     return;
                 }
 
+                this.#syncFaceBackgroundFromExternalCSS();
                 this.#syncFaceBackgroundGeometry();
                 this.#faceBackgroundFrame = requestAnimationFrame(update);
             };
 
+            this.#syncFaceBackgroundFromExternalCSS();
             this.#syncFaceBackgroundGeometry();
             this.#faceBackgroundFrame = requestAnimationFrame(update);
         }
