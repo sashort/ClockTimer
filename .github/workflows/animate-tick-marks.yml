@@ -1,0 +1,40 @@
+name: Animate ClockTimer tick marks
+
+on:
+  push:
+    paths:
+      - '.github/workflows/animate-tick-marks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  animate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply tick-mark transition
+        run: python .github/scripts/animate_tick_marks.py
+
+      - name: Syntax check
+        run: node --check ClockTimer.js
+
+      - name: Targeted checks
+        run: |
+          grep -q -- '--clock-timer-ring-resize-duration:' ClockTimer.js
+          grep -q 'transition-property:' ClockTimer.js
+          grep -q 'transition-duration:' ClockTimer.js
+          grep -q 'transition-timing-function:' ClockTimer.js
+
+      - name: Commit change and cleanup
+        run: |
+          rm -f .github/workflows/animate-tick-marks.yml
+          rm -f .github/scripts/animate_tick_marks.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/workflows/animate-tick-marks.yml .github/scripts/animate_tick_marks.py
+          git commit -m 'Animate ClockTimer tick-mark ring changes' || exit 0
+          git push
