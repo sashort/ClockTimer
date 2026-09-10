@@ -13,6 +13,7 @@ class TimeRange extends HTMLElement {
     #geometryStyleElement;
     #contourLayer;
     #elapsedBaseLayer;
+    #elapsedEdgeLayer;
     #elapsedWaveLayer;
     #appearanceObserver;
     #appearanceRefreshFrame;
@@ -202,6 +203,7 @@ class TimeRange extends HTMLElement {
             }
 
             #elapsed-base,
+            #elapsed-edge,
             #elapsed-wave {
                 position: absolute;
                 inset: 0;
@@ -223,6 +225,7 @@ class TimeRange extends HTMLElement {
             }
 
             :host([type="elapsed"]) #elapsed-base,
+            :host([type="elapsed"]) #elapsed-edge,
             :host([type="elapsed"]) #elapsed-wave {
                 display: block;
             }
@@ -279,6 +282,14 @@ class TimeRange extends HTMLElement {
         this.#elapsedBaseLayer.id =
             "elapsed-base";
 
+        this.#elapsedEdgeLayer =
+            document.createElement(
+                "div"
+            );
+
+        this.#elapsedEdgeLayer.id =
+            "elapsed-edge";
+
         this.#elapsedWaveLayer =
             document.createElement(
                 "div"
@@ -303,6 +314,7 @@ class TimeRange extends HTMLElement {
             this.#styleElement,
             this.#contourLayer,
             this.#elapsedBaseLayer,
+            this.#elapsedEdgeLayer,
             this.#elapsedWaveLayer
         );
     }
@@ -2529,6 +2541,7 @@ class TimeRange extends HTMLElement {
     #updateElapsedWaveAppearance() {
         if (
             !this.#elapsedBaseLayer ||
+            !this.#elapsedEdgeLayer ||
             !this.#elapsedWaveLayer
         ) {
             return;
@@ -2540,6 +2553,9 @@ class TimeRange extends HTMLElement {
         ) {
             this.#elapsedBaseLayer.style.background =
                 "transparent";
+
+            this.#elapsedEdgeLayer.style.backgroundImage =
+                "none";
 
             this.#elapsedWaveLayer.style.backgroundImage =
                 "none";
@@ -2676,12 +2692,23 @@ class TimeRange extends HTMLElement {
 
         const baseStrength =
             Math.min(
-                0.16,
+                0.18,
                 Math.max(
-                    0.08,
-                    0.09 +
-                        contrastRange * 0.04 +
+                    0.12,
+                    0.13 +
+                        contrastRange * 0.03 +
                         (1 - strongestOpacity) * 0.03
+                )
+            );
+
+        const edgeStrength =
+            Math.min(
+                0.25,
+                Math.max(
+                    0.15,
+                    0.17 +
+                        contrastRange * 0.04 +
+                        (1 - strongestOpacity) * 0.04
                 )
             );
 
@@ -2690,6 +2717,14 @@ class TimeRange extends HTMLElement {
 
         this.#elapsedBaseLayer.style.background =
             `rgba(255, 255, 255, ${baseStrength.toFixed(3)})`;
+
+        this.#elapsedEdgeLayer.style.mixBlendMode =
+            "screen";
+
+        this.#elapsedEdgeLayer.style.setProperty(
+            "--elapsed-edge-strength",
+            edgeStrength.toFixed(3)
+        );
 
         const shoulder =
             strength * 0.38;
@@ -2791,6 +2826,20 @@ class TimeRange extends HTMLElement {
             `rgba(0, 0, 0, 0.28) ${innerRadius}px, ` +
             `rgba(255, 255, 255, 0.34) ${centerRadius}px, ` +
             `rgba(0, 0, 0, 0.22) ${outerRadius}px)`;
+
+        if (this.#elapsedEdgeLayer) {
+            const edge =
+                2;
+
+            this.#elapsedEdgeLayer.style.backgroundImage =
+                `radial-gradient(circle at center, ` +
+                `transparent ${Math.max(0, innerRadius - edge)}px, ` +
+                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${innerRadius}px, ` +
+                `transparent ${innerRadius + edge}px, ` +
+                `transparent ${Math.max(innerRadius + edge, outerRadius - edge)}px, ` +
+                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${outerRadius}px, ` +
+                `transparent ${outerRadius + edge}px)`;
+        }
     }
 
     #updateClipPath() {
