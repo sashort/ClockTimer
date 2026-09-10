@@ -50,6 +50,8 @@ class RingContainer extends HTMLElement {
     #animationFrontRamp = "0ms";
     #animationEndRamp = "0ms";
 
+    #geometryRefreshFrame;
+
     static #batchResizing = false;
     static #propertiesRegistered = false;
     static #instances = new Set();
@@ -205,6 +207,14 @@ class RingContainer extends HTMLElement {
             parent,
             "disconnect"
         );
+    }
+
+    get renderedInset() {
+        return this.#getRenderedGeometry().inset;
+    }
+
+    get renderedWidth() {
+        return this.#getRenderedGeometry().width;
     }
 
     static get batchResizing() {
@@ -1343,6 +1353,8 @@ class RingContainer extends HTMLElement {
             this.#animationTargetWidth
         );
 
+        this.#startChildGeometryRefresh();
+
         if (
             milliseconds <= 0
         ) {
@@ -1449,6 +1461,59 @@ class RingContainer extends HTMLElement {
         }
     }
 
+    #startChildGeometryRefresh() {
+        if (
+            this.#geometryRefreshFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#geometryRefreshFrame
+            );
+        }
+
+        const refresh = () => {
+            if (
+                this.#animationPhase !==
+                    "geometry"
+            ) {
+                this.#geometryRefreshFrame =
+                    undefined;
+
+                return;
+            }
+
+            this.#refreshChildVisualGeometry();
+
+            this.#geometryRefreshFrame =
+                requestAnimationFrame(
+                    refresh
+                );
+        };
+
+        this.#refreshChildVisualGeometry();
+
+        this.#geometryRefreshFrame =
+            requestAnimationFrame(
+                refresh
+            );
+    }
+
+    #stopChildGeometryRefresh() {
+        if (
+            this.#geometryRefreshFrame ===
+                undefined
+        ) {
+            return;
+        }
+
+        cancelAnimationFrame(
+            this.#geometryRefreshFrame
+        );
+
+        this.#geometryRefreshFrame =
+            undefined;
+    }
+
     #finishAnimation(
         expectedToken
     ) {
@@ -1464,6 +1529,8 @@ class RingContainer extends HTMLElement {
         clearTimeout(
             this.#phaseTimer
         );
+
+        this.#stopChildGeometryRefresh();
 
         ++this.#animationToken;
 
@@ -1517,6 +1584,8 @@ class RingContainer extends HTMLElement {
         clearTimeout(
             this.#phaseTimer
         );
+
+        this.#stopChildGeometryRefresh();
 
         ++this.#animationToken;
 

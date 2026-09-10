@@ -2355,6 +2355,7 @@ class TimeRange extends HTMLElement {
 
         const ringWidth =
             this.#resolveLength(
+                parent.renderedWidth ??
                 parent.getAttribute(
                     "width"
                 ) ??
@@ -2363,6 +2364,7 @@ class TimeRange extends HTMLElement {
 
         const ringInset =
             this.#resolveLength(
+                parent.renderedInset ??
                 this.#getEffectiveRingInset(
                     parent
                 )
