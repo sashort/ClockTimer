@@ -1,0 +1,34 @@
+name: Fix start clear angle animation
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-start-clear-angle-animation.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fix
+        run: python .github/scripts/fix-start-clear-angle-animation.py
+      - name: Syntax checks
+        run: |
+          node --check TimeRange.js
+          node --check ClockTimer.js
+      - name: Targeted checks
+        run: |
+          grep -q 'snapToLogicalTiming()' TimeRange.js
+          grep -q '#snapTimerRangeAngles()' ClockTimer.js
+          grep -q 'this.#tick();' ClockTimer.js
+          grep -q 'this.#scheduleNextTick();' ClockTimer.js
+          grep -q 'data-time-range-full-entry' ClockTimer.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/scripts/fix-start-clear-angle-animation.py
+          rm .github/workflows/fix-start-clear-angle-animation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js TimeRange.js .github/scripts/fix-start-clear-angle-animation.py .github/workflows/fix-start-clear-angle-animation.yml
+          git commit -m 'Keep TimeRange angles fixed during start and clear'
+          git push
