@@ -1714,38 +1714,78 @@
             return ring;
         }
 
+        #getTickInset() {
+            let outerInset =
+                "0px";
+
+            const rings =
+                Array.from(
+                    this.children
+                ).filter(
+                    element =>
+                        element.localName ===
+                            "ring-container"
+                );
+
+            for (
+                const ring of
+                    rings
+            ) {
+                const width =
+                    ring.getAttribute(
+                        "width"
+                    ) ??
+                    "0px";
+
+                const outerMargin =
+                    ring.getAttribute(
+                        "outer-margin"
+                    ) ??
+                    "0px";
+
+                const innerMargin =
+                    ring.getAttribute(
+                        "inner-margin"
+                    ) ??
+                    "0px";
+
+                const inset =
+                    `calc(${outerInset} + ${outerMargin})`;
+
+                if (
+                    ring ===
+                        this.#tickRing
+                ) {
+                    return inset;
+                }
+
+                outerInset =
+                    `calc(${inset} + ${width} + ${innerMargin})`;
+            }
+
+            return "0px";
+        }
+
         #syncTickMarkGeometry() {
-            const ring =
-                this.#ensureTickRing();
+            this.#ensureTickRing();
 
-            const hostRect =
-                this.getBoundingClientRect();
-
-            const ringRect =
-                ring.getBoundingClientRect();
-
-            const left =
-                ringRect.left -
-                hostRect.left;
-
-            const top =
-                ringRect.top -
-                hostRect.top;
-
-            this.#tickMarkLayer.style.inset =
-                "auto";
+            const inset =
+                this.#getTickInset();
 
             this.#tickMarkLayer.style.left =
-                `${left}px`;
+                "";
 
             this.#tickMarkLayer.style.top =
-                `${top}px`;
+                "";
 
             this.#tickMarkLayer.style.width =
-                `${ringRect.width}px`;
+                "";
 
             this.#tickMarkLayer.style.height =
-                `${ringRect.height}px`;
+                "";
+
+            this.#tickMarkLayer.style.inset =
+                inset;
         }
 
         #startTickGeometryTracking() {
