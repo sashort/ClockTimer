@@ -4336,7 +4336,7 @@
                     this.#scheduledStartMilliseconds
             ) {
                 spans.push({
-                    type: "late-start",
+                    type: "prestart",
                     start: this.#scheduledStartMilliseconds,
                     end: this.#startTimeMilliseconds
                 });
