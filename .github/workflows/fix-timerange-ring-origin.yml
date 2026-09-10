@@ -1,0 +1,42 @@
+name: Fix TimeRange ring origin
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-timerange-ring-origin.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply TimeRange ring-origin fix
+        run: python .github/scripts/fix_timerange_ring_origin.py
+
+      - name: Syntax check
+        run: node --check TimeRange.js
+
+      - name: Targeted checks
+        run: |
+          grep -q '#getRingOriginTime' TimeRange.js
+          grep -q '#updateParentClipPaths' TimeRange.js
+          grep -q 'data-clock-timer-ring' TimeRange.js
+          grep -q 'ringOrigin' TimeRange.js
+
+      - name: Commit fix and cleanup
+        run: |
+          rm .github/scripts/fix_timerange_ring_origin.py
+          rm .github/workflows/fix-timerange-ring-origin.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add TimeRange.js .github/scripts/fix_timerange_ring_origin.py .github/workflows/fix-timerange-ring-origin.yml
+          git commit -m 'Align TimeRange angles to ClockTimer ring origin'
+          git push
