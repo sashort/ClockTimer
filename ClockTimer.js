@@ -133,6 +133,9 @@
             style.textContent = `
                 :host {
 
+                    --clock-timer-tick-inset:
+                        clamp(5px, 2cqi, 10px);
+
                     --clock-timer-tick-width:
                         clamp(1px, 0.35cqi, 1.5px);
 
@@ -1680,6 +1683,11 @@
             ring.setAttribute(
                 "width",
                 "0px"
+            );
+
+            ring.setAttribute(
+                "outer-margin",
+                "var(--clock-timer-tick-inset, clamp(5px, 2cqi, 10px))"
             );
 
             ring.resizeFilter =
