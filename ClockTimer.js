@@ -146,6 +146,10 @@
                     --clock-timer-tick-color:
                         currentColor;
 
+                    --clock-timer-tick-shadow:
+                        0 0 1px rgb(0 0 0 / 75%),
+                        0 0 2px rgb(0 0 0 / 45%);
+
                     position: relative;
 
                     display: block;
@@ -272,6 +276,11 @@
                     background:
                         var(
                             --clock-timer-tick-color
+                        );
+
+                    box-shadow:
+                        var(
+                            --clock-timer-tick-shadow
                         );
 
                     transform:
