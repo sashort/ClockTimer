@@ -1,0 +1,31 @@
+name: Rounded TimeRange gradient
+on:
+  push:
+    paths:
+      - .github/workflows/rounded-timerange-gradient.yml
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply rounded gradient
+        run: python .github/scripts/rounded-timerange-gradient.py
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Targeted checks
+        run: |
+          grep -q 'radial-gradient' TimeRange.js
+          grep -q 'time-range-ring-inset' TimeRange.js
+          grep -q 'time-range-ring-width' TimeRange.js
+          grep -q ':host(\[overlapping\])' TimeRange.js
+          ! grep -q 'drop-shadow' TimeRange.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/scripts/rounded-timerange-gradient.py .github/workflows/rounded-timerange-gradient.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add TimeRange.js .github/scripts/rounded-timerange-gradient.py .github/workflows/rounded-timerange-gradient.yml
+          git commit -m 'Round TimeRange rings with radial gradient'
+          git push
