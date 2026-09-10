@@ -1,0 +1,29 @@
+name: Add background color attribute
+on:
+  push:
+    paths:
+      - '.github/workflows/add-background-color-attribute.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/add-background-color-attribute.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify background-color support
+        run: |
+          grep -q '"background-color"' ClockTimer.js
+          grep -q '#syncFaceBackgroundColor' ClockTimer.js
+      - name: Commit result and self-clean
+        run: |
+          rm .github/scripts/add-background-color-attribute.py
+          rm .github/workflows/add-background-color-attribute.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/add-background-color-attribute.py .github/workflows/add-background-color-attribute.yml
+          git commit -m 'Pipe background-color attribute to clock face'
+          git push
