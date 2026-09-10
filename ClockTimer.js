@@ -1947,7 +1947,7 @@
                     fragment.appendChild(
                         this.#createTickMark(
                             tickSecond * 6,
-                            offset === 0
+                            tickSecond % 5 === 0
                         )
                     );
                 }
