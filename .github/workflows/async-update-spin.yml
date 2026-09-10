@@ -1,0 +1,37 @@
+name: Async update batching and spin
+on:
+  push:
+    paths:
+      - '.github/workflows/async-update-spin.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply patch
+        run: python .github/scripts/async-update-spin.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify async batching and spin
+        run: |
+          grep -q 'suspendUpdate()' ClockTimer.js
+          grep -q 'resumeUpdate()' ClockTimer.js
+          grep -q 'spin(rotations = 1, duration)' ClockTimer.js
+          grep -q -- '--clock-timer-spin-duration' ClockTimer.js
+          grep -q 'initial-value: 750ms' ClockTimer.js
+          grep -q '#flushAsyncOperations()' ClockTimer.js
+          grep -q 'item.type !== "spin"' ClockTimer.js
+          grep -q 'rotateY' ClockTimer.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/workflows/async-update-spin.yml .github/scripts/async-update-spin.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/workflows/async-update-spin.yml .github/scripts/async-update-spin.py
+          git commit -m 'Add async update batching and spin'
+          git push
