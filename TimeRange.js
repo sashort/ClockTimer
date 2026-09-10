@@ -12,6 +12,9 @@ class TimeRange extends HTMLElement {
     #styleElement;
     #geometryStyleElement;
     #contourLayer;
+    #elapsedWaveLayer;
+    #appearanceObserver;
+    #appearanceRefreshFrame;
     #syncing = 0;
     #suspendAnimations = false;
     #renderStartTime;
@@ -196,6 +199,35 @@ class TimeRange extends HTMLElement {
             :host([overlapping]) #contour {
                 display: none;
             }
+
+            #elapsed-wave {
+                position: absolute;
+                inset: 0;
+                display: none;
+                pointer-events: none;
+                transform-origin: 50% 50%;
+                background-repeat: no-repeat;
+                will-change: transform;
+            }
+
+            :host([type="elapsed"]) {
+                animation: none !important;
+            }
+
+            :host([type="elapsed"]) #elapsed-wave {
+                display: block;
+                animation: elapsed-wave-rotation 4s linear infinite;
+            }
+
+            @keyframes elapsed-wave-rotation {
+                from {
+                    transform: rotate(0deg);
+                }
+
+                to {
+                    transform: rotate(360deg);
+                }
+            }
         `;
 
         this.#contourLayer =
@@ -205,6 +237,14 @@ class TimeRange extends HTMLElement {
 
         this.#contourLayer.id =
             "contour";
+
+        this.#elapsedWaveLayer =
+            document.createElement(
+                "div"
+            );
+
+        this.#elapsedWaveLayer.id =
+            "elapsed-wave";
 
         this.#styleElement =
             document.createElement(
@@ -220,7 +260,8 @@ class TimeRange extends HTMLElement {
             contourStyle,
             this.#geometryStyleElement,
             this.#styleElement,
-            this.#contourLayer
+            this.#contourLayer,
+            this.#elapsedWaveLayer
         );
     }
 
@@ -267,6 +308,9 @@ class TimeRange extends HTMLElement {
             this.parentElement
         );
 
+        this.#startAppearanceObserver();
+        this.#scheduleAppearanceRefresh();
+
         if (
             this.timeRangeFullEntry ===
                 true
@@ -307,6 +351,8 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        this.#stopAppearanceObserver();
+
         if (
             this.#animationFrame !==
                 undefined
@@ -346,6 +392,8 @@ class TimeRange extends HTMLElement {
         ) {
             return;
         }
+
+        this.#scheduleAppearanceRefresh();
 
         if (
             name ===
@@ -1963,6 +2011,7 @@ class TimeRange extends HTMLElement {
 
     refreshVisualGeometry() {
         this.#updateClipPath();
+        this.#scheduleAppearanceRefresh();
 
         return this;
     }
@@ -2322,6 +2371,234 @@ class TimeRange extends HTMLElement {
         )
             ? pixels
             : 0;
+    }
+
+    #startAppearanceObserver() {
+        this.#stopAppearanceObserver();
+
+        this.#appearanceObserver =
+            new MutationObserver(
+                mutations => {
+                    if (
+                        mutations.some(
+                            mutation =>
+                                mutation.type === "attributes" &&
+                                (
+                                    mutation.target === this ||
+                                    mutation.target === this.parentElement
+                                )
+                        )
+                    ) {
+                        this.#scheduleAppearanceRefresh();
+                    }
+                }
+            );
+
+        this.#appearanceObserver.observe(
+            this,
+            {
+                attributes: true
+            }
+        );
+
+        const parent =
+            this.parentElement;
+
+        if (parent) {
+            this.#appearanceObserver.observe(
+                parent,
+                {
+                    attributes: true
+                }
+            );
+        }
+    }
+
+    #stopAppearanceObserver() {
+        this.#appearanceObserver?.disconnect();
+        this.#appearanceObserver =
+            undefined;
+
+        if (
+            this.#appearanceRefreshFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#appearanceRefreshFrame
+            );
+
+            this.#appearanceRefreshFrame =
+                undefined;
+        }
+    }
+
+    #scheduleAppearanceRefresh() {
+        if (
+            !this.isConnected ||
+            this.#appearanceRefreshFrame !==
+                undefined
+        ) {
+            return;
+        }
+
+        this.#appearanceRefreshFrame =
+            requestAnimationFrame(
+                () => {
+                    this.#appearanceRefreshFrame =
+                        undefined;
+
+                    this.#updateElapsedWaveAppearance();
+                }
+            );
+    }
+
+    #parseComputedColor(value) {
+        const match =
+            String(value ?? "").match(
+                /^rgba?\(\s*([\d.]+)\s*(?:,|\s)\s*([\d.]+)\s*(?:,|\s)\s*([\d.]+)(?:\s*(?:,|\/)\s*([\d.]+%?))?\s*\)$/i
+            );
+
+        if (!match) {
+            return undefined;
+        }
+
+        const alphaText =
+            match[4];
+
+        const alpha =
+            alphaText === undefined
+                ? 1
+                : alphaText.endsWith("%")
+                    ? Number(alphaText.slice(0, -1)) / 100
+                    : Number(alphaText);
+
+        return {
+            red: Number(match[1]),
+            green: Number(match[2]),
+            blue: Number(match[3]),
+            alpha: Number.isFinite(alpha)
+                ? Math.min(1, Math.max(0, alpha))
+                : 1
+        };
+    }
+
+    #updateElapsedWaveAppearance() {
+        if (!this.#elapsedWaveLayer) {
+            return;
+        }
+
+        if (
+            this.getAttribute("type") !==
+                "elapsed"
+        ) {
+            this.#elapsedWaveLayer.style.backgroundImage =
+                "none";
+
+            return;
+        }
+
+        const computed =
+            getComputedStyle(this);
+
+        const color =
+            this.#parseComputedColor(
+                computed.backgroundColor
+            );
+
+        const opacityValue =
+            Number.parseFloat(
+                computed.opacity
+            );
+
+        const hostOpacity =
+            Number.isFinite(opacityValue)
+                ? Math.min(1, Math.max(0, opacityValue))
+                : 1;
+
+        const backgroundAlpha =
+            color?.alpha ?? 1;
+
+        const effectiveOpacity =
+            hostOpacity *
+            backgroundAlpha;
+
+        let luminance =
+            0.5;
+
+        if (color) {
+            const channel =
+                value => {
+                    const normalized =
+                        value / 255;
+
+                    return normalized <= 0.04045
+                        ? normalized / 12.92
+                        : Math.pow(
+                            (normalized + 0.055) / 1.055,
+                            2.4
+                        );
+                };
+
+            luminance =
+                0.2126 * channel(color.red) +
+                0.7152 * channel(color.green) +
+                0.0722 * channel(color.blue);
+        }
+
+        const useDarkWave =
+            luminance > 0.58;
+
+        const waveChannel =
+            useDarkWave ? 0 : 255;
+
+        let strength =
+            0.42 +
+            (1 - effectiveOpacity) *
+                0.38;
+
+        if (
+            computed.backgroundImage !==
+                "none"
+        ) {
+            strength += 0.08;
+        }
+
+        if (
+            computed.filter !== "none" ||
+            computed.mixBlendMode !== "normal"
+        ) {
+            strength += 0.05;
+        }
+
+        strength =
+            Math.min(
+                0.9,
+                Math.max(
+                    0.38,
+                    strength
+                )
+            );
+
+        const shoulder =
+            strength * 0.34;
+
+        const rgba =
+            alpha =>
+                `rgba(${waveChannel}, ${waveChannel}, ${waveChannel}, ${alpha.toFixed(3)})`;
+
+        this.#elapsedWaveLayer.style.mixBlendMode =
+            useDarkWave
+                ? "multiply"
+                : "screen";
+
+        this.#elapsedWaveLayer.style.backgroundImage =
+            `conic-gradient(from 0deg at 50% 50%, ` +
+            `${rgba(strength)} 0deg, ` +
+            `${rgba(shoulder)} 13deg, ` +
+            `transparent 38deg, ` +
+            `transparent 322deg, ` +
+            `${rgba(shoulder)} 347deg, ` +
+            `${rgba(strength)} 360deg)`;
     }
 
     #updateContour() {
