@@ -46,6 +46,8 @@
 
         #indicatorHandoffTimeout;
 
+        #ringLayerHandoffTimeout;
+
         #tickMarkTimeout;
 
         #handLayer;
@@ -288,6 +290,9 @@
 
                     box-sizing:
                         border-box;
+
+                    background:
+                        transparent !important;
 
                     pointer-events:
                         none;
@@ -764,6 +769,27 @@
 
             this.#indicatorHandoffFrozen =
                 false;
+
+            if (
+                this.#ringLayerHandoffTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#ringLayerHandoffTimeout
+                );
+
+                this.#ringLayerHandoffTimeout =
+                    undefined;
+            }
+
+            for (
+                const ring of
+                    this.#rings.values()
+            ) {
+                ring.style.removeProperty(
+                    "z-index"
+                );
+            }
 
             if (
                 this.#handStartTimeout !==
@@ -6331,6 +6357,66 @@
                 this.#ensureRing(
                     activeIndex
                 );
+
+            const becomingInactiveRing =
+                Array.from(
+                    this.#rings.values()
+                ).find(
+                    ring =>
+                        ring !== activeRing &&
+                        ring.hasAttribute(
+                            "active"
+                        )
+                );
+
+            if (becomingInactiveRing) {
+                if (
+                    this.#ringLayerHandoffTimeout !==
+                        undefined
+                ) {
+                    clearTimeout(
+                        this.#ringLayerHandoffTimeout
+                    );
+                }
+
+                for (
+                    const ring of
+                        this.#rings.values()
+                ) {
+                    ring.style.zIndex =
+                        "0";
+                }
+
+                becomingInactiveRing.style.zIndex =
+                    "1";
+
+                activeRing.style.zIndex =
+                    "2";
+
+                const duration =
+                    this.#getRangeAnimationDuration();
+
+                this.#ringLayerHandoffTimeout =
+                    setTimeout(
+                        () => {
+                            this.#ringLayerHandoffTimeout =
+                                undefined;
+
+                            for (
+                                const ring of
+                                    this.#rings.values()
+                            ) {
+                                ring.style.removeProperty(
+                                    "z-index"
+                                );
+                            }
+                        },
+                        Math.max(
+                            0,
+                            duration
+                        )
+                    );
+            }
 
             const inactive =
                 Array.from(
