@@ -1,0 +1,29 @@
+name: Fix TimeRange hour origin
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-timerange-hour-origin.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fix
+        run: python .github/scripts/fix-timerange-hour-origin.py
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Targeted check
+        run: |
+          grep -q 'hourOrigin.setMinutes' TimeRange.js
+          grep -q 'return hourOrigin' TimeRange.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/scripts/fix-timerange-hour-origin.py
+          rm .github/workflows/fix-timerange-hour-origin.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add TimeRange.js .github/scripts/fix-timerange-hour-origin.py .github/workflows/fix-timerange-hour-origin.yml
+          git commit -m 'Align TimeRange start angle to clock hour'
+          git push
