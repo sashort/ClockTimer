@@ -1696,6 +1696,43 @@ class TimeRange extends HTMLElement {
         };
     }
 
+    #getAnimationDuration() {
+        const raw =
+            getComputedStyle(
+                this
+            ).getPropertyValue(
+                "--clock-timer-ring-resize-duration"
+            ).trim();
+
+        const match =
+            raw.match(
+                /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i
+            );
+
+        if (!match) {
+            return TimeRange.#animationDuration;
+        }
+
+        const amount =
+            Number(
+                match[1]
+            );
+
+        if (
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+            return TimeRange.#animationDuration;
+        }
+
+        return (
+            match[2].toLowerCase() ===
+                "s"
+        )
+            ? amount * 1000
+            : amount;
+    }
+
     #animateToLogicalTiming() {
         if (
             !this.isConnected ||
@@ -1761,7 +1798,7 @@ class TimeRange extends HTMLElement {
             removeAfter;
 
         const duration =
-            TimeRange.#animationDuration;
+            this.#getAnimationDuration();
 
         if (
             duration <= 0
@@ -1867,7 +1904,7 @@ class TimeRange extends HTMLElement {
 
     #animateOpacityIn() {
         const duration =
-            TimeRange.#animationDuration;
+            this.#getAnimationDuration();
 
         if (
             duration <= 0 ||

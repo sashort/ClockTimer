@@ -2922,23 +2922,40 @@
         }
 
         #getRangeAnimationDuration() {
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
+            const raw =
+                getComputedStyle(
+                    this
+                ).getPropertyValue(
+                    "--clock-timer-ring-resize-duration"
+                ).trim();
+
+            const match =
+                raw.match(
+                    /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i
                 );
 
-            const duration =
+            if (!match) {
+                return 333;
+            }
+
+            const amount =
                 Number(
-                    TimeRangeClass
-                        ?.animationDuration
+                    match[1]
                 );
+
+            if (
+                !Number.isFinite(amount) ||
+                amount < 0
+            ) {
+                return 333;
+            }
 
             return (
-                Number.isFinite(duration) &&
-                duration >= 0
+                match[2].toLowerCase() ===
+                    "s"
             )
-                ? duration
-                : 0;
+                ? amount * 1000
+                : amount;
         }
 
         #getPlannedSegments() {
@@ -4505,6 +4522,19 @@
                 refreshTickMarks = false
             } = {}
         ) {
+            const duration =
+                this.#getRangeAnimationDuration();
+
+            for (
+                const ring of
+                    this.querySelectorAll(
+                        ":scope > ring-container"
+                    )
+            ) {
+                ring.resizeDuration =
+                    `${duration}ms`;
+            }
+
             this.#removeEmptyRings();
 
             if (
