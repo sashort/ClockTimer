@@ -1,0 +1,27 @@
+name: Add ClockTimer calculatedEndTime tracking
+on:
+  push:
+    paths:
+      - '.github/workflows/add-calculated-end-time.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply patch
+        run: python .github/scripts/add-calculated-end-time.py
+      - name: Check syntax
+        run: node --check ClockTimer.js
+      - name: Commit and self-clean
+        run: |
+          rm .github/workflows/add-calculated-end-time.yml
+          rm .github/scripts/add-calculated-end-time.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js .github/workflows/add-calculated-end-time.yml .github/scripts/add-calculated-end-time.py
+          git commit -m "Track calculated end time through inserts and replacements"
+          git push origin HEAD:main
