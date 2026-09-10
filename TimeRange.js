@@ -2566,6 +2566,11 @@ class TimeRange extends HTMLElement {
         const parent =
             this.parentElement;
 
+        const activeRing =
+            parent?.hasAttribute(
+                "active"
+            ) === true;
+
         let darkestLuminance = 1;
         let lightestLuminance = 0;
         let hasUnderlay = false;
@@ -2691,26 +2696,46 @@ class TimeRange extends HTMLElement {
             );
 
         const baseStrength =
-            Math.min(
-                0.18,
-                Math.max(
-                    0.12,
-                    0.13 +
-                        contrastRange * 0.03 +
-                        (1 - strongestOpacity) * 0.03
+            activeRing
+                ? Math.min(
+                    0.34,
+                    Math.max(
+                        0.24,
+                        0.26 +
+                            contrastRange * 0.05 +
+                            (1 - strongestOpacity) * 0.04
+                    )
                 )
-            );
+                : Math.min(
+                    0.18,
+                    Math.max(
+                        0.12,
+                        0.13 +
+                            contrastRange * 0.03 +
+                            (1 - strongestOpacity) * 0.03
+                    )
+                );
 
         const edgeStrength =
-            Math.min(
-                0.25,
-                Math.max(
-                    0.15,
-                    0.17 +
-                        contrastRange * 0.04 +
-                        (1 - strongestOpacity) * 0.04
+            activeRing
+                ? Math.min(
+                    0.48,
+                    Math.max(
+                        0.34,
+                        0.37 +
+                            contrastRange * 0.06 +
+                            (1 - strongestOpacity) * 0.05
+                    )
                 )
-            );
+                : Math.min(
+                    0.25,
+                    Math.max(
+                        0.15,
+                        0.17 +
+                            contrastRange * 0.04 +
+                            (1 - strongestOpacity) * 0.04
+                    )
+                );
 
         this.#elapsedBaseLayer.style.mixBlendMode =
             "screen";
@@ -2724,6 +2749,27 @@ class TimeRange extends HTMLElement {
         this.#elapsedEdgeLayer.style.setProperty(
             "--elapsed-edge-strength",
             edgeStrength.toFixed(3)
+        );
+
+        if (!activeRing) {
+            this.#elapsedWaveLayer.style.animation =
+                "none";
+
+            this.#elapsedWaveLayer.style.opacity =
+                "0";
+
+            this.#elapsedWaveLayer.style.backgroundImage =
+                "none";
+
+            return;
+        }
+
+        this.#elapsedWaveLayer.style.removeProperty(
+            "animation"
+        );
+
+        this.#elapsedWaveLayer.style.removeProperty(
+            "opacity"
         );
 
         const shoulder =
