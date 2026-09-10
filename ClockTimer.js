@@ -793,7 +793,12 @@
 
             this.#renderAllInsertedRanges();
 
-            this.#scheduleHourRender();
+            this.#refreshRingLayout(
+                this.#getCurrentTimelineTime(),
+                {
+                    refreshTickMarks: true
+                }
+            );
 
             this.#startTickTimer();
 
@@ -1443,7 +1448,12 @@
                 }
             }
 
-            this.#scheduleHourRender();
+            this.#refreshRingLayout(
+                undefined,
+                {
+                    refreshTickMarks: true
+                }
+            );
         }
 
         #ensureAttributes() {
@@ -2735,13 +2745,12 @@
                 now
             );
 
-            this.#removeEmptyRings();
-
-            this.#reorderRings(
-                now
+            this.#refreshRingLayout(
+                now,
+                {
+                    refreshTickMarks: true
+                }
             );
-
-            this.#scheduleHourRender();
         }
 
         #getPercentGoal() {
@@ -3708,6 +3717,12 @@
                     }
                 }
             }
+
+            this.#refreshRingLayout(
+                this.#started
+                    ? this.#getCurrentTimelineTime()
+                    : undefined
+            );
         }
 
         #shiftScheduleMarkers(
@@ -3921,6 +3936,55 @@
             );
 
             this.#renderAllInsertedRanges();
+        }
+
+        #refreshRingLayout(
+            now,
+            {
+                refreshTickMarks = false
+            } = {}
+        ) {
+            this.#removeEmptyRings();
+
+            if (
+                this.#started
+            ) {
+                const current =
+                    Number.isFinite(
+                        now
+                    )
+                        ? now
+                        : this.#getCurrentTimelineTime();
+
+                this.#reorderRings(
+                    current
+                );
+            }
+            else {
+                this.#ensurePermanentRingOrder();
+            }
+
+            this.#scheduleHourRender();
+
+            if (
+                !this.hasAttribute(
+                    "tick-marks"
+                )
+            ) {
+                return;
+            }
+
+            if (
+                refreshTickMarks
+            ) {
+                this.#updateTickMarks(
+                    new Date()
+                );
+
+                return;
+            }
+
+            this.#syncTickMarkGeometry();
         }
 
         #needsTick() {
@@ -5002,7 +5066,7 @@
                 now
             );
 
-            this.#reorderRings(
+            this.#refreshRingLayout(
                 now
             );
         }
