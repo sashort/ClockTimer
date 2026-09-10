@@ -15,4 +15,6 @@ if old not in text:
     raise SystemExit('current refresh reflection block not found')
 text = text.replace(old, new, 1)
 
+text = text.replace('''                () => {\n                    this.#refreshNormalizedLengthAttributes();\n\n                    this.#updateProperties(\n                        false\n                    );\n''', '''                () => {\n                    this.#updateProperties(\n                        false\n                    );\n''', 1)
+
 path.write_text(text)
