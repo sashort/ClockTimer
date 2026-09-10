@@ -1345,7 +1345,7 @@
                 this.#grayscaleAnimation =
                     undefined;
 
-                this.#clockFace.style.filter =
+                this.style.filter =
                     targetFilter;
 
                 return;
@@ -1356,27 +1356,27 @@
 
             const currentFilter =
                 getComputedStyle(
-                    this.#clockFace
+                    this
                 ).filter || "none";
 
             this.#grayscaleAnimation
                 ?.cancel();
 
-            this.#clockFace.style.filter =
+            this.style.filter =
                 currentFilter;
 
             if (duration <= 0) {
                 this.#grayscaleAnimation =
                     undefined;
 
-                this.#clockFace.style.filter =
+                this.style.filter =
                     targetFilter;
 
                 return;
             }
 
             const animation =
-                this.#clockFace.animate(
+                this.animate(
                     [
                         {
                             filter: currentFilter
@@ -1404,7 +1404,7 @@
                         return;
                     }
 
-                    this.#clockFace.style.filter =
+                    this.style.filter =
                         targetFilter;
 
                     animation.cancel();
