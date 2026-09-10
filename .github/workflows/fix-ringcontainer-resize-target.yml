@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/fix-ringcontainer-resize-target.yml'
+      - '.github/scripts/fix_ringcontainer_resize_target.py'
 permissions:
   contents: write
 jobs:
@@ -24,6 +25,7 @@ jobs:
           grep -Fq '#resizeTarget;' RingContainer.js
           grep -Fq 'const pendingInset =' RingContainer.js
           grep -Fq 'this.#resizeAnimation !==' RingContainer.js
+          grep -Fq '#instanceFilter;' RingContainer.js
       - name: Commit RingContainer update and cleanup
         run: |
           rm -f .github/scripts/fix_ringcontainer_resize_target.py
