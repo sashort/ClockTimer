@@ -36,3 +36,4 @@ jobs:
             .github/scripts/restore_tick_ring_spacing.py
           git commit -m "Restore tick ring layout spacing"
           git push origin main
+# retrigger after patch-script update
