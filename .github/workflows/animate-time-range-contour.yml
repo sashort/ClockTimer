@@ -1,0 +1,33 @@
+name: Animate TimeRange contour
+on:
+  push:
+    paths:
+      - '.github/workflows/animate-time-range-contour.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply contour animation fix
+        run: python .github/scripts/animate-time-range-contour.py
+      - name: Syntax checks
+        run: |
+          node --check RingContainer.js
+          node --check TimeRange.js
+      - name: Targeted checks
+        run: |
+          grep -n 'get renderedInset' RingContainer.js
+          grep -n '#startChildGeometryRefresh' RingContainer.js
+          grep -n 'parent.renderedWidth' TimeRange.js
+          grep -n 'parent.renderedInset' TimeRange.js
+      - name: Commit change and cleanup
+        run: |
+          rm -f .github/workflows/animate-time-range-contour.yml
+          rm -f .github/scripts/animate-time-range-contour.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RingContainer.js TimeRange.js .github
+          git commit -m 'Animate TimeRange contour with ring geometry'
+          git push
