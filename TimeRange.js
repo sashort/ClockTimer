@@ -1961,6 +1961,12 @@ class TimeRange extends HTMLElement {
         return this;
     }
 
+    refreshVisualGeometry() {
+        this.#updateClipPath();
+
+        return this;
+    }
+
     removeAnimated({
         collapseTo = "end",
         targetStart,

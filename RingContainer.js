@@ -1438,6 +1438,17 @@ class RingContainer extends HTMLElement {
             );
     }
 
+    #refreshChildVisualGeometry() {
+        for (const child of this.children) {
+            if (
+                typeof child.refreshVisualGeometry ===
+                    "function"
+            ) {
+                child.refreshVisualGeometry();
+            }
+        }
+    }
+
     #finishAnimation(
         expectedToken
     ) {
@@ -1496,6 +1507,8 @@ class RingContainer extends HTMLElement {
             "--ring-container-inset, --ring-container-width",
             this.resizeDuration
         );
+
+        this.#refreshChildVisualGeometry();
     }
 
     #cancelAnimation(
