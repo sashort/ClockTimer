@@ -219,16 +219,30 @@ class TimeRange extends HTMLElement {
 
             :host([type="elapsed"]) #elapsed-wave {
                 display: block;
-                animation: elapsed-wave-rotation 4s linear infinite;
+                animation: elapsed-wave-sweep 4s linear infinite;
             }
 
-            @keyframes elapsed-wave-rotation {
-                from {
-                    transform: rotate(0deg);
+            @keyframes elapsed-wave-sweep {
+                0% {
+                    opacity: 1;
+                    transform: rotate(
+                        var(--elapsed-wave-start-angle, 0deg)
+                    );
                 }
 
-                to {
-                    transform: rotate(360deg);
+                25% {
+                    opacity: 1;
+                    transform: rotate(
+                        var(--elapsed-wave-end-angle, 360deg)
+                    );
+                }
+
+                25.01%,
+                100% {
+                    opacity: 0;
+                    transform: rotate(
+                        var(--elapsed-wave-end-angle, 360deg)
+                    );
                 }
             }
         `;
@@ -2810,6 +2824,21 @@ class TimeRange extends HTMLElement {
             duration >=
                 60 * 60 * 1000
         ) {
+            if (
+                this.getAttribute("type") ===
+                    "elapsed"
+            ) {
+                this.#elapsedWaveLayer.style.setProperty(
+                    "--elapsed-wave-start-angle",
+                    "0deg"
+                );
+
+                this.#elapsedWaveLayer.style.setProperty(
+                    "--elapsed-wave-end-angle",
+                    "360deg"
+                );
+            }
+
             this.#styleElement.textContent = `
                 :host {
                     clip-path: none;
@@ -2833,6 +2862,27 @@ class TimeRange extends HTMLElement {
                 renderEnd,
                 ringOrigin
             );
+
+        if (
+            this.getAttribute("type") ===
+                "elapsed"
+        ) {
+            const sweepEndAngle =
+                duration > 0 &&
+                endAngle <= startAngle
+                    ? endAngle + 360
+                    : endAngle;
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-start-angle",
+                `${startAngle}deg`
+            );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-end-angle",
+                `${sweepEndAngle}deg`
+            );
+        }
 
         const startPoint =
             this.#getEdgePoint(
