@@ -1,0 +1,38 @@
+name: Restore tick ring spacing
+on:
+  push:
+    paths:
+      - '.github/workflows/restore-tick-ring-spacing.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply tick ring spacing restore
+        run: python .github/scripts/restore_tick_ring_spacing.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify structural spacing and flush visible ticks
+        run: |
+          grep -Fq -- '--clock-timer-tick-inset:' ClockTimer.js
+          grep -Fq '"outer-margin"' ClockTimer.js
+          grep -Fq 'return outerInset;' ClockTimer.js
+      - name: Commit update and cleanup
+        run: |
+          rm -f \
+            .github/workflows/restore-tick-ring-spacing.yml \
+            .github/scripts/restore_tick_ring_spacing.py
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js \
+            .github/workflows/restore-tick-ring-spacing.yml \
+            .github/scripts/restore_tick_ring_spacing.py
+          git commit -m "Restore tick ring layout spacing"
+          git push origin main
