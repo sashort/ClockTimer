@@ -173,6 +173,12 @@
 
         #spinAnimation;
 
+        #spinFrozenTimeFontSize;
+
+        #spinPreviousTimeInlineFontSize;
+
+        #spinPreviousTimeInlineFontPriority;
+
         #grayscaleAnimation;
 
         constructor() {
@@ -797,6 +803,8 @@
             this.#spinAnimation =
                 undefined;
 
+            this.#restoreTimeFontAfterSpin();
+
             this.#grayscaleAnimation
                 ?.cancel();
 
@@ -1210,38 +1218,134 @@
             ) ?? 750;
         }
 
+        #freezeTimeFontForSpin() {
+            if (
+                !this.#timeElement ||
+                this.#spinFrozenTimeFontSize !==
+                    undefined
+            ) {
+                return;
+            }
+
+            const computedFontSize =
+                getComputedStyle(
+                    this.#timeElement
+                ).fontSize;
+
+            if (!computedFontSize) {
+                return;
+            }
+
+            this.#spinPreviousTimeInlineFontSize =
+                this.#timeElement.style.getPropertyValue(
+                    "font-size"
+                );
+
+            this.#spinPreviousTimeInlineFontPriority =
+                this.#timeElement.style.getPropertyPriority(
+                    "font-size"
+                );
+
+            this.#spinFrozenTimeFontSize =
+                computedFontSize;
+
+            this.#timeElement.style.setProperty(
+                "font-size",
+                computedFontSize,
+                "important"
+            );
+        }
+
+        #restoreTimeFontAfterSpin() {
+            if (
+                !this.#timeElement ||
+                this.#spinFrozenTimeFontSize ===
+                    undefined
+            ) {
+                return;
+            }
+
+            if (this.#spinPreviousTimeInlineFontSize) {
+                this.#timeElement.style.setProperty(
+                    "font-size",
+                    this.#spinPreviousTimeInlineFontSize,
+                    this.#spinPreviousTimeInlineFontPriority ||
+                        ""
+                );
+            }
+            else {
+                this.#timeElement.style.removeProperty(
+                    "font-size"
+                );
+            }
+
+            this.#spinFrozenTimeFontSize =
+                undefined;
+
+            this.#spinPreviousTimeInlineFontSize =
+                undefined;
+
+            this.#spinPreviousTimeInlineFontPriority =
+                undefined;
+        }
+
         #runSpin(rotations, duration) {
             const perRotationDuration =
                 this.#getSpinDurationMilliseconds(
                     duration
                 );
 
+            this.#freezeTimeFontForSpin();
+
             this.#spinAnimation
                 ?.cancel();
 
-            this.#spinAnimation =
+            const animation =
                 this.animate(
                     [
                         {
+                            offset: 0,
                             transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
                         },
                         {
-                            transform: `perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(${rotations * 360}deg)`
+                            offset: 0.5,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(90deg)"
+                        },
+                        {
+                            offset: 0.5,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(-90deg)"
+                        },
+                        {
+                            offset: 1,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
                         }
                     ],
                     {
                         duration:
-                            perRotationDuration *
+                            perRotationDuration,
+                        iterations:
                             rotations,
                         easing: "ease-in-out"
                     }
                 );
 
-            this.#spinAnimation.finished
+            this.#spinAnimation =
+                animation;
+
+            animation.finished
                 .catch(() => {})
                 .finally(() => {
+                    if (
+                        this.#spinAnimation !==
+                            animation
+                    ) {
+                        return;
+                    }
+
                     this.#spinAnimation =
                         undefined;
+
+                    this.#restoreTimeFontAfterSpin();
                 });
         }
 
