@@ -1349,7 +1349,7 @@ class TimeRange extends HTMLElement {
         };
     }
 
-    #getCornerBetweenAngles(
+    #getCornersBetweenAngles(
         startAngle,
         endAngle,
         width,
@@ -1407,74 +1407,61 @@ class TimeRange extends HTMLElement {
                 endAngle
             );
 
-        const candidates =
-            corners
-                .map(
-                    corner => {
-                        const dx =
-                            corner.x -
-                            width /
-                            2;
+        return corners
+            .map(
+                corner => {
+                    const dx =
+                        corner.x -
+                        width /
+                        2;
 
-                        const dy =
-                            corner.y -
-                            height /
-                            2;
+                    const dy =
+                        corner.y -
+                        height /
+                        2;
 
-                        const angle =
-                            normalize(
-                                Math.atan2(
-                                    dx,
-                                    -dy
-                                ) *
-                                180 /
-                                Math.PI
-                            );
-
-                        return {
-                            ...corner,
-                            angle
-                        };
-                    }
-                )
-                .filter(
-                    corner => {
-                        const distance =
-                            clockwiseDistance(
-                                startAngle,
-                                corner.angle
-                            );
-
-                        return (
-                            distance > 0 &&
-                            distance <
-                                totalDistance
+                    const angle =
+                        normalize(
+                            Math.atan2(
+                                dx,
+                                -dy
+                            ) *
+                            180 /
+                            Math.PI
                         );
-                    }
-                );
 
-        if (
-            candidates.length === 0
-        ) {
-            return undefined;
-        }
+                    return {
+                        ...corner,
+                        angle
+                    };
+                }
+            )
+            .filter(
+                corner => {
+                    const distance =
+                        clockwiseDistance(
+                            startAngle,
+                            corner.angle
+                        );
 
-        candidates.sort(
-            (
-                a,
-                b
-            ) =>
-                clockwiseDistance(
-                    startAngle,
-                    a.angle
-                ) -
-                clockwiseDistance(
-                    startAngle,
-                    b.angle
-                )
-        );
-
-        return candidates[0];
+                    return (
+                        distance > 0 &&
+                        distance <
+                            totalDistance
+                    );
+                }
+            )
+            .sort(
+                (a, b) =>
+                    clockwiseDistance(
+                        startAngle,
+                        a.angle
+                    ) -
+                    clockwiseDistance(
+                        startAngle,
+                        b.angle
+                    )
+            );
     }
 
     #getRingOriginTime() {
@@ -1593,6 +1580,23 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        const duration =
+            this.#endTime.getTime() -
+            this.#startTime.getTime();
+
+        if (
+            duration >=
+                60 * 60 * 1000
+        ) {
+            this.#styleElement.textContent = `
+                :host {
+                    clip-path: none;
+                }
+            `;
+
+            return;
+        }
+
         const ringOrigin =
             this.#getRingOriginTime();
 
@@ -1622,8 +1626,8 @@ class TimeRange extends HTMLElement {
                 height
             );
 
-        const corner =
-            this.#getCornerBetweenAngles(
+        const corners =
+            this.#getCornersBetweenAngles(
                 startAngle,
                 endAngle,
                 width,
@@ -1650,39 +1654,28 @@ class TimeRange extends HTMLElement {
             height *
             100;
 
-        if (
-            corner
-        ) {
-            const cornerX =
-                corner.x /
-                width *
-                100;
-
-            const cornerY =
-                corner.y /
-                height *
-                100;
-
-            this.#styleElement.textContent = `
-                :host {
-                    clip-path: polygon(
-                        50% 50%,
-                        ${startX}% ${startY}%,
-                        ${cornerX}% ${cornerY}%,
-                        ${endX}% ${endY}%
-                    );
-                }
-            `;
-
-            return;
-        }
+        const polygonPoints = [
+            "50% 50%",
+            `${startX}% ${startY}%`,
+            ...corners.map(
+                corner =>
+                    `${
+                        corner.x /
+                        width *
+                        100
+                    }% ${
+                        corner.y /
+                        height *
+                        100
+                    }%`
+            ),
+            `${endX}% ${endY}%`
+        ];
 
         this.#styleElement.textContent = `
             :host {
                 clip-path: polygon(
-                    50% 50%,
-                    ${startX}% ${startY}%,
-                    ${endX}% ${endY}%
+                    ${polygonPoints.join(",\n                    ")}
                 );
             }
         `;
