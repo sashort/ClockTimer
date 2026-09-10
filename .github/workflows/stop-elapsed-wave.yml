@@ -1,0 +1,31 @@
+name: Stop elapsed animation
+on:
+  push:
+    paths:
+      - '.github/workflows/stop-elapsed-wave.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch elapsed stop behavior
+        run: python .github/scripts/stop-elapsed-wave.py
+      - name: Validate JavaScript
+        run: |
+          node --check ClockTimer.js
+          node --check TimeRange.js
+      - name: Commit result and clean helper files
+        run: |
+          rm .github/scripts/stop-elapsed-wave.py .github/workflows/stop-elapsed-wave.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Stop elapsed wave when ClockTimer stops'
+          git push
