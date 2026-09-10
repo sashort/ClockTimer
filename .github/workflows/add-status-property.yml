@@ -1,0 +1,27 @@
+name: Add ClockTimer status property
+on:
+  push:
+    paths:
+      - '.github/workflows/add-status-property.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply patch
+        run: python .github/scripts/add-status-property.py
+      - name: Check syntax
+        run: node --check ClockTimer.js
+      - name: Commit and self-clean
+        run: |
+          rm .github/workflows/add-status-property.yml
+          rm .github/scripts/add-status-property.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js .github/workflows/add-status-property.yml .github/scripts/add-status-property.py
+          git commit -m "Add ClockTimer status property"
+          git push origin HEAD:main
