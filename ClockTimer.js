@@ -306,9 +306,12 @@
 
                     inset: 0;
 
-                    display: grid;
+                    display: flex;
 
-                    place-items:
+                    align-items:
+                        center;
+
+                    justify-content:
                         center;
 
                     z-index: 100;
@@ -325,19 +328,19 @@
                         border-box;
 
                     width:
-                        fit-content;
+                        auto;
 
                     height:
-                        fit-content;
+                        auto;
 
                     max-width:
-                        100%;
+                        max-content;
 
                     max-height:
-                        100%;
+                        max-content;
 
-                    place-self:
-                        center;
+                    flex:
+                        0 0 auto;
 
                     background:
                         transparent;
