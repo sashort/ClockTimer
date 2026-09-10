@@ -236,7 +236,7 @@ class RingContainer extends HTMLElement {
         return (
             RingContainer
                 .#globalResizeDuration ??
-            "333.333ms"
+            "333ms"
         );
     }
 
@@ -416,7 +416,7 @@ class RingContainer extends HTMLElement {
 
         return (
             this.#resizeDuration ??
-            "333.333ms"
+            "333ms"
         );
     }
 

@@ -3,7 +3,7 @@ class TimeRange extends HTMLElement {
     static #percentGoal = 1;
     static #calculatedEndTime;
     static #reordering = false;
-    static #animationDuration = 1000;
+    static #animationDuration = 333;
 
     #startTime;
     #endTime;
