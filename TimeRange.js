@@ -86,20 +86,50 @@ class TimeRange extends HTMLElement {
     }
 
     static #calculateTimeAngle(
-        time
+        time,
+        origin
     ) {
         const millisecondsInHour =
             60 *
             60 *
             1000;
 
-        const milliseconds =
-            time.getMinutes() *
-                60 *
-                1000 +
-            time.getSeconds() *
-                1000 +
-            time.getMilliseconds();
+        let milliseconds;
+
+        if (
+            origin instanceof Date
+        ) {
+            const difference =
+                time.getTime() -
+                origin.getTime();
+
+            if (
+                difference >= 0 &&
+                difference <=
+                    millisecondsInHour
+            ) {
+                milliseconds =
+                    difference;
+            }
+            else {
+                milliseconds =
+                    (
+                        difference %
+                            millisecondsInHour +
+                        millisecondsInHour
+                    ) %
+                    millisecondsInHour;
+            }
+        }
+        else {
+            milliseconds =
+                time.getMinutes() *
+                    60 *
+                    1000 +
+                time.getSeconds() *
+                    1000 +
+                time.getMilliseconds();
+        }
 
         return (
             360 /
@@ -159,7 +189,9 @@ class TimeRange extends HTMLElement {
             this.#removeOverlaps();
         }
 
-        this.#updateClipPath();
+        TimeRange.#updateParentClipPaths(
+            this.parentElement
+        );
         TimeRange.#reorderParent(
             this.parentElement
         );
@@ -213,7 +245,9 @@ class TimeRange extends HTMLElement {
         if (
             newValue === null
         ) {
-            this.#updateClipPath();
+            TimeRange.#updateParentClipPaths(
+                this.parentElement
+            );
 
             return;
         }
@@ -456,7 +490,9 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            this.#updateClipPath();
+            TimeRange.#updateParentClipPaths(
+                this.parentElement
+            );
         }
     }
 
@@ -530,7 +566,9 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            this.#updateClipPath();
+            TimeRange.#updateParentClipPaths(
+                this.parentElement
+            );
         }
     }
 
@@ -604,7 +642,9 @@ class TimeRange extends HTMLElement {
         if (
             this.isConnected
         ) {
-            this.#updateClipPath();
+            TimeRange.#updateParentClipPaths(
+                this.parentElement
+            );
         }
     }
 
@@ -1437,6 +1477,90 @@ class TimeRange extends HTMLElement {
         return candidates[0];
     }
 
+    #getRingOriginTime() {
+        const parent =
+            this.parentElement;
+
+        if (
+            !parent ||
+            parent.localName !==
+                "ring-container" ||
+            !parent.hasAttribute(
+                "data-clock-timer-ring"
+            )
+        ) {
+            return undefined;
+        }
+
+        let earliest;
+
+        for (
+            const child of
+                parent.children
+        ) {
+            if (
+                child.localName !==
+                    "time-range"
+            ) {
+                continue;
+            }
+
+            const value =
+                child.getAttribute(
+                    "start-time"
+                );
+
+            if (
+                value === null
+            ) {
+                continue;
+            }
+
+            const start =
+                this.#uniformDate(
+                    value,
+                    false
+                );
+
+            if (
+                !(start instanceof Date)
+            ) {
+                continue;
+            }
+
+            if (
+                !(earliest instanceof Date) ||
+                start.getTime() <
+                    earliest.getTime()
+            ) {
+                earliest =
+                    start;
+            }
+        }
+
+        return earliest;
+    }
+
+    static #updateParentClipPaths(
+        parent
+    ) {
+        if (!parent) {
+            return;
+        }
+
+        for (
+            const child of
+                parent.children
+        ) {
+            if (
+                child instanceof
+                    TimeRange
+            ) {
+                child.#updateClipPath();
+            }
+        }
+    }
+
     #updateClipPath() {
         const parent =
             this.parentElement;
@@ -1469,14 +1593,19 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        const ringOrigin =
+            this.#getRingOriginTime();
+
         const startAngle =
             TimeRange.#calculateTimeAngle(
-                this.#startTime
+                this.#startTime,
+                ringOrigin
             );
 
         const endAngle =
             TimeRange.#calculateTimeAngle(
-                this.#endTime
+                this.#endTime,
+                ringOrigin
             );
 
         const startPoint =
