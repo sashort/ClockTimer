@@ -117,6 +117,9 @@
         #preserveInsertedOnClear =
             false;
 
+        #starting =
+            false;
+
         constructor() {
             super();
 
@@ -825,16 +828,27 @@
                     );
             }
 
-            this.#buildPlannedRanges();
+            this.#starting =
+                true;
 
-            this.#renderAllInsertedRanges();
+            try {
+                this.#buildPlannedRanges();
 
-            this.#refreshRingLayout(
-                this.#getCurrentTimelineTime(),
-                {
-                    refreshTickMarks: true
-                }
-            );
+                this.#renderAllInsertedRanges();
+
+                this.#refreshRingLayout(
+                    this.#getCurrentTimelineTime(),
+                    {
+                        refreshTickMarks: true
+                    }
+                );
+            }
+            finally {
+                this.#starting =
+                    false;
+            }
+
+            this.#animateStartedRingWidths();
 
             this.#startTickTimer();
 
@@ -1472,6 +1486,9 @@
             }
 
             try {
+                const duration =
+                    this.#getRangeAnimationDuration();
+
                 for (
                     const ring of
                     this.querySelectorAll(
@@ -1487,45 +1504,17 @@
                         ""
                     );
 
-                    const ranges =
-                        Array.from(
-                            ring.querySelectorAll(
-                                ":scope > time-range"
-                            )
-                        );
+                    ring.resizeDuration =
+                        `${duration}ms`;
 
-                    for (
-                        const range of ranges
-                    ) {
-                        if (
-                            typeof range.removeAnimated ===
-                                "function"
-                        ) {
-                            range.removeAnimated({
-                                collapseTo: "start"
-                            });
-                        }
-                        else {
-                            range.remove();
-                        }
-                    }
-
-                    const TimeRangeClass =
-                        customElements.get(
-                            "time-range"
-                        );
-
-                    const duration =
-                        TimeRangeClass
-                            ? TimeRangeClass.animationDuration
-                            : 0;
+                    ring.setAttribute(
+                        "width",
+                        "0px"
+                    );
 
                     setTimeout(
                         () => ring.remove(),
-                        Math.max(
-                            0,
-                            duration
-                        )
+                        duration
                     );
                 }
 
@@ -2890,11 +2879,9 @@
                 return;
             }
 
-            this.#removePlannedRanges();
+            this.#reconcilePlannedRanges();
 
             this.#removeOvertimeRanges();
-
-            this.#buildPlannedRanges();
 
             const now =
                 this.#getCurrentTimelineTime();
@@ -2911,6 +2898,310 @@
                 now,
                 {
                     refreshTickMarks: true
+                }
+            );
+        }
+
+        #getRangeAnimationDuration() {
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            const duration =
+                Number(
+                    TimeRangeClass
+                        ?.animationDuration
+                );
+
+            return (
+                Number.isFinite(duration) &&
+                duration >= 0
+            )
+                ? duration
+                : 0;
+        }
+
+        #getPlannedSegments() {
+            const spans = [];
+
+            if (
+                this.#startTimeMilliseconds !==
+                    undefined &&
+                this.#scheduledStartMilliseconds >
+                    this.#startTimeMilliseconds
+            ) {
+                spans.push({
+                    type: "early-start",
+                    start: this.#startTimeMilliseconds,
+                    end: this.#scheduledStartMilliseconds
+                });
+            }
+
+            if (
+                this.#startTimeMilliseconds !==
+                    undefined &&
+                this.#startTimeMilliseconds >
+                    this.#scheduledStartMilliseconds
+            ) {
+                spans.push({
+                    type: "late-start",
+                    start: this.#scheduledStartMilliseconds,
+                    end: this.#startTimeMilliseconds
+                });
+            }
+
+            const tripStart =
+                this.#scheduledStartMilliseconds;
+
+            this.#standardEnd =
+                tripStart +
+                this.#standardDuration;
+
+            this.#calculatedEnd =
+                tripStart +
+                (
+                    this.#standardDuration /
+                    this.#percentGoal
+                );
+
+            if (this.#percentGoal > 1) {
+                this.#tripEnd =
+                    this.#calculatedEnd;
+
+                this.#toleranceEnd =
+                    this.#standardEnd;
+
+                spans.push({
+                    type: "trip",
+                    start: tripStart,
+                    end: this.#calculatedEnd
+                });
+
+                spans.push({
+                    type: "tolerance",
+                    start: this.#calculatedEnd,
+                    end: this.#standardEnd
+                });
+            }
+            else {
+                this.#tripEnd =
+                    this.#standardEnd;
+
+                this.#toleranceEnd =
+                    undefined;
+
+                spans.push({
+                    type: "trip",
+                    start: tripStart,
+                    end: this.#standardEnd
+                });
+
+                if (this.#percentGoal < 1) {
+                    spans.push({
+                        type: "overtime",
+                        start: this.#standardEnd,
+                        end: this.#calculatedEnd
+                    });
+                }
+            }
+
+            const segments = [];
+
+            for (const span of spans) {
+                let cursor =
+                    span.start;
+
+                while (cursor < span.end) {
+                    const ringIndex =
+                        this.#getRingIndex(
+                            cursor
+                        );
+
+                    const ringEnd =
+                        this.#getRingStart(
+                            ringIndex
+                        ) +
+                        ClockTimer.#HOUR;
+
+                    const segmentEnd =
+                        Math.min(
+                            span.end,
+                            ringEnd
+                        );
+
+                    segments.push({
+                        type: span.type,
+                        start: cursor,
+                        end: segmentEnd,
+                        ringIndex
+                    });
+
+                    cursor =
+                        segmentEnd;
+                }
+            }
+
+            return segments;
+        }
+
+        #reconcilePlannedRanges() {
+            const desired =
+                this.#getPlannedSegments();
+
+            const existing =
+                Array.from(
+                    this.querySelectorAll(
+                        ':scope > ring-container > time-range[data-clock-timer-planned]:not([data-time-range-exiting])'
+                    )
+                );
+
+            const unused =
+                new Set(existing);
+
+            for (const target of desired) {
+                let match;
+                let bestScore =
+                    -Infinity;
+
+                for (const candidate of unused) {
+                    if (
+                        candidate.getAttribute(
+                            "type"
+                        ) !== target.type
+                    ) {
+                        continue;
+                    }
+
+                    const candidateRing =
+                        Number(
+                            candidate.parentElement
+                                ?.dataset.clockTimerRingIndex
+                        );
+
+                    if (
+                        candidateRing !==
+                            target.ringIndex
+                    ) {
+                        continue;
+                    }
+
+                    const oldStart =
+                        Number(
+                            candidate.dataset.clockTimerStart
+                        );
+
+                    const oldEnd =
+                        Number(
+                            candidate.dataset.clockTimerEnd
+                        );
+
+                    const overlap =
+                        Number.isFinite(oldStart) &&
+                        Number.isFinite(oldEnd)
+                            ? Math.max(
+                                0,
+                                Math.min(oldEnd, target.end) -
+                                Math.max(oldStart, target.start)
+                            )
+                            : 0;
+
+                    const distance =
+                        Number.isFinite(oldStart) &&
+                        Number.isFinite(oldEnd)
+                            ? Math.abs(oldStart - target.start) +
+                                Math.abs(oldEnd - target.end)
+                            : Number.MAX_SAFE_INTEGER;
+
+                    const score =
+                        overlap > 0
+                            ? overlap
+                            : -distance;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        match = candidate;
+                    }
+                }
+
+                const ring =
+                    this.#ensureRing(
+                        target.ringIndex
+                    );
+
+                if (match) {
+                    unused.delete(match);
+
+                    this.#setRangeTiming(
+                        match,
+                        target.start,
+                        target.end
+                    );
+                }
+                else {
+                    const range =
+                        this.#createTimeRange(
+                            target.type,
+                            target.start,
+                            target.end
+                        );
+
+                    ring.appendChild(range);
+                }
+            }
+
+            for (const range of unused) {
+                if (
+                    typeof range.removeAnimated ===
+                        "function"
+                ) {
+                    range.removeAnimated({
+                        collapseTo: "end"
+                    });
+                }
+                else {
+                    range.remove();
+                }
+            }
+        }
+
+        #animateStartedRingWidths() {
+            const duration =
+                this.#getRangeAnimationDuration();
+
+            const rings =
+                Array.from(
+                    this.querySelectorAll(
+                        ":scope > ring-container[data-clock-timer-ring]"
+                    )
+                );
+
+            if (rings.length === 0) {
+                return;
+            }
+
+            requestAnimationFrame(
+                () => {
+                    for (const ring of rings) {
+                        if (!ring.isConnected) {
+                            continue;
+                        }
+
+                        ring.resizeDuration =
+                            `${duration}ms`;
+
+                        const targetWidth =
+                            ring.dataset.clockTimerTargetWidth;
+
+                        if (targetWidth) {
+                            ring.setAttribute(
+                                "width",
+                                targetWidth
+                            );
+
+                            delete ring.dataset.clockTimerTargetWidth;
+                        }
+                    }
                 }
             );
         }
@@ -3415,19 +3706,36 @@
             end,
             preserveRangeLength = false
         ) {
-            range.setAttribute(
-                "start-time",
+            const startTime =
                 this.#formatTimelineTime(
                     start
-                )
-            );
+                );
 
-            range.setAttribute(
-                "end-time",
+            const endTime =
                 this.#formatTimelineTime(
                     end
-                )
-            );
+                );
+
+            if (
+                typeof range.transitionTo ===
+                    "function"
+            ) {
+                range.transitionTo({
+                    startTime,
+                    endTime
+                });
+            }
+            else {
+                range.setAttribute(
+                    "start-time",
+                    startTime
+                );
+
+                range.setAttribute(
+                    "end-time",
+                    endTime
+                );
+            }
 
             if (
                 preserveRangeLength
@@ -3465,8 +3773,6 @@
                 range.hasAttribute(
                     "range-length"
                 );
-
-            range.remove();
 
             let firstSegment =
                 true;
@@ -3536,9 +3842,50 @@
                             ringIndex
                         );
 
-                    ring.appendChild(
-                        segment
-                    );
+                    if (
+                        segment === range &&
+                        range.parentElement !== ring
+                    ) {
+                        if (
+                            typeof range.removeAnimated ===
+                                "function"
+                        ) {
+                            range.removeAnimated({
+                                collapseTo: "end"
+                            });
+                        }
+                        else {
+                            range.remove();
+                        }
+
+                        const movedSegment =
+                            document.createElement(
+                                "time-range"
+                            );
+
+                        this.#applyPreservedAttributes(
+                            movedSegment,
+                            preservedAttributes
+                        );
+
+                        this.#setRangeTiming(
+                            movedSegment,
+                            cursor,
+                            segmentEnd,
+                            preserveRangeLength
+                        );
+
+                        ring.appendChild(
+                            movedSegment
+                        );
+                    }
+                    else if (
+                        segment.parentElement !== ring
+                    ) {
+                        ring.appendChild(
+                            segment
+                        );
+                    }
 
                     firstSegment =
                         false;
@@ -3728,6 +4075,13 @@
                         start
                     )
                 );
+
+                if (this.#starting) {
+                    range.setAttribute(
+                        "data-time-range-full-entry",
+                        ""
+                    );
+                }
 
                 range.dataset.clockTimerStart =
                     String(start);
@@ -4409,6 +4763,13 @@
                 )
             );
 
+            if (this.#starting) {
+                range.setAttribute(
+                    "data-time-range-full-entry",
+                    ""
+                );
+            }
+
             range.dataset.clockTimerStart =
                 String(
                     start
@@ -4781,10 +5142,27 @@
                     ringIndex
                 );
 
-            ring.setAttribute(
-                "width",
-                "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))"
-            );
+            const initialWidth =
+                "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
+
+            if (this.#starting) {
+                ring.dataset.clockTimerTargetWidth =
+                    initialWidth;
+
+                ring.setAttribute(
+                    "width",
+                    "0px"
+                );
+
+                ring.resizeDuration =
+                    `${this.#getRangeAnimationDuration()}ms`;
+            }
+            else {
+                ring.setAttribute(
+                    "width",
+                    initialWidth
+                );
+            }
 
             this.#rings.set(
                 ringIndex,
@@ -4877,7 +5255,22 @@
                         :
                         "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
-                if (
+                if (this.#starting) {
+                    ring.dataset.clockTimerTargetWidth =
+                        width;
+
+                    if (
+                        ring.getAttribute(
+                            "width"
+                        ) !== "0px"
+                    ) {
+                        ring.setAttribute(
+                            "width",
+                            "0px"
+                        );
+                    }
+                }
+                else if (
                     ring.getAttribute(
                         "width"
                     ) !==

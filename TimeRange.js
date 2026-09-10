@@ -280,7 +280,6 @@ class TimeRange extends HTMLElement {
                 );
 
             this.#updateClipPath();
-            this.#animateOpacityIn();
         }
         else {
             this.#renderStartTime =
@@ -622,6 +621,58 @@ class TimeRange extends HTMLElement {
                 this.#animateToLogicalTiming();
             }
         }
+    }
+
+    transitionTo({
+        startTime,
+        endTime
+    } = {}) {
+        const start =
+            this.#uniformDate(
+                startTime,
+                false
+            );
+
+        const end =
+            this.#uniformDate(
+                endTime,
+                false
+            );
+
+        if (
+            !(start instanceof Date) ||
+            !(end instanceof Date) ||
+            end.getTime() <=
+                start.getTime()
+        ) {
+            return false;
+        }
+
+        this.#syncing++;
+
+        try {
+            this.#startTime =
+                start;
+
+            this.#endTime =
+                end;
+
+            this.#rangeLength =
+                end.getTime() -
+                start.getTime();
+
+            this.#writeStartTimeAttribute();
+            this.#writeEndTimeAttribute();
+            this.#writeRangeLengthAttribute();
+        } finally {
+            this.#syncing--;
+        }
+
+        if (this.isConnected) {
+            this.#animateToLogicalTiming();
+        }
+
+        return true;
     }
 
     #getEndTime() {
