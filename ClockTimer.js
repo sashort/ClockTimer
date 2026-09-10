@@ -3931,6 +3931,12 @@
         replaceToNext(
             type
         ) {
+            if (!this.#hasStartProperties()) {
+                throw new Error(
+                    "replaceToNext() cannot be called before start() or after clear()."
+                );
+            }
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
