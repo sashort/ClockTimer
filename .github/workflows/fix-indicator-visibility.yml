@@ -1,0 +1,31 @@
+name: Fix indicator visibility
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-indicator-visibility.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply patch
+        run: python .github/scripts/fix-indicator-visibility.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify indicator visibility defaults
+        run: |
+          grep -q 'indicator-symbol-color, white' ClockTimer.js
+          grep -q 'translate(-50%, -50%)' ClockTimer.js
+      - name: Commit change and cleanup
+        run: |
+          rm .github/workflows/fix-indicator-visibility.yml .github/scripts/fix-indicator-visibility.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/workflows/fix-indicator-visibility.yml .github/scripts/fix-indicator-visibility.py
+          git commit -m 'Fix indicator symbol visibility'
+          git push
