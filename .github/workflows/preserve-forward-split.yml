@@ -1,0 +1,33 @@
+name: Preserve forward split range
+on:
+  push:
+    paths:
+      - '.github/workflows/preserve-forward-split.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply patch
+        run: python .github/scripts/preserve-forward-split.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify forward preservation
+        run: |
+          grep -q 'const preserveForwardRange' ClockTimer.js
+          grep -q 'segmentIndex ===' ClockTimer.js
+          grep -q 'segment !== range' ClockTimer.js
+      - name: Commit update and cleanup
+        run: |
+          rm .github/scripts/preserve-forward-split.py
+          rm .github/workflows/preserve-forward-split.yml
+          git config user.name sashort
+          git config user.email '95879519+sashort@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/preserve-forward-split.py .github/workflows/preserve-forward-split.yml
+          git commit -m 'Preserve forward range during insert splits'
+          git push
