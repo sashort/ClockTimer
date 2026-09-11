@@ -1,0 +1,69 @@
+name: Fix active ring width mapping
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/fix_active_ring_width_mapping.py
+      - .github/workflows/fix-active-ring-width-mapping.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+
+      - name: Verify expected target base
+        working-directory: target
+        run: |
+          test "$(git rev-parse HEAD)" = "a215b6f4dfa52aedeaf2c6189468b02edb9bfc91"
+
+      - name: Apply active ring width mapping fix
+        run: |
+          python controller/.github/scripts/fix_active_ring_width_mapping.py target/ClockTimer.js
+
+      - name: Syntax check
+        working-directory: target
+        run: node --check ClockTimer.js
+
+      - name: Verify width mapping
+        working-directory: target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          large = 'var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))'
+          small = 'var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))'
+          assert text.count(large) == 2, text.count(large)
+          assert text.count(small) == 1, text.count(small)
+          PY
+          git diff --check
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Restore active ring width mapping"
+          git push origin HEAD:radial-fitted
