@@ -7631,7 +7631,7 @@
                         ) &&
                         this.#openEndedLastTick > start
                             ? this.#openEndedLastTick
-                            : start + 1
+                            : start
                     )
                     : (
                         record.endDate
@@ -7655,29 +7655,22 @@
                     );
 
                 const range =
-                    document.createElement(
-                        "time-range"
+                    this.#createTimeRange(
+                        record.type,
+                        start,
+                        start,
+                        { dynamic: true }
                     );
 
-                range.setAttribute(
-                    "type",
-                    record.type
-                );
+                delete range.clockTimerDynamic;
 
                 range.setAttribute(
-                    "start-time",
-                    this.#formatTimelineTime(
-                        start
-                    )
+                    "overlapping",
+                    ""
                 );
 
-                if (this.#starting) {
-                    range.timeRangeFullEntry =
-                        true;
-                }
-
-                range.clockTimerStart =
-                    String(start);
+                range.timeRangeFullEntry =
+                    true;
 
                 range.clockTimerInserted =
                     record.id;
@@ -7731,6 +7724,11 @@
                     );
 
                 delete range.clockTimerDynamic;
+
+                range.setAttribute(
+                    "overlapping",
+                    ""
+                );
 
                 range.clockTimerInserted =
                     record.id;
@@ -8039,6 +8037,11 @@
                         );
 
                     delete range.clockTimerDynamic;
+
+                    range.setAttribute(
+                        "overlapping",
+                        ""
+                    );
 
                     range.clockTimerInserted =
                         record.id;
