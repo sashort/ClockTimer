@@ -7631,7 +7631,7 @@
                         ) &&
                         this.#openEndedLastTick > start
                             ? this.#openEndedLastTick
-                            : undefined
+                            : start + 1
                     )
                     : (
                         record.endDate
