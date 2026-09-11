@@ -1746,11 +1746,8 @@
                     this.#scheduledStartMilliseconds +
                     this.#standardDuration;
 
-                const originalPercentGoal =
-                    this.#percentGoal;
-
                 this.#percentGoal =
-                    1;
+                    this.#getPercentGoal();
 
                 this.#ringAnchor =
                     creationMilliseconds;
@@ -1758,10 +1755,16 @@
                 this.#startedAtEpoch =
                     creationDate.getTime();
 
-                this.#tickAlignmentMilliseconds =
-                    this.#millisecondsComponent(
-                        this.#scheduledStartMilliseconds
-                    );
+                if (
+                    !Number.isFinite(
+                        this.#tickAlignmentMilliseconds
+                    )
+                ) {
+                    this.#tickAlignmentMilliseconds =
+                        this.#millisecondsComponent(
+                            this.#scheduledStartMilliseconds
+                        );
+                }
 
                 this.#setIndicatorSymbolVisible(false);
 
@@ -1951,9 +1954,6 @@
 
                     this.#started =
                         false;
-
-                    this.#percentGoal =
-                        originalPercentGoal;
                 }
 
                 for (const ring of this.#rings.values()) {
