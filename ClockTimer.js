@@ -1743,7 +1743,8 @@
                     );
 
                 this.#calculatedEndTime =
-                    terminal;
+                    this.#scheduledStartMilliseconds +
+                    this.#standardDuration;
 
                 const originalPercentGoal =
                     this.#percentGoal;
@@ -1756,6 +1757,13 @@
 
                 this.#startedAtEpoch =
                     creationDate.getTime();
+
+                this.#tickAlignmentMilliseconds =
+                    this.#millisecondsComponent(
+                        this.#scheduledStartMilliseconds
+                    );
+
+                this.#setIndicatorSymbolVisible(false);
 
                 this.#started =
                     true;
