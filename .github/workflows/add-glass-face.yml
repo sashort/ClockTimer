@@ -1,0 +1,36 @@
+name: Add glass clock face
+on:
+  push:
+    paths:
+      - .github/workflows/add-glass-face.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/add-glass-face.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          assert '--clock-timer-glass-highlight-opacity' in s
+          assert '--clock-timer-glass-vignette-opacity' in s
+          assert '#face-background::before' in s
+          assert '#face-background::after' in s
+          assert 'mix-blend-mode: screen;' in s
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/add-glass-face.py
+          rm -f .github/workflows/add-glass-face.yml
+          rm -f .github/workflows/inspect-face-background.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Add glassy clock face treatment"
+          git push
