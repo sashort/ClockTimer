@@ -1826,6 +1826,14 @@
                             ""
                         );
 
+                        elapsedRange.setAttribute(
+                            "static-elapsed",
+                            ""
+                        );
+
+                        elapsedRange.timeRangeFullEntry =
+                            true;
+
                         ring.appendChild(
                             elapsedRange
                         );

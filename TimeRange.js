@@ -230,8 +230,12 @@ class TimeRange extends HTMLElement {
                 display: block;
             }
 
-            :host([type="elapsed"]) #elapsed-wave {
+            :host([type="elapsed"]:not([static-elapsed])) #elapsed-wave {
                 animation: elapsed-wave-sweep 4.5s linear infinite;
+            }
+
+            :host([type="elapsed"][static-elapsed]) #elapsed-wave {
+                display: none;
             }
 
             @keyframes elapsed-wave-sweep {
