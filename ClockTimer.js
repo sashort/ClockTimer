@@ -2452,23 +2452,18 @@
                 }
             }
 
-            if (
-                this.#elapsedRange &&
-                this.#elapsedRange.isConnected
-            ) {
-                this.#elapsedRange.setAttribute(
-                    "end-time",
-                    this.#formatTimelineTime(
-                        stopTime
-                    )
-                );
-
-                this.#elapsedRange.clockTimerEnd =
-                    String(stopTime);
-
-                this.#elapsedRange.stopElapsedAnimation
+            for (const elapsedRange of
+                this.querySelectorAll(
+                    'time-range[type="elapsed"]'
+                )) {
+                elapsedRange.stopElapsedAnimation
                     ?.();
+
+                elapsedRange.remove();
             }
+
+            this.#elapsedRange =
+                undefined;
 
             for (
                 const [ringIndex, range] of
