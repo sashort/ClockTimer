@@ -32,6 +32,7 @@ jobs:
           rm -f .github/scripts/fix-fromjson-percent-goal.py
           rm -f .github/workflows/fix-fromjson-percent-goal.yml
           rm -f .github/workflows/inspect-fromjson.yml
+          rm -f .github/workflows/inspect-fromjson-finally.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add ClockTimer.js .github
