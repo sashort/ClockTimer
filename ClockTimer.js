@@ -10832,9 +10832,7 @@
                     "overlapping",
                     ""
                 );
-            }
 
-            if (type === "elapsed") {
                 range.setAttribute(
                     "timer-mode",
                     this.#getTimerMode()

@@ -309,16 +309,26 @@ class TimeRange extends HTMLElement {
                 will-change: transform;
             }
 
-            :host([type="elapsed"]) {
+            :host([type="elapsed"]),
+            :host([type="remaining"][timer-mode="remaining"]) {
                 animation: none !important;
                 background: transparent !important;
                 background-color: transparent !important;
                 background-image: none !important;
             }
 
+            :host([type="remaining"][timer-mode="elapsed"]) {
+                display: none !important;
+            }
+
             :host([type="elapsed"]) #elapsed-base,
             :host([type="elapsed"]) #elapsed-edge,
             :host([type="elapsed"]) #elapsed-wave {
+                display: block;
+            }
+
+            :host([type="remaining"][timer-mode="remaining"]) #elapsed-base,
+            :host([type="remaining"][timer-mode="remaining"]) #elapsed-edge {
                 display: block;
             }
 
@@ -2824,9 +2834,26 @@ class TimeRange extends HTMLElement {
             return;
         }
 
+        const type =
+            this.getAttribute(
+                "type"
+            );
+
+        const timerMode =
+            this.getAttribute(
+                "timer-mode"
+            );
+
+        const elapsedAppearance =
+            type === "elapsed";
+
+        const remainingAppearance =
+            type === "remaining" &&
+            timerMode === "remaining";
+
         if (
-            this.getAttribute("type") !==
-                "elapsed"
+            !elapsedAppearance &&
+            !remainingAppearance
         ) {
             this.#elapsedBaseLayer.style.background =
                 "transparent";
@@ -2875,8 +2902,14 @@ class TimeRange extends HTMLElement {
                     range === this ||
                     range.localName !==
                         "time-range" ||
-                    range.getAttribute("type") ===
-                        "elapsed"
+                    [
+                        "elapsed",
+                        "remaining"
+                    ].includes(
+                        range.getAttribute(
+                            "type"
+                        )
+                    )
                 ) {
                     continue;
                 }
@@ -3029,6 +3062,7 @@ class TimeRange extends HTMLElement {
         );
 
         if (
+            remainingAppearance ||
             this.hasAttribute(
                 "static-elapsed"
             ) ||
