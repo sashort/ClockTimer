@@ -3129,7 +3129,27 @@
             this.#tickAlignmentMilliseconds =
                 record.startDate.getMilliseconds();
 
-            this.#renderAllInsertedRanges();
+            if (record.openEnded) {
+                const initialNow =
+                    new Date();
+
+                if (
+                    initialNow.getTime() <=
+                        record.startDate.getTime()
+                ) {
+                    initialNow.setTime(
+                        record.startDate.getTime() +
+                        1
+                    );
+                }
+
+                this.#updateOpenEndedRange(
+                    initialNow
+                );
+            }
+            else {
+                this.#renderAllInsertedRanges();
+            }
 
             const insertedElement =
                 this.#getManagedTimeRanges()
