@@ -10828,6 +10828,10 @@
                 type === "elapsed" ||
                 type === "remaining"
             ) {
+                range.classList.add(
+                    type
+                );
+
                 range.setAttribute(
                     "overlapping",
                     ""
