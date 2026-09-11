@@ -221,6 +221,12 @@
                     initial-value: 125ms;
                 }
 
+                @property --clock-timer-spin-scale-factor {
+                    syntax: "<number>";
+                    inherits: true;
+                    initial-value: 0.95;
+                }
+
                 @property --clock-timer-grayscale {
                     syntax: "<percentage>";
                     inherits: true;
@@ -1650,7 +1656,8 @@
         spin({
             rotations = 1,
             duration,
-            scaleSpeed
+            scaleSpeed,
+            spinScaleFactor
         } = {}) {
             const normalizedRotations =
                 Number(rotations);
@@ -1682,6 +1689,20 @@
                 );
             }
 
+            if (spinScaleFactor !== undefined) {
+                const normalizedSpinScaleFactor =
+                    Number(spinScaleFactor);
+
+                if (
+                    !Number.isFinite(normalizedSpinScaleFactor) ||
+                    normalizedSpinScaleFactor <= 0
+                ) {
+                    throw new RangeError(
+                        "spinScaleFactor must be a finite number greater than zero."
+                    );
+                }
+            }
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
@@ -1690,7 +1711,8 @@
                     type: "spin",
                     rotations: normalizedRotations,
                     duration,
-                    scaleSpeed
+                    scaleSpeed,
+                    spinScaleFactor
                 });
 
                 return this;
@@ -1699,7 +1721,8 @@
             this.#runSpin(
                 normalizedRotations,
                 duration,
-                scaleSpeed
+                scaleSpeed,
+                spinScaleFactor
             );
 
             return this;
@@ -1893,6 +1916,26 @@
             ) ?? 125;
         }
 
+        #getSpinScaleFactor(spinScaleFactor) {
+            if (spinScaleFactor !== undefined) {
+                return Number(spinScaleFactor);
+            }
+
+            const computed =
+                Number(
+                    getComputedStyle(this)
+                        .getPropertyValue(
+                            "--clock-timer-spin-scale-factor"
+                        )
+                        .trim()
+                );
+
+            return Number.isFinite(computed) &&
+                computed > 0
+                    ? computed
+                    : 0.95;
+        }
+
         #freezeTimeFontForSpin() {
             if (
                 !this.#timeElement ||
@@ -1964,7 +2007,12 @@
                 undefined;
         }
 
-        #runSpin(rotations, duration, scaleSpeed) {
+        #runSpin(
+            rotations,
+            duration,
+            scaleSpeed,
+            spinScaleFactor
+        ) {
             const perRotationDuration =
                 this.#getSpinDurationMilliseconds(
                     duration
@@ -2011,6 +2059,11 @@
                         totalDuration
                     : 0.5;
 
+            const scaleFactor =
+                this.#getSpinScaleFactor(
+                    spinScaleFactor
+                );
+
             const spinAnimation =
                 this.animate(
                     [
@@ -2051,7 +2104,8 @@
                         {
                             offset:
                                 scaleOffset,
-                            scale: "0.95"
+                            scale:
+                                String(scaleFactor)
                         },
                         {
                             offset:
