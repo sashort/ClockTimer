@@ -1,43 +1,21 @@
-name: Apply TimeRange animation rework
+name: Inspect TimeRange animation removals
 'on':
   push:
     branches:
       - time-range-animation-rework
     paths:
       - '.github/workflows/inspect-animation-rework.yml'
-      - '.github/scripts/apply_time_range_animation_rework.py'
 permissions:
-  contents: write
+  contents: read
 jobs:
-  patch:
+  inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout controller branch
-        uses: actions/checkout@v4
-      - name: Preserve patch script
-        run: cp .github/scripts/apply_time_range_animation_rework.py /tmp/apply_time_range_animation_rework.py
-      - name: Switch to target branch
+      - uses: actions/checkout@v4
+        with:
+          ref: time-range-animation-target
+      - name: Show removal call sites
         run: |
-          git fetch origin time-range-animation-target
-          git checkout -B time-range-animation-target origin/time-range-animation-target
-      - name: Apply animation rework
-        run: python /tmp/apply_time_range_animation_rework.py
-      - name: Syntax check
-        run: |
-          node --check TimeRange.js
-          node --check ClockTimer.js
-      - name: Verify animation APIs
-        run: |
-          grep -Fq 'static calculateClipPath({' TimeRange.js
-          grep -Fq 'applyAnimatedLayout({' TimeRange.js
-          grep -Fq 'commitAnimatedLayout(' TimeRange.js
-          grep -Fq '#timeRangeTimingAnimations =' ClockTimer.js
-          grep -Fq 'TimeRangeClass.suspendLayout(' ClockTimer.js
-          grep -Fq '#stepTimeRangeTimingAnimation(' ClockTimer.js
-      - name: Commit target branch
-        run: |
-          git config user.name "sashort"
-          git config user.email "95879519+sashort@users.noreply.github.com"
-          git add TimeRange.js ClockTimer.js
-          git commit -m "Rework TimeRange animation orchestration"
-          git push origin time-range-animation-target
+          grep -n -C 8 'removeAnimated' ClockTimer.js || true
+          echo '--- direct removes ---'
+          grep -n -C 4 '\.remove();' ClockTimer.js | head -n 800 || true
