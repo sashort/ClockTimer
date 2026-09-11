@@ -10345,24 +10345,6 @@
                     continue;
                 }
 
-                const hasAdjacentRange =
-                    this.#getManagedTimeRanges()
-                        .some(
-                            candidate =>
-                                candidate !== range &&
-                                candidate.timeRangeExiting !== true &&
-                                candidate.getAttribute(
-                                    "type"
-                                ) !== "elapsed" &&
-                                Number(
-                                    candidate.clockTimerStart
-                                ) === end
-                        );
-
-                if (!hasAdjacentRange) {
-                    continue;
-                }
-
                 this.overwrite({
                     type: overwriteType
                 });
