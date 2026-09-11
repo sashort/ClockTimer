@@ -1,0 +1,41 @@
+name: Add timer range classes
+'on':
+  push:
+    branches:
+      - timer-range-classes
+    paths:
+      - '.github/workflows/add-timer-range-classes.yml'
+      - '.github/scripts/add_timer_range_classes.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Checkout tools
+        uses: actions/checkout@v4
+        with:
+          ref: timer-range-classes
+          path: tools
+      - name: Apply patch
+        working-directory: repo
+        run: python ../tools/.github/scripts/add_timer_range_classes.py
+      - name: Syntax check
+        working-directory: repo
+        run: node --check ClockTimer.js
+      - name: Verify classes
+        working-directory: repo
+        run: grep -Fq 'range.classList.add(' ClockTimer.js
+      - name: Commit
+        working-directory: repo
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add ClockTimer.js
+          git commit -m 'Classify elapsed and remaining timer ranges'
+          git push origin main
