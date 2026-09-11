@@ -2951,7 +2951,15 @@ class TimeRange extends HTMLElement {
 
         if (
             width <= 0 ||
-            height <= 0 ||
+            height <= 0
+        ) {
+            this.#styleElement.textContent =
+                "";
+
+            return;
+        }
+
+        if (
             !(
                 this.#startTime instanceof Date
             ) ||
@@ -2959,8 +2967,15 @@ class TimeRange extends HTMLElement {
                 this.#endTime instanceof Date
             )
         ) {
-            this.#styleElement.textContent =
-                "";
+            this.#styleElement.textContent = `
+                :host {
+                    clip-path: polygon(
+                        50% 50%,
+                        50% 50%,
+                        50% 50%
+                    );
+                }
+            `;
 
             return;
         }

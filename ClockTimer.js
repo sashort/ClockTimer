@@ -7411,6 +7411,9 @@
                             range,
                             segment
                         );
+
+                        segment.timeRangeFullEntry =
+                            true;
                     }
 
                     this.#setRangeTiming(
@@ -7455,6 +7458,9 @@
                             range,
                             movedSegment
                         );
+
+                        movedSegment.timeRangeFullEntry =
+                            true;
 
                         this.#setRangeTiming(
                             movedSegment,
