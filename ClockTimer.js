@@ -7358,6 +7358,11 @@
             let firstSegment =
                 true;
 
+            const preserveForwardRange =
+                spans.length > 1;
+
+            let segmentIndex = 0;
+
             for (
                 const [
                     spanStart,
@@ -7395,15 +7400,21 @@
                             ringEnd
                         );
 
+                    const useOriginalRange =
+                        preserveForwardRange
+                            ? segmentIndex ===
+                                spans.length - 1
+                            : firstSegment;
+
                     const segment =
-                        firstSegment
+                        useOriginalRange
                             ? range
                             : document.createElement(
                                 "time-range"
                             );
 
                     if (
-                        !firstSegment
+                        segment !== range
                     ) {
                         this.#applyPreservedAttributes(
                             segment,
@@ -7509,6 +7520,8 @@
                     cursor =
                         segmentEnd;
                 }
+
+                segmentIndex++;
             }
         }
 
