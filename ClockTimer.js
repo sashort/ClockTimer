@@ -2,6 +2,7 @@
     class ClockTimer extends HTMLElement {
         static observedAttributes = [
             "percent-goal",
+            "timer-type",
             "timer-mode",
             "military-time",
             "time-format",
@@ -1022,6 +1023,10 @@
             }
 
             switch (name) {
+                case "timer-type":
+                    this.#normalizeTimerType();
+                    break;
+
                 case "timer-mode":
                     this.#handleTimerModeChange(
                         oldValue,
@@ -1911,17 +1916,14 @@
 
                     while (elapsedCursor < terminal) {
                         const ringIndex =
-                            this.#getRingIndex(
+                            this.#getTimerRingIndex(
                                 elapsedCursor
                             );
 
                         const segmentEnd =
                             Math.min(
                                 terminal,
-                                this.#getRingStart(
-                                    ringIndex
-                                ) +
-                                    ClockTimer.#HOUR
+                                this.#getTimerRingEnd(ringIndex)
                             );
 
                         const ring =
@@ -1976,13 +1978,12 @@
 
                         while (cursor < next.milliseconds) {
                             const ringIndex =
-                                this.#getRingIndex(cursor);
+                                this.#getTimerRingIndex(cursor);
 
                             const segmentEnd =
                                 Math.min(
                                     next.milliseconds,
-                                    this.#getRingStart(ringIndex) +
-                                        ClockTimer.#HOUR
+                                    this.#getTimerRingEnd(ringIndex)
                                 );
 
                             const ring =
@@ -2011,13 +2012,12 @@
 
                         while (cursor < lateStart.end) {
                             const ringIndex =
-                                this.#getRingIndex(cursor);
+                                this.#getTimerRingIndex(cursor);
 
                             const segmentEnd =
                                 Math.min(
                                     lateStart.end,
-                                    this.#getRingStart(ringIndex) +
-                                        ClockTimer.#HOUR
+                                    this.#getTimerRingEnd(ringIndex)
                                 );
 
                             const ring =
@@ -4679,7 +4679,7 @@
 
             const ring =
                 this.#ensureRing(
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         rightStart
                     )
                 );
@@ -4923,15 +4923,12 @@
 
             while (cursor < end) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -5005,15 +5002,12 @@
 
             while (cursor < effectiveEnd) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -5751,7 +5745,7 @@
                 );
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -5936,7 +5930,7 @@
                 );
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -6515,6 +6509,20 @@
         #ensureAttributes() {
             if (
                 !this.hasAttribute(
+                    "timer-type"
+                )
+            ) {
+                this.setAttribute(
+                    "timer-type",
+                    "radial-overflow"
+                );
+            }
+            else {
+                this.#normalizeTimerType();
+            }
+
+            if (
+                !this.hasAttribute(
                     "timer-mode"
                 )
             ) {
@@ -6565,6 +6573,37 @@
             else {
                 this.#normalizeFormat();
             }
+        }
+
+        #getTimerType() {
+            return this.getAttribute(
+                "timer-type"
+            ) === "radial-fitted"
+                ? "radial-fitted"
+                : "radial-overflow";
+        }
+
+        #normalizeTimerType() {
+            const raw =
+                this.getAttribute(
+                    "timer-type"
+                );
+
+            const normalized =
+                typeof raw === "string" &&
+                raw.trim().toLowerCase() ===
+                    "radial-fitted"
+                    ? "radial-fitted"
+                    : "radial-overflow";
+
+            if (raw !== normalized) {
+                this.setAttribute(
+                    "timer-type",
+                    normalized
+                );
+            }
+
+            return normalized;
         }
 
         #getTimerMode() {
@@ -8428,6 +8467,19 @@
 
 
         #refreshTimeRangeVisualGeometry() {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined
+                );
+
+                return;
+            }
+
             for (
                 const range of
                     this.#getManagedTimeRanges()
@@ -8757,10 +8809,285 @@
             );
         }
 
+        #getRadialFittedBounds(
+            now
+        ) {
+            if (
+                this.#getTimerType() !==
+                    "radial-fitted"
+            ) {
+                return undefined;
+            }
+
+            let start;
+            let end;
+
+            const ignoredTypes =
+                new Set([
+                    "elapsed",
+                    "remaining",
+                    "wave"
+                ]);
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.timeRangeExiting === true ||
+                    ignoredTypes.has(
+                        range.getAttribute(
+                            "type"
+                        )
+                    )
+                ) {
+                    continue;
+                }
+
+                const rangeStart =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const rangeEnd =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(rangeStart) &&
+                    (
+                        !Number.isFinite(start) ||
+                        rangeStart < start
+                    )
+                ) {
+                    start =
+                        rangeStart;
+                }
+
+                if (
+                    Number.isFinite(rangeEnd) &&
+                    (
+                        !Number.isFinite(end) ||
+                        rangeEnd > end
+                    )
+                ) {
+                    end =
+                        rangeEnd;
+                }
+            }
+
+            if (!Number.isFinite(start)) {
+                if (
+                    Number.isFinite(
+                        this.#scheduledStartMilliseconds
+                    )
+                ) {
+                    start =
+                        this.#scheduledStartMilliseconds;
+                }
+                else if (
+                    Number.isFinite(
+                        this.#ringAnchor
+                    )
+                ) {
+                    start =
+                        this.#ringAnchor;
+                }
+            }
+
+            if (
+                Number.isFinite(
+                    this.#calculatedEndTime
+                )
+            ) {
+                end =
+                    Number.isFinite(end)
+                        ? Math.max(
+                            end,
+                            this.#calculatedEndTime
+                        )
+                        : this.#calculatedEndTime;
+            }
+
+            const current =
+                Number.isFinite(now)
+                    ? now
+                    : (
+                        this.#started
+                            ? this.#getCurrentTimelineTime()
+                            : undefined
+                    );
+
+            const currentThreshold =
+                Number.isFinite(
+                    this.#calculatedEndTime
+                )
+                    ? this.#calculatedEndTime
+                    : end;
+
+            if (
+                Number.isFinite(current) &&
+                Number.isFinite(currentThreshold) &&
+                current >= currentThreshold
+            ) {
+                end =
+                    Number.isFinite(end)
+                        ? Math.max(
+                            end,
+                            current
+                        )
+                        : current;
+            }
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                return undefined;
+            }
+
+            return {
+                start,
+                end,
+                duration:
+                    end - start
+            };
+        }
+
+        #refreshRadialFittedLayouts(
+            now
+        ) {
+            if (
+                this.#getTimerType() !==
+                    "radial-fitted"
+            ) {
+                return;
+            }
+
+            const bounds =
+                this.#getRadialFittedBounds(
+                    now
+                );
+
+            if (!bounds) {
+                return;
+            }
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            const ranges =
+                this.#getTimerRanges()
+                    .filter(
+                        range =>
+                            range.isConnected &&
+                            range.timeRangeExiting !== true
+                    );
+
+            if (
+                this.#waveRange?.isConnected &&
+                !ranges.includes(
+                    this.#waveRange
+                )
+            ) {
+                ranges.push(
+                    this.#waveRange
+                );
+            }
+
+            const suspended = [];
+
+            try {
+                for (const range of ranges) {
+                    const start =
+                        Number(
+                            range.clockTimerStart
+                        );
+
+                    const end =
+                        Number(
+                            range.clockTimerEnd
+                        );
+
+                    if (
+                        !Number.isFinite(start) ||
+                        !Number.isFinite(end) ||
+                        end <= start
+                    ) {
+                        continue;
+                    }
+
+                    const coordinatorManaged =
+                        this.#timeRangeTimingAnimations.has(
+                            range
+                        );
+
+                    if (
+                        !coordinatorManaged &&
+                        typeof TimeRangeClass?.suspendLayout ===
+                            "function"
+                    ) {
+                        TimeRangeClass.suspendLayout(
+                            range
+                        );
+
+                        suspended.push(
+                            range
+                        );
+                    }
+
+                    const layout =
+                        this.#calculateTimeRangeLayout(
+                            range,
+                            start,
+                            end,
+                            bounds.start,
+                            bounds
+                        );
+
+                    if (layout) {
+                        this.#applyTimeRangeLayout(
+                            range,
+                            layout,
+                            true
+                        );
+                    }
+                }
+            }
+            finally {
+                if (
+                    typeof TimeRangeClass?.resumeLayout ===
+                        "function"
+                ) {
+                    for (const range of suspended) {
+                        TimeRangeClass.resumeLayout(
+                            range
+                        );
+                    }
+                }
+            }
+        }
+
         #getTimeRangeOriginMilliseconds(
             range,
             fallbackStart
         ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds();
+
+                if (bounds) {
+                    return bounds.start;
+                }
+            }
+
             let earliest =
                 Number.isFinite(
                     fallbackStart
@@ -8825,7 +9152,8 @@
             range,
             start,
             end,
-            originMilliseconds
+            originMilliseconds,
+            fittedBounds
         ) {
             const TimeRangeClass =
                 customElements.get(
@@ -8862,53 +9190,110 @@
                 return;
             }
 
-            const origin =
-                Number.isFinite(
-                    originMilliseconds
-                )
-                    ? originMilliseconds
-                    : this.#getTimeRangeOriginMilliseconds(
-                        range,
-                        start
+            const rangeDuration =
+                end - start;
+
+            let origin;
+            let startAngle;
+            let endAngle;
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    fittedBounds ??
+                    this.#getRadialFittedBounds();
+
+                if (!bounds) {
+                    return;
+                }
+
+                origin =
+                    bounds.start;
+
+                const degreesPerMillisecond =
+                    360 /
+                    bounds.duration;
+
+                startAngle =
+                    (
+                        start -
+                        bounds.start
+                    ) *
+                    degreesPerMillisecond;
+
+                endAngle =
+                    (
+                        end -
+                        bounds.start
+                    ) *
+                    degreesPerMillisecond;
+
+                startAngle =
+                    Math.max(
+                        0,
+                        Math.min(
+                            360,
+                            startAngle
+                        )
                     );
 
-            const originDate =
-                this.#timeRangeTimelineDate(
-                    origin
-                );
+                endAngle =
+                    Math.max(
+                        0,
+                        Math.min(
+                            360,
+                            endAngle
+                        )
+                    );
+            }
+            else {
+                origin =
+                    Number.isFinite(
+                        originMilliseconds
+                    )
+                        ? originMilliseconds
+                        : this.#getTimeRangeOriginMilliseconds(
+                            range,
+                            start
+                        );
 
-            const startAngle =
-                TimeRangeClass.calculateTimeAngle(
+                const originDate =
                     this.#timeRangeTimelineDate(
-                        start
-                    ),
-                    originDate
-                );
+                        origin
+                    );
 
-            let endAngle =
-                TimeRangeClass.calculateTimeAngle(
-                    this.#timeRangeTimelineDate(
-                        end
-                    ),
-                    originDate
-                );
+                startAngle =
+                    TimeRangeClass.calculateTimeAngle(
+                        this.#timeRangeTimelineDate(
+                            start
+                        ),
+                        originDate
+                    );
+
+                endAngle =
+                    TimeRangeClass.calculateTimeAngle(
+                        this.#timeRangeTimelineDate(
+                            end
+                        ),
+                        originDate
+                    );
+
+                if (
+                    rangeDuration >=
+                        ClockTimer.#HOUR
+                ) {
+                    endAngle =
+                        startAngle + 360;
+                }
+            }
 
             if (
                 !Number.isFinite(startAngle) ||
                 !Number.isFinite(endAngle)
             ) {
                 return;
-            }
-
-            const rangeDuration =
-                end - start;
-
-            if (
-                rangeDuration >=
-                    ClockTimer.#HOUR
-            ) {
-                endAngle =
-                    startAngle + 360;
             }
 
             const clipPath =
@@ -9417,15 +9802,12 @@
 
                 while (cursor < span.end) {
                     const ringIndex =
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             cursor
                         );
 
                     const ringEnd =
-                        this.#getRingStart(
-                            ringIndex
-                        ) +
-                        ClockTimer.#HOUR;
+                        this.#getTimerRingEnd(ringIndex);
 
                     const segmentEnd =
                         Math.min(
@@ -9586,6 +9968,19 @@
         }
 
         #snapTimerRangeAngles() {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined
+                );
+
+                return;
+            }
+
             for (
                 const range of
                     this.#getTimerRanges()
@@ -10185,6 +10580,16 @@
                 return;
             }
 
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#ringAnchor =
+                    start;
+
+                return;
+            }
+
             this.#ringAnchor =
                 start -
                 (
@@ -10638,15 +11043,12 @@
                     cursor < spanEnd
                 ) {
                     const ringIndex =
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             cursor
                         );
 
                     const ringEnd =
-                        this.#getRingStart(
-                            ringIndex
-                        ) +
-                        ClockTimer.#HOUR;
+                        this.#getTimerRingEnd(ringIndex);
 
                     const segmentEnd =
                         Math.min(
@@ -10906,7 +11308,7 @@
                 }
 
                 this.#overtimeRanges.set(
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         start
                     ),
                     range
@@ -10980,7 +11382,7 @@
             ) {
                 const ring =
                     this.#ensureRing(
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             start
                         )
                     );
@@ -11030,15 +11432,12 @@
                 cursor < effectiveEnd
             ) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -11336,15 +11735,12 @@
 
             while (cursor < effectiveEnd) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -11648,6 +12044,10 @@
             this.#scheduleIndicatorSymbolUpdate();
             this.#syncWaveRange();
 
+            this.#refreshRadialFittedLayouts(
+                now
+            );
+
             if (
                 !this.hasAttribute(
                     "tick-marks"
@@ -11836,7 +12236,7 @@
                 );
 
             const nextRingIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -11932,17 +12332,51 @@
                 return;
             }
 
-            const millisecondsIntoHour =
-                (
-                    end % ClockTimer.#HOUR +
-                    ClockTimer.#HOUR
-                ) % ClockTimer.#HOUR;
+            let normalizedAngle;
 
-            const normalizedAngle =
-                (
-                    millisecondsIntoHour /
-                    ClockTimer.#HOUR
-                ) * 360;
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds(
+                        end
+                    );
+
+                if (!bounds) {
+                    this.#setIndicatorSymbolVisible(false);
+                    return;
+                }
+
+                normalizedAngle =
+                    Math.max(
+                        0,
+                        Math.min(
+                            360,
+                            (
+                                (
+                                    end -
+                                    bounds.start
+                                ) /
+                                bounds.duration
+                            ) *
+                            360
+                        )
+                    );
+            }
+            else {
+                const millisecondsIntoHour =
+                    (
+                        end % ClockTimer.#HOUR +
+                        ClockTimer.#HOUR
+                    ) % ClockTimer.#HOUR;
+
+                normalizedAngle =
+                    (
+                        millisecondsIntoHour /
+                        ClockTimer.#HOUR
+                    ) * 360;
+            }
 
             const activeMetrics =
                 this.#getIndicatorRingMetrics(ring);
@@ -12151,18 +12585,17 @@
                     end
             ) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -12277,12 +12710,12 @@
             }
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
             const ringStart =
-                this.#getRingStart(
+                this.#getTimerRingStart(
                     ringIndex
                 );
 
@@ -12324,6 +12757,19 @@
                 );
 
                 return;
+            }
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted" &&
+                Number(
+                    this.#elapsedRange.clockTimerStart
+                ) !== ringStart
+            ) {
+                this.#setRangeStart(
+                    this.#elapsedRange,
+                    ringStart
+                );
             }
 
             this.#setRangeEnd(
@@ -12422,12 +12868,12 @@
             }
 
             const firstRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     start
                 );
 
             const lastRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     latestEnd - 0.0001
                 );
 
@@ -12457,13 +12903,12 @@
                 ringIndex++
             ) {
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentStart =
                     Math.max(
@@ -12561,12 +13006,12 @@
                 this.#standardEnd;
 
             const firstRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     overtimeStart
                 );
 
             const lastRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now -
                     0.0001
                 );
@@ -12579,13 +13024,12 @@
                 ringIndex++
             ) {
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentStart =
                     Math.max(
@@ -12916,7 +13360,7 @@
             }
 
             const activeIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -13144,6 +13588,77 @@
                     ring
                 );
             }
+        }
+
+        #getTimerRingIndex(
+            milliseconds
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                return 0;
+            }
+
+            return this.#getRingIndex(
+                milliseconds
+            );
+        }
+
+        #getTimerRingStart(
+            ringIndex
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds();
+
+                if (bounds) {
+                    return bounds.start;
+                }
+
+                if (
+                    Number.isFinite(
+                        this.#scheduledStartMilliseconds
+                    )
+                ) {
+                    return this.#scheduledStartMilliseconds;
+                }
+
+                if (
+                    Number.isFinite(
+                        this.#ringAnchor
+                    )
+                ) {
+                    return this.#ringAnchor;
+                }
+
+                return 0;
+            }
+
+            return this.#getRingStart(
+                ringIndex
+            );
+        }
+
+        #getTimerRingEnd(
+            ringIndex
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                return Infinity;
+            }
+
+            return (
+                this.#getRingStart(
+                    ringIndex
+                ) +
+                ClockTimer.#HOUR
+            );
         }
 
         #getRingIndex(
@@ -13460,7 +13975,7 @@
             );
 
             this.#ensureRing(
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 )
             );
