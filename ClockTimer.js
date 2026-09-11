@@ -1388,17 +1388,14 @@
             return this;
         }
 
-        stop(stopTime) {
-            const parsedStop =
-                stopTime === undefined
-                    ? this.#dateToStandardTime(
-                        new Date()
-                    )
-                    : stopTime;
-
+        stop(
+            stopTime = this.#dateToStandardTime(
+                new Date()
+            )
+        ) {
             const parsed =
                 this.#validateClockTime(
-                    parsedStop,
+                    stopTime,
                     "stopTime"
                 );
 
