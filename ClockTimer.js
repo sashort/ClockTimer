@@ -215,6 +215,12 @@
                     initial-value: 750ms;
                 }
 
+                @property --clock-timer-spin-scale-speed {
+                    syntax: "<time>";
+                    inherits: true;
+                    initial-value: 125ms;
+                }
+
                 @property --clock-timer-grayscale {
                     syntax: "<percentage>";
                     inherits: true;
@@ -1641,7 +1647,11 @@
             return this;
         }
 
-        spin(rotations = 1, duration) {
+        spin({
+            rotations = 1,
+            duration,
+            scaleSpeed
+        } = {}) {
             const normalizedRotations =
                 Number(rotations);
 
@@ -1663,6 +1673,15 @@
                 );
             }
 
+            if (scaleSpeed !== undefined) {
+                this.#parseCSSTimeMilliseconds(
+                    scaleSpeed,
+                    {
+                        throwOnInvalid: true
+                    }
+                );
+            }
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
@@ -1670,7 +1689,8 @@
                 this.#queueAsyncOperation({
                     type: "spin",
                     rotations: normalizedRotations,
-                    duration
+                    duration,
+                    scaleSpeed
                 });
 
                 return this;
@@ -1678,7 +1698,8 @@
 
             this.#runSpin(
                 normalizedRotations,
-                duration
+                duration,
+                scaleSpeed
             );
 
             return this;
@@ -1850,6 +1871,28 @@
             ) ?? 750;
         }
 
+        #getSpinScaleSpeedMilliseconds(scaleSpeed) {
+            if (scaleSpeed !== undefined) {
+                return this.#parseCSSTimeMilliseconds(
+                    scaleSpeed,
+                    {
+                        throwOnInvalid: true
+                    }
+                );
+            }
+
+            const computed =
+                getComputedStyle(this)
+                    .getPropertyValue(
+                        "--clock-timer-spin-scale-speed"
+                    )
+                    .trim();
+
+            return this.#parseCSSTimeMilliseconds(
+                computed
+            ) ?? 125;
+        }
+
         #freezeTimeFontForSpin() {
             if (
                 !this.#timeElement ||
@@ -1921,7 +1964,7 @@
                 undefined;
         }
 
-        #runSpin(rotations, duration) {
+        #runSpin(rotations, duration, scaleSpeed) {
             const perRotationDuration =
                 this.#getSpinDurationMilliseconds(
                     duration
@@ -1951,9 +1994,14 @@
                 perRotationDuration *
                 rotations;
 
+            const requestedScaleDuration =
+                this.#getSpinScaleSpeedMilliseconds(
+                    scaleSpeed
+                );
+
             const scaleDuration =
                 Math.min(
-                    125,
+                    requestedScaleDuration,
                     totalDuration / 2
                 );
 
