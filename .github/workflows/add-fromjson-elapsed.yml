@@ -1,0 +1,37 @@
+name: Add fromJSON elapsed reconstruction
+on:
+  push:
+    paths:
+      - .github/workflows/add-fromjson-elapsed.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/add-fromjson-elapsed.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON(')
+          q=s.index('\n        get status()', p)
+          b=s[p:q]
+          assert 'let elapsedCursor =' in b
+          assert '"elapsed",\n                                elapsedCursor,\n                                segmentEnd' in b
+          assert 'elapsedRange.setAttribute(\n                            "overlapping"' in b
+          assert b.count('Math.max(\n                            terminal,\n                            this.#standardEnd ?? terminal\n                        )') >= 2
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/add-fromjson-elapsed.py
+          rm -f .github/workflows/add-fromjson-elapsed.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Reconstruct elapsed ranges in fromJSON"
+          git push
