@@ -1,0 +1,15 @@
+name: Inspect stop elapsed cleanup
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-stop-elapsed.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect
+        run: |
+          grep -n -E '^        stop\(|type.*elapsed|"elapsed"|#updateElapsed|#endElapsed' ClockTimer.js | head -120
+          line=$(grep -n -m1 '^        stop(' ClockTimer.js | cut -d: -f1)
+          sed -n "$((line-20)),$((line+240))p" ClockTimer.js
