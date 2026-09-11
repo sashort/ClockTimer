@@ -1,5 +1,5 @@
 name: Apply TimeRange layout suspension
-on:
+'on':
   push:
     branches:
       - time-range-layout-suspension
