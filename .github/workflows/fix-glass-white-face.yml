@@ -1,0 +1,33 @@
+name: Fix glass face on light backgrounds
+on:
+  push:
+    paths:
+      - .github/workflows/fix-glass-white-face.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/fix-glass-white-face.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          assert 'mix-blend-mode: screen;' not in s[s.index('#face-background::before'):s.index('#rings')]
+          assert 'rgb(0 0 0 / 34%) 100%' in s
+          assert 'inset 0 0 0 clamp(1px, 0.45cqi, 2px)' in s
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/fix-glass-white-face.py
+          rm -f .github/workflows/fix-glass-white-face.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Make glass face visible on light backgrounds"
+          git push
