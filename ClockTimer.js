@@ -10337,65 +10337,34 @@
                         "overwrite"
                     )?.trim();
 
+                range.removeAttribute(
+                    "overwrite"
+                );
+
                 if (!overwriteType) {
                     continue;
                 }
 
-                const nextRange =
+                const hasAdjacentRange =
                     this.#getManagedTimeRanges()
-                        .filter(
+                        .some(
                             candidate =>
                                 candidate !== range &&
                                 candidate.timeRangeExiting !== true &&
                                 candidate.getAttribute(
                                     "type"
-                                ) !== "elapsed"
-                        )
-                        .map(
-                            candidate => ({
-                                range: candidate,
-                                start: Number(
+                                ) !== "elapsed" &&
+                                Number(
                                     candidate.clockTimerStart
-                                ),
-                                end: Number(
-                                    candidate.clockTimerEnd
-                                )
-                            })
-                        )
-                        .filter(
-                            item =>
-                                Number.isFinite(item.start) &&
-                                Number.isFinite(item.end) &&
-                                item.end > item.start &&
-                                item.start === end
-                        )[0];
+                                ) === end
+                        );
 
-                range.removeAttribute(
-                    "overwrite"
-                );
-
-                if (nextRange) {
-                    this.overwrite({
-                        type: overwriteType,
-                        startTime:
-                            this.#formatTimelineTime(
-                                nextRange.start
-                            ),
-                        endTime:
-                            this.#formatTimelineTime(
-                                nextRange.end
-                            )
-                    });
-
+                if (!hasAdjacentRange) {
                     continue;
                 }
 
                 this.overwrite({
-                    type: overwriteType,
-                    startTime:
-                        this.#formatTimelineTime(
-                            end
-                        )
+                    type: overwriteType
                 });
             }
         }
