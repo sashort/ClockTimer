@@ -1794,6 +1794,37 @@ class TimeRange extends HTMLElement {
         }
 
         if (mode !== "radial") {
+            const parentStyle =
+                getComputedStyle(parent);
+
+            const paddingLeft =
+                Number.parseFloat(parentStyle.paddingLeft) || 0;
+
+            const paddingRight =
+                Number.parseFloat(parentStyle.paddingRight) || 0;
+
+            const paddingTop =
+                Number.parseFloat(parentStyle.paddingTop) || 0;
+
+            const paddingBottom =
+                Number.parseFloat(parentStyle.paddingBottom) || 0;
+
+            const contentWidth =
+                Math.max(
+                    0,
+                    width -
+                        paddingLeft -
+                        paddingRight
+                );
+
+            const contentHeight =
+                Math.max(
+                    0,
+                    height -
+                        paddingTop -
+                        paddingBottom
+                );
+
             const startProgress =
                 Math.max(
                     0,
@@ -1814,64 +1845,72 @@ class TimeRange extends HTMLElement {
 
             if (mode === "to-right") {
                 const startX =
-                    width * startProgress;
+                    paddingLeft +
+                    contentWidth * startProgress;
 
                 const endX =
-                    width * endProgress;
+                    paddingLeft +
+                    contentWidth * endProgress;
 
                 return [
-                    { x: startX, y: 0 },
-                    { x: endX, y: 0 },
-                    { x: endX, y: height },
-                    { x: startX, y: height }
+                    { x: startX, y: paddingTop },
+                    { x: endX, y: paddingTop },
+                    { x: endX, y: paddingTop + contentHeight },
+                    { x: startX, y: paddingTop + contentHeight }
                 ];
             }
 
             if (mode === "to-left") {
                 const startX =
-                    width *
-                    (1 - startProgress);
+                    paddingLeft +
+                    contentWidth *
+                        (1 - startProgress);
 
                 const endX =
-                    width *
-                    (1 - endProgress);
+                    paddingLeft +
+                    contentWidth *
+                        (1 - endProgress);
 
                 return [
-                    { x: startX, y: 0 },
-                    { x: endX, y: 0 },
-                    { x: endX, y: height },
-                    { x: startX, y: height }
+                    { x: startX, y: paddingTop },
+                    { x: endX, y: paddingTop },
+                    { x: endX, y: paddingTop + contentHeight },
+                    { x: startX, y: paddingTop + contentHeight }
                 ];
             }
 
             if (mode === "to-bottom") {
                 const startY =
-                    height * startProgress;
+                    paddingTop +
+                    contentHeight * startProgress;
 
                 const endY =
-                    height * endProgress;
+                    paddingTop +
+                    contentHeight * endProgress;
 
                 return [
-                    { x: 0, y: startY },
-                    { x: width, y: startY },
-                    { x: width, y: endY },
-                    { x: 0, y: endY }
+                    { x: paddingLeft, y: startY },
+                    { x: paddingLeft + contentWidth, y: startY },
+                    { x: paddingLeft + contentWidth, y: endY },
+                    { x: paddingLeft, y: endY }
                 ];
             }
 
             const startY =
-                height *
-                (1 - startProgress);
+                paddingTop +
+                contentHeight *
+                    (1 - startProgress);
 
             const endY =
-                height *
-                (1 - endProgress);
+                paddingTop +
+                contentHeight *
+                    (1 - endProgress);
 
             return [
-                { x: 0, y: startY },
-                { x: width, y: startY },
-                { x: width, y: endY },
-                { x: 0, y: endY }
+                { x: paddingLeft, y: startY },
+                { x: paddingLeft + contentWidth, y: startY },
+                { x: paddingLeft + contentWidth, y: endY },
+                { x: paddingLeft, y: endY }
             ];
         }
         const normalize =
