@@ -1,0 +1,80 @@
+name: Adjust timer type indicator depth
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/adjust_timer_type_indicator_depth.py
+      - .github/workflows/adjust-timer-type-indicator-depth.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+
+      - name: Verify expected target base
+        working-directory: target
+        run: |
+          test "$(git rev-parse HEAD)" = "8211803cfb100c39bb3e025dac01c69b37403c90"
+
+      - name: Apply timer type indicator depth change
+        run: |
+          python controller/.github/scripts/adjust_timer_type_indicator_depth.py target/ClockTimer.js
+
+      - name: Syntax check
+        working-directory: target
+        run: node --check ClockTimer.js
+
+      - name: Verify indicator transition behavior
+        working-directory: target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+
+          required = [
+              '#setTimerTypeIndicatorTransitionLayer(',
+              '#getTimerTypeIndicatorTickCenter(',
+              '#retargetTimerTypeIndicatorToTicks(',
+              'state.indicatorInwardCenter',
+              '"2147483647"',
+              'tickInset +\n                tickLength / 2',
+          ]
+
+          for item in required:
+              assert item in text, item
+
+          assert text.count('#setTimerTypeIndicatorTransitionLayer(') == 4
+          assert text.count('#retargetTimerTypeIndicatorToTicks(') == 2
+          PY
+          git diff --check
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Center transition indicator over tick marks"
+          git push origin HEAD:radial-fitted
