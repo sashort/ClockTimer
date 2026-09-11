@@ -7352,11 +7352,7 @@
                     "range-length"
                 );
 
-            const isSplit =
-                spans.length > 1;
-
-            let firstSegment =
-                true;
+            const segments = [];
 
             for (
                 const [
@@ -7395,127 +7391,133 @@
                             ringEnd
                         );
 
-                    const segment =
-                        firstSegment
-                            ? range
-                            : document.createElement(
-                                "time-range"
-                            );
-
-                    if (
-                        !firstSegment
-                    ) {
-                        this.#applyPreservedAttributes(
-                            segment,
-                            preservedAttributes
-                        );
-
-                        this.#copyClockTimerRangeState(
-                            range,
-                            segment
-                        );
-
-                        segment.timeRangeFullEntry =
-                            true;
-
-                        segment.setAttribute(
-                            "ignore-overlaps",
-                            ""
-                        );
-                    }
-
-                    this.#setRangeTiming(
-                        segment,
-                        cursor,
-                        segmentEnd,
-                        preserveRangeLength
-                    );
-
-                    if (
-                        isSplit &&
-                        segment === range &&
-                        typeof range.snapToLogicalTiming ===
-                            "function"
-                    ) {
-                        range.snapToLogicalTiming();
-                    }
-
-                    const ring =
-                        this.#ensureRing(
-                            ringIndex
-                        );
-
-                    if (
-                        segment === range &&
-                        range.parentElement !== ring
-                    ) {
-                        if (
-                            typeof range.removeAnimated ===
-                                "function"
-                        ) {
-                            range.removeAnimated({
-                                collapseTo: "end"
-                            });
-                        }
-                        else {
-                            range.remove();
-                        }
-
-                        const movedSegment =
-                            document.createElement(
-                                "time-range"
-                            );
-
-                        this.#applyPreservedAttributes(
-                            movedSegment,
-                            preservedAttributes
-                        );
-
-                        this.#copyClockTimerRangeState(
-                            range,
-                            movedSegment
-                        );
-
-                        movedSegment.timeRangeFullEntry =
-                            true;
-
-                        movedSegment.setAttribute(
-                            "ignore-overlaps",
-                            ""
-                        );
-
-                        this.#setRangeTiming(
-                            movedSegment,
-                            cursor,
-                            segmentEnd,
-                            preserveRangeLength
-                        );
-
-                        ring.appendChild(
-                            movedSegment
-                        );
-                    }
-                    else if (
-                        segment.parentElement !== ring
-                    ) {
-                        ring.appendChild(
-                            segment
-                        );
-
-                        if (
-                            typeof segment.refreshVisualGeometry ===
-                                "function"
-                        ) {
-                            segment.refreshVisualGeometry();
-                        }
-                    }
-
-                    firstSegment =
-                        false;
+                    segments.push({
+                        start: cursor,
+                        end: segmentEnd,
+                        ringIndex
+                    });
 
                     cursor =
                         segmentEnd;
                 }
+            }
+
+            if (segments.length === 0) {
+                range.remove();
+                return;
+            }
+
+            if (segments.length > 1) {
+                const replacements = [];
+
+                for (const entry of segments) {
+                    const segment =
+                        document.createElement(
+                            "time-range"
+                        );
+
+                    this.#applyPreservedAttributes(
+                        segment,
+                        preservedAttributes
+                    );
+
+                    this.#copyClockTimerRangeState(
+                        range,
+                        segment
+                    );
+
+                    segment.timeRangeFullEntry =
+                        true;
+
+                    segment.setAttribute(
+                        "ignore-overlaps",
+                        ""
+                    );
+
+                    this.#setRangeTiming(
+                        segment,
+                        entry.start,
+                        entry.end,
+                        preserveRangeLength
+                    );
+
+                    replacements.push({
+                        segment,
+                        ring:
+                            this.#ensureRing(
+                                entry.ringIndex
+                            )
+                    });
+                }
+
+                for (
+                    const {
+                        segment,
+                        ring
+                    } of replacements
+                ) {
+                    ring.appendChild(
+                        segment
+                    );
+                }
+
+                range.remove();
+                return;
+            }
+
+            const entry =
+                segments[0];
+
+            this.#setRangeTiming(
+                range,
+                entry.start,
+                entry.end,
+                preserveRangeLength
+            );
+
+            const ring =
+                this.#ensureRing(
+                    entry.ringIndex
+                );
+
+            if (
+                range.parentElement !== ring
+            ) {
+                const movedSegment =
+                    document.createElement(
+                        "time-range"
+                    );
+
+                this.#applyPreservedAttributes(
+                    movedSegment,
+                    preservedAttributes
+                );
+
+                this.#copyClockTimerRangeState(
+                    range,
+                    movedSegment
+                );
+
+                movedSegment.timeRangeFullEntry =
+                    true;
+
+                movedSegment.setAttribute(
+                    "ignore-overlaps",
+                    ""
+                );
+
+                this.#setRangeTiming(
+                    movedSegment,
+                    entry.start,
+                    entry.end,
+                    preserveRangeLength
+                );
+
+                ring.appendChild(
+                    movedSegment
+                );
+
+                range.remove();
             }
         }
 
