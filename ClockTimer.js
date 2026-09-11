@@ -4728,6 +4728,10 @@
                 )
             );
 
+            nextRange.removeAttribute(
+                "overwrite"
+            );
+
             this.#setRangeStart(
                 nextRange,
                 now
@@ -4858,6 +4862,10 @@
             ) {
                 return;
             }
+
+            currentRange.removeAttribute(
+                "overwrite"
+            );
 
             this.#setRangeEnd(
                 currentRange,
