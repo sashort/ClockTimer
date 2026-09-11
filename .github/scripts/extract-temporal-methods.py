@@ -1,11 +1,10 @@
 from pathlib import Path
-import re
 
 def extract(text, marker, indent):
-    name=re.escape(marker)
-    m=re.search(rf'^{{{indent}}}{name}', text, re.M)
-    if not m: return f'NOT FOUND: {marker}\n'
-    i=m.start(); b=text.find('{',m.end())
+    prefix=' ' * indent + marker
+    i=text.find(prefix)
+    if i<0: return f'NOT FOUND: {marker}\n'
+    b=text.find('{',i+len(prefix))
     if b<0: return f'NO BRACE: {marker}\n'
     depth=0; quote=None; esc=False; line_comment=False; block=False
     j=b
