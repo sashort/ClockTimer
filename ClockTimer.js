@@ -269,15 +269,6 @@
                     --clock-timer-ring-resize-duration:
                         333ms;
 
-                    --clock-timer-glass-highlight-opacity:
-                        0.72;
-
-                    --clock-timer-glass-vignette-opacity:
-                        0.24;
-
-                    --clock-timer-glass-edge-opacity:
-                        0.28;
-
                     position: relative;
 
                     display: block;
@@ -345,68 +336,7 @@
                     inset: 0;
                     border-radius: 50%;
                     z-index: -1;
-                    overflow: hidden;
                     pointer-events: none;
-                    box-shadow:
-                        inset 0 0 clamp(12px, 5cqi, 30px)
-                            rgb(0 0 0 / calc(
-                                var(--clock-timer-glass-vignette-opacity) * 0.72
-                            )),
-                        inset 0 clamp(1px, 0.5cqi, 3px) clamp(4px, 1.6cqi, 10px)
-                            rgb(255 255 255 / calc(
-                                var(--clock-timer-glass-edge-opacity) * 0.95
-                            )),
-                        inset 0 0 0 clamp(1px, 0.45cqi, 2px)
-                            rgb(0 0 0 / calc(
-                                var(--clock-timer-glass-edge-opacity) * 0.34
-                            ));
-                }
-
-                #face-background::before,
-                #face-background::after {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    border-radius: inherit;
-                    pointer-events: none;
-                }
-
-                #face-background::before {
-                    background:
-                        radial-gradient(
-                            ellipse 74% 48% at 30% 16%,
-                            rgb(255 255 255 / 34%) 0%,
-                            rgb(255 255 255 / 16%) 28%,
-                            transparent 68%
-                        ),
-                        linear-gradient(
-                            145deg,
-                            rgb(255 255 255 / 32%) 0%,
-                            transparent 34%,
-                            transparent 64%,
-                            rgb(0 0 0 / 10%) 100%
-                        );
-                    opacity:
-                        var(--clock-timer-glass-highlight-opacity);
-                }
-
-                #face-background::after {
-                    background:
-                        radial-gradient(
-                            circle at 50% 43%,
-                            transparent 48%,
-                            rgb(0 0 0 / 14%) 76%,
-                            rgb(0 0 0 / 34%) 100%
-                        ),
-                        linear-gradient(
-                            180deg,
-                            rgb(255 255 255 / 24%) 0%,
-                            transparent 26%,
-                            transparent 68%,
-                            rgb(0 0 0 / 18%) 100%
-                        );
-                    opacity:
-                        var(--clock-timer-glass-vignette-opacity);
                 }
 
                 #rings {
