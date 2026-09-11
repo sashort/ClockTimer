@@ -146,6 +146,9 @@
         #timerModeTransitionAnimations =
             new Set();
 
+        #timeRangeTimingAnimations =
+            new Map();
+
         #timerModeTransitionToken =
             0;
 
@@ -919,6 +922,7 @@
             this.#stopFaceBackgroundTracking();
 
             this.#cancelTimerModeTransition();
+            this.#cancelTimeRangeTimingAnimations();
 
             this.#spinAnimation
                 ?.cancel();
@@ -2652,15 +2656,10 @@
             }
 
             if (current) {
-                current.range.setAttribute(
-                    "end-time",
-                    this.#formatTimelineTime(
-                        stopTime
-                    )
+                this.#setRangeEnd(
+                    current.range,
+                    stopTime
                 );
-
-                current.range.clockTimerEnd =
-                    String(stopTime);
             }
 
             for (const elapsedRange of
@@ -6334,6 +6333,7 @@
             }
 
             this.#stopTickTimer();
+            this.#cancelTimeRangeTimingAnimations();
             this.#setIndicatorSymbolVisible(false);
 
             this.#creationTime =
@@ -7243,19 +7243,15 @@
                     range;
             }
             else {
-                this.#setRangeStart(
+                this.#setRangeTiming(
                     range,
-                    start
-                );
-
-                this.#setRangeEnd(
-                    range,
-                    end
+                    start,
+                    end,
+                    range.hasAttribute(
+                        "range-length"
+                    )
                 );
             }
-
-            range.snapToLogicalTiming?.();
-            range.refreshVisualGeometry?.();
         }
 
         #ensureBorderRing() {
@@ -8749,6 +8745,546 @@
             );
         }
 
+        #timeRangeTimelineDate(
+            milliseconds
+        ) {
+            const base =
+                new Date(
+                    2000,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                );
+
+            return new Date(
+                base.getTime() +
+                milliseconds
+            );
+        }
+
+        #getTimeRangeOriginMilliseconds(
+            range,
+            fallbackStart
+        ) {
+            let earliest =
+                Number.isFinite(
+                    fallbackStart
+                )
+                    ? fallbackStart
+                    : undefined;
+
+            const parent =
+                range?.parentElement;
+
+            if (parent) {
+                for (
+                    const child of
+                        parent.children
+                ) {
+                    if (
+                        child.localName !==
+                            "time-range" ||
+                        child.timeRangeExiting ===
+                            true
+                    ) {
+                        continue;
+                    }
+
+                    const start =
+                        child === range &&
+                        Number.isFinite(
+                            fallbackStart
+                        )
+                            ? fallbackStart
+                            : Number(
+                                child.clockTimerStart
+                            );
+
+                    if (
+                        Number.isFinite(start) &&
+                        (
+                            !Number.isFinite(earliest) ||
+                            start < earliest
+                        )
+                    ) {
+                        earliest =
+                            start;
+                    }
+                }
+            }
+
+            if (!Number.isFinite(earliest)) {
+                return 0;
+            }
+
+            return (
+                Math.floor(
+                    earliest /
+                    ClockTimer.#HOUR
+                ) *
+                ClockTimer.#HOUR
+            );
+        }
+
+        #calculateTimeRangeLayout(
+            range,
+            start,
+            end,
+            originMilliseconds
+        ) {
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            const parent =
+                range?.parentElement;
+
+            if (
+                !TimeRangeClass ||
+                typeof TimeRangeClass.calculateTimeAngle !==
+                    "function" ||
+                typeof TimeRangeClass.calculateClipPath !==
+                    "function" ||
+                !parent ||
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end < start
+            ) {
+                return;
+            }
+
+            const width =
+                parent.clientWidth;
+
+            const height =
+                parent.clientHeight;
+
+            if (
+                width <= 0 ||
+                height <= 0
+            ) {
+                return;
+            }
+
+            const origin =
+                Number.isFinite(
+                    originMilliseconds
+                )
+                    ? originMilliseconds
+                    : this.#getTimeRangeOriginMilliseconds(
+                        range,
+                        start
+                    );
+
+            const originDate =
+                this.#timeRangeTimelineDate(
+                    origin
+                );
+
+            const startAngle =
+                TimeRangeClass.calculateTimeAngle(
+                    this.#timeRangeTimelineDate(
+                        start
+                    ),
+                    originDate
+                );
+
+            let endAngle =
+                TimeRangeClass.calculateTimeAngle(
+                    this.#timeRangeTimelineDate(
+                        end
+                    ),
+                    originDate
+                );
+
+            if (
+                !Number.isFinite(startAngle) ||
+                !Number.isFinite(endAngle)
+            ) {
+                return;
+            }
+
+            const rangeDuration =
+                end - start;
+
+            if (
+                rangeDuration >=
+                    ClockTimer.#HOUR
+            ) {
+                endAngle =
+                    startAngle + 360;
+            }
+
+            const clipPath =
+                TimeRangeClass.calculateClipPath({
+                    startAngle,
+                    endAngle,
+                    width,
+                    height,
+                    parent,
+                    mode: "radial"
+                });
+
+            if (
+                typeof clipPath !==
+                    "string"
+            ) {
+                return;
+            }
+
+            return {
+                clipPath,
+                startAngle,
+                endAngle,
+                duration:
+                    rangeDuration,
+                originMilliseconds:
+                    origin
+            };
+        }
+
+        #applyTimeRangeLayout(
+            range,
+            layout,
+            commit = false
+        ) {
+            if (!range || !layout) {
+                return false;
+            }
+
+            const method =
+                commit
+                    ? range.commitAnimatedLayout
+                    : range.applyAnimatedLayout;
+
+            if (
+                typeof method !==
+                    "function"
+            ) {
+                return false;
+            }
+
+            return (
+                method.call(
+                    range,
+                    layout
+                ) !== false
+            );
+        }
+
+        #writeRangeTiming(
+            range,
+            start,
+            end,
+            preserveRangeLength = false
+        ) {
+            const startTime =
+                this.#formatTimelineTime(
+                    start
+                );
+
+            const endTime =
+                this.#formatTimelineTime(
+                    end
+                );
+
+            if (
+                typeof range.transitionTo ===
+                    "function"
+            ) {
+                range.transitionTo({
+                    startTime,
+                    endTime
+                });
+            }
+            else {
+                range.setAttribute(
+                    "start-time",
+                    startTime
+                );
+
+                range.setAttribute(
+                    "end-time",
+                    endTime
+                );
+            }
+
+            if (preserveRangeLength) {
+                range.setAttribute(
+                    "range-length",
+                    this.#formatStandardTime(
+                        end - start
+                    )
+                );
+            }
+            else {
+                range.removeAttribute(
+                    "range-length"
+                );
+            }
+
+            range.clockTimerStart =
+                String(start);
+
+            range.clockTimerEnd =
+                String(end);
+        }
+
+        #finishTimeRangeTimingAnimation(
+            range,
+            state
+        ) {
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            if (
+                this.#timeRangeTimingAnimations.get(
+                    range
+                ) !== state
+            ) {
+                return;
+            }
+
+            this.#applyTimeRangeLayout(
+                range,
+                state.targetLayout
+            );
+
+            const pending =
+                state.pending;
+
+            if (
+                pending &&
+                (
+                    pending.start !==
+                        state.targetStart ||
+                    pending.end !==
+                        state.targetEnd
+                ) &&
+                range.isConnected
+            ) {
+                state.pending =
+                    undefined;
+
+                state.fromStart =
+                    state.targetStart;
+
+                state.fromEnd =
+                    state.targetEnd;
+
+                state.targetStart =
+                    pending.start;
+
+                state.targetEnd =
+                    pending.end;
+
+                state.originMilliseconds =
+                    this.#getTimeRangeOriginMilliseconds(
+                        range,
+                        pending.start
+                    );
+
+                state.targetLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        pending.start,
+                        pending.end,
+                        state.originMilliseconds
+                    );
+
+                if (!state.targetLayout) {
+                    this.#timeRangeTimingAnimations.delete(
+                        range
+                    );
+
+                    TimeRangeClass?.resumeLayout?.(
+                        range
+                    );
+
+                    range.refreshVisualGeometry?.();
+                    return;
+                }
+
+                state.startedAt =
+                    undefined;
+
+                state.duration =
+                    this.#getRangeAnimationDuration();
+
+                state.frame =
+                    requestAnimationFrame(
+                        timestamp =>
+                            this.#stepTimeRangeTimingAnimation(
+                                range,
+                                state,
+                                timestamp
+                            )
+                    );
+
+                return;
+            }
+
+            this.#applyTimeRangeLayout(
+                range,
+                state.targetLayout,
+                true
+            );
+
+            this.#timeRangeTimingAnimations.delete(
+                range
+            );
+
+            TimeRangeClass?.resumeLayout?.(
+                range
+            );
+        }
+
+        #stepTimeRangeTimingAnimation(
+            range,
+            state,
+            timestamp
+        ) {
+            if (
+                this.#timeRangeTimingAnimations.get(
+                    range
+                ) !== state
+            ) {
+                return;
+            }
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            if (!range.isConnected) {
+                this.#timeRangeTimingAnimations.delete(
+                    range
+                );
+
+                TimeRangeClass?.resumeLayout?.(
+                    range
+                );
+
+                return;
+            }
+
+            if (
+                state.startedAt ===
+                    undefined
+            ) {
+                state.startedAt =
+                    timestamp;
+            }
+
+            const duration =
+                Math.max(
+                    0,
+                    state.duration
+                );
+
+            const progress =
+                duration <= 0
+                    ? 1
+                    : Math.min(
+                        1,
+                        Math.max(
+                            0,
+                            (
+                                timestamp -
+                                state.startedAt
+                            ) /
+                            duration
+                        )
+                    );
+
+            const currentStart =
+                state.fromStart +
+                (
+                    state.targetStart -
+                    state.fromStart
+                ) *
+                progress;
+
+            const currentEnd =
+                state.fromEnd +
+                (
+                    state.targetEnd -
+                    state.fromEnd
+                ) *
+                progress;
+
+            const currentLayout =
+                this.#calculateTimeRangeLayout(
+                    range,
+                    currentStart,
+                    currentEnd,
+                    state.originMilliseconds
+                );
+
+            if (currentLayout) {
+                this.#applyTimeRangeLayout(
+                    range,
+                    currentLayout
+                );
+            }
+
+            if (progress >= 1) {
+                state.frame =
+                    undefined;
+
+                this.#finishTimeRangeTimingAnimation(
+                    range,
+                    state
+                );
+
+                return;
+            }
+
+            state.frame =
+                requestAnimationFrame(
+                    nextTimestamp =>
+                        this.#stepTimeRangeTimingAnimation(
+                            range,
+                            state,
+                            nextTimestamp
+                        )
+                );
+        }
+
+        #cancelTimeRangeTimingAnimations() {
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            for (
+                const [range, state] of
+                    this.#timeRangeTimingAnimations
+            ) {
+                if (
+                    state.frame !==
+                        undefined
+                ) {
+                    cancelAnimationFrame(
+                        state.frame
+                    );
+                }
+
+                TimeRangeClass?.resumeLayout?.(
+                    range
+                );
+            }
+
+            this.#timeRangeTimingAnimations.clear();
+        }
+
         #getPlannedSegments(
             startTimeMilliseconds =
                 this.#getStartTimeMilliseconds()
@@ -9776,58 +10312,200 @@
             end,
             preserveRangeLength = false
         ) {
-            const startTime =
-                this.#formatTimelineTime(
+            if (
+                !range ||
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                return false;
+            }
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            const previousStart =
+                Number(
+                    range.clockTimerStart
+                );
+
+            const previousEnd =
+                Number(
+                    range.clockTimerEnd
+                );
+
+            const active =
+                this.#timeRangeTimingAnimations.get(
+                    range
+                );
+
+            if (active) {
+                this.#writeRangeTiming(
+                    range,
+                    start,
+                    end,
+                    preserveRangeLength
+                );
+
+                active.pending =
+                    start === active.targetStart &&
+                    end === active.targetEnd
+                        ? undefined
+                        : {
+                            start,
+                            end,
+                            preserveRangeLength
+                        };
+
+                return true;
+            }
+
+            const canManageAnimation =
+                range.isConnected &&
+                TimeRangeClass &&
+                typeof TimeRangeClass.suspendLayout ===
+                    "function" &&
+                typeof TimeRangeClass.resumeLayout ===
+                    "function" &&
+                typeof range.applyAnimatedLayout ===
+                    "function" &&
+                typeof range.commitAnimatedLayout ===
+                    "function";
+
+            if (!canManageAnimation) {
+                this.#writeRangeTiming(
+                    range,
+                    start,
+                    end,
+                    preserveRangeLength
+                );
+
+                return true;
+            }
+
+            TimeRangeClass.suspendLayout(
+                range
+            );
+
+            this.#writeRangeTiming(
+                range,
+                start,
+                end,
+                preserveRangeLength
+            );
+
+            const originMilliseconds =
+                this.#getTimeRangeOriginMilliseconds(
+                    range,
                     start
                 );
 
-            const endTime =
-                this.#formatTimelineTime(
-                    end
+            const targetLayout =
+                this.#calculateTimeRangeLayout(
+                    range,
+                    start,
+                    end,
+                    originMilliseconds
                 );
 
-            if (
-                typeof range.transitionTo ===
-                    "function"
-            ) {
-                range.transitionTo({
-                    startTime,
-                    endTime
-                });
-            }
-            else {
-                range.setAttribute(
-                    "start-time",
-                    startTime
+            if (!targetLayout) {
+                TimeRangeClass.resumeLayout(
+                    range
                 );
 
-                range.setAttribute(
-                    "end-time",
-                    endTime
-                );
+                range.refreshVisualGeometry?.();
+                return true;
             }
 
             if (
-                preserveRangeLength
+                !Number.isFinite(previousStart) ||
+                !Number.isFinite(previousEnd) ||
+                (
+                    previousStart === start &&
+                    previousEnd === end
+                ) ||
+                this.#starting ||
+                this.#getRangeAnimationDuration() <= 0
             ) {
-                range.setAttribute(
-                    "range-length",
-                    this.#formatStandardTime(
-                        end - start
-                    )
+                this.#applyTimeRangeLayout(
+                    range,
+                    targetLayout,
+                    true
                 );
-            }
-            else {
-                range.removeAttribute(
-                    "range-length"
+
+                TimeRangeClass.resumeLayout(
+                    range
                 );
+
+                return true;
             }
 
-            range.clockTimerStart =
-                String(start);
+            const fromLayout =
+                this.#calculateTimeRangeLayout(
+                    range,
+                    previousStart,
+                    previousEnd,
+                    originMilliseconds
+                );
 
-            range.clockTimerEnd =
-                String(end);
+            if (!fromLayout) {
+                this.#applyTimeRangeLayout(
+                    range,
+                    targetLayout,
+                    true
+                );
+
+                TimeRangeClass.resumeLayout(
+                    range
+                );
+
+                return true;
+            }
+
+            this.#applyTimeRangeLayout(
+                range,
+                fromLayout
+            );
+
+            const state = {
+                fromStart:
+                    previousStart,
+                fromEnd:
+                    previousEnd,
+                targetStart:
+                    start,
+                targetEnd:
+                    end,
+                originMilliseconds,
+                targetLayout,
+                pending:
+                    undefined,
+                frame:
+                    undefined,
+                startedAt:
+                    undefined,
+                duration:
+                    this.#getRangeAnimationDuration()
+            };
+
+            this.#timeRangeTimingAnimations.set(
+                range,
+                state
+            );
+
+            state.frame =
+                requestAnimationFrame(
+                    timestamp =>
+                        this.#stepTimeRangeTimingAnimation(
+                            range,
+                            state,
+                            timestamp
+                        )
+                );
+
+            return true;
         }
 
         #replaceRangeWithSegments(
@@ -11715,14 +12393,13 @@
                     );
                 }
                 else {
-                    this.#setRangeStart(
+                    this.#setRangeTiming(
                         range,
-                        segmentStart
-                    );
-
-                    this.#setRangeEnd(
-                        range,
-                        segmentEnd
+                        segmentStart,
+                        segmentEnd,
+                        range.hasAttribute(
+                            "range-length"
+                        )
                     );
                 }
 
@@ -11730,8 +12407,6 @@
                     "overlapping",
                     ""
                 );
-
-                range.snapToLogicalTiming?.();
             }
         }
 
@@ -11933,6 +12608,25 @@
             range,
             milliseconds
         ) {
+            const end =
+                Number(
+                    range?.clockTimerEnd
+                );
+
+            if (
+                Number.isFinite(end) &&
+                end > milliseconds
+            ) {
+                return this.#setRangeTiming(
+                    range,
+                    milliseconds,
+                    end,
+                    range.hasAttribute(
+                        "range-length"
+                    )
+                );
+            }
+
             const formatted =
                 this.#formatTimelineTime(
                     milliseconds
@@ -11941,8 +12635,7 @@
             if (
                 range.getAttribute(
                     "start-time"
-                ) !==
-                    formatted
+                ) !== formatted
             ) {
                 range.setAttribute(
                     "start-time",
@@ -11951,15 +12644,34 @@
             }
 
             range.clockTimerStart =
-                String(
-                    milliseconds
-                );
+                String(milliseconds);
+
+            return true;
         }
 
         #setRangeEnd(
             range,
             milliseconds
         ) {
+            const start =
+                Number(
+                    range?.clockTimerStart
+                );
+
+            if (
+                Number.isFinite(start) &&
+                milliseconds > start
+            ) {
+                return this.#setRangeTiming(
+                    range,
+                    start,
+                    milliseconds,
+                    range.hasAttribute(
+                        "range-length"
+                    )
+                );
+            }
+
             const formatted =
                 this.#formatTimelineTime(
                     milliseconds
@@ -11968,8 +12680,7 @@
             if (
                 range.getAttribute(
                     "end-time"
-                ) !==
-                    formatted
+                ) !== formatted
             ) {
                 range.setAttribute(
                     "end-time",
@@ -11978,9 +12689,9 @@
             }
 
             range.clockTimerEnd =
-                String(
-                    milliseconds
-                );
+                String(milliseconds);
+
+            return true;
         }
 
         #ensureRing(

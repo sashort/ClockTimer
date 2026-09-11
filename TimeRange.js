@@ -596,7 +596,8 @@ class TimeRange extends HTMLElement {
                 "overlapping"
         ) {
             TimeRange.#reorderParent(
-                this.parentElement
+                this.parentElement,
+                this
             );
 
             return;
@@ -2069,6 +2070,139 @@ class TimeRange extends HTMLElement {
             );
     }
 
+    static calculateClipPath({
+        startAngle,
+        endAngle,
+        width,
+        height,
+        parent = undefined,
+        mode = "radial"
+    } = {}) {
+        if (
+            !Number.isFinite(startAngle) ||
+            !Number.isFinite(endAngle) ||
+            !Number.isFinite(width) ||
+            !Number.isFinite(height) ||
+            width <= 0 ||
+            height <= 0
+        ) {
+            return;
+        }
+
+        if (
+            mode === "radial" &&
+            Math.abs(
+                endAngle - startAngle
+            ) >= 360
+        ) {
+            return "none";
+        }
+
+        const corners =
+            TimeRange.calculateCorners({
+                startAngle,
+                endAngle,
+                width,
+                height,
+                parent,
+                mode
+            });
+
+        if (!Array.isArray(corners)) {
+            return;
+        }
+
+        const pointText =
+            point =>
+                `${
+                    point.x /
+                    width *
+                    100
+                }% ${
+                    point.y /
+                    height *
+                    100
+                }%`;
+
+        if (mode !== "radial") {
+            return `polygon(${corners.map(pointText).join(", ")})`;
+        }
+
+        const startPoint =
+            TimeRange.calculateEdgePoint(
+                startAngle,
+                width,
+                height
+            );
+
+        const endPoint =
+            TimeRange.calculateEdgePoint(
+                endAngle,
+                width,
+                height
+            );
+
+        return `polygon(${[
+            "50% 50%",
+            pointText(startPoint),
+            ...corners.map(pointText),
+            pointText(endPoint)
+        ].join(", ")})`;
+    }
+
+    applyAnimatedLayout({
+        clipPath,
+        startAngle,
+        endAngle,
+        duration
+    } = {}) {
+        if (
+            typeof clipPath !== "string" ||
+            clipPath.trim() === ""
+        ) {
+            return false;
+        }
+
+        this.#updateContour();
+        this.#updateGeometryVariables();
+
+        this.#updateWaveGeometry(
+            startAngle,
+            endAngle,
+            duration
+        );
+
+        this.#applyClipPath(
+            clipPath
+        );
+
+        return true;
+    }
+
+    commitAnimatedLayout(
+        layout = {}
+    ) {
+        if (
+            !this.applyAnimatedLayout(
+                layout
+            )
+        ) {
+            return false;
+        }
+
+        this.#renderStartTime =
+            this.#cloneDate(
+                this.#startTime
+            );
+
+        this.#renderEndTime =
+            this.#cloneDate(
+                this.#endTime
+            );
+
+        return true;
+    }
+
     #cloneDate(value) {
         return value instanceof Date
             ? new Date(
@@ -3201,31 +3335,13 @@ class TimeRange extends HTMLElement {
 
     }
 
-    #updateClipPath() {
-        if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
-        ) {
-            return;
-        }
-
+    #updateGeometryVariables() {
         const parent =
             this.parentElement;
 
-        if (
-            !parent
-        ) {
+        if (!parent) {
             return;
         }
-
-        this.#updateContour();
-
-        const width =
-            parent.clientWidth;
-
-        const height =
-            parent.clientHeight;
 
         const ringInset =
             parent.getAttribute(
@@ -3253,6 +3369,128 @@ class TimeRange extends HTMLElement {
                 --time-range-ring-width: ${effectiveRingWidth};
             }
         `;
+    }
+
+    #applyClipPath(
+        clipPath
+    ) {
+        this.#styleElement.textContent = `
+            :host {
+                clip-path: ${clipPath};
+            }
+        `;
+    }
+
+    #updateWaveGeometry(
+        startAngle,
+        endAngle,
+        duration
+    ) {
+        if (
+            this.getAttribute("type") !==
+                "wave" ||
+            !Number.isFinite(startAngle) ||
+            !Number.isFinite(endAngle) ||
+            !Number.isFinite(duration)
+        ) {
+            return;
+        }
+
+        if (
+            duration >=
+                60 * 60 * 1000
+        ) {
+            const waveWidth = 38;
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-width",
+                `${waveWidth}deg`
+            );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-shoulder",
+                `${waveWidth * 0.35}deg`
+            );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-start-angle",
+                `${-waveWidth - 180}deg`
+            );
+
+            this.#elapsedWaveLayer.style.setProperty(
+                "--elapsed-wave-end-angle",
+                `${360 + waveWidth - 180}deg`
+            );
+
+            return;
+        }
+
+        const sweepEndAngle =
+            duration > 0 &&
+            endAngle <= startAngle
+                ? endAngle + 360
+                : endAngle;
+
+        const sweepAngle =
+            Math.max(
+                0,
+                sweepEndAngle - startAngle
+            );
+
+        const waveWidth =
+            Math.max(
+                1.5,
+                Math.min(
+                    38,
+                    sweepAngle * 0.4
+                )
+            );
+
+        this.#elapsedWaveLayer.style.setProperty(
+            "--elapsed-wave-width",
+            `${waveWidth}deg`
+        );
+
+        this.#elapsedWaveLayer.style.setProperty(
+            "--elapsed-wave-shoulder",
+            `${Math.max(0.5, waveWidth * 0.35)}deg`
+        );
+
+        this.#elapsedWaveLayer.style.setProperty(
+            "--elapsed-wave-start-angle",
+            `${startAngle - waveWidth - 180}deg`
+        );
+
+        this.#elapsedWaveLayer.style.setProperty(
+            "--elapsed-wave-end-angle",
+            `${sweepEndAngle + waveWidth - 180}deg`
+        );
+    }
+
+    #updateClipPath() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
+        const parent =
+            this.parentElement;
+
+        if (!parent) {
+            return;
+        }
+
+        this.#updateContour();
+        this.#updateGeometryVariables();
+
+        const width =
+            parent.clientWidth;
+
+        const height =
+            parent.clientHeight;
 
         if (
             width <= 0 ||
@@ -3265,22 +3503,12 @@ class TimeRange extends HTMLElement {
         }
 
         if (
-            !(
-                this.#startTime instanceof Date
-            ) ||
-            !(
-                this.#endTime instanceof Date
-            )
+            !(this.#startTime instanceof Date) ||
+            !(this.#endTime instanceof Date)
         ) {
-            this.#styleElement.textContent = `
-                :host {
-                    clip-path: polygon(
-                        50% 50%,
-                        50% 50%,
-                        50% 50%
-                    );
-                }
-            `;
+            this.#applyClipPath(
+                "polygon(50% 50%, 50% 50%, 50% 50%)"
+            );
 
             return;
         }
@@ -3299,46 +3527,6 @@ class TimeRange extends HTMLElement {
             renderEnd.getTime() -
             renderStart.getTime();
 
-        if (
-            duration >=
-                60 * 60 * 1000
-        ) {
-            if (
-                this.getAttribute("type") ===
-                    "wave"
-            ) {
-                const waveWidth = 38;
-
-                this.#elapsedWaveLayer.style.setProperty(
-                    "--elapsed-wave-width",
-                    `${waveWidth}deg`
-                );
-
-                this.#elapsedWaveLayer.style.setProperty(
-                    "--elapsed-wave-shoulder",
-                    `${waveWidth * 0.35}deg`
-                );
-
-                this.#elapsedWaveLayer.style.setProperty(
-                    "--elapsed-wave-start-angle",
-                    `${-waveWidth - 180}deg`
-                );
-
-                this.#elapsedWaveLayer.style.setProperty(
-                    "--elapsed-wave-end-angle",
-                    `${360 + waveWidth - 180}deg`
-                );
-            }
-
-            this.#styleElement.textContent = `
-                :host {
-                    clip-path: none;
-                }
-            `;
-
-            return;
-        }
-
         const ringOrigin =
             this.#getRingOriginTime();
 
@@ -3348,125 +3536,50 @@ class TimeRange extends HTMLElement {
                 ringOrigin
             );
 
-        const endAngle =
+        let endAngle =
             TimeRange.calculateTimeAngle(
                 renderEnd,
                 ringOrigin
             );
 
         if (
-            this.getAttribute("type") ===
-                "wave"
+            !Number.isFinite(startAngle) ||
+            !Number.isFinite(endAngle)
         ) {
-            const sweepEndAngle =
-                duration > 0 &&
-                endAngle <= startAngle
-                    ? endAngle + 360
-                    : endAngle;
-
-            const sweepAngle =
-                Math.max(
-                    0,
-                    sweepEndAngle - startAngle
-                );
-
-            const waveWidth =
-                Math.max(
-                    1.5,
-                    Math.min(
-                        38,
-                        sweepAngle * 0.4
-                    )
-                );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-width",
-                `${waveWidth}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-shoulder",
-                `${Math.max(0.5, waveWidth * 0.35)}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-start-angle",
-                `${startAngle - waveWidth - 180}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-end-angle",
-                `${sweepEndAngle + waveWidth - 180}deg`
-            );
+            return;
         }
 
-        const startPoint =
-            TimeRange.calculateEdgePoint(
-                startAngle,
-                width,
-                height
-            );
+        if (
+            duration >=
+                60 * 60 * 1000
+        ) {
+            endAngle =
+                startAngle + 360;
+        }
 
-        const endPoint =
-            TimeRange.calculateEdgePoint(
+        this.#updateWaveGeometry(
+            startAngle,
+            endAngle,
+            duration
+        );
+
+        const clipPath =
+            TimeRange.calculateClipPath({
+                startAngle,
                 endAngle,
                 width,
-                height
-            );
-
-        const corners =
-            TimeRange.calculateCorners({
-                startAngle,
-                endAngle,
-                width,
-                height
+                height,
+                parent,
+                mode: "radial"
             });
 
-        const startX =
-            startPoint.x /
-            width *
-            100;
+        if (clipPath === undefined) {
+            return;
+        }
 
-        const startY =
-            startPoint.y /
-            height *
-            100;
-
-        const endX =
-            endPoint.x /
-            width *
-            100;
-
-        const endY =
-            endPoint.y /
-            height *
-            100;
-
-        const polygonPoints = [
-            "50% 50%",
-            `${startX}% ${startY}%`,
-            ...corners.map(
-                corner =>
-                    `${
-                        corner.x /
-                        width *
-                        100
-                    }% ${
-                        corner.y /
-                        height *
-                        100
-                    }%`
-            ),
-            `${endX}% ${endY}%`
-        ];
-
-        this.#styleElement.textContent = `
-            :host {
-                clip-path: polygon(
-                    ${polygonPoints.join(",\n                    ")}
-                );
-            }
-        `;
+        this.#applyClipPath(
+            clipPath
+        );
     }
 
     static #reorderParent(
