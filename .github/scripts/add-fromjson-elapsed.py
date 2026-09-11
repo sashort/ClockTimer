@@ -79,9 +79,4 @@ if old not in s:
     raise SystemExit('fromJSON refresh target not found')
 s = s.replace(old, new, 1)
 
-# Replace second identical refresh after finally too.
-if old not in s:
-    raise SystemExit('second fromJSON refresh target not found')
-s = s.replace(old, new, 1)
-
 path.write_text(s)
