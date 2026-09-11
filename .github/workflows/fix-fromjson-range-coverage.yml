@@ -1,0 +1,33 @@
+name: Fix fromJSON range coverage
+on:
+  push:
+    paths:
+      - .github/workflows/fix-fromjson-range-coverage.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/fix-fromjson-range-coverage.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON('); q=s.index('\n        get status()',p); b=s[p:q]
+          assert 'const coverageEnd =' in b
+          assert '"overtime",\n                            this.#standardEnd,\n                            coverageEnd' in b
+          assert 'this.#calculatedEndTime =\n                        coverageEnd;' in b
+          assert 'while (elapsedCursor < terminal)' in b
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/fix-fromjson-range-coverage.py .github/workflows/fix-fromjson-range-coverage.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Extend restored ranges through later end"
+          git push
