@@ -1,0 +1,38 @@
+name: Offset fromJSON planned end
+on:
+  push:
+    paths:
+      - .github/workflows/offset-fromjson-planned-end.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/offset-fromjson-planned-end.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON(')
+          q=s.index('\n        get status()', p)
+          b=s[p:q]
+          assert 'const originalStandardDuration =' in b
+          assert 'let customIntervalOffset =' in b
+          assert 'customIntervalOffset +=' in b
+          assert 'this.#standardDuration =\n                    originalStandardDuration +\n                    customIntervalOffset;' in b
+          assert 'this.#standardDuration =\n                        originalStandardDuration;' in b
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/offset-fromjson-planned-end.py
+          rm -f .github/workflows/offset-fromjson-planned-end.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Offset restored planned end by custom intervals"
+          git push
