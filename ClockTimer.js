@@ -1927,6 +1927,18 @@
 
             this.#freezeTimeFontForSpin();
 
+            if (
+                this.#fontSizingFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#fontSizingFrame
+                );
+
+                this.#fontSizingFrame =
+                    undefined;
+            }
+
             this.#spinAnimation
                 ?.cancel();
 
@@ -1976,6 +1988,8 @@
                         undefined;
 
                     this.#restoreTimeFontAfterSpin();
+
+                    this.#scheduleFontSizing();
                 });
         }
 
@@ -5980,6 +5994,12 @@
 
         #scheduleFontSizing() {
             if (
+                this.#spinAnimation
+            ) {
+                return;
+            }
+
+            if (
                 this.#fontSizingFrame !==
                     undefined
             ) {
@@ -5995,7 +6015,8 @@
                             undefined;
 
                         if (
-                            !this.isConnected
+                            !this.isConnected ||
+                            this.#spinAnimation
                         ) {
                             return;
                         }
@@ -6006,6 +6027,12 @@
         }
 
         #updateResponsiveFontSizes() {
+            if (
+                this.#spinAnimation
+            ) {
+                return;
+            }
+
             const rect =
                 this.getBoundingClientRect();
 
