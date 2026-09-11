@@ -12,8 +12,6 @@ class TimeRange extends HTMLElement {
     #styleElement;
     #geometryStyleElement;
     #contourLayer;
-    #elapsedBaseLayer;
-    #elapsedEdgeLayer;
     #elapsedWaveLayer;
     #appearanceObserver;
     #appearanceRefreshFrame;
@@ -294,60 +292,39 @@ class TimeRange extends HTMLElement {
                 display: none;
             }
 
-            #elapsed-base,
-            #elapsed-edge,
             #elapsed-wave {
                 position: absolute;
                 inset: 0;
                 display: none;
                 pointer-events: none;
                 background-repeat: no-repeat;
-            }
-
-            #elapsed-wave {
                 transform-origin: 50% 50%;
                 will-change: transform;
             }
 
-            :host([type="elapsed"]),
-            :host([type="remaining"][timer-mode="remaining"]) {
+            :host(.elapsed),
+            :host(.remaining) {
+                background-color:
+                    rgb(255 255 255 / 25%);
                 animation: none !important;
+                transition: none !important;
+            }
+
+            :host(.elapsed):host-context(clock-timer[timer-mode="remaining"]) {
+                display: none !important;
+            }
+
+            :host([type="wave"]) {
+                animation: none !important;
+                transition: none !important;
                 background: transparent !important;
                 background-color: transparent !important;
                 background-image: none !important;
             }
 
-            :host([type="remaining"][timer-mode="elapsed"]) {
-                display: none !important;
-            }
-
-            :host([type="elapsed"]) #elapsed-base,
-            :host([type="elapsed"]) #elapsed-edge,
-            :host([type="elapsed"]) #elapsed-wave {
+            :host([type="wave"]) #elapsed-wave {
                 display: block;
-            }
-
-            :host([type="remaining"][timer-mode="remaining"]) #elapsed-base,
-            :host([type="remaining"][timer-mode="remaining"]) #elapsed-edge {
-                display: block;
-            }
-
-            :host([type="elapsed"][timer-mode="remaining"]) #elapsed-base,
-            :host([type="elapsed"][timer-mode="remaining"]) #elapsed-edge {
-                display: none;
-            }
-
-            :host([type="remaining"]) {
-                animation: none !important;
-                transition: none !important;
-            }
-
-            :host([type="elapsed"]:not([static-elapsed])) #elapsed-wave {
                 animation: elapsed-wave-sweep 4.5s linear infinite;
-            }
-
-            :host([type="elapsed"][static-elapsed]) #elapsed-wave {
-                display: none;
             }
 
             @keyframes elapsed-wave-sweep {
@@ -390,22 +367,6 @@ class TimeRange extends HTMLElement {
         this.#contourLayer.id =
             "contour";
 
-        this.#elapsedBaseLayer =
-            document.createElement(
-                "div"
-            );
-
-        this.#elapsedBaseLayer.id =
-            "elapsed-base";
-
-        this.#elapsedEdgeLayer =
-            document.createElement(
-                "div"
-            );
-
-        this.#elapsedEdgeLayer.id =
-            "elapsed-edge";
-
         this.#elapsedWaveLayer =
             document.createElement(
                 "div"
@@ -429,8 +390,6 @@ class TimeRange extends HTMLElement {
             this.#geometryStyleElement,
             this.#styleElement,
             this.#contourLayer,
-            this.#elapsedBaseLayer,
-            this.#elapsedEdgeLayer,
             this.#elapsedWaveLayer
         );
     }
@@ -2131,9 +2090,14 @@ class TimeRange extends HTMLElement {
         removeAfter = false
     ) {
         if (
-            this.getAttribute(
-                "type"
-            ) === "remaining"
+            [
+                "remaining",
+                "wave"
+            ].includes(
+                this.getAttribute(
+                    "type"
+                )
+            )
         ) {
             this.#renderStartTime =
                 this.#cloneDate(
@@ -2723,11 +2687,8 @@ class TimeRange extends HTMLElement {
                     if (
                         mutations.some(
                             mutation =>
-                                mutation.type === "attributes" &&
-                                (
-                                    mutation.target === this ||
-                                    mutation.target === this.parentElement
-                                )
+                                mutation.type === "attributes" ||
+                                mutation.type === "childList"
                         )
                     ) {
                         this.#scheduleAppearanceRefresh();
@@ -2748,6 +2709,26 @@ class TimeRange extends HTMLElement {
         if (parent) {
             this.#appearanceObserver.observe(
                 parent,
+                {
+                    attributes: true,
+                    childList: true,
+                    subtree: true
+                }
+            );
+        }
+
+        const root =
+            this.getRootNode();
+
+        const clockTimer =
+            root?.host?.localName ===
+                "clock-timer"
+                ? root.host
+                : undefined;
+
+        if (clockTimer) {
+            this.#appearanceObserver.observe(
+                clockTimer,
                 {
                     attributes: true,
                     childList: true,
@@ -2826,54 +2807,67 @@ class TimeRange extends HTMLElement {
     }
 
     #updateElapsedWaveAppearance() {
-        if (
-            !this.#elapsedBaseLayer ||
-            !this.#elapsedEdgeLayer ||
-            !this.#elapsedWaveLayer
-        ) {
+        if (!this.#elapsedWaveLayer) {
             return;
         }
 
-        const type =
+        if (
             this.getAttribute(
                 "type"
-            );
-
-        const timerMode =
-            this.getAttribute(
-                "timer-mode"
-            );
-
-        const elapsedAppearance =
-            type === "elapsed";
-
-        const remainingAppearance =
-            type === "remaining" &&
-            timerMode === "remaining";
-
-        if (
-            !elapsedAppearance &&
-            !remainingAppearance
+            ) !== "wave"
         ) {
-            this.#elapsedBaseLayer.style.background =
-                "transparent";
-
-            this.#elapsedEdgeLayer.style.backgroundImage =
-                "none";
-
             this.#elapsedWaveLayer.style.backgroundImage =
                 "none";
 
             return;
         }
 
-        const parent =
-            this.parentElement;
+        const root =
+            this.getRootNode();
 
-        const activeRing =
-            parent?.hasAttribute(
-                "active"
-            ) === true;
+        const clockTimer =
+            root?.host?.localName ===
+                "clock-timer"
+                ? root.host
+                : undefined;
+
+        const sourceRingIndex =
+            this.parentElement
+                ?.clockTimerRingIndex;
+
+        let sourceRing;
+
+        if (clockTimer) {
+            for (
+                const ring of
+                    clockTimer.querySelectorAll(
+                        ":scope > ring-container"
+                    )
+            ) {
+                if (
+                    String(
+                        ring.clockTimerRingIndex ??
+                        ""
+                    ) ===
+                    String(
+                        sourceRingIndex ??
+                        ""
+                    )
+                ) {
+                    sourceRing = ring;
+                    break;
+                }
+            }
+        }
+
+        const sources =
+            sourceRing
+                ? Array.from(
+                    sourceRing.querySelectorAll(
+                        ":scope > time-range"
+                    )
+                )
+                : [];
 
         let darkestLuminance = 1;
         let lightestLuminance = 0;
@@ -2893,91 +2887,88 @@ class TimeRange extends HTMLElement {
                     );
             };
 
-        if (parent) {
-            for (
-                const range of
-                    parent.children
+        for (const range of sources) {
+            const style =
+                getComputedStyle(
+                    range
+                );
+
+            if (
+                style.display === "none" ||
+                style.visibility === "hidden"
             ) {
-                if (
-                    range === this ||
-                    range.localName !==
-                        "time-range" ||
-                    [
-                        "elapsed",
-                        "remaining"
-                    ].includes(
-                        range.getAttribute(
-                            "type"
+                continue;
+            }
+
+            const opacityValue =
+                Number.parseFloat(
+                    style.opacity
+                );
+
+            const opacity =
+                Number.isFinite(
+                    opacityValue
+                )
+                    ? Math.min(
+                        1,
+                        Math.max(
+                            0,
+                            opacityValue
                         )
                     )
-                ) {
-                    continue;
-                }
+                    : 1;
 
-                const style =
-                    getComputedStyle(range);
+            if (opacity <= 0) {
+                continue;
+            }
 
-                const color =
-                    this.#parseComputedColor(
-                        style.backgroundColor
+            const color =
+                this.#parseComputedColor(
+                    style.backgroundColor
+                );
+
+            if (
+                color &&
+                color.alpha > 0
+            ) {
+                const luminance =
+                    0.2126 * channel(color.red) +
+                    0.7152 * channel(color.green) +
+                    0.0722 * channel(color.blue);
+
+                darkestLuminance =
+                    Math.min(
+                        darkestLuminance,
+                        luminance
                     );
 
-                const opacityValue =
-                    Number.parseFloat(
-                        style.opacity
+                lightestLuminance =
+                    Math.max(
+                        lightestLuminance,
+                        luminance
                     );
 
-                const opacity =
-                    Number.isFinite(opacityValue)
-                        ? Math.min(
-                            1,
-                            Math.max(
-                                0,
-                                opacityValue
-                            )
-                        )
-                        : 1;
+                strongestOpacity =
+                    Math.max(
+                        strongestOpacity,
+                        opacity * color.alpha
+                    );
 
-                if (color) {
-                    const luminance =
-                        0.2126 * channel(color.red) +
-                        0.7152 * channel(color.green) +
-                        0.0722 * channel(color.blue);
+                hasUnderlay =
+                    true;
+            }
+            else if (
+                style.backgroundImage !==
+                    "none"
+            ) {
+                hasUnderlay =
+                    true;
 
-                    darkestLuminance =
-                        Math.min(
-                            darkestLuminance,
-                            luminance
-                        );
-
-                    lightestLuminance =
-                        Math.max(
-                            lightestLuminance,
-                            luminance
-                        );
-
-                    strongestOpacity =
-                        Math.max(
-                            strongestOpacity,
-                            opacity * color.alpha
-                        );
-
-                    hasUnderlay =
-                        true;
-                }
-                else if (
-                    style.backgroundImage !==
-                        "none"
-                ) {
-                    hasUnderlay =
-                        true;
-
-                    strongestOpacity =
-                        Math.max(
-                            strongestOpacity,
-                            opacity
-                        );
-                }
+                strongestOpacity =
+                    Math.max(
+                        strongestOpacity,
+                        opacity
+                    );
             }
         }
 
@@ -3004,89 +2995,6 @@ class TimeRange extends HTMLElement {
                     strength
                 )
             );
-
-        const baseStrength =
-            activeRing
-                ? Math.min(
-                    0.34,
-                    Math.max(
-                        0.24,
-                        0.26 +
-                            contrastRange * 0.05 +
-                            (1 - strongestOpacity) * 0.04
-                    )
-                )
-                : Math.min(
-                    0.18,
-                    Math.max(
-                        0.12,
-                        0.13 +
-                            contrastRange * 0.03 +
-                            (1 - strongestOpacity) * 0.03
-                    )
-                );
-
-        const edgeStrength =
-            activeRing
-                ? Math.min(
-                    0.48,
-                    Math.max(
-                        0.34,
-                        0.37 +
-                            contrastRange * 0.06 +
-                            (1 - strongestOpacity) * 0.05
-                    )
-                )
-                : Math.min(
-                    0.25,
-                    Math.max(
-                        0.15,
-                        0.17 +
-                            contrastRange * 0.04 +
-                            (1 - strongestOpacity) * 0.04
-                    )
-                );
-
-        this.#elapsedBaseLayer.style.mixBlendMode =
-            "screen";
-
-        this.#elapsedBaseLayer.style.background =
-            `rgba(255, 255, 255, ${baseStrength.toFixed(3)})`;
-
-        this.#elapsedEdgeLayer.style.mixBlendMode =
-            "screen";
-
-        this.#elapsedEdgeLayer.style.setProperty(
-            "--elapsed-edge-strength",
-            edgeStrength.toFixed(3)
-        );
-
-        if (
-            remainingAppearance ||
-            this.hasAttribute(
-                "static-elapsed"
-            ) ||
-            !activeRing
-        ) {
-            this.#elapsedWaveLayer.style.animation =
-                "none";
-
-            this.#elapsedWaveLayer.style.opacity =
-                "0";
-
-            this.#elapsedWaveLayer.style.backgroundImage =
-                "none";
-
-            return;
-        }
-
-        this.#elapsedWaveLayer.style.removeProperty(
-            "animation"
-        );
-
-        this.#elapsedWaveLayer.style.removeProperty(
-            "opacity"
-        );
 
         const shoulder =
             strength * 0.38;
@@ -3190,19 +3098,6 @@ class TimeRange extends HTMLElement {
             `rgba(255, 255, 255, 0.34) ${centerRadius}px, ` +
             `rgba(0, 0, 0, 0.22) ${outerRadius}px)`;
 
-        if (this.#elapsedEdgeLayer) {
-            const edge =
-                2;
-
-            this.#elapsedEdgeLayer.style.backgroundImage =
-                `radial-gradient(circle at center, ` +
-                `transparent ${Math.max(0, innerRadius - edge)}px, ` +
-                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${innerRadius}px, ` +
-                `transparent ${innerRadius + edge}px, ` +
-                `transparent ${Math.max(innerRadius + edge, outerRadius - edge)}px, ` +
-                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${outerRadius}px, ` +
-                `transparent ${outerRadius + edge}px)`;
-        }
     }
 
     #updateClipPath() {
@@ -3301,7 +3196,7 @@ class TimeRange extends HTMLElement {
         ) {
             if (
                 this.getAttribute("type") ===
-                    "elapsed"
+                    "wave"
             ) {
                 const waveWidth = 38;
 

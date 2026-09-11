@@ -23,6 +23,8 @@
 
         #clockFace;
 
+        #ringLayer;
+
         #faceBackground;
 
         #faceBackgroundFrame;
@@ -140,6 +142,10 @@
 
         #remainingRanges =
             new Map();
+
+        #waveRing;
+
+        #waveRange;
 
         #elapsedRange;
 
@@ -649,6 +655,9 @@
                 document.createElement(
                     "div"
                 );
+
+            this.#ringLayer =
+                ringLayer;
 
             ringLayer.id =
                 "rings";
@@ -1609,7 +1618,8 @@
                         "earlystart",
                         "prestart",
                         "elapsed",
-                        "remaining"
+                        "remaining",
+                        "wave"
                     ]);
 
                 const excludedAttributes =
@@ -1918,16 +1928,6 @@
 
                         elapsedRange.clockTimerImportedElapsed =
                             "";
-
-                        if (
-                            this.#getTimerMode() ===
-                                "elapsed"
-                        ) {
-                            elapsedRange.setAttribute(
-                                "static-elapsed",
-                                ""
-                            );
-                        }
 
                         elapsedRange.timeRangeFullEntry =
                             true;
@@ -2664,6 +2664,8 @@
 
             this.#elapsedRange =
                 undefined;
+
+            this.#removeWaveRange();
 
             for (
                 const [ringIndex, range] of
@@ -6377,6 +6379,8 @@
 
             this.#remainingRanges.clear();
 
+            this.#removeWaveRange();
+
             this.#rings.clear();
 
             this.#started =
@@ -6579,39 +6583,9 @@
             const mode =
                 this.#normalizeTimerMode();
 
-            for (
-                const range of
-                    this.querySelectorAll(
-                        'time-range[type="elapsed"]'
-                    )
-            ) {
-                range.setAttribute(
-                    "timer-mode",
-                    mode
-                );
-
-                if (
-                    range.clockTimerImportedElapsed !==
-                        undefined
-                ) {
-                    if (mode === "remaining") {
-                        range.removeAttribute(
-                            "static-elapsed"
-                        );
-                    }
-                    else {
-                        range.setAttribute(
-                            "static-elapsed",
-                            ""
-                        );
-                    }
-                }
-
-                range.refreshVisualGeometry?.();
-            }
-
             if (mode !== "remaining") {
                 this.#removeRemainingRanges();
+                this.#syncWaveRange();
                 return;
             }
 
@@ -6625,7 +6599,7 @@
                 for (
                     const range of
                         this.querySelectorAll(
-                            'time-range[type="elapsed"]'
+                            "time-range.elapsed"
                         )
                 ) {
                     const end =
@@ -6650,6 +6624,318 @@
                     start
                 );
             }
+
+            this.#syncWaveRange();
+        }
+
+        #findWaveSourceRange() {
+            if (
+                this.#started &&
+                this.#elapsedRange?.isConnected
+            ) {
+                return this.#elapsedRange;
+            }
+
+            if (
+                this.#getTimerMode() !==
+                    "remaining"
+            ) {
+                return undefined;
+            }
+
+            let selected;
+            let selectedEnd =
+                -Infinity;
+
+            for (
+                const range of
+                    this.querySelectorAll(
+                        "time-range.elapsed"
+                    )
+            ) {
+                if (!range.isConnected) {
+                    continue;
+                }
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(end) &&
+                    end > selectedEnd
+                ) {
+                    selected = range;
+                    selectedEnd = end;
+                }
+            }
+
+            return selected;
+        }
+
+        #ensureWaveRing(
+            sourceRing
+        ) {
+            if (
+                !sourceRing ||
+                sourceRing.localName !==
+                    "ring-container" ||
+                !this.#ringLayer
+            ) {
+                return undefined;
+            }
+
+            if (!this.#waveRing) {
+                const ring =
+                    document.createElement(
+                        "ring-container"
+                    );
+
+                ring.id =
+                    "progress-wave-ring";
+
+                ring.clockTimerInternalWave =
+                    "";
+
+                ring.style.position =
+                    "absolute";
+
+                ring.style.inset =
+                    "0";
+
+                ring.style.width =
+                    "100%";
+
+                ring.style.height =
+                    "100%";
+
+                ring.style.zIndex =
+                    "100";
+
+                ring.style.pointerEvents =
+                    "none";
+
+                ring.style.background =
+                    "transparent";
+
+                ring.resizeDuration =
+                    "0ms";
+
+                ring.resizeFilter =
+                    "none";
+
+                ring.reorderFilter =
+                    "none";
+
+                ring.connectFilter =
+                    "none";
+
+                ring.disconnectFilter =
+                    "none";
+
+                ring.filterRamp =
+                    false;
+
+                ring.filterRampFront =
+                    "0ms";
+
+                ring.filterRampEnd =
+                    "0ms";
+
+                ring.filterRampConnect =
+                    "0ms";
+
+                ring.filterRampDisconnect =
+                    "0ms";
+
+                this.#ringLayer.appendChild(
+                    ring
+                );
+
+                this.#waveRing =
+                    ring;
+            }
+
+            const ring =
+                this.#waveRing;
+
+            ring.style.display =
+                "block";
+
+            ring.clockTimerRing =
+                "";
+
+            ring.clockTimerRingIndex =
+                sourceRing.clockTimerRingIndex ??
+                "";
+
+            const inset =
+                sourceRing.renderedInset ??
+                sourceRing.getAttribute(
+                    "inset"
+                ) ??
+                "0px";
+
+            const width =
+                sourceRing.renderedWidth ??
+                sourceRing.getAttribute(
+                    "width"
+                ) ??
+                "0px";
+
+            if (
+                ring.getAttribute(
+                    "inset"
+                ) !== inset
+            ) {
+                ring.setAttribute(
+                    "inset",
+                    inset
+                );
+            }
+
+            if (
+                ring.getAttribute(
+                    "width"
+                ) !== width
+            ) {
+                ring.setAttribute(
+                    "width",
+                    width
+                );
+            }
+
+            ring.toggleAttribute(
+                "active",
+                sourceRing.hasAttribute(
+                    "active"
+                )
+            );
+
+            return ring;
+        }
+
+        #removeWaveRange() {
+            if (this.#waveRange) {
+                this.#waveRange.remove();
+                this.#waveRange =
+                    undefined;
+            }
+
+            if (this.#waveRing) {
+                this.#waveRing.style.display =
+                    "none";
+            }
+        }
+
+        #syncWaveRange() {
+            const source =
+                this.#findWaveSourceRange();
+
+            if (!source) {
+                this.#removeWaveRange();
+                return;
+            }
+
+            const start =
+                Number(
+                    source.clockTimerStart
+                );
+
+            const end =
+                Number(
+                    source.clockTimerEnd
+                );
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                this.#removeWaveRange();
+                return;
+            }
+
+            const ring =
+                this.#ensureWaveRing(
+                    source.parentElement
+                );
+
+            if (!ring) {
+                this.#removeWaveRange();
+                return;
+            }
+
+            let range =
+                this.#waveRange;
+
+            if (
+                !range ||
+                range.parentElement !== ring
+            ) {
+                range =
+                    document.createElement(
+                        "time-range"
+                    );
+
+                range.setAttribute(
+                    "type",
+                    "wave"
+                );
+
+                range.setAttribute(
+                    "overlapping",
+                    ""
+                );
+
+                range.setAttribute(
+                    "start-time",
+                    this.#formatTimelineTime(
+                        start
+                    )
+                );
+
+                range.setAttribute(
+                    "end-time",
+                    this.#formatTimelineTime(
+                        end
+                    )
+                );
+
+                range.clockTimerStart =
+                    String(start);
+
+                range.clockTimerEnd =
+                    String(end);
+
+                range.clockTimerInternalWave =
+                    "";
+
+                range.timeRangeFullEntry =
+                    true;
+
+                ring.appendChild(
+                    range
+                );
+
+                this.#waveRange =
+                    range;
+            }
+            else {
+                this.#setRangeStart(
+                    range,
+                    start
+                );
+
+                this.#setRangeEnd(
+                    range,
+                    end
+                );
+            }
+
+            range.snapToLogicalTiming?.();
+            range.refreshVisualGeometry?.();
         }
 
         #ensureBorderRing() {
@@ -10256,6 +10542,7 @@
 
             this.#scheduleHourRender();
             this.#scheduleIndicatorSymbolUpdate();
+            this.#syncWaveRange();
 
             if (
                 !this.hasAttribute(
@@ -10835,11 +11122,6 @@
                 range.setAttribute(
                     "overlapping",
                     ""
-                );
-
-                range.setAttribute(
-                    "timer-mode",
-                    this.#getTimerMode()
                 );
             }
 
