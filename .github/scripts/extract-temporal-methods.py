@@ -1,9 +1,11 @@
 from pathlib import Path
+import re
 
-def extract(text, marker):
-    i=text.find(marker)
-    if i<0: return f'NOT FOUND: {marker}\n'
-    b=text.find('{',i)
+def extract(text, marker, indent):
+    name=re.escape(marker)
+    m=re.search(rf'^{{{indent}}}{name}', text, re.M)
+    if not m: return f'NOT FOUND: {marker}\n'
+    i=m.start(); b=text.find('{',m.end())
     if b<0: return f'NO BRACE: {marker}\n'
     depth=0; quote=None; esc=False; line_comment=False; block=False
     j=b
@@ -30,15 +32,15 @@ def extract(text, marker):
     return f'UNTERMINATED: {marker}\n'
 
 wanted={
-'ClockTimer.js':['#normalizeFormat(', '#updateDisplay(', '#validateDurationTime(', '#validateClockTime(', '#formatStandardTime(', '#formatTimelineTime(', '#parseInsertDateTime(', '#parseInsertRangeLength(', '#getRangeAnimationDuration('],
-'TimeRange.js':['#uniformDate(', '#formatDateTime(', '#parseRangeLength(', '#formatRangeLength('],
-'RingContainer.js':['static #normalizeOptionalTime(', 'static #timeToMilliseconds(']
+'ClockTimer.js':(8,['#normalizeFormat(', '#updateDisplay(', '#validateDurationTime(', '#validateClockTime(', '#formatStandardTime(', '#formatTimelineTime(', '#parseInsertDateTime(', '#parseInsertRangeLength(', '#getRangeAnimationDuration(']),
+'TimeRange.js':(4,['#uniformDate(', '#formatDateTime(', '#parseRangeLength(', '#formatRangeLength(']),
+'RingContainer.js':(4,['static #normalizeOptionalTime(', 'static #timeToMilliseconds('])
 }
 out=[]
-for fn, markers in wanted.items():
+for fn, (indent, markers) in wanted.items():
     text=Path(fn).read_text()
     out.append('\n===== '+fn+' =====\n')
-    for m in markers:
-        out.append('\n--- '+m+' ---\n')
-        out.append(extract(text,m))
+    for marker in markers:
+        out.append('\n--- '+marker+' ---\n')
+        out.append(extract(text,marker,indent))
 Path('TEMPORAL_METHODS.txt').write_text(''.join(out))
