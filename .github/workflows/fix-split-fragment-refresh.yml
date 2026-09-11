@@ -1,0 +1,46 @@
+name: Fix split fragment refresh
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-split-fragment-refresh.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore stable split implementation
+        run: git checkout a32446491690f9cf80364f678505292dc9998d33 -- ClockTimer.js
+
+      - name: Apply immediate fragment refresh
+        run: python .github/scripts/fix_split_fragment_refresh.py
+
+      - name: Syntax check
+        run: node --check ClockTimer.js
+
+      - name: Verify split behavior patch
+        run: |
+          grep -q 'segment.timeRangeFullEntry' ClockTimer.js
+          grep -q 'ignore-overlaps' ClockTimer.js
+          grep -q 'segment.refreshVisualGeometry' ClockTimer.js
+
+      - name: Commit update and cleanup
+        run: |
+          rm .github/scripts/fix_split_fragment_refresh.py
+          rm .github/workflows/fix-split-fragment-refresh.yml
+          git add ClockTimer.js .github/scripts/fix_split_fragment_refresh.py .github/workflows/fix-split-fragment-refresh.yml
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git commit -m "Refresh split continuation immediately"
+          git push origin main
