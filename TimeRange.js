@@ -3255,6 +3255,18 @@ class TimeRange extends HTMLElement {
     #removeOverlaps() {
         if (
             this.hasAttribute(
+                "ignore-overlaps"
+            )
+        ) {
+            this.removeAttribute(
+                "ignore-overlaps"
+            );
+
+            return;
+        }
+
+        if (
+            this.hasAttribute(
                 "overlapping"
             )
         ) {
