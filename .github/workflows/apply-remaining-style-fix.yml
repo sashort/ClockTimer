@@ -1,0 +1,32 @@
+name: Apply remaining style fix
+on:
+  push:
+    branches:
+      - remaining-style-fix
+    paths:
+      - '.github/workflows/apply-remaining-style-fix.yml'
+      - '.github/scripts/apply_remaining_style_fix.py'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Checkout fix tools
+        uses: actions/checkout@v4
+        with:
+          ref: remaining-style-fix
+          path: tools
+      - name: Configure Git
+        working-directory: repo
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+      - name: Apply and commit
+        working-directory: repo
+        run: python ../tools/.github/scripts/apply_remaining_style_fix.py
