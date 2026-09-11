@@ -1,0 +1,1172 @@
+997-            }
+998-
+999-            switch (name) {
+1000-                case "percent-goal":
+1001-                    if (
+1002-                        this.#updatesSuspended &&
+1003-                        !this.#processingAsyncBatch
+1004-                    ) {
+1005-                        this.#queueAsyncOperation({
+1006-                            type: "percent-goal"
+1007-                        });
+1008-                    }
+1009-                    else {
+1010-                        this.#handlePercentGoalChange();
+1011-                    }
+1012-                    break;
+1013-
+1014-                case "military-time":
+1015-                    this.#normalizeMilitaryTime();
+1016-
+1017:                    this.#normalizeFormat();
+1018-
+1019-                    this.#scheduleHourRender();
+1020-
+1021-                    this.#updateDisplay(
+1022-                        new Date()
+1023-                    );
+1024-
+1025-                    break;
+1026-
+1027-                case "time-format":
+1028:                    this.#normalizeFormat();
+1029-
+1030-                    this.#updateDisplay(
+1031-                        new Date()
+1032-                    );
+1033-
+1034-                    break;
+1035-
+1036-                case "date-format":
+1037-                    this.#updateDisplay(
+1038-                        new Date()
+1039-                    );
+1040-
+1041-                    break;
+1042-
+1043-                case "visible-hours":
+1044-                    this.#scheduleHourRender();
+1045-                    break;
+1046-
+1047-                case "tick-marks":
+1048-                    this.#updateTickMarks();
+1049-                    break;
+1050-
+1051-                case "indicator-symbol":
+1052-                    this.#syncIndicatorSymbolContent();
+1053-                    this.#scheduleIndicatorSymbolUpdate();
+1054-                    break;
+1055-
+1056-                case "grayscale":
+1057-                case "grayscale-ramp":
+1058-                    if (
+1059-                        this.#updatesSuspended &&
+1060-                        !this.#processingAsyncBatch
+1061-                    ) {
+1062-                        this.#queueAsyncOperation({
+1063-                            type: "grayscale"
+1064-                        });
+1065-                    }
+1066-                    else {
+1067-                        this.#runGrayscale();
+1068-                    }
+1069-                    break;
+1070-            }
+1071-        }
+1072-
+1073-        #getJSONCreationDate() {
+1074-            if (
+1075-                !Number.isFinite(
+1076-                    this.#startedAtEpoch
+1077-                )
+1078-            ) {
+1079-                return undefined;
+1080-            }
+1081-
+1082-            const date =
+1083-                new Date(
+1084-                    this.#startedAtEpoch
+1085-                );
+1086-
+1087-            if (
+1088-                Number.isNaN(
+1089-                    date.getTime()
+1090-                )
+1091-            ) {
+1092-                return undefined;
+1093-            }
+1094-
+1095-            return new Date(
+1096-                date.getFullYear(),
+1097-                date.getMonth(),
+1098-                date.getDate()
+1099-            );
+1100-        }
+1101-
+1102-        #formatJSONDate(
+1103-            date,
+1104-            includeTime = false
+1105-        ) {
+1106-            if (
+1107-                !(date instanceof Date) ||
+1108-                Number.isNaN(
+1109-                    date.getTime()
+1110-                )
+1111-            ) {
+1112-                return undefined;
+1113-            }
+1114-
+1115-            const pad =
+1116-                (value, length = 2) =>
+1117-                    String(value).padStart(
+1118-                        length,
+1119-                        "0"
+1120-                    );
+1121-
+1122-            const dateText =
+1123-                `${pad(date.getFullYear(), 4)}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+1124-
+1125-            if (!includeTime) {
+1126-                return dateText;
+1127-            }
+1128-
+1129-            return `${dateText} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`;
+1130-        }
+1131-
+1132-        #formatJSONTimelineTime(
+1133-            milliseconds,
+1134-            creationDate
+1135-        ) {
+1136-            if (
+1137-                !Number.isFinite(milliseconds) ||
+1138-                !(creationDate instanceof Date) ||
+1139-                Number.isNaN(
+1140-                    creationDate.getTime()
+1141-                )
+1142-            ) {
+1143-                return undefined;
+1144-            }
+1145-
+1146-            return this.#formatJSONDate(
+1147-                new Date(
+1148-                    creationDate.getTime() +
+--
+6471-                this.setAttribute(
+6472-                    "military-time",
+6473-                    "true"
+6474-                );
+6475-            }
+6476-            else {
+6477-                this.#normalizeMilitaryTime();
+6478-            }
+6479-
+6480-            if (
+6481-                !this.hasAttribute(
+6482-                    "time-format"
+6483-                )
+6484-            ) {
+6485-                this.setAttribute(
+6486-                    "time-format",
+6487-                    this.#getDefaultFormat()
+6488-                );
+6489-            }
+6490-            else {
+6491:                this.#normalizeFormat();
+6492-            }
+6493-        }
+6494-
+6495-        #ensureBorderRing() {
+6496-            if (
+6497-                this.#borderRing &&
+6498-                this.#borderRing.parentElement ===
+6499-                    this
+6500-            ) {
+6501-                return this.#borderRing;
+6502-            }
+6503-
+6504-            const ring =
+6505-                document.createElement(
+6506-                    "ring-container"
+6507-                );
+6508-
+6509-            ring.clockTimerBorder =
+6510-                "";
+6511-
+6512-            ring.setAttribute(
+6513-                "width",
+6514-                "var(--clock-timer-border-width, clamp(2px, 1.5cqi, 7px))"
+6515-            );
+6516-
+6517-            const borderFill =
+6518-                document.createElement(
+6519-                    "div"
+6520-                );
+6521-
+6522-            borderFill.clockTimerBorderFill =
+6523-                "";
+6524-
+6525-            borderFill.style.position =
+6526-                "absolute";
+6527-
+6528-            borderFill.style.inset =
+6529-                "0";
+6530-
+6531-            borderFill.style.width =
+6532-                "100%";
+6533-
+6534-            borderFill.style.height =
+6535-                "100%";
+6536-
+6537-            borderFill.style.minWidth =
+6538-                "0";
+6539-
+6540-            borderFill.style.minHeight =
+6541-                "0";
+6542-
+6543-            borderFill.style.boxSizing =
+6544-                "border-box";
+6545-
+6546-            borderFill.style.background =
+6547-                "var(--clock-timer-border-color, black)";
+6548-
+6549-            borderFill.style.pointerEvents =
+6550-                "none";
+6551-
+6552-            ring.appendChild(
+6553-                borderFill
+6554-            );
+6555-
+6556-            this.#borderRing =
+6557-                ring;
+6558-
+6559-            this.appendChild(
+6560-                ring
+6561-            );
+6562-
+6563-            return ring;
+6564-        }
+6565-
+6566-        #ensureHandRing() {
+6567-            if (
+6568-                this.#handRing &&
+6569-                this.#handRing.parentElement ===
+6570-                    this
+6571-            ) {
+6572-                return this.#handRing;
+6573-            }
+6574-
+6575-            this.#stopHandAnimations();
+6576-
+6577-            const ring =
+6578-                document.createElement(
+6579-                    "ring-container"
+6580-                );
+6581-
+6582-            ring.clockTimerHands =
+6583-                "";
+6584-
+6585-            ring.setAttribute(
+6586-                "geometry-only",
+6587-                ""
+6588-            );
+6589-
+6590-            ring.setAttribute(
+6591-                "width",
+6592-                "0px"
+6593-            );
+6594-
+6595-            ring.resizeFilter =
+6596-                "none";
+6597-
+6598-            ring.reorderFilter =
+6599-                "none";
+6600-
+6601-            ring.connectFilter =
+6602-                "none";
+6603-
+6604-            ring.disconnectFilter =
+6605-                "none";
+6606-
+6607-            ring.filterRamp =
+6608-                false;
+6609-
+6610-            this.#handRing =
+6611-                ring;
+--
+12351-                value !==
+12352-                    "true" &&
+12353-                value !==
+12354-                    "false"
+12355-            ) {
+12356-                this.setAttribute(
+12357-                    "military-time",
+12358-                    "true"
+12359-                );
+12360-            }
+12361-        }
+12362-
+12363-        #getDefaultFormat() {
+12364-            return this.getAttribute(
+12365-                "military-time"
+12366-            ) === "false"
+12367-                ? "h:mm:ss AM/PM"
+12368-                : "hhmmss";
+12369-        }
+12370-
+12371:        #normalizeFormat() {
+12372-            const value =
+12373-                this.getAttribute(
+12374-                    "time-format"
+12375-                );
+12376-
+12377-            if (
+12378-                !this.#isValidFormat(
+12379-                    value
+12380-                )
+12381-            ) {
+12382-                const defaultFormat =
+12383-                    this.#getDefaultFormat();
+12384-
+12385-                if (
+12386-                    value !==
+12387-                        defaultFormat
+12388-                ) {
+12389-                    this.setAttribute(
+12390-                        "time-format",
+12391-                        defaultFormat
+12392-                    );
+12393-                }
+12394-            }
+12395-        }
+12396-
+12397-        #isValidFormat(
+12398-            value
+12399-        ) {
+12400-            if (
+12401-                typeof value !==
+12402-                    "string"
+12403-            ) {
+12404-                return false;
+12405-            }
+12406-
+12407-            const military =
+12408-                this.getAttribute(
+12409-                    "military-time"
+12410-                ) !== "false";
+12411-
+12412-            if (military) {
+12413-                return /^(?:hhmm|hhmmss)$/.test(
+12414-                    value
+12415-                );
+12416-            }
+12417-
+12418-            return /^(?:hh:mm(?::ss)?|(?:h|0h):mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?)$/.test(
+12419-                value
+12420-            );
+12421-        }
+12422-
+12423-        #updateDisplay(
+12424-            now
+12425-        ) {
+12426-            this.#dateElement.textContent =
+12427-                new Intl.DateTimeFormat(
+12428-                    undefined,
+12429-                    {
+12430-                        weekday: "long",
+12431-                        month: "long",
+12432-                        day: "numeric"
+12433-                    }
+12434-                ).format(now);
+12435-
+12436-            const military =
+12437-                this.getAttribute(
+12438-                    "military-time"
+12439-                ) !== "false";
+12440-
+12441-            const format =
+12442-                this.getAttribute(
+12443-                    "time-format"
+12444-                ) ??
+12445-                this.#getDefaultFormat();
+12446-
+12447-            const rawHours =
+12448-                now.getHours();
+12449-
+12450-            const minutes =
+12451-                String(
+12452-                    now.getMinutes()
+12453-                ).padStart(
+12454-                    2,
+12455-                    "0"
+12456-                );
+12457-
+12458-            const seconds =
+12459-                String(
+12460-                    now.getSeconds()
+12461-                ).padStart(
+12462-                    2,
+12463-                    "0"
+12464-                );
+12465-
+12466-            if (military) {
+12467-                const hourText =
+12468-                    String(
+12469-                        rawHours
+12470-                    ).padStart(
+12471-                        2,
+12472-                        "0"
+12473-                    );
+12474-
+12475-                this.#timeElement.textContent =
+12476-                    format === "hhmmss"
+12477-                        ? `${hourText}${minutes}${seconds}`
+12478-                        : `${hourText}${minutes}`;
+12479-
+12480-                this.#scheduleFontSizing();
+12481-
+12482-                return;
+12483-            }
+12484-
+12485-            const militaryHour =
+12486-                format.startsWith(
+12487-                    "hh:"
+12488-                );
+12489-
+12490-            const padHour =
+12491-                militaryHour ||
+6467-                !this.hasAttribute(
+6468-                    "military-time"
+6469-                )
+6470-            ) {
+6471-                this.setAttribute(
+6472-                    "military-time",
+6473-                    "true"
+6474-                );
+6475-            }
+6476-            else {
+6477-                this.#normalizeMilitaryTime();
+6478-            }
+6479-
+6480-            if (
+6481-                !this.hasAttribute(
+6482-                    "time-format"
+6483-                )
+6484-            ) {
+6485-                this.setAttribute(
+6486-                    "time-format",
+6487:                    this.#getDefaultFormat()
+6488-                );
+6489-            }
+6490-            else {
+6491-                this.#normalizeFormat();
+6492-            }
+6493-        }
+6494-
+6495-        #ensureBorderRing() {
+6496-            if (
+6497-                this.#borderRing &&
+6498-                this.#borderRing.parentElement ===
+6499-                    this
+6500-            ) {
+6501-                return this.#borderRing;
+6502-            }
+6503-
+6504-            const ring =
+6505-                document.createElement(
+6506-                    "ring-container"
+6507-                );
+6508-
+6509-            ring.clockTimerBorder =
+6510-                "";
+6511-
+6512-            ring.setAttribute(
+6513-                "width",
+6514-                "var(--clock-timer-border-width, clamp(2px, 1.5cqi, 7px))"
+6515-            );
+6516-
+6517-            const borderFill =
+6518-                document.createElement(
+6519-                    "div"
+6520-                );
+6521-
+6522-            borderFill.clockTimerBorderFill =
+6523-                "";
+6524-
+6525-            borderFill.style.position =
+6526-                "absolute";
+6527-
+6528-            borderFill.style.inset =
+6529-                "0";
+6530-
+6531-            borderFill.style.width =
+6532-                "100%";
+6533-
+6534-            borderFill.style.height =
+6535-                "100%";
+6536-
+6537-            borderFill.style.minWidth =
+6538-                "0";
+6539-
+6540-            borderFill.style.minHeight =
+6541-                "0";
+6542-
+6543-            borderFill.style.boxSizing =
+6544-                "border-box";
+6545-
+6546-            borderFill.style.background =
+6547-                "var(--clock-timer-border-color, black)";
+6548-
+6549-            borderFill.style.pointerEvents =
+6550-                "none";
+6551-
+6552-            ring.appendChild(
+6553-                borderFill
+6554-            );
+6555-
+6556-            this.#borderRing =
+6557-                ring;
+6558-
+6559-            this.appendChild(
+6560-                ring
+6561-            );
+6562-
+6563-            return ring;
+6564-        }
+6565-
+6566-        #ensureHandRing() {
+6567-            if (
+--
+12343-
+12344-        #normalizeMilitaryTime() {
+12345-            const value =
+12346-                this.getAttribute(
+12347-                    "military-time"
+12348-                );
+12349-
+12350-            if (
+12351-                value !==
+12352-                    "true" &&
+12353-                value !==
+12354-                    "false"
+12355-            ) {
+12356-                this.setAttribute(
+12357-                    "military-time",
+12358-                    "true"
+12359-                );
+12360-            }
+12361-        }
+12362-
+12363:        #getDefaultFormat() {
+12364-            return this.getAttribute(
+12365-                "military-time"
+12366-            ) === "false"
+12367-                ? "h:mm:ss AM/PM"
+12368-                : "hhmmss";
+12369-        }
+12370-
+12371-        #normalizeFormat() {
+12372-            const value =
+12373-                this.getAttribute(
+12374-                    "time-format"
+12375-                );
+12376-
+12377-            if (
+12378-                !this.#isValidFormat(
+12379-                    value
+12380-                )
+12381-            ) {
+12382-                const defaultFormat =
+12383:                    this.#getDefaultFormat();
+12384-
+12385-                if (
+12386-                    value !==
+12387-                        defaultFormat
+12388-                ) {
+12389-                    this.setAttribute(
+12390-                        "time-format",
+12391-                        defaultFormat
+12392-                    );
+12393-                }
+12394-            }
+12395-        }
+12396-
+12397-        #isValidFormat(
+12398-            value
+12399-        ) {
+12400-            if (
+12401-                typeof value !==
+12402-                    "string"
+12403-            ) {
+12404-                return false;
+12405-            }
+12406-
+12407-            const military =
+12408-                this.getAttribute(
+12409-                    "military-time"
+12410-                ) !== "false";
+12411-
+12412-            if (military) {
+12413-                return /^(?:hhmm|hhmmss)$/.test(
+12414-                    value
+12415-                );
+12416-            }
+12417-
+12418-            return /^(?:hh:mm(?::ss)?|(?:h|0h):mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?)$/.test(
+12419-                value
+12420-            );
+12421-        }
+12422-
+12423-        #updateDisplay(
+12424-            now
+12425-        ) {
+12426-            this.#dateElement.textContent =
+12427-                new Intl.DateTimeFormat(
+12428-                    undefined,
+12429-                    {
+12430-                        weekday: "long",
+12431-                        month: "long",
+12432-                        day: "numeric"
+12433-                    }
+12434-                ).format(now);
+12435-
+12436-            const military =
+12437-                this.getAttribute(
+12438-                    "military-time"
+12439-                ) !== "false";
+12440-
+12441-            const format =
+12442-                this.getAttribute(
+12443-                    "time-format"
+12444-                ) ??
+12445:                this.#getDefaultFormat();
+12446-
+12447-            const rawHours =
+12448-                now.getHours();
+12449-
+12450-            const minutes =
+12451-                String(
+12452-                    now.getMinutes()
+12453-                ).padStart(
+12454-                    2,
+12455-                    "0"
+12456-                );
+12457-
+12458-            const seconds =
+12459-                String(
+12460-                    now.getSeconds()
+12461-                ).padStart(
+12462-                    2,
+12463-                    "0"
+12464-                );
+12465-
+12466-            if (military) {
+12467-                const hourText =
+12468-                    String(
+12469-                        rawHours
+12470-                    ).padStart(
+12471-                        2,
+12472-                        "0"
+12473-                    );
+12474-
+12475-                this.#timeElement.textContent =
+12476-                    format === "hhmmss"
+12477-                        ? `${hourText}${minutes}${seconds}`
+12478-                        : `${hourText}${minutes}`;
+12479-
+12480-                this.#scheduleFontSizing();
+12481-
+12482-                return;
+12483-            }
+12484-
+12485-            const militaryHour =
+12486-                format.startsWith(
+12487-                    "hh:"
+12488-                );
+12489-
+12490-            const padHour =
+12491-                militaryHour ||
+12492-                format.startsWith(
+12493-                    "0h:"
+12494-                );
+12495-
+12496-            const hourValue =
+12497-                militaryHour
+12498-                    ? rawHours
+12499-                    : rawHours % 12 || 12;
+12500-
+12501-            const hourText =
+12502-                padHour
+12503-                    ? String(hourValue).padStart(2, "0")
+12504-                    : String(hourValue);
+12505-
+12506-            const hasSeconds =
+12507-                /:ss(?: |$)/.test(
+12508-                    format
+12509-                );
+12510-
+12511-            let result =
+12512-                `${hourText}:${minutes}`;
+12513-
+12514-            if (hasSeconds) {
+12515-                result +=
+12516-                    `:${seconds}`;
+12517-            }
+12518-
+12519-            if (!militaryHour) {
+12520-                const suffixMatch =
+12521-                    format.match(
+12522-                        /^(?:h|0h):mm(?::ss)?( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
+12523-                    );
+12524-
+12525-                if (suffixMatch) {
+1001-                    if (
+1002-                        this.#updatesSuspended &&
+1003-                        !this.#processingAsyncBatch
+1004-                    ) {
+1005-                        this.#queueAsyncOperation({
+1006-                            type: "percent-goal"
+1007-                        });
+1008-                    }
+1009-                    else {
+1010-                        this.#handlePercentGoalChange();
+1011-                    }
+1012-                    break;
+1013-
+1014-                case "military-time":
+1015-                    this.#normalizeMilitaryTime();
+1016-
+1017-                    this.#normalizeFormat();
+1018-
+1019-                    this.#scheduleHourRender();
+1020-
+1021:                    this.#updateDisplay(
+1022-                        new Date()
+1023-                    );
+1024-
+1025-                    break;
+1026-
+1027-                case "time-format":
+1028-                    this.#normalizeFormat();
+1029-
+1030:                    this.#updateDisplay(
+1031-                        new Date()
+1032-                    );
+1033-
+1034-                    break;
+1035-
+1036-                case "date-format":
+1037:                    this.#updateDisplay(
+1038-                        new Date()
+1039-                    );
+1040-
+1041-                    break;
+1042-
+1043-                case "visible-hours":
+1044-                    this.#scheduleHourRender();
+1045-                    break;
+1046-
+1047-                case "tick-marks":
+1048-                    this.#updateTickMarks();
+1049-                    break;
+1050-
+1051-                case "indicator-symbol":
+1052-                    this.#syncIndicatorSymbolContent();
+1053-                    this.#scheduleIndicatorSymbolUpdate();
+1054-                    break;
+1055-
+1056-                case "grayscale":
+1057-                case "grayscale-ramp":
+1058-                    if (
+1059-                        this.#updatesSuspended &&
+1060-                        !this.#processingAsyncBatch
+1061-                    ) {
+1062-                        this.#queueAsyncOperation({
+1063-                            type: "grayscale"
+1064-                        });
+1065-                    }
+1066-                    else {
+1067-                        this.#runGrayscale();
+1068-                    }
+1069-                    break;
+1070-            }
+1071-        }
+1072-
+1073-        #getJSONCreationDate() {
+1074-            if (
+1075-                !Number.isFinite(
+1076-                    this.#startedAtEpoch
+1077-                )
+1078-            ) {
+1079-                return undefined;
+1080-            }
+1081-
+1082-            const date =
+1083-                new Date(
+1084-                    this.#startedAtEpoch
+1085-                );
+1086-
+1087-            if (
+1088-                Number.isNaN(
+1089-                    date.getTime()
+1090-                )
+1091-            ) {
+1092-                return undefined;
+1093-            }
+1094-
+1095-            return new Date(
+1096-                date.getFullYear(),
+1097-                date.getMonth(),
+1098-                date.getDate()
+1099-            );
+1100-        }
+1101-
+1102-        #formatJSONDate(
+1103-            date,
+1104-            includeTime = false
+1105-        ) {
+1106-            if (
+1107-                !(date instanceof Date) ||
+1108-                Number.isNaN(
+1109-                    date.getTime()
+1110-                )
+1111-            ) {
+1112-                return undefined;
+1113-            }
+1114-
+1115-            const pad =
+1116-                (value, length = 2) =>
+1117-                    String(value).padStart(
+1118-                        length,
+1119-                        "0"
+1120-                    );
+1121-
+1122-            const dateText =
+1123-                `${pad(date.getFullYear(), 4)}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+1124-
+1125-            if (!includeTime) {
+1126-                return dateText;
+1127-            }
+1128-
+1129-            return `${dateText} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`;
+1130-        }
+1131-
+1132-        #formatJSONTimelineTime(
+1133-            milliseconds,
+1134-            creationDate
+1135-        ) {
+1136-            if (
+1137-                !Number.isFinite(milliseconds) ||
+1138-                !(creationDate instanceof Date) ||
+1139-                Number.isNaN(
+1140-                    creationDate.getTime()
+1141-                )
+1142-            ) {
+1143-                return undefined;
+1144-            }
+1145-
+1146-            return this.#formatJSONDate(
+1147-                new Date(
+1148-                    creationDate.getTime() +
+1149-                    milliseconds
+1150-                ),
+1151-                true
+1152-            );
+1153-        }
+1154-
+1155-        #getJSONRangeAttributes(range) {
+1156-            const excluded =
+1157-                new Set([
+--
+11437-                        milliseconds ===
+11438-                            0
+11439-                            ?
+11440-                            1000
+11441-                            :
+11442-                            1000 -
+11443-                                milliseconds;
+11444-
+11445-                    this.#displayTimeout =
+11446-                        setTimeout(
+11447-                            () => {
+11448-                                this.#displayTimeout =
+11449-                                    undefined;
+11450-
+11451-                                if (
+11452-                                    !this.isConnected
+11453-                                ) {
+11454-                                    return;
+11455-                                }
+11456-
+11457:                                this.#updateDisplay(
+11458-                                    new Date()
+11459-                                );
+11460-
+11461-                                scheduleNext();
+11462-                            },
+11463-                            delay
+11464-                        );
+11465-                };
+11466-
+11467:            this.#updateDisplay(
+11468-                new Date()
+11469-            );
+11470-
+11471-            scheduleNext();
+11472-        }
+11473-
+11474-        #stopDisplayTimer() {
+11475-            if (
+11476-                this.#displayTimeout !==
+11477-                    undefined
+11478-            ) {
+11479-                clearTimeout(
+11480-                    this.#displayTimeout
+11481-                );
+11482-
+11483-                this.#displayTimeout =
+11484-                    undefined;
+11485-            }
+11486-        }
+11487-
+11488-        #startTickTimer() {
+11489-            if (this.#processingAsyncBatch) {
+11490-                return;
+11491-            }
+11492-
+11493-            this.#stopTickTimer();
+11494-
+11495-            if (
+11496-                !this.#needsTick()
+11497-            ) {
+11498-                return;
+11499-            }
+11500-
+11501-            this.#tick();
+11502-
+11503-            this.#scheduleNextTick();
+11504-        }
+11505-
+11506-        #scheduleNextTick() {
+11507-            if (this.#processingAsyncBatch) {
+11508-                return;
+11509-            }
+11510-
+11511-            if (
+11512-                !this.#needsTick() &&
+11513-                !this.#asyncResumePending
+11514-            ) {
+11515-                return;
+11516-            }
+11517-
+11518-            const targetMilliseconds =
+11519-                Number.isFinite(
+11520-                    this.#tickAlignmentMilliseconds
+11521-                )
+11522-                    ? this.#millisecondsComponent(
+11523-                        this.#tickAlignmentMilliseconds
+11524-                    )
+11525-                    : 0;
+11526-
+11527-            const currentMilliseconds =
+11528-                new Date().getMilliseconds();
+11529-
+11530-            let delay =
+11531-                (
+11532-                    targetMilliseconds -
+11533-                    currentMilliseconds +
+11534-                    1000
+11535-                ) % 1000;
+11536-
+11537-            if (delay === 0) {
+11538-                delay = 1000;
+11539-            }
+11540-
+11541-            this.#tickTimeout =
+11542-                setTimeout(
+11543-                    () => {
+11544-                        this.#tickTimeout =
+11545-                            undefined;
+11546-
+11547-                        if (
+11548-                            !this.#needsTick() &&
+11549-                            !this.#asyncResumePending
+11550-                        ) {
+11551-                            return;
+11552-                        }
+11553-
+11554-                        this.#tick();
+11555-
+11556-                        this.#scheduleNextTick();
+11557-                    },
+11558-                    delay
+11559-                );
+11560-        }
+11561-
+11562-        #stopTickTimer() {
+11563-            if (
+11564-                this.#tickTimeout !==
+11565-                    undefined
+11566-            ) {
+11567-                clearTimeout(
+11568-                    this.#tickTimeout
+11569-                );
+11570-
+11571-                this.#tickTimeout =
+11572-                    undefined;
+11573-            }
+11574-        }
+11575-
+11576-        #processElapsedOverwriteRanges(
+11577-            now
+11578-        ) {
+11579-            const ranges =
+11580-                this.#getManagedTimeRanges()
+11581-                    .filter(
+11582-                        range =>
+11583-                            range.timeRangeExiting !== true &&
+11584-                            range.hasAttribute(
+11585-                                "overwrite"
+11586-                            )
+11587-                    );
+--
+12403-            ) {
+12404-                return false;
+12405-            }
+12406-
+12407-            const military =
+12408-                this.getAttribute(
+12409-                    "military-time"
+12410-                ) !== "false";
+12411-
+12412-            if (military) {
+12413-                return /^(?:hhmm|hhmmss)$/.test(
+12414-                    value
+12415-                );
+12416-            }
+12417-
+12418-            return /^(?:hh:mm(?::ss)?|(?:h|0h):mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?)$/.test(
+12419-                value
+12420-            );
+12421-        }
+12422-
+12423:        #updateDisplay(
+12424-            now
+12425-        ) {
+12426-            this.#dateElement.textContent =
+12427-                new Intl.DateTimeFormat(
+12428-                    undefined,
+12429-                    {
+12430-                        weekday: "long",
+12431-                        month: "long",
+12432-                        day: "numeric"
+12433-                    }
+12434-                ).format(now);
+12435-
+12436-            const military =
+12437-                this.getAttribute(
+12438-                    "military-time"
+12439-                ) !== "false";
+12440-
+12441-            const format =
+12442-                this.getAttribute(
+12443-                    "time-format"
+12444-                ) ??
+12445-                this.#getDefaultFormat();
+12446-
+12447-            const rawHours =
+12448-                now.getHours();
+12449-
+12450-            const minutes =
+12451-                String(
+12452-                    now.getMinutes()
+12453-                ).padStart(
+12454-                    2,
+12455-                    "0"
+12456-                );
+12457-
+12458-            const seconds =
+12459-                String(
+12460-                    now.getSeconds()
+12461-                ).padStart(
+12462-                    2,
+12463-                    "0"
+12464-                );
+12465-
+12466-            if (military) {
+12467-                const hourText =
+12468-                    String(
+12469-                        rawHours
+12470-                    ).padStart(
+12471-                        2,
+12472-                        "0"
+12473-                    );
+12474-
+12475-                this.#timeElement.textContent =
+12476-                    format === "hhmmss"
+12477-                        ? `${hourText}${minutes}${seconds}`
+12478-                        : `${hourText}${minutes}`;
+12479-
+12480-                this.#scheduleFontSizing();
+12481-
+12482-                return;
+12483-            }
+12484-
+12485-            const militaryHour =
+12486-                format.startsWith(
+12487-                    "hh:"
+12488-                );
+12489-
+12490-            const padHour =
+12491-                militaryHour ||
+12492-                format.startsWith(
+12493-                    "0h:"
+12494-                );
+12495-
+12496-            const hourValue =
+12497-                militaryHour
+12498-                    ? rawHours
+12499-                    : rawHours % 12 || 12;
+12500-
+12501-            const hourText =
+12502-                padHour
+12503-                    ? String(hourValue).padStart(2, "0")
+12504-                    : String(hourValue);
+12505-
+12506-            const hasSeconds =
+12507-                /:ss(?: |$)/.test(
+12508-                    format
+12509-                );
+12510-
+12511-            let result =
+12512-                `${hourText}:${minutes}`;
+12513-
+12514-            if (hasSeconds) {
+12515-                result +=
+12516-                    `:${seconds}`;
+12517-            }
+12518-
+12519-            if (!militaryHour) {
+12520-                const suffixMatch =
+12521-                    format.match(
+12522-                        /^(?:h|0h):mm(?::ss)?( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
+12523-                    );
+12524-
+12525-                if (suffixMatch) {
+12526-                    const space =
+12527-                        suffixMatch[1];
+12528-
+12529-                    const style =
+12530-                        suffixMatch[2];
+12531-
+12532-                    const pm =
+12533-                        rawHours >= 12;
+12534-
+12535-                    const suffixes = {
+12536-                        "a/p": pm ? "p" : "a",
+12537-                        "A/P": pm ? "P" : "A",
+12538-                        "AM/PM": pm ? "PM" : "AM",
+12539-                        "A.M./P.M.": pm ? "P.M." : "A.M.",
+12540-                        "am/pm": pm ? "pm" : "am",
+12541-                        "a.m./p.m.": pm ? "p.m." : "a.m."
+12542-                    };
+12543-
