@@ -9026,8 +9026,11 @@
                             range
                         );
 
+                    if (coordinatorManaged) {
+                        continue;
+                    }
+
                     if (
-                        !coordinatorManaged &&
                         typeof TimeRangeClass?.suspendLayout ===
                             "function"
                     ) {
@@ -9434,6 +9437,24 @@
                 ) !== state
             ) {
                 return;
+            }
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const targetLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        state.targetStart,
+                        state.targetEnd,
+                        state.originMilliseconds
+                    );
+
+                if (targetLayout) {
+                    state.targetLayout =
+                        targetLayout;
+                }
             }
 
             this.#applyTimeRangeLayout(
