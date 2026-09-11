@@ -2,767 +2,1057 @@
 ===== ClockTimer.js =====
 
 --- #normalizeFormat( ---
-#normalizeFormat();
-
-                    this.#scheduleHourRender();
-
-                    this.#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "time-format":
-                    this.#normalizeFormat();
-
-                    this.#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "date-format":
-                    this.#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "visible-hours":
-                    this.#scheduleHourRender();
-                    break;
-
-                case "tick-marks":
-                    this.#updateTickMarks();
-                    break;
-
-                case "indicator-symbol":
-                    this.#syncIndicatorSymbolContent();
-                    this.#scheduleIndicatorSymbolUpdate();
-                    break;
-
-                case "grayscale":
-                case "grayscale-ramp":
-                    if (
-                        this.#updatesSuspended &&
-                        !this.#processingAsyncBatch
-                    ) {
-                        this.#queueAsyncOperation({
-                            type: "grayscale"
-                        });
-                    }
-
---- #updateDisplay( ---
-#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "time-format":
-                    this.#normalizeFormat();
-
-                    this.#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "date-format":
-                    this.#updateDisplay(
-                        new Date()
-                    );
-
-                    break;
-
-                case "visible-hours":
-                    this.#scheduleHourRender();
-                    break;
-
-                case "tick-marks":
-                    this.#updateTickMarks();
-                    break;
-
-                case "indicator-symbol":
-                    this.#syncIndicatorSymbolContent();
-                    this.#scheduleIndicatorSymbolUpdate();
-                    break;
-
-                case "grayscale":
-                case "grayscale-ramp":
-                    if (
-                        this.#updatesSuspended &&
-                        !this.#processingAsyncBatch
-                    ) {
-                        this.#queueAsyncOperation({
-                            type: "grayscale"
-                        });
-                    }
-
---- #validateDurationTime( ---
-#validateDurationTime(
-                        data.standardTime,
-                        "standardTime"
-                    );
-
-                const scheduled =
-                    this.#validateClockTime(
-                        data.scheduledStart,
-                        "scheduledStart"
-                    );
-
-                const reserved =
-                    new Set([
-                        "trip",
-                        "tolerance",
-                        "overtime",
-                        "earlystart",
-                        "prestart",
-                        "elapsed"
-                    ]);
-
-                const excludedAttributes =
-                    new Set([
-                        "start-time",
-                        "end-time",
-                        "range-length",
-                        "overwrite"
-                    ]);
-
-                const events = [];
-
-                for (const record of data.records) {
-                    if (
-                        !record ||
-                        typeof record !== "object" ||
-                        Array.isArray(record)
-                    ) {
-                        return false;
-                    }
-
-                    const entries = Object.entries(record);
-
-                    if (entries.length !== 1) {
-                        return false;
-                    }
-
-                    const [time, value] = entries[0];
-                    const milliseconds =
-                        parseTimestamp(time);
-
-                    if (
-                        !Number.isFinite(milliseconds) ||
-                        !value ||
-                        typeof value !== "object" ||
-                        Array.isArray(value) ||
-                        typeof value.type !== "string" ||
-                        !value.type.trim()
-                    ) {
-                        return false;
-                    }
-
-                    const type = value.type.trim();
-
-                    if (
-                        reserved.has(type) ||
-                        ![
-                            "start",
-                            "resume",
-                            "end"
-                        ].includes(type) &&
-                        Object.keys(value).some(
-                            name =>
-                                name !== "type" &&
-                                excludedAttributes.has(
-                                    name.toLowerCase()
-                                )
-                        )
-                    ) {
-                        return false;
-                    }
-
-                    const attributes = {};
-
-                    for (const [name, attributeValue] of Object.entries(value)) {
-                        if (name === "type") {
-                            continue;
-                        }
-
-                        if (typeof attributeValue !== "string") {
-                            return false;
-                        }
-
-                        attributes[name] = attributeValue;
-                    }
-
-                    events.push({
-                        time,
-                        milliseconds,
-                        type,
-                        attributes
-                    });
-                }
-
---- #validateClockTime( ---
-#validateClockTime(
-                        data.scheduledStart,
-                        "scheduledStart"
-                    );
-
-                const reserved =
-                    new Set([
-                        "trip",
-                        "tolerance",
-                        "overtime",
-                        "earlystart",
-                        "prestart",
-                        "elapsed"
-                    ]);
-
-                const excludedAttributes =
-                    new Set([
-                        "start-time",
-                        "end-time",
-                        "range-length",
-                        "overwrite"
-                    ]);
-
-                const events = [];
-
-                for (const record of data.records) {
-                    if (
-                        !record ||
-                        typeof record !== "object" ||
-                        Array.isArray(record)
-                    ) {
-                        return false;
-                    }
-
-                    const entries = Object.entries(record);
-
-                    if (entries.length !== 1) {
-                        return false;
-                    }
-
-                    const [time, value] = entries[0];
-                    const milliseconds =
-                        parseTimestamp(time);
-
-                    if (
-                        !Number.isFinite(milliseconds) ||
-                        !value ||
-                        typeof value !== "object" ||
-                        Array.isArray(value) ||
-                        typeof value.type !== "string" ||
-                        !value.type.trim()
-                    ) {
-                        return false;
-                    }
-
-                    const type = value.type.trim();
-
-                    if (
-                        reserved.has(type) ||
-                        ![
-                            "start",
-                            "resume",
-                            "end"
-                        ].includes(type) &&
-                        Object.keys(value).some(
-                            name =>
-                                name !== "type" &&
-                                excludedAttributes.has(
-                                    name.toLowerCase()
-                                )
-                        )
-                    ) {
-                        return false;
-                    }
-
-                    const attributes = {};
-
-                    for (const [name, attributeValue] of Object.entries(value)) {
-                        if (name === "type") {
-                            continue;
-                        }
-
-                        if (typeof attributeValue !== "string") {
-                            return false;
-                        }
-
-                        attributes[name] = attributeValue;
-                    }
-
-                    events.push({
-                        time,
-                        milliseconds,
-                        type,
-                        attributes
-                    });
-                }
-
---- #formatStandardTime( ---
-#formatStandardTime(
-                        creationMilliseconds,
-                        { clock: true }
-
---- #formatTimelineTime( ---
-#formatTimelineTime(
-                        scheduledStartMilliseconds
-                    );
-
-                this.#standardDuration =
-                    standard.total;
-
-                this.#standardTime =
-                    this.#formatStandardTime(
-                        standard.total
-                    );
-
-                this.#calculatedEndTime =
-                    this.#scheduledStartMilliseconds +
-                    this.#standardDuration;
-
-                this.#percentGoal =
-                    this.#getPercentGoal();
-
-                this.#ringAnchor =
-                    creationMilliseconds;
-
-                this.#startedAtEpoch =
-                    creationDate.getTime();
+        #normalizeFormat() {
+            const value =
+                this.getAttribute(
+                    "time-format"
+                );
+
+            if (
+                !this.#isValidFormat(
+                    value
+                )
+            ) {
+                const defaultFormat =
+                    this.#getDefaultFormat();
 
                 if (
-                    !Number.isFinite(
-                        this.#tickAlignmentMilliseconds
-                    )
+                    value !==
+                        defaultFormat
                 ) {
-                    this.#tickAlignmentMilliseconds =
-                        this.#millisecondsComponent(
-                            this.#scheduledStartMilliseconds
-                        );
+                    this.setAttribute(
+                        "time-format",
+                        defaultFormat
+                    );
                 }
+            }
+        }
+
+--- #updateDisplay( ---
+        #updateDisplay(
+            now
+        ) {
+            this.#dateElement.textContent =
+                new Intl.DateTimeFormat(
+                    undefined,
+                    {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric"
+                    }
+                ).format(now);
+
+            const military =
+                this.getAttribute(
+                    "military-time"
+                ) !== "false";
+
+            const format =
+                this.getAttribute(
+                    "time-format"
+                ) ??
+                this.#getDefaultFormat();
+
+            const rawHours =
+                now.getHours();
+
+            const minutes =
+                String(
+                    now.getMinutes()
+                ).padStart(
+                    2,
+                    "0"
+                );
+
+            const seconds =
+                String(
+                    now.getSeconds()
+                ).padStart(
+                    2,
+                    "0"
+                );
+
+            if (military) {
+                const hourText =
+                    String(
+                        rawHours
+                    ).padStart(
+                        2,
+                        "0"
+                    );
+
+                this.#timeElement.textContent =
+                    format === "hhmmss"
+                        ? `${hourText}${minutes}${seconds}`
+                        : `${hourText}${minutes}`;
+
+                this.#scheduleFontSizing();
+
+                return;
+            }
+
+            const militaryHour =
+                format.startsWith(
+                    "hh:"
+                );
+
+            const padHour =
+                militaryHour ||
+                format.startsWith(
+                    "0h:"
+                );
+
+            const hourValue =
+                militaryHour
+                    ? rawHours
+                    : rawHours % 12 || 12;
+
+            const hourText =
+                padHour
+                    ? String(hourValue).padStart(2, "0")
+                    : String(hourValue);
+
+            const hasSeconds =
+                /:ss(?: |$)/.test(
+                    format
+                );
+
+            let result =
+                `${hourText}:${minutes}`;
+
+            if (hasSeconds) {
+                result +=
+                    `:${seconds}`;
+            }
+
+            if (!militaryHour) {
+                const suffixMatch =
+                    format.match(
+                        /^(?:h|0h):mm(?::ss)?( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
+                    );
+
+                if (suffixMatch) {
+                    const space =
+                        suffixMatch[1];
+
+                    const style =
+                        suffixMatch[2];
+
+                    const pm =
+                        rawHours >= 12;
+
+                    const suffixes = {
+                        "a/p": pm ? "p" : "a",
+                        "A/P": pm ? "P" : "A",
+                        "AM/PM": pm ? "PM" : "AM",
+                        "A.M./P.M.": pm ? "P.M." : "A.M.",
+                        "am/pm": pm ? "pm" : "am",
+                        "a.m./p.m.": pm ? "p.m." : "a.m."
+                    };
+
+                    result +=
+                        space +
+                        suffixes[style];
+                }
+            }
+
+            this.#timeElement.textContent =
+                result;
+
+            this.#scheduleFontSizing();
+        }
+
+--- #validateDurationTime( ---
+        #validateDurationTime(
+            value,
+            name = "duration"
+        ) {
+            return this.#parseStandardTime(
+                value,
+                {
+                    duration: true,
+                    name
+                }
+            );
+        }
+
+--- #validateClockTime( ---
+        #validateClockTime(
+            value,
+            name = "time"
+        ) {
+            return this.#parseStandardTime(
+                value,
+                {
+                    duration: false,
+                    name
+                }
+            );
+        }
+
+--- #formatStandardTime( ---
+        #formatStandardTime(
+            milliseconds,
+            {
+                clock = false
+            }
+
+--- #formatTimelineTime( ---
+        #formatTimelineTime(
+            milliseconds
+        ) {
+            const value =
+                (
+                    Math.round(
+                        milliseconds
+                    ) %
+                        ClockTimer.#DAY +
+                    ClockTimer.#DAY
+                ) %
+                    ClockTimer.#DAY;
+
+            const hours =
+                Math.floor(
+                    value /
+                        ClockTimer.#HOUR
+                );
+
+            let remaining =
+                value %
+                    ClockTimer.#HOUR;
+
+            const minutes =
+                Math.floor(
+                    remaining /
+                        (
+                            60 *
+                            1000
+                        )
+                );
+
+            remaining %=
+                60 *
+                    1000;
+
+            const seconds =
+                Math.floor(
+                    remaining /
+                        1000
+                );
+
+            const millisecondsPart =
+                remaining %
+                    1000;
+
+            let result =
+                `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+            if (
+                millisecondsPart !==
+                    0
+            ) {
+                result +=
+                    `.${String(millisecondsPart).padStart(3, "0")}`;
+            }
+
+            return result;
+        }
 
 --- #parseInsertDateTime( ---
-#parseInsertDateTime(
-                        startTime,
-                        "startTime"
-                    );
-
-                this.#recordPendingTickAlignment(
-                    parsed.getMilliseconds()
+        #parseInsertDateTime(
+            value,
+            name
+        ) {
+            if (
+                typeof value !==
+                    "string"
+            ) {
+                throw new TypeError(
+                    `${name} must be a string.`
                 );
             }
-            catch {
+
+            const text =
+                value.trim();
+
+            const match =
+                text.match(
+                    /^(?:(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\s+)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:\s*(AM|PM))?$/i
+                );
+
+            if (!match) {
+                throw new TypeError(
+                    `${name} must match [yyyy/mm/dd h:m]m:ss[.ms][ AM/PM].`
+                );
             }
 
+            const now =
+                new Date();
+
+            const year =
+                match[1] === undefined
+                    ? now.getFullYear()
+                    : Number(match[1]);
+
+            const month =
+                match[2] === undefined
+                    ? now.getMonth() + 1
+                    : Number(match[2]);
+
+            const day =
+                match[3] === undefined
+                    ? now.getDate()
+                    : Number(match[3]);
+
+            let hour =
+                Number(match[4]);
+
+            const minute =
+                Number(match[5]);
+
+            const second =
+                Number(match[6]);
+
+            const millisecond =
+                match[7] === undefined
+                    ? 0
+                    : Number(
+                        match[7].padEnd(
+                            3,
+                            "0"
+                        )
+                    );
+
+            const meridiem =
+                match[8]?.toUpperCase();
+
+            if (
+                minute > 59 ||
+                second > 59
+            ) {
+                throw new RangeError(
+                    `${name} contains an invalid time.`
+                );
+            }
+
+            if (meridiem) {
+                if (
+                    hour < 1 ||
+                    hour > 12
+                ) {
+                    throw new RangeError(
+                        `${name} contains an invalid hour.`
+                    );
+                }
+
+                if (
+                    meridiem === "AM"
+                ) {
+                    if (hour === 12) {
+                        hour = 0;
+                    }
+                }
+                else if (hour !== 12) {
+                    hour += 12;
+                }
+            }
+            else if (hour > 23) {
+                throw new RangeError(
+                    `${name} contains an invalid hour.`
+                );
+            }
+
+            const date =
+                new Date(
+                    year,
+                    month - 1,
+                    day,
+                    hour,
+                    minute,
+                    second,
+                    millisecond
+                );
+
+            if (
+                date.getFullYear() !== year ||
+                date.getMonth() !== month - 1 ||
+                date.getDate() !== day
+            ) {
+                throw new RangeError(
+                    `${name} contains an invalid date.`
+                );
+            }
+
+            return date;
+        }
+
 --- #parseInsertRangeLength( ---
-#parseInsertRangeLength(
-                            rangeLength
-                        );
-                }
-                catch {
-                    return;
-                }
+        #parseInsertRangeLength(
+            value
+        ) {
+            if (
+                typeof value !==
+                    "string"
+            ) {
+                throw new TypeError(
+                    "rangeLength must be a string."
+                );
+            }
+
+            const match =
+                value.trim().match(
+                    /^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/
+                );
+
+            if (!match) {
+                throw new TypeError(
+                    "rangeLength must match [h:m]m:ss[.ms]."
+                );
+            }
+
+            const hours =
+                match[1] === undefined
+                    ? 0
+                    : Number(match[1]);
+
+            const minutes =
+                Number(match[2]);
+
+            const seconds =
+                Number(match[3]);
+
+            const milliseconds =
+                match[4] === undefined
+                    ? 0
+                    : Number(
+                        match[4].padEnd(
+                            3,
+                            "0"
+                        )
+                    );
+
+            if (
+                minutes > 59 ||
+                seconds > 59
+            ) {
+                throw new RangeError(
+                    "rangeLength contains an invalid duration."
+                );
+            }
+
+            const total =
+                hours * ClockTimer.#HOUR +
+                minutes * 60 * 1000 +
+                seconds * 1000 +
+                milliseconds;
+
+            if (total <= 0) {
+                throw new RangeError(
+                    "rangeLength must be greater than zero."
+                );
+            }
+
+            return total;
+        }
 
 --- #getRangeAnimationDuration( ---
-#getRangeAnimationDuration();
+        #getRangeAnimationDuration() {
+            const raw =
+                getComputedStyle(
+                    this
+                ).getPropertyValue(
+                    "--clock-timer-ring-resize-duration"
+                ).trim();
 
-                for (
-                    const ring of
-                        this.#getTimerRings()
-                ) {
-                    for (
-                        const range of
-                            ring.querySelectorAll(
-                                ":scope > time-range"
-                            )
-                    ) {
-                        if (
-                            typeof range.snapToLogicalTiming ===
-                                "function"
-                        ) {
-                            range.snapToLogicalTiming();
-                        }
-                    }
+            const match =
+                raw.match(
+                    /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i
+                );
 
-                    delete ring.clockTimerRing;
+            if (!match) {
+                return 333;
+            }
 
-                    ring.clockTimerExitingRing =
-                        true;
+            const amount =
+                Number(
+                    match[1]
+                );
 
-                    ring.resizeDuration =
-                        `${duration}ms`;
+            if (
+                !Number.isFinite(amount) ||
+                amount < 0
+            ) {
+                return 333;
+            }
 
-                    ring.setAttribute(
-                        "width",
-                        "0px"
-                    );
-
-                    setTimeout(
-                        () => ring.remove(),
-                        duration
-                    );
-                }
+            return (
+                match[2].toLowerCase() ===
+                    "s"
+            )
+                ? amount * 1000
+                : amount;
+        }
 
 ===== TimeRange.js =====
 
 --- #uniformDate( ---
-#uniformDate(
-                        newValue,
-                        false
+    #uniformDate(
+        timeValue,
+        lookForward = true
+    ) {
+        if (
+            timeValue === null ||
+            timeValue === undefined
+        ) {
+            return undefined;
+        }
+
+        if (
+            timeValue instanceof Date
+        ) {
+            return new Date(
+                timeValue.getTime()
+            );
+        }
+
+        if (
+            typeof timeValue === "number" &&
+            Number.isInteger(
+                timeValue
+            )
+        ) {
+            const date =
+                new Date(
+                    timeValue
+                );
+
+            return Number.isNaN(
+                date.getTime()
+            )
+                ? undefined
+                : date;
+        }
+
+        if (
+            typeof timeValue !== "string"
+        ) {
+            return undefined;
+        }
+
+        const value =
+            timeValue.trim();
+
+        if (
+            value === ""
+        ) {
+            return undefined;
+        }
+
+        if (
+            /^-?\d+$/.test(
+                value
+            )
+        ) {
+            const date =
+                new Date(
+                    Number(
+                        value
                     )
                 );
-                break;
 
-            case "end-time":
-                this.#setEndTime(
-                    this.#uniformDate(
-                        newValue,
-                        false
-                    )
+            return Number.isNaN(
+                date.getTime()
+            )
+                ? undefined
+                : date;
+        }
+
+        const timeMatch =
+            value.match(
+                /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?:\.(\d{1,3}))?\s*(AM|PM)?$/i
+            );
+
+        if (
+            timeMatch
+        ) {
+            let hour =
+                Number(
+                    timeMatch[1]
                 );
-                break;
 
-            case "range-length":
-                this.#setRangeLength(
-                    this.#parseRangeLength(
-                        newValue
-                    )
+            const minute =
+                timeMatch[2] === undefined
+                    ? 0
+                    : Number(
+                        timeMatch[2]
+                    );
+
+            const second =
+                timeMatch[3] === undefined
+                    ? 0
+                    : Number(
+                        timeMatch[3]
+                    );
+
+            const millisecond =
+                timeMatch[4] === undefined
+                    ? 0
+                    : Number(
+                        timeMatch[4]
+                            .padEnd(
+                                3,
+                                "0"
+                            )
+                    );
+
+            const meridiem =
+                timeMatch[5]
+                    ?.toUpperCase();
+
+            if (
+                meridiem
+            ) {
+                if (
+                    hour < 1 ||
+                    hour > 12
+                ) {
+                    return undefined;
+                }
+
+                if (
+                    meridiem === "AM"
+                ) {
+                    if (
+                        hour === 12
+                    ) {
+                        hour = 0;
+                    }
+                } else if (
+                    hour !== 12
+                ) {
+                    hour += 12;
+                }
+            } else if (
+                hour < 0 ||
+                hour > 23
+            ) {
+                return undefined;
+            }
+
+            if (
+                minute > 59 ||
+                second > 59
+            ) {
+                return undefined;
+            }
+
+            const now =
+                new Date();
+
+            const date =
+                new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                    hour,
+                    minute,
+                    second,
+                    millisecond
                 );
-                break;
+
+            if (
+                lookForward &&
+                date.getTime() <
+                    now.getTime()
+            ) {
+                date.setDate(
+                    date.getDate() + 1
+                );
+            }
+
+            return date;
         }
-    }
 
-    #initializeFromAttributes() {
-        const hasStart =
-            this.hasAttribute(
-                "start-time"
+        const dateTimeMatch =
+            value.match(
+                /^\d{4}-\d{2}-\d{2}[T\s]+\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:\s*(?:AM|PM))?(?:Z|[+-]\d{2}:?\d{2})?$/i
             );
-
-        const hasEnd =
-            this.hasAttribute(
-                "end-time"
-            );
-
-        const hasRange =
-            this.hasAttribute(
-                "range-length"
-            );
-
-        const start =
-            hasStart
-                ? this.#uniformDate(
-                    this.getAttribute(
-                        "start-time"
-                    ),
-                    false
-                )
-                : undefined;
-
-        const end =
-            hasEnd
-                ? this.#uniformDate(
-                    this.getAttribute(
-                        "end-time"
-                    ),
-                    false
-                )
-                : undefined;
-
-        const range =
-            hasRange
-                ? this.#parseRangeLength(
-                    this.getAttribute(
-                        "range-length"
-                    )
-                )
-                : undefined;
-
-        this.#syncing++;
-
-        try {
-            this.#startTime =
-                start;
-
-            this.#endTime =
-                end;
-
-            this.#rangeLength =
-                range;
-        } finally {
-            this.#syncing--;
-        }
 
         if (
-            start instanceof Date &&
-            Number.isInteger(
-                range
-            ) &&
-            range > 0
+            !dateTimeMatch
         ) {
-            this.#setStartTime(
-                start
-            );
-
-            return;
+            return undefined;
         }
+
+        const date =
+            new Date(
+                value
+            );
 
         if (
-            end instanceof Date &&
-            Number.isInteger(
-                range
-            ) &&
-            range > 0
+            Number.isNaN(
+                date.getTime()
+            )
         ) {
-            this.#setEndTime(
-                end
-            );
-
-            return;
+            return undefined;
         }
 
-        if (
-            start instanceof Date &&
-            end instanceof Date
-        ) {
-            this.#setStartTime(
-                start
-            );
-
-            return;
-        }
-
-        if (
-            start instanceof Date
-        ) {
-            this.#setStartTime(
-                start
-            );
-
-            return;
-        }
-
-        if (
-            end instanceof Date
-        ) {
-            this.#setEndTime(
-                end
-            );
-
-            return;
-        }
-
-        if (
-            Number.isInteger(
-                range
-            ) &&
-            range > 0
-        ) {
-            this.#setRangeLength(
-                range
-            );
-        }
+        return date;
     }
 
 --- #formatDateTime( ---
-#formatDateTime(
-                splitTime
+    #formatDateTime(
+        date
+    ) {
+        if (
+            !(
+                date instanceof Date
             )
-        );
+        ) {
+            return undefined;
+        }
 
-        right.setAttribute(
-            "end-time",
-            this.#formatDateTime(
-                originalEnd
-            )
-        );
+        const year =
+            String(
+                date.getFullYear()
+            ).padStart(
+                4,
+                "0"
+            );
 
-        const rightLength =
-            endMilliseconds -
-            splitMilliseconds;
+        const month =
+            String(
+                date.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const day =
+            String(
+                date.getDate()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const hour =
+            String(
+                date.getHours()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const minute =
+            String(
+                date.getMinutes()
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const second =
+            date.getSeconds();
+
+        const millisecond =
+            date.getMilliseconds();
+
+        let result =
+            `${year}-${month}-${day} ` +
+            `${hour}:${minute}`;
 
         if (
-            hadRangeLength &&
-            rightLength > 0
+            second !== 0 ||
+            millisecond !== 0
         ) {
-            right.setAttribute(
-                "range-length",
-                this.#formatRangeLength(
-                    rightLength
-                )
-            );
+            result +=
+                `:${String(
+                    second
+                ).padStart(
+                    2,
+                    "0"
+                )}`;
         }
 
---- #parseRangeLength( ---
-#parseRangeLength(
-                        newValue
-                    )
-                );
-                break;
+        if (
+            millisecond !== 0
+        ) {
+            result +=
+                `.${String(
+                    millisecond
+                ).padStart(
+                    3,
+                    "0"
+                )}`;
         }
+
+        return result;
     }
 
-    #initializeFromAttributes() {
-        const hasStart =
-            this.hasAttribute(
-                "start-time"
-            );
-
-        const hasEnd =
-            this.hasAttribute(
-                "end-time"
-            );
-
-        const hasRange =
-            this.hasAttribute(
-                "range-length"
-            );
-
-        const start =
-            hasStart
-                ? this.#uniformDate(
-                    this.getAttribute(
-                        "start-time"
-                    ),
-                    false
-                )
-                : undefined;
-
-        const end =
-            hasEnd
-                ? this.#uniformDate(
-                    this.getAttribute(
-                        "end-time"
-                    ),
-                    false
-                )
-                : undefined;
-
-        const range =
-            hasRange
-                ? this.#parseRangeLength(
-                    this.getAttribute(
-                        "range-length"
-                    )
-                )
-                : undefined;
-
-        this.#syncing++;
-
-        try {
-            this.#startTime =
-                start;
-
-            this.#endTime =
-                end;
-
-            this.#rangeLength =
-                range;
-        } finally {
-            this.#syncing--;
+--- #parseRangeLength( ---
+    #parseRangeLength(
+        value
+    ) {
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+            return undefined;
         }
 
         if (
-            start instanceof Date &&
+            typeof value === "number" &&
             Number.isInteger(
-                range
+                value
             ) &&
-            range > 0
+            value > 0
         ) {
-            this.#setStartTime(
-                start
-            );
-
-            return;
+            return value;
         }
 
         if (
-            end instanceof Date &&
-            Number.isInteger(
-                range
-            ) &&
-            range > 0
+            typeof value !== "string"
         ) {
-            this.#setEndTime(
-                end
+            return undefined;
+        }
+
+        const normalized =
+            value
+                .trim()
+                .replace(
+                    /\s/g,
+                    ""
+                );
+
+        if (
+            !/^\d+(?::\d+){0,2}(?:\.\d+)?$/.test(
+                normalized
+            )
+        ) {
+            return undefined;
+        }
+
+        const parts =
+            normalized.split(
+                ":"
             );
 
-            return;
+        let milliseconds =
+            0;
+
+        const secondsPart =
+            parts.pop();
+
+        let seconds;
+        let fractionalMilliseconds =
+            0;
+
+        if (
+            secondsPart.includes(
+                "."
+            )
+        ) {
+            const [
+                whole,
+                fraction
+            ] =
+                secondsPart.split(
+                    "."
+                );
+
+            seconds =
+                Number(
+                    whole
+                );
+
+            fractionalMilliseconds =
+                Number(
+                    fraction
+                        .padEnd(
+                            3,
+                            "0"
+                        )
+                        .slice(
+                            0,
+                            3
+                        )
+                );
+        } else {
+            seconds =
+                Number(
+                    secondsPart
+                );
         }
 
         if (
-            start instanceof Date &&
-            end instanceof Date
+            parts.length === 0
         ) {
-            this.#setStartTime(
-                start
-            );
+            milliseconds +=
+                seconds *
+                1000;
+        } else if (
+            parts.length === 1
+        ) {
+            milliseconds +=
+                Number(
+                    parts[0]
+                ) *
+                60 *
+                1000;
 
-            return;
+            milliseconds +=
+                seconds *
+                1000;
+        } else if (
+            parts.length === 2
+        ) {
+            milliseconds +=
+                Number(
+                    parts[0]
+                ) *
+                60 *
+                60 *
+                1000;
+
+            milliseconds +=
+                Number(
+                    parts[1]
+                ) *
+                60 *
+                1000;
+
+            milliseconds +=
+                seconds *
+                1000;
         }
+
+        milliseconds +=
+            fractionalMilliseconds;
 
         if (
-            start instanceof Date
+            !Number.isInteger(
+                milliseconds
+            ) ||
+            milliseconds <= 0
         ) {
-            this.#setStartTime(
-                start
-            );
-
-            return;
+            return undefined;
         }
 
-        if (
-            end instanceof Date
-        ) {
-            this.#setEndTime(
-                end
-            );
-
-            return;
-        }
-
-        if (
-            Number.isInteger(
-                range
-            ) &&
-            range > 0
-        ) {
-            this.#setRangeLength(
-                range
-            );
-        }
+        return milliseconds;
     }
 
 --- #formatRangeLength( ---
-#formatRangeLength(
-                    rightLength
-                )
-            );
+    #formatRangeLength(
+        milliseconds
+    ) {
+        if (
+            !Number.isInteger(
+                milliseconds
+            ) ||
+            milliseconds <= 0
+        ) {
+            return undefined;
         }
 
-        right.setAttribute(
-            "ignore-overlaps",
-            ""
-        );
+        let remaining =
+            milliseconds;
 
-        right.timeRangeFullEntry =
-            true;
+        const hours =
+            Math.floor(
+                remaining /
+                (
+                    60 *
+                    60 *
+                    1000
+                )
+            );
 
-        const transitioned =
-            this.transitionTo({
-                startTime:
-                    new Date(
-                        startMilliseconds
-                    ),
-                endTime:
-                    splitTime
-            }
+        remaining %=
+            60 *
+            60 *
+            1000;
+
+        const minutes =
+            Math.floor(
+                remaining /
+                (
+                    60 *
+                    1000
+                )
+            );
+
+        remaining %=
+            60 *
+            1000;
+
+        const seconds =
+            Math.floor(
+                remaining /
+                1000
+            );
+
+        const millisecondsPart =
+            remaining %
+            1000;
+
+        let result;
+
+        if (
+            hours > 0
+        ) {
+            result =
+                `${hours}:` +
+                `${String(
+                    minutes
+                ).padStart(
+                    2,
+                    "0"
+                )}:` +
+                `${String(
+                    seconds
+                ).padStart(
+                    2,
+                    "0"
+                )}`;
+        } else if (
+            minutes > 0
+        ) {
+            result =
+                `${minutes}:` +
+                `${String(
+                    seconds
+                ).padStart(
+                    2,
+                    "0"
+                )}`;
+        } else {
+            result =
+                String(
+                    seconds
+                );
+        }
+
+        if (
+            millisecondsPart !== 0
+        ) {
+            result +=
+                `.${String(
+                    millisecondsPart
+                ).padStart(
+                    3,
+                    "0"
+                )}`;
+        }
+
+        return result;
+    }
 
 ===== RingContainer.js =====
 
 --- static #normalizeOptionalTime( ---
-static #normalizeOptionalTime(
+    static #normalizeOptionalTime(
         value
     ) {
         if (
@@ -796,7 +1086,7 @@ static #normalizeOptionalTime(
     }
 
 --- static #timeToMilliseconds( ---
-static #timeToMilliseconds(
+    static #timeToMilliseconds(
         value
     ) {
         const time =
