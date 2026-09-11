@@ -1,0 +1,62 @@
+name: Redo timer type indicator transition
+'on':
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - '.github/workflows/redo-indicator-transition.yml'
+      - '.github/scripts/redo_indicator_transition.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+      - name: Verify expected target base
+        run: test "$(git -C target rev-parse HEAD)" = "4b4326c10c7da11ee8fd34467da308a056877a4b"
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore last working ClockTimer
+        run: git -C target checkout 0612310266f04a3da39ef2686375fd2548bbd928 -- ClockTimer.js
+      - name: Apply indicator-only transition update
+        run: python controller/.github/scripts/redo_indicator_transition.py target/ClockTimer.js
+      - name: Syntax check
+        run: node --check target/ClockTimer.js
+      - name: Verify RingContainer remains untouched
+        run: git -C target diff --quiet HEAD -- RingContainer.js
+      - name: Verify baseline ring code remains unchanged
+        run: |
+          git -C target show 0612310266f04a3da39ef2686375fd2548bbd928:ClockTimer.js | sed -n '1,7550p' > /tmp/baseline-prefix
+          sed -n '1,7550p' target/ClockTimer.js > /tmp/target-prefix
+          cmp /tmp/baseline-prefix /tmp/target-prefix
+      - name: Structural checks
+        run: |
+          grep -q '#startTimerTypeIndicatorInward' target/ClockTimer.js
+          grep -q '#startTimerTypeIndicatorOutward' target/ClockTimer.js
+          grep -q '#prepareTimerTypeIndicatorInward' target/ClockTimer.js
+          grep -q 'drop-shadow(0 2px 2px rgb(0 0 0 / 80%))' target/ClockTimer.js
+          ! grep -q '#startTimerTypeIndicatorSpin' target/ClockTimer.js
+          ! grep -q 'indicatorSpinAnimation' target/ClockTimer.js
+          grep -q 'this.#timerTypeIndicatorFrozen &&' target/ClockTimer.js
+      - name: Show focused diff
+        run: git -C target diff --stat && git -C target diff -- ClockTimer.js | head -n 500
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Redo timer type indicator animation" || exit 0
+          git push origin radial-fitted
