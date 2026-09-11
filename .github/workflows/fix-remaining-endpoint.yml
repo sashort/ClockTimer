@@ -1,0 +1,40 @@
+name: Fix remaining endpoint
+'on':
+  push:
+    branches:
+      - remaining-endpoint-controller
+    paths:
+      - '.github/workflows/fix-remaining-endpoint.yml'
+      - '.github/scripts/fix_remaining_endpoint.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+      - name: Preserve patch script
+        run: cp .github/scripts/fix_remaining_endpoint.py /tmp/fix_remaining_endpoint.py
+      - name: Switch to target branch
+        run: |
+          git fetch origin remaining-endpoint-fix
+          git checkout -B remaining-endpoint-fix origin/remaining-endpoint-fix
+      - name: Apply remaining endpoint fix
+        run: python /tmp/fix_remaining_endpoint.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify endpoint logic
+        run: |
+          grep -Fq '"elapsed",' ClockTimer.js
+          grep -Fq '"remaining",' ClockTimer.js
+          grep -Fq '"wave"' ClockTimer.js
+          grep -Fq 'this.#calculatedEndTime' ClockTimer.js
+          grep -Fq 'range.timeRangeExiting === true' ClockTimer.js
+      - name: Commit target branch
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Use timer terminal for remaining ranges"
+          git push origin remaining-endpoint-fix
