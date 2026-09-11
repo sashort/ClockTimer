@@ -1,0 +1,41 @@
+name: Fix atomic split handoff
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-atomic-split-handoff.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply patch
+        run: python .github/scripts/fix_atomic_split_handoff.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify atomic split handoff
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          block = text[text.index('        #replaceRangeWithSegments(\n'):text.index('        #shiftExistingTimeRanges(\n')]
+          assert 'const replacements = [];' in block
+          assert 'for (const entry of segments)' in block
+          assert block.count('segment.timeRangeFullEntry =') >= 1
+          assert 'range.remove();\n                return;' in block
+          PY
+      - name: Commit update and cleanup
+        run: |
+          rm .github/scripts/fix_atomic_split_handoff.py
+          rm .github/workflows/fix-atomic-split-handoff.yml
+          git config user.name sashort
+          git config user.email '95879519+sashort@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/fix_atomic_split_handoff.py .github/workflows/fix-atomic-split-handoff.yml
+          git commit -m 'Make split range handoff atomic'
+          git push origin main
