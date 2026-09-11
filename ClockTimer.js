@@ -7583,341 +7583,71 @@
             360;
         }
 
-        #getTimerTypeIndicatorTopInset() {
-            if (!this.#indicatorRing) {
-                return 0;
-            }
-
-            const top =
-                Number.parseFloat(
-                    getComputedStyle(
-                        this.#indicatorRing
-                    ).top
-                );
-
-            if (Number.isFinite(top)) {
-                return top;
-            }
-
-            const inset =
-                Number.parseFloat(
-                    this.#indicatorRing.style.inset
-                );
-
-            return Number.isFinite(inset)
-                ? inset
-                : 0;
-        }
-
-        #getTimerTypeIndicatorShadow(
-            visible
-        ) {
-            return visible
-                ? "drop-shadow(0 2px 2px rgb(0 0 0 / 80%)) drop-shadow(0 0 5px rgb(0 0 0 / 65%))"
-                : "drop-shadow(0 2px 2px rgb(0 0 0 / 0%)) drop-shadow(0 0 5px rgb(0 0 0 / 0%))";
-        }
-
-        #prepareTimerTypeIndicatorInward(
-            state
+        #startTimerTypeIndicatorSpin(
+            state,
+            duration
         ) {
             if (
                 !state.indicatorUsed ||
                 !this.#indicatorSymbol ||
-                !this.#indicatorRing
-            ) {
-                return;
-            }
-
-            const baseInset =
-                this.#getTimerTypeIndicatorTopInset();
-
-            let inwardTip;
-
-            for (
-                const ring of
-                    state.oldRings
-            ) {
-                if (
-                    !ring.hasAttribute(
-                        "active"
-                    )
-                ) {
-                    continue;
-                }
-
-                const geometry =
-                    state.oldGeometry.get(
-                        ring
-                    );
-
-                if (!geometry) {
-                    continue;
-                }
-
-                const innerEdge =
-                    geometry.inset +
-                    geometry.width / 2;
-
-                if (
-                    Number.isFinite(innerEdge) &&
-                    (
-                        !Number.isFinite(inwardTip) ||
-                        innerEdge > inwardTip
-                    )
-                ) {
-                    inwardTip =
-                        innerEdge;
-                }
-            }
-
-            state.indicatorInwardTip =
-                Number.isFinite(inwardTip)
-                    ? inwardTip
-                    : baseInset;
-
-            state.indicatorInwardDistance =
-                Math.max(
-                    0,
-                    state.indicatorInwardTip -
-                    baseInset
-                );
-        }
-
-        #startTimerTypeIndicatorInward(
-            state
-        ) {
-            if (
-                !state.indicatorUsed ||
-                !this.#indicatorSymbol
-            ) {
-                return;
-            }
-
-            const duration = 750;
-
-            const distance =
-                Number.isFinite(
-                    state.indicatorInwardDistance
-                )
-                    ? state.indicatorInwardDistance
-                    : 0;
-
-            const startTransform =
-                "translateX(-50%) translateY(0px)";
-
-            const endTransform =
-                `translateX(-50%) translateY(${distance}px)`;
-
-            const transparentShadow =
-                this.#getTimerTypeIndicatorShadow(
-                    false
-                );
-
-            const heavyShadow =
-                this.#getTimerTypeIndicatorShadow(
-                    true
-                );
-
-            if (
+                duration <= 0 ||
                 typeof this.#indicatorSymbol.animate !==
                     "function"
             ) {
-                this.#indicatorSymbol.style.transform =
-                    endTransform;
-
-                this.#indicatorSymbol.style.filter =
-                    heavyShadow;
-
                 return;
             }
 
-            const animation =
+            const seconds =
+                duration /
+                1000;
+
+            const minimumTurns =
+                Math.max(
+                    1,
+                    Math.ceil(
+                        seconds * 6
+                    )
+                );
+
+            const maximumTurns =
+                Math.max(
+                    minimumTurns,
+                    Math.floor(
+                        seconds * 8
+                    )
+                );
+
+            const preferredTurns =
+                Math.round(
+                    seconds * 7
+                );
+
+            const turns =
+                Math.min(
+                    maximumTurns,
+                    Math.max(
+                        minimumTurns,
+                        preferredTurns
+                    )
+                );
+
+            state.indicatorSpinAnimation =
                 this.#indicatorSymbol.animate(
                     [
                         {
                             transform:
-                                startTransform,
-                            filter:
-                                transparentShadow
+                                "translateX(-50%) rotate(0deg)"
                         },
                         {
                             transform:
-                                endTransform,
-                            filter:
-                                heavyShadow
+                                `translateX(-50%) rotate(${turns * 360}deg)`
                         }
                     ],
                     {
                         duration,
-                        easing:
-                            "ease-in-out",
-                        fill: "both"
+                        easing: "linear"
                     }
                 );
-
-            state.indicatorInwardAnimation =
-                animation;
-
-            animation.finished.then(
-                () => {
-                    if (
-                        state !==
-                            this.#timerTypeTransitionState
-                    ) {
-                        return;
-                    }
-
-                    this.#indicatorSymbol.style.transform =
-                        endTransform;
-
-                    this.#indicatorSymbol.style.filter =
-                        heavyShadow;
-
-                    animation.cancel();
-
-                    state.indicatorInwardAnimation =
-                        undefined;
-                },
-                () => {}
-            );
-        }
-
-        #startTimerTypeIndicatorOutward(
-            state
-        ) {
-            if (
-                state !==
-                    this.#timerTypeTransitionState ||
-                !state.indicatorUsed ||
-                !this.#indicatorSymbol
-            ) {
-                this.#releaseTimerTypeIndicator(
-                    state
-                );
-
-                return;
-            }
-
-            const duration = 750;
-
-            const heavyShadow =
-                this.#getTimerTypeIndicatorShadow(
-                    true
-                );
-
-            const transparentShadow =
-                this.#getTimerTypeIndicatorShadow(
-                    false
-                );
-
-            this.#timerTypeIndicatorFrozen =
-                false;
-
-            this.#updateIndicatorSymbol();
-
-            const newBaseInset =
-                this.#getTimerTypeIndicatorTopInset();
-
-            const inwardTip =
-                Number.isFinite(
-                    state.indicatorInwardTip
-                )
-                    ? state.indicatorInwardTip
-                    : newBaseInset;
-
-            const distance =
-                Math.max(
-                    0,
-                    inwardTip -
-                    newBaseInset
-                );
-
-            const startTransform =
-                `translateX(-50%) translateY(${distance}px)`;
-
-            const endTransform =
-                "translateX(-50%) translateY(0px)";
-
-            this.#indicatorSymbol.style.transform =
-                startTransform;
-
-            this.#indicatorSymbol.style.filter =
-                heavyShadow;
-
-            if (
-                typeof this.#indicatorSymbol.animate !==
-                    "function"
-            ) {
-                this.#indicatorSymbol.style.removeProperty(
-                    "transform"
-                );
-
-                this.#indicatorSymbol.style.removeProperty(
-                    "filter"
-                );
-
-                this.#releaseTimerTypeIndicator(
-                    state
-                );
-
-                return;
-            }
-
-            const animation =
-                this.#indicatorSymbol.animate(
-                    [
-                        {
-                            transform:
-                                startTransform,
-                            filter:
-                                heavyShadow
-                        },
-                        {
-                            transform:
-                                endTransform,
-                            filter:
-                                transparentShadow
-                        }
-                    ],
-                    {
-                        duration,
-                        easing:
-                            "ease-in-out",
-                        fill: "both"
-                    }
-                );
-
-            state.indicatorOutwardAnimation =
-                animation;
-
-            animation.finished.then(
-                () => {
-                    if (
-                        state !==
-                            this.#timerTypeTransitionState
-                    ) {
-                        return;
-                    }
-
-                    this.#indicatorSymbol.style.removeProperty(
-                        "transform"
-                    );
-
-                    this.#indicatorSymbol.style.removeProperty(
-                        "filter"
-                    );
-
-                    animation.cancel();
-
-                    state.indicatorOutwardAnimation =
-                        undefined;
-
-                    this.#releaseTimerTypeIndicator(
-                        state
-                    );
-                },
-                () => {}
-            );
         }
 
         #releaseTimerTypeIndicator(
@@ -7928,22 +7658,6 @@
                     this.#timerTypeTransitionState
             ) {
                 return;
-            }
-
-            state.indicatorInwardAnimation
-                ?.cancel();
-
-            state.indicatorOutwardAnimation
-                ?.cancel();
-
-            if (this.#indicatorSymbol) {
-                this.#indicatorSymbol.style.removeProperty(
-                    "transform"
-                );
-
-                this.#indicatorSymbol.style.removeProperty(
-                    "filter"
-                );
             }
 
             this.#timerTypeIndicatorFrozen =
@@ -8011,7 +7725,7 @@
                                 targetAngle
                             )
                         ) {
-                            this.#startTimerTypeIndicatorOutward(
+                            this.#releaseTimerTypeIndicator(
                                 state
                             );
 
@@ -8038,7 +7752,7 @@
                             this.#indicatorTrack.style.transform =
                                 `rotate(${targetAngle}deg)`;
 
-                            this.#startTimerTypeIndicatorOutward(
+                            this.#releaseTimerTypeIndicator(
                                 state
                             );
 
@@ -8085,7 +7799,7 @@
                                 state.indicatorTrackAnimation =
                                     undefined;
 
-                                this.#startTimerTypeIndicatorOutward(
+                                this.#releaseTimerTypeIndicator(
                                     state
                                 );
                             },
@@ -8261,21 +7975,8 @@
                 );
             }
 
-            state.indicatorInwardAnimation
+            state.indicatorSpinAnimation
                 ?.cancel();
-
-            state.indicatorOutwardAnimation
-                ?.cancel();
-
-            if (this.#indicatorSymbol) {
-                this.#indicatorSymbol.style.removeProperty(
-                    "transform"
-                );
-
-                this.#indicatorSymbol.style.removeProperty(
-                    "filter"
-                );
-            }
 
             if (
                 state.indicatorTrackAnimation
@@ -8489,8 +8190,9 @@
             state.maximumDuration =
                 maximumDuration;
 
-            this.#startTimerTypeIndicatorInward(
-                state
+            this.#startTimerTypeIndicatorSpin(
+                state,
+                maximumDuration
             );
 
             const refresh =
@@ -8763,10 +8465,6 @@
                         }
                     }
                 }
-
-                this.#prepareTimerTypeIndicatorInward(
-                    state
-                );
 
                 this.#rings =
                     new Map();
@@ -14694,18 +14392,6 @@
 
             if (this.#indicatorHandoffFrozen) {
                 this.#setIndicatorSymbolVisible(true);
-                return;
-            }
-
-            if (
-                this.#timerTypeIndicatorFrozen &&
-                this.#timerTypeTransitionState
-                    ?.indicatorUsed
-            ) {
-                this.#setIndicatorSymbolVisible(
-                    true
-                );
-
                 return;
             }
 
