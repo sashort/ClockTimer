@@ -1337,7 +1337,9 @@
                         "insert",
                         "overwrite",
                         "replaceWithNext",
-                        "replaceToNext"
+                        "replaceToNext",
+                        "replaceWithPrevious",
+                        "replaceToPrevious"
                     ]);
 
                 this.#asyncOperationBuffer =
@@ -2124,6 +2126,14 @@
                             this.replaceToNext(operation.value);
                             break;
 
+                        case "replaceWithPrevious":
+                            this.replaceWithPrevious();
+                            break;
+
+                        case "replaceToPrevious":
+                            this.replaceToPrevious(operation.value);
+                            break;
+
                         case "closeOpenRange":
                             this.closeOpenRange();
                             break;
@@ -2183,6 +2193,37 @@
             startTime,
             scheduledStart
         } = {}) {
+            try {
+                this.#validateDurationTime(
+                    standardTime,
+                    "standardTime"
+                );
+
+                if (creationTime !== undefined) {
+                    this.#validateClockTime(
+                        creationTime,
+                        "creationTime"
+                    );
+                }
+
+                if (scheduledStart !== undefined) {
+                    this.#validateClockTime(
+                        scheduledStart,
+                        "scheduledStart"
+                    );
+                }
+
+                if (startTime !== undefined) {
+                    this.#validateClockTime(
+                        startTime,
+                        "startTime"
+                    );
+                }
+            }
+            catch {
+                return false;
+            }
+
             const suppliedStartArguments = {
                 standardTime,
                 creationTime,
@@ -2208,7 +2249,7 @@
                     args
                 });
 
-                return this;
+                return true;
             }
 
             this.#preserveInsertedOnClear =
@@ -2421,7 +2462,7 @@
                 };
             }
 
-            return this;
+            return true;
         }
 
         #cloneInsertedRecords(records) {
@@ -2453,9 +2494,7 @@
 
         reset() {
             if (!this.#startResetState) {
-                throw new Error(
-                    "reset() cannot be called before start() or after clear()."
-                );
+                return false;
             }
 
             if (
@@ -2466,7 +2505,7 @@
                     type: "reset"
                 });
 
-                return this;
+                return true;
             }
 
             const baseline =
@@ -2524,7 +2563,7 @@
                     false;
             }
 
-            return this;
+            return true;
         }
 
         #typeExtendsCalculatedEndTime(type) {
@@ -2585,7 +2624,7 @@
                     args
                 });
 
-                return true;
+                return;
             }
 
             if (
@@ -2594,13 +2633,13 @@
                 type.trim() ===
                     ""
             ) {
-                return false;
+                return;
             }
 
             if (
                 this.#openEndedRange
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -2616,7 +2655,7 @@
                     )
                 )
             ) {
-                return false;
+                return;
             }
 
             let startDate;
@@ -2632,7 +2671,7 @@
                         );
             }
             catch {
-                return false;
+                return;
             }
 
             let endDate;
@@ -2649,7 +2688,7 @@
                         );
                 }
                 catch {
-                    return false;
+                    return;
                 }
             }
 
@@ -2666,7 +2705,7 @@
                         );
                 }
                 catch {
-                    return false;
+                    return;
                 }
             }
 
@@ -2675,7 +2714,7 @@
                 endDate.getTime() <=
                     startDate.getTime()
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -2686,7 +2725,7 @@
                     startDate.getTime() !==
                     duration
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -2793,13 +2832,21 @@
 
             this.#renderAllInsertedRanges();
 
+            const insertedElement =
+                this.#getManagedTimeRanges()
+                    .find(
+                        candidate =>
+                            candidate.clockTimerInserted ===
+                                record.id
+                    );
+
             if (
                 this.#needsTick()
             ) {
                 this.#startTickTimer();
             }
 
-            return true;
+            return insertedElement;
         }
 
         overwrite({
@@ -2845,14 +2892,14 @@
                     args
                 });
 
-                return true;
+                return;
             }
 
             if (
                 typeof type !== "string" ||
                 type.trim() === ""
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -2860,18 +2907,18 @@
                 !hasEnd &&
                 !hasLength
             ) {
-                return false;
+                return;
             }
 
             if (
                 openEnded &&
                 !this.#hasStartProperties()
             ) {
-                return false;
+                return;
             }
 
             if (this.#openOverwriteRange) {
-                return false;
+                return;
             }
 
             const reference =
@@ -2898,7 +2945,7 @@
                 }
             }
             catch {
-                return false;
+                return;
             }
 
             let end;
@@ -2919,7 +2966,7 @@
                         );
                 }
                 catch {
-                    return false;
+                    return;
                 }
             }
 
@@ -2932,7 +2979,7 @@
                         ).total;
                 }
                 catch {
-                    return false;
+                    return;
                 }
             }
 
@@ -2940,7 +2987,7 @@
                 Number.isFinite(end) &&
                 end <= start
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -2948,7 +2995,7 @@
                 Number.isFinite(duration) &&
                 end - start !== duration
             ) {
-                return false;
+                return;
             }
 
             if (
@@ -3000,6 +3047,14 @@
                     record
                 );
 
+                const overwriteElement =
+                    this.#getManagedTimeRanges()
+                        .find(
+                            candidate =>
+                                candidate.clockTimerOverwrite ===
+                                    record.id
+                        );
+
                 this.#refreshRingLayout(
                     start,
                     { refreshTickMarks: true }
@@ -3008,7 +3063,7 @@
                 this.#stopTickTimer();
                 this.#scheduleNextTick();
 
-                return true;
+                return overwriteElement;
             }
 
             const net =
@@ -3040,6 +3095,14 @@
                 record
             );
 
+            const overwriteElement =
+                this.#getManagedTimeRanges()
+                    .find(
+                        candidate =>
+                            candidate.clockTimerOverwrite ===
+                                record.id
+                    );
+
             this.#refreshRingLayout(
                 this.#started
                     ? this.#getCurrentTimelineTime()
@@ -3047,7 +3110,7 @@
                 { refreshTickMarks: true }
             );
 
-            return true;
+            return overwriteElement;
         }
 
         #adjustCalculatedEndTime(delta) {
@@ -3570,9 +3633,7 @@
                 this.#openOverwriteRange;
 
             if (!openInsert && !openOverwrite) {
-                throw new Error(
-                    "close() requires an open-ended insert or overwrite."
-                );
+                return false;
             }
 
             const nowDate =
@@ -3700,7 +3761,7 @@
                 { refreshTickMarks: true }
             );
 
-            return this;
+            return true;
         }
 
         closeOpenRange() {
@@ -3793,13 +3854,13 @@
                     type: "replaceWithNext"
                 });
 
-                return true;
+                return;
             }
 
             if (
                 !this.#started
             ) {
-                return false;
+                return;
             }
 
             const nowDate =
@@ -3821,7 +3882,7 @@
                 );
 
             if (!ring) {
-                return false;
+                return;
             }
 
             let nextRange;
@@ -3901,7 +3962,7 @@
             }
 
             if (!nextRange) {
-                return false;
+                return;
             }
 
             this.#extendCalculatedEndTime(
@@ -3925,16 +3986,14 @@
                 this.#startTickTimer();
             }
 
-            return true;
+            return nextRange;
         }
 
         replaceToNext(
             type
         ) {
             if (!this.#hasStartProperties()) {
-                throw new Error(
-                    "replaceToNext() cannot be called before start() or after clear()."
-                );
+                return;
             }
 
             if (
@@ -3950,7 +4009,7 @@
                     value: type
                 });
 
-                return true;
+                return;
             }
 
             if (
@@ -3960,7 +4019,7 @@
                     "" ||
                 !this.#started
             ) {
-                return false;
+                return;
             }
 
             const nowDate =
@@ -3982,7 +4041,7 @@
                 );
 
             if (!ring) {
-                return false;
+                return;
             }
 
             let currentRange;
@@ -4057,7 +4116,7 @@
                 !nextRange ||
                 nextStart <= now
             ) {
-                return false;
+                return;
             }
 
             this.#setRangeEnd(
@@ -4105,7 +4164,290 @@
             return replacement;
         }
 
+        replaceWithPrevious() {
+            if (!this.#hasStartProperties()) {
+                return;
+            }
+
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+
+                this.#queueAsyncOperation({
+                    type: "replaceWithPrevious"
+                });
+
+                return;
+            }
+
+            if (!this.#started) {
+                return;
+            }
+
+            const nowDate =
+                new Date();
+
+            const now =
+                this.#getCurrentTimelineTime(
+                    nowDate
+                );
+
+            let currentRange;
+            let currentStart =
+                -Infinity;
+
+            let previousRange;
+            let previousEnd =
+                -Infinity;
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.hasAttribute(
+                        "overlapping"
+                    ) ||
+                    range.timeRangeExiting ===
+                        true
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(start) &&
+                    Number.isFinite(end) &&
+                    start <= now &&
+                    end > now &&
+                    start > currentStart
+                ) {
+                    currentRange =
+                        range;
+
+                    currentStart =
+                        start;
+                }
+
+                if (
+                    Number.isFinite(end) &&
+                    end <= now &&
+                    end > previousEnd
+                ) {
+                    previousRange =
+                        range;
+
+                    previousEnd =
+                        end;
+                }
+            }
+
+            if (
+                !currentRange ||
+                !previousRange ||
+                previousEnd >= now
+            ) {
+                return;
+            }
+
+            this.#extendCalculatedEndTime(
+                now - previousEnd,
+                previousRange.getAttribute(
+                    "type"
+                )
+            );
+
+            this.#setRangeEnd(
+                previousRange,
+                now
+            );
+
+            this.#tickAlignmentMilliseconds =
+                nowDate.getMilliseconds();
+
+            if (this.#needsTick()) {
+                this.#startTickTimer();
+            }
+
+            return previousRange;
+        }
+
+        replaceToPrevious(
+            type
+        ) {
+            if (!this.#hasStartProperties()) {
+                return;
+            }
+
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
+
+                this.#queueAsyncOperation({
+                    type: "replaceToPrevious",
+                    value: type
+                });
+
+                return;
+            }
+
+            if (
+                typeof type !==
+                    "string" ||
+                type.trim() ===
+                    "" ||
+                !this.#started
+            ) {
+                return;
+            }
+
+            const nowDate =
+                new Date();
+
+            const now =
+                this.#getCurrentTimelineTime(
+                    nowDate
+                );
+
+            let currentRange;
+            let currentStart =
+                -Infinity;
+
+            let previousRange;
+            let previousEnd =
+                -Infinity;
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.hasAttribute(
+                        "overlapping"
+                    ) ||
+                    range.timeRangeExiting ===
+                        true
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(start) &&
+                    Number.isFinite(end) &&
+                    start <= now &&
+                    end > now &&
+                    start > currentStart
+                ) {
+                    currentRange =
+                        range;
+
+                    currentStart =
+                        start;
+                }
+
+                if (
+                    Number.isFinite(end) &&
+                    end <= now &&
+                    end > previousEnd
+                ) {
+                    previousRange =
+                        range;
+
+                    previousEnd =
+                        end;
+                }
+            }
+
+            if (
+                !currentRange ||
+                !previousRange ||
+                previousEnd >= now
+            ) {
+                return;
+            }
+
+            this.#setRangeStart(
+                currentRange,
+                now
+            );
+
+            const replacementType =
+                type.trim();
+
+            this.#extendCalculatedEndTime(
+                now - previousEnd,
+                replacementType
+            );
+
+            const replacement =
+                this.#createTimeRange(
+                    replacementType,
+                    previousEnd,
+                    now,
+                    {
+                        dynamic: true
+                    }
+                );
+
+            replacement.setAttribute(
+                "data-time-range-full-entry",
+                ""
+            );
+
+            const ring =
+                currentRange.parentElement;
+
+            if (!ring) {
+                return;
+            }
+
+            ring.insertBefore(
+                replacement,
+                currentRange
+            );
+
+            this.#tickAlignmentMilliseconds =
+                nowDate.getMilliseconds();
+
+            if (this.#needsTick()) {
+                this.#startTickTimer();
+            }
+
+            return replacement;
+        }
+
         clear() {
+            if (!this.#hasStartProperties()) {
+                return false;
+            }
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
@@ -4114,7 +4456,7 @@
                     type: "clear"
                 });
 
-                return;
+                return true;
             }
 
             this.#stopTickTimer();
@@ -4280,6 +4622,8 @@
                     refreshTickMarks: true
                 }
             );
+
+            return true;
         }
 
         #ensureAttributes() {
