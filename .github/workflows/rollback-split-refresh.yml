@@ -1,0 +1,29 @@
+name: Rollback split refresh
+on:
+  push:
+    paths:
+      - '.github/workflows/rollback-split-refresh.yml'
+permissions:
+  contents: write
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore ClockTimer.js
+        run: git checkout 60bfec50eeae83ea5f804633f9f966709bb22c43 -- ClockTimer.js
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify restored blob
+        run: |
+          test "$(git hash-object ClockTimer.js)" = "53502b3a69f36c8a88767377c861e43e33f1b6bf"
+      - name: Commit rollback and cleanup
+        run: |
+          rm .github/workflows/rollback-split-refresh.yml
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add ClockTimer.js .github/workflows/rollback-split-refresh.yml
+          git commit -m "Rollback split fragment refresh"
+          git push origin main
