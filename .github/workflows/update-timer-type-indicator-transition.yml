@@ -1,0 +1,51 @@
+name: Update timer type indicator transition
+'on':
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - '.github/workflows/update-timer-type-indicator-transition.yml'
+      - '.github/scripts/update_timer_type_indicator_transition.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          path: target
+      - name: Verify expected target base
+        run: test "$(git -C target rev-parse HEAD)" = "0612310266f04a3da39ef2686375fd2548bbd928"
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply indicator transition update
+        run: python controller/.github/scripts/update_timer_type_indicator_transition.py target/ClockTimer.js
+      - name: Syntax check
+        run: node --check target/ClockTimer.js
+      - name: Structural checks
+        run: |
+          ! grep -q '#startTimerTypeIndicatorSpin' target/ClockTimer.js
+          ! grep -q 'indicatorSpinAnimation' target/ClockTimer.js
+          grep -q '#startTimerTypeIndicatorInward' target/ClockTimer.js
+          grep -q '#startTimerTypeIndicatorOutward' target/ClockTimer.js
+          grep -q 'indicatorGeometryFrozen' target/ClockTimer.js
+          grep -q 'drop-shadow(0 2px 2px rgb(0 0 0 / 80%))' target/ClockTimer.js
+          grep -q 'state.indicatorInwardTip' target/ClockTimer.js
+          grep -A8 '#startTimerTypeIndicatorCatchup' target/ClockTimer.js | grep -q 'state'
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Refine timer type indicator transition" || exit 0
+          git push origin radial-fitted
