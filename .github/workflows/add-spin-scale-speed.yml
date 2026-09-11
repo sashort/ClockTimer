@@ -1,0 +1,38 @@
+name: Add ClockTimer spin scale speed
+on:
+  push:
+    paths:
+      - '.github/workflows/add-spin-scale-speed.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/add_spin_scale_speed.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify spin API and scale speed
+        run: |
+          grep -Fq '@property --clock-timer-spin-scale-speed' ClockTimer.js
+          grep -Fq 'initial-value: 125ms;' ClockTimer.js
+          grep -Fq 'spin({' ClockTimer.js
+          grep -Fq 'scaleSpeed' ClockTimer.js
+          grep -Fq '#getSpinScaleSpeedMilliseconds' ClockTimer.js
+          grep -Fq 'operation.scaleSpeed' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/add_spin_scale_speed.py
+          rm -f .github/workflows/add-spin-scale-speed.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/add_spin_scale_speed.py .github/workflows/add-spin-scale-speed.yml
+          git commit -m "Add configurable spin scale speed"
+          git push origin main
