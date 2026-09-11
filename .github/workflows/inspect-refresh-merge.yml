@@ -1,0 +1,29 @@
+name: Inspect refresh merge
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-refresh-merge.yml'
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          for pattern in '#refreshRingLayout' '#setRangeTiming' '#createTimeRange' '#handlePercentGoalChange'; do
+            echo "===== $pattern ====="
+            line=$(grep -n -m1 "$pattern" ClockTimer.js | cut -d: -f1)
+            if [ -n "$line" ]; then
+              start=$((line-20)); [ $start -lt 1 ] && start=1
+              end=$((line+180))
+              sed -n "${start},${end}p" ClockTimer.js
+            fi
+          done
+      - run: |
+          rm .github/workflows/inspect-refresh-merge.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/inspect-refresh-merge.yml
+          git commit -m 'Remove refresh merge inspection workflow'
+          git push
