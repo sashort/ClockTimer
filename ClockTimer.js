@@ -1916,10 +1916,18 @@
                             ""
                         );
 
-                        elapsedRange.setAttribute(
-                            "static-elapsed",
-                            ""
-                        );
+                        elapsedRange.clockTimerImportedElapsed =
+                            "";
+
+                        if (
+                            this.#getTimerMode() ===
+                                "elapsed"
+                        ) {
+                            elapsedRange.setAttribute(
+                                "static-elapsed",
+                                ""
+                            );
+                        }
 
                         elapsedRange.timeRangeFullEntry =
                             true;
@@ -2016,6 +2024,15 @@
 
                             cursor = segmentEnd;
                         }
+                    }
+
+                    if (
+                        this.#getTimerMode() ===
+                            "remaining"
+                    ) {
+                        this.#updateRemainingRanges(
+                            terminal
+                        );
                     }
 
                     this.#refreshRingLayout(
@@ -6572,6 +6589,23 @@
                     "timer-mode",
                     mode
                 );
+
+                if (
+                    range.clockTimerImportedElapsed !==
+                        undefined
+                ) {
+                    if (mode === "remaining") {
+                        range.removeAttribute(
+                            "static-elapsed"
+                        );
+                    }
+                    else {
+                        range.setAttribute(
+                            "static-elapsed",
+                            ""
+                        );
+                    }
+                }
 
                 range.refreshVisualGeometry?.();
             }
