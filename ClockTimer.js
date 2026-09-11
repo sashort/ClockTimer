@@ -3362,8 +3362,30 @@
                         start
                     );
 
-                this.#renderOverwriteRecord(
-                    record
+                const initialNowDate =
+                    new Date();
+
+                let initialNow =
+                    this.#getCurrentTimelineTime(
+                        initialNowDate
+                    );
+
+                if (initialNow <= start) {
+                    initialNow =
+                        start + 1;
+                }
+
+                this.#updateOpenOverwriteRange(
+                    new Date(
+                        initialNowDate.getTime() +
+                        Math.max(
+                            0,
+                            initialNow -
+                                this.#getCurrentTimelineTime(
+                                    initialNowDate
+                                )
+                        )
+                    )
                 );
 
                 const overwriteElement =
