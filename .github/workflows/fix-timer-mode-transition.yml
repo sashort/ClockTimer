@@ -1,0 +1,39 @@
+name: Fix timer mode transition
+'on':
+  push:
+    branches:
+      - time-range-animation-rework
+    paths:
+      - '.github/workflows/fix-timer-mode-transition.yml'
+      - '.github/scripts/fix_timer_mode_transition.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+      - name: Preserve patch script
+        run: cp .github/scripts/fix_timer_mode_transition.py /tmp/fix_timer_mode_transition.py
+      - name: Switch to target branch
+        run: |
+          git fetch origin timer-mode-transition-fix
+          git checkout -B timer-mode-transition-fix origin/timer-mode-transition-fix
+      - name: Apply transition fix
+        run: python /tmp/fix_timer_mode_transition.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify mode transition path
+        run: |
+          grep -Fq 'this.#applyTimerModeState(' ClockTimer.js
+          grep -Fq 'rangeType === "remaining"' ClockTimer.js
+          grep -Fq 'rangeType === "wave"' ClockTimer.js
+          grep -Fq 'TimeRangeClass?.suspendLayout?.(' ClockTimer.js
+      - name: Commit target branch
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fix timer mode transition state"
+          git push origin timer-mode-transition-fix
