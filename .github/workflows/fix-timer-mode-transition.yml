@@ -37,3 +37,4 @@ jobs:
           git add ClockTimer.js
           git commit -m "Fix timer mode transition state"
           git push origin timer-mode-transition-fix
+# rerun after target branch creation
