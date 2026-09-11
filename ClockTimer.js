@@ -1015,15 +1015,28 @@
         }
 
         set standardTime(value) {
-            this.#assertStartPropertiesInitialized(
-                "standardTime"
-            );
+            if (!this.#hasStartProperties()) {
+                return;
+            }
 
-            const parsed =
-                this.#validateDurationTime(
-                    value,
-                    "standardTime"
-                );
+            let parsed;
+
+            try {
+                parsed =
+                    this.#validateDurationTime(
+                        value,
+                        "standardTime"
+                    );
+            }
+            catch {
+                return;
+            }
+
+            const startTimeMilliseconds =
+                this.#getStartTimeMilliseconds();
+
+            const previousDuration =
+                this.#standardDuration;
 
             this.#standardTime =
                 this.#formatStandardTime(
@@ -1032,6 +1045,23 @@
 
             this.#standardDuration =
                 parsed.total;
+
+            if (
+                Number.isFinite(
+                    this.#calculatedEndTime
+                ) &&
+                Number.isFinite(
+                    previousDuration
+                )
+            ) {
+                this.#calculatedEndTime +=
+                    parsed.total -
+                    previousDuration;
+            }
+
+            this.#refreshAfterStartPropertyChange(
+                startTimeMilliseconds
+            );
         }
 
         get creationTime() {
@@ -1039,15 +1069,22 @@
         }
 
         set creationTime(value) {
-            this.#assertStartPropertiesInitialized(
-                "creationTime"
-            );
+            if (!this.#hasStartProperties()) {
+                return;
+            }
 
-            const parsed =
-                this.#validateClockTime(
-                    value,
-                    "creationTime"
-                );
+            let parsed;
+
+            try {
+                parsed =
+                    this.#validateClockTime(
+                        value,
+                        "creationTime"
+                    );
+            }
+            catch {
+                return;
+            }
 
             this.#creationTime =
                 this.#formatStandardTime(
@@ -1064,26 +1101,70 @@
         }
 
         set scheduledStart(value) {
-            this.#assertStartPropertiesInitialized(
-                "scheduledStart"
-            );
+            if (!this.#hasStartProperties()) {
+                return;
+            }
 
-            const parsed =
-                this.#validateClockTime(
-                    value,
-                    "scheduledStart"
-                );
+            let parsed;
 
-            this.#scheduledStartMilliseconds =
+            try {
+                parsed =
+                    this.#validateClockTime(
+                        value,
+                        "scheduledStart"
+                    );
+            }
+            catch {
+                return;
+            }
+
+            const startTimeMilliseconds =
+                this.#getStartTimeMilliseconds();
+
+            const previousScheduledStart =
+                this.#scheduledStartMilliseconds;
+
+            const milliseconds =
                 this.#resolveNear(
                     parsed.total,
                     this.#creationMilliseconds
                 );
 
+            this.#scheduledStartMilliseconds =
+                milliseconds;
+
             this.#scheduledStart =
                 this.#formatTimelineTime(
-                    this.#scheduledStartMilliseconds
+                    milliseconds
                 );
+
+            if (
+                Number.isFinite(
+                    this.#calculatedEndTime
+                ) &&
+                Number.isFinite(
+                    previousScheduledStart
+                )
+            ) {
+                this.#calculatedEndTime +=
+                    milliseconds -
+                    previousScheduledStart;
+            }
+
+            this.#tickAlignmentMilliseconds =
+                this.#millisecondsComponent(
+                    milliseconds
+                );
+
+            this.#refreshAfterStartPropertyChange(
+                startTimeMilliseconds
+            );
+
+            this.#stopTickTimer();
+
+            if (this.#needsTick()) {
+                this.#scheduleNextTick();
+            }
         }
 
         get startTime() {
@@ -1102,15 +1183,22 @@
         }
 
         set startTime(value) {
-            this.#assertStartPropertiesInitialized(
-                "startTime"
-            );
+            if (!this.#hasStartProperties()) {
+                return;
+            }
 
-            const parsed =
-                this.#validateClockTime(
-                    value,
-                    "startTime"
-                );
+            let parsed;
+
+            try {
+                parsed =
+                    this.#validateClockTime(
+                        value,
+                        "startTime"
+                    );
+            }
+            catch {
+                return;
+            }
 
             const milliseconds =
                 this.#resolveNear(
@@ -1118,15 +1206,46 @@
                     this.#scheduledStartMilliseconds
                 );
 
+            this.#refreshAfterStartPropertyChange(
+                milliseconds
+            );
+        }
+
+        #refreshAfterStartPropertyChange(
+            startTimeMilliseconds =
+                this.#getStartTimeMilliseconds()
+        ) {
+            if (!this.#hasStartProperties()) {
+                return;
+            }
+
             this.#reconcilePlannedRanges({
-                startTimeMilliseconds:
-                    milliseconds
+                startTimeMilliseconds
             });
+
+            this.#removeOvertimeRanges();
+
+            let now;
+
+            if (this.#started) {
+                now =
+                    this.#getCurrentTimelineTime();
+
+                this.#updateElapsedRange(
+                    now
+                );
+
+                this.#updateOvertimeRanges(
+                    now
+                );
+            }
+
+            this.#reapplyOverwriteRanges();
 
             this.#refreshRingLayout(
                 this.#started
-                    ? this.#getCurrentTimelineTime()
-                    : milliseconds,
+                    ? now
+                    : startTimeMilliseconds,
                 { refreshTickMarks: true }
             );
         }
@@ -1136,16 +1255,6 @@
                 this.#standardTime !== undefined &&
                 this.#creationTime !== undefined &&
                 this.#scheduledStart !== undefined
-            );
-        }
-
-        #assertStartPropertiesInitialized(name) {
-            if (this.#hasStartProperties()) {
-                return;
-            }
-
-            throw new Error(
-                `${name} cannot be set before start() or after clear().`
             );
         }
 
