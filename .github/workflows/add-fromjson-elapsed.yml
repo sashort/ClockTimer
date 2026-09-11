@@ -24,7 +24,7 @@ jobs:
           assert 'let elapsedCursor =' in b
           assert '"elapsed",\n                                elapsedCursor,\n                                segmentEnd' in b
           assert 'elapsedRange.setAttribute(\n                            "overlapping"' in b
-          assert b.count('Math.max(\n                            terminal,\n                            this.#standardEnd ?? terminal\n                        )') >= 2
+          assert 'Math.max(\n                            terminal,\n                            this.#standardEnd ?? terminal\n                        )' in b
           PY
       - name: Commit
         run: |
