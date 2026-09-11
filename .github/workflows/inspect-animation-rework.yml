@@ -1,21 +1,42 @@
-name: Inspect TimeRange animation removals
+name: Finalize TimeRange animation rework
 'on':
   push:
     branches:
       - time-range-animation-rework
     paths:
       - '.github/workflows/inspect-animation-rework.yml'
+      - '.github/scripts/fix_time_range_animation_removals.py'
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: time-range-animation-target
-      - name: Show removal call sites
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+      - name: Preserve compatibility patch
+        run: cp .github/scripts/fix_time_range_animation_removals.py /tmp/fix_time_range_animation_removals.py
+      - name: Switch to target branch
         run: |
-          grep -n -C 8 'removeAnimated' ClockTimer.js || true
-          echo '--- direct removes ---'
-          grep -n -C 4 '\.remove();' ClockTimer.js | head -n 800 || true
+          git fetch origin time-range-animation-target
+          git checkout -B time-range-animation-target origin/time-range-animation-target
+      - name: Apply compatibility patch
+        run: python /tmp/fix_time_range_animation_removals.py
+      - name: Syntax check
+        run: |
+          node --check TimeRange.js
+          node --check ClockTimer.js
+      - name: Verify final animation flow
+        run: |
+          grep -Fq 'renderStartTime' TimeRange.js
+          grep -Fq '#releaseTimeRangeTimingAnimation(' ClockTimer.js
+          test "$(grep -c '#releaseTimeRangeTimingAnimation(' ClockTimer.js)" -ge 6
+          grep -Fq 'static calculateClipPath({' TimeRange.js
+          grep -Fq 'TimeRangeClass.suspendLayout(' ClockTimer.js
+      - name: Commit target branch
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add TimeRange.js ClockTimer.js
+          git commit -m "Handle removal during TimeRange timing animations"
+          git push origin time-range-animation-target
