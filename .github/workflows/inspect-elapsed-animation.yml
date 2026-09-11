@@ -1,0 +1,12 @@
+name: Inspect elapsed animation paths
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-elapsed-animation.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          grep -n -C 5 -E 'elapsed.*[Aa]nimation|[Aa]nimation.*elapsed|startElapsed|stopElapsed|#elapsedRange|type="elapsed"' ClockTimer.js TimeRange.js | head -n 500
