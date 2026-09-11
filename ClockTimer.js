@@ -1942,41 +1942,11 @@
             this.#spinAnimation
                 ?.cancel();
 
-            const animation =
-                this.animate(
-                    [
-                        {
-                            offset: 0,
-                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
-                        },
-                        {
-                            offset: 0.5,
-                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(90deg)"
-                        },
-                        {
-                            offset: 0.5,
-                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(-90deg)"
-                        },
-                        {
-                            offset: 1,
-                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
-                        }
-                    ],
-                    {
-                        duration:
-                            perRotationDuration,
-                        iterations:
-                            rotations,
-                        easing: "ease-in-out"
-                    }
-                );
+            const scaleDuration =
+                125;
 
-            this.#spinAnimation =
-                animation;
-
-            animation.finished
-                .catch(() => {})
-                .finally(() => {
+            const finishSpin =
+                animation => {
                     if (
                         this.#spinAnimation !==
                             animation
@@ -1990,7 +1960,108 @@
                     this.#restoreTimeFontAfterSpin();
 
                     this.#scheduleFontSizing();
-                });
+                };
+
+            const shrinkAnimation =
+                this.animate(
+                    [
+                        {
+                            transform: "scale(1)"
+                        },
+                        {
+                            transform: "scale(0.95)"
+                        }
+                    ],
+                    {
+                        duration: scaleDuration,
+                        easing: "ease-out",
+                        fill: "forwards"
+                    }
+                );
+
+            this.#spinAnimation =
+                shrinkAnimation;
+
+            shrinkAnimation.finished
+                .then(() => {
+                    if (
+                        this.#spinAnimation !==
+                            shrinkAnimation
+                    ) {
+                        return;
+                    }
+
+                    const spinAnimation =
+                        this.animate(
+                            [
+                                {
+                                    offset: 0,
+                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg) scale(0.95)"
+                                },
+                                {
+                                    offset: 0.5,
+                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(90deg) scale(0.95)"
+                                },
+                                {
+                                    offset: 0.5,
+                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(-90deg) scale(0.95)"
+                                },
+                                {
+                                    offset: 1,
+                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg) scale(0.95)"
+                                }
+                            ],
+                            {
+                                duration:
+                                    perRotationDuration,
+                                iterations:
+                                    rotations,
+                                easing: "ease-in-out",
+                                fill: "forwards"
+                            }
+                        );
+
+                    this.#spinAnimation =
+                        spinAnimation;
+
+                    return spinAnimation.finished
+                        .then(() => {
+                            if (
+                                this.#spinAnimation !==
+                                    spinAnimation
+                            ) {
+                                return;
+                            }
+
+                            const restoreAnimation =
+                                this.animate(
+                                    [
+                                        {
+                                            transform: "scale(0.95)"
+                                        },
+                                        {
+                                            transform: "scale(1)"
+                                        }
+                                    ],
+                                    {
+                                        duration: scaleDuration,
+                                        easing: "ease-in",
+                                        fill: "forwards"
+                                    }
+                                );
+
+                            this.#spinAnimation =
+                                restoreAnimation;
+
+                            return restoreAnimation.finished
+                                .then(() => {
+                                    finishSpin(
+                                        restoreAnimation
+                                    );
+                                });
+                        });
+                })
+                .catch(() => {});
         }
 
         #parseGrayscalePercentage(value) {
