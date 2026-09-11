@@ -7352,6 +7352,9 @@
                     "range-length"
                 );
 
+            const isSplit =
+                spans.length > 1;
+
             let firstSegment =
                 true;
 
@@ -7427,6 +7430,15 @@
                         segmentEnd,
                         preserveRangeLength
                     );
+
+                    if (
+                        isSplit &&
+                        segment === range &&
+                        typeof range.snapToLogicalTiming ===
+                            "function"
+                    ) {
+                        range.snapToLogicalTiming();
+                    }
 
                     const ring =
                         this.#ensureRing(
