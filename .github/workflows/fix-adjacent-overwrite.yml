@@ -1,0 +1,26 @@
+name: Fix adjacent overwrite
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-adjacent-overwrite.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/fix-adjacent-overwrite.py
+      - run: node --check ClockTimer.js
+      - name: Verify adjacency
+        run: |
+          grep -q 'item.start === end' ClockTimer.js
+          ! grep -q 'item.start >= end' ClockTimer.js
+      - name: Commit
+        run: |
+          rm .github/scripts/fix-adjacent-overwrite.py .github/workflows/fix-adjacent-overwrite.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Require adjacent overwrite target'
+          git push
