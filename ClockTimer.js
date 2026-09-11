@@ -4,6 +4,7 @@
             "percent-goal",
             "military-time",
             "format",
+            "date-format",
             "visible-hours",
             "tick-marks",
             "indicator-symbol",
@@ -522,6 +523,10 @@
                         none;
                 }
 
+                #date[hidden] {
+                    display: none !important;
+                }
+
                 #date,
                 #time {
                     display:
@@ -720,6 +725,11 @@
 
             this.#dateElement.id =
                 "date";
+
+            this.#dateElement.hidden =
+                !this.hasAttribute(
+                    "date-format"
+                );
 
             this.#dateElement.setAttribute(
                 "part",
@@ -1017,6 +1027,13 @@
                 case "format":
                     this.#normalizeFormat();
 
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "date-format":
                     this.#updateDisplay(
                         new Date()
                     );
@@ -7870,6 +7887,18 @@
                 "--clock-timer-auto-time-font-size",
                 `${fittedSize}px`
             );
+
+            const dateVisible =
+                this.hasAttribute(
+                    "date-format"
+                );
+
+            this.#dateElement.hidden =
+                !dateVisible;
+
+            if (!dateVisible) {
+                return;
+            }
 
             const dateSize =
                 fittedSize * 0.38;
