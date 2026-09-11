@@ -1,0 +1,37 @@
+name: Fix open overwrite incremental updates
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-open-overwrite-incremental.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/fix_open_overwrite_incremental.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify incremental overwrite path
+        run: |
+          grep -q '#syncOpenOverwriteRangeElements' ClockTimer.js
+          grep -A70 '#updateOpenOverwriteRange' ClockTimer.js | grep -q '#syncOpenOverwriteRangeElements'
+          ! grep -A70 '#updateOpenOverwriteRange' ClockTimer.js | grep -q '#renderOverwriteRecord'
+      - name: Commit fix and cleanup
+        run: |
+          rm .github/scripts/fix_open_overwrite_incremental.py
+          rm .github/workflows/fix-open-overwrite-incremental.yml
+          rm -f .github/workflows/inspect-open-overwrite.yml
+          git add ClockTimer.js .github/scripts/fix_open_overwrite_incremental.py .github/workflows/fix-open-overwrite-incremental.yml .github/workflows/inspect-open-overwrite.yml
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git commit -m "Fix open overwrite incremental updates"
+          git push origin main
