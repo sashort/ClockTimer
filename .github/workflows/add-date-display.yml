@@ -1,0 +1,37 @@
+name: Add centered date display
+on:
+  push:
+    paths:
+      - .github/workflows/add-date-display.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/add-date-display.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          assert '#dateElement;' in s
+          assert 'weekday: "long"' in s
+          assert 'month: "long"' in s
+          assert 'day: "numeric"' in s
+          assert 'fittedSize * 0.38' in s
+          assert 'part",\n                "date"' in s
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/add-date-display.py
+          rm -f .github/workflows/add-date-display.yml
+          rm -f .github/workflows/inspect-date-display.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Add centered date above clock time"
+          git push
