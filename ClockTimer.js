@@ -7671,6 +7671,11 @@
                     )
                 );
 
+                range.setAttribute(
+                    "ignore-overlaps",
+                    ""
+                );
+
                 if (this.#starting) {
                     range.timeRangeFullEntry =
                         true;
@@ -8039,6 +8044,11 @@
                         );
 
                     delete range.clockTimerDynamic;
+
+                    range.setAttribute(
+                        "ignore-overlaps",
+                        ""
+                    );
 
                     range.clockTimerInserted =
                         record.id;
