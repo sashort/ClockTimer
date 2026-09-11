@@ -1,10 +1,9 @@
-name: TimeRange layout suspension target patch
+name: TimeRange calculateCorners destructuring patch
 'on':
   push:
     branches:
       - time-range-layout-suspension
     paths:
-      - '.github/workflows/time-range-layout-suspension-v3.yml'
       - '.github/scripts/apply_time_range_layout_suspension.py'
 permissions:
   contents: write
@@ -26,13 +25,12 @@ jobs:
         run: node --check TimeRange.js
       - name: Verify API
         run: |
-          grep -Fq 'static suspendedTimeRanges = [];' TimeRange.js
-          grep -Fq 'static suspendLayout(' TimeRange.js
-          grep -Fq 'static resumeLayout(' TimeRange.js
+          grep -Fq 'static calculateCorners({' TimeRange.js
+          grep -Fq 'TimeRange.calculateCorners({' TimeRange.js
       - name: Commit target branch
         run: |
           git config user.name "sashort"
           git config user.email "95879519+sashort@users.noreply.github.com"
           git add TimeRange.js
-          git commit -m "Add TimeRange layout suspension"
+          git commit -m "Destructure calculateCorners parameters"
           git push origin time-range-layout-target
