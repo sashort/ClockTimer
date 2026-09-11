@@ -102,6 +102,8 @@
 
         #creationMilliseconds;
 
+        #tripId;
+
         #scheduledStart;
 
         #scheduledStartMilliseconds;
@@ -1279,14 +1281,14 @@
                 this.#getJSONCreationDate();
 
             const result = {
+                tripId:
+                    this.#tripId,
                 creationDate:
-                    this.#formatJSONDate(
-                        creationDate
-                    ),
+                    this.creationDate,
                 standardTime:
-                    this.#standardTime,
+                    this.standardTime,
                 scheduledStart:
-                    this.#scheduledStart,
+                    this.scheduledStart,
                 records: []
             };
 
@@ -1454,6 +1456,12 @@
         get originalStartTime() {
             return this.#originalStartArguments
                 ?.startTime;
+        }
+
+        get creationDate() {
+            return this.#formatJSONDate(
+                this.#getJSONCreationDate()
+            );
         }
 
         get standardTime() {
@@ -2909,12 +2917,19 @@
         }
 
         start({
+            tripId,
             standardTime,
             creationTime,
             startTime,
             scheduledStart
         } = {}) {
             try {
+                if (!Number.isInteger(tripId)) {
+                    throw new TypeError(
+                        "tripId must be a non-null integer."
+                    );
+                }
+
                 this.#validateDurationTime(
                     standardTime,
                     "standardTime"
@@ -2946,6 +2961,7 @@
             }
 
             const suppliedStartArguments = {
+                tripId,
                 standardTime,
                 creationTime,
                 startTime,
@@ -2957,6 +2973,7 @@
                 !this.#processingAsyncBatch
             ) {
                 const args = {
+                    tripId,
                     standardTime,
                     creationTime,
                     startTime,
@@ -2983,6 +3000,9 @@
                 this.#preserveInsertedOnClear =
                     false;
             }
+
+            this.#tripId =
+                tripId;
 
             const standard =
                 this.#validateDurationTime(
@@ -3153,6 +3173,8 @@
 
                 this.#startResetState = {
                     args: {
+                        tripId:
+                            this.#tripId,
                         standardTime:
                             this.#standardTime,
                         creationTime:
