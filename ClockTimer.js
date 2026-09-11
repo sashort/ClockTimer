@@ -4749,6 +4749,10 @@
                         typeof range.removeAnimated ===
                             "function"
                     ) {
+                        this.#releaseTimeRangeTimingAnimation(
+                            range
+                        );
+
                         range.removeAnimated({
                             collapseTo: "start"
                         });
@@ -5081,6 +5085,10 @@
                     typeof range.removeAnimated ===
                         "function"
                 ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
                     range.removeAnimated({
                         collapseTo: "start"
                     });
@@ -8942,6 +8950,14 @@
                 endAngle,
                 duration:
                     rangeDuration,
+                renderStartTime:
+                    this.#formatTimelineTime(
+                        start
+                    ),
+                renderEndTime:
+                    this.#formatTimelineTime(
+                        end
+                    ),
                 originMilliseconds:
                     origin
             };
@@ -9258,6 +9274,43 @@
                 );
         }
 
+        #releaseTimeRangeTimingAnimation(
+            range
+        ) {
+            const state =
+                this.#timeRangeTimingAnimations.get(
+                    range
+                );
+
+            if (!state) {
+                return false;
+            }
+
+            if (
+                state.frame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.frame
+                );
+            }
+
+            this.#timeRangeTimingAnimations.delete(
+                range
+            );
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            TimeRangeClass?.resumeLayout?.(
+                range
+            );
+
+            return true;
+        }
+
         #cancelTimeRangeTimingAnimations() {
             const TimeRangeClass =
                 customElements.get(
@@ -9529,6 +9582,10 @@
                     typeof range.removeAnimated ===
                         "function"
                 ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
                     range.removeAnimated({
                         collapseTo:
                             counterclockwiseOvertimeRemoval &&
@@ -10830,6 +10887,10 @@
                     typeof range.removeAnimated ===
                         "function"
                 ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
                     range.removeAnimated({
                         collapseTo: "start"
                     });
@@ -11316,6 +11377,10 @@
                     typeof range.removeAnimated ===
                         'function'
                 ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
                     range.removeAnimated({
                         collapseTo: 'start'
                     });

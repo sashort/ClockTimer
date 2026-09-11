@@ -2154,13 +2154,42 @@ class TimeRange extends HTMLElement {
         clipPath,
         startAngle,
         endAngle,
-        duration
+        duration,
+        renderStartTime,
+        renderEndTime
     } = {}) {
         if (
             typeof clipPath !== "string" ||
             clipPath.trim() === ""
         ) {
             return false;
+        }
+
+        const renderStart =
+            this.#uniformDate(
+                renderStartTime,
+                false
+            );
+
+        const renderEnd =
+            this.#uniformDate(
+                renderEndTime,
+                false
+            );
+
+        if (
+            renderStart instanceof Date &&
+            renderEnd instanceof Date
+        ) {
+            this.#renderStartTime =
+                this.#cloneDate(
+                    renderStart
+                );
+
+            this.#renderEndTime =
+                this.#cloneDate(
+                    renderEnd
+                );
         }
 
         this.#updateContour();
