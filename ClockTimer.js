@@ -4156,10 +4156,7 @@
             let currentRange;
             let currentStart =
                 -Infinity;
-
-            let nextRange;
-            let nextStart =
-                Infinity;
+            let currentEnd;
 
             for (
                 const range of
@@ -4188,12 +4185,8 @@
                     );
 
                 if (
-                    Number.isFinite(
-                        start
-                    ) &&
-                    Number.isFinite(
-                        end
-                    ) &&
+                    Number.isFinite(start) &&
+                    Number.isFinite(end) &&
                     start <= now &&
                     end > now &&
                     start > currentStart
@@ -4203,27 +4196,18 @@
 
                     currentStart =
                         start;
-                }
 
-                if (
-                    Number.isFinite(
-                        start
-                    ) &&
-                    start > now &&
-                    start < nextStart
-                ) {
-                    nextRange =
-                        range;
-
-                    nextStart =
-                        start;
+                    currentEnd =
+                        end;
                 }
             }
 
             if (
                 !currentRange ||
-                !nextRange ||
-                nextStart <= now
+                !Number.isFinite(
+                    currentEnd
+                ) ||
+                currentEnd <= now
             ) {
                 return;
             }
@@ -4237,7 +4221,7 @@
                 type.trim();
 
             this.#extendCalculatedEndTime(
-                nextStart - now,
+                currentEnd - now,
                 replacementType
             );
 
@@ -4245,7 +4229,7 @@
                 this.#createTimeRange(
                     replacementType,
                     now,
-                    nextStart,
+                    currentEnd,
                     {
                         dynamic: true
                     }
@@ -4258,7 +4242,7 @@
 
             ring.insertBefore(
                 replacement,
-                nextRange
+                currentRange.nextSibling
             );
 
             this.#tickAlignmentMilliseconds =
@@ -4439,10 +4423,6 @@
             let currentStart =
                 -Infinity;
 
-            let previousRange;
-            let previousEnd =
-                -Infinity;
-
             for (
                 const range of
                     this.#getManagedTimeRanges()
@@ -4480,25 +4460,22 @@
                     currentStart =
                         start;
                 }
-
-                if (
-                    Number.isFinite(end) &&
-                    end <= now &&
-                    end > previousEnd
-                ) {
-                    previousRange =
-                        range;
-
-                    previousEnd =
-                        end;
-                }
             }
 
             if (
                 !currentRange ||
-                !previousRange ||
-                previousEnd >= now
+                !Number.isFinite(
+                    currentStart
+                ) ||
+                currentStart >= now
             ) {
+                return;
+            }
+
+            const ring =
+                currentRange.parentElement;
+
+            if (!ring) {
                 return;
             }
 
@@ -4511,14 +4488,14 @@
                 type.trim();
 
             this.#extendCalculatedEndTime(
-                now - previousEnd,
+                now - currentStart,
                 replacementType
             );
 
             const replacement =
                 this.#createTimeRange(
                     replacementType,
-                    previousEnd,
+                    currentStart,
                     now,
                     {
                         dynamic: true
@@ -4530,13 +4507,6 @@
                 ""
             );
 
-            const ring =
-                currentRange.parentElement;
-
-            if (!ring) {
-                return;
-            }
-
             ring.insertBefore(
                 replacement,
                 currentRange
@@ -4545,7 +4515,9 @@
             this.#tickAlignmentMilliseconds =
                 nowDate.getMilliseconds();
 
-            if (this.#needsTick()) {
+            if (
+                this.#needsTick()
+            ) {
                 this.#startTickTimer();
             }
 
