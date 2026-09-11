@@ -1,0 +1,33 @@
+name: Spin ClockTimer face inside host
+on:
+  push:
+    paths:
+      - '.github/workflows/spin-clock-face.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/spin_clock_face.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify spin target
+        run: |
+          grep -Fq 'this.#clockFace.animate(' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/spin_clock_face.py
+          rm -f .github/workflows/spin-clock-face.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/spin_clock_face.py .github/workflows/spin-clock-face.yml
+          git commit -m "Keep ClockTimer spin inside host bounds"
+          git push origin main
