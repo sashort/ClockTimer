@@ -1,0 +1,24 @@
+name: Update ClockTimer async API
+on:
+  push:
+    paths:
+      - '.github/workflows/update-async-api.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python .github/scripts/update-async-api.py
+      - run: node --check ClockTimer.js
+      - run: |
+          rm .github/scripts/update-async-api.py .github/workflows/update-async-api.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Update async API returns and add previous replacements'
+          git push
