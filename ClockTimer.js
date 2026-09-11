@@ -8085,7 +8085,7 @@
                                 state.indicatorTrackAnimation =
                                     undefined;
 
-                                this.#releaseTimerTypeIndicator(
+                                this.#startTimerTypeIndicatorOutward(
                                     state
                                 );
                             },
