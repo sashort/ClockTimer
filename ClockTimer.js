@@ -2,6 +2,7 @@
     class ClockTimer extends HTMLElement {
         static observedAttributes = [
             "percent-goal",
+            "timer-mode",
             "military-time",
             "time-format",
             "date-format",
@@ -997,6 +998,10 @@
             }
 
             switch (name) {
+                case "timer-mode":
+                    this.#handleTimerModeChange();
+                    break;
+
                 case "percent-goal":
                     if (
                         this.#updatesSuspended &&
@@ -6454,6 +6459,20 @@
         #ensureAttributes() {
             if (
                 !this.hasAttribute(
+                    "timer-mode"
+                )
+            ) {
+                this.setAttribute(
+                    "timer-mode",
+                    "elapsed"
+                );
+            }
+            else {
+                this.#normalizeTimerMode();
+            }
+
+            if (
+                !this.hasAttribute(
                     "percent-goal"
                 )
             ) {
@@ -6489,6 +6508,56 @@
             }
             else {
                 this.#normalizeFormat();
+            }
+        }
+
+        #getTimerMode() {
+            return this.getAttribute(
+                "timer-mode"
+            ) === "remaining"
+                ? "remaining"
+                : "elapsed";
+        }
+
+        #normalizeTimerMode() {
+            const raw =
+                this.getAttribute(
+                    "timer-mode"
+                );
+
+            const normalized =
+                typeof raw === "string" &&
+                raw.trim().toLowerCase() ===
+                    "remaining"
+                    ? "remaining"
+                    : "elapsed";
+
+            if (raw !== normalized) {
+                this.setAttribute(
+                    "timer-mode",
+                    normalized
+                );
+            }
+
+            return normalized;
+        }
+
+        #handleTimerModeChange() {
+            const mode =
+                this.#normalizeTimerMode();
+
+            for (
+                const range of
+                    this.querySelectorAll(
+                        'time-range[type="elapsed"]'
+                    )
+            ) {
+                range.setAttribute(
+                    "timer-mode",
+                    mode
+                );
+
+                range.refreshVisualGeometry?.();
             }
         }
 
@@ -10667,6 +10736,11 @@
                 range.setAttribute(
                     "overlapping",
                     ""
+                );
+
+                range.setAttribute(
+                    "timer-mode",
+                    this.#getTimerMode()
                 );
             }
 
