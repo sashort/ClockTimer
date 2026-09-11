@@ -1,0 +1,12 @@
+name: Inspect late start handling
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-latestart.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect
+        run: grep -n -E 'earlystart|prestart|buildPlannedRanges' ClockTimer.js | head -100
