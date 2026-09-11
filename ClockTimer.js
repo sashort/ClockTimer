@@ -1421,6 +1421,130 @@
             return result;
         }
 
+        fromJSON(json) {
+            if (this.status !== "ready") {
+                return false;
+            }
+
+            try {
+                const data =
+                    typeof json === "string"
+                        ? JSON.parse(json)
+                        : json;
+
+                if (
+                    !data ||
+                    typeof data !== "object" ||
+                    Array.isArray(data) ||
+                    data.tripId === null ||
+                    !Number.isInteger(data.tripId) ||
+                    typeof data.creationDate !== "string" ||
+                    typeof data.standardTime !== "string" ||
+                    typeof data.scheduledStart !== "string" ||
+                    !Array.isArray(data.records)
+                ) {
+                    return false;
+                }
+
+                const events = [];
+
+                for (const record of data.records) {
+                    if (
+                        !record ||
+                        typeof record !== "object" ||
+                        Array.isArray(record)
+                    ) {
+                        return false;
+                    }
+
+                    const entries = Object.entries(record);
+
+                    if (entries.length !== 1) {
+                        return false;
+                    }
+
+                    const [time, value] = entries[0];
+
+                    if (
+                        !value ||
+                        typeof value !== "object" ||
+                        Array.isArray(value) ||
+                        typeof value.type !== "string" ||
+                        !value.type.trim()
+                    ) {
+                        return false;
+                    }
+
+                    const date = new Date(time.replace(" ", "T"));
+
+                    if (Number.isNaN(date.getTime())) {
+                        return false;
+                    }
+
+                    events.push({ time, value });
+                }
+
+                const startIndex = events.findIndex(
+                    event => event.value.type === "start"
+                );
+                const endIndex = events.findIndex(
+                    event => event.value.type === "end"
+                );
+
+                if (startIndex < 0 || endIndex < 0) {
+                    return false;
+                }
+
+                if (!this.start({
+                    tripId: data.tripId,
+                    creationTime: `${data.creationDate} 00:00:00.000`,
+                    standardTime: data.standardTime,
+                    scheduledStart: data.scheduledStart,
+                    startTime: events[startIndex].time
+                })) {
+                    return false;
+                }
+
+                for (
+                    let index = startIndex + 1;
+                    index < endIndex;
+                    index++
+                ) {
+                    const event = events[index];
+                    const type = event.value.type.trim();
+
+                    if (type === "resume") {
+                        continue;
+                    }
+
+                    const next = events[index + 1];
+
+                    if (!next) {
+                        return false;
+                    }
+
+                    const attributes = {
+                        ...event.value
+                    };
+                    delete attributes.type;
+
+                    if (!this.overwrite({
+                        type,
+                        startTime: event.time,
+                        endTime: next.time,
+                        otherAttributes: attributes
+                    })) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
         get status() {
             if (!this.#hasStartProperties()) {
                 return "ready";
