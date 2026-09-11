@@ -2437,21 +2437,6 @@
                     String(stopTime);
             }
 
-            for (const item of ranges) {
-                if (
-                    item.range ===
-                        current?.range
-                ) {
-                    continue;
-                }
-
-                if (
-                    item.start >= stopTime
-                ) {
-                    item.range.remove();
-                }
-            }
-
             for (const elapsedRange of
                 this.querySelectorAll(
                     'time-range[type="elapsed"]'
