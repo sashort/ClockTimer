@@ -1,0 +1,46 @@
+name: Fix indicator outward completion
+'on':
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - '.github/workflows/fix-indicator-outward-completion.yml'
+      - '.github/scripts/fix_indicator_outward_completion.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          path: target
+      - name: Verify expected target base
+        run: test "$(git -C target rev-parse HEAD)" = "132d90bfb316620a32974f445427b6291cd3b5fb"
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply completion fix
+        run: python controller/.github/scripts/fix_indicator_outward_completion.py target/ClockTimer.js
+      - name: Syntax check
+        run: node --check target/ClockTimer.js
+      - name: Verify RingContainer remains untouched
+        run: git -C target diff --quiet HEAD -- RingContainer.js
+      - name: Structural check
+        run: |
+          grep -A8 -B2 'state.indicatorTrackAnimation =' target/ClockTimer.js | grep -q '#startTimerTypeIndicatorOutward'
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Finish indicator transition outward" || exit 0
+          git push origin radial-fitted
