@@ -1812,14 +1812,14 @@ class TimeRange extends HTMLElement {
         };
     }
 
-    static calculateCorners(
+    static calculateCorners({
         startAngle,
         endAngle,
         width,
         height,
         parent = undefined,
         mode = "radial"
-    ) {
+    } = {}) {
         const supportedModes =
             new Set([
                 "radial",
@@ -3415,12 +3415,12 @@ class TimeRange extends HTMLElement {
             );
 
         const corners =
-            TimeRange.calculateCorners(
+            TimeRange.calculateCorners({
                 startAngle,
                 endAngle,
                 width,
                 height
-            );
+            });
 
         const startX =
             startPoint.x /
