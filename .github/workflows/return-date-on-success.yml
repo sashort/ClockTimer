@@ -1,0 +1,48 @@
+name: Return Date on ClockTimer success
+'on':
+  push:
+    branches:
+      - return-date-controller
+    paths:
+      - '.github/workflows/return-date-on-success.yml'
+      - '.github/scripts/return_date_on_success.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+      - name: Preserve patch script
+        run: cp .github/scripts/return_date_on_success.py /tmp/return_date_on_success.py
+      - name: Switch to target branch
+        run: |
+          git fetch origin return-date-success
+          git checkout -B return-date-success origin/return-date-success
+      - name: Apply return-date change
+        run: python /tmp/return_date_on_success.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify public success returns
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          for name in ('fromJSON', 'start', 'reset', 'delete', 'closeOpenRange', 'clear'):
+              marker = f'\n        {name}('
+              start = text.index(marker)
+              next_private = text.find('\n        #', start + len(marker))
+              next_public_candidates = [
+                  p for p in [text.find('\n        ', start + len(marker))]
+                  if p != -1
+              ]
+              assert 'return new Date();' in text[start:], name
+          PY
+      - name: Commit target branch
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Return Date for successful ClockTimer commands"
+          git push origin return-date-success
