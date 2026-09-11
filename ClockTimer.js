@@ -6952,6 +6952,10 @@
                 range
             );
 
+            this.#prepareTimerTypeTransitionVisualRange(
+                range
+            );
+
             return range;
         }
 
@@ -7786,6 +7790,335 @@
                 );
         }
 
+        #isTimerTypeTransitionVisualRange(
+            range
+        ) {
+            const type =
+                range?.getAttribute?.(
+                    "type"
+                );
+
+            return (
+                type === "elapsed" ||
+                type === "remaining" ||
+                type === "wave"
+            );
+        }
+
+        #prepareTimerTypeTransitionVisualRange(
+            range,
+            state =
+                this.#timerTypeTransitionState
+        ) {
+            if (
+                !state ||
+                state.visualFadeStarted ||
+                !range?.isConnected ||
+                !this.#isTimerTypeTransitionVisualRange(
+                    range
+                )
+            ) {
+                return;
+            }
+
+            if (!state.visualFadeRanges) {
+                state.visualFadeRanges =
+                    new Set();
+            }
+
+            if (
+                range.clockTimerTypeTransitionOpacityState ===
+                    undefined
+            ) {
+                range.clockTimerTypeTransitionOpacityState = {
+                    target:
+                        this.#getRangeOpacity(
+                            range
+                        ),
+                    inlineValue:
+                        range.style.getPropertyValue(
+                            "opacity"
+                        ),
+                    inlinePriority:
+                        range.style.getPropertyPriority(
+                            "opacity"
+                        )
+                };
+            }
+
+            range.style.setProperty(
+                "opacity",
+                "0"
+            );
+
+            state.visualFadeRanges.add(
+                range
+            );
+        }
+
+        #restoreTimerTypeTransitionVisualRange(
+            range
+        ) {
+            if (!range) {
+                return;
+            }
+
+            const opacityState =
+                range.clockTimerTypeTransitionOpacityState;
+
+            if (!opacityState) {
+                range.style.removeProperty(
+                    "opacity"
+                );
+
+                return;
+            }
+
+            if (opacityState.inlineValue) {
+                range.style.setProperty(
+                    "opacity",
+                    opacityState.inlineValue,
+                    opacityState.inlinePriority ??
+                        ""
+                );
+            }
+            else {
+                range.style.removeProperty(
+                    "opacity"
+                );
+            }
+
+            delete range.clockTimerTypeTransitionOpacityState;
+        }
+
+        #stripTimerTypeTransitionOldVisualRanges(
+            rings
+        ) {
+            for (const ring of rings) {
+                for (
+                    const range of
+                        Array.from(
+                            ring.children
+                        )
+                ) {
+                    if (
+                        range.localName !==
+                            "time-range" ||
+                        !this.#isTimerTypeTransitionVisualRange(
+                            range
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    range.remove();
+                }
+            }
+
+            this.#elapsedRange =
+                undefined;
+
+            this.#remainingRanges.clear();
+
+            this.#removeWaveRange();
+        }
+
+        #finishTimerTypeTransitionVisualFade(
+            state
+        ) {
+            if (!state) {
+                return;
+            }
+
+            for (
+                const animation of
+                    state.visualFadeAnimations ??
+                        []
+            ) {
+                animation.cancel();
+            }
+
+            state.visualFadeAnimations
+                ?.clear();
+
+            for (
+                const range of
+                    state.visualFadeRanges ??
+                        []
+            ) {
+                this.#restoreTimerTypeTransitionVisualRange(
+                    range
+                );
+            }
+
+            state.visualFadeRanges
+                ?.clear();
+        }
+
+        #startTimerTypeTransitionVisualFade(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState ||
+                state.visualFadeStarted
+            ) {
+                return;
+            }
+
+            for (
+                const ring of
+                    state.newRings
+            ) {
+                if (!ring.isConnected) {
+                    continue;
+                }
+
+                for (
+                    const range of
+                        ring.children
+                ) {
+                    this.#prepareTimerTypeTransitionVisualRange(
+                        range,
+                        state
+                    );
+                }
+            }
+
+            if (
+                this.#waveRange?.isConnected
+            ) {
+                this.#prepareTimerTypeTransitionVisualRange(
+                    this.#waveRange,
+                    state
+                );
+            }
+
+            state.visualFadeStarted =
+                true;
+
+            state.visualFadeAnimations =
+                new Set();
+
+            for (
+                const range of
+                    state.visualFadeRanges ??
+                        []
+            ) {
+                if (!range.isConnected) {
+                    continue;
+                }
+
+                const opacityState =
+                    range.clockTimerTypeTransitionOpacityState;
+
+                const target =
+                    Number.isFinite(
+                        opacityState?.target
+                    )
+                        ? Math.min(
+                            1,
+                            Math.max(
+                                0,
+                                opacityState.target
+                            )
+                        )
+                        : 1;
+
+                range.style.setProperty(
+                    "opacity",
+                    "0"
+                );
+
+                if (
+                    typeof range.animate !==
+                        "function"
+                ) {
+                    this.#restoreTimerTypeTransitionVisualRange(
+                        range
+                    );
+
+                    continue;
+                }
+
+                const animation =
+                    range.animate(
+                        [
+                            { opacity: "0" },
+                            {
+                                opacity:
+                                    String(
+                                        target
+                                    )
+                            }
+                        ],
+                        {
+                            duration: 750,
+                            easing:
+                                "ease-in-out",
+                            fill: "both"
+                        }
+                    );
+
+                state.visualFadeAnimations.add(
+                    animation
+                );
+
+                animation.finished.then(
+                    () => {
+                        state.visualFadeAnimations
+                            ?.delete(
+                                animation
+                            );
+
+                        this.#restoreTimerTypeTransitionVisualRange(
+                            range
+                        );
+
+                        animation.cancel();
+                    },
+                    () => {}
+                );
+            }
+        }
+
+        #scheduleTimerTypeTransitionRelease(
+            state,
+            duration = 750
+        ) {
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+            }
+
+            state.indicatorOutwardTimeout =
+                setTimeout(
+                    () => {
+                        state.indicatorOutwardTimeout =
+                            undefined;
+
+                        if (
+                            state !==
+                                this.#timerTypeTransitionState
+                        ) {
+                            return;
+                        }
+
+                        this.#releaseTimerTypeIndicator(
+                            state
+                        );
+                    },
+                    Math.max(
+                        0,
+                        duration
+                    )
+                );
+        }
+
         #prepareTimerTypeIndicatorInward(
             state
         ) {
@@ -7956,18 +8289,35 @@
         ) {
             if (
                 state !==
-                    this.#timerTypeTransitionState ||
-                !state.indicatorUsed ||
-                !this.#indicatorSymbol
+                    this.#timerTypeTransitionState
             ) {
-                this.#releaseTimerTypeIndicator(
-                    state
-                );
-
                 return;
             }
 
             const duration = 750;
+
+            this.#startTimerTypeTransitionVisualFade(
+                state
+            );
+
+            const indicatorAvailable =
+                state.indicatorUsed &&
+                this.hasAttribute(
+                    "indicator-symbol"
+                ) &&
+                this.#started &&
+                Boolean(
+                    this.#indicatorSymbol
+                );
+
+            if (!indicatorAvailable) {
+                this.#scheduleTimerTypeTransitionRelease(
+                    state,
+                    duration
+                );
+
+                return;
+            }
 
             const heavyShadow =
                 this.#getTimerTypeIndicatorShadow(
@@ -8045,8 +8395,9 @@
                     "filter"
                 );
 
-                this.#releaseTimerTypeIndicator(
-                    state
+                this.#scheduleTimerTypeTransitionRelease(
+                    state,
+                    duration
                 );
 
                 return;
@@ -8125,6 +8476,22 @@
             state.indicatorOutwardAnimation
                 ?.cancel();
 
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+
+                state.indicatorOutwardTimeout =
+                    undefined;
+            }
+
+            this.#finishTimerTypeTransitionVisualFade(
+                state
+            );
+
             if (this.#indicatorSymbol) {
                 this.#indicatorSymbol.style.removeProperty(
                     "transform"
@@ -8152,16 +8519,42 @@
             state
         ) {
             if (
-                !state.indicatorUsed ||
-                !this.hasAttribute(
-                    "indicator-symbol"
-                ) ||
-                !this.#started ||
-                !this.#indicatorTrack
+                state !==
+                    this.#timerTypeTransitionState
             ) {
-                this.#releaseTimerTypeIndicator(
-                    state
+                return;
+            }
+
+            const indicatorAvailable =
+                state.indicatorUsed &&
+                this.hasAttribute(
+                    "indicator-symbol"
+                ) &&
+                this.#started &&
+                Boolean(
+                    this.#indicatorTrack
                 );
+
+            if (!indicatorAvailable) {
+                state.indicatorDelayTimeout =
+                    setTimeout(
+                        () => {
+                            state.indicatorDelayTimeout =
+                                undefined;
+
+                            if (
+                                state !==
+                                    this.#timerTypeTransitionState
+                            ) {
+                                return;
+                            }
+
+                            this.#startTimerTypeIndicatorOutward(
+                                state
+                            );
+                        },
+                        1500
+                    );
 
                 return;
             }
@@ -8463,6 +8856,22 @@
 
             state.indicatorOutwardAnimation
                 ?.cancel();
+
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+
+                state.indicatorOutwardTimeout =
+                    undefined;
+            }
+
+            this.#finishTimerTypeTransitionVisualFade(
+                state
+            );
 
             if (this.#indicatorSymbol) {
                 this.#indicatorSymbol.style.removeProperty(
@@ -8860,6 +9269,10 @@
 
             this.#timerTypeTransitionState =
                 state;
+
+            this.#stripTimerTypeTransitionOldVisualRanges(
+                oldRings
+            );
 
             this.#timerTypeTransitioning =
                 true;
@@ -9819,6 +10232,10 @@
                     )
                 );
             }
+
+            this.#prepareTimerTypeTransitionVisualRange(
+                range
+            );
         }
 
         #ensureBorderRing() {
