@@ -1,0 +1,30 @@
+name: Timer mode reproduction
+'on':
+  push:
+    branches:
+      - timer-mode-repro
+    paths:
+      - '.github/workflows/timer-mode-repro.yml'
+      - '.github/tests/timer-mode-repro.mjs'
+permissions:
+  contents: read
+jobs:
+  repro:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repro branch
+        uses: actions/checkout@v4
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run reproduction
+        run: node .github/tests/timer-mode-repro.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timer-mode-repro-screenshots
+          path: timer-mode-*.png
+          if-no-files-found: ignore
