@@ -4641,6 +4641,10 @@
                 return;
             }
 
+            let currentRange;
+            let currentStart =
+                -Infinity;
+
             let nextRange;
             let nextStart =
                 Infinity;
@@ -4703,6 +4707,24 @@
                         );
                 }
 
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(end) &&
+                    start <= now &&
+                    end > now &&
+                    start > currentStart
+                ) {
+                    currentRange =
+                        range;
+
+                    currentStart =
+                        start;
+                }
+
                 if (
                     start < now ||
                     start >= nextStart
@@ -4728,7 +4750,7 @@
                 )
             );
 
-            nextRange.removeAttribute(
+            currentRange?.removeAttribute(
                 "overwrite"
             );
 
