@@ -2920,7 +2920,12 @@ class TimeRange extends HTMLElement {
             edgeStrength.toFixed(3)
         );
 
-        if (!activeRing) {
+        if (
+            this.hasAttribute(
+                "static-elapsed"
+            ) ||
+            !activeRing
+        ) {
             this.#elapsedWaveLayer.style.animation =
                 "none";
 
