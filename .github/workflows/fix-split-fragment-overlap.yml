@@ -1,0 +1,34 @@
+name: Fix split fragment overlap
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-split-fragment-overlap.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/fix_split_fragment_overlap.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify split fragment ignore-overlaps
+        run: |
+          grep -A35 'segment.timeRangeFullEntry' ClockTimer.js | grep -Fq '"ignore-overlaps"'
+          grep -A35 'movedSegment.timeRangeFullEntry' ClockTimer.js | grep -Fq '"ignore-overlaps"'
+      - name: Commit update and cleanup
+        run: |
+          rm -f .github/scripts/fix_split_fragment_overlap.py
+          rm -f .github/workflows/fix-split-fragment-overlap.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/fix_split_fragment_overlap.py .github/workflows/fix-split-fragment-overlap.yml
+          git commit -m "Prevent split fragment overlap animation"
+          git push origin main
