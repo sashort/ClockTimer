@@ -2938,7 +2938,33 @@
             if (
                 this.#openEndedRange
             ) {
-                return;
+                const openRecord =
+                    this.#openEndedRange;
+
+                const hasOpenElement =
+                    this.#getManagedTimeRanges()
+                        .some(
+                            candidate =>
+                                candidate.clockTimerInserted ===
+                                    openRecord.id &&
+                                candidate.isConnected
+                        );
+
+                if (hasOpenElement) {
+                    return;
+                }
+
+                this.#insertedRanges =
+                    this.#insertedRanges.filter(
+                        record =>
+                            record !== openRecord
+                    );
+
+                this.#openEndedRange =
+                    undefined;
+
+                this.#openEndedLastTick =
+                    undefined;
             }
 
             if (
@@ -3287,7 +3313,33 @@
             }
 
             if (this.#openOverwriteRange) {
-                return;
+                const openRecord =
+                    this.#openOverwriteRange;
+
+                const hasOpenElement =
+                    this.#getManagedTimeRanges()
+                        .some(
+                            candidate =>
+                                candidate.clockTimerOverwrite ===
+                                    openRecord.id &&
+                                candidate.isConnected
+                        );
+
+                if (hasOpenElement) {
+                    return;
+                }
+
+                this.#overwriteRanges =
+                    this.#overwriteRanges.filter(
+                        record =>
+                            record !== openRecord
+                    );
+
+                this.#openOverwriteRange =
+                    undefined;
+
+                this.#openOverwriteLastTick =
+                    undefined;
             }
 
             const reference =
