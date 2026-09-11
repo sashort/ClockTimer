@@ -4069,7 +4069,7 @@
             );
         }
 
-        close() {
+        stop() {
             const openInsert =
                 this.#openEndedRange;
 
