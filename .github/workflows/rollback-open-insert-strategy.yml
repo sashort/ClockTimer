@@ -19,10 +19,7 @@ jobs:
         run: node --check ClockTimer.js
       - name: Verify restored baseline
         run: |
-          grep -Fq '#syncOpenEndedRangeElements(' ClockTimer.js
-          grep -Fq '#shiftInsertedRangeElements(' ClockTimer.js
-          ! grep -Fq 'start + 1' ClockTimer.js
-          ! grep -A60 '#renderInsertedRecord(' ClockTimer.js | grep -Fq 'range.setAttribute('
+          test "$(git hash-object ClockTimer.js)" = "e8d2a216c2b0cc5dbdd09c1d59eedc910be2c3b7"
       - name: Commit rollback and cleanup
         run: |
           rm -f .github/workflows/rollback-open-insert-strategy.yml
