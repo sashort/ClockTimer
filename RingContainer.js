@@ -2565,14 +2565,10 @@ class RingContainer extends HTMLElement {
             !CSS.supports(
                 "animation-duration",
                 time
+            ) ||
+            !TemporalFormat.isCSSTime(
+                time
             )
-        ) {
-            return undefined;
-        }
-
-        if (
-            !/^(?:\d+(?:\.\d+)?|\.\d+)(?:ms|s)$/i
-                .test(time)
         ) {
             return undefined;
         }
@@ -2583,34 +2579,11 @@ class RingContainer extends HTMLElement {
     static #timeToMilliseconds(
         value
     ) {
-        const time =
-            String(value)
-                .trim()
-                .toLowerCase();
-
-        const match =
-            time.match(
-                /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/
-            );
-
-        if (!match) {
-            return 0;
-        }
-
-        const number =
-            Number(
-                match[1]
-            );
-
-        if (
-            match[2] === "s"
-        ) {
-            return (
-                number * 1000
-            );
-        }
-
-        return number;
+        return (
+            TemporalFormat.cssTimeToMilliseconds(
+                String(value).trim()
+            ) ?? 0
+        );
     }
 
     static #normalizeOptionalFilter(

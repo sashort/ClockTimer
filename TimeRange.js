@@ -1231,286 +1231,103 @@ class TimeRange extends HTMLElement {
             return undefined;
         }
 
-        if (
-            timeValue instanceof Date
-        ) {
-            return new Date(
-                timeValue.getTime()
+        const now =
+            new Date();
+
+        const parsed =
+            TemporalFormat.parseDateTime(
+                timeValue,
+                now
             );
-        }
 
-        if (
-            typeof timeValue === "number" &&
-            Number.isInteger(
-                timeValue
-            )
-        ) {
-            const date =
-                new Date(
-                    timeValue
+        if (parsed) {
+            if (
+                lookForward &&
+                typeof timeValue === "string" &&
+                !/^[-+]?\d+$/.test(
+                    timeValue.trim()
+                ) &&
+                !/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(
+                    timeValue.trim()
+                ) &&
+                parsed.getTime() <
+                    now.getTime()
+            ) {
+                parsed.setDate(
+                    parsed.getDate() + 1
                 );
+            }
 
-            return Number.isNaN(
-                date.getTime()
-            )
-                ? undefined
-                : date;
+            return parsed;
         }
 
-        if (
-            typeof timeValue !== "string"
-        ) {
+        if (typeof timeValue !== "string") {
             return undefined;
         }
 
         const value =
             timeValue.trim();
 
-        if (
-            value === ""
-        ) {
-            return undefined;
-        }
-
-        if (
-            /^-?\d+$/.test(
-                value
-            )
-        ) {
-            const date =
-                new Date(
-                    Number(
-                        value
-                    )
-                );
-
-            return Number.isNaN(
-                date.getTime()
-            )
-                ? undefined
-                : date;
-        }
-
-        const timeMatch =
+        const hourOnly =
             value.match(
-                /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?(?:\.(\d{1,3}))?\s*(AM|PM)?$/i
+                /^(\d{1,2})\s*(AM|PM)$/i
             );
 
-        if (
-            timeMatch
-        ) {
-            let hour =
-                Number(
-                    timeMatch[1]
-                );
+        if (hourOnly) {
+            let hour = Number(hourOnly[1]);
+            const meridiem = hourOnly[2].toUpperCase();
 
-            const minute =
-                timeMatch[2] === undefined
-                    ? 0
-                    : Number(
-                        timeMatch[2]
-                    );
-
-            const second =
-                timeMatch[3] === undefined
-                    ? 0
-                    : Number(
-                        timeMatch[3]
-                    );
-
-            const millisecond =
-                timeMatch[4] === undefined
-                    ? 0
-                    : Number(
-                        timeMatch[4]
-                            .padEnd(
-                                3,
-                                "0"
-                            )
-                    );
-
-            const meridiem =
-                timeMatch[5]
-                    ?.toUpperCase();
-
-            if (
-                meridiem
-            ) {
-                if (
-                    hour < 1 ||
-                    hour > 12
-                ) {
-                    return undefined;
-                }
-
-                if (
-                    meridiem === "AM"
-                ) {
-                    if (
-                        hour === 12
-                    ) {
-                        hour = 0;
-                    }
-                } else if (
-                    hour !== 12
-                ) {
-                    hour += 12;
-                }
-            } else if (
-                hour < 0 ||
-                hour > 23
-            ) {
+            if (hour < 1 || hour > 12) {
                 return undefined;
             }
 
-            if (
-                minute > 59 ||
-                second > 59
-            ) {
-                return undefined;
+            if (meridiem === "AM") {
+                if (hour === 12) hour = 0;
+            }
+            else if (hour !== 12) {
+                hour += 12;
             }
 
-            const now =
-                new Date();
-
-            const date =
-                new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate(),
-                    hour,
-                    minute,
-                    second,
-                    millisecond
-                );
+            const date = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                hour,
+                0,
+                0,
+                0
+            );
 
             if (
                 lookForward &&
-                date.getTime() <
-                    now.getTime()
+                date.getTime() < now.getTime()
             ) {
-                date.setDate(
-                    date.getDate() + 1
-                );
+                date.setDate(date.getDate() + 1);
             }
 
             return date;
         }
 
-        const dateTimeMatch =
-            value.match(
-                /^\d{4}-\d{2}-\d{2}[T\s]+\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:\s*(?:AM|PM))?(?:Z|[+-]\d{2}:?\d{2})?$/i
-            );
-
         if (
-            !dateTimeMatch
-        ) {
-            return undefined;
-        }
-
-        const date =
-            new Date(
+            /^\d{4}-\d{2}-\d{2}[T\s]+\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:\s*(?:AM|PM))?(?:Z|[+-]\d{2}:?\d{2})?$/i.test(
                 value
-            );
-
-        if (
-            Number.isNaN(
-                date.getTime()
             )
         ) {
-            return undefined;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime())
+                ? undefined
+                : date;
         }
 
-        return date;
+        return undefined;
     }
 
     #formatDateTime(
         date
     ) {
-        if (
-            !(
-                date instanceof Date
-            )
-        ) {
-            return undefined;
-        }
-
-        const year =
-            String(
-                date.getFullYear()
-            ).padStart(
-                4,
-                "0"
-            );
-
-        const month =
-            String(
-                date.getMonth() + 1
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const day =
-            String(
-                date.getDate()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const hour =
-            String(
-                date.getHours()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const minute =
-            String(
-                date.getMinutes()
-            ).padStart(
-                2,
-                "0"
-            );
-
-        const second =
-            date.getSeconds();
-
-        const millisecond =
-            date.getMilliseconds();
-
-        let result =
-            `${year}-${month}-${day} ` +
-            `${hour}:${minute}`;
-
-        if (
-            second !== 0 ||
-            millisecond !== 0
-        ) {
-            result +=
-                `:${String(
-                    second
-                ).padStart(
-                    2,
-                    "0"
-                )}`;
-        }
-
-        if (
-            millisecond !== 0
-        ) {
-            result +=
-                `.${String(
-                    millisecond
-                ).padStart(
-                    3,
-                    "0"
-                )}`;
-        }
-
-        return result;
+        return TemporalFormat.formatDateTime(
+            date
+        );
     }
 
     #parseRangeLength(
@@ -1547,6 +1364,21 @@ class TimeRange extends HTMLElement {
                     /\s/g,
                     ""
                 );
+
+        const temporalDuration =
+            TemporalFormat.parseDuration(
+                normalized
+            );
+
+        if (
+            temporalDuration !== undefined &&
+            temporalDuration > 0 &&
+            normalized.includes(
+                ":"
+            )
+        ) {
+            return temporalDuration;
+        }
 
         if (
             !/^\d+(?::\d+){0,2}(?:\.\d+)?$/.test(
@@ -1668,6 +1500,14 @@ class TimeRange extends HTMLElement {
     #formatRangeLength(
         milliseconds
     ) {
+        if (
+            Number.isInteger(milliseconds) &&
+            milliseconds >= 60000
+        ) {
+            return TemporalFormat.formatDuration(
+                milliseconds
+            );
+        }
         if (
             !Number.isInteger(
                 milliseconds

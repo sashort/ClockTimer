@@ -7972,33 +7972,11 @@
                     "--clock-timer-ring-resize-duration"
                 ).trim();
 
-            const match =
-                raw.match(
-                    /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i
-                );
-
-            if (!match) {
-                return 333;
-            }
-
-            const amount =
-                Number(
-                    match[1]
-                );
-
-            if (
-                !Number.isFinite(amount) ||
-                amount < 0
-            ) {
-                return 333;
-            }
-
             return (
-                match[2].toLowerCase() ===
-                    "s"
-            )
-                ? amount * 1000
-                : amount;
+                TemporalFormat.cssTimeToMilliseconds(
+                    raw
+                ) ?? 333
+            );
         }
 
         #getPlannedSegments(
@@ -8727,123 +8705,33 @@
             value,
             name
         ) {
-            if (
-                typeof value !==
-                    "string"
-            ) {
+            if (typeof value !== "string") {
                 throw new TypeError(
                     `${name} must be a string.`
                 );
             }
 
-            const text =
-                value.trim();
+            const text = value.trim();
 
-            const match =
-                text.match(
-                    /^(?:(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\s+)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:\s*(AM|PM))?$/i
-                );
-
-            if (!match) {
+            if (
+                !/^(?:(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\s+)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:\s*(AM|PM))?$/i.test(
+                    text
+                )
+            ) {
                 throw new TypeError(
                     `${name} must match [yyyy/mm/dd h:m]m:ss[.ms][ AM/PM].`
                 );
             }
 
-            const now =
-                new Date();
-
-            const year =
-                match[1] === undefined
-                    ? now.getFullYear()
-                    : Number(match[1]);
-
-            const month =
-                match[2] === undefined
-                    ? now.getMonth() + 1
-                    : Number(match[2]);
-
-            const day =
-                match[3] === undefined
-                    ? now.getDate()
-                    : Number(match[3]);
-
-            let hour =
-                Number(match[4]);
-
-            const minute =
-                Number(match[5]);
-
-            const second =
-                Number(match[6]);
-
-            const millisecond =
-                match[7] === undefined
-                    ? 0
-                    : Number(
-                        match[7].padEnd(
-                            3,
-                            "0"
-                        )
-                    );
-
-            const meridiem =
-                match[8]?.toUpperCase();
-
-            if (
-                minute > 59 ||
-                second > 59
-            ) {
-                throw new RangeError(
-                    `${name} contains an invalid time.`
-                );
-            }
-
-            if (meridiem) {
-                if (
-                    hour < 1 ||
-                    hour > 12
-                ) {
-                    throw new RangeError(
-                        `${name} contains an invalid hour.`
-                    );
-                }
-
-                if (
-                    meridiem === "AM"
-                ) {
-                    if (hour === 12) {
-                        hour = 0;
-                    }
-                }
-                else if (hour !== 12) {
-                    hour += 12;
-                }
-            }
-            else if (hour > 23) {
-                throw new RangeError(
-                    `${name} contains an invalid hour.`
-                );
-            }
-
             const date =
-                new Date(
-                    year,
-                    month - 1,
-                    day,
-                    hour,
-                    minute,
-                    second,
-                    millisecond
+                TemporalFormat.parseDateTime(
+                    text,
+                    new Date()
                 );
 
-            if (
-                date.getFullYear() !== year ||
-                date.getMonth() !== month - 1 ||
-                date.getDate() !== day
-            ) {
+            if (!date) {
                 throw new RangeError(
-                    `${name} contains an invalid date.`
+                    `${name} contains an invalid date or time.`
                 );
             }
 
@@ -8853,61 +8741,34 @@
         #parseInsertRangeLength(
             value
         ) {
-            if (
-                typeof value !==
-                    "string"
-            ) {
+            if (typeof value !== "string") {
                 throw new TypeError(
                     "rangeLength must be a string."
                 );
             }
 
-            const match =
-                value.trim().match(
-                    /^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/
-                );
+            const text = value.trim();
 
-            if (!match) {
+            if (
+                !/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/.test(
+                    text
+                )
+            ) {
                 throw new TypeError(
                     "rangeLength must match [h:m]m:ss[.ms]."
                 );
             }
 
-            const hours =
-                match[1] === undefined
-                    ? 0
-                    : Number(match[1]);
+            const total =
+                TemporalFormat.durationToMilliseconds(
+                    text
+                );
 
-            const minutes =
-                Number(match[2]);
-
-            const seconds =
-                Number(match[3]);
-
-            const milliseconds =
-                match[4] === undefined
-                    ? 0
-                    : Number(
-                        match[4].padEnd(
-                            3,
-                            "0"
-                        )
-                    );
-
-            if (
-                minutes > 59 ||
-                seconds > 59
-            ) {
+            if (total === undefined) {
                 throw new RangeError(
                     "rangeLength contains an invalid duration."
                 );
             }
-
-            const total =
-                hours * ClockTimer.#HOUR +
-                minutes * 60 * 1000 +
-                seconds * 1000 +
-                milliseconds;
 
             if (total <= 0) {
                 throw new RangeError(
