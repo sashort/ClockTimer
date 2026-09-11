@@ -3247,7 +3247,7 @@ class TimeRange extends HTMLElement {
 
         if (
             this.getAttribute("type") ===
-                "elapsed"
+                "wave"
         ) {
             const sweepEndAngle =
                 duration > 0 &&
