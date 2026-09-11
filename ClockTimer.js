@@ -1865,6 +1865,27 @@
                         false;
                 }
 
+                for (const ring of this.#rings.values()) {
+                    const targetWidth =
+                        ring.clockTimerTargetWidth;
+
+                    if (targetWidth) {
+                        ring.setAttribute(
+                            "width",
+                            targetWidth
+                        );
+
+                        delete ring.clockTimerTargetWidth;
+                    }
+                }
+
+                this.#refreshRingLayout(
+                    terminal,
+                    {
+                        refreshTickMarks: true
+                    }
+                );
+
                 this.#originalStartArguments =
                     undefined;
 
