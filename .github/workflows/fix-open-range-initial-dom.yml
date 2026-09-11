@@ -1,0 +1,36 @@
+name: Fix ClockTimer open range initial DOM
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-open-range-initial-dom.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/fix_open_range_initial_dom.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify direct open range DOM creation
+        run: |
+          grep -Fq 'let insertedElement;' ClockTimer.js
+          grep -Fq 'insertedElement.clockTimerInserted =' ClockTimer.js
+          grep -Fq 'overwriteElement.clockTimerOverwrite =' ClockTimer.js
+          grep -Fq 'ring.appendChild(' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/fix_open_range_initial_dom.py
+          rm -f .github/workflows/fix-open-range-initial-dom.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/fix_open_range_initial_dom.py .github/workflows/fix-open-range-initial-dom.yml
+          git commit -m "Fix open range initial DOM insertion"
+          git push origin main
