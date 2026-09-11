@@ -1,0 +1,37 @@
+name: Scale ClockTimer during spin
+on:
+  push:
+    paths:
+      - '.github/workflows/spin-scale-during-rotation.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/spin_scale_during_rotation.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify concurrent spin scaling
+        run: |
+          grep -Fq '#spinScaleAnimation;' ClockTimer.js
+          grep -Fq 'const totalDuration =' ClockTimer.js
+          grep -Fq 'scale: "0.95"' ClockTimer.js
+          grep -Fq 'Promise.allSettled([' ClockTimer.js
+          grep -Fq 'iterations:' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/spin_scale_during_rotation.py
+          rm -f .github/workflows/spin-scale-during-rotation.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/spin_scale_during_rotation.py .github/workflows/spin-scale-during-rotation.yml
+          git commit -m "Scale ClockTimer during spin"
+          git push origin main
