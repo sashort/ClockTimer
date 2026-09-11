@@ -1,0 +1,61 @@
+name: Merge identical ranges v2
+on:
+  push:
+    paths:
+      - '.github/workflows/merge-identical-ranges-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix patcher insertion point
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.github/scripts/merge-identical-ranges.py')
+          s = p.read_text()
+          old = """brace = text.find('{\\n', start)\nif brace < 0:\n    raise SystemExit('refreshRingLayout opening brace not found')\ninsert_at = brace + 2\n"""
+          new = """paren = text.find('(', start)\nif paren < 0:\n    raise SystemExit('refreshRingLayout opening parenthesis not found')\ndepth = 0\nclose = -1\nfor index in range(paren, len(text)):\n    character = text[index]\n    if character == '(':\n        depth += 1\n    elif character == ')':\n        depth -= 1\n        if depth == 0:\n            close = index\n            break\nif close < 0:\n    raise SystemExit('refreshRingLayout closing parenthesis not found')\nbrace = text.find('{\\n', close)\nif brace < 0:\n    raise SystemExit('refreshRingLayout opening brace not found')\ninsert_at = brace + 2\n"""
+          if old not in s:
+              raise SystemExit('old insertion logic not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - run: python .github/scripts/merge-identical-ranges.py
+      - run: node --check ClockTimer.js
+      - name: Verify merge normalization
+        run: |
+          grep -q '#mergeAdjacentIdenticalRanges() {' ClockTimer.js
+          grep -q '#rangesAreMergeIdentical(' ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          start = text.index('\n        #refreshRingLayout(')
+          paren = text.index('(', start)
+          depth = 0
+          close = None
+          for i in range(paren, len(text)):
+              if text[i] == '(':
+                  depth += 1
+              elif text[i] == ')':
+                  depth -= 1
+                  if depth == 0:
+                      close = i
+                      break
+          brace = text.index('{\n', close)
+          assert 'this.#mergeAdjacentIdenticalRanges();' in text[brace:brace+250]
+          block = text[text.index('#getRangeMergeAttributes'):text.index('#getRangeMergeClockTimerState')]
+          for name in ('overwrite', 'start-time', 'end-time', 'range-length'):
+              assert f'"{name}"' in block
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/merge-identical-ranges.py
+          rm -f .github/workflows/merge-identical-ranges.yml
+          rm -f .github/workflows/merge-identical-ranges-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/merge-identical-ranges.py .github/workflows/merge-identical-ranges.yml .github/workflows/merge-identical-ranges-v2.yml
+          git commit -m 'Merge adjacent identical time ranges'
+          git push
