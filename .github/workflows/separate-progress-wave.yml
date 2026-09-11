@@ -1,5 +1,5 @@
 name: Separate progress wave
-on:
+'on':
   push:
     branches:
       - separate-progress-wave
@@ -36,8 +36,7 @@ jobs:
           old2 = "if '#elapsedBaseLayer' in time or '#elapsedEdgeLayer' in time:\n    raise SystemExit('legacy elapsed base/edge layers remain')"
           if old2 not in s:
               raise SystemExit('base edge check block not found')
-          s = s.replace(old2, '', 1)
-          p.write_text(s)
+          p.write_text(s.replace(old2, '', 1))
           PY
       - name: Apply changes
         working-directory: repo
@@ -46,25 +45,14 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p = Path('repo/TimeRange.js')
           s = p.read_text()
-          old = '''        if (this.#elapsedEdgeLayer) {
-            const edge =
-                2;
-
-            this.#elapsedEdgeLayer.style.backgroundImage =
-                `radial-gradient(circle at center, ` +
-                `transparent ${Math.max(0, innerRadius - edge)}px, ` +
-                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${innerRadius}px, ` +
-                `transparent ${innerRadius + edge}px, ` +
-                `transparent ${Math.max(innerRadius + edge, outerRadius - edge)}px, ` +
-                `rgb(255 255 255 / var(--elapsed-edge-strength, 0.18)) ${outerRadius}px, ` +
-                `transparent ${outerRadius + edge}px)`;
-        }
-'''
-          if old not in s:
+          pattern = r'\n        if \(this\.\#elapsedEdgeLayer\) \{.*?\n        \}\n(?=    \}\n\n    \#updateClipPath\(\) \{)'
+          s2, count = re.subn(pattern, '\n', s, count=1, flags=re.S)
+          if count != 1:
               raise SystemExit('legacy edge render block not found')
-          p.write_text(s.replace(old, '', 1))
+          p.write_text(s2)
           PY
       - name: Syntax check
         working-directory: repo
