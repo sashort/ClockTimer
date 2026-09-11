@@ -1755,7 +1755,7 @@
                     creationDate.getTime();
 
                 this.#started =
-                    false;
+                    true;
 
                 this.#starting =
                     true;
@@ -1862,6 +1862,9 @@
                 }
                 finally {
                     this.#starting =
+                        false;
+
+                    this.#started =
                         false;
                 }
 
