@@ -25,6 +25,8 @@
 
         #faceBackgroundFrame;
 
+        #hostTransparencyStyle;
+
         #hostBackgroundOverride =
             false;
 
@@ -566,6 +568,14 @@
                 }
             `;
 
+            this.#hostTransparencyStyle =
+                document.createElement(
+                    "style"
+                );
+
+            this.#hostTransparencyStyle.textContent =
+                `:host { background-color: transparent !important; }`;
+
             const clockFace =
                 document.createElement(
                     "div"
@@ -746,6 +756,7 @@
 
             this.#shadowRoot.append(
                 style,
+                this.#hostTransparencyStyle,
                 clockFace
             );
         }
@@ -5322,21 +5333,31 @@
                 return;
             }
 
-            this.style.removeProperty(
-                "background-color"
-            );
+            const transparencySheet =
+                this.#hostTransparencyStyle
+                    ?.sheet;
 
-            const backgroundColor =
-                getComputedStyle(this).backgroundColor;
+            if (transparencySheet) {
+                transparencySheet.disabled =
+                    true;
+            }
+
+            let backgroundColor;
+
+            try {
+                backgroundColor =
+                    getComputedStyle(this)
+                        .backgroundColor;
+            }
+            finally {
+                if (transparencySheet) {
+                    transparencySheet.disabled =
+                        false;
+                }
+            }
 
             this.#faceBackground.style.backgroundColor =
                 backgroundColor;
-
-            this.style.setProperty(
-                "background-color",
-                "transparent",
-                "important"
-            );
         }
         #syncFaceBackgroundGeometry() {
             if (!this.#faceBackground || !this.#borderRing) {
