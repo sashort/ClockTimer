@@ -1,0 +1,58 @@
+name: Migrate timing components to TemporalFormat
+on:
+  push:
+    paths:
+      - .github/workflows/migrate-temporal-format.yml
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/migrate-temporal-format.py
+      - name: Verify syntax and migration
+        run: |
+          node --check TemporalFormat.js
+          node --check ClockTimer.js
+          node --check TimeRange.js
+          node --check RingContainer.js
+          node - <<'NODE'
+          require('./TemporalFormat.js');
+          const T = globalThis.TemporalFormat;
+          if (T.parseDuration('15:00') !== 900000) throw new Error('duration parse');
+          if (T.parseCSSTime('1.25s') !== 1250) throw new Error('css time parse');
+          if (T.formatDate(new Date(2026, 8, 11), 'M/d/yyyy') !== '9/11/2026') throw new Error('date format');
+          if (T.formatTime(new Date(2026, 8, 11, 17, 4, 5), 'hh:mm:ss', true) !== '17:04:05') throw new Error('time format 24h');
+          if (T.formatTime(new Date(2026, 8, 11, 17, 4, 5), 'h:mm:ss', false) !== '5:04:05') throw new Error('time format 12h');
+          NODE
+          python - <<'PY'
+          from pathlib import Path
+          for fn in ['ClockTimer.js','TimeRange.js','RingContainer.js']:
+              s=Path(fn).read_text()
+              assert 'TemporalFormat.' in s, fn
+          c=Path('ClockTimer.js').read_text()
+          assert 'ignore-overlaps' not in c
+          assert '#date[hidden]' in c and 'display: none !important;' in c
+          assert '"time-format"' in c
+          r=Path('RingContainer.js').read_text()
+          assert 'TemporalFormat.isCSSTime' in r
+          assert 'TemporalFormat.cssTimeToMilliseconds' in r
+          t=Path('TimeRange.js').read_text()
+          assert 'TemporalFormat.parseDateTime' in t
+          assert 'TemporalFormat.formatDateTime' in t
+          assert 'TemporalFormat.parseDuration' in t
+          PY
+      - name: Commit migration and clean inspection helpers
+        run: |
+          rm -f TEMPORAL_METHODS.txt
+          rm -f .github/scripts/migrate-temporal-format.py
+          rm -f .github/scripts/extract-temporal-methods.py
+          rm -f .github/workflows/migrate-temporal-format.yml
+          rm -f .github/workflows/extract-temporal-methods.yml
+          rm -f .github/workflows/inspect-temporal-migration.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js TimeRange.js RingContainer.js .github TEMPORAL_METHODS.txt
+          git commit -m "Use TemporalFormat across timing components"
+          git push
