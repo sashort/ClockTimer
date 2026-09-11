@@ -1,0 +1,30 @@
+name: Add ClockTimer tripId
+on:
+  push:
+    paths:
+      - '.github/workflows/add-tripid.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/add-tripid.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify tripId
+        run: |
+          grep -q '#tripId;' ClockTimer.js
+          grep -q 'tripId must be a non-null integer' ClockTimer.js
+          grep -q 'get creationDate()' ClockTimer.js
+          grep -q 'tripId:' ClockTimer.js
+      - name: Commit
+        run: |
+          rm .github/scripts/add-tripid.py .github/workflows/add-tripid.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/add-tripid.py .github/workflows/add-tripid.yml
+          git commit -m 'Add immutable ClockTimer tripId'
+          git push
