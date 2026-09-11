@@ -2938,33 +2938,7 @@
             if (
                 this.#openEndedRange
             ) {
-                const openRecord =
-                    this.#openEndedRange;
-
-                const hasOpenElement =
-                    this.#getManagedTimeRanges()
-                        .some(
-                            candidate =>
-                                candidate.clockTimerInserted ===
-                                    openRecord.id &&
-                                candidate.isConnected
-                        );
-
-                if (hasOpenElement) {
-                    return;
-                }
-
-                this.#insertedRanges =
-                    this.#insertedRanges.filter(
-                        record =>
-                            record !== openRecord
-                    );
-
-                this.#openEndedRange =
-                    undefined;
-
-                this.#openEndedLastTick =
-                    undefined;
+                return;
             }
 
             if (
@@ -3155,85 +3129,15 @@
             this.#tickAlignmentMilliseconds =
                 record.startDate.getMilliseconds();
 
-            let insertedElement;
+            this.#renderAllInsertedRanges();
 
-            if (record.openEnded) {
-                const initialNowDate =
-                    new Date();
-
-                let initialEnd =
-                    this.#dateToTimelineTime(
-                        initialNowDate
+            const insertedElement =
+                this.#getManagedTimeRanges()
+                    .find(
+                        candidate =>
+                            candidate.clockTimerInserted ===
+                                record.id
                     );
-
-                if (initialEnd <= startTimeline) {
-                    initialEnd =
-                        startTimeline + 1;
-                }
-
-                const delta =
-                    initialEnd - startTimeline;
-
-                this.#extendCalculatedEndTime(
-                    delta,
-                    record.type
-                );
-
-                this.#openEndedLastTick =
-                    initialEnd;
-
-                this.#shiftRangesAfter(
-                    startTimeline,
-                    delta,
-                    record
-                );
-
-                const ring =
-                    this.#ensureRing(
-                        this.#getRingIndex(
-                            startTimeline
-                        )
-                    );
-
-                insertedElement =
-                    this.#createTimeRange(
-                        record.type,
-                        startTimeline,
-                        initialEnd,
-                        { dynamic: true }
-                    );
-
-                delete insertedElement.clockTimerDynamic;
-
-                insertedElement.clockTimerInserted =
-                    record.id;
-
-                this.#applyOtherAttributes(
-                    insertedElement,
-                    record.otherAttributes
-                );
-
-                ring.appendChild(
-                    insertedElement
-                );
-
-                this.#refreshRingLayout(
-                    this.#started
-                        ? this.#getCurrentTimelineTime()
-                        : startTimeline
-                );
-            }
-            else {
-                this.#renderAllInsertedRanges();
-
-                insertedElement =
-                    this.#getManagedTimeRanges()
-                        .find(
-                            candidate =>
-                                candidate.clockTimerInserted ===
-                                    record.id
-                        );
-            }
 
             if (
                 this.#needsTick()
@@ -3313,33 +3217,7 @@
             }
 
             if (this.#openOverwriteRange) {
-                const openRecord =
-                    this.#openOverwriteRange;
-
-                const hasOpenElement =
-                    this.#getManagedTimeRanges()
-                        .some(
-                            candidate =>
-                                candidate.clockTimerOverwrite ===
-                                    openRecord.id &&
-                                candidate.isConnected
-                        );
-
-                if (hasOpenElement) {
-                    return;
-                }
-
-                this.#overwriteRanges =
-                    this.#overwriteRanges.filter(
-                        record =>
-                            record !== openRecord
-                    );
-
-                this.#openOverwriteRange =
-                    undefined;
-
-                this.#openOverwriteLastTick =
-                    undefined;
+                return;
             }
 
             const reference =
@@ -3464,62 +3342,17 @@
                         start
                     );
 
-                let initialEnd =
-                    this.#getCurrentTimelineTime();
-
-                if (initialEnd <= start) {
-                    initialEnd =
-                        start + 1;
-                }
-
-                const net =
-                    this.#getOverwriteCalculatedEndDelta(
-                        start,
-                        initialEnd,
-                        record.type
-                    );
-
-                this.#adjustCalculatedEndTime(
-                    net
+                this.#renderOverwriteRecord(
+                    record
                 );
-
-                this.#applyOverwriteMask(
-                    start,
-                    initialEnd
-                );
-
-                this.#openOverwriteLastTick =
-                    initialEnd;
-
-                record.end =
-                    initialEnd;
-
-                const ring =
-                    this.#ensureRing(
-                        this.#getRingIndex(
-                            start
-                        )
-                    );
 
                 const overwriteElement =
-                    this.#createTimeRange(
-                        record.type,
-                        start,
-                        initialEnd,
-                        { dynamic: true }
-                    );
-
-                delete overwriteElement.clockTimerDynamic;
-
-                overwriteElement.clockTimerOverwrite =
-                    record.id;
-
-                overwriteElement.timeRangeFullEntry =
-                    true;
-
-                ring.appendChild(
-                    overwriteElement
-                );
+                    this.#getManagedTimeRanges()
+                        .find(
+                            candidate =>
+                                candidate.clockTimerOverwrite ===
+                                    record.id
+                        );
 
                 this.#refreshRingLayout(
                     start,
