@@ -1,0 +1,32 @@
+name: Implement timer mode commits
+on:
+  push:
+    branches:
+      - timer-mode-work
+    paths:
+      - '.github/workflows/implement-timer-mode.yml'
+      - '.github/scripts/implement_timer_mode_commits.py'
+permissions:
+  contents: write
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Checkout implementation tools
+        uses: actions/checkout@v4
+        with:
+          ref: timer-mode-work
+          path: tools
+      - name: Configure Git
+        working-directory: repo
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+      - name: Apply split commits
+        working-directory: repo
+        run: python ../tools/.github/scripts/implement_timer_mode_commits.py
