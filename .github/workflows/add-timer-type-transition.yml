@@ -1,0 +1,50 @@
+name: Add timer type transition
+'on':
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - '.github/workflows/add-timer-type-transition.yml'
+      - '.github/scripts/add_timer_type_transition.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          path: target
+      - name: Verify expected target base
+        run: test "$(git -C target rev-parse HEAD)" = "bf288f7eb2ba15716bafee498961771e3001a479"
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply timer-type transition implementation
+        run: python controller/.github/scripts/add_timer_type_transition.py target
+      - name: Syntax check ClockTimer
+        run: node --check target/ClockTimer.js
+      - name: Syntax check RingContainer
+        run: node --check target/RingContainer.js
+      - name: Structural checks
+        run: |
+          grep -q '#transitionTimerType' target/ClockTimer.js
+          grep -q '#startTimerTypeRingAnimations' target/ClockTimer.js
+          grep -q 'clockTimerLayoutDetached' target/ClockTimer.js
+          grep -q 'snapGeometry()' target/RingContainer.js
+          grep -q 'clockTimerExternalRangeLayout' target/RingContainer.js
+      - name: Commit transition implementation on target branch
+        working-directory: target
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js RingContainer.js
+          git commit -m "Animate radial timer type transitions" || exit 0
+          git push origin radial-fitted
