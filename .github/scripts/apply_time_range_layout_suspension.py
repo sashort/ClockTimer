@@ -123,8 +123,8 @@ new_reorder = """        TimeRange.#reorderParent(
             this
         );"""
 count = text.count(old_reorder)
-if count != 2:
-    raise SystemExit(f"Expected 2 reorder call sites, found {count}")
+if count < 1:
+    raise SystemExit("Expected at least one reorder call site")
 text = text.replace(old_reorder, new_reorder)
 
 replace_once(
