@@ -4073,61 +4073,6 @@
             );
         }
 
-        stop() {
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "stop"
-                });
-
-                return true;
-            }
-
-            const wasRunning =
-                this.#started;
-
-            const hadOpenRange =
-                Boolean(
-                    this.#openEndedRange ||
-                    this.#openOverwriteRange
-                );
-
-            if (!wasRunning && !hadOpenRange) {
-                return false;
-            }
-
-            if (hadOpenRange) {
-                this.closeOpenRange();
-            }
-
-            const now =
-                wasRunning
-                    ? this.#getCurrentTimelineTime()
-                    : undefined;
-
-            this.#started =
-                false;
-
-            this.#stopTickTimer();
-
-            this.#setIndicatorSymbolVisible(
-                false
-            );
-
-            this.#refreshRingLayout(
-                now,
-                { refreshTickMarks: true }
-            );
-
-            return true;
-        }
-
         closeOpenRange() {
             if (
                 this.#updatesSuspended &&
