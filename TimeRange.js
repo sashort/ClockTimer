@@ -1,5 +1,6 @@
 class TimeRange extends HTMLElement {
     static #instances = [];
+    static suspendedTimeRanges = [];
     static #percentGoal = 1;
     static #calculatedEndTime;
     static #reordering = false;
@@ -55,6 +56,71 @@ class TimeRange extends HTMLElement {
             TimeRange.#animationDuration =
                 duration;
         }
+    }
+
+    static suspendLayout(
+        timeRange
+    ) {
+        if (
+            !(timeRange instanceof TimeRange)
+        ) {
+            return;
+        }
+
+        if (
+            !TimeRange.suspendedTimeRanges.includes(
+                timeRange
+            )
+        ) {
+            TimeRange.suspendedTimeRanges.push(
+                timeRange
+            );
+        }
+
+        if (
+            timeRange.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                timeRange.#animationFrame
+            );
+
+            timeRange.#animationFrame =
+                undefined;
+        }
+    }
+
+    static resumeLayout(
+        timeRange
+    ) {
+        if (
+            !(timeRange instanceof TimeRange)
+        ) {
+            return;
+        }
+
+        const index =
+            TimeRange.suspendedTimeRanges.indexOf(
+                timeRange
+            );
+
+        if (index !== -1) {
+            TimeRange.suspendedTimeRanges.splice(
+                index,
+                1
+            );
+        }
+    }
+
+    static #isLayoutSuspended(
+        timeRange
+    ) {
+        return (
+            timeRange instanceof TimeRange &&
+            TimeRange.suspendedTimeRanges.includes(
+                timeRange
+            )
+        );
     }
 
     static set percentGoal(value) {
@@ -434,7 +500,8 @@ class TimeRange extends HTMLElement {
         }
 
         TimeRange.#reorderParent(
-            this.parentElement
+            this.parentElement,
+            this
         );
 
         this.#startAppearanceObserver();
@@ -539,7 +606,8 @@ class TimeRange extends HTMLElement {
             newValue === null
         ) {
             TimeRange.#updateParentClipPaths(
-                this.parentElement
+                this.parentElement,
+                this
             );
 
             return;
@@ -2063,6 +2131,9 @@ class TimeRange extends HTMLElement {
 
     #animateToLogicalTiming() {
         if (
+            TimeRange.#isLayoutSuspended(
+                this
+            ) ||
             !this.isConnected ||
             !(this.#startTime instanceof Date) ||
             !(this.#endTime instanceof Date)
@@ -2089,6 +2160,14 @@ class TimeRange extends HTMLElement {
         targetEnd,
         removeAfter = false
     ) {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
         if (
             [
                 "remaining",
@@ -2285,6 +2364,14 @@ class TimeRange extends HTMLElement {
 
     snapToLogicalTiming() {
         if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return this;
+        }
+
+        if (
             this.#animationFrame !==
                 undefined
         ) {
@@ -2315,6 +2402,14 @@ class TimeRange extends HTMLElement {
     }
 
     refreshVisualGeometry() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return this;
+        }
+
         this.#updateClipPath();
         this.#scheduleAppearanceRefresh();
 
@@ -2488,9 +2583,15 @@ class TimeRange extends HTMLElement {
     }
 
     static #updateParentClipPaths(
-        parent
+        parent,
+        source
     ) {
-        if (!parent) {
+        if (
+            !parent ||
+            TimeRange.#isLayoutSuspended(
+                source
+            )
+        ) {
             return;
         }
 
@@ -3101,6 +3202,14 @@ class TimeRange extends HTMLElement {
     }
 
     #updateClipPath() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
         const parent =
             this.parentElement;
 
@@ -3361,11 +3470,15 @@ class TimeRange extends HTMLElement {
     }
 
     static #reorderParent(
-        parent
+        parent,
+        source
     ) {
         if (
             !parent ||
-            TimeRange.#reordering
+            TimeRange.#reordering ||
+            TimeRange.#isLayoutSuspended(
+                source
+            )
         ) {
             return;
         }
@@ -3464,6 +3577,14 @@ class TimeRange extends HTMLElement {
     }
 
     #removeOverlaps() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
         if (
             this.hasAttribute(
                 "ignore-overlaps"
