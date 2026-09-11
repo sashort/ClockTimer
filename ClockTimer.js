@@ -1768,6 +1768,49 @@
                         startTimeMilliseconds
                     );
 
+                    let elapsedCursor =
+                        startTimeMilliseconds;
+
+                    while (elapsedCursor < terminal) {
+                        const ringIndex =
+                            this.#getRingIndex(
+                                elapsedCursor
+                            );
+
+                        const segmentEnd =
+                            Math.min(
+                                terminal,
+                                this.#getRingStart(
+                                    ringIndex
+                                ) +
+                                    ClockTimer.#HOUR
+                            );
+
+                        const ring =
+                            this.#ensureRing(
+                                ringIndex
+                            );
+
+                        const elapsedRange =
+                            this.#createTimeRange(
+                                "elapsed",
+                                elapsedCursor,
+                                segmentEnd
+                            );
+
+                        elapsedRange.setAttribute(
+                            "overlapping",
+                            ""
+                        );
+
+                        ring.appendChild(
+                            elapsedRange
+                        );
+
+                        elapsedCursor =
+                            segmentEnd;
+                    }
+
                     for (let index = 1; index < events.length - 1; index++) {
                         const event = events[index];
 
@@ -1855,7 +1898,10 @@
                     }
 
                     this.#refreshRingLayout(
-                        terminal,
+                        Math.max(
+                            terminal,
+                            this.#standardEnd ?? terminal
+                        ),
                         {
                             refreshTickMarks: true
                         }
