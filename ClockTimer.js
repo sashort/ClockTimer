@@ -2099,7 +2099,7 @@
 
                 this.#stopTickTimer();
 
-                return true;
+                return new Date();
             }
             catch {
                 return false;
@@ -3653,7 +3653,7 @@
                     args
                 });
 
-                return true;
+                return new Date();
             }
 
             this.#preserveInsertedOnClear =
@@ -3871,7 +3871,7 @@
                 };
             }
 
-            return true;
+            return new Date();
         }
 
         #cloneInsertedRecords(records) {
@@ -3914,7 +3914,7 @@
                     type: "reset"
                 });
 
-                return true;
+                return new Date();
             }
 
             const baseline =
@@ -3972,7 +3972,7 @@
                     false;
             }
 
-            return true;
+            return new Date();
         }
 
         #typeExtendsCalculatedEndTime(type) {
@@ -5590,7 +5590,7 @@
                 this.#stopTickTimer();
             }
 
-            return true;
+            return new Date();
         }
 
         closeOpenRange() {
@@ -5606,7 +5606,7 @@
                     type: "closeOpenRange"
                 });
 
-                return true;
+                return new Date();
             }
 
             const insertRecord =
@@ -5665,7 +5665,7 @@
                     this.#stopTickTimer();
                 }
 
-                return true;
+                return new Date();
             }
 
             const record =
@@ -5717,7 +5717,7 @@
                 this.#stopTickTimer();
             }
 
-            return true;
+            return new Date();
         }
 
         replaceWithNext() {
@@ -6337,7 +6337,7 @@
                     type: "clear"
                 });
 
-                return true;
+                return new Date();
             }
 
             this.#stopTickTimer();
@@ -6509,7 +6509,7 @@
                 }
             );
 
-            return true;
+            return new Date();
         }
 
         #ensureAttributes() {
