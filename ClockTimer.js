@@ -3521,36 +3521,51 @@
             rightStart,
             rightEnd
         ) {
-            const attributes =
-                this.#getPreservedAttributes(
-                    range
-                );
+            if (
+                typeof range.split !==
+                    "function"
+            ) {
+                return;
+            }
 
             const preserveRangeLength =
                 range.hasAttribute(
                     "range-length"
                 );
 
-            this.#setRangeTiming(
-                range,
-                leftStart,
-                leftEnd,
-                preserveRangeLength
-            );
-
-            const right =
-                document.createElement(
-                    "time-range"
+            const splitRanges =
+                range.split(
+                    this.#formatTimelineTime(
+                        leftEnd
+                    ),
+                    true
                 );
 
-            this.#applyPreservedAttributes(
-                right,
-                attributes
-            );
+            if (
+                !Array.isArray(splitRanges) ||
+                splitRanges.length < 2
+            ) {
+                return;
+            }
+
+            const left =
+                splitRanges[0];
+
+            const right =
+                splitRanges[
+                    splitRanges.length - 1
+                ];
 
             this.#copyClockTimerRangeState(
                 range,
                 right
+            );
+
+            this.#setRangeTiming(
+                left,
+                leftStart,
+                leftEnd,
+                preserveRangeLength
             );
 
             this.#setRangeTiming(
@@ -3567,9 +3582,14 @@
                     )
                 );
 
-            ring.appendChild(
-                right
-            );
+            if (
+                right.parentElement !==
+                    ring
+            ) {
+                ring.appendChild(
+                    right
+                );
+            }
         }
 
         #applyOverwriteMask(
@@ -7342,11 +7362,6 @@
             range,
             spans
         ) {
-            const preservedAttributes =
-                this.#getPreservedAttributes(
-                    range
-                );
-
             const preserveRangeLength =
                 range.hasAttribute(
                     "range-length"
@@ -7408,55 +7423,119 @@
             }
 
             if (segments.length > 1) {
-                const replacements = [];
+                if (
+                    typeof range.split !==
+                        "function"
+                ) {
+                    return;
+                }
 
-                for (const entry of segments) {
-                    const segment =
-                        document.createElement(
-                            "time-range"
+                const sourceStart =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const sourceEnd =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(sourceStart) ||
+                    !Number.isFinite(sourceEnd) ||
+                    sourceEnd <= sourceStart
+                ) {
+                    return;
+                }
+
+                const pieces = [
+                    range
+                ];
+
+                let sourceCursor =
+                    sourceStart;
+
+                let currentPiece =
+                    range;
+
+                for (
+                    let index = 0;
+                    index < segments.length - 1;
+                    index++
+                ) {
+                    const duration =
+                        segments[index].end -
+                        segments[index].start;
+
+                    sourceCursor +=
+                        duration;
+
+                    const splitRanges =
+                        currentPiece.split(
+                            this.#formatTimelineTime(
+                                sourceCursor
+                            ),
+                            true
                         );
 
-                    this.#applyPreservedAttributes(
-                        segment,
-                        preservedAttributes
-                    );
+                    if (
+                        !Array.isArray(splitRanges) ||
+                        splitRanges.length < 2
+                    ) {
+                        return;
+                    }
+
+                    const right =
+                        splitRanges[
+                            splitRanges.length - 1
+                        ];
 
                     this.#copyClockTimerRangeState(
                         range,
-                        segment
+                        right
                     );
 
-                    segment.timeRangeFullEntry =
-                        true;
+                    pieces.push(
+                        right
+                    );
+
+                    currentPiece =
+                        right;
+                }
+
+                for (
+                    let index = 0;
+                    index < segments.length;
+                    index++
+                ) {
+                    const piece =
+                        pieces[index];
+
+                    const entry =
+                        segments[index];
 
                     this.#setRangeTiming(
-                        segment,
+                        piece,
                         entry.start,
                         entry.end,
                         preserveRangeLength
                     );
 
-                    replacements.push({
-                        segment,
-                        ring:
-                            this.#ensureRing(
-                                entry.ringIndex
-                            )
-                    });
+                    const ring =
+                        this.#ensureRing(
+                            entry.ringIndex
+                        );
+
+                    if (
+                        piece.parentElement !==
+                            ring
+                    ) {
+                        ring.appendChild(
+                            piece
+                        );
+                    }
                 }
 
-                for (
-                    const {
-                        segment,
-                        ring
-                    } of replacements
-                ) {
-                    ring.appendChild(
-                        segment
-                    );
-                }
-
-                range.remove();
                 return;
             }
 
@@ -7478,36 +7557,9 @@
             if (
                 range.parentElement !== ring
             ) {
-                const movedSegment =
-                    document.createElement(
-                        "time-range"
-                    );
-
-                this.#applyPreservedAttributes(
-                    movedSegment,
-                    preservedAttributes
-                );
-
-                this.#copyClockTimerRangeState(
-                    range,
-                    movedSegment
-                );
-
-                movedSegment.timeRangeFullEntry =
-                    true;
-
-                this.#setRangeTiming(
-                    movedSegment,
-                    entry.start,
-                    entry.end,
-                    preserveRangeLength
-                );
-
                 ring.appendChild(
-                    movedSegment
+                    range
                 );
-
-                range.remove();
             }
         }
 
