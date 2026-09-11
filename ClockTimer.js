@@ -7429,11 +7429,6 @@
                     segment.timeRangeFullEntry =
                         true;
 
-                    segment.setAttribute(
-                        "ignore-overlaps",
-                        ""
-                    );
-
                     this.#setRangeTiming(
                         segment,
                         entry.start,
@@ -7500,11 +7495,6 @@
 
                 movedSegment.timeRangeFullEntry =
                     true;
-
-                movedSegment.setAttribute(
-                    "ignore-overlaps",
-                    ""
-                );
 
                 this.#setRangeTiming(
                     movedSegment,
@@ -7706,11 +7696,6 @@
                     this.#formatTimelineTime(
                         start
                     )
-                );
-
-                range.setAttribute(
-                    "ignore-overlaps",
-                    ""
                 );
 
                 if (this.#starting) {
@@ -8081,11 +8066,6 @@
                         );
 
                     delete range.clockTimerDynamic;
-
-                    range.setAttribute(
-                        "ignore-overlaps",
-                        ""
-                    );
 
                     range.clockTimerInserted =
                         record.id;
