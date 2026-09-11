@@ -1,0 +1,48 @@
+name: Smooth timer mode transitions
+'on':
+  push:
+    branches:
+      - fix-wave-geometry
+    paths:
+      - '.github/workflows/smooth-timer-mode.yml'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Checkout tools
+        uses: actions/checkout@v4
+        with:
+          ref: fix-wave-geometry
+          path: tools
+      - name: Apply timer mode transition patch
+        working-directory: repo
+        run: python ../tools/.github/scripts/smooth_timer_mode.py
+      - name: Validate syntax
+        working-directory: repo
+        run: |
+          node --check ClockTimer.js
+          node --check TimeRange.js
+      - name: Verify transition behavior
+        working-directory: repo
+        run: |
+          grep -Fq '#timerModeTransitionAnimations' ClockTimer.js
+          grep -Fq '#transitionTimerMode(' ClockTimer.js
+          grep -Fq 'duration: 333' ClockTimer.js
+          grep -Fq 'easing: "ease-in-out"' ClockTimer.js
+          grep -Fq 'timer-mode-transitioning' ClockTimer.js
+          grep -Fq ':host(.elapsed:not([timer-mode-transitioning])):host-context(clock-timer[timer-mode="remaining"])' TimeRange.js
+      - name: Commit
+        working-directory: repo
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add ClockTimer.js TimeRange.js
+          git commit -m 'Smooth timer mode transitions'
+          git push origin main
