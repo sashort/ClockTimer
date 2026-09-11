@@ -1,0 +1,42 @@
+name: ClockTimer regression
+on:
+  push:
+    paths:
+      - '.github/workflows/clocktimer-regression.yml'
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax checks
+        run: |
+          node --check ClockTimer.js
+          node --check RingContainer.js
+          node --check TimeRange.js
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run ClockTimer regression suite
+        id: regression
+        continue-on-error: true
+        run: node .github/tests/clocktimer-regression.mjs
+      - name: Preserve regression outcome
+        run: echo "REGRESSION_OUTCOME=${{ steps.regression.outcome }}" >> "$GITHUB_ENV"
+      - name: Cleanup temporary regression files
+        if: always()
+        run: |
+          rm -f .github/tests/clocktimer-regression.mjs .github/workflows/clocktimer-regression.yml
+          git config user.name sashort
+          git config user.email '95879519+sashort@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove temporary ClockTimer regression harness' || true
+          git push
+      - name: Fail if regression failed
+        if: always()
+        run: test "$REGRESSION_OUTCOME" = "success"
