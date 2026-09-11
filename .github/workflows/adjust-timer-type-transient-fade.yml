@@ -1,0 +1,85 @@
+name: Adjust timer type transient fade
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/adjust_timer_type_transient_fade.py
+      - .github/workflows/adjust-timer-type-transient-fade.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+
+      - name: Verify expected target base
+        working-directory: target
+        run: |
+          test "$(git rev-parse HEAD)" = "50443592af7b88150f61a392818b17fd2d181b7e"
+
+      - name: Apply transient fade change
+        run: |
+          python controller/.github/scripts/adjust_timer_type_transient_fade.py target/ClockTimer.js
+
+      - name: Syntax check
+        working-directory: target
+        run: node --check ClockTimer.js
+
+      - name: Verify transition behavior
+        working-directory: target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+
+          required = [
+              '#stripTimerTypeTransitionOldVisualRanges(',
+              '#startTimerTypeTransitionVisualFade(',
+              'type === "elapsed" ||',
+              'type === "remaining" ||',
+              'type === "wave"',
+              'duration: 750,',
+              'this.#prepareTimerTypeTransitionVisualRange(\n                range\n            );',
+              'this.#removeWaveRange();',
+              'this.#scheduleTimerTypeTransitionRelease(',
+              '1500',
+          ]
+
+          for item in required:
+              assert item in text, item
+
+          assert text.count('#startTimerTypeTransitionVisualFade(') >= 2
+          assert text.count('clockTimerTypeTransitionOpacityState') >= 5
+          assert text.count('this.#finishTimerTypeTransitionVisualFade(') >= 2
+          PY
+          git diff --check
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fade transition overlays with outward phase"
+          git push origin HEAD:radial-fitted
