@@ -3,7 +3,7 @@
         static observedAttributes = [
             "percent-goal",
             "military-time",
-            "format",
+            "time-format",
             "date-format",
             "visible-hours",
             "tick-marks",
@@ -1024,7 +1024,7 @@
 
                     break;
 
-                case "format":
+                case "time-format":
                     this.#normalizeFormat();
 
                     this.#updateDisplay(
@@ -6479,11 +6479,11 @@
 
             if (
                 !this.hasAttribute(
-                    "format"
+                    "time-format"
                 )
             ) {
                 this.setAttribute(
-                    "format",
+                    "time-format",
                     this.#getDefaultFormat()
                 );
             }
@@ -12510,7 +12510,7 @@
         #normalizeFormat() {
             const value =
                 this.getAttribute(
-                    "format"
+                    "time-format"
                 );
 
             if (
@@ -12526,7 +12526,7 @@
                         defaultFormat
                 ) {
                     this.setAttribute(
-                        "format",
+                        "time-format",
                         defaultFormat
                     );
                 }
@@ -12579,7 +12579,7 @@
 
             const format =
                 this.getAttribute(
-                    "format"
+                    "time-format"
                 ) ??
                 this.#getDefaultFormat();
 
