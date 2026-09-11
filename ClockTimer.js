@@ -3129,35 +3129,85 @@
             this.#tickAlignmentMilliseconds =
                 record.startDate.getMilliseconds();
 
+            let insertedElement;
+
             if (record.openEnded) {
-                const initialNow =
+                const initialNowDate =
                     new Date();
 
-                if (
-                    initialNow.getTime() <=
-                        record.startDate.getTime()
-                ) {
-                    initialNow.setTime(
-                        record.startDate.getTime() +
-                        1
+                let initialEnd =
+                    this.#dateToTimelineTime(
+                        initialNowDate
                     );
+
+                if (initialEnd <= startTimeline) {
+                    initialEnd =
+                        startTimeline + 1;
                 }
 
-                this.#updateOpenEndedRange(
-                    initialNow
+                const delta =
+                    initialEnd - startTimeline;
+
+                this.#extendCalculatedEndTime(
+                    delta,
+                    record.type
+                );
+
+                this.#openEndedLastTick =
+                    initialEnd;
+
+                this.#shiftRangesAfter(
+                    startTimeline,
+                    delta,
+                    record
+                );
+
+                const ring =
+                    this.#ensureRing(
+                        this.#getRingIndex(
+                            startTimeline
+                        )
+                    );
+
+                insertedElement =
+                    this.#createTimeRange(
+                        record.type,
+                        startTimeline,
+                        initialEnd,
+                        { dynamic: true }
+                    );
+
+                delete insertedElement.clockTimerDynamic;
+
+                insertedElement.clockTimerInserted =
+                    record.id;
+
+                this.#applyOtherAttributes(
+                    insertedElement,
+                    record.otherAttributes
+                );
+
+                ring.appendChild(
+                    insertedElement
+                );
+
+                this.#refreshRingLayout(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : startTimeline
                 );
             }
             else {
                 this.#renderAllInsertedRanges();
-            }
 
-            const insertedElement =
-                this.#getManagedTimeRanges()
-                    .find(
-                        candidate =>
-                            candidate.clockTimerInserted ===
-                                record.id
-                    );
+                insertedElement =
+                    this.#getManagedTimeRanges()
+                        .find(
+                            candidate =>
+                                candidate.clockTimerInserted ===
+                                    record.id
+                        );
+            }
 
             if (
                 this.#needsTick()
@@ -3362,39 +3412,62 @@
                         start
                     );
 
-                const initialNowDate =
-                    new Date();
+                let initialEnd =
+                    this.#getCurrentTimelineTime();
 
-                let initialNow =
-                    this.#getCurrentTimelineTime(
-                        initialNowDate
-                    );
-
-                if (initialNow <= start) {
-                    initialNow =
+                if (initialEnd <= start) {
+                    initialEnd =
                         start + 1;
                 }
 
-                this.#updateOpenOverwriteRange(
-                    new Date(
-                        initialNowDate.getTime() +
-                        Math.max(
-                            0,
-                            initialNow -
-                                this.#getCurrentTimelineTime(
-                                    initialNowDate
-                                )
-                        )
-                    )
+                const net =
+                    this.#getOverwriteCalculatedEndDelta(
+                        start,
+                        initialEnd,
+                        record.type
+                    );
+
+                this.#adjustCalculatedEndTime(
+                    net
                 );
 
+                this.#applyOverwriteMask(
+                    start,
+                    initialEnd
+                );
+
+                this.#openOverwriteLastTick =
+                    initialEnd;
+
+                record.end =
+                    initialEnd;
+
+                const ring =
+                    this.#ensureRing(
+                        this.#getRingIndex(
+                            start
+                        )
+                    );
+
                 const overwriteElement =
-                    this.#getManagedTimeRanges()
-                        .find(
-                            candidate =>
-                                candidate.clockTimerOverwrite ===
-                                    record.id
-                        );
+                    this.#createTimeRange(
+                        record.type,
+                        start,
+                        initialEnd,
+                        { dynamic: true }
+                    );
+
+                delete overwriteElement.clockTimerDynamic;
+
+                overwriteElement.clockTimerOverwrite =
+                    record.id;
+
+                overwriteElement.timeRangeFullEntry =
+                    true;
+
+                ring.appendChild(
+                    overwriteElement
+                );
 
                 this.#refreshRingLayout(
                     start,
