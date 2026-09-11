@@ -1,0 +1,37 @@
+name: Add ClockTimer spin scale phases
+on:
+  push:
+    paths:
+      - '.github/workflows/add-spin-scale-phases.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/add_spin_scale_phases.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify spin scale phases
+        run: |
+          grep -Fq 'const scaleDuration =' ClockTimer.js
+          grep -Fq 'transform: "scale(0.95)"' ClockTimer.js
+          grep -Fq 'rotateY(90deg) scale(0.95)' ClockTimer.js
+          grep -Fq 'easing: "ease-out"' ClockTimer.js
+          grep -Fq 'easing: "ease-in"' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/add_spin_scale_phases.py
+          rm -f .github/workflows/add-spin-scale-phases.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/add_spin_scale_phases.py .github/workflows/add-spin-scale-phases.yml
+          git commit -m "Add scale phases around ClockTimer spin"
+          git push origin main
