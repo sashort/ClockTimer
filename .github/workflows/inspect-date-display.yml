@@ -1,0 +1,12 @@
+name: Inspect date display
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-date-display.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          grep -n -A 140 -B 30 '#updateDisplay\|#startDisplayTimer\|#formatDisplay' ClockTimer.js | head -n 700
