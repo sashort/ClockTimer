@@ -1,0 +1,11 @@
+name: Inspect face background
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-face-background.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: grep -n -A 120 -B 20 '#captureFaceBackground\|#startFaceBackgroundTracking' ClockTimer.js | head -n 500
