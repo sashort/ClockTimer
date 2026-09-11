@@ -38,6 +38,8 @@
 
         #timeElement;
 
+        #dateElement;
+
         #hourLayer;
 
         #numberRing;
@@ -520,6 +522,45 @@
                         none;
                 }
 
+                #date {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform:
+                        translate(
+                            -50%,
+                            calc(
+                                -50% -
+                                var(
+                                    --clock-timer-auto-date-offset,
+                                    2rem
+                                )
+                            )
+                        );
+                    width: max-content;
+                    max-width: 80%;
+                    text-align: center;
+                    white-space: nowrap;
+                    font-family:
+                        var(
+                            --clock-timer-date-font,
+                            var(
+                                --clock-timer-time-font,
+                                inherit
+                            )
+                        );
+                    font-size:
+                        var(
+                            --clock-timer-date-font-size,
+                            var(
+                                --clock-timer-auto-date-font-size,
+                                0.75rem
+                            )
+                        );
+                    line-height: 1;
+                    pointer-events: none;
+                }
+
                 #time {
                     display:
                         inline-block;
@@ -674,6 +715,19 @@
             timeLayer.id =
                 "time-layer";
 
+            this.#dateElement =
+                document.createElement(
+                    "div"
+                );
+
+            this.#dateElement.id =
+                "date";
+
+            this.#dateElement.setAttribute(
+                "part",
+                "date"
+            );
+
             this.#timeElement =
                 document.createElement(
                     "div"
@@ -687,7 +741,8 @@
                 "time"
             );
 
-            timeLayer.appendChild(
+            timeLayer.append(
+                this.#dateElement,
                 this.#timeElement
             );
 
@@ -7817,6 +7872,22 @@
                 "--clock-timer-auto-time-font-size",
                 `${fittedSize}px`
             );
+
+            const dateSize =
+                fittedSize * 0.38;
+
+            const dateOffset =
+                fittedSize * 0.72;
+
+            this.#dateElement.style.setProperty(
+                "--clock-timer-auto-date-font-size",
+                `${dateSize}px`
+            );
+
+            this.#dateElement.style.setProperty(
+                "--clock-timer-auto-date-offset",
+                `${dateOffset}px`
+            );
         }
 
         #handlePercentGoalChange() {
@@ -12464,6 +12535,16 @@
         #updateDisplay(
             now
         ) {
+            this.#dateElement.textContent =
+                new Intl.DateTimeFormat(
+                    undefined,
+                    {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric"
+                    }
+                ).format(now);
+
             const military =
                 this.getAttribute(
                     "military-time"
