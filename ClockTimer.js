@@ -138,6 +138,9 @@
         #overtimeRanges =
             new Map();
 
+        #remainingRanges =
+            new Map();
+
         #elapsedRange;
 
         #tripEnd;
@@ -1605,7 +1608,8 @@
                         "overtime",
                         "earlystart",
                         "prestart",
-                        "elapsed"
+                        "elapsed",
+                        "remaining"
                     ]);
 
                 const excludedAttributes =
@@ -2339,6 +2343,10 @@
                 );
 
                 this.#updateOvertimeRanges(
+                    now
+                );
+
+                this.#updateRemainingRanges(
                     now
                 );
             }
@@ -3943,7 +3951,8 @@
                 "trip",
                 "earlystart",
                 "prestart",
-                "overtime"
+                "overtime",
+                "remaining"
             ]).has(
                 String(type).trim()
             );
@@ -5140,7 +5149,8 @@
                 "overtime",
                 "earlystart",
                 "prestart",
-                "elapsed"
+                "elapsed",
+                "remaining"
             ]);
         }
 
@@ -5399,6 +5409,10 @@
                 );
 
                 this.#updateOvertimeRanges(
+                    now
+                );
+
+                this.#updateRemainingRanges(
                     now
                 );
             }
@@ -6344,6 +6358,8 @@
 
             this.#overtimeRanges.clear();
 
+            this.#remainingRanges.clear();
+
             this.#rings.clear();
 
             this.#started =
@@ -6558,6 +6574,47 @@
                 );
 
                 range.refreshVisualGeometry?.();
+            }
+
+            if (mode !== "remaining") {
+                this.#removeRemainingRanges();
+                return;
+            }
+
+            let start;
+
+            if (this.#started) {
+                start =
+                    this.#getCurrentTimelineTime();
+            }
+            else {
+                for (
+                    const range of
+                        this.querySelectorAll(
+                            'time-range[type="elapsed"]'
+                        )
+                ) {
+                    const end =
+                        Number(
+                            range.clockTimerEnd
+                        );
+
+                    if (
+                        Number.isFinite(end) &&
+                        (
+                            !Number.isFinite(start) ||
+                            end > start
+                        )
+                    ) {
+                        start = end;
+                    }
+                }
+            }
+
+            if (Number.isFinite(start)) {
+                this.#updateRemainingRanges(
+                    start
+                );
             }
         }
 
@@ -8020,6 +8077,10 @@
             );
 
             this.#updateOvertimeRanges(
+                now
+            );
+
+            this.#updateRemainingRanges(
                 now
             );
 
@@ -10730,14 +10791,16 @@
             );
 
             if (
-                type ===
-                    "elapsed"
+                type === "elapsed" ||
+                type === "remaining"
             ) {
                 range.setAttribute(
                     "overlapping",
                     ""
                 );
+            }
 
+            if (type === "elapsed") {
                 range.setAttribute(
                     "timer-mode",
                     this.#getTimerMode()
@@ -10846,6 +10909,192 @@
                 now
             );
 
+        }
+
+        #getLatestTimerEnd() {
+            let latest;
+
+            for (
+                const range of
+                    this.querySelectorAll(
+                        "ring-container > time-range"
+                    )
+            ) {
+                if (
+                    range.getAttribute(
+                        "type"
+                    ) === "remaining"
+                ) {
+                    continue;
+                }
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(end) &&
+                    (
+                        !Number.isFinite(latest) ||
+                        end > latest
+                    )
+                ) {
+                    latest = end;
+                }
+            }
+
+            return latest;
+        }
+
+        #removeRemainingRanges() {
+            for (
+                const range of
+                    this.#remainingRanges.values()
+            ) {
+                range.remove();
+            }
+
+            this.#remainingRanges.clear();
+        }
+
+        #updateRemainingRanges(
+            start
+        ) {
+            if (
+                this.#getTimerMode() !==
+                    "remaining" ||
+                !Number.isFinite(start)
+            ) {
+                this.#removeRemainingRanges();
+                return;
+            }
+
+            const latestEnd =
+                this.#getLatestTimerEnd();
+
+            if (
+                !Number.isFinite(latestEnd) ||
+                latestEnd <= start
+            ) {
+                this.#removeRemainingRanges();
+                return;
+            }
+
+            const firstRing =
+                this.#getRingIndex(
+                    start
+                );
+
+            const lastRing =
+                this.#getRingIndex(
+                    latestEnd - 0.0001
+                );
+
+            for (
+                const [ringIndex, range] of
+                    this.#remainingRanges
+            ) {
+                if (
+                    ringIndex < firstRing ||
+                    ringIndex > lastRing ||
+                    !range.isConnected
+                ) {
+                    range.remove();
+                    this.#remainingRanges.delete(
+                        ringIndex
+                    );
+                }
+            }
+
+            for (
+                let ringIndex = firstRing;
+                ringIndex <= lastRing;
+                ringIndex++
+            ) {
+                const ringStart =
+                    this.#getRingStart(
+                        ringIndex
+                    );
+
+                const ringEnd =
+                    ringStart +
+                    ClockTimer.#HOUR;
+
+                const segmentStart =
+                    Math.max(
+                        start,
+                        ringStart
+                    );
+
+                const segmentEnd =
+                    Math.min(
+                        latestEnd,
+                        ringEnd
+                    );
+
+                if (segmentEnd <= segmentStart) {
+                    continue;
+                }
+
+                const ring =
+                    this.#ensureRing(
+                        ringIndex
+                    );
+
+                let range =
+                    this.#remainingRanges.get(
+                        ringIndex
+                    );
+
+                if (
+                    !range ||
+                    range.parentElement !== ring
+                ) {
+                    range =
+                        this.#createTimeRange(
+                            "remaining",
+                            segmentStart,
+                            segmentEnd,
+                            {
+                                dynamic: true
+                            }
+                        );
+
+                    range.clockTimerRemaining =
+                        "";
+
+                    range.timeRangeFullEntry =
+                        true;
+
+                    ring.appendChild(
+                        range
+                    );
+
+                    this.#remainingRanges.set(
+                        ringIndex,
+                        range
+                    );
+                }
+                else {
+                    this.#setRangeStart(
+                        range,
+                        segmentStart
+                    );
+
+                    this.#setRangeEnd(
+                        range,
+                        segmentEnd
+                    );
+                }
+
+                range.setAttribute(
+                    "overlapping",
+                    ""
+                );
+
+                range.snapToLogicalTiming?.();
+            }
         }
 
         #updateOvertimeRanges(
@@ -11744,6 +11993,10 @@
             );
 
             this.#updateOvertimeRanges(
+                now
+            );
+
+            this.#updateRemainingRanges(
                 now
             );
 
