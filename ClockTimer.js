@@ -10367,12 +10367,7 @@
                                 Number.isFinite(item.start) &&
                                 Number.isFinite(item.end) &&
                                 item.end > item.start &&
-                                item.start >= end
-                        )
-                        .sort(
-                            (a, b) =>
-                                a.start - b.start ||
-                                a.end - b.end
+                                item.start === end
                         )[0];
 
                 range.removeAttribute(
