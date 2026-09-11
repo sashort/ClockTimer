@@ -26,7 +26,7 @@ jobs:
           grep -Fq 'spin({' ClockTimer.js
           grep -Fq 'scaleSpeed' ClockTimer.js
           grep -Fq '#getSpinScaleSpeedMilliseconds' ClockTimer.js
-          grep -Fq 'operation.scaleSpeed' ClockTimer.js
+          grep -Fq 'requestedScaleDuration' ClockTimer.js
       - name: Commit ClockTimer update and cleanup
         run: |
           rm -f .github/scripts/add_spin_scale_speed.py
