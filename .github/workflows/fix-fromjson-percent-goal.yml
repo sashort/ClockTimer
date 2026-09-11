@@ -1,0 +1,39 @@
+name: Fix fromJSON percent goal
+on:
+  push:
+    paths:
+      - .github/workflows/fix-fromjson-percent-goal.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/fix-fromjson-percent-goal.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON(')
+          q=s.index('\n        get status()', p)
+          block=s[p:q]
+          assert 'const originalPercentGoal =' in block
+          assert 'this.#percentGoal =\n                    1;' in block
+          assert 'this.#percentGoal =\n                        originalPercentGoal;' in block
+          assert 'this.#started =\n                    true;' in block
+          assert 'this.#started =\n                        false;' in block
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/fix-fromjson-percent-goal.py
+          rm -f .github/workflows/fix-fromjson-percent-goal.yml
+          rm -f .github/workflows/inspect-fromjson.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js .github
+          git commit -m "Safeguard percent goal during fromJSON"
+          git push
