@@ -3863,6 +3863,132 @@
             }
         }
 
+        #syncOpenOverwriteRangeElements(
+            record,
+            effectiveEnd
+        ) {
+            if (
+                !record ||
+                !Number.isFinite(record.start) ||
+                !Number.isFinite(effectiveEnd) ||
+                effectiveEnd <= record.start
+            ) {
+                return;
+            }
+
+            const existing =
+                this.#getManagedTimeRanges()
+                    .filter(
+                        range =>
+                            range.clockTimerOverwrite ===
+                                record.id &&
+                            range.timeRangeExiting !==
+                                true
+                    )
+                    .sort(
+                        (a, b) =>
+                            Number(a.clockTimerStart) -
+                            Number(b.clockTimerStart)
+                    );
+
+            let cursor =
+                record.start;
+
+            let index =
+                0;
+
+            while (cursor < effectiveEnd) {
+                const ringIndex =
+                    this.#getRingIndex(
+                        cursor
+                    );
+
+                const ringEnd =
+                    this.#getRingStart(
+                        ringIndex
+                    ) +
+                    ClockTimer.#HOUR;
+
+                const segmentEnd =
+                    Math.min(
+                        effectiveEnd,
+                        ringEnd
+                    );
+
+                const ring =
+                    this.#ensureRing(
+                        ringIndex
+                    );
+
+                let range =
+                    existing[index];
+
+                if (!range) {
+                    range =
+                        this.#createTimeRange(
+                            record.type,
+                            cursor,
+                            segmentEnd,
+                            { dynamic: true }
+                        );
+
+                    delete range.clockTimerDynamic;
+
+                    range.clockTimerOverwrite =
+                        record.id;
+
+                    range.timeRangeFullEntry =
+                        true;
+
+                    ring.appendChild(
+                        range
+                    );
+                }
+                else {
+                    if (
+                        range.parentElement !==
+                            ring
+                    ) {
+                        ring.appendChild(
+                            range
+                        );
+                    }
+
+                    this.#setRangeTiming(
+                        range,
+                        cursor,
+                        segmentEnd
+                    );
+                }
+
+                cursor =
+                    segmentEnd;
+
+                index++;
+            }
+
+            for (
+                ;
+                index < existing.length;
+                index++
+            ) {
+                const range =
+                    existing[index];
+
+                if (
+                    typeof range.removeAnimated ===
+                        "function"
+                ) {
+                    range.removeAnimated({
+                        collapseTo: "start"
+                    });
+                }
+                else {
+                    range.remove();
+                }
+            }
+        }
+
         #reapplyOverwriteRanges() {
             if (this.#overwriteRanges.length === 0) {
                 return;
@@ -3937,11 +4063,10 @@
             record.end =
                 now;
 
-            this.#renderOverwriteRecord({
-                ...record,
-                start: previous,
-                openEnded: false
-            });
+            this.#syncOpenOverwriteRangeElements(
+                record,
+                now
+            );
         }
 
         close() {
