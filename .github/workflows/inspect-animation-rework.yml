@@ -1,0 +1,15 @@
+name: Inspect animation rework
+'on':
+  push:
+    branches:
+      - time-range-animation-rework
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show animation method locations
+        run: |
+          grep -n -E 'transitionTimerMode|updateRemainingRanges|setRangeTiming|removeAnimated|snapToLogicalTiming|transitionTo|calculateCorners|updateClipPath|startTimingAnimation|animateToLogicalTiming|createTimeRange|updateElapsedRange|removeRemainingRanges|syncWaveRange' ClockTimer.js TimeRange.js || true
