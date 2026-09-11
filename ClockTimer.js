@@ -7406,6 +7406,11 @@
                             segment,
                             preservedAttributes
                         );
+
+                        this.#copyClockTimerRangeState(
+                            range,
+                            segment
+                        );
                     }
 
                     this.#setRangeTiming(
@@ -7444,6 +7449,11 @@
                         this.#applyPreservedAttributes(
                             movedSegment,
                             preservedAttributes
+                        );
+
+                        this.#copyClockTimerRangeState(
+                            range,
+                            movedSegment
                         );
 
                         this.#setRangeTiming(
@@ -7888,10 +7898,210 @@
             }
         }
 
-        #shiftRangesAfter(
+        #shiftInsertedRangeElements(
             cutoff,
             delta,
             excludedRecord
+        ) {
+            const excludedId =
+                excludedRecord?.id;
+
+            const ranges =
+                this.#getManagedTimeRanges()
+                    .filter(
+                        range =>
+                            range.clockTimerInserted !==
+                                undefined &&
+                            range.clockTimerInserted !==
+                                excludedId &&
+                            range.timeRangeExiting !==
+                                true
+                    );
+
+            for (const range of ranges) {
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(end) ||
+                    end <= cutoff
+                ) {
+                    continue;
+                }
+
+                if (start >= cutoff) {
+                    this.#replaceRangeWithSegments(
+                        range,
+                        [[
+                            start + delta,
+                            end + delta
+                        ]]
+                    );
+
+                    continue;
+                }
+
+                this.#replaceRangeWithSegments(
+                    range,
+                    [
+                        [
+                            start,
+                            cutoff
+                        ],
+                        [
+                            cutoff + delta,
+                            end + delta
+                        ]
+                    ]
+                );
+            }
+        }
+
+        #syncOpenEndedRangeElements(
+            record,
+            effectiveEnd
+        ) {
+            const start =
+                this.#dateToTimelineTime(
+                    record.startDate
+                );
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(effectiveEnd) ||
+                effectiveEnd <= start
+            ) {
+                return;
+            }
+
+            const existing =
+                this.#getManagedTimeRanges()
+                    .filter(
+                        range =>
+                            range.clockTimerInserted ===
+                                record.id &&
+                            range.timeRangeExiting !==
+                                true
+                    )
+                    .sort(
+                        (a, b) =>
+                            Number(a.clockTimerStart) -
+                            Number(b.clockTimerStart)
+                    );
+
+            let cursor =
+                start;
+
+            let index =
+                0;
+
+            while (cursor < effectiveEnd) {
+                const ringIndex =
+                    this.#getRingIndex(
+                        cursor
+                    );
+
+                const ringEnd =
+                    this.#getRingStart(
+                        ringIndex
+                    ) +
+                    ClockTimer.#HOUR;
+
+                const segmentEnd =
+                    Math.min(
+                        effectiveEnd,
+                        ringEnd
+                    );
+
+                const ring =
+                    this.#ensureRing(
+                        ringIndex
+                    );
+
+                let range =
+                    existing[index];
+
+                if (!range) {
+                    range =
+                        this.#createTimeRange(
+                            record.type,
+                            cursor,
+                            segmentEnd,
+                            { dynamic: true }
+                        );
+
+                    delete range.clockTimerDynamic;
+
+                    range.clockTimerInserted =
+                        record.id;
+
+                    this.#applyOtherAttributes(
+                        range,
+                        record.otherAttributes
+                    );
+
+                    ring.appendChild(
+                        range
+                    );
+                }
+                else {
+                    if (
+                        range.parentElement !==
+                            ring
+                    ) {
+                        ring.appendChild(
+                            range
+                        );
+                    }
+
+                    this.#setRangeTiming(
+                        range,
+                        cursor,
+                        segmentEnd
+                    );
+                }
+
+                cursor =
+                    segmentEnd;
+
+                index++;
+            }
+
+            for (
+                ;
+                index < existing.length;
+                index++
+            ) {
+                const range =
+                    existing[index];
+
+                if (
+                    typeof range.removeAnimated ===
+                        'function'
+                ) {
+                    range.removeAnimated({
+                        collapseTo: 'start'
+                    });
+                }
+                else {
+                    range.remove();
+                }
+            }
+        }
+
+        #shiftRangesAfter(
+            cutoff,
+            delta,
+            excludedRecord,
+            renderInserted = true
         ) {
             if (
                 !Number.isFinite(delta) ||
@@ -7906,6 +8116,14 @@
                 cutoff,
                 delta
             );
+
+            if (!renderInserted) {
+                this.#shiftInsertedRangeElements(
+                    cutoff,
+                    delta,
+                    excludedRecord
+                );
+            }
 
             for (
                 const record of
@@ -7975,7 +8193,10 @@
 
             this.#rebuildOvertimeRangeMap();
             this.#removeEmptyRings();
-            this.#renderAllInsertedRanges();
+
+            if (renderInserted) {
+                this.#renderAllInsertedRanges();
+            }
 
             if (
                 this.#started
@@ -8031,10 +8252,20 @@
             this.#shiftRangesAfter(
                 previous,
                 delta,
-                record
+                record,
+                false
             );
 
-            this.#renderAllInsertedRanges();
+            this.#syncOpenEndedRangeElements(
+                record,
+                now
+            );
+
+            this.#refreshRingLayout(
+                this.#started
+                    ? this.#getCurrentTimelineTime()
+                    : now
+            );
         }
 
         #refreshRingLayout(
