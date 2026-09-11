@@ -1,0 +1,329 @@
+name: Apply TimeRange layout suspension
+on:
+  push:
+    branches:
+      - time-range-layout-suspension
+    paths:
+      - '.github/workflows/apply-time-range-layout-suspension.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch TimeRange layout suspension
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('TimeRange.js')
+          text = path.read_text()
+
+          def replace_once(old, new):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              'class TimeRange extends HTMLElement {\n    static #instances = [];\n',
+              'class TimeRange extends HTMLElement {\n    static #instances = [];\n    static suspendedTimeRanges = [];\n'
+          )
+
+          replace_once(
+              '''    static set animationDuration(value) {
+        const duration = Number(value);
+
+        if (
+            Number.isFinite(duration) &&
+            duration >= 0
+        ) {
+            TimeRange.#animationDuration =
+                duration;
+        }
+    }
+
+    static set percentGoal(value) {''',
+              '''    static set animationDuration(value) {
+        const duration = Number(value);
+
+        if (
+            Number.isFinite(duration) &&
+            duration >= 0
+        ) {
+            TimeRange.#animationDuration =
+                duration;
+        }
+    }
+
+    static suspendLayout(
+        timeRange
+    ) {
+        if (
+            !(
+                timeRange instanceof
+                    TimeRange
+            )
+        ) {
+            return;
+        }
+
+        if (
+            !TimeRange.suspendedTimeRanges.includes(
+                timeRange
+            )
+        ) {
+            TimeRange.suspendedTimeRanges.push(
+                timeRange
+            );
+        }
+
+        if (
+            timeRange.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                timeRange.#animationFrame
+            );
+
+            timeRange.#animationFrame =
+                undefined;
+        }
+    }
+
+    static resumeLayout(
+        timeRange
+    ) {
+        if (
+            !(
+                timeRange instanceof
+                    TimeRange
+            )
+        ) {
+            return;
+        }
+
+        const index =
+            TimeRange.suspendedTimeRanges.indexOf(
+                timeRange
+            );
+
+        if (index !== -1) {
+            TimeRange.suspendedTimeRanges.splice(
+                index,
+                1
+            );
+        }
+    }
+
+    static #isLayoutSuspended(
+        timeRange
+    ) {
+        return (
+            timeRange instanceof
+                TimeRange &&
+            TimeRange.suspendedTimeRanges.includes(
+                timeRange
+            )
+        );
+    }
+
+    static set percentGoal(value) {'''
+          )
+
+          old_reorder = '''        TimeRange.#reorderParent(
+            this.parentElement
+        );'''
+          new_reorder = '''        TimeRange.#reorderParent(
+            this.parentElement,
+            this
+        );'''
+          count = text.count(old_reorder)
+          if count != 2:
+              raise SystemExit(f'Expected 2 reorder call sites, found {count}')
+          text = text.replace(old_reorder, new_reorder)
+
+          replace_once(
+              '''            TimeRange.#updateParentClipPaths(
+                this.parentElement
+            );''',
+              '''            TimeRange.#updateParentClipPaths(
+                this.parentElement,
+                this
+            );'''
+          )
+
+          replace_once(
+              '''    #animateToLogicalTiming() {
+        if (
+            !this.isConnected ||''',
+              '''    #animateToLogicalTiming() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            ) ||
+            !this.isConnected ||'''
+          )
+
+          replace_once(
+              '''    #startTimingAnimation(
+        fromStart,
+        fromEnd,
+        targetStart,
+        targetEnd,
+        removeAfter = false
+    ) {
+        if (
+            [''',
+              '''    #startTimingAnimation(
+        fromStart,
+        fromEnd,
+        targetStart,
+        targetEnd,
+        removeAfter = false
+    ) {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
+        if (
+            ['''
+          )
+
+          replace_once(
+              '''    snapToLogicalTiming() {
+        if (
+            this.#animationFrame !==''',
+              '''    snapToLogicalTiming() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return this;
+        }
+
+        if (
+            this.#animationFrame !=='''
+          )
+
+          replace_once(
+              '''    refreshVisualGeometry() {
+        this.#updateClipPath();''',
+              '''    refreshVisualGeometry() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return this;
+        }
+
+        this.#updateClipPath();'''
+          )
+
+          replace_once(
+              '''    static #updateParentClipPaths(
+        parent
+    ) {
+        if (!parent) {
+            return;
+        }''',
+              '''    static #updateParentClipPaths(
+        parent,
+        source
+    ) {
+        if (
+            !parent ||
+            TimeRange.#isLayoutSuspended(
+                source
+            )
+        ) {
+            return;
+        }'''
+          )
+
+          replace_once(
+              '''    #updateClipPath() {
+        const parent =''',
+              '''    #updateClipPath() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
+        const parent ='''
+          )
+
+          replace_once(
+              '''    static #reorderParent(
+        parent
+    ) {
+        if (
+            !parent ||
+            TimeRange.#reordering
+        ) {''',
+              '''    static #reorderParent(
+        parent,
+        source
+    ) {
+        if (
+            !parent ||
+            TimeRange.#reordering ||
+            TimeRange.#isLayoutSuspended(
+                source
+            )
+        ) {'''
+          )
+
+          replace_once(
+              '''    #removeOverlaps() {
+        if (
+            this.hasAttribute(''',
+              '''    #removeOverlaps() {
+        if (
+            TimeRange.#isLayoutSuspended(
+                this
+            )
+        ) {
+            return;
+        }
+
+        if (
+            this.hasAttribute('''
+          )
+
+          path.write_text(text)
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Verify layout suspension API
+        run: |
+          grep -Fq 'static suspendedTimeRanges = [];' TimeRange.js
+          grep -Fq 'static suspendLayout(' TimeRange.js
+          grep -Fq 'static resumeLayout(' TimeRange.js
+          grep -Fq 'static #isLayoutSuspended(' TimeRange.js
+      - name: Commit TimeRange update
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add TimeRange.js
+          git commit -m "Add TimeRange layout suspension"
+          git push origin HEAD:main
+      - name: Remove temporary branch
+        if: always()
+        run: git push origin --delete time-range-layout-suspension || true
