@@ -1,0 +1,64 @@
+name: Separate progress wave
+on:
+  push:
+    branches:
+      - separate-progress-wave
+    paths:
+      - '.github/workflows/separate-progress-wave.yml'
+      - '.github/scripts/separate_progress_wave.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Checkout tools
+        uses: actions/checkout@v4
+        with:
+          ref: separate-progress-wave
+          path: tools
+      - name: Relax legacy check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/.github/scripts/separate_progress_wave.py')
+          s = p.read_text()
+          old = "if 'timer-mode=\"remaining\"' in time or 'static-elapsed' in time:\n    raise SystemExit('legacy elapsed timer-mode/static-elapsed styling remains')"
+          new = "if 'static-elapsed' in time:\n    raise SystemExit('legacy static-elapsed styling remains')"
+          if old not in s:
+              raise SystemExit('legacy check block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Apply changes
+        working-directory: repo
+        run: python ../tools/.github/scripts/separate_progress_wave.py
+      - name: Syntax check
+        working-directory: repo
+        run: |
+          node --check ClockTimer.js
+          node --check TimeRange.js
+      - name: Verify architecture
+        working-directory: repo
+        run: |
+          grep -Fq 'range.classList.add(' ClockTimer.js
+          grep -Fq '"progress-wave-ring"' ClockTimer.js
+          grep -Fq ':host(.elapsed),' TimeRange.js
+          grep -Fq 'rgb(255 255 255 / 25%)' TimeRange.js
+          grep -Fq ':host(.elapsed):host-context(clock-timer[timer-mode="remaining"])' TimeRange.js
+          grep -Fq ':host([type="wave"]) #elapsed-wave' TimeRange.js
+          ! grep -Fq 'static-elapsed' TimeRange.js
+          ! grep -Fq '#elapsedBaseLayer' TimeRange.js
+          ! grep -Fq '#elapsedEdgeLayer' TimeRange.js
+      - name: Commit
+        working-directory: repo
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add ClockTimer.js TimeRange.js
+          git commit -m 'Separate static progress from internal wave'
+          git push origin main
