@@ -24,8 +24,8 @@ jobs:
           grep -Fq '#syncOpenEndedRangeElements(' ClockTimer.js
           grep -Fq '#shiftInsertedRangeElements(' ClockTimer.js
           grep -Fq 'renderInserted = true' ClockTimer.js
-          grep -Fq 'record,' ClockTimer.js
-          ! grep -A80 '#updateOpenEndedRange(' ClockTimer.js | grep -Fq 'this.#renderAllInsertedRanges();'
+          grep -Fq 'this.#syncOpenEndedRangeElements(' ClockTimer.js
+          grep -Fq 'this.#copyClockTimerRangeState(' ClockTimer.js
       - name: Commit update and cleanup
         run: |
           rm -f .github/scripts/fix_open_insert_incremental.py
