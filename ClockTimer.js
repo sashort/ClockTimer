@@ -185,6 +185,8 @@
 
         #spinAnimation;
 
+        #spinScaleAnimation;
+
         #spinFrozenTimeFontSize;
 
         #spinPreviousTimeInlineFontSize;
@@ -1942,126 +1944,116 @@
             this.#spinAnimation
                 ?.cancel();
 
+            this.#spinScaleAnimation
+                ?.cancel();
+
+            const totalDuration =
+                perRotationDuration *
+                rotations;
+
             const scaleDuration =
-                125;
+                Math.min(
+                    125,
+                    totalDuration / 2
+                );
 
-            const finishSpin =
-                animation => {
-                    if (
-                        this.#spinAnimation !==
-                            animation
-                    ) {
-                        return;
-                    }
+            const scaleOffset =
+                totalDuration > 0
+                    ? scaleDuration /
+                        totalDuration
+                    : 0.5;
 
-                    this.#spinAnimation =
-                        undefined;
-
-                    this.#restoreTimeFontAfterSpin();
-
-                    this.#scheduleFontSizing();
-                };
-
-            const shrinkAnimation =
+            const spinAnimation =
                 this.animate(
                     [
                         {
-                            transform: "scale(1)"
+                            offset: 0,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
                         },
                         {
-                            transform: "scale(0.95)"
+                            offset: 0.5,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(90deg)"
+                        },
+                        {
+                            offset: 0.5,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(-90deg)"
+                        },
+                        {
+                            offset: 1,
+                            transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg)"
                         }
                     ],
                     {
-                        duration: scaleDuration,
-                        easing: "ease-out",
+                        duration:
+                            perRotationDuration,
+                        iterations:
+                            rotations,
+                        easing: "ease-in-out"
+                    }
+                );
+
+            const scaleAnimation =
+                this.animate(
+                    [
+                        {
+                            offset: 0,
+                            scale: "1",
+                            easing: "ease-out"
+                        },
+                        {
+                            offset:
+                                scaleOffset,
+                            scale: "0.95"
+                        },
+                        {
+                            offset:
+                                1 - scaleOffset,
+                            scale: "0.95",
+                            easing: "ease-in"
+                        },
+                        {
+                            offset: 1,
+                            scale: "1"
+                        }
+                    ],
+                    {
+                        duration:
+                            totalDuration,
                         fill: "forwards"
                     }
                 );
 
             this.#spinAnimation =
-                shrinkAnimation;
+                spinAnimation;
 
-            shrinkAnimation.finished
-                .then(() => {
-                    if (
-                        this.#spinAnimation !==
-                            shrinkAnimation
-                    ) {
-                        return;
-                    }
+            this.#spinScaleAnimation =
+                scaleAnimation;
 
-                    const spinAnimation =
-                        this.animate(
-                            [
-                                {
-                                    offset: 0,
-                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg) scale(0.95)"
-                                },
-                                {
-                                    offset: 0.5,
-                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(90deg) scale(0.95)"
-                                },
-                                {
-                                    offset: 0.5,
-                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(-90deg) scale(0.95)"
-                                },
-                                {
-                                    offset: 1,
-                                    transform: "perspective(var(--clock-timer-spin-perspective, 800px)) rotateY(0deg) scale(0.95)"
-                                }
-                            ],
-                            {
-                                duration:
-                                    perRotationDuration,
-                                iterations:
-                                    rotations,
-                                easing: "ease-in-out",
-                                fill: "forwards"
-                            }
-                        );
+            Promise.allSettled([
+                spinAnimation.finished,
+                scaleAnimation.finished
+            ]).then(() => {
+                if (
+                    this.#spinAnimation !==
+                        spinAnimation ||
+                    this.#spinScaleAnimation !==
+                        scaleAnimation
+                ) {
+                    return;
+                }
 
-                    this.#spinAnimation =
-                        spinAnimation;
+                this.#spinAnimation =
+                    undefined;
 
-                    return spinAnimation.finished
-                        .then(() => {
-                            if (
-                                this.#spinAnimation !==
-                                    spinAnimation
-                            ) {
-                                return;
-                            }
+                this.#spinScaleAnimation =
+                    undefined;
 
-                            const restoreAnimation =
-                                this.animate(
-                                    [
-                                        {
-                                            transform: "scale(0.95)"
-                                        },
-                                        {
-                                            transform: "scale(1)"
-                                        }
-                                    ],
-                                    {
-                                        duration: scaleDuration,
-                                        easing: "ease-in",
-                                        fill: "forwards"
-                                    }
-                                );
+                scaleAnimation.cancel();
 
-                            this.#spinAnimation =
-                                restoreAnimation;
+                this.#restoreTimeFontAfterSpin();
 
-                            return restoreAnimation.finished
-                                .then(() => {
-                                    finishSpin(
-                                        restoreAnimation
-                                    );
-                                });
-                        });
-                })
-                .catch(() => {});
+                this.#scheduleFontSizing();
+            });
         }
 
         #parseGrayscalePercentage(value) {
