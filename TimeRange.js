@@ -762,7 +762,11 @@ class TimeRange extends HTMLElement {
 
         if (
             splitMilliseconds <= startMilliseconds ||
-            splitMilliseconds >= endMilliseconds
+            splitMilliseconds > endMilliseconds ||
+            (
+                splitMilliseconds === endMilliseconds &&
+                !insert
+            )
         ) {
             return;
         }
@@ -817,12 +821,18 @@ class TimeRange extends HTMLElement {
             )
         );
 
-        if (hadRangeLength) {
+        const rightLength =
+            endMilliseconds -
+            splitMilliseconds;
+
+        if (
+            hadRangeLength &&
+            rightLength > 0
+        ) {
             right.setAttribute(
                 "range-length",
                 this.#formatRangeLength(
-                    endMilliseconds -
-                    splitMilliseconds
+                    rightLength
                 )
             );
         }
