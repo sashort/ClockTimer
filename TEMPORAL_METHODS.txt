@@ -1,0 +1,830 @@
+
+===== ClockTimer.js =====
+
+--- #normalizeFormat( ---
+#normalizeFormat();
+
+                    this.#scheduleHourRender();
+
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "time-format":
+                    this.#normalizeFormat();
+
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "date-format":
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "visible-hours":
+                    this.#scheduleHourRender();
+                    break;
+
+                case "tick-marks":
+                    this.#updateTickMarks();
+                    break;
+
+                case "indicator-symbol":
+                    this.#syncIndicatorSymbolContent();
+                    this.#scheduleIndicatorSymbolUpdate();
+                    break;
+
+                case "grayscale":
+                case "grayscale-ramp":
+                    if (
+                        this.#updatesSuspended &&
+                        !this.#processingAsyncBatch
+                    ) {
+                        this.#queueAsyncOperation({
+                            type: "grayscale"
+                        });
+                    }
+
+--- #updateDisplay( ---
+#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "time-format":
+                    this.#normalizeFormat();
+
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "date-format":
+                    this.#updateDisplay(
+                        new Date()
+                    );
+
+                    break;
+
+                case "visible-hours":
+                    this.#scheduleHourRender();
+                    break;
+
+                case "tick-marks":
+                    this.#updateTickMarks();
+                    break;
+
+                case "indicator-symbol":
+                    this.#syncIndicatorSymbolContent();
+                    this.#scheduleIndicatorSymbolUpdate();
+                    break;
+
+                case "grayscale":
+                case "grayscale-ramp":
+                    if (
+                        this.#updatesSuspended &&
+                        !this.#processingAsyncBatch
+                    ) {
+                        this.#queueAsyncOperation({
+                            type: "grayscale"
+                        });
+                    }
+
+--- #validateDurationTime( ---
+#validateDurationTime(
+                        data.standardTime,
+                        "standardTime"
+                    );
+
+                const scheduled =
+                    this.#validateClockTime(
+                        data.scheduledStart,
+                        "scheduledStart"
+                    );
+
+                const reserved =
+                    new Set([
+                        "trip",
+                        "tolerance",
+                        "overtime",
+                        "earlystart",
+                        "prestart",
+                        "elapsed"
+                    ]);
+
+                const excludedAttributes =
+                    new Set([
+                        "start-time",
+                        "end-time",
+                        "range-length",
+                        "overwrite"
+                    ]);
+
+                const events = [];
+
+                for (const record of data.records) {
+                    if (
+                        !record ||
+                        typeof record !== "object" ||
+                        Array.isArray(record)
+                    ) {
+                        return false;
+                    }
+
+                    const entries = Object.entries(record);
+
+                    if (entries.length !== 1) {
+                        return false;
+                    }
+
+                    const [time, value] = entries[0];
+                    const milliseconds =
+                        parseTimestamp(time);
+
+                    if (
+                        !Number.isFinite(milliseconds) ||
+                        !value ||
+                        typeof value !== "object" ||
+                        Array.isArray(value) ||
+                        typeof value.type !== "string" ||
+                        !value.type.trim()
+                    ) {
+                        return false;
+                    }
+
+                    const type = value.type.trim();
+
+                    if (
+                        reserved.has(type) ||
+                        ![
+                            "start",
+                            "resume",
+                            "end"
+                        ].includes(type) &&
+                        Object.keys(value).some(
+                            name =>
+                                name !== "type" &&
+                                excludedAttributes.has(
+                                    name.toLowerCase()
+                                )
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    const attributes = {};
+
+                    for (const [name, attributeValue] of Object.entries(value)) {
+                        if (name === "type") {
+                            continue;
+                        }
+
+                        if (typeof attributeValue !== "string") {
+                            return false;
+                        }
+
+                        attributes[name] = attributeValue;
+                    }
+
+                    events.push({
+                        time,
+                        milliseconds,
+                        type,
+                        attributes
+                    });
+                }
+
+--- #validateClockTime( ---
+#validateClockTime(
+                        data.scheduledStart,
+                        "scheduledStart"
+                    );
+
+                const reserved =
+                    new Set([
+                        "trip",
+                        "tolerance",
+                        "overtime",
+                        "earlystart",
+                        "prestart",
+                        "elapsed"
+                    ]);
+
+                const excludedAttributes =
+                    new Set([
+                        "start-time",
+                        "end-time",
+                        "range-length",
+                        "overwrite"
+                    ]);
+
+                const events = [];
+
+                for (const record of data.records) {
+                    if (
+                        !record ||
+                        typeof record !== "object" ||
+                        Array.isArray(record)
+                    ) {
+                        return false;
+                    }
+
+                    const entries = Object.entries(record);
+
+                    if (entries.length !== 1) {
+                        return false;
+                    }
+
+                    const [time, value] = entries[0];
+                    const milliseconds =
+                        parseTimestamp(time);
+
+                    if (
+                        !Number.isFinite(milliseconds) ||
+                        !value ||
+                        typeof value !== "object" ||
+                        Array.isArray(value) ||
+                        typeof value.type !== "string" ||
+                        !value.type.trim()
+                    ) {
+                        return false;
+                    }
+
+                    const type = value.type.trim();
+
+                    if (
+                        reserved.has(type) ||
+                        ![
+                            "start",
+                            "resume",
+                            "end"
+                        ].includes(type) &&
+                        Object.keys(value).some(
+                            name =>
+                                name !== "type" &&
+                                excludedAttributes.has(
+                                    name.toLowerCase()
+                                )
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    const attributes = {};
+
+                    for (const [name, attributeValue] of Object.entries(value)) {
+                        if (name === "type") {
+                            continue;
+                        }
+
+                        if (typeof attributeValue !== "string") {
+                            return false;
+                        }
+
+                        attributes[name] = attributeValue;
+                    }
+
+                    events.push({
+                        time,
+                        milliseconds,
+                        type,
+                        attributes
+                    });
+                }
+
+--- #formatStandardTime( ---
+#formatStandardTime(
+                        creationMilliseconds,
+                        { clock: true }
+
+--- #formatTimelineTime( ---
+#formatTimelineTime(
+                        scheduledStartMilliseconds
+                    );
+
+                this.#standardDuration =
+                    standard.total;
+
+                this.#standardTime =
+                    this.#formatStandardTime(
+                        standard.total
+                    );
+
+                this.#calculatedEndTime =
+                    this.#scheduledStartMilliseconds +
+                    this.#standardDuration;
+
+                this.#percentGoal =
+                    this.#getPercentGoal();
+
+                this.#ringAnchor =
+                    creationMilliseconds;
+
+                this.#startedAtEpoch =
+                    creationDate.getTime();
+
+                if (
+                    !Number.isFinite(
+                        this.#tickAlignmentMilliseconds
+                    )
+                ) {
+                    this.#tickAlignmentMilliseconds =
+                        this.#millisecondsComponent(
+                            this.#scheduledStartMilliseconds
+                        );
+                }
+
+--- #parseInsertDateTime( ---
+#parseInsertDateTime(
+                        startTime,
+                        "startTime"
+                    );
+
+                this.#recordPendingTickAlignment(
+                    parsed.getMilliseconds()
+                );
+            }
+            catch {
+            }
+
+--- #parseInsertRangeLength( ---
+#parseInsertRangeLength(
+                            rangeLength
+                        );
+                }
+                catch {
+                    return;
+                }
+
+--- #getRangeAnimationDuration( ---
+#getRangeAnimationDuration();
+
+                for (
+                    const ring of
+                        this.#getTimerRings()
+                ) {
+                    for (
+                        const range of
+                            ring.querySelectorAll(
+                                ":scope > time-range"
+                            )
+                    ) {
+                        if (
+                            typeof range.snapToLogicalTiming ===
+                                "function"
+                        ) {
+                            range.snapToLogicalTiming();
+                        }
+                    }
+
+                    delete ring.clockTimerRing;
+
+                    ring.clockTimerExitingRing =
+                        true;
+
+                    ring.resizeDuration =
+                        `${duration}ms`;
+
+                    ring.setAttribute(
+                        "width",
+                        "0px"
+                    );
+
+                    setTimeout(
+                        () => ring.remove(),
+                        duration
+                    );
+                }
+
+===== TimeRange.js =====
+
+--- #uniformDate( ---
+#uniformDate(
+                        newValue,
+                        false
+                    )
+                );
+                break;
+
+            case "end-time":
+                this.#setEndTime(
+                    this.#uniformDate(
+                        newValue,
+                        false
+                    )
+                );
+                break;
+
+            case "range-length":
+                this.#setRangeLength(
+                    this.#parseRangeLength(
+                        newValue
+                    )
+                );
+                break;
+        }
+    }
+
+    #initializeFromAttributes() {
+        const hasStart =
+            this.hasAttribute(
+                "start-time"
+            );
+
+        const hasEnd =
+            this.hasAttribute(
+                "end-time"
+            );
+
+        const hasRange =
+            this.hasAttribute(
+                "range-length"
+            );
+
+        const start =
+            hasStart
+                ? this.#uniformDate(
+                    this.getAttribute(
+                        "start-time"
+                    ),
+                    false
+                )
+                : undefined;
+
+        const end =
+            hasEnd
+                ? this.#uniformDate(
+                    this.getAttribute(
+                        "end-time"
+                    ),
+                    false
+                )
+                : undefined;
+
+        const range =
+            hasRange
+                ? this.#parseRangeLength(
+                    this.getAttribute(
+                        "range-length"
+                    )
+                )
+                : undefined;
+
+        this.#syncing++;
+
+        try {
+            this.#startTime =
+                start;
+
+            this.#endTime =
+                end;
+
+            this.#rangeLength =
+                range;
+        } finally {
+            this.#syncing--;
+        }
+
+        if (
+            start instanceof Date &&
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            end instanceof Date &&
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setEndTime(
+                end
+            );
+
+            return;
+        }
+
+        if (
+            start instanceof Date &&
+            end instanceof Date
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            start instanceof Date
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            end instanceof Date
+        ) {
+            this.#setEndTime(
+                end
+            );
+
+            return;
+        }
+
+        if (
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setRangeLength(
+                range
+            );
+        }
+    }
+
+--- #formatDateTime( ---
+#formatDateTime(
+                splitTime
+            )
+        );
+
+        right.setAttribute(
+            "end-time",
+            this.#formatDateTime(
+                originalEnd
+            )
+        );
+
+        const rightLength =
+            endMilliseconds -
+            splitMilliseconds;
+
+        if (
+            hadRangeLength &&
+            rightLength > 0
+        ) {
+            right.setAttribute(
+                "range-length",
+                this.#formatRangeLength(
+                    rightLength
+                )
+            );
+        }
+
+--- #parseRangeLength( ---
+#parseRangeLength(
+                        newValue
+                    )
+                );
+                break;
+        }
+    }
+
+    #initializeFromAttributes() {
+        const hasStart =
+            this.hasAttribute(
+                "start-time"
+            );
+
+        const hasEnd =
+            this.hasAttribute(
+                "end-time"
+            );
+
+        const hasRange =
+            this.hasAttribute(
+                "range-length"
+            );
+
+        const start =
+            hasStart
+                ? this.#uniformDate(
+                    this.getAttribute(
+                        "start-time"
+                    ),
+                    false
+                )
+                : undefined;
+
+        const end =
+            hasEnd
+                ? this.#uniformDate(
+                    this.getAttribute(
+                        "end-time"
+                    ),
+                    false
+                )
+                : undefined;
+
+        const range =
+            hasRange
+                ? this.#parseRangeLength(
+                    this.getAttribute(
+                        "range-length"
+                    )
+                )
+                : undefined;
+
+        this.#syncing++;
+
+        try {
+            this.#startTime =
+                start;
+
+            this.#endTime =
+                end;
+
+            this.#rangeLength =
+                range;
+        } finally {
+            this.#syncing--;
+        }
+
+        if (
+            start instanceof Date &&
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            end instanceof Date &&
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setEndTime(
+                end
+            );
+
+            return;
+        }
+
+        if (
+            start instanceof Date &&
+            end instanceof Date
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            start instanceof Date
+        ) {
+            this.#setStartTime(
+                start
+            );
+
+            return;
+        }
+
+        if (
+            end instanceof Date
+        ) {
+            this.#setEndTime(
+                end
+            );
+
+            return;
+        }
+
+        if (
+            Number.isInteger(
+                range
+            ) &&
+            range > 0
+        ) {
+            this.#setRangeLength(
+                range
+            );
+        }
+    }
+
+--- #formatRangeLength( ---
+#formatRangeLength(
+                    rightLength
+                )
+            );
+        }
+
+        right.setAttribute(
+            "ignore-overlaps",
+            ""
+        );
+
+        right.timeRangeFullEntry =
+            true;
+
+        const transitioned =
+            this.transitionTo({
+                startTime:
+                    new Date(
+                        startMilliseconds
+                    ),
+                endTime:
+                    splitTime
+            }
+
+===== RingContainer.js =====
+
+--- static #normalizeOptionalTime( ---
+static #normalizeOptionalTime(
+        value
+    ) {
+        if (
+            value === undefined ||
+            value === null
+        ) {
+            return undefined;
+        }
+
+        const time =
+            String(value).trim();
+
+        if (
+            !time ||
+            !CSS.supports(
+                "animation-duration",
+                time
+            )
+        ) {
+            return undefined;
+        }
+
+        if (
+            !/^(?:\d+(?:\.\d+)?|\.\d+)(?:ms|s)$/i
+                .test(time)
+        ) {
+            return undefined;
+        }
+
+        return time;
+    }
+
+--- static #timeToMilliseconds( ---
+static #timeToMilliseconds(
+        value
+    ) {
+        const time =
+            String(value)
+                .trim()
+                .toLowerCase();
+
+        const match =
+            time.match(
+                /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/
+            );
+
+        if (!match) {
+            return 0;
+        }
+
+        const number =
+            Number(
+                match[1]
+            );
+
+        if (
+            match[2] === "s"
+        ) {
+            return (
+                number * 1000
+            );
+        }
+
+        return number;
+    }
