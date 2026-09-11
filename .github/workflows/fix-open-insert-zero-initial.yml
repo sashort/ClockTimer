@@ -1,0 +1,36 @@
+name: Fix open insert zero initial span
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-open-insert-zero-initial.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/fix_open_insert_zero_initial.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify zero-span inserted ranges
+        run: |
+          grep -Fq ': start' ClockTimer.js
+          grep -Fq 'range.timeRangeFullEntry =' ClockTimer.js
+          grep -Fq 'range.setAttribute(' ClockTimer.js
+          grep -Fq '"overlapping"' ClockTimer.js
+      - name: Commit update and cleanup
+        run: |
+          rm -f .github/scripts/fix_open_insert_zero_initial.py
+          rm -f .github/workflows/fix-open-insert-zero-initial.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/fix_open_insert_zero_initial.py .github/workflows/fix-open-insert-zero-initial.yml
+          git commit -m "Fix open insert zero initial span"
+          git push origin main
