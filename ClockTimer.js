@@ -12336,6 +12336,13 @@
         #getLatestTimerEnd() {
             let latest;
 
+            const ignoredTypes =
+                new Set([
+                    "elapsed",
+                    "remaining",
+                    "wave"
+                ]);
+
             for (
                 const range of
                     this.querySelectorAll(
@@ -12343,9 +12350,12 @@
                     )
             ) {
                 if (
-                    range.getAttribute(
-                        "type"
-                    ) === "remaining"
+                    range.timeRangeExiting === true ||
+                    ignoredTypes.has(
+                        range.getAttribute(
+                            "type"
+                        )
+                    )
                 ) {
                     continue;
                 }
@@ -12397,7 +12407,11 @@
             }
 
             const latestEnd =
-                this.#getLatestTimerEnd();
+                Number.isFinite(
+                    this.#calculatedEndTime
+                )
+                    ? this.#calculatedEndTime
+                    : this.#getLatestTimerEnd();
 
             if (
                 !Number.isFinite(latestEnd) ||
