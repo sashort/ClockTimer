@@ -23,7 +23,7 @@ jobs:
         run: |
           grep -Fq 'const initialNowDate =' ClockTimer.js
           grep -Fq 'this.#updateOpenOverwriteRange(' ClockTimer.js
-          grep -Fq 'initialNow = start + 1' ClockTimer.js
+          grep -Fq 'start + 1;' ClockTimer.js
       - name: Commit ClockTimer update and cleanup
         run: |
           rm -f .github/scripts/fix_open_overwrite_initial_render.py
