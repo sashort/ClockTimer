@@ -21,14 +21,17 @@ s = s.replace(old, new, 1)
 old = '''                finally {
                     this.#starting =
                         false;
+
                     this.#started =
                         false;
                 }'''
 new = '''                finally {
                     this.#starting =
                         false;
+
                     this.#started =
                         false;
+
                     this.#percentGoal =
                         originalPercentGoal;
                 }'''
