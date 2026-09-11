@@ -1,0 +1,22 @@
+name: Inspect fromJSON
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-fromjson.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show fromJSON
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON(')
+          # print through next public status getter
+          q=s.index('\n        get status()', p)
+          print(s[p:q])
+          PY
