@@ -1649,6 +1649,53 @@
                     }
                 }
 
+                const lateStarts = [];
+
+                for (let index = 1; index < events.length - 1; index++) {
+                    const event = events[index];
+
+                    if (["start", "resume", "end"].includes(event.type)) {
+                        continue;
+                    }
+
+                    const allowedEntry =
+                        Object.entries(event.attributes)
+                            .find(([name]) =>
+                                name.toLowerCase() === "allowed"
+                            );
+
+                    if (!allowedEntry) {
+                        continue;
+                    }
+
+                    const allowedMinutes =
+                        Number(allowedEntry[1]);
+
+                    if (
+                        !Number.isFinite(allowedMinutes) ||
+                        allowedMinutes < 0
+                    ) {
+                        return false;
+                    }
+
+                    const next = events[index + 1];
+
+                    if (next?.type !== "resume") {
+                        continue;
+                    }
+
+                    const allowedEnd =
+                        event.milliseconds +
+                        allowedMinutes * 60 * 1000;
+
+                    if (next.milliseconds > allowedEnd) {
+                        lateStarts.push({
+                            start: allowedEnd,
+                            end: next.milliseconds
+                        });
+                    }
+                }
+
                 const startTimeMilliseconds =
                     starts[0].milliseconds;
 
@@ -1761,6 +1808,41 @@
                             this.#applyOtherAttributes(
                                 range,
                                 event.attributes
+                            );
+
+                            ring.appendChild(range);
+
+                            cursor = segmentEnd;
+                        }
+                    }
+
+                    for (const lateStart of lateStarts) {
+                        let cursor = lateStart.start;
+
+                        while (cursor < lateStart.end) {
+                            const ringIndex =
+                                this.#getRingIndex(cursor);
+
+                            const segmentEnd =
+                                Math.min(
+                                    lateStart.end,
+                                    this.#getRingStart(ringIndex) +
+                                        ClockTimer.#HOUR
+                                );
+
+                            const ring =
+                                this.#ensureRing(ringIndex);
+
+                            const range =
+                                this.#createTimeRange(
+                                    "prestart",
+                                    cursor,
+                                    segmentEnd
+                                );
+
+                            range.setAttribute(
+                                "overlapping",
+                                ""
                             );
 
                             ring.appendChild(range);
