@@ -1,0 +1,40 @@
+name: Refactor ClockTimer to TimeRange split
+on:
+  push:
+    paths:
+      - '.github/workflows/refactor-clocktimer-split.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply refactor
+        run: python .github/scripts/refactor_clocktimer_to_split.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify split delegation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          assert 'currentPiece.split(' in text
+          assert 'range.split(' in text
+          assert '#splitRangeForOverwrite' in text
+          assert 'document.createElement(\n                            "time-range"\n                        );' not in text[text.index('#replaceRangeWithSegments'):text.index('#shiftExistingTimeRanges')]
+          PY
+      - name: Commit update and cleanup
+        run: |
+          rm .github/scripts/refactor_clocktimer_to_split.py
+          rm .github/workflows/refactor-clocktimer-split.yml
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add ClockTimer.js .github/scripts/refactor_clocktimer_to_split.py .github/workflows/refactor-clocktimer-split.yml
+          git commit -m "Refactor ClockTimer to use TimeRange split"
+          git push origin main
