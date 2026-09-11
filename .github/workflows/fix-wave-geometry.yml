@@ -1,0 +1,53 @@
+name: Fix internal wave geometry
+'on':
+  push:
+    branches:
+      - fix-wave-geometry
+    paths:
+      - '.github/workflows/fix-wave-geometry.yml'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch wave geometry
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('TimeRange.js')
+          s = p.read_text()
+          marker = '''        if (
+            this.getAttribute("type") ===
+                "elapsed"
+        ) {
+            const sweepEndAngle ='''
+          replacement = '''        if (
+            this.getAttribute("type") ===
+                "wave"
+        ) {
+            const sweepEndAngle ='''
+          if marker not in s:
+              raise SystemExit('normal wave geometry block not found')
+          p.write_text(s.replace(marker, replacement, 1))
+          PY
+      - name: Validate
+        run: |
+          node --check TimeRange.js
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('TimeRange.js').read_text()
+          if s.count('this.getAttribute("type") ===\n                    "wave"') < 2:
+              raise SystemExit('wave geometry checks incomplete')
+          PY
+      - name: Commit
+        run: |
+          git config user.name sashort
+          git config user.email 95879519+sashort@users.noreply.github.com
+          git add TimeRange.js
+          git commit -m 'Fix internal wave segment geometry'
+          git push origin main
