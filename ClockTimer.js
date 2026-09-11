@@ -350,11 +350,15 @@
                     box-shadow:
                         inset 0 0 clamp(12px, 5cqi, 30px)
                             rgb(0 0 0 / calc(
-                                var(--clock-timer-glass-vignette-opacity) * 0.38
+                                var(--clock-timer-glass-vignette-opacity) * 0.72
                             )),
                         inset 0 clamp(1px, 0.5cqi, 3px) clamp(4px, 1.6cqi, 10px)
                             rgb(255 255 255 / calc(
-                                var(--clock-timer-glass-edge-opacity) * 0.72
+                                var(--clock-timer-glass-edge-opacity) * 0.95
+                            )),
+                        inset 0 0 0 clamp(1px, 0.45cqi, 2px)
+                            rgb(0 0 0 / calc(
+                                var(--clock-timer-glass-edge-opacity) * 0.34
                             ));
                 }
 
@@ -377,30 +381,29 @@
                         ),
                         linear-gradient(
                             145deg,
-                            rgb(255 255 255 / 18%) 0%,
+                            rgb(255 255 255 / 32%) 0%,
                             transparent 34%,
-                            transparent 68%,
-                            rgb(255 255 255 / 6%) 100%
+                            transparent 64%,
+                            rgb(0 0 0 / 10%) 100%
                         );
                     opacity:
                         var(--clock-timer-glass-highlight-opacity);
-                    mix-blend-mode: screen;
                 }
 
                 #face-background::after {
                     background:
                         radial-gradient(
                             circle at 50% 43%,
-                            transparent 52%,
-                            rgb(0 0 0 / 8%) 78%,
-                            rgb(0 0 0 / 20%) 100%
+                            transparent 48%,
+                            rgb(0 0 0 / 14%) 76%,
+                            rgb(0 0 0 / 34%) 100%
                         ),
                         linear-gradient(
                             180deg,
-                            rgb(255 255 255 / 8%) 0%,
-                            transparent 24%,
-                            transparent 72%,
-                            rgb(0 0 0 / 10%) 100%
+                            rgb(255 255 255 / 24%) 0%,
+                            transparent 26%,
+                            transparent 68%,
+                            rgb(0 0 0 / 18%) 100%
                         );
                     opacity:
                         var(--clock-timer-glass-vignette-opacity);
