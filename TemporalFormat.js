@@ -19,9 +19,11 @@ class TemporalFormat {
     ];
 
     static #TIME_TOKENS = [
+        "HH",
         "hh",
         "mm",
         "ss",
+        "H",
         "h"
     ];
 
@@ -322,23 +324,27 @@ class TemporalFormat {
             return undefined;
         }
 
-        let hour =
+        const militaryHour =
             date.getHours();
 
-        if (!militaryTime) {
-            hour %= 12;
+        let standardHour =
+            militaryHour % 12;
 
-            if (hour === 0) {
-                hour = 12;
-            }
+        if (standardHour === 0) {
+            standardHour = 12;
         }
 
         const values = {
-            hh: TemporalFormat.#pad(
-                hour,
+            HH: TemporalFormat.#pad(
+                militaryHour,
                 2
             ),
-            h: String(hour),
+            H: String(militaryHour),
+            hh: TemporalFormat.#pad(
+                standardHour,
+                2
+            ),
+            h: String(standardHour),
             mm: TemporalFormat.#pad(
                 date.getMinutes(),
                 2
@@ -656,18 +662,26 @@ class TemporalFormat {
                 TemporalFormat.#TIME_TOKENS
             );
 
-        const hasHour =
+        const hasMilitaryHour =
+            tokens.includes("H") ||
+            tokens.includes("HH");
+
+        const hasStandardHour =
             tokens.includes("h") ||
             tokens.includes("hh");
 
+        const hasExpectedHour =
+            militaryTime
+                ? hasMilitaryHour
+                : hasStandardHour;
+
         if (
-            !hasHour ||
+            !hasExpectedHour ||
+            hasMilitaryHour === hasStandardHour ||
             !tokens.includes("mm")
         ) {
             return undefined;
         }
-
-        void militaryTime;
 
         return text;
     }
