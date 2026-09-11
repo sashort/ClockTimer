@@ -522,45 +522,7 @@
                         none;
                 }
 
-                #date {
-                    position: absolute;
-                    left: 50%;
-                    top: 50%;
-                    transform:
-                        translate(
-                            -50%,
-                            calc(
-                                -50% -
-                                var(
-                                    --clock-timer-auto-date-offset,
-                                    2rem
-                                )
-                            )
-                        );
-                    width: max-content;
-                    max-width: 80%;
-                    text-align: center;
-                    white-space: nowrap;
-                    font-family:
-                        var(
-                            --clock-timer-date-font,
-                            var(
-                                --clock-timer-time-font,
-                                inherit
-                            )
-                        );
-                    font-size:
-                        var(
-                            --clock-timer-date-font-size,
-                            var(
-                                --clock-timer-auto-date-font-size,
-                                0.75rem
-                            )
-                        );
-                    line-height: 1;
-                    pointer-events: none;
-                }
-
+                #date,
                 #time {
                     display:
                         inline-block;
@@ -586,6 +548,50 @@
                     background:
                         transparent;
 
+                    line-height: 1;
+
+                    white-space:
+                        nowrap;
+
+                    pointer-events:
+                        none;
+                }
+
+                #date {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform:
+                        translate(
+                            -50%,
+                            calc(
+                                -50% -
+                                var(
+                                    --clock-timer-auto-date-offset,
+                                    2rem
+                                )
+                            )
+                        );
+                    text-align: center;
+                    font-family:
+                        var(
+                            --clock-timer-date-font,
+                            var(
+                                --clock-timer-time-font,
+                                inherit
+                            )
+                        );
+                    font-size:
+                        var(
+                            --clock-timer-date-font-size,
+                            var(
+                                --clock-timer-auto-date-font-size,
+                                0.75rem
+                            )
+                        );
+                }
+
+                #time {
                     font-family:
                         var(
                             --clock-timer-time-font,
@@ -600,14 +606,6 @@
                                 1rem
                             )
                         );
-
-                    line-height: 1;
-
-                    white-space:
-                        nowrap;
-
-                    pointer-events:
-                        none;
                 }
             `;
 
