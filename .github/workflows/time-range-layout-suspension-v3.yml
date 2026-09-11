@@ -1,0 +1,38 @@
+name: TimeRange layout suspension target patch
+'on':
+  push:
+    branches:
+      - time-range-layout-suspension
+    paths:
+      - '.github/workflows/time-range-layout-suspension-v3.yml'
+      - '.github/scripts/apply_time_range_layout_suspension.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch branch
+        uses: actions/checkout@v4
+      - name: Preserve patch script
+        run: cp .github/scripts/apply_time_range_layout_suspension.py /tmp/apply_time_range_layout_suspension.py
+      - name: Switch to target branch
+        run: |
+          git fetch origin time-range-layout-target
+          git checkout -B time-range-layout-target origin/time-range-layout-target
+      - name: Apply patch
+        run: python /tmp/apply_time_range_layout_suspension.py
+      - name: Syntax check
+        run: node --check TimeRange.js
+      - name: Verify API
+        run: |
+          grep -Fq 'static suspendedTimeRanges = [];' TimeRange.js
+          grep -Fq 'static suspendLayout(' TimeRange.js
+          grep -Fq 'static resumeLayout(' TimeRange.js
+      - name: Commit target branch
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add TimeRange.js
+          git commit -m "Add TimeRange layout suspension"
+          git push origin time-range-layout-target
