@@ -7414,6 +7414,11 @@
 
                         segment.timeRangeFullEntry =
                             true;
+
+                        segment.setAttribute(
+                            "ignore-overlaps",
+                            ""
+                        );
                     }
 
                     this.#setRangeTiming(
@@ -7461,6 +7466,11 @@
 
                         movedSegment.timeRangeFullEntry =
                             true;
+
+                        movedSegment.setAttribute(
+                            "ignore-overlaps",
+                            ""
+                        );
 
                         this.#setRangeTiming(
                             movedSegment,
