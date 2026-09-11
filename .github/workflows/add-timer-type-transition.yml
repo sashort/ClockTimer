@@ -6,6 +6,7 @@ name: Add timer type transition
     paths:
       - '.github/workflows/add-timer-type-transition.yml'
       - '.github/scripts/add_timer_type_transition.py'
+      - '.github/scripts/run_timer_type_transition_patch.py'
 permissions:
   contents: write
 jobs:
@@ -28,7 +29,7 @@ jobs:
         with:
           node-version: 22
       - name: Apply timer-type transition implementation
-        run: python controller/.github/scripts/add_timer_type_transition.py target
+        run: python controller/.github/scripts/run_timer_type_transition_patch.py target
       - name: Syntax check ClockTimer
         run: node --check target/ClockTimer.js
       - name: Syntax check RingContainer
