@@ -6933,25 +6933,9 @@
                 return;
             }
 
-            const previousMode =
-                oldValue === "remaining"
-                    ? "remaining"
-                    : "elapsed";
+            this.#cancelTimerModeTransition();
 
-            if (
-                !this.isConnected ||
-                oldValue === null ||
-                previousMode === mode
-            ) {
-                this.#cancelTimerModeTransition();
-                this.#applyTimerModeState(
-                    mode
-                );
-                return;
-            }
-
-            this.#transitionTimerMode(
-                previousMode,
+            this.#applyTimerModeState(
                 mode
             );
         }
@@ -10393,6 +10377,63 @@
                     range.clockTimerEnd
                 );
 
+            const rangeType =
+                range.getAttribute(
+                    "type"
+                );
+
+            if (
+                rangeType === "remaining" ||
+                rangeType === "wave"
+            ) {
+                this.#releaseTimeRangeTimingAnimation(
+                    range
+                );
+
+                TimeRangeClass?.suspendLayout?.(
+                    range
+                );
+
+                this.#writeRangeTiming(
+                    range,
+                    start,
+                    end,
+                    preserveRangeLength
+                );
+
+                const originMilliseconds =
+                    this.#getTimeRangeOriginMilliseconds(
+                        range,
+                        start
+                    );
+
+                const targetLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        start,
+                        end,
+                        originMilliseconds
+                    );
+
+                if (targetLayout) {
+                    this.#applyTimeRangeLayout(
+                        range,
+                        targetLayout,
+                        true
+                    );
+                }
+
+                TimeRangeClass?.resumeLayout?.(
+                    range
+                );
+
+                if (!targetLayout) {
+                    range.refreshVisualGeometry?.();
+                }
+
+                return true;
+            }
+
             const active =
                 this.#timeRangeTimingAnimations.get(
                     range
@@ -12333,6 +12374,10 @@
                 const range of
                     this.#remainingRanges.values()
             ) {
+                this.#releaseTimeRangeTimingAnimation(
+                    range
+                );
+
                 range.remove();
             }
 
@@ -12381,6 +12426,10 @@
                     ringIndex > lastRing ||
                     !range.isConnected
                 ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
                     range.remove();
                     this.#remainingRanges.delete(
                         ringIndex
