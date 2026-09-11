@@ -2405,6 +2405,10 @@
                             this.start(operation.args);
                             break;
 
+                        case "stop":
+                            this.stop();
+                            break;
+
                         case "insert":
                             this.insert(operation.args);
                             break;
@@ -4070,138 +4074,54 @@
         }
 
         stop() {
-            const openInsert =
-                this.#openEndedRange;
+            if (
+                this.#updatesSuspended &&
+                !this.#processingAsyncBatch
+            ) {
+                this.#recordPendingTickAlignment(
+                    new Date().getMilliseconds()
+                );
 
-            const openOverwrite =
-                this.#openOverwriteRange;
+                this.#queueAsyncOperation({
+                    type: "stop"
+                });
 
-            if (!openInsert && !openOverwrite) {
+                return true;
+            }
+
+            const wasRunning =
+                this.#started;
+
+            const hadOpenRange =
+                Boolean(
+                    this.#openEndedRange ||
+                    this.#openOverwriteRange
+                );
+
+            if (!wasRunning && !hadOpenRange) {
                 return false;
             }
 
-            const nowDate =
-                new Date();
+            if (hadOpenRange) {
+                this.closeOpenRange();
+            }
 
             const now =
-                this.#getCurrentTimelineTime(
-                    nowDate
-                );
+                wasRunning
+                    ? this.#getCurrentTimelineTime()
+                    : undefined;
 
-            if (openInsert) {
-                const start =
-                    this.#dateToTimelineTime(
-                        openInsert.startDate
-                    );
-
-                const previous =
-                    Number.isFinite(
-                        this.#openEndedLastTick
-                    )
-                        ? this.#openEndedLastTick
-                        : start;
-
-                if (now > previous) {
-                    const delta =
-                        now - previous;
-
-                    this.#extendCalculatedEndTime(
-                        delta,
-                        openInsert.type
-                    );
-
-                    this.#shiftRangesAfter(
-                        previous,
-                        delta,
-                        openInsert
-                    );
-                }
-
-                openInsert.openEnded =
-                    false;
-
-                openInsert.endDate =
-                    new Date(
-                        nowDate.getTime()
-                    );
-
-                openInsert.rangeLength =
-                    Math.max(
-                        0,
-                        now - start
-                    );
-
-                this.#openEndedRange =
-                    undefined;
-
-                this.#openEndedLastTick =
-                    undefined;
-
-                this.#renderAllInsertedRanges();
-            }
-
-            if (openOverwrite) {
-                const previous =
-                    Number.isFinite(
-                        this.#openOverwriteLastTick
-                    )
-                        ? this.#openOverwriteLastTick
-                        : openOverwrite.start;
-
-                if (now > previous) {
-                    const net =
-                        this.#getOverwriteCalculatedEndDelta(
-                            previous,
-                            now,
-                            openOverwrite.type
-                        );
-
-                    this.#adjustCalculatedEndTime(
-                        net
-                    );
-
-                    this.#applyOverwriteMask(
-                        previous,
-                        now
-                    );
-
-                    this.#renderOverwriteRecord({
-                        ...openOverwrite,
-                        start: previous,
-                        end: now,
-                        openEnded: false
-                    });
-                }
-
-                openOverwrite.openEnded =
-                    false;
-
-                openOverwrite.end =
-                    Math.max(
-                        openOverwrite.start,
-                        now
-                    );
-
-                this.#openOverwriteRange =
-                    undefined;
-
-                this.#openOverwriteLastTick =
-                    undefined;
-            }
-
-            this.#tickAlignmentMilliseconds =
-                nowDate.getMilliseconds();
+            this.#started =
+                false;
 
             this.#stopTickTimer();
 
-            if (this.#needsTick()) {
-                this.#scheduleNextTick();
-            }
+            this.#setIndicatorSymbolVisible(
+                false
+            );
 
             this.#refreshRingLayout(
-                this.#started
-                    ? now
-                    : undefined,
+                now,
                 { refreshTickMarks: true }
             );
 
