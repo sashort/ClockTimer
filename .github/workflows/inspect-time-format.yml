@@ -1,0 +1,14 @@
+name: Inspect time-format validation
+on:
+  push:
+    paths:
+      - .github/workflows/inspect-time-format.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          grep -n -A80 -B10 '#normalizeFormat' ClockTimer.js || true
+          grep -n -A60 -B10 'normalizeTimeFormat' ClockTimer.js || true
+          grep -n -A40 -B10 'formatTime(' ClockTimer.js || true
