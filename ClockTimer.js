@@ -4224,10 +4224,16 @@
                 return true;
             }
 
-            const record =
+            const insertRecord =
                 this.#openEndedRange;
 
-            if (!record) {
+            const overwriteRecord =
+                this.#openOverwriteRange;
+
+            if (
+                !insertRecord &&
+                !overwriteRecord
+            ) {
                 return false;
             }
 
@@ -4235,6 +4241,50 @@
                 this.#normalizeTickDate(
                     new Date()
                 );
+
+            if (
+                !insertRecord &&
+                overwriteRecord
+            ) {
+                const endTimeline =
+                    this.#getCurrentTimelineTime(
+                        endDate
+                    );
+
+                this.#updateOpenOverwriteRange(
+                    endDate
+                );
+
+                overwriteRecord.openEnded =
+                    false;
+
+                overwriteRecord.end =
+                    Math.max(
+                        overwriteRecord.start,
+                        endTimeline
+                    );
+
+                this.#openOverwriteRange =
+                    undefined;
+
+                this.#openOverwriteLastTick =
+                    undefined;
+
+                this.#tickAlignmentMilliseconds =
+                    endDate.getMilliseconds();
+
+                if (this.#needsTick()) {
+                    this.#startTickTimer();
+                }
+                else {
+                    this.#stopTickTimer();
+                }
+
+                return true;
+            }
+
+            const record =
+                insertRecord;
 
             const endTimeline =
                 this.#dateToTimelineTime(
