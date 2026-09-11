@@ -1745,8 +1745,11 @@
                 this.#calculatedEndTime =
                     terminal;
 
+                const originalPercentGoal =
+                    this.#percentGoal;
+
                 this.#percentGoal =
-                    this.#getPercentGoal();
+                    1;
 
                 this.#ringAnchor =
                     creationMilliseconds;
@@ -1866,6 +1869,9 @@
 
                     this.#started =
                         false;
+
+                    this.#percentGoal =
+                        originalPercentGoal;
                 }
 
                 for (const ring of this.#rings.values()) {
