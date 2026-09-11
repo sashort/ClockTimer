@@ -1,0 +1,34 @@
+name: Fix fromJSON started state
+on:
+  push:
+    paths:
+      - .github/workflows/fix-fromjson-started.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/fix-fromjson-started.py
+      - name: Verify
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('ClockTimer.js').read_text()
+          p=s.index('fromJSON('); q=s.index('\n        get status()', p); m=s[p:q]
+          assert 'this.#started =\n                    true;' in m
+          assert 'finally {\n                    this.#starting =\n                        false;\n\n                    this.#started =\n                        false;\n                }' in m
+          PY
+      - name: Commit
+        run: |
+          rm -f .github/scripts/fix-fromjson-started.py .github/workflows/fix-fromjson-started.yml .github/workflows/inspect-fromjson.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ClockTimer.js .github/scripts/fix-fromjson-started.py .github/workflows/fix-fromjson-started.yml .github/workflows/inspect-fromjson.yml
+          git commit -m 'Reconstruct planned ranges during fromJSON'
+          git push origin main
