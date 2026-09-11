@@ -1,0 +1,35 @@
+name: Suppress responsive sizing during spin
+on:
+  push:
+    paths:
+      - '.github/workflows/suppress-spin-responsive-sizing.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply ClockTimer patch
+        run: python .github/scripts/suppress_spin_responsive_sizing.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify spin sizing suppression
+        run: |
+          grep -Fq 'this.#spinAnimation' ClockTimer.js
+          grep -Fq 'this.#scheduleFontSizing();' ClockTimer.js
+          grep -Fq 'cancelAnimationFrame(' ClockTimer.js
+      - name: Commit ClockTimer update and cleanup
+        run: |
+          rm -f .github/scripts/suppress_spin_responsive_sizing.py
+          rm -f .github/workflows/suppress-spin-responsive-sizing.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js .github/scripts/suppress_spin_responsive_sizing.py .github/workflows/suppress-spin-responsive-sizing.yml
+          git commit -m "Suppress responsive sizing during spin"
+          git push origin main
