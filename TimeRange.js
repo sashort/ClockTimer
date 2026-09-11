@@ -120,10 +120,102 @@ class TimeRange extends HTMLElement {
             value;
     }
 
-    static #calculateTimeAngle(
-        time,
-        origin
+    static #getGroupTimeBounds(
+        parent
     ) {
+        if (
+            !parent ||
+            typeof parent.querySelectorAll !==
+                "function"
+        ) {
+            return;
+        }
+
+        let earliestStart;
+        let latestEnd;
+
+        for (
+            const range of
+                parent.querySelectorAll(
+                    "time-range"
+                )
+        ) {
+            if (
+                !(range instanceof TimeRange) ||
+                range.#pendingRemoval ||
+                !(range.#startTime instanceof Date) ||
+                !(range.#endTime instanceof Date)
+            ) {
+                continue;
+            }
+
+            const start =
+                range.#startTime.getTime();
+
+            const end =
+                range.#endTime.getTime();
+
+            if (
+                earliestStart === undefined ||
+                start < earliestStart
+            ) {
+                earliestStart = start;
+            }
+
+            if (
+                latestEnd === undefined ||
+                end > latestEnd
+            ) {
+                latestEnd = end;
+            }
+        }
+
+        if (
+            earliestStart === undefined ||
+            latestEnd === undefined ||
+            latestEnd <= earliestStart
+        ) {
+            return;
+        }
+
+        return {
+            start: earliestStart,
+            end: latestEnd
+        };
+    }
+
+    static calculateTimeAngle(
+        time,
+        origin,
+        parent = undefined
+    ) {
+        if (!(time instanceof Date)) {
+            return;
+        }
+
+        if (parent !== undefined) {
+            const bounds =
+                TimeRange.#getGroupTimeBounds(
+                    parent
+                );
+
+            if (!bounds) {
+                return;
+            }
+
+            return (
+                (
+                    time.getTime() -
+                    bounds.start
+                ) /
+                (
+                    bounds.end -
+                    bounds.start
+                )
+            ) *
+            360;
+        }
+
         const millisecondsInHour =
             60 *
             60 *
@@ -1610,7 +1702,7 @@ class TimeRange extends HTMLElement {
         return result;
     }
 
-    #getEdgePoint(
+    static calculateEdgePoint(
         angle,
         width,
         height
@@ -1673,12 +1765,115 @@ class TimeRange extends HTMLElement {
         };
     }
 
-    #getCornersBetweenAngles(
+    static calculateCorners(
         startAngle,
         endAngle,
         width,
-        height
+        height,
+        parent = undefined,
+        mode = "radial"
     ) {
+        const supportedModes =
+            new Set([
+                "radial",
+                "to-right",
+                "to-left",
+                "to-bottom",
+                "to-top"
+            ]);
+
+        if (!supportedModes.has(mode)) {
+            return;
+        }
+
+        if (
+            mode !== "radial" &&
+            parent === undefined
+        ) {
+            return;
+        }
+
+        if (mode !== "radial") {
+            const startProgress =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        startAngle / 360
+                    )
+                );
+
+            const endProgress =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        endAngle / 360
+                    )
+                );
+
+            if (mode === "to-right") {
+                const startX =
+                    width * startProgress;
+
+                const endX =
+                    width * endProgress;
+
+                return [
+                    { x: startX, y: 0 },
+                    { x: endX, y: 0 },
+                    { x: endX, y: height },
+                    { x: startX, y: height }
+                ];
+            }
+
+            if (mode === "to-left") {
+                const startX =
+                    width *
+                    (1 - startProgress);
+
+                const endX =
+                    width *
+                    (1 - endProgress);
+
+                return [
+                    { x: startX, y: 0 },
+                    { x: endX, y: 0 },
+                    { x: endX, y: height },
+                    { x: startX, y: height }
+                ];
+            }
+
+            if (mode === "to-bottom") {
+                const startY =
+                    height * startProgress;
+
+                const endY =
+                    height * endProgress;
+
+                return [
+                    { x: 0, y: startY },
+                    { x: width, y: startY },
+                    { x: width, y: endY },
+                    { x: 0, y: endY }
+                ];
+            }
+
+            const startY =
+                height *
+                (1 - startProgress);
+
+            const endY =
+                height *
+                (1 - endProgress);
+
+            return [
+                { x: 0, y: startY },
+                { x: width, y: startY },
+                { x: width, y: endY },
+                { x: 0, y: endY }
+            ];
+        }
         const normalize =
             angle =>
                 (
@@ -3037,13 +3232,13 @@ class TimeRange extends HTMLElement {
             this.#getRingOriginTime();
 
         const startAngle =
-            TimeRange.#calculateTimeAngle(
+            TimeRange.calculateTimeAngle(
                 renderStart,
                 ringOrigin
             );
 
         const endAngle =
-            TimeRange.#calculateTimeAngle(
+            TimeRange.calculateTimeAngle(
                 renderEnd,
                 ringOrigin
             );
@@ -3095,21 +3290,21 @@ class TimeRange extends HTMLElement {
         }
 
         const startPoint =
-            this.#getEdgePoint(
+            TimeRange.calculateEdgePoint(
                 startAngle,
                 width,
                 height
             );
 
         const endPoint =
-            this.#getEdgePoint(
+            TimeRange.calculateEdgePoint(
                 endAngle,
                 width,
                 height
             );
 
         const corners =
-            this.#getCornersBetweenAngles(
+            TimeRange.calculateCorners(
                 startAngle,
                 endAngle,
                 width,
