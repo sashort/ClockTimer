@@ -1768,6 +1768,29 @@
                         startTimeMilliseconds
                     );
 
+                    const restoredCalculatedEndTime =
+                        this.#calculatedEndTime;
+
+                    const coverageEnd =
+                        Math.max(
+                            terminal,
+                            restoredCalculatedEndTime ?? terminal
+                        );
+
+                    if (
+                        Number.isFinite(this.#standardEnd) &&
+                        coverageEnd > this.#standardEnd
+                    ) {
+                        this.#createSpan(
+                            "overtime",
+                            this.#standardEnd,
+                            coverageEnd
+                        );
+                    }
+
+                    this.#calculatedEndTime =
+                        coverageEnd;
+
                     let elapsedCursor =
                         startTimeMilliseconds;
 
@@ -1898,10 +1921,7 @@
                     }
 
                     this.#refreshRingLayout(
-                        Math.max(
-                            terminal,
-                            this.#standardEnd ?? terminal
-                        ),
+                        coverageEnd,
                         {
                             refreshTickMarks: true
                         }
@@ -1935,7 +1955,10 @@
                 }
 
                 this.#refreshRingLayout(
-                    terminal,
+                    Math.max(
+                        terminal,
+                        this.#calculatedEndTime ?? terminal
+                    ),
                     {
                         refreshTickMarks: true
                     }
