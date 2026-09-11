@@ -12365,7 +12365,7 @@
                 "military-time"
             ) === "false"
                 ? "h:mm:ss AM/PM"
-                : "hhmmss";
+                : "HHmmss";
         }
 
         #normalizeFormat() {
@@ -12397,9 +12397,14 @@
         #isValidFormat(
             value
         ) {
+            const formatType =
+                TemporalFormat.getFormatType(
+                    value
+                );
+
             if (
-                typeof value !==
-                    "string"
+                !formatType ||
+                formatType.type !== "time"
             ) {
                 return false;
             }
@@ -12409,15 +12414,10 @@
                     "military-time"
                 ) !== "false";
 
-            if (military) {
-                return /^(?:hhmm|hhmmss)$/.test(
-                    value
-                );
-            }
-
-            return /^(?:hh:mm(?::ss)?|(?:h|0h):mm(?::ss)?(?: ?(?:a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.))?)$/.test(
-                value
-            );
+            return formatType["time-type"] ===
+                (military
+                    ? "military"
+                    : "12-hour");
         }
 
         #updateDisplay(
@@ -12444,107 +12444,34 @@
                 ) ??
                 this.#getDefaultFormat();
 
-            const rawHours =
-                now.getHours();
-
-            const minutes =
-                String(
-                    now.getMinutes()
-                ).padStart(
-                    2,
-                    "0"
+            let result =
+                TemporalFormat.formatTime(
+                    now,
+                    format,
+                    military
                 );
 
-            const seconds =
-                String(
-                    now.getSeconds()
-                ).padStart(
-                    2,
-                    "0"
-                );
-
-            if (military) {
-                const hourText =
-                    String(
-                        rawHours
-                    ).padStart(
-                        2,
-                        "0"
-                    );
-
-                this.#timeElement.textContent =
-                    format === "hhmmss"
-                        ? `${hourText}${minutes}${seconds}`
-                        : `${hourText}${minutes}`;
-
-                this.#scheduleFontSizing();
-
+            if (result === undefined) {
                 return;
             }
 
-            const militaryHour =
-                format.startsWith(
-                    "hh:"
+            if (!military) {
+                const pm =
+                    now.getHours() >= 12;
+
+                const suffixes = {
+                    "a/p": pm ? "p" : "a",
+                    "A/P": pm ? "P" : "A",
+                    "AM/PM": pm ? "PM" : "AM",
+                    "A.M./P.M.": pm ? "P.M." : "A.M.",
+                    "am/pm": pm ? "pm" : "am",
+                    "a.m./p.m.": pm ? "p.m." : "a.m."
+                };
+
+                result = result.replace(
+                    /(A\.M\.\/P\.M\.|a\.m\.\/p\.m\.|AM\/PM|am\/pm|A\/P|a\/p)/,
+                    token => suffixes[token]
                 );
-
-            const padHour =
-                militaryHour ||
-                format.startsWith(
-                    "0h:"
-                );
-
-            const hourValue =
-                militaryHour
-                    ? rawHours
-                    : rawHours % 12 || 12;
-
-            const hourText =
-                padHour
-                    ? String(hourValue).padStart(2, "0")
-                    : String(hourValue);
-
-            const hasSeconds =
-                /:ss(?: |$)/.test(
-                    format
-                );
-
-            let result =
-                `${hourText}:${minutes}`;
-
-            if (hasSeconds) {
-                result +=
-                    `:${seconds}`;
-            }
-
-            if (!militaryHour) {
-                const suffixMatch =
-                    format.match(
-                        /^(?:h|0h):mm(?::ss)?( ?)(a\/p|A\/P|AM\/PM|A\.M\.\/P\.M\.|am\/pm|a\.m\.\/p\.m\.)$/
-                    );
-
-                if (suffixMatch) {
-                    const space =
-                        suffixMatch[1];
-
-                    const style =
-                        suffixMatch[2];
-
-                    const pm =
-                        rawHours >= 12;
-
-                    const suffixes = {
-                        "a/p": pm ? "p" : "a",
-                        "A/P": pm ? "P" : "A",
-                        "AM/PM": pm ? "PM" : "AM",
-                        "A.M./P.M.": pm ? "P.M." : "A.M.",
-                        "am/pm": pm ? "pm" : "am",
-                        "a.m./p.m.": pm ? "p.m." : "a.m."
-                    };
-
-                    result +=
-                        space +
-                        suffixes[style];
-                }
             }
 
             this.#timeElement.textContent =

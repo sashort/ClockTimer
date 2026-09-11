@@ -642,6 +642,213 @@ class TemporalFormat {
         );
     }
 
+    static getFormatType(value) {
+        if (typeof value !== "string") {
+            return;
+        }
+
+        const text = value.trim();
+
+        if (!text) {
+            return;
+        }
+
+        const timeTokens =
+            TemporalFormat.#collectTokens(
+                text,
+                TemporalFormat.#TIME_TOKENS
+            );
+
+        const dateTokens =
+            TemporalFormat.#collectTokens(
+                text,
+                TemporalFormat.#DATE_TOKENS
+            );
+
+        const hasMilitaryHour =
+            timeTokens.includes("H") ||
+            timeTokens.includes("HH");
+
+        const hasStandardHour =
+            timeTokens.includes("h") ||
+            timeTokens.includes("hh");
+
+        const hasTime =
+            timeTokens.includes("mm") &&
+            hasMilitaryHour !== hasStandardHour;
+
+        const hasYear =
+            dateTokens.includes("yy") ||
+            dateTokens.includes("yyyy");
+
+        const hasMonth =
+            dateTokens.includes("M") ||
+            dateTokens.includes("MM") ||
+            dateTokens.includes("MMM") ||
+            dateTokens.includes("MMMM");
+
+        const hasDay =
+            dateTokens.includes("d") ||
+            dateTokens.includes("dd");
+
+        const hasDate =
+            hasYear &&
+            hasMonth &&
+            hasDay;
+
+        if (!hasDate && !hasTime) {
+            return;
+        }
+
+        const result = {
+            type:
+                hasDate && hasTime
+                    ? "datetime"
+                    : hasDate
+                        ? "date"
+                        : "time"
+        };
+
+        if (hasTime) {
+            result["time-type"] =
+                TemporalFormat.#isISO8601Format(text)
+                    ? "ISO 8601"
+                    : hasMilitaryHour
+                        ? "military"
+                        : "12-hour";
+        }
+
+        return result;
+    }
+
+    static parseISO8601(
+        value,
+        referenceDate = new Date()
+    ) {
+        if (typeof value !== "string") {
+            return;
+        }
+
+        const text = value.trim();
+
+        if (!text) {
+            return;
+        }
+
+        const dateMatch =
+            text.match(
+                /^(\d{4})-(\d{2})-(\d{2})$/
+            );
+
+        if (dateMatch) {
+            return TemporalFormat.#buildISODate(
+                dateMatch
+            );
+        }
+
+        const dateTimeMatch =
+            text.match(
+                /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2})?$/
+            );
+
+        if (dateTimeMatch) {
+            const local =
+                TemporalFormat.#buildDate(
+                    Number(dateTimeMatch[1]),
+                    Number(dateTimeMatch[2]),
+                    Number(dateTimeMatch[3]),
+                    dateTimeMatch[4],
+                    dateTimeMatch[5],
+                    dateTimeMatch[6],
+                    TemporalFormat.#isoMilliseconds(
+                        dateTimeMatch[7]
+                    )
+                );
+
+            if (!local) {
+                return;
+            }
+
+            if (!dateTimeMatch[8]) {
+                return local;
+            }
+
+            const normalized =
+                TemporalFormat.#normalizeISOOffset(
+                    text
+                );
+
+            const date = new Date(normalized);
+
+            return Number.isFinite(date.getTime())
+                ? date
+                : undefined;
+        }
+
+        const timeMatch =
+            text.match(
+                /^(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2})?$/
+            );
+
+        if (!timeMatch) {
+            return;
+        }
+
+        const reference =
+            referenceDate instanceof Date &&
+            Number.isFinite(referenceDate.getTime())
+                ? referenceDate
+                : new Date();
+
+        const local =
+            TemporalFormat.#buildDate(
+                reference.getFullYear(),
+                reference.getMonth() + 1,
+                reference.getDate(),
+                timeMatch[1],
+                timeMatch[2],
+                timeMatch[3],
+                TemporalFormat.#isoMilliseconds(
+                    timeMatch[4]
+                )
+            );
+
+        if (!local || !timeMatch[5]) {
+            return local;
+        }
+
+        const dateText = [
+            reference.getFullYear(),
+            TemporalFormat.#pad(
+                reference.getMonth() + 1,
+                2
+            ),
+            TemporalFormat.#pad(
+                reference.getDate(),
+                2
+            )
+        ].join("-");
+
+        const normalized =
+            TemporalFormat.#normalizeISOOffset(
+                `${dateText}T${text}`
+            );
+
+        const date = new Date(normalized);
+
+        return Number.isFinite(date.getTime())
+            ? date
+            : undefined;
+    }
+
+    static isISO8601(value) {
+        return (
+            TemporalFormat.parseISO8601(
+                value
+            ) !== undefined
+        );
+    }
+
     static normalizeTimeFormat(
         format,
         militaryTime = true
@@ -740,6 +947,51 @@ class TemporalFormat {
                 format
             ) !== undefined
         );
+    }
+
+    static #isISO8601Format(format) {
+        return /^yyyy-MM-ddTHH:mm(?::ss)?$/.test(
+            format
+        );
+    }
+
+    static #isoMilliseconds(value) {
+        if (value === undefined) {
+            return undefined;
+        }
+
+        return String(value)
+            .slice(0, 3)
+            .padEnd(3, "0");
+    }
+
+    static #normalizeISOOffset(value) {
+        return value.replace(
+            /([+-]\d{2})(\d{2})$/,
+            "$1:$2"
+        );
+    }
+
+    static #buildISODate(match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+
+        const date = new Date(
+            year,
+            month - 1,
+            day
+        );
+
+        if (
+            date.getFullYear() !== year ||
+            date.getMonth() !== month - 1 ||
+            date.getDate() !== day
+        ) {
+            return;
+        }
+
+        return date;
     }
 
     static #buildDate(
