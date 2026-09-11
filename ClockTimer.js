@@ -7588,25 +7588,33 @@
                 return 0;
             }
 
-            const computedTop =
+            const top =
                 Number.parseFloat(
                     getComputedStyle(
                         this.#indicatorRing
                     ).top
                 );
 
-            if (Number.isFinite(computedTop)) {
-                return computedTop;
+            if (Number.isFinite(top)) {
+                return top;
             }
 
-            const inlineInset =
+            const inset =
                 Number.parseFloat(
                     this.#indicatorRing.style.inset
                 );
 
-            return Number.isFinite(inlineInset)
-                ? inlineInset
+            return Number.isFinite(inset)
+                ? inset
                 : 0;
+        }
+
+        #getTimerTypeIndicatorShadow(
+            visible
+        ) {
+            return visible
+                ? "drop-shadow(0 2px 2px rgb(0 0 0 / 80%)) drop-shadow(0 0 5px rgb(0 0 0 / 65%))"
+                : "drop-shadow(0 2px 2px rgb(0 0 0 / 0%)) drop-shadow(0 0 5px rgb(0 0 0 / 0%))";
         }
 
         #prepareTimerTypeIndicatorInward(
@@ -7614,25 +7622,29 @@
         ) {
             if (
                 !state.indicatorUsed ||
-                !this.#indicatorSymbol
+                !this.#indicatorSymbol ||
+                !this.#indicatorRing
             ) {
                 return;
             }
-
-            const activeRings =
-                state.oldRings.filter(
-                    ring =>
-                        ring.hasAttribute(
-                            "active"
-                        )
-                );
 
             const baseInset =
                 this.#getTimerTypeIndicatorTopInset();
 
             let inwardTip;
 
-            for (const ring of activeRings) {
+            for (
+                const ring of
+                    state.oldRings
+            ) {
+                if (
+                    !ring.hasAttribute(
+                        "active"
+                    )
+                ) {
+                    continue;
+                }
+
                 const geometry =
                     state.oldGeometry.get(
                         ring
@@ -7658,9 +7670,6 @@
                 }
             }
 
-            state.indicatorBaseInset =
-                baseInset;
-
             state.indicatorInwardTip =
                 Number.isFinite(inwardTip)
                     ? inwardTip
@@ -7684,8 +7693,7 @@
                 return;
             }
 
-            const duration =
-                750;
+            const duration = 750;
 
             const distance =
                 Number.isFinite(
@@ -7694,17 +7702,21 @@
                     ? state.indicatorInwardDistance
                     : 0;
 
-            const transparentShadow =
-                "drop-shadow(0 2px 2px rgb(0 0 0 / 0%)) drop-shadow(0 0 5px rgb(0 0 0 / 0%))";
-
-            const heavyShadow =
-                "drop-shadow(0 2px 2px rgb(0 0 0 / 80%)) drop-shadow(0 0 5px rgb(0 0 0 / 65%))";
-
             const startTransform =
                 "translateX(-50%) translateY(0px)";
 
             const endTransform =
                 `translateX(-50%) translateY(${distance}px)`;
+
+            const transparentShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    false
+                );
+
+            const heavyShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    true
+                );
 
             if (
                 typeof this.#indicatorSymbol.animate !==
@@ -7786,17 +7798,17 @@
                 return;
             }
 
-            const duration =
-                750;
-
-            const transparentShadow =
-                "drop-shadow(0 2px 2px rgb(0 0 0 / 0%)) drop-shadow(0 0 5px rgb(0 0 0 / 0%))";
+            const duration = 750;
 
             const heavyShadow =
-                "drop-shadow(0 2px 2px rgb(0 0 0 / 80%)) drop-shadow(0 0 5px rgb(0 0 0 / 65%))";
+                this.#getTimerTypeIndicatorShadow(
+                    true
+                );
 
-            state.indicatorGeometryFrozen =
-                false;
+            const transparentShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    false
+                );
 
             this.#timerTypeIndicatorFrozen =
                 false;
@@ -7813,12 +7825,15 @@
                     ? state.indicatorInwardTip
                     : newBaseInset;
 
-            const compensation =
-                inwardTip -
-                newBaseInset;
+            const distance =
+                Math.max(
+                    0,
+                    inwardTip -
+                    newBaseInset
+                );
 
             const startTransform =
-                `translateX(-50%) translateY(${compensation}px)`;
+                `translateX(-50%) translateY(${distance}px)`;
 
             const endTransform =
                 "translateX(-50%) translateY(0px)";
@@ -7914,9 +7929,6 @@
             ) {
                 return;
             }
-
-            state.indicatorGeometryFrozen =
-                false;
 
             state.indicatorInwardAnimation
                 ?.cancel();
@@ -8073,7 +8085,7 @@
                                 state.indicatorTrackAnimation =
                                     undefined;
 
-                                this.#startTimerTypeIndicatorOutward(
+                                this.#releaseTimerTypeIndicator(
                                     state
                                 );
                             },
@@ -8646,16 +8658,11 @@
                         this.#indicatorSymbol
                     ),
                 ringsFinished:
-                    false,
-                indicatorGeometryFrozen:
                     false
             };
 
             this.#timerTypeTransitionState =
                 state;
-
-            state.indicatorGeometryFrozen =
-                state.indicatorUsed;
 
             this.#timerTypeTransitioning =
                 true;
@@ -14690,6 +14697,18 @@
                 return;
             }
 
+            if (
+                this.#timerTypeIndicatorFrozen &&
+                this.#timerTypeTransitionState
+                    ?.indicatorUsed
+            ) {
+                this.#setIndicatorSymbolVisible(
+                    true
+                );
+
+                return;
+            }
+
             if (!this.hasAttribute("indicator-symbol") || !this.#started || !this.#elapsedRange) {
                 this.#setIndicatorSymbolVisible(false);
                 return;
@@ -14756,21 +14775,9 @@
                 bottomInset - topInset
             );
 
-            const freezeGeometry =
-                this.#timerTypeTransitionState
-                    ?.indicatorGeometryFrozen ===
-                        true;
-
-            if (!freezeGeometry) {
-                this.#indicatorRing.style.inset =
-                    `${topInset}px`;
-
-                this.#indicatorSymbol.style.height =
-                    `${radialSpan}px`;
-
-                this.#indicatorSymbol.style.fontSize =
-                    `${radialSpan}px`;
-            }
+            this.#indicatorRing.style.inset = `${topInset}px`;
+            this.#indicatorSymbol.style.height = `${radialSpan}px`;
+            this.#indicatorSymbol.style.fontSize = `${radialSpan}px`;
 
             if (!this.#timerTypeIndicatorFrozen) {
                 this.#indicatorTrack.style.transform =
