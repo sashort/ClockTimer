@@ -3166,7 +3166,6 @@
                 rangeLength !== undefined;
 
             const openEnded =
-                !explicitStart &&
                 !hasEnd &&
                 !hasLength;
 
@@ -3198,14 +3197,6 @@
             if (
                 typeof type !== "string" ||
                 type.trim() === ""
-            ) {
-                return;
-            }
-
-            if (
-                explicitStart &&
-                !hasEnd &&
-                !hasLength
             ) {
                 return;
             }
@@ -10315,6 +10306,105 @@
             }
         }
 
+        #processElapsedOverwriteRanges(
+            now
+        ) {
+            const ranges =
+                this.#getManagedTimeRanges()
+                    .filter(
+                        range =>
+                            range.timeRangeExiting !== true &&
+                            range.hasAttribute(
+                                "overwrite"
+                            )
+                    );
+
+            for (const range of ranges) {
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(end) ||
+                    now < end
+                ) {
+                    continue;
+                }
+
+                const overwriteType =
+                    range.getAttribute(
+                        "overwrite"
+                    )?.trim();
+
+                if (!overwriteType) {
+                    continue;
+                }
+
+                const nextRange =
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            candidate =>
+                                candidate !== range &&
+                                candidate.timeRangeExiting !== true &&
+                                candidate.getAttribute(
+                                    "type"
+                                ) !== "elapsed"
+                        )
+                        .map(
+                            candidate => ({
+                                range: candidate,
+                                start: Number(
+                                    candidate.clockTimerStart
+                                ),
+                                end: Number(
+                                    candidate.clockTimerEnd
+                                )
+                            })
+                        )
+                        .filter(
+                            item =>
+                                Number.isFinite(item.start) &&
+                                Number.isFinite(item.end) &&
+                                item.end > item.start &&
+                                item.start >= end
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.start - b.start ||
+                                a.end - b.end
+                        )[0];
+
+                range.removeAttribute(
+                    "overwrite"
+                );
+
+                if (nextRange) {
+                    this.overwrite({
+                        type: overwriteType,
+                        startTime:
+                            this.#formatTimelineTime(
+                                nextRange.start
+                            ),
+                        endTime:
+                            this.#formatTimelineTime(
+                                nextRange.end
+                            )
+                    });
+
+                    continue;
+                }
+
+                this.overwrite({
+                    type: overwriteType,
+                    startTime:
+                        this.#formatTimelineTime(
+                            end
+                        )
+                });
+            }
+        }
+
         #tick() {
             this.#flushAsyncOperations();
 
@@ -10347,6 +10437,10 @@
                 this.#getCurrentTimelineTime(
                     nowDate
                 );
+
+            this.#processElapsedOverwriteRanges(
+                now
+            );
 
             this.#freezeIndicatorForRingHandoff(
                 now
