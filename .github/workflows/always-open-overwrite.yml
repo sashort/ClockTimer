@@ -1,0 +1,27 @@
+name: Always open overwrite
+on:
+  push:
+    paths:
+      - '.github/workflows/always-open-overwrite.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/always-open-overwrite.py
+      - run: node --check ClockTimer.js
+      - name: Verify
+        run: |
+          grep -q 'this.overwrite({' ClockTimer.js
+          grep -q 'type: overwriteType' ClockTimer.js
+          ! grep -A80 '#processElapsedOverwriteRanges' ClockTimer.js | grep -q 'nextRange'
+      - name: Commit
+        run: |
+          rm .github/scripts/always-open-overwrite.py .github/workflows/always-open-overwrite.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Always start open overwrite on elapsed range'
+          git push
