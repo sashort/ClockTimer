@@ -15675,7 +15675,7 @@
                     "radial-fitted";
 
             const initialWidth =
-                "var(--clock-timer-active-ring-width, clamp(4px, 2.5cqi, 12px))";
+                "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))";
 
             if (
                 this.#starting ||
@@ -15853,9 +15853,9 @@
                 const width =
                     active
                         ?
-                        "var(--clock-timer-active-ring-width, clamp(4px, 2.5cqi, 12px))"
+                        "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))"
                         :
-                        "var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))";
+                        "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
                 if (
                     this.#starting ||
