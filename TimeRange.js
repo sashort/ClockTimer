@@ -310,7 +310,7 @@ class TimeRange extends HTMLElement {
                 transition: none !important;
             }
 
-            :host(.elapsed):host-context(clock-timer[timer-mode="remaining"]) {
+            :host(.elapsed:not([timer-mode-transitioning])):host-context(clock-timer[timer-mode="remaining"]) {
                 display: none !important;
             }
 
