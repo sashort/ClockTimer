@@ -322,6 +322,16 @@ class TimeRange extends HTMLElement {
                 display: block;
             }
 
+            :host([type="elapsed"][timer-mode="remaining"]) #elapsed-base,
+            :host([type="elapsed"][timer-mode="remaining"]) #elapsed-edge {
+                display: none;
+            }
+
+            :host([type="remaining"]) {
+                animation: none !important;
+                transition: none !important;
+            }
+
             :host([type="elapsed"]:not([static-elapsed])) #elapsed-wave {
                 animation: elapsed-wave-sweep 4.5s linear infinite;
             }
@@ -2110,6 +2120,30 @@ class TimeRange extends HTMLElement {
         targetEnd,
         removeAfter = false
     ) {
+        if (
+            this.getAttribute(
+                "type"
+            ) === "remaining"
+        ) {
+            this.#renderStartTime =
+                this.#cloneDate(
+                    targetStart
+                );
+
+            this.#renderEndTime =
+                this.#cloneDate(
+                    targetEnd
+                );
+
+            this.#updateClipPath();
+
+            if (removeAfter) {
+                this.remove();
+            }
+
+            return;
+        }
+
         if (
             !(fromStart instanceof Date) ||
             !(fromEnd instanceof Date) ||
