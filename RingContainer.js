@@ -2398,6 +2398,7 @@ class RingContainer extends HTMLElement {
 
         if (
             inset !== null &&
+            inset !== undefined &&
             inset
                 .trim()
                 .toLowerCase() !==
