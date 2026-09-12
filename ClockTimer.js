@@ -1284,7 +1284,7 @@
                     "tolerance",
                     "overtime",
                     "earlystart",
-                    "prestart",
+                    "latency",
                     "elapsed"
                 ]);
 
@@ -1672,7 +1672,7 @@
                         "tolerance",
                         "overtime",
                         "earlystart",
-                        "prestart",
+                        "latency",
                         "elapsed",
                         "remaining",
                         "wave"
@@ -2061,7 +2061,7 @@
 
                             const range =
                                 this.#createTimeRange(
-                                    "prestart",
+                                    "latency",
                                     cursor,
                                     segmentEnd
                                 );
@@ -2475,13 +2475,13 @@
                 );
             }
 
-            const prestartEnds =
+            const latencyEnds =
                 ranges
                     .filter(
                         range =>
                             range.getAttribute(
                                 "type"
-                            ) === "prestart"
+                            ) === "latency"
                     )
                     .map(
                         range =>
@@ -2491,9 +2491,9 @@
                     )
                     .filter(Number.isFinite);
 
-            if (prestartEnds.length > 0) {
+            if (latencyEnds.length > 0) {
                 return Math.max(
-                    ...prestartEnds
+                    ...latencyEnds
                 );
             }
 
@@ -4037,7 +4037,7 @@
             return !new Set([
                 "trip",
                 "earlystart",
-                "prestart",
+                "latency",
                 "overtime",
                 "remaining"
             ]).has(
@@ -5237,7 +5237,7 @@
                 "tolerance",
                 "overtime",
                 "earlystart",
-                "prestart",
+                "latency",
                 "elapsed",
                 "remaining"
             ]);
@@ -13153,7 +13153,7 @@
                     this.#scheduledStartMilliseconds
             ) {
                 spans.push({
-                    type: "prestart",
+                    type: "latency",
                     start: this.#scheduledStartMilliseconds,
                     end: startTimeMilliseconds
                 });
@@ -15913,7 +15913,7 @@
                     this.#scheduledStartMilliseconds
             ) {
                 this.#createSpan(
-                    "prestart",
+                    "latency",
                     this.#scheduledStartMilliseconds,
                     startTimeMilliseconds
                 );
