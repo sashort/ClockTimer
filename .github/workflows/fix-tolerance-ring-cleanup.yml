@@ -1,0 +1,61 @@
+name: Fix tolerance ring cleanup
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/workflows/fix-tolerance-ring-cleanup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Fetch controller helpers
+        run: git fetch origin radial-fitted-controller
+
+      - name: Verify expected target base
+        run: |
+          test "$(git rev-parse HEAD)" = "44c6619d7c5963d2014286ac8c65b7dcc22b8968"
+
+      - name: Apply tolerance cleanup patch
+        run: |
+          git show origin/radial-fitted-controller:.github/scripts/fix_tolerance_ring_cleanup.py > /tmp/fix_tolerance_ring_cleanup.py
+          python /tmp/fix_tolerance_ring_cleanup.py
+
+      - name: Verify implementation
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("ClockTimer.js").read_text()
+          required = [
+              '#removeToleranceTransitionRing(',
+              '"elapsed",\n                    "remaining",\n                    "wave"',
+              'this.#remainingRanges.delete(',
+              'this.#waveRange =\n                        undefined;',
+              'const visibleTimerEnd =\n                this.#getLatestTimerEnd();',
+              'this.#removeToleranceTransitionRing(\n                        fade.ring'
+          ]
+          for item in required:
+              if item not in text:
+                  raise SystemExit(f"missing expected implementation: {item}")
+          PY
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fix showTolerance ring cleanup"
+          git push origin HEAD:rename-prestart-latency
