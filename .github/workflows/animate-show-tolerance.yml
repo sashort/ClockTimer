@@ -1,0 +1,54 @@
+name: Animate showTolerance
+
+on:
+  push:
+    paths:
+      - '.github/workflows/animate-show-tolerance.yml'
+      - '.github/scripts/animate_show_tolerance.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+          path: target
+
+      - name: Checkout controller helpers
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Verify expected target base
+        working-directory: target
+        run: test "$(git rev-parse HEAD)" = "85cd037d05d7af8aca8d927e73d43ec2fb74d9d1"
+
+      - name: Apply showTolerance animation patch
+        working-directory: target
+        run: python ../controller/.github/scripts/animate_show_tolerance.py
+
+      - name: Verify implementation
+        working-directory: target
+        run: |
+          node --check ClockTimer.js
+          grep -q '#transitionShowTolerance()' ClockTimer.js
+          grep -q '#stepToleranceTransition(' ClockTimer.js
+          grep -q '#syncToleranceTransitionRanges(' ClockTimer.js
+          grep -q 'duration: 750' ClockTimer.js
+          grep -q 'clockTimerToleranceTransitionHold' ClockTimer.js
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Animate showTolerance transitions"
+          git push origin HEAD:rename-prestart-latency
