@@ -2,6 +2,7 @@
     class ClockTimer extends HTMLElement {
         static observedAttributes = [
             "percent-goal",
+            "timer-type",
             "timer-mode",
             "military-time",
             "time-format",
@@ -122,6 +123,8 @@
 
         #startResetState;
 
+        #json;
+
         #restoringStartState =
             false;
 
@@ -151,6 +154,23 @@
 
         #timerModeTransitionToken =
             0;
+
+        #timerType =
+            "radial-overflow";
+
+        #timerTypeTransitionToken =
+            0;
+
+        #timerTypeTransitioning =
+            false;
+
+        #timerTypeTransitionBuilding =
+            false;
+
+        #timerTypeTransitionState;
+
+        #timerTypeIndicatorFrozen =
+            false;
 
         #waveRing;
 
@@ -518,7 +538,7 @@
                     color: var(--clock-timer-indicator-symbol-color, white);
                     text-shadow: var(--clock-timer-indicator-symbol-shadow, 0 0 2px rgb(0 0 0 / 50%));
                     transform: translateX(-50%);
-                    transform-origin: 50% 0;
+                    transform-origin: 50% 50%;
                     pointer-events: none;
                 }
 
@@ -921,6 +941,10 @@
 
             this.#stopFaceBackgroundTracking();
 
+            this.#cancelTimerTypeTransition(
+                false
+            );
+
             this.#cancelTimerModeTransition();
             this.#cancelTimeRangeTimingAnimations();
 
@@ -1022,6 +1046,13 @@
             }
 
             switch (name) {
+                case "timer-type":
+                    this.#handleTimerTypeChange(
+                        oldValue,
+                        newValue
+                    );
+                    break;
+
                 case "timer-mode":
                     this.#handleTimerModeChange(
                         oldValue,
@@ -1529,6 +1560,13 @@
             }
 
             try {
+                const jsonString =
+                    typeof json === "string"
+                        ? json
+                        : JSON.stringify(
+                            json
+                        );
+
                 const data =
                     typeof json === "string"
                         ? JSON.parse(json)
@@ -1911,17 +1949,14 @@
 
                     while (elapsedCursor < terminal) {
                         const ringIndex =
-                            this.#getRingIndex(
+                            this.#getTimerRingIndex(
                                 elapsedCursor
                             );
 
                         const segmentEnd =
                             Math.min(
                                 terminal,
-                                this.#getRingStart(
-                                    ringIndex
-                                ) +
-                                    ClockTimer.#HOUR
+                                this.#getTimerRingEnd(ringIndex)
                             );
 
                         const ring =
@@ -1976,13 +2011,12 @@
 
                         while (cursor < next.milliseconds) {
                             const ringIndex =
-                                this.#getRingIndex(cursor);
+                                this.#getTimerRingIndex(cursor);
 
                             const segmentEnd =
                                 Math.min(
                                     next.milliseconds,
-                                    this.#getRingStart(ringIndex) +
-                                        ClockTimer.#HOUR
+                                    this.#getTimerRingEnd(ringIndex)
                                 );
 
                             const ring =
@@ -2011,13 +2045,12 @@
 
                         while (cursor < lateStart.end) {
                             const ringIndex =
-                                this.#getRingIndex(cursor);
+                                this.#getTimerRingIndex(cursor);
 
                             const segmentEnd =
                                 Math.min(
                                     lateStart.end,
-                                    this.#getRingStart(ringIndex) +
-                                        ClockTimer.#HOUR
+                                    this.#getTimerRingEnd(ringIndex)
                                 );
 
                             const ring =
@@ -2098,6 +2131,9 @@
                     undefined;
 
                 this.#stopTickTimer();
+
+                this.#json =
+                    jsonString;
 
                 return new Date();
             }
@@ -3902,7 +3938,10 @@
         }
 
         reset() {
-            if (!this.#startResetState) {
+            if (
+                this.#json === undefined &&
+                !this.#startResetState
+            ) {
                 return false;
             }
 
@@ -3915,6 +3954,22 @@
                 });
 
                 return new Date();
+            }
+
+            if (this.#json !== undefined) {
+                const json =
+                    this.#json;
+
+                const result =
+                    this.clear();
+
+                if (result === false) {
+                    return false;
+                }
+
+                return this.fromJSON(
+                    json
+                );
             }
 
             const baseline =
@@ -4679,7 +4734,7 @@
 
             const ring =
                 this.#ensureRing(
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         rightStart
                     )
                 );
@@ -4923,15 +4978,12 @@
 
             while (cursor < end) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -5005,15 +5057,12 @@
 
             while (cursor < effectiveEnd) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -5751,7 +5800,7 @@
                 );
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -5936,7 +5985,7 @@
                 );
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -6340,6 +6389,9 @@
                 return new Date();
             }
 
+            this.#json =
+                undefined;
+
             this.#stopTickTimer();
             this.#cancelTimeRangeTimingAnimations();
             this.#setIndicatorSymbolVisible(false);
@@ -6515,6 +6567,21 @@
         #ensureAttributes() {
             if (
                 !this.hasAttribute(
+                    "timer-type"
+                )
+            ) {
+                this.setAttribute(
+                    "timer-type",
+                    "radial-overflow"
+                );
+            }
+            else {
+                this.#timerType =
+                    this.#normalizeTimerType();
+            }
+
+            if (
+                !this.hasAttribute(
                     "timer-mode"
                 )
             ) {
@@ -6566,6 +6633,2999 @@
                 this.#normalizeFormat();
             }
         }
+
+        #getTimerType() {
+            return this.#timerType;
+        }
+
+        #normalizeTimerType() {
+            const raw =
+                this.getAttribute(
+                    "timer-type"
+                );
+
+            const normalized =
+                typeof raw === "string" &&
+                raw.trim().toLowerCase() ===
+                    "radial-fitted"
+                    ? "radial-fitted"
+                    : "radial-overflow";
+
+            if (raw !== normalized) {
+                this.setAttribute(
+                    "timer-type",
+                    normalized
+                );
+            }
+
+            return normalized;
+        }
+
+        #handleTimerTypeChange(
+            oldValue,
+            newValue
+        ) {
+            const timerType =
+                this.#normalizeTimerType();
+
+            if (newValue !== timerType) {
+                return;
+            }
+
+            const previousType =
+                this.#timerType;
+
+            this.#timerType =
+                timerType;
+
+            if (
+                previousType === timerType ||
+                !this.isConnected
+            ) {
+                return;
+            }
+
+            this.#transitionTimerType(
+                previousType,
+                timerType
+            );
+        }
+
+        #getTimerTypeRangeSnapshotSignature(
+            snapshot
+        ) {
+            const attributes =
+                snapshot.attributes
+                    .map(
+                        ([name, value]) => [
+                            name,
+                            value
+                        ]
+                    )
+                    .sort(
+                        (a, b) =>
+                            a[0].localeCompare(
+                                b[0]
+                            ) ||
+                            a[1].localeCompare(
+                                b[1]
+                            )
+                    );
+
+            const state =
+                Object.entries(
+                    snapshot.state
+                )
+                    .map(
+                        ([name, value]) => [
+                            name,
+                            typeof value === "object" &&
+                            value !== null
+                                ? JSON.stringify(
+                                    value
+                                )
+                                : String(
+                                    value
+                                )
+                        ]
+                    )
+                    .sort(
+                        (a, b) =>
+                            a[0].localeCompare(
+                                b[0]
+                            ) ||
+                            a[1].localeCompare(
+                                b[1]
+                            )
+                    );
+
+            return JSON.stringify({
+                attributes,
+                state,
+                rangeLength:
+                    snapshot.hasRangeLength
+            });
+        }
+
+        #captureTimerTypeRangeSnapshots(
+            rings
+        ) {
+            const snapshots = [];
+
+            for (const ring of rings) {
+                for (const range of ring.children) {
+                    if (
+                        range.localName !==
+                            "time-range" ||
+                        range.timeRangeExiting ===
+                            true
+                    ) {
+                        continue;
+                    }
+
+                    const start =
+                        Number(
+                            range.clockTimerStart
+                        );
+
+                    const end =
+                        Number(
+                            range.clockTimerEnd
+                        );
+
+                    if (!Number.isFinite(start)) {
+                        continue;
+                    }
+
+                    const attributes =
+                        Array.from(
+                            range.attributes
+                        )
+                            .filter(
+                                attribute =>
+                                    ![
+                                        "start-time",
+                                        "end-time",
+                                        "range-length",
+                                        "ignore-overlaps",
+                                        "timer-mode-transitioning"
+                                    ].includes(
+                                        attribute.name.toLowerCase()
+                                    )
+                            )
+                            .map(
+                                attribute => [
+                                    attribute.name,
+                                    attribute.value
+                                ]
+                            );
+
+                    const state = {};
+
+                    for (
+                        const key of
+                            Object.keys(range)
+                    ) {
+                        if (
+                            !key.startsWith(
+                                "clockTimer"
+                            ) ||
+                            key ===
+                                "clockTimerStart" ||
+                            key ===
+                                "clockTimerEnd"
+                        ) {
+                            continue;
+                        }
+
+                        state[key] =
+                            range[key];
+                    }
+
+                    const snapshot = {
+                        start,
+                        end:
+                            Number.isFinite(end)
+                                ? end
+                                : undefined,
+                        attributes,
+                        state,
+                        hasRangeLength:
+                            range.hasAttribute(
+                                "range-length"
+                            )
+                    };
+
+                    snapshot.signature =
+                        this.#getTimerTypeRangeSnapshotSignature(
+                            snapshot
+                        );
+
+                    snapshots.push(
+                        snapshot
+                    );
+                }
+            }
+
+            snapshots.sort(
+                (a, b) =>
+                    a.start - b.start ||
+                    (
+                        Number.isFinite(a.end)
+                            ? a.end
+                            : Infinity
+                    ) -
+                    (
+                        Number.isFinite(b.end)
+                            ? b.end
+                            : Infinity
+                    ) ||
+                    a.signature.localeCompare(
+                        b.signature
+                    )
+            );
+
+            const merged = [];
+
+            for (const snapshot of snapshots) {
+                const previous =
+                    merged[
+                        merged.length - 1
+                    ];
+
+                if (
+                    previous &&
+                    previous.signature ===
+                        snapshot.signature &&
+                    Number.isFinite(
+                        previous.end
+                    ) &&
+                    Number.isFinite(
+                        snapshot.end
+                    ) &&
+                    previous.end ===
+                        snapshot.start
+                ) {
+                    previous.end =
+                        snapshot.end;
+
+                    continue;
+                }
+
+                merged.push({
+                    ...snapshot,
+                    attributes:
+                        snapshot.attributes.map(
+                            entry => [
+                                ...entry
+                            ]
+                        ),
+                    state: {
+                        ...snapshot.state
+                    }
+                });
+            }
+
+            return merged;
+        }
+
+        #appendTimerTypeTransitionRange(
+            snapshot,
+            start,
+            end,
+            ring
+        ) {
+            const range =
+                document.createElement(
+                    "time-range"
+                );
+
+            for (
+                const [name, value] of
+                    snapshot.attributes
+            ) {
+                range.setAttribute(
+                    name,
+                    value
+                );
+            }
+
+            range.setAttribute(
+                "ignore-overlaps",
+                ""
+            );
+
+            range.setAttribute(
+                "start-time",
+                this.#formatTimelineTime(
+                    start
+                )
+            );
+
+            if (Number.isFinite(end)) {
+                range.setAttribute(
+                    "end-time",
+                    this.#formatTimelineTime(
+                        end
+                    )
+                );
+
+                if (
+                    snapshot.hasRangeLength
+                ) {
+                    range.setAttribute(
+                        "range-length",
+                        this.#formatStandardTime(
+                            end - start
+                        )
+                    );
+                }
+            }
+
+            range.clockTimerStart =
+                String(start);
+
+            if (Number.isFinite(end)) {
+                range.clockTimerEnd =
+                    String(end);
+            }
+
+            for (
+                const [key, value] of
+                    Object.entries(
+                        snapshot.state
+                    )
+            ) {
+                range[key] = value;
+            }
+
+            range.timeRangeFullEntry =
+                true;
+
+            ring.appendChild(
+                range
+            );
+
+            this.#prepareTimerTypeTransitionVisualRange(
+                range
+            );
+
+            return range;
+        }
+
+        #renderTimerTypeRangeSnapshots(
+            snapshots
+        ) {
+            const ranges = [];
+
+            for (const snapshot of snapshots) {
+                if (
+                    !Number.isFinite(
+                        snapshot.end
+                    ) ||
+                    snapshot.end <=
+                        snapshot.start
+                ) {
+                    const ring =
+                        this.#ensureRing(
+                            this.#getTimerRingIndex(
+                                snapshot.start
+                            )
+                        );
+
+                    ranges.push(
+                        this.#appendTimerTypeTransitionRange(
+                            snapshot,
+                            snapshot.start,
+                            undefined,
+                            ring
+                        )
+                    );
+
+                    continue;
+                }
+
+                let cursor =
+                    snapshot.start;
+
+                while (
+                    cursor < snapshot.end
+                ) {
+                    const ringIndex =
+                        this.#getTimerRingIndex(
+                            cursor
+                        );
+
+                    const ringEnd =
+                        this.#getTimerRingEnd(
+                            ringIndex
+                        );
+
+                    const segmentEnd =
+                        Math.min(
+                            snapshot.end,
+                            ringEnd
+                        );
+
+                    if (
+                        !Number.isFinite(
+                            segmentEnd
+                        ) ||
+                        segmentEnd <= cursor
+                    ) {
+                        break;
+                    }
+
+                    const ring =
+                        this.#ensureRing(
+                            ringIndex
+                        );
+
+                    ranges.push(
+                        this.#appendTimerTypeTransitionRange(
+                            snapshot,
+                            cursor,
+                            segmentEnd,
+                            ring
+                        )
+                    );
+
+                    cursor =
+                        segmentEnd;
+                }
+            }
+
+            return ranges;
+        }
+
+        #rebuildTimerTypeRangeReferences() {
+            this.#elapsedRange =
+                undefined;
+
+            this.#remainingRanges.clear();
+            this.#overtimeRanges.clear();
+
+            let elapsedEnd =
+                -Infinity;
+
+            for (
+                const range of
+                    this.#getTimerRanges()
+            ) {
+                const ringIndex =
+                    Number(
+                        range.parentElement
+                            ?.clockTimerRingIndex
+                    );
+
+                if (
+                    range.clockTimerElapsed !==
+                        undefined
+                ) {
+                    const end =
+                        Number(
+                            range.clockTimerEnd
+                        );
+
+                    if (
+                        Number.isFinite(end) &&
+                        end > elapsedEnd
+                    ) {
+                        this.#elapsedRange =
+                            range;
+
+                        elapsedEnd =
+                            end;
+                    }
+                }
+
+                if (
+                    Number.isFinite(ringIndex) &&
+                    range.clockTimerRemaining !==
+                        undefined
+                ) {
+                    this.#remainingRanges.set(
+                        ringIndex,
+                        range
+                    );
+                }
+
+                if (
+                    Number.isFinite(ringIndex) &&
+                    range.clockTimerOvertime !==
+                        undefined
+                ) {
+                    this.#overtimeRanges.set(
+                        ringIndex,
+                        range
+                    );
+                }
+            }
+        }
+
+        #getTimerTypeTransitionReferenceTime(
+            snapshots
+        ) {
+            if (this.#started) {
+                return this.#getCurrentTimelineTime();
+            }
+
+            let reference;
+
+            for (const snapshot of snapshots) {
+                if (
+                    Number.isFinite(
+                        snapshot.end
+                    ) &&
+                    (
+                        !Number.isFinite(
+                            reference
+                        ) ||
+                        snapshot.end > reference
+                    )
+                ) {
+                    reference =
+                        snapshot.end;
+                }
+            }
+
+            if (Number.isFinite(reference)) {
+                return reference;
+            }
+
+            if (
+                Number.isFinite(
+                    this.#scheduledStartMilliseconds
+                )
+            ) {
+                return this.#scheduledStartMilliseconds;
+            }
+
+            return snapshots.find(
+                snapshot =>
+                    Number.isFinite(
+                        snapshot.start
+                    )
+            )?.start;
+        }
+
+        #resolveTimerTypeTransitionLength(
+            value,
+            context = this
+        ) {
+            if (
+                typeof value === "number" &&
+                Number.isFinite(value)
+            ) {
+                return value;
+            }
+
+            const text =
+                String(
+                    value ?? "0px"
+                ).trim();
+
+            if (!text) {
+                return 0;
+            }
+
+            const measure =
+                document.createElement(
+                    "div"
+                );
+
+            measure.style.position =
+                "absolute";
+
+            measure.style.visibility =
+                "hidden";
+
+            measure.style.pointerEvents =
+                "none";
+
+            measure.style.marginLeft =
+                text;
+
+            const parent =
+                context?.appendChild
+                    ? context
+                    : this;
+
+            parent.appendChild(
+                measure
+            );
+
+            const resolved =
+                Number.parseFloat(
+                    getComputedStyle(
+                        measure
+                    ).marginLeft
+                );
+
+            measure.remove();
+
+            return Number.isFinite(
+                resolved
+            )
+                ? resolved
+                : 0;
+        }
+
+        #getTimerTypeTransitionMargin(
+            ring,
+            side
+        ) {
+            const value =
+                side === "inner"
+                    ? (
+                        ring.innerMargin ??
+                        ring.margin ??
+                        "0px"
+                    )
+                    : (
+                        ring.outerMargin ??
+                        ring.margin ??
+                        "0px"
+                    );
+
+            return this.#resolveTimerTypeTransitionLength(
+                value,
+                ring
+            );
+        }
+
+        #collapseTimerTypeTransitionMargins(
+            first,
+            second
+        ) {
+            return (
+                Math.max(
+                    0,
+                    first,
+                    second
+                ) +
+                Math.min(
+                    0,
+                    first,
+                    second
+                )
+            );
+        }
+
+        #calculateTimerTypeTargetGeometry(
+            newRings
+        ) {
+            const newRingSet =
+                new Set(
+                    newRings
+                );
+
+            const geometry =
+                new Map();
+
+            let previous;
+
+            for (
+                const ring of
+                    Array.from(
+                        this.children
+                    ).filter(
+                        element =>
+                            element.localName ===
+                                "ring-container" &&
+                            element.clockTimerLayoutDetached !==
+                                true
+                    )
+            ) {
+                const widthValue =
+                    newRingSet.has(ring)
+                        ? (
+                            ring.clockTimerTargetWidth ??
+                            ring.width ??
+                            "0px"
+                        )
+                        : (
+                            ring.width ??
+                            "0px"
+                        );
+
+                const width =
+                    Math.max(
+                        0,
+                        this.#resolveTimerTypeTransitionLength(
+                            widthValue,
+                            ring
+                        )
+                    );
+
+                const insetValue =
+                    ring.inset;
+
+                let inset;
+
+                if (
+                    insetValue !== null &&
+                    insetValue !== undefined &&
+                    String(
+                        insetValue
+                    ).trim().toLowerCase() !==
+                        "auto"
+                ) {
+                    inset =
+                        this.#resolveTimerTypeTransitionLength(
+                            insetValue,
+                            ring
+                        );
+                }
+                else if (!previous) {
+                    inset =
+                        this.#getTimerTypeTransitionMargin(
+                            ring,
+                            "outer"
+                        ) +
+                        width / 2;
+                }
+                else {
+                    inset =
+                        previous.inset +
+                        previous.width / 2 +
+                        this.#collapseTimerTypeTransitionMargins(
+                            previous.innerMargin,
+                            this.#getTimerTypeTransitionMargin(
+                                ring,
+                                "outer"
+                            )
+                        ) +
+                        width / 2;
+                }
+
+                const entry = {
+                    inset,
+                    width,
+                    widthValue,
+                    innerMargin:
+                        this.#getTimerTypeTransitionMargin(
+                            ring,
+                            "inner"
+                        )
+                };
+
+                geometry.set(
+                    ring,
+                    entry
+                );
+
+                previous =
+                    entry;
+            }
+
+            return geometry;
+        }
+
+        #isTimerRingOutsideBorder(
+            ring
+        ) {
+            if (
+                ring?.hasAttribute?.(
+                    "active"
+                )
+            ) {
+                return true;
+            }
+
+            if (
+                !this.#borderRing ||
+                this.#borderRing.parentElement !==
+                    this
+            ) {
+                return false;
+            }
+
+            const children =
+                Array.from(
+                    this.children
+                );
+
+            const ringIndex =
+                children.indexOf(
+                    ring
+                );
+
+            const borderIndex =
+                children.indexOf(
+                    this.#borderRing
+                );
+
+            return (
+                ringIndex !== -1 &&
+                borderIndex !== -1 &&
+                ringIndex < borderIndex
+            );
+        }
+
+        #getTimerTypeRingAnimationDuration(
+            ring
+        ) {
+            const base =
+                TemporalFormat.cssTimeToMilliseconds(
+                    String(
+                        ring?.resizeDuration ??
+                        "0ms"
+                    ).trim()
+                ) ?? 0;
+
+            const filter =
+                String(
+                    ring?.resizeFilter ??
+                    "none"
+                ).trim().toLowerCase();
+
+            if (
+                filter === "none" ||
+                ring?.filterRamp === false
+            ) {
+                return Math.max(
+                    0,
+                    base
+                );
+            }
+
+            const front =
+                TemporalFormat.cssTimeToMilliseconds(
+                    String(
+                        ring?.filterRampFront ??
+                        "0ms"
+                    ).trim()
+                ) ?? 0;
+
+            const end =
+                TemporalFormat.cssTimeToMilliseconds(
+                    String(
+                        ring?.filterRampEnd ??
+                        "0ms"
+                    ).trim()
+                ) ?? 0;
+
+            return Math.max(
+                0,
+                front + base + end
+            );
+        }
+
+        #snapTimerTypeRings(
+            rings
+        ) {
+            for (
+                const ring of
+                    new Set(rings)
+            ) {
+                if (
+                    ring?.isConnected &&
+                    typeof ring.snapGeometry ===
+                        "function"
+                ) {
+                    ring.snapGeometry();
+                }
+            }
+        }
+
+        #getIndicatorTrackAngle() {
+            if (!this.#indicatorTrack) {
+                return 0;
+            }
+
+            const normalize =
+                angle =>
+                    (
+                        (
+                            angle % 360
+                        ) +
+                        360
+                    ) % 360;
+
+            const transform =
+                getComputedStyle(
+                    this.#indicatorTrack
+                ).transform;
+
+            if (
+                transform &&
+                transform !== "none"
+            ) {
+                try {
+                    const matrix =
+                        new DOMMatrixReadOnly(
+                            transform
+                        );
+
+                    const angle =
+                        Math.atan2(
+                            matrix.b,
+                            matrix.a
+                        ) *
+                        180 /
+                        Math.PI;
+
+                    if (Number.isFinite(angle)) {
+                        return normalize(
+                            angle
+                        );
+                    }
+                }
+                catch {
+                    // Fall through to the inline transform.
+                }
+            }
+
+            const match =
+                this.#indicatorTrack.style.transform
+                    .match(
+                        /rotate\(\s*(-?\d+(?:\.\d+)?)deg\s*\)/i
+                    );
+
+            return match
+                ? normalize(
+                    Number(match[1])
+                )
+                : 0;
+        }
+
+        #getIndicatorAngleForTime(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds(
+                        milliseconds
+                    );
+
+                if (!bounds) {
+                    return undefined;
+                }
+
+                return Math.max(
+                    0,
+                    Math.min(
+                        360,
+                        (
+                            (
+                                milliseconds -
+                                bounds.start
+                            ) /
+                            bounds.duration
+                        ) *
+                        360
+                    )
+                );
+            }
+
+            const millisecondsIntoHour =
+                (
+                    milliseconds %
+                        ClockTimer.#HOUR +
+                    ClockTimer.#HOUR
+                ) %
+                ClockTimer.#HOUR;
+
+            return (
+                millisecondsIntoHour /
+                ClockTimer.#HOUR
+            ) *
+            360;
+        }
+
+        #getTimerTypeIndicatorTopInset() {
+            if (!this.#indicatorRing) {
+                return 0;
+            }
+
+            const top =
+                Number.parseFloat(
+                    getComputedStyle(
+                        this.#indicatorRing
+                    ).top
+                );
+
+            if (Number.isFinite(top)) {
+                return top;
+            }
+
+            const inset =
+                Number.parseFloat(
+                    this.#indicatorRing.style.inset
+                );
+
+            return Number.isFinite(inset)
+                ? inset
+                : 0;
+        }
+
+        #getTimerTypeIndicatorShadow(
+            visible
+        ) {
+            return visible
+                ? "drop-shadow(0 2px 2px rgb(0 0 0 / 80%)) drop-shadow(0 0 5px rgb(0 0 0 / 65%))"
+                : "drop-shadow(0 2px 2px rgb(0 0 0 / 0%)) drop-shadow(0 0 5px rgb(0 0 0 / 0%))";
+        }
+
+        #setTimerTypeIndicatorTransitionLayer(
+            active
+        ) {
+            if (!this.#indicatorRing) {
+                return;
+            }
+
+            if (active) {
+                this.#indicatorRing.style.zIndex =
+                    "2147483647";
+
+                return;
+            }
+
+            this.#indicatorRing.style.removeProperty(
+                "z-index"
+            );
+        }
+
+        #getTimerTypeIndicatorSymbolHeight() {
+            if (!this.#indicatorSymbol) {
+                return 0;
+            }
+
+            const computedHeight =
+                Number.parseFloat(
+                    getComputedStyle(
+                        this.#indicatorSymbol
+                    ).height
+                );
+
+            if (
+                Number.isFinite(computedHeight) &&
+                computedHeight > 0
+            ) {
+                return computedHeight;
+            }
+
+            const renderedHeight =
+                this.#indicatorSymbol
+                    .getBoundingClientRect()
+                    .height;
+
+            return Number.isFinite(renderedHeight)
+                ? renderedHeight
+                : 0;
+        }
+
+        #getTimerTypeIndicatorTickCenter(
+            state
+        ) {
+            if (
+                !this.hasAttribute(
+                    "tick-marks"
+                ) ||
+                !this.#tickMarkLayer ||
+                this.#tickMarkLayer.childElementCount ===
+                    0
+            ) {
+                return undefined;
+            }
+
+            let tickInset;
+
+            const target =
+                state.targetGeometry
+                    ?.get(
+                        this.#tickRing
+                    );
+
+            if (
+                target &&
+                Number.isFinite(
+                    target.inset
+                )
+            ) {
+                tickInset =
+                    target.inset;
+            }
+
+            if (!Number.isFinite(tickInset)) {
+                tickInset =
+                    Number.parseFloat(
+                        getComputedStyle(
+                            this.#tickMarkLayer
+                        ).top
+                    );
+            }
+
+            if (!Number.isFinite(tickInset)) {
+                return undefined;
+            }
+
+            let tickLength = 0;
+
+            for (
+                const mark of
+                    this.#tickMarkLayer.querySelectorAll(
+                        ".tick-mark"
+                    )
+            ) {
+                const height =
+                    Number.parseFloat(
+                        getComputedStyle(
+                            mark
+                        ).height
+                    );
+
+                if (Number.isFinite(height)) {
+                    tickLength =
+                        Math.max(
+                            tickLength,
+                            height
+                        );
+                }
+            }
+
+            if (tickLength <= 0) {
+                return undefined;
+            }
+
+            return (
+                tickInset +
+                tickLength / 2
+            );
+        }
+
+        #retargetTimerTypeIndicatorToTicks(
+            state
+        ) {
+            if (
+                !state.indicatorUsed ||
+                !this.#indicatorSymbol ||
+                !this.#indicatorRing
+            ) {
+                return;
+            }
+
+            const center =
+                this.#getTimerTypeIndicatorTickCenter(
+                    state
+                );
+
+            if (!Number.isFinite(center)) {
+                return;
+            }
+
+            const baseInset =
+                this.#getTimerTypeIndicatorTopInset();
+
+            const symbolHeight =
+                this.#getTimerTypeIndicatorSymbolHeight();
+
+            if (symbolHeight <= 0) {
+                return;
+            }
+
+            state.indicatorInwardCenter =
+                center;
+
+            state.indicatorInwardDistance =
+                Math.max(
+                    0,
+                    center -
+                    baseInset -
+                    symbolHeight / 2
+                );
+        }
+
+        #isTimerTypeTransitionVisualRange(
+            range
+        ) {
+            const type =
+                range?.getAttribute?.(
+                    "type"
+                );
+
+            return (
+                type === "elapsed" ||
+                type === "remaining" ||
+                type === "wave"
+            );
+        }
+
+        #prepareTimerTypeTransitionVisualRange(
+            range,
+            state =
+                this.#timerTypeTransitionState
+        ) {
+            if (
+                !state ||
+                state.visualFadeStarted ||
+                !range?.isConnected ||
+                !this.#isTimerTypeTransitionVisualRange(
+                    range
+                )
+            ) {
+                return;
+            }
+
+            if (!state.visualFadeRanges) {
+                state.visualFadeRanges =
+                    new Set();
+            }
+
+            if (
+                range.clockTimerTypeTransitionOpacityState ===
+                    undefined
+            ) {
+                range.clockTimerTypeTransitionOpacityState = {
+                    target:
+                        this.#getRangeOpacity(
+                            range
+                        ),
+                    inlineValue:
+                        range.style.getPropertyValue(
+                            "opacity"
+                        ),
+                    inlinePriority:
+                        range.style.getPropertyPriority(
+                            "opacity"
+                        ),
+                    displayInlineValue:
+                        range.style.getPropertyValue(
+                            "display"
+                        ),
+                    displayInlinePriority:
+                        range.style.getPropertyPriority(
+                            "display"
+                        )
+                };
+            }
+
+            range.style.setProperty(
+                "opacity",
+                "0"
+            );
+
+            range.style.setProperty(
+                "display",
+                "none",
+                "important"
+            );
+
+            state.visualFadeRanges.add(
+                range
+            );
+        }
+
+        #restoreTimerTypeTransitionVisualRange(
+            range
+        ) {
+            if (!range) {
+                return;
+            }
+
+            const opacityState =
+                range.clockTimerTypeTransitionOpacityState;
+
+            if (!opacityState) {
+                range.style.removeProperty(
+                    "opacity"
+                );
+
+                return;
+            }
+
+            if (opacityState.inlineValue) {
+                range.style.setProperty(
+                    "opacity",
+                    opacityState.inlineValue,
+                    opacityState.inlinePriority ??
+                        ""
+                );
+            }
+            else {
+                range.style.removeProperty(
+                    "opacity"
+                );
+            }
+
+            if (opacityState.displayInlineValue) {
+                range.style.setProperty(
+                    "display",
+                    opacityState.displayInlineValue,
+                    opacityState.displayInlinePriority ??
+                        ""
+                );
+            }
+            else {
+                range.style.removeProperty(
+                    "display"
+                );
+            }
+
+            delete range.clockTimerTypeTransitionOpacityState;
+        }
+
+        #stripTimerTypeTransitionOldVisualRanges(
+            rings
+        ) {
+            for (const ring of rings) {
+                for (
+                    const range of
+                        Array.from(
+                            ring.children
+                        )
+                ) {
+                    if (
+                        range.localName !==
+                            "time-range" ||
+                        !this.#isTimerTypeTransitionVisualRange(
+                            range
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    range.remove();
+                }
+            }
+
+            this.#elapsedRange =
+                undefined;
+
+            this.#remainingRanges.clear();
+
+            this.#removeWaveRange();
+        }
+
+        #finishTimerTypeTransitionVisualFade(
+            state
+        ) {
+            if (!state) {
+                return;
+            }
+
+            for (
+                const animation of
+                    state.visualFadeAnimations ??
+                        []
+            ) {
+                animation.cancel();
+            }
+
+            state.visualFadeAnimations
+                ?.clear();
+
+            for (
+                const range of
+                    state.visualFadeRanges ??
+                        []
+            ) {
+                this.#restoreTimerTypeTransitionVisualRange(
+                    range
+                );
+            }
+
+            state.visualFadeRanges
+                ?.clear();
+        }
+
+        #startTimerTypeTransitionVisualFade(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState ||
+                state.visualFadeStarted
+            ) {
+                return;
+            }
+
+            for (
+                const ring of
+                    state.newRings
+            ) {
+                if (!ring.isConnected) {
+                    continue;
+                }
+
+                for (
+                    const range of
+                        ring.children
+                ) {
+                    this.#prepareTimerTypeTransitionVisualRange(
+                        range,
+                        state
+                    );
+                }
+            }
+
+            if (
+                this.#waveRange?.isConnected
+            ) {
+                this.#prepareTimerTypeTransitionVisualRange(
+                    this.#waveRange,
+                    state
+                );
+            }
+
+            state.visualFadeStarted =
+                true;
+
+            state.visualFadeAnimations =
+                new Set();
+
+            for (
+                const range of
+                    state.visualFadeRanges ??
+                        []
+            ) {
+                if (!range.isConnected) {
+                    continue;
+                }
+
+                const opacityState =
+                    range.clockTimerTypeTransitionOpacityState;
+
+                const target =
+                    Number.isFinite(
+                        opacityState?.target
+                    )
+                        ? Math.min(
+                            1,
+                            Math.max(
+                                0,
+                                opacityState.target
+                            )
+                        )
+                        : 1;
+
+                range.style.setProperty(
+                    "opacity",
+                    "0"
+                );
+
+                if (opacityState?.displayInlineValue) {
+                    range.style.setProperty(
+                        "display",
+                        opacityState.displayInlineValue,
+                        opacityState.displayInlinePriority ??
+                            ""
+                    );
+                }
+                else {
+                    range.style.removeProperty(
+                        "display"
+                    );
+                }
+
+                if (
+                    typeof range.animate !==
+                        "function"
+                ) {
+                    this.#restoreTimerTypeTransitionVisualRange(
+                        range
+                    );
+
+                    continue;
+                }
+
+                const animation =
+                    range.animate(
+                        [
+                            { opacity: "0" },
+                            {
+                                opacity:
+                                    String(
+                                        target
+                                    )
+                            }
+                        ],
+                        {
+                            duration: 750,
+                            easing:
+                                "ease-in-out",
+                            fill: "both"
+                        }
+                    );
+
+                state.visualFadeAnimations.add(
+                    animation
+                );
+
+                animation.finished.then(
+                    () => {
+                        state.visualFadeAnimations
+                            ?.delete(
+                                animation
+                            );
+
+                        this.#restoreTimerTypeTransitionVisualRange(
+                            range
+                        );
+
+                        animation.cancel();
+                    },
+                    () => {}
+                );
+            }
+        }
+
+        #scheduleTimerTypeTransitionRelease(
+            state,
+            duration = 750
+        ) {
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+            }
+
+            state.indicatorOutwardTimeout =
+                setTimeout(
+                    () => {
+                        state.indicatorOutwardTimeout =
+                            undefined;
+
+                        if (
+                            state !==
+                                this.#timerTypeTransitionState
+                        ) {
+                            return;
+                        }
+
+                        this.#releaseTimerTypeIndicator(
+                            state
+                        );
+                    },
+                    Math.max(
+                        0,
+                        duration
+                    )
+                );
+        }
+
+        #prepareTimerTypeIndicatorInward(
+            state
+        ) {
+            if (
+                !state.indicatorUsed ||
+                !this.#indicatorSymbol ||
+                !this.#indicatorRing
+            ) {
+                return;
+            }
+
+            const baseInset =
+                this.#getTimerTypeIndicatorTopInset();
+
+            let inwardTip;
+
+            for (
+                const ring of
+                    state.oldRings
+            ) {
+                if (
+                    !ring.hasAttribute(
+                        "active"
+                    )
+                ) {
+                    continue;
+                }
+
+                const geometry =
+                    state.oldGeometry.get(
+                        ring
+                    );
+
+                if (!geometry) {
+                    continue;
+                }
+
+                const innerEdge =
+                    geometry.inset +
+                    geometry.width / 2;
+
+                if (
+                    Number.isFinite(innerEdge) &&
+                    (
+                        !Number.isFinite(inwardTip) ||
+                        innerEdge > inwardTip
+                    )
+                ) {
+                    inwardTip =
+                        innerEdge;
+                }
+            }
+
+            state.indicatorInwardTip =
+                Number.isFinite(inwardTip)
+                    ? inwardTip
+                    : baseInset;
+
+            state.indicatorInwardDistance =
+                Math.max(
+                    0,
+                    state.indicatorInwardTip -
+                    baseInset
+                );
+        }
+
+        #startTimerTypeIndicatorInward(
+            state
+        ) {
+            if (
+                !state.indicatorUsed ||
+                !this.#indicatorSymbol
+            ) {
+                return;
+            }
+
+            const duration = 750;
+
+            const distance =
+                Number.isFinite(
+                    state.indicatorInwardDistance
+                )
+                    ? state.indicatorInwardDistance
+                    : 0;
+
+            const startTransform =
+                "translateX(-50%) translateY(0px)";
+
+            const endTransform =
+                `translateX(-50%) translateY(${distance}px)`;
+
+            const transparentShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    false
+                );
+
+            const heavyShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    true
+                );
+
+            if (
+                typeof this.#indicatorSymbol.animate !==
+                    "function"
+            ) {
+                this.#indicatorSymbol.style.transform =
+                    endTransform;
+
+                this.#indicatorSymbol.style.filter =
+                    heavyShadow;
+
+                return;
+            }
+
+            const animation =
+                this.#indicatorSymbol.animate(
+                    [
+                        {
+                            transform:
+                                startTransform,
+                            filter:
+                                transparentShadow
+                        },
+                        {
+                            transform:
+                                endTransform,
+                            filter:
+                                heavyShadow
+                        }
+                    ],
+                    {
+                        duration,
+                        easing:
+                            "ease-in-out",
+                        fill: "both"
+                    }
+                );
+
+            state.indicatorInwardAnimation =
+                animation;
+
+            animation.finished.then(
+                () => {
+                    if (
+                        state !==
+                            this.#timerTypeTransitionState
+                    ) {
+                        return;
+                    }
+
+                    this.#indicatorSymbol.style.transform =
+                        endTransform;
+
+                    this.#indicatorSymbol.style.filter =
+                        heavyShadow;
+
+                    animation.cancel();
+
+                    state.indicatorInwardAnimation =
+                        undefined;
+                },
+                () => {}
+            );
+        }
+
+        #startTimerTypeIndicatorOutward(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            const duration = 750;
+
+            this.#startTimerTypeTransitionVisualFade(
+                state
+            );
+
+            const indicatorAvailable =
+                state.indicatorUsed &&
+                this.hasAttribute(
+                    "indicator-symbol"
+                ) &&
+                this.#started &&
+                Boolean(
+                    this.#indicatorSymbol
+                );
+
+            if (!indicatorAvailable) {
+                this.#scheduleTimerTypeTransitionRelease(
+                    state,
+                    duration
+                );
+
+                return;
+            }
+
+            const heavyShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    true
+                );
+
+            const transparentShadow =
+                this.#getTimerTypeIndicatorShadow(
+                    false
+                );
+
+            this.#timerTypeIndicatorFrozen =
+                false;
+
+            this.#updateIndicatorSymbol();
+
+            const newBaseInset =
+                this.#getTimerTypeIndicatorTopInset();
+
+            let distance;
+
+            if (
+                Number.isFinite(
+                    state.indicatorInwardCenter
+                )
+            ) {
+                const symbolHeight =
+                    this.#getTimerTypeIndicatorSymbolHeight();
+
+                distance =
+                    Math.max(
+                        0,
+                        state.indicatorInwardCenter -
+                        newBaseInset -
+                        symbolHeight / 2
+                    );
+            }
+            else {
+                const inwardTip =
+                    Number.isFinite(
+                        state.indicatorInwardTip
+                    )
+                        ? state.indicatorInwardTip
+                        : newBaseInset;
+
+                distance =
+                    Math.max(
+                        0,
+                        inwardTip -
+                        newBaseInset
+                    );
+            }
+
+            const startTransform =
+                `translateX(-50%) translateY(${distance}px)`;
+
+            const endTransform =
+                "translateX(-50%) translateY(0px)";
+
+            this.#indicatorSymbol.style.transform =
+                startTransform;
+
+            this.#indicatorSymbol.style.filter =
+                heavyShadow;
+
+            if (
+                typeof this.#indicatorSymbol.animate !==
+                    "function"
+            ) {
+                this.#indicatorSymbol.style.removeProperty(
+                    "transform"
+                );
+
+                this.#indicatorSymbol.style.removeProperty(
+                    "filter"
+                );
+
+                this.#scheduleTimerTypeTransitionRelease(
+                    state,
+                    duration
+                );
+
+                return;
+            }
+
+            const animation =
+                this.#indicatorSymbol.animate(
+                    [
+                        {
+                            transform:
+                                startTransform,
+                            filter:
+                                heavyShadow
+                        },
+                        {
+                            transform:
+                                endTransform,
+                            filter:
+                                transparentShadow
+                        }
+                    ],
+                    {
+                        duration,
+                        easing:
+                            "ease-in-out",
+                        fill: "both"
+                    }
+                );
+
+            state.indicatorOutwardAnimation =
+                animation;
+
+            animation.finished.then(
+                () => {
+                    if (
+                        state !==
+                            this.#timerTypeTransitionState
+                    ) {
+                        return;
+                    }
+
+                    this.#indicatorSymbol.style.removeProperty(
+                        "transform"
+                    );
+
+                    this.#indicatorSymbol.style.removeProperty(
+                        "filter"
+                    );
+
+                    animation.cancel();
+
+                    state.indicatorOutwardAnimation =
+                        undefined;
+
+                    this.#releaseTimerTypeIndicator(
+                        state
+                    );
+                },
+                () => {}
+            );
+        }
+
+        #releaseTimerTypeIndicator(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            state.indicatorInwardAnimation
+                ?.cancel();
+
+            state.indicatorOutwardAnimation
+                ?.cancel();
+
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+
+                state.indicatorOutwardTimeout =
+                    undefined;
+            }
+
+            this.#finishTimerTypeTransitionVisualFade(
+                state
+            );
+
+            if (this.#indicatorSymbol) {
+                this.#indicatorSymbol.style.removeProperty(
+                    "transform"
+                );
+
+                this.#indicatorSymbol.style.removeProperty(
+                    "filter"
+                );
+            }
+
+            this.#timerTypeIndicatorFrozen =
+                false;
+
+            this.#setTimerTypeIndicatorTransitionLayer(
+                false
+            );
+
+            this.#timerTypeTransitionState =
+                undefined;
+
+            this.#updateIndicatorSymbol();
+        }
+
+        #startTimerTypeIndicatorCatchup(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            const indicatorAvailable =
+                state.indicatorUsed &&
+                this.hasAttribute(
+                    "indicator-symbol"
+                ) &&
+                this.#started &&
+                Boolean(
+                    this.#indicatorTrack
+                );
+
+            if (!indicatorAvailable) {
+                state.indicatorDelayTimeout =
+                    setTimeout(
+                        () => {
+                            state.indicatorDelayTimeout =
+                                undefined;
+
+                            if (
+                                state !==
+                                    this.#timerTypeTransitionState
+                            ) {
+                                return;
+                            }
+
+                            this.#startTimerTypeIndicatorOutward(
+                                state
+                            );
+                        },
+                        1500
+                    );
+
+                return;
+            }
+
+            state.indicatorDelayTimeout =
+                setTimeout(
+                    () => {
+                        state.indicatorDelayTimeout =
+                            undefined;
+
+                        if (
+                            state !==
+                                this.#timerTypeTransitionState ||
+                            !this.#started
+                        ) {
+                            return;
+                        }
+
+                        const duration =
+                            750;
+
+                        const startAngle =
+                            this.#getIndicatorTrackAngle();
+
+                        const targetTime =
+                            this.#getCurrentTimelineTime(
+                                new Date(
+                                    Date.now() +
+                                    duration
+                                )
+                            );
+
+                        const targetAngle =
+                            this.#getIndicatorAngleForTime(
+                                targetTime
+                            );
+
+                        if (
+                            !Number.isFinite(
+                                targetAngle
+                            )
+                        ) {
+                            this.#startTimerTypeIndicatorOutward(
+                                state
+                            );
+
+                            return;
+                        }
+
+                        const delta =
+                            (
+                                targetAngle -
+                                startAngle +
+                                360
+                            ) %
+                            360;
+
+                        const endAngle =
+                            startAngle +
+                            delta;
+
+                        if (
+                            typeof this.#indicatorTrack.animate !==
+                                "function" ||
+                            delta === 0
+                        ) {
+                            this.#indicatorTrack.style.transform =
+                                `rotate(${targetAngle}deg)`;
+
+                            this.#startTimerTypeIndicatorOutward(
+                                state
+                            );
+
+                            return;
+                        }
+
+                        const animation =
+                            this.#indicatorTrack.animate(
+                                [
+                                    {
+                                        transform:
+                                            `rotate(${startAngle}deg)`
+                                    },
+                                    {
+                                        transform:
+                                            `rotate(${endAngle}deg)`
+                                    }
+                                ],
+                                {
+                                    duration,
+                                    easing:
+                                        "ease-in-out",
+                                    fill: "both"
+                                }
+                            );
+
+                        state.indicatorTrackAnimation =
+                            animation;
+
+                        animation.finished.then(
+                            () => {
+                                if (
+                                    state !==
+                                        this.#timerTypeTransitionState
+                                ) {
+                                    return;
+                                }
+
+                                this.#indicatorTrack.style.transform =
+                                    `rotate(${targetAngle}deg)`;
+
+                                animation.cancel();
+
+                                state.indicatorTrackAnimation =
+                                    undefined;
+
+                                this.#startTimerTypeIndicatorOutward(
+                                    state
+                                );
+                            },
+                            () => {}
+                        );
+                    },
+                    750
+                );
+        }
+
+        #finishTimerTypeTransition(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            if (
+                state.geometryFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.geometryFrame
+                );
+
+                state.geometryFrame =
+                    undefined;
+            }
+
+            if (
+                state.collapseFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.collapseFrame
+                );
+
+                state.collapseFrame =
+                    undefined;
+            }
+
+            const now =
+                this.#started
+                    ? this.#getCurrentTimelineTime()
+                    : state.referenceTime;
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    now,
+                    {
+                        suspendLayout:
+                            false
+                    }
+                );
+            }
+
+            for (
+                const ring of
+                    state.newRings
+            ) {
+                if (!ring.isConnected) {
+                    continue;
+                }
+
+                ring.inset =
+                    undefined;
+
+                ring.snapGeometry?.();
+
+                delete ring.clockTimerTargetWidth;
+                delete ring.clockTimerTransitionNew;
+
+                ring.style.removeProperty(
+                    "z-index"
+                );
+            }
+
+            for (
+                const ring of
+                    state.oldRings
+            ) {
+                ring.remove();
+            }
+
+            state.oldRings = [];
+            state.ringsFinished =
+                true;
+
+            this.#timerTypeTransitioning =
+                false;
+
+            this.#refreshRingLayout(
+                now,
+                {
+                    refreshTickMarks:
+                        true
+                }
+            );
+
+            this.#updateIndicatorSymbol();
+
+            this.#startTimerTypeIndicatorCatchup(
+                state
+            );
+        }
+
+        #cancelTimerTypeTransition(
+            commit = true
+        ) {
+            const state =
+                this.#timerTypeTransitionState;
+
+            this.#timerTypeTransitionToken++;
+
+            this.#setTimerTypeIndicatorTransitionLayer(
+                false
+            );
+
+            if (!state) {
+                this.#timerTypeTransitioning =
+                    false;
+
+                this.#timerTypeIndicatorFrozen =
+                    false;
+
+                return;
+            }
+
+            if (
+                state.startFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.startFrame
+                );
+            }
+
+            if (
+                state.geometryFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.geometryFrame
+                );
+            }
+
+            if (
+                state.collapseFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.collapseFrame
+                );
+            }
+
+            if (
+                state.cleanupTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.cleanupTimeout
+                );
+            }
+
+            if (
+                state.indicatorDelayTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorDelayTimeout
+                );
+            }
+
+            state.indicatorInwardAnimation
+                ?.cancel();
+
+            state.indicatorOutwardAnimation
+                ?.cancel();
+
+            if (
+                state.indicatorOutwardTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.indicatorOutwardTimeout
+                );
+
+                state.indicatorOutwardTimeout =
+                    undefined;
+            }
+
+            this.#finishTimerTypeTransitionVisualFade(
+                state
+            );
+
+            if (this.#indicatorSymbol) {
+                this.#indicatorSymbol.style.removeProperty(
+                    "transform"
+                );
+
+                this.#indicatorSymbol.style.removeProperty(
+                    "filter"
+                );
+            }
+
+            if (
+                state.indicatorTrackAnimation
+            ) {
+                const angle =
+                    this.#getIndicatorTrackAngle();
+
+                state.indicatorTrackAnimation.cancel();
+
+                this.#indicatorTrack.style.transform =
+                    `rotate(${angle}deg)`;
+            }
+
+            if (commit) {
+                for (
+                    const ring of
+                        state.oldRings
+                ) {
+                    const geometry =
+                        state.oldGeometry.get(
+                            ring
+                        );
+
+                    if (
+                        ring.isConnected &&
+                        geometry
+                    ) {
+                        ring.inset =
+                            `${geometry.collapseInset}px`;
+
+                        ring.width =
+                            "0px";
+
+                        ring.snapGeometry?.();
+                    }
+                }
+
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    const target =
+                        state.targetGeometry.get(
+                            ring
+                        );
+
+                    if (
+                        ring.isConnected &&
+                        target
+                    ) {
+                        ring.inset =
+                            `${target.inset}px`;
+
+                        ring.width =
+                            target.widthValue;
+
+                        ring.snapGeometry?.();
+
+                        ring.inset =
+                            undefined;
+
+                        ring.snapGeometry?.();
+                    }
+
+                    delete ring.clockTimerTargetWidth;
+                    delete ring.clockTimerTransitionNew;
+
+                    ring.style.removeProperty(
+                        "z-index"
+                    );
+                }
+
+                for (
+                    const ring of
+                        state.oldRings
+                ) {
+                    ring.remove();
+                }
+            }
+
+            this.#timerTypeTransitionState =
+                undefined;
+
+            this.#timerTypeTransitioning =
+                false;
+
+            this.#timerTypeTransitionBuilding =
+                false;
+
+            this.#timerTypeIndicatorFrozen =
+                false;
+
+            if (
+                commit &&
+                this.isConnected
+            ) {
+                const now =
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined;
+
+                this.#refreshRingLayout(
+                    now,
+                    {
+                        refreshTickMarks:
+                            true
+                    }
+                );
+            }
+        }
+
+        #startTimerTypeRingAnimations(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            state.startFrame =
+                undefined;
+
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
+
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
+            }
+
+            try {
+                for (
+                    const ring of
+                        state.oldRings
+                ) {
+                    const geometry =
+                        state.oldGeometry.get(
+                            ring
+                        );
+
+                    if (!geometry) {
+                        continue;
+                    }
+
+                    ring.inset =
+                        `${geometry.collapseInset}px`;
+
+                    ring.width =
+                        "0px";
+                }
+
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    const target =
+                        state.targetGeometry.get(
+                            ring
+                        );
+
+                    if (!target) {
+                        continue;
+                    }
+
+                    ring.inset =
+                        `${target.inset}px`;
+
+                    ring.width =
+                        target.widthValue;
+                }
+            }
+            finally {
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
+                }
+            }
+
+            const animatedRings =
+                new Set([
+                    ...state.oldRings,
+                    ...state.newRings,
+                    ...Array.from(
+                        this.children
+                    ).filter(
+                        element =>
+                            element.localName ===
+                                "ring-container" &&
+                            element.clockTimerLayoutDetached !==
+                                true
+                    )
+                ]);
+
+            const maximumDuration =
+                Math.max(
+                    0,
+                    ...Array.from(
+                        animatedRings
+                    ).map(
+                        ring =>
+                            this.#getTimerTypeRingAnimationDuration(
+                                ring
+                            )
+                    )
+                );
+
+            state.maximumDuration =
+                maximumDuration;
+
+            this.#startTimerTypeIndicatorInward(
+                state
+            );
+
+            const refresh =
+                () => {
+                    if (
+                        state !==
+                            this.#timerTypeTransitionState ||
+                        state.ringsFinished
+                    ) {
+                        state.geometryFrame =
+                            undefined;
+
+                        return;
+                    }
+
+                    const now =
+                        this.#started
+                            ? this.#getCurrentTimelineTime()
+                            : state.referenceTime;
+
+                    if (
+                        this.#getTimerType() ===
+                            "radial-fitted"
+                    ) {
+                        this.#refreshRadialFittedLayouts(
+                            now,
+                            {
+                                suspendLayout:
+                                    false
+                            }
+                        );
+                    }
+
+                    this.#syncWaveRange();
+                    this.#updateIndicatorSymbol();
+
+                    state.geometryFrame =
+                        requestAnimationFrame(
+                            refresh
+                        );
+                };
+
+            state.geometryFrame =
+                requestAnimationFrame(
+                    refresh
+                );
+
+            state.cleanupTimeout =
+                setTimeout(
+                    () => {
+                        state.cleanupTimeout =
+                            undefined;
+
+                        const waitForCollapse =
+                            () => {
+                                if (
+                                    state !==
+                                        this.#timerTypeTransitionState
+                                ) {
+                                    return;
+                                }
+
+                                const collapsed =
+                                    state.oldRings.every(
+                                        ring =>
+                                            !ring.isConnected ||
+                                            this.#resolveTimerTypeTransitionLength(
+                                                ring.renderedWidth ??
+                                                "0px",
+                                                ring
+                                            ) <=
+                                                0.05
+                                    );
+
+                                if (!collapsed) {
+                                    state.collapseFrame =
+                                        requestAnimationFrame(
+                                            waitForCollapse
+                                        );
+
+                                    return;
+                                }
+
+                                state.collapseFrame =
+                                    undefined;
+
+                                this.#finishTimerTypeTransition(
+                                    state
+                                );
+                            };
+
+                        state.collapseFrame =
+                            requestAnimationFrame(
+                                waitForCollapse
+                            );
+                    },
+                    maximumDuration
+                );
+        }
+
+        #transitionTimerType(
+            previousType,
+            timerType
+        ) {
+            this.#cancelTimerTypeTransition(
+                true
+            );
+
+            this.#cancelTimerModeTransition();
+            this.#cancelTimeRangeTimingAnimations();
+
+            const oldRings =
+                this.#getTimerRings()
+                    .filter(
+                        ring =>
+                            ring.isConnected
+                    );
+
+            if (oldRings.length === 0) {
+                const now =
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined;
+
+                this.#refreshRingLayout(
+                    now,
+                    {
+                        refreshTickMarks:
+                            true
+                    }
+                );
+
+                return;
+            }
+
+            const snapshots =
+                this.#captureTimerTypeRangeSnapshots(
+                    oldRings
+                );
+
+            const token =
+                ++this.#timerTypeTransitionToken;
+
+            const state = {
+                token,
+                previousType,
+                timerType,
+                oldRings:
+                    [...oldRings],
+                newRings: [],
+                oldGeometry:
+                    new Map(),
+                targetGeometry:
+                    new Map(),
+                referenceTime:
+                    this.#getTimerTypeTransitionReferenceTime(
+                        snapshots
+                    ),
+                indicatorUsed:
+                    this.hasAttribute(
+                        "indicator-symbol"
+                    ) &&
+                    this.#started &&
+                    Boolean(
+                        this.#indicatorSymbol
+                    ),
+                ringsFinished:
+                    false
+            };
+
+            this.#timerTypeTransitionState =
+                state;
+
+            this.#stripTimerTypeTransitionOldVisualRanges(
+                oldRings
+            );
+
+            this.#timerTypeTransitioning =
+                true;
+
+            this.#timerTypeIndicatorFrozen =
+                state.indicatorUsed;
+
+            this.#setTimerTypeIndicatorTransitionLayer(
+                state.indicatorUsed
+            );
+
+            if (
+                this.#indicatorHandoffTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#indicatorHandoffTimeout
+                );
+
+                this.#indicatorHandoffTimeout =
+                    undefined;
+            }
+
+            this.#indicatorHandoffFrozen =
+                false;
+
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
+
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
+            }
+
+            try {
+                for (const ring of oldRings) {
+                    const inset =
+                        this.#resolveTimerTypeTransitionLength(
+                            ring.renderedInset ??
+                            ring.inset ??
+                            "0px",
+                            ring
+                        );
+
+                    const width =
+                        Math.max(
+                            0,
+                            this.#resolveTimerTypeTransitionLength(
+                                ring.renderedWidth ??
+                                ring.width ??
+                                "0px",
+                                ring
+                            )
+                        );
+
+                    const towardBorder =
+                        this.#isTimerRingOutsideBorder(
+                            ring
+                        )
+                            ? 1
+                            : -1;
+
+                    state.oldGeometry.set(
+                        ring,
+                        {
+                            inset,
+                            width,
+                            collapseInset:
+                                inset +
+                                towardBorder *
+                                width / 2
+                        }
+                    );
+
+                    ring.clockTimerExitingRing =
+                        true;
+
+                    ring.clockTimerLayoutDetached =
+                        true;
+
+                    ring.style.zIndex =
+                        "-1";
+
+                    ring.inset =
+                        `${inset}px`;
+
+                    ring.width =
+                        `${width}px`;
+
+                    for (
+                        const range of
+                            ring.children
+                    ) {
+                        if (
+                            range.localName ===
+                                "time-range"
+                        ) {
+                            range.timeRangeExiting =
+                                true;
+                        }
+                    }
+                }
+
+                this.#prepareTimerTypeIndicatorInward(
+                    state
+                );
+
+                this.#rings =
+                    new Map();
+
+                this.#elapsedRange =
+                    undefined;
+
+                this.#remainingRanges.clear();
+                this.#overtimeRanges.clear();
+
+                if (
+                    timerType ===
+                        "radial-overflow" &&
+                    !this.#hasStartProperties()
+                ) {
+                    const earliest =
+                        snapshots
+                            .map(
+                                snapshot =>
+                                    snapshot.start
+                            )
+                            .filter(
+                                Number.isFinite
+                            )
+                            .sort(
+                                (a, b) =>
+                                    a - b
+                            )[0];
+
+                    if (Number.isFinite(earliest)) {
+                        this.#ringAnchor =
+                            earliest -
+                            (
+                                (
+                                    earliest %
+                                        ClockTimer.#HOUR +
+                                    ClockTimer.#HOUR
+                                ) %
+                                ClockTimer.#HOUR
+                            );
+                    }
+                }
+
+                this.#timerTypeTransitionBuilding =
+                    true;
+
+                this.#renderTimerTypeRangeSnapshots(
+                    snapshots
+                );
+
+                this.#rebuildTimerTypeRangeReferences();
+
+                const reference =
+                    Number.isFinite(
+                        state.referenceTime
+                    )
+                        ? state.referenceTime
+                        : this.#scheduledStartMilliseconds;
+
+                if (
+                    Number.isFinite(reference) &&
+                    this.#rings.size > 0
+                ) {
+                    this.#reorderRings(
+                        reference
+                    );
+                }
+
+                state.newRings =
+                    Array.from(
+                        this.#rings.values()
+                    );
+
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    ring.clockTimerTransitionNew =
+                        true;
+                }
+
+                state.targetGeometry =
+                    this.#calculateTimerTypeTargetGeometry(
+                        state.newRings
+                    );
+
+                this.#retargetTimerTypeIndicatorToTicks(
+                    state
+                );
+
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    const target =
+                        state.targetGeometry.get(
+                            ring
+                        );
+
+                    if (!target) {
+                        continue;
+                    }
+
+                    const outside =
+                        this.#isTimerRingOutsideBorder(
+                            ring
+                        );
+
+                    const initialInset =
+                        target.inset +
+                        (
+                            outside
+                                ? target.width / 2
+                                : -target.width / 2
+                        );
+
+                    ring.inset =
+                        `${initialInset}px`;
+
+                    ring.width =
+                        "0px";
+                }
+            }
+            finally {
+                this.#timerTypeTransitionBuilding =
+                    false;
+
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
+                }
+            }
+
+            this.#snapTimerTypeRings([
+                ...oldRings,
+                ...Array.from(
+                    this.children
+                ).filter(
+                    element =>
+                        element.localName ===
+                            "ring-container"
+                )
+            ]);
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    state.referenceTime,
+                    {
+                        suspendLayout:
+                            false
+                    }
+                );
+            }
+
+            this.#syncWaveRange();
+            this.#updateIndicatorSymbol();
+
+            state.startFrame =
+                requestAnimationFrame(
+                    () =>
+                        this.#startTimerTypeRingAnimations(
+                            state
+                        )
+                );
+        }
+
 
         #getTimerMode() {
             return this.getAttribute(
@@ -7072,6 +10132,10 @@
             const ring =
                 this.#waveRing;
 
+            ring.clockTimerExternalRangeLayout =
+                this.#getTimerType() ===
+                    "radial-fitted";
+
             ring.style.display =
                 "block";
 
@@ -7244,6 +10308,10 @@
                     )
                 );
             }
+
+            this.#prepareTimerTypeTransitionVisualRange(
+                range
+            );
         }
 
         #ensureBorderRing() {
@@ -7480,7 +10548,9 @@
                 ).filter(
                     element =>
                         element.localName ===
-                            "ring-container"
+                            "ring-container" &&
+                        element.clockTimerExitingRing !==
+                            true
                 );
 
             for (
@@ -7844,7 +10914,9 @@
                         child.localName ===
                             "ring-container" &&
                         child.clockTimerRing !==
-                            undefined
+                            undefined &&
+                        child.clockTimerExitingRing !==
+                            true
                 );
 
             if (
@@ -8428,6 +11500,23 @@
 
 
         #refreshTimeRangeVisualGeometry() {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined,
+                    {
+                        suspendLayout:
+                            !this.#timerTypeTransitioning
+                    }
+                );
+
+                return;
+            }
+
             for (
                 const range of
                     this.#getManagedTimeRanges()
@@ -8671,12 +11760,317 @@
             );
         }
 
+        #captureRadialFittedPercentGoalAnimation(
+            now
+        ) {
+            if (
+                this.#getTimerType() !==
+                    "radial-fitted" ||
+                !this.#started
+            ) {
+                return;
+            }
+
+            const bounds =
+                this.#getRadialFittedBounds(
+                    now
+                );
+
+            if (!bounds) {
+                return;
+            }
+
+            const timings =
+                new Map();
+
+            for (
+                const range of
+                    this.#getTimerRanges()
+            ) {
+                if (
+                    !range.isConnected ||
+                    range.timeRangeExiting ===
+                        true
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(end) ||
+                    end < start
+                ) {
+                    continue;
+                }
+
+                timings.set(
+                    range,
+                    {
+                        start,
+                        end
+                    }
+                );
+            }
+
+            return {
+                bounds: {
+                    start:
+                        bounds.start,
+                    end:
+                        bounds.end,
+                    duration:
+                        bounds.duration
+                },
+                timings
+            };
+        }
+
+        #prepareRadialFittedPercentGoalAnimation(
+            snapshot,
+            now
+        ) {
+            if (
+                !snapshot ||
+                this.#getTimerType() !==
+                    "radial-fitted"
+            ) {
+                return;
+            }
+
+            const targetBounds =
+                this.#getRadialFittedBounds(
+                    now
+                );
+
+            if (!targetBounds) {
+                return;
+            }
+
+            const duration =
+                this.#getRangeAnimationDuration();
+
+            if (duration <= 0) {
+                return;
+            }
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            if (
+                !TimeRangeClass ||
+                typeof TimeRangeClass.suspendLayout !==
+                    "function"
+            ) {
+                return;
+            }
+
+            const boundsChanged =
+                snapshot.bounds.start !==
+                    targetBounds.start ||
+                snapshot.bounds.end !==
+                    targetBounds.end;
+
+            for (
+                const range of
+                    this.#getTimerRanges()
+            ) {
+                if (
+                    !range.isConnected ||
+                    range.timeRangeExiting ===
+                        true
+                ) {
+                    continue;
+                }
+
+                const targetStart =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const targetEnd =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(targetStart) ||
+                    !Number.isFinite(targetEnd) ||
+                    targetEnd < targetStart
+                ) {
+                    continue;
+                }
+
+                const active =
+                    this.#timeRangeTimingAnimations.get(
+                        range
+                    );
+
+                if (active) {
+                    if (boundsChanged) {
+                        active.fromFittedBounds = {
+                            ...snapshot.bounds
+                        };
+
+                        active.targetFittedBounds = {
+                            start:
+                                targetBounds.start,
+                            end:
+                                targetBounds.end,
+                            duration:
+                                targetBounds.duration
+                        };
+
+                        const targetLayout =
+                            this.#calculateTimeRangeLayout(
+                                range,
+                                active.targetStart,
+                                active.targetEnd,
+                                active.originMilliseconds,
+                                active.targetFittedBounds
+                            );
+
+                        if (targetLayout) {
+                            active.targetLayout =
+                                targetLayout;
+                        }
+                    }
+
+                    continue;
+                }
+
+                const previous =
+                    snapshot.timings.get(
+                        range
+                    );
+
+                const timingChanged =
+                    !previous ||
+                    previous.start !==
+                        targetStart ||
+                    previous.end !==
+                        targetEnd;
+
+                if (
+                    !boundsChanged &&
+                    !timingChanged
+                ) {
+                    continue;
+                }
+
+                const fromStart =
+                    previous?.start ??
+                    targetStart;
+
+                const fromEnd =
+                    previous?.end ??
+                    targetStart;
+
+                const originMilliseconds =
+                    targetBounds.start;
+
+                const fromLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        fromStart,
+                        fromEnd,
+                        originMilliseconds,
+                        snapshot.bounds
+                    );
+
+                const targetLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        targetStart,
+                        targetEnd,
+                        originMilliseconds,
+                        targetBounds
+                    );
+
+                if (
+                    !fromLayout ||
+                    !targetLayout
+                ) {
+                    continue;
+                }
+
+                TimeRangeClass.suspendLayout(
+                    range
+                );
+
+                this.#applyTimeRangeLayout(
+                    range,
+                    fromLayout
+                );
+
+                const state = {
+                    fromStart,
+                    fromEnd,
+                    targetStart,
+                    targetEnd,
+                    originMilliseconds,
+                    targetLayout,
+                    fromFittedBounds: {
+                        ...snapshot.bounds
+                    },
+                    targetFittedBounds: {
+                        start:
+                            targetBounds.start,
+                        end:
+                            targetBounds.end,
+                        duration:
+                            targetBounds.duration
+                    },
+                    pending:
+                        undefined,
+                    frame:
+                        undefined,
+                    startedAt:
+                        undefined,
+                    duration
+                };
+
+                this.#timeRangeTimingAnimations.set(
+                    range,
+                    state
+                );
+
+                state.frame =
+                    requestAnimationFrame(
+                        timestamp =>
+                            this.#stepTimeRangeTimingAnimation(
+                                range,
+                                state,
+                                timestamp
+                            )
+                    );
+            }
+        }
+
         #handlePercentGoalChange() {
             const goal =
                 this.#getPercentGoal();
 
             const previousGoal =
                 this.#percentGoal;
+
+            const percentGoalAnimation =
+                this.#captureRadialFittedPercentGoalAnimation(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined
+                );
 
             const counterclockwiseOvertimeRemoval =
                 previousGoal < 1 &&
@@ -8713,6 +12107,11 @@
             );
 
             this.#reapplyOverwriteRanges();
+
+            this.#prepareRadialFittedPercentGoalAnimation(
+                percentGoalAnimation,
+                now
+            );
 
             this.#refreshRingLayout(
                 now,
@@ -8757,10 +12156,292 @@
             );
         }
 
+        #getRadialFittedBounds(
+            now
+        ) {
+            if (
+                this.#getTimerType() !==
+                    "radial-fitted"
+            ) {
+                return undefined;
+            }
+
+            let start;
+            let end;
+
+            const ignoredTypes =
+                new Set([
+                    "elapsed",
+                    "remaining",
+                    "wave"
+                ]);
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.timeRangeExiting === true ||
+                    ignoredTypes.has(
+                        range.getAttribute(
+                            "type"
+                        )
+                    )
+                ) {
+                    continue;
+                }
+
+                const rangeStart =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const rangeEnd =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(rangeStart) &&
+                    (
+                        !Number.isFinite(start) ||
+                        rangeStart < start
+                    )
+                ) {
+                    start =
+                        rangeStart;
+                }
+
+                if (
+                    Number.isFinite(rangeEnd) &&
+                    (
+                        !Number.isFinite(end) ||
+                        rangeEnd > end
+                    )
+                ) {
+                    end =
+                        rangeEnd;
+                }
+            }
+
+            if (!Number.isFinite(start)) {
+                if (
+                    Number.isFinite(
+                        this.#scheduledStartMilliseconds
+                    )
+                ) {
+                    start =
+                        this.#scheduledStartMilliseconds;
+                }
+                else if (
+                    Number.isFinite(
+                        this.#ringAnchor
+                    )
+                ) {
+                    start =
+                        this.#ringAnchor;
+                }
+            }
+
+            if (
+                Number.isFinite(
+                    this.#calculatedEndTime
+                )
+            ) {
+                end =
+                    Number.isFinite(end)
+                        ? Math.max(
+                            end,
+                            this.#calculatedEndTime
+                        )
+                        : this.#calculatedEndTime;
+            }
+
+            const current =
+                Number.isFinite(now)
+                    ? now
+                    : (
+                        this.#started
+                            ? this.#getCurrentTimelineTime()
+                            : undefined
+                    );
+
+            const currentThreshold =
+                Number.isFinite(
+                    this.#calculatedEndTime
+                )
+                    ? this.#calculatedEndTime
+                    : end;
+
+            if (
+                Number.isFinite(current) &&
+                Number.isFinite(currentThreshold) &&
+                current >= currentThreshold
+            ) {
+                end =
+                    Number.isFinite(end)
+                        ? Math.max(
+                            end,
+                            current
+                        )
+                        : current;
+            }
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                return undefined;
+            }
+
+            return {
+                start,
+                end,
+                duration:
+                    end - start
+            };
+        }
+
+        #refreshRadialFittedLayouts(
+            now,
+            {
+                suspendLayout = true
+            } = {}
+        ) {
+            if (
+                this.#getTimerType() !==
+                    "radial-fitted"
+            ) {
+                return;
+            }
+
+            const bounds =
+                this.#getRadialFittedBounds(
+                    now
+                );
+
+            if (!bounds) {
+                return;
+            }
+
+            const TimeRangeClass =
+                customElements.get(
+                    "time-range"
+                );
+
+            const ranges =
+                this.#getTimerRanges()
+                    .filter(
+                        range =>
+                            range.isConnected &&
+                            range.timeRangeExiting !== true
+                    );
+
+            if (
+                this.#waveRange?.isConnected &&
+                !ranges.includes(
+                    this.#waveRange
+                )
+            ) {
+                ranges.push(
+                    this.#waveRange
+                );
+            }
+
+            const suspended = [];
+
+            try {
+                for (const range of ranges) {
+                    const start =
+                        Number(
+                            range.clockTimerStart
+                        );
+
+                    const end =
+                        Number(
+                            range.clockTimerEnd
+                        );
+
+                    if (
+                        !Number.isFinite(start) ||
+                        !Number.isFinite(end) ||
+                        end <= start
+                    ) {
+                        continue;
+                    }
+
+                    const coordinatorManaged =
+                        this.#timeRangeTimingAnimations.has(
+                            range
+                        );
+
+                    if (coordinatorManaged) {
+                        continue;
+                    }
+
+                    if (
+                        suspendLayout &&
+                        typeof TimeRangeClass?.suspendLayout ===
+                            "function"
+                    ) {
+                        TimeRangeClass.suspendLayout(
+                            range
+                        );
+
+                        suspended.push(
+                            range
+                        );
+                    }
+
+                    const layout =
+                        this.#calculateTimeRangeLayout(
+                            range,
+                            start,
+                            end,
+                            bounds.start,
+                            bounds
+                        );
+
+                    if (layout) {
+                        this.#applyTimeRangeLayout(
+                            range,
+                            layout,
+                            true
+                        );
+                    }
+                }
+            }
+            finally {
+                if (
+                    typeof TimeRangeClass?.resumeLayout ===
+                        "function"
+                ) {
+                    for (const range of suspended) {
+                        TimeRangeClass.resumeLayout(
+                            range
+                        );
+                    }
+                }
+            }
+        }
+
         #getTimeRangeOriginMilliseconds(
             range,
             fallbackStart
         ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds();
+
+                if (bounds) {
+                    return bounds.start;
+                }
+            }
+
             let earliest =
                 Number.isFinite(
                     fallbackStart
@@ -8825,7 +12506,8 @@
             range,
             start,
             end,
-            originMilliseconds
+            originMilliseconds,
+            fittedBounds
         ) {
             const TimeRangeClass =
                 customElements.get(
@@ -8862,53 +12544,110 @@
                 return;
             }
 
-            const origin =
-                Number.isFinite(
-                    originMilliseconds
-                )
-                    ? originMilliseconds
-                    : this.#getTimeRangeOriginMilliseconds(
-                        range,
-                        start
+            const rangeDuration =
+                end - start;
+
+            let origin;
+            let startAngle;
+            let endAngle;
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    fittedBounds ??
+                    this.#getRadialFittedBounds();
+
+                if (!bounds) {
+                    return;
+                }
+
+                origin =
+                    bounds.start;
+
+                const degreesPerMillisecond =
+                    360 /
+                    bounds.duration;
+
+                startAngle =
+                    (
+                        start -
+                        bounds.start
+                    ) *
+                    degreesPerMillisecond;
+
+                endAngle =
+                    (
+                        end -
+                        bounds.start
+                    ) *
+                    degreesPerMillisecond;
+
+                startAngle =
+                    Math.max(
+                        0,
+                        Math.min(
+                            360,
+                            startAngle
+                        )
                     );
 
-            const originDate =
-                this.#timeRangeTimelineDate(
-                    origin
-                );
+                endAngle =
+                    Math.max(
+                        0,
+                        Math.min(
+                            360,
+                            endAngle
+                        )
+                    );
+            }
+            else {
+                origin =
+                    Number.isFinite(
+                        originMilliseconds
+                    )
+                        ? originMilliseconds
+                        : this.#getTimeRangeOriginMilliseconds(
+                            range,
+                            start
+                        );
 
-            const startAngle =
-                TimeRangeClass.calculateTimeAngle(
+                const originDate =
                     this.#timeRangeTimelineDate(
-                        start
-                    ),
-                    originDate
-                );
+                        origin
+                    );
 
-            let endAngle =
-                TimeRangeClass.calculateTimeAngle(
-                    this.#timeRangeTimelineDate(
-                        end
-                    ),
-                    originDate
-                );
+                startAngle =
+                    TimeRangeClass.calculateTimeAngle(
+                        this.#timeRangeTimelineDate(
+                            start
+                        ),
+                        originDate
+                    );
+
+                endAngle =
+                    TimeRangeClass.calculateTimeAngle(
+                        this.#timeRangeTimelineDate(
+                            end
+                        ),
+                        originDate
+                    );
+
+                if (
+                    rangeDuration >=
+                        ClockTimer.#HOUR
+                ) {
+                    endAngle =
+                        startAngle + 360;
+                }
+            }
 
             if (
                 !Number.isFinite(startAngle) ||
                 !Number.isFinite(endAngle)
             ) {
                 return;
-            }
-
-            const rangeDuration =
-                end - start;
-
-            if (
-                rangeDuration >=
-                    ClockTimer.#HOUR
-            ) {
-                endAngle =
-                    startAngle + 360;
             }
 
             const clipPath =
@@ -9051,6 +12790,24 @@
                 return;
             }
 
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const targetLayout =
+                    this.#calculateTimeRangeLayout(
+                        range,
+                        state.targetStart,
+                        state.targetEnd,
+                        state.originMilliseconds
+                    );
+
+                if (targetLayout) {
+                    state.targetLayout =
+                        targetLayout;
+                }
+            }
+
             this.#applyTimeRangeLayout(
                 range,
                 state.targetLayout
@@ -9077,6 +12834,14 @@
 
                 state.fromEnd =
                     state.targetEnd;
+
+                if (
+                    state.targetFittedBounds
+                ) {
+                    state.fromFittedBounds = {
+                        ...state.targetFittedBounds
+                    };
+                }
 
                 state.targetStart =
                     pending.start;
@@ -9220,12 +12985,49 @@
                 ) *
                 progress;
 
+            let fittedBounds;
+
+            if (
+                state.fromFittedBounds &&
+                state.targetFittedBounds
+            ) {
+                const start =
+                    state.fromFittedBounds.start +
+                    (
+                        state.targetFittedBounds.start -
+                        state.fromFittedBounds.start
+                    ) *
+                    progress;
+
+                const end =
+                    state.fromFittedBounds.end +
+                    (
+                        state.targetFittedBounds.end -
+                        state.fromFittedBounds.end
+                    ) *
+                    progress;
+
+                if (
+                    Number.isFinite(start) &&
+                    Number.isFinite(end) &&
+                    end > start
+                ) {
+                    fittedBounds = {
+                        start,
+                        end,
+                        duration:
+                            end - start
+                    };
+                }
+            }
+
             const currentLayout =
                 this.#calculateTimeRangeLayout(
                     range,
                     currentStart,
                     currentEnd,
-                    state.originMilliseconds
+                    state.originMilliseconds,
+                    fittedBounds
                 );
 
             if (currentLayout) {
@@ -9417,15 +13219,12 @@
 
                 while (cursor < span.end) {
                     const ringIndex =
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             cursor
                         );
 
                     const ringEnd =
-                        this.#getRingStart(
-                            ringIndex
-                        ) +
-                        ClockTimer.#HOUR;
+                        this.#getTimerRingEnd(ringIndex);
 
                     const segmentEnd =
                         Math.min(
@@ -9586,6 +13385,23 @@
         }
 
         #snapTimerRangeAngles() {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#refreshRadialFittedLayouts(
+                    this.#started
+                        ? this.#getCurrentTimelineTime()
+                        : undefined,
+                    {
+                        suspendLayout:
+                            !this.#timerTypeTransitioning
+                    }
+                );
+
+                return;
+            }
+
             for (
                 const range of
                     this.#getTimerRanges()
@@ -9898,7 +13714,9 @@
             for (const ring of this.children) {
                 if (
                     ring.localName !==
-                        "ring-container"
+                        "ring-container" ||
+                    ring.clockTimerExitingRing ===
+                        true
                 ) {
                     continue;
                 }
@@ -9922,7 +13740,9 @@
             for (const child of this.children) {
                 if (
                     child.localName !==
-                        "ring-container"
+                        "ring-container" ||
+                    child.clockTimerExitingRing ===
+                        true
                 ) {
                     continue;
                 }
@@ -9948,7 +13768,9 @@
                     child.localName ===
                         "ring-container" &&
                     child.clockTimerRing !==
-                        undefined
+                        undefined &&
+                    child.clockTimerExitingRing !==
+                        true
             );
         }
 
@@ -10182,6 +14004,16 @@
                     this.#ringAnchor
                 )
             ) {
+                return;
+            }
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                this.#ringAnchor =
+                    start;
+
                 return;
             }
 
@@ -10638,15 +14470,12 @@
                     cursor < spanEnd
                 ) {
                     const ringIndex =
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             cursor
                         );
 
                     const ringEnd =
-                        this.#getRingStart(
-                            ringIndex
-                        ) +
-                        ClockTimer.#HOUR;
+                        this.#getTimerRingEnd(ringIndex);
 
                     const segmentEnd =
                         Math.min(
@@ -10906,7 +14735,7 @@
                 }
 
                 this.#overtimeRanges.set(
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         start
                     ),
                     range
@@ -10980,7 +14809,7 @@
             ) {
                 const ring =
                     this.#ensureRing(
-                        this.#getRingIndex(
+                        this.#getTimerRingIndex(
                             start
                         )
                     );
@@ -11030,15 +14859,12 @@
                 cursor < effectiveEnd
             ) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -11336,15 +15162,12 @@
 
             while (cursor < effectiveEnd) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringEnd =
-                    this.#getRingStart(
-                        ringIndex
-                    ) +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -11620,6 +15443,13 @@
                         ":scope > ring-container"
                     )
             ) {
+                if (
+                    ring.clockTimerExitingRing ===
+                        true
+                ) {
+                    continue;
+                }
+
                 ring.resizeDuration =
                     `${duration}ms`;
             }
@@ -11647,6 +15477,14 @@
             this.#scheduleHourRender();
             this.#scheduleIndicatorSymbolUpdate();
             this.#syncWaveRange();
+
+            this.#refreshRadialFittedLayouts(
+                now,
+                {
+                    suspendLayout:
+                        !this.#timerTypeTransitioning
+                }
+            );
 
             if (
                 !this.hasAttribute(
@@ -11836,7 +15674,7 @@
                 );
 
             const nextRingIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -11912,6 +15750,18 @@
                 return;
             }
 
+            if (
+                this.#timerTypeIndicatorFrozen &&
+                this.#timerTypeTransitionState
+                    ?.indicatorUsed
+            ) {
+                this.#setIndicatorSymbolVisible(
+                    true
+                );
+
+                return;
+            }
+
             if (!this.hasAttribute("indicator-symbol") || !this.#started || !this.#elapsedRange) {
                 this.#setIndicatorSymbolVisible(false);
                 return;
@@ -11932,17 +15782,19 @@
                 return;
             }
 
-            const millisecondsIntoHour =
-                (
-                    end % ClockTimer.#HOUR +
-                    ClockTimer.#HOUR
-                ) % ClockTimer.#HOUR;
-
             const normalizedAngle =
-                (
-                    millisecondsIntoHour /
-                    ClockTimer.#HOUR
-                ) * 360;
+                this.#getIndicatorAngleForTime(
+                    end
+                );
+
+            if (
+                !Number.isFinite(
+                    normalizedAngle
+                )
+            ) {
+                this.#setIndicatorSymbolVisible(false);
+                return;
+            }
 
             const activeMetrics =
                 this.#getIndicatorRingMetrics(ring);
@@ -11979,7 +15831,12 @@
             this.#indicatorRing.style.inset = `${topInset}px`;
             this.#indicatorSymbol.style.height = `${radialSpan}px`;
             this.#indicatorSymbol.style.fontSize = `${radialSpan}px`;
-            this.#indicatorTrack.style.transform = `rotate(${normalizedAngle}deg)`;
+
+            if (!this.#timerTypeIndicatorFrozen) {
+                this.#indicatorTrack.style.transform =
+                    `rotate(${normalizedAngle}deg)`;
+            }
+
             this.#setIndicatorSymbolVisible(!this.#starting);
         }
 
@@ -12151,18 +16008,17 @@
                     end
             ) {
                 const ringIndex =
-                    this.#getRingIndex(
+                    this.#getTimerRingIndex(
                         cursor
                     );
 
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentEnd =
                     Math.min(
@@ -12277,12 +16133,12 @@
             }
 
             const ringIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
             const ringStart =
-                this.#getRingStart(
+                this.#getTimerRingStart(
                     ringIndex
                 );
 
@@ -12323,7 +16179,24 @@
                     this.#elapsedRange
                 );
 
+                this.#prepareTimerTypeTransitionVisualRange(
+                    this.#elapsedRange
+                );
+
                 return;
+            }
+
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted" &&
+                Number(
+                    this.#elapsedRange.clockTimerStart
+                ) !== ringStart
+            ) {
+                this.#setRangeStart(
+                    this.#elapsedRange,
+                    ringStart
+                );
             }
 
             this.#setRangeEnd(
@@ -12422,12 +16295,12 @@
             }
 
             const firstRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     start
                 );
 
             const lastRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     latestEnd - 0.0001
                 );
 
@@ -12457,13 +16330,12 @@
                 ringIndex++
             ) {
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentStart =
                     Math.max(
@@ -12515,6 +16387,10 @@
                         range
                     );
 
+                    this.#prepareTimerTypeTransitionVisualRange(
+                        range
+                    );
+
                     this.#remainingRanges.set(
                         ringIndex,
                         range
@@ -12561,12 +16437,12 @@
                 this.#standardEnd;
 
             const firstRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     overtimeStart
                 );
 
             const lastRing =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now -
                     0.0001
                 );
@@ -12579,13 +16455,12 @@
                 ringIndex++
             ) {
                 const ringStart =
-                    this.#getRingStart(
+                    this.#getTimerRingStart(
                         ringIndex
                     );
 
                 const ringEnd =
-                    ringStart +
-                    ClockTimer.#HOUR;
+                    this.#getTimerRingEnd(ringIndex);
 
                 const segmentStart =
                     Math.max(
@@ -12856,10 +16731,17 @@
                     ringIndex
                 );
 
-            const initialWidth =
-                "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
+            ring.clockTimerExternalRangeLayout =
+                this.#getTimerType() ===
+                    "radial-fitted";
 
-            if (this.#starting) {
+            const initialWidth =
+                "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))";
+
+            if (
+                this.#starting ||
+                this.#timerTypeTransitionBuilding
+            ) {
                 ring.clockTimerTargetWidth =
                     initialWidth;
 
@@ -12894,6 +16776,13 @@
         #reorderRings(
             now
         ) {
+            if (
+                this.#timerTypeTransitioning &&
+                !this.#timerTypeTransitionBuilding
+            ) {
+                return;
+            }
+
             const borderRing =
                 this.#ensureBorderRing();
 
@@ -12916,7 +16805,7 @@
             }
 
             const activeIndex =
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 );
 
@@ -13029,7 +16918,10 @@
                         :
                         "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
 
-                if (this.#starting) {
+                if (
+                    this.#starting ||
+                    this.#timerTypeTransitionBuilding
+                ) {
                     ring.clockTimerTargetWidth =
                         width;
 
@@ -13144,6 +17036,77 @@
                     ring
                 );
             }
+        }
+
+        #getTimerRingIndex(
+            milliseconds
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                return 0;
+            }
+
+            return this.#getRingIndex(
+                milliseconds
+            );
+        }
+
+        #getTimerRingStart(
+            ringIndex
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                const bounds =
+                    this.#getRadialFittedBounds();
+
+                if (bounds) {
+                    return bounds.start;
+                }
+
+                if (
+                    Number.isFinite(
+                        this.#scheduledStartMilliseconds
+                    )
+                ) {
+                    return this.#scheduledStartMilliseconds;
+                }
+
+                if (
+                    Number.isFinite(
+                        this.#ringAnchor
+                    )
+                ) {
+                    return this.#ringAnchor;
+                }
+
+                return 0;
+            }
+
+            return this.#getRingStart(
+                ringIndex
+            );
+        }
+
+        #getTimerRingEnd(
+            ringIndex
+        ) {
+            if (
+                this.#getTimerType() ===
+                    "radial-fitted"
+            ) {
+                return Infinity;
+            }
+
+            return (
+                this.#getRingStart(
+                    ringIndex
+                ) +
+                ClockTimer.#HOUR
+            );
         }
 
         #getRingIndex(
@@ -13460,7 +17423,7 @@
             );
 
             this.#ensureRing(
-                this.#getRingIndex(
+                this.#getTimerRingIndex(
                     now
                 )
             );

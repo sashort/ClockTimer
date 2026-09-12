@@ -298,6 +298,31 @@ class RingContainer extends HTMLElement {
         return this.#getRenderedGeometry().width;
     }
 
+    snapGeometry() {
+        this.#cancelAnimation();
+
+        this.#resizePending =
+            false;
+
+        this.#reorderPending =
+            false;
+
+        this.#pendingLifecycleAction =
+            undefined;
+
+        this.#updateProperties(
+            false
+        );
+
+        this.#updateAutomaticFollowingRings(
+            false
+        );
+
+        this.#refreshChildVisualGeometry();
+
+        return this;
+    }
+
     static get batchResizing() {
         return RingContainer.#batchResizing;
     }
@@ -1068,7 +1093,9 @@ class RingContainer extends HTMLElement {
         ).filter(
             element =>
                 element instanceof
-                RingContainer
+                    RingContainer &&
+                element.clockTimerLayoutDetached !==
+                    true
         );
     }
 
@@ -1514,6 +1541,15 @@ class RingContainer extends HTMLElement {
     }
 
     #refreshChildVisualGeometry() {
+        if (
+            this.clockTimerLayoutDetached ===
+                true ||
+            this.clockTimerExternalRangeLayout ===
+                true
+        ) {
+            return;
+        }
+
         for (const child of this.children) {
             if (
                 typeof child.refreshVisualGeometry ===
@@ -1841,6 +1877,8 @@ class RingContainer extends HTMLElement {
             child =>
                 child instanceof
                     RingContainer &&
+                child.clockTimerLayoutDetached !==
+                    true &&
                 child.#reorderPending
         );
     }
@@ -2159,6 +2197,14 @@ class RingContainer extends HTMLElement {
         }
 
         if (
+            this.clockTimerLayoutDetached ===
+                true
+        ) {
+            this.#scheduleResize();
+            return;
+        }
+
+        if (
             this.#parentHasPendingReorder()
         ) {
             this.#markParentRingsPending();
@@ -2352,6 +2398,7 @@ class RingContainer extends HTMLElement {
 
         if (
             inset !== null &&
+            inset !== undefined &&
             inset
                 .trim()
                 .toLowerCase() !==
@@ -2463,7 +2510,9 @@ class RingContainer extends HTMLElement {
         while (sibling) {
             if (
                 sibling instanceof
-                    RingContainer
+                    RingContainer &&
+                sibling.clockTimerLayoutDetached !==
+                    true
             ) {
                 return sibling;
             }
@@ -2483,7 +2532,9 @@ class RingContainer extends HTMLElement {
         while (sibling) {
             if (
                 sibling instanceof
-                    RingContainer
+                    RingContainer &&
+                sibling.clockTimerLayoutDetached !==
+                    true
             ) {
                 return sibling;
             }
