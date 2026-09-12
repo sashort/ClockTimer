@@ -1,0 +1,42 @@
+name: Add showTolerance
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-show-tolerance.yml'
+      - '.github/scripts/add_show_tolerance.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Verify expected target base
+        run: test "$(git rev-parse HEAD)" = "bab60aeac72ee8ebdf307906de393c7840cfaf7c"
+
+      - name: Apply showTolerance patch
+        run: python ../radial-fitted-controller/.github/scripts/add_show_tolerance.py
+
+      - name: Verify implementation
+        run: |
+          node --check ClockTimer.js
+          grep -q 'get showTolerance()' ClockTimer.js
+          grep -q 'set showTolerance(value)' ClockTimer.js
+          grep -q '#getToleranceRenderEnd(' ClockTimer.js
+          grep -q '#loadingFromJSON' ClockTimer.js
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Add showTolerance control"
+          git push origin HEAD:rename-prestart-latency
