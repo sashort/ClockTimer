@@ -16145,6 +16145,10 @@
                     this.#elapsedRange
                 );
 
+                this.#prepareTimerTypeTransitionVisualRange(
+                    this.#elapsedRange
+                );
+
                 return;
             }
 
@@ -16346,6 +16350,10 @@
                         true;
 
                     ring.appendChild(
+                        range
+                    );
+
+                    this.#prepareTimerTypeTransitionVisualRange(
                         range
                     );
 
