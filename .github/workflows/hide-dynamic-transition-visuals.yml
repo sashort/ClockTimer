@@ -1,0 +1,74 @@
+name: Hide dynamic timer type transition visuals
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/hide_dynamic_transition_visuals.py
+      - .github/workflows/hide-dynamic-transition-visuals.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+
+      - name: Verify expected target base
+        working-directory: target
+        run: |
+          test "$(git rev-parse HEAD)" = "ac843fe4271ea85e0eae06b5c244bfe4e037f15d"
+
+      - name: Apply dynamic transition visual hiding change
+        run: |
+          python controller/.github/scripts/hide_dynamic_transition_visuals.py target/ClockTimer.js
+
+      - name: Syntax check
+        working-directory: target
+        run: node --check ClockTimer.js
+
+      - name: Verify transition visual creation paths
+        working-directory: target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+
+          elapsed = '''ring.appendChild(\n                    this.#elapsedRange\n                );\n\n                this.#prepareTimerTypeTransitionVisualRange(\n                    this.#elapsedRange\n                );'''
+          remaining = '''ring.appendChild(\n                        range\n                    );\n\n                    this.#prepareTimerTypeTransitionVisualRange(\n                        range\n                    );\n\n                    this.#remainingRanges.set('''
+
+          assert text.count(elapsed) == 1
+          assert text.count(remaining) == 1
+          assert 'type === "elapsed" ||' in text
+          assert 'type === "remaining" ||' in text
+          assert '"display",\n                "none",\n                "important"' in text
+          PY
+          git diff --check
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Keep dynamic overlays hidden during timer type transition"
+          git push origin HEAD:radial-fitted
