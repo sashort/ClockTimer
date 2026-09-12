@@ -1,0 +1,55 @@
+name: Fail clear while running
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fail-clear-while-running.yml'
+      - '.github/scripts/fail_clear_while_running.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+          path: target
+
+      - name: Checkout controller helpers
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Verify expected target base
+        working-directory: target
+        run: test "$(git rev-parse HEAD)" = "af46a54a19f515acee9d429d711ad7903528e6f3"
+
+      - name: Apply clear running guard
+        working-directory: target
+        run: python ../controller/.github/scripts/fail_clear_while_running.py
+
+      - name: Verify implementation
+        working-directory: target
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          marker = '''        clear() {\n            if (!this.#hasStartProperties()) {\n                return false;\n            }\n\n            if (this.#started) {\n                return false;\n            }\n'''
+          assert marker in text
+          PY
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fail clear while trip is running"
+          git push origin HEAD:rename-prestart-latency
