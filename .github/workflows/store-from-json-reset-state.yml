@@ -1,0 +1,95 @@
+name: Store fromJSON reset state
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/store_from_json_reset_state.py
+      - .github/workflows/store-from-json-reset-state.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted
+          fetch-depth: 0
+          path: target
+
+      - name: Verify expected target base
+        working-directory: target
+        run: |
+          test "$(git rev-parse HEAD)" = "4875ca53d001560249e013587665c0f14df397c3"
+
+      - name: Apply JSON reset state change
+        run: |
+          python controller/.github/scripts/store_from_json_reset_state.py target/ClockTimer.js
+
+      - name: Syntax check
+        working-directory: target
+        run: node --check ClockTimer.js
+
+      - name: Verify JSON reset behavior wiring
+        working-directory: target
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          text = Path('ClockTimer.js').read_text()
+
+          assert text.count('        #json;\n') == 1
+
+          from_start = text.index('        fromJSON(json) {')
+          from_end = text.index('        get status() {', from_start)
+          from_section = text[from_start:from_end]
+          assert 'const jsonString =' in from_section
+          assert 'typeof json === "string"' in from_section
+          assert 'JSON.stringify(' in from_section
+          assert 'this.#json =\n                    jsonString;' in from_section
+
+          reset_start = text.index('        reset() {')
+          reset_end = text.index('        ', reset_start + len('        reset() {'))
+          reset_section = text[reset_start:text.find('\n        ', reset_start + 12)]
+          # Use broader stable bounds so formatting changes inside reset do not matter.
+          clear_pos = text.find('        clear() {', reset_start)
+          if clear_pos != -1:
+              reset_section = text[reset_start:clear_pos]
+          else:
+              reset_section = text[reset_start:]
+          assert 'this.#json === undefined' in reset_section
+          assert 'if (this.#json !== undefined)' in reset_section
+          assert 'const json =\n                    this.#json;' in reset_section
+          assert 'this.clear();' in reset_section
+          assert 'return this.fromJSON(' in reset_section
+
+          clear_start = text.index('        clear() {')
+          clear_section = text[clear_start:]
+          assert 'this.#json =\n                undefined;' in clear_section
+          PY
+          git diff --check
+
+      - name: Commit update on target branch
+        working-directory: target
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Restore from stored JSON on reset"
+          git push origin HEAD:radial-fitted
