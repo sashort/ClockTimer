@@ -1,0 +1,52 @@
+name: State change visuals
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/state_change_visuals.py
+      - .github/workflows/state-change-visuals.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Fetch controller helpers
+        run: |
+          git fetch origin radial-fitted-controller
+          git show origin/radial-fitted-controller:.github/scripts/state_change_visuals.py > /tmp/state_change_visuals.py
+
+      - name: Verify expected target base
+        run: |
+          test "$(git rev-parse HEAD)" = "4b8d7878f4888ee8b6721714730d844b37b15ef5"
+
+      - name: Apply state change visual patch
+        run: python /tmp/state_change_visuals.py
+
+      - name: Verify implementation
+        run: |
+          node --check ClockTimer.js
+          node --check TimeRange.js
+          grep -q '#beginStateChangeVisuals' ClockTimer.js
+          grep -q '#startStateChangeWave' ClockTimer.js
+          grep -q 'clockTimerStateChangeOverlay' ClockTimer.js
+          grep -q 'state-change-wave-sweep 750ms' TimeRange.js
+          grep -q 'this.#startStateChangeVisualFade' ClockTimer.js
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js TimeRange.js
+          git commit -m "Coordinate state change progress visuals"
+          git push origin HEAD:rename-prestart-latency
