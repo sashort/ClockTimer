@@ -6442,6 +6442,10 @@
                 return false;
             }
 
+            if (this.#started) {
+                return false;
+            }
+
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
