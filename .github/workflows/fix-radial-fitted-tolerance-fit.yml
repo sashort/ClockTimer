@@ -1,0 +1,50 @@
+name: Fix radial fitted tolerance fit
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/workflows/fix-radial-fitted-tolerance-fit.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch controller helpers
+        run: |
+          git fetch origin radial-fitted-controller
+          git show origin/radial-fitted-controller:.github/scripts/fix_radial_fitted_tolerance_fit.py > /tmp/fix_radial_fitted_tolerance_fit.py
+
+      - name: Verify expected target base
+        run: |
+          test "$(git rev-parse HEAD)" = "150ed2f6e82fd25ad44175657ce2bb3d54231c86"
+
+      - name: Apply radial fitted tolerance fit patch
+        run: python /tmp/fix_radial_fitted_tolerance_fit.py
+
+      - name: Verify implementation
+        run: |
+          node --check ClockTimer.js
+          grep -q "const liveToleranceUsesVisibleEnd" ClockTimer.js
+          grep -q "!liveToleranceUsesVisibleEnd &&" ClockTimer.js
+          grep -q "this.#refreshRadialFittedLayouts(" ClockTimer.js
+          git diff --check
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fit radial timer to visible tolerance"
+          git push origin HEAD:rename-prestart-latency
