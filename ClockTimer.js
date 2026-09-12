@@ -12313,7 +12313,14 @@
                 }
             }
 
+            const liveToleranceUsesVisibleEnd =
+                this.#percentGoal > 1 &&
+                this.#started &&
+                this.#json === undefined &&
+                !this.#loadingFromJSON;
+
             if (
+                !liveToleranceUsesVisibleEnd &&
                 Number.isFinite(
                     this.#calculatedEndTime
                 )
@@ -12337,6 +12344,7 @@
                     );
 
             const currentThreshold =
+                !liveToleranceUsesVisibleEnd &&
                 Number.isFinite(
                     this.#calculatedEndTime
                 )
