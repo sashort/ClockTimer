@@ -18,14 +18,24 @@ jobs:
         with:
           ref: rename-prestart-latency
           fetch-depth: 0
+          path: target
+
+      - name: Checkout controller helpers
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          path: controller
 
       - name: Verify expected target base
+        working-directory: target
         run: test "$(git rev-parse HEAD)" = "bab60aeac72ee8ebdf307906de393c7840cfaf7c"
 
       - name: Apply showTolerance patch
-        run: python ../radial-fitted-controller/.github/scripts/add_show_tolerance.py
+        working-directory: target
+        run: python ../controller/.github/scripts/add_show_tolerance.py
 
       - name: Verify implementation
+        working-directory: target
         run: |
           node --check ClockTimer.js
           grep -q 'get showTolerance()' ClockTimer.js
@@ -34,6 +44,7 @@ jobs:
           grep -q '#loadingFromJSON' ClockTimer.js
 
       - name: Commit update on target branch
+        working-directory: target
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
