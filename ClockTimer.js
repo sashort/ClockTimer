@@ -20,6 +20,9 @@
         static #DAY =
             24 * ClockTimer.#HOUR;
 
+        static #DEFAULT_DATE_FORMAT =
+            "yyyy-mm-dd";
+
         #shadowRoot;
 
         #clockFace;
@@ -18187,18 +18190,63 @@
                     : "12-hour");
         }
 
+        #normalizeDateFormat(
+            format
+        ) {
+            if (typeof format !== "string") {
+                return undefined;
+            }
+
+            const translated =
+                format.trim().replace(
+                    /m{1,4}/g,
+                    token =>
+                        "M".repeat(
+                            token.length
+                        )
+                );
+
+            return TemporalFormat.isDateFormat(
+                translated
+            )
+                ? translated
+                : undefined;
+        }
+
+        #getDateFormat() {
+            return (
+                this.#normalizeDateFormat(
+                    this.getAttribute(
+                        "date-format"
+                    )
+                ) ??
+                this.#normalizeDateFormat(
+                    ClockTimer.#DEFAULT_DATE_FORMAT
+                )
+            );
+        }
+
         #updateDisplay(
             now
         ) {
+            const dateVisible =
+                this.hasAttribute(
+                    "date-format"
+                );
+
+            this.#dateElement.hidden =
+                !dateVisible;
+
             this.#dateElement.textContent =
-                new Intl.DateTimeFormat(
-                    undefined,
-                    {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric"
-                    }
-                ).format(now);
+                dateVisible
+                    ? (
+                        TemporalFormat.formatDate(
+                            now,
+                            this.#getDateFormat()
+                        ) ??
+                        ""
+                    )
+                    : "";
 
             const military =
                 this.getAttribute(
