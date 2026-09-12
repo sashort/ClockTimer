@@ -6828,7 +6828,10 @@
                         range.localName !==
                             "time-range" ||
                         range.timeRangeExiting ===
-                            true
+                            true ||
+                        this.#isTimerTypeTransitionVisualRange(
+                            range
+                        )
                     ) {
                         continue;
                     }
@@ -9578,6 +9581,23 @@
                 );
 
                 this.#rebuildTimerTypeRangeReferences();
+
+                if (this.#started) {
+                    const visualReference =
+                        Number.isFinite(
+                            state.referenceTime
+                        )
+                            ? state.referenceTime
+                            : this.#getCurrentTimelineTime();
+
+                    this.#updateElapsedRange(
+                        visualReference
+                    );
+
+                    this.#updateRemainingRanges(
+                        visualReference
+                    );
+                }
 
                 const reference =
                     Number.isFinite(
