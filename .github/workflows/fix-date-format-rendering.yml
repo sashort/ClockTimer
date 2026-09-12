@@ -1,0 +1,58 @@
+name: Fix date format rendering
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/workflows/fix-date-format-rendering.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: radial-fitted-controller
+          fetch-depth: 0
+
+      - name: Preserve patch script
+        run: cp .github/scripts/fix_date_format_rendering.py /tmp/fix_date_format_rendering.py
+
+      - name: Checkout target branch
+        run: |
+          git fetch origin date-format-rendering
+          git checkout -B date-format-rendering origin/date-format-rendering
+
+      - name: Verify expected target base
+        run: test "$(git rev-parse HEAD)" = "bfa6fdcd1c661e4719eef9f7f2d1c8acd218fc52"
+
+      - name: Apply date format rendering change
+        run: python /tmp/fix_date_format_rendering.py
+
+      - name: Syntax check
+        run: node --check ClockTimer.js
+
+      - name: Verify date format behavior wiring
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('ClockTimer.js').read_text()
+          assert 'static #DEFAULT_DATE_FORMAT =\n            "yyyy-mm-dd";' in s
+          assert 'this.hasAttribute(\n                    "date-format"\n                )' in s
+          assert 'TemporalFormat.formatDate(' in s
+          assert 'this.#getDateFormat()' in s
+          assert 'new Intl.DateTimeFormat(' not in s[s.index('#updateDisplay('):s.index('#startDisplayTimer')]
+          PY
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js
+          git commit -m "Format date from date-format attribute"
+          git push origin HEAD:date-format-rendering
