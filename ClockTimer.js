@@ -13294,6 +13294,14 @@
         #ringHasNonToleranceContent(
             ring
         ) {
+            const removableTypes =
+                new Set([
+                    "tolerance",
+                    "elapsed",
+                    "remaining",
+                    "wave"
+                ]);
+
             for (const child of ring.children) {
                 if (
                     child.localName !==
@@ -13310,11 +13318,11 @@
                 }
 
                 if (
-                    child.clockTimerPlanned !==
-                        undefined &&
-                    child.getAttribute(
-                        "type"
-                    ) === "tolerance"
+                    removableTypes.has(
+                        child.getAttribute(
+                            "type"
+                        )
+                    )
                 ) {
                     continue;
                 }
@@ -13323,6 +13331,100 @@
             }
 
             return false;
+        }
+
+        #removeToleranceTransitionRing(
+            ring
+        ) {
+            if (!ring) {
+                return false;
+            }
+
+            const ringIndex =
+                Number(
+                    ring.clockTimerRingIndex
+                );
+
+            for (
+                const range of
+                    Array.from(
+                        ring.querySelectorAll(
+                            ":scope > time-range"
+                        )
+                    )
+            ) {
+                this.#releaseTimeRangeTimingAnimation(
+                    range
+                );
+
+                if (
+                    this.#elapsedRange ===
+                        range
+                ) {
+                    this.#elapsedRange =
+                        undefined;
+                }
+
+                if (
+                    this.#waveRange ===
+                        range
+                ) {
+                    this.#waveRange =
+                        undefined;
+                }
+            }
+
+            for (
+                const [
+                    remainingIndex,
+                    range
+                ] of
+                    this.#remainingRanges
+            ) {
+                if (
+                    range.parentElement ===
+                        ring ||
+                    (
+                        Number.isFinite(ringIndex) &&
+                        remainingIndex ===
+                            ringIndex
+                    )
+                ) {
+                    this.#releaseTimeRangeTimingAnimation(
+                        range
+                    );
+
+                    this.#remainingRanges.delete(
+                        remainingIndex
+                    );
+                }
+            }
+
+            if (
+                this.#waveRing ===
+                    ring
+            ) {
+                this.#waveRing =
+                    undefined;
+
+                this.#waveRange =
+                    undefined;
+            }
+
+            ring.remove();
+
+            if (
+                Number.isFinite(ringIndex) &&
+                this.#rings.get(
+                    ringIndex
+                ) === ring
+            ) {
+                this.#rings.delete(
+                    ringIndex
+                );
+            }
+
+            return true;
         }
 
         #getToleranceFadeOutRings(
@@ -13814,27 +13916,14 @@
                                 "time-range" &&
                             child.timeRangeExiting !==
                                 true &&
-                            child.clockTimerPlanned !==
-                                undefined &&
                             child.getAttribute(
                                 "type"
                             ) === "tolerance"
                     )
                 ) {
-                    const ringIndex =
-                        Number(
-                            fade.ring.clockTimerRingIndex
-                        );
-
-                    fade.ring.remove();
-
-                    if (
-                        Number.isFinite(ringIndex)
-                    ) {
-                        this.#rings.delete(
-                            ringIndex
-                        );
-                    }
+                    this.#removeToleranceTransitionRing(
+                        fade.ring
+                    );
                 }
             }
 
@@ -17340,12 +17429,22 @@
                 return;
             }
 
+            const visibleTimerEnd =
+                this.#getLatestTimerEnd();
+
             const latestEnd =
-                Number.isFinite(
-                    this.#calculatedEndTime
-                )
-                    ? this.#calculatedEndTime
-                    : this.#getLatestTimerEnd();
+                this.#percentGoal > 1 &&
+                this.#started &&
+                this.#json === undefined &&
+                !this.#loadingFromJSON
+                    ? visibleTimerEnd
+                    : (
+                        Number.isFinite(
+                            this.#calculatedEndTime
+                        )
+                            ? this.#calculatedEndTime
+                            : visibleTimerEnd
+                    );
 
             if (
                 !Number.isFinite(latestEnd) ||
