@@ -1,0 +1,53 @@
+name: Fix timer type visual ranges
+
+on:
+  push:
+    branches:
+      - radial-fitted-controller
+    paths:
+      - .github/scripts/fix_timer_type_visual_ranges.py
+      - .github/workflows/fix-timer-type-visual-ranges.yml
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Fetch controller helpers
+        run: |
+          git fetch origin radial-fitted-controller
+          git show origin/radial-fitted-controller:.github/scripts/fix_timer_type_visual_ranges.py > /tmp/fix_timer_type_visual_ranges.py
+
+      - name: Verify expected target base
+        run: |
+          test "$(git rev-parse HEAD)" = "0f500c13c81f443a1af257a86d7c76e766933d1e"
+
+      - name: Apply timer type visual range fix
+        run: python /tmp/fix_timer_type_visual_ranges.py
+
+      - name: Verify implementation
+        run: |
+          node --check ClockTimer.js
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          assert 'this.#isTimerTypeTransitionVisualRange(\n                            range\n                        )' in text
+          assert 'const visualReference =' in text
+          assert 'this.#updateElapsedRange(\n                        visualReference\n                    );' in text
+          assert 'this.#updateRemainingRanges(\n                        visualReference\n                    );' in text
+          PY
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Rebuild visual ranges for timer type changes"
+          git push origin HEAD:rename-prestart-latency
