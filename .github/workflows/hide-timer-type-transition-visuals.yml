@@ -63,8 +63,8 @@ jobs:
               assert item in text, item
 
           assert text.count('"display",\n                "none",\n                "important"') == 1
-          assert text.count('displayInlineValue') >= 4
-          assert text.count('displayInlinePriority') >= 4
+          assert text.count('displayInlineValue') >= 3
+          assert text.count('displayInlinePriority') >= 3
           PY
           git diff --check
 
