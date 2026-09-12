@@ -134,6 +134,12 @@
         #percentGoal =
             1;
 
+        #showTolerance =
+            true;
+
+        #loadingFromJSON =
+            false;
+
         #startedAtEpoch;
 
         #ringAnchor;
@@ -1913,6 +1919,9 @@
 
                 this.#setIndicatorSymbolVisible(false);
 
+                this.#loadingFromJSON =
+                    true;
+
                 this.#started =
                     true;
 
@@ -2101,6 +2110,9 @@
 
                     this.#started =
                         false;
+
+                    this.#loadingFromJSON =
+                        false;
                 }
 
                 for (const ring of this.#rings.values()) {
@@ -2143,6 +2155,61 @@
             catch {
                 return false;
             }
+        }
+
+        get showTolerance() {
+            return this.#showTolerance;
+        }
+
+        set showTolerance(value) {
+            let normalized;
+
+            if (typeof value === "boolean") {
+                normalized = value;
+            }
+            else if (typeof value === "string") {
+                const text =
+                    value.trim().toLowerCase();
+
+                if (text === "true") {
+                    normalized = true;
+                }
+                else if (text === "false") {
+                    normalized = false;
+                }
+                else {
+                    return;
+                }
+            }
+            else {
+                return;
+            }
+
+            if (normalized === this.#showTolerance) {
+                return;
+            }
+
+            this.#showTolerance =
+                normalized;
+
+            if (
+                !this.#started ||
+                this.#percentGoal <= 1 ||
+                this.#json !== undefined ||
+                this.#loadingFromJSON
+            ) {
+                return;
+            }
+
+            const now =
+                this.#getCurrentTimelineTime();
+
+            this.#reconcilePlannedRanges();
+
+            this.#refreshRingLayout(
+                now,
+                { refreshTickMarks: true }
+            );
         }
 
         get status() {
@@ -13127,6 +13194,42 @@
             this.#timeRangeTimingAnimations.clear();
         }
 
+        #getToleranceRenderEnd(
+            now = undefined
+        ) {
+            if (
+                this.#percentGoal <= 1 ||
+                this.#loadingFromJSON ||
+                this.#json !== undefined
+            ) {
+                return undefined;
+            }
+
+            if (
+                !this.#started ||
+                this.#showTolerance
+            ) {
+                return this.#standardEnd;
+            }
+
+            const current =
+                Number.isFinite(now)
+                    ? now
+                    : this.#getCurrentTimelineTime();
+
+            if (
+                !Number.isFinite(current) ||
+                current <= this.#calculatedEnd
+            ) {
+                return undefined;
+            }
+
+            return Math.min(
+                current,
+                this.#standardEnd
+            );
+        }
+
         #getPlannedSegments(
             startTimeMilliseconds =
                 this.#getStartTimeMilliseconds()
@@ -13186,11 +13289,22 @@
                     end: this.#calculatedEnd
                 });
 
-                spans.push({
-                    type: "tolerance",
-                    start: this.#calculatedEnd,
-                    end: this.#standardEnd
-                });
+                const toleranceRenderEnd =
+                    this.#getToleranceRenderEnd();
+
+                if (
+                    Number.isFinite(
+                        toleranceRenderEnd
+                    ) &&
+                    toleranceRenderEnd >
+                        this.#calculatedEnd
+                ) {
+                    spans.push({
+                        type: "tolerance",
+                        start: this.#calculatedEnd,
+                        end: toleranceRenderEnd
+                    });
+                }
             }
             else {
                 this.#tripEnd =
@@ -15949,11 +16063,22 @@
                     this.#calculatedEnd
                 );
 
-                this.#createSpan(
-                    "tolerance",
-                    this.#calculatedEnd,
-                    this.#standardEnd
-                );
+                const toleranceRenderEnd =
+                    this.#getToleranceRenderEnd();
+
+                if (
+                    Number.isFinite(
+                        toleranceRenderEnd
+                    ) &&
+                    toleranceRenderEnd >
+                        this.#calculatedEnd
+                ) {
+                    this.#createSpan(
+                        "tolerance",
+                        this.#calculatedEnd,
+                        toleranceRenderEnd
+                    );
+                }
 
                 return;
             }
@@ -17416,6 +17541,15 @@
                 this.#getCurrentTimelineTime(
                     nowDate
                 );
+
+            if (
+                !this.#showTolerance &&
+                this.#percentGoal > 1 &&
+                this.#json === undefined &&
+                !this.#loadingFromJSON
+            ) {
+                this.#reconcilePlannedRanges();
+            }
 
             this.#processElapsedOverwriteRanges(
                 now
