@@ -123,6 +123,8 @@
 
         #startResetState;
 
+        #json;
+
         #restoringStartState =
             false;
 
@@ -1558,6 +1560,13 @@
             }
 
             try {
+                const jsonString =
+                    typeof json === "string"
+                        ? json
+                        : JSON.stringify(
+                            json
+                        );
+
                 const data =
                     typeof json === "string"
                         ? JSON.parse(json)
@@ -2122,6 +2131,9 @@
                     undefined;
 
                 this.#stopTickTimer();
+
+                this.#json =
+                    jsonString;
 
                 return new Date();
             }
@@ -3926,7 +3938,10 @@
         }
 
         reset() {
-            if (!this.#startResetState) {
+            if (
+                this.#json === undefined &&
+                !this.#startResetState
+            ) {
                 return false;
             }
 
@@ -3939,6 +3954,22 @@
                 });
 
                 return new Date();
+            }
+
+            if (this.#json !== undefined) {
+                const json =
+                    this.#json;
+
+                const result =
+                    this.clear();
+
+                if (result === false) {
+                    return false;
+                }
+
+                return this.fromJSON(
+                    json
+                );
             }
 
             const baseline =
@@ -6357,6 +6388,9 @@
 
                 return new Date();
             }
+
+            this.#json =
+                undefined;
 
             this.#stopTickTimer();
             this.#cancelTimeRangeTimingAnimations();
