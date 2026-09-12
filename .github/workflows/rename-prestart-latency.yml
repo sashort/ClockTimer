@@ -1,0 +1,70 @@
+name: Rename prestart to latency
+
+on:
+  push:
+    paths:
+      - .github/workflows/rename-prestart-latency.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Verify expected target base
+        run: |
+          test "$(git rev-parse HEAD)" = "3180c21f048aad6085535a65ce31297f02c63935"
+
+      - name: Rename prestart to latency everywhere
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          files = subprocess.check_output(
+              ["git", "grep", "-Il", "prestart", "--", "."],
+              text=True,
+          ).splitlines()
+
+          if not files:
+              raise SystemExit("No tracked prestart usages found")
+
+          for name in files:
+              path = Path(name)
+              text = path.read_text()
+              updated = text.replace("prestart", "latency")
+              if updated == text:
+                  raise SystemExit(f"Expected replacement in {name}")
+              path.write_text(updated)
+
+          print("Updated:")
+          for name in files:
+              print(name)
+          PY
+
+      - name: Verify rename
+        run: |
+          if git grep -n "prestart" -- .; then
+            echo "prestart remains in tracked files"
+            exit 1
+          fi
+          git grep -n "latency" -- .
+          node --check ClockTimer.js
+          node --check TimeRange.js
+          node --check RingContainer.js
+          node --check TemporalFormat.js
+
+      - name: Commit update on target branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Rename prestart range type to latency"
+          git push origin HEAD:rename-prestart-latency
