@@ -393,6 +393,26 @@ class TimeRange extends HTMLElement {
                 animation: elapsed-wave-sweep 4.5s linear infinite;
             }
 
+            :host([type="wave"][state-change-wave]) #elapsed-wave {
+                animation: state-change-wave-sweep 750ms linear 1 both;
+            }
+
+            @keyframes state-change-wave-sweep {
+                0% {
+                    opacity: 1;
+                    transform: rotate(-180deg);
+                }
+
+                96% {
+                    opacity: 1;
+                }
+
+                100% {
+                    opacity: 0;
+                    transform: rotate(180deg);
+                }
+            }
+
             @keyframes elapsed-wave-sweep {
                 0% {
                     opacity: 0;
