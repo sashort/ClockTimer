@@ -7842,6 +7842,14 @@
                     inlinePriority:
                         range.style.getPropertyPriority(
                             "opacity"
+                        ),
+                    displayInlineValue:
+                        range.style.getPropertyValue(
+                            "display"
+                        ),
+                    displayInlinePriority:
+                        range.style.getPropertyPriority(
+                            "display"
                         )
                 };
             }
@@ -7849,6 +7857,12 @@
             range.style.setProperty(
                 "opacity",
                 "0"
+            );
+
+            range.style.setProperty(
+                "display",
+                "none",
+                "important"
             );
 
             state.visualFadeRanges.add(
@@ -7885,6 +7899,20 @@
             else {
                 range.style.removeProperty(
                     "opacity"
+                );
+            }
+
+            if (opacityState.displayInlineValue) {
+                range.style.setProperty(
+                    "display",
+                    opacityState.displayInlineValue,
+                    opacityState.displayInlinePriority ??
+                        ""
+                );
+            }
+            else {
+                range.style.removeProperty(
+                    "display"
                 );
             }
 
@@ -8029,6 +8057,20 @@
                     "opacity",
                     "0"
                 );
+
+                if (opacityState?.displayInlineValue) {
+                    range.style.setProperty(
+                        "display",
+                        opacityState.displayInlineValue,
+                        opacityState.displayInlinePriority ??
+                            ""
+                    );
+                }
+                else {
+                    range.style.removeProperty(
+                        "display"
+                    );
+                }
 
                 if (
                     typeof range.animate !==
