@@ -4326,6 +4326,10 @@
                     []
             };
 
+            this.#ensureIntervalRecordId(
+                record
+            );
+
             const startTimeline =
                 this.#dateToTimelineTime(
                     record.startDate
@@ -4562,6 +4566,10 @@
                         : undefined,
                 openEnded
             };
+
+            this.#ensureIntervalRecordId(
+                record
+            );
 
             if (openEnded) {
                 this.#overwriteRanges.push(
@@ -5089,6 +5097,11 @@
                 range.clockTimerOverwrite =
                     record.id;
 
+                this.#ensureIntervalIdAttribute(
+                    range,
+                    record.intervalId
+                );
+
                 range.timeRangeFullEntry =
                     true;
 
@@ -5195,6 +5208,11 @@
                         segmentEnd
                     );
                 }
+
+                this.#ensureIntervalIdAttribute(
+                    range,
+                    record.intervalId
+                );
 
                 cursor =
                     segmentEnd;
@@ -5346,6 +5364,149 @@
                 .has(
                     normalized.toLowerCase()
                 );
+        }
+
+        #createIntervalId() {
+            return (
+                globalThis.crypto
+                    ?.randomUUID?.() ??
+                `interval-${Date.now()}-${Math.random()}`
+            );
+        }
+
+        #getIntervalIdFromAttributes(
+            attributes
+        ) {
+            if (
+                !attributes ||
+                typeof attributes !==
+                    "object"
+            ) {
+                return undefined;
+            }
+
+            for (
+                const [name, value] of
+                    Object.entries(attributes)
+            ) {
+                if (
+                    String(name)
+                        .toLowerCase() !==
+                    "interval-id"
+                ) {
+                    continue;
+                }
+
+                const normalized =
+                    String(value ?? "")
+                        .trim();
+
+                return normalized ||
+                    undefined;
+            }
+
+            return undefined;
+        }
+
+        #ensureIntervalRecordId(
+            record
+        ) {
+            if (
+                !record ||
+                !this.#isIntervalType(
+                    record.type
+                )
+            ) {
+                return undefined;
+            }
+
+            const intervalId =
+                String(
+                    record.intervalId ??
+                    this.#getIntervalIdFromAttributes(
+                        record.otherAttributes
+                    ) ??
+                    this.#createIntervalId()
+                ).trim();
+
+            record.intervalId =
+                intervalId;
+
+            if (
+                record.otherAttributes &&
+                typeof record.otherAttributes ===
+                    "object"
+            ) {
+                for (
+                    const name of
+                        Object.keys(
+                            record.otherAttributes
+                        )
+                ) {
+                    if (
+                        name.toLowerCase() ===
+                            "interval-id"
+                    ) {
+                        delete record
+                            .otherAttributes[name];
+                    }
+                }
+
+                record.otherAttributes[
+                    "interval-id"
+                ] = intervalId;
+            }
+
+            return intervalId;
+        }
+
+        #ensureIntervalIdAttribute(
+            range,
+            intervalId
+        ) {
+            if (
+                !range ||
+                range.localName !==
+                    "time-range" ||
+                !this.#isIntervalType(
+                    range.getAttribute(
+                        "type"
+                    )
+                )
+            ) {
+                return undefined;
+            }
+
+            const requested =
+                intervalId === undefined ||
+                intervalId === null
+                    ? ""
+                    : String(intervalId)
+                        .trim();
+
+            const existing =
+                range.getAttribute(
+                    "interval-id"
+                )?.trim() ??
+                "";
+
+            const value =
+                requested ||
+                existing ||
+                this.#createIntervalId();
+
+            if (
+                range.getAttribute(
+                    "interval-id"
+                ) !== value
+            ) {
+                range.setAttribute(
+                    "interval-id",
+                    value
+                );
+            }
+
+            return value;
         }
 
         #shiftPlannedRangesAfter(
@@ -17160,6 +17321,10 @@
                         range.localName ===
                             "time-range"
                     ) {
+                        this.#ensureIntervalIdAttribute(
+                            range
+                        );
+
                         ranges.push(range);
                     }
                 }
@@ -19526,6 +19691,10 @@
             range.setAttribute(
                 "type",
                 type
+            );
+
+            this.#ensureIntervalIdAttribute(
+                range
             );
 
             if (
