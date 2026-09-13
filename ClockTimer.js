@@ -9935,6 +9935,98 @@
             ring.snapGeometry?.();
         }
 
+        #positionStateChangeWaveRing(
+            ring,
+            sourceRing
+        ) {
+            if (
+                !ring ||
+                !sourceRing
+            ) {
+                return;
+            }
+
+            const renderedInset =
+                Number.parseFloat(
+                    sourceRing.renderedInset ??
+                    sourceRing.inset ??
+                    sourceRing.getAttribute(
+                        "inset"
+                    ) ??
+                    "0"
+                );
+
+            const renderedWidth =
+                Number.parseFloat(
+                    sourceRing.renderedWidth ??
+                    sourceRing.width ??
+                    sourceRing.getAttribute(
+                        "width"
+                    ) ??
+                    "0"
+                );
+
+            const targetWidthValue =
+                sourceRing.clockTimerTargetWidth ??
+                sourceRing.width ??
+                sourceRing.getAttribute(
+                    "width"
+                ) ??
+                sourceRing.renderedWidth ??
+                "0px";
+
+            const targetWidth =
+                this.#resolveTimerTypeTransitionLength(
+                    targetWidthValue,
+                    sourceRing
+                );
+
+            if (
+                !Number.isFinite(renderedInset) ||
+                !Number.isFinite(renderedWidth) ||
+                !Number.isFinite(targetWidth) ||
+                targetWidth <= 0
+            ) {
+                this.#syncInternalVisualRingGeometry(
+                    ring,
+                    sourceRing
+                );
+
+                return;
+            }
+
+            const outerEdge =
+                renderedInset -
+                renderedWidth / 2;
+
+            const targetInset =
+                outerEdge +
+                targetWidth / 2;
+
+            ring.clockTimerRingIndex =
+                sourceRing.clockTimerRingIndex ??
+                "";
+
+            ring.clockTimerExternalRangeLayout =
+                this.#getTimerType() ===
+                    "radial-fitted";
+
+            ring.inset =
+                `${targetInset}px`;
+
+            ring.width =
+                `${targetWidth}px`;
+
+            ring.toggleAttribute(
+                "active",
+                sourceRing.hasAttribute(
+                    "active"
+                )
+            );
+
+            ring.snapGeometry?.();
+        }
+
         #startStateChangeWave() {
             this.#removeStateChangeWave();
 
@@ -9971,6 +10063,11 @@
 
             this.#ringLayer.appendChild(
                 ring
+            );
+
+            this.#positionStateChangeWaveRing(
+                ring,
+                sourceRing
             );
 
             let start;
@@ -18559,20 +18656,58 @@
                 return;
             }
 
-            if (!this.hasAttribute("indicator-symbol") || !this.#started || !this.#elapsedRange) {
+            if (
+                !this.hasAttribute(
+                    "indicator-symbol"
+                ) ||
+                !this.#started
+            ) {
                 this.#setIndicatorSymbolVisible(false);
                 return;
             }
 
-            const ring = this.#elapsedRange.parentElement;
+            let ring =
+                this.#elapsedRange?.isConnected
+                    ? this.#elapsedRange.parentElement
+                    : undefined;
 
-            if (!ring || ring.localName !== "ring-container" || !ring.hasAttribute("active")) {
+            let end =
+                this.#elapsedRange?.isConnected
+                    ? Number(
+                        this.#elapsedRange.clockTimerEnd
+                    )
+                    : undefined;
+
+            if (
+                (
+                    !ring ||
+                    !Number.isFinite(end)
+                ) &&
+                this.#stateChangeVisualState
+            ) {
+                ring =
+                    this.#getStateChangeActiveRing();
+
+                end =
+                    this.#getCurrentTimelineTime();
+            }
+
+            if (
+                !ring ||
+                ring.localName !==
+                    "ring-container" ||
+                !ring.hasAttribute(
+                    "active"
+                )
+            ) {
                 this.#setIndicatorSymbolVisible(false);
                 return;
             }
 
-            const end = Number(this.#elapsedRange.clockTimerEnd);
-            const ringIndex = Number(ring.clockTimerRingIndex);
+            const ringIndex =
+                Number(
+                    ring.clockTimerRingIndex
+                );
 
             if (!Number.isFinite(end) || !Number.isFinite(ringIndex)) {
                 this.#setIndicatorSymbolVisible(false);
