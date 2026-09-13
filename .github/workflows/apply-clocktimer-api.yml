@@ -1,0 +1,39 @@
+name: Apply ClockTimer API integration
+on:
+  push:
+    branches: [rename-prestart-latency]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 .github/patch-clocktimer-api.py
+      - run: node --check ClockTimer.js
+      - name: Validate PHP
+        run: |
+          for file in api/*.php api/users/*.php api/trips/*.php api/intervals/*.php; do
+            php -l "$file"
+          done
+      - name: Verify API surface
+        run: |
+          ! grep -q '#createIntervalId' ClockTimer.js
+          ! grep -q '^        closeInterval(' ClockTimer.js
+          grep -q '^        async connect(' ClockTimer.js
+          grep -q '^        async start(' ClockTimer.js
+          grep -q '^        async stop(' ClockTimer.js
+          grep -q '^        async clear(' ClockTimer.js
+          grep -q '^        async reset(' ClockTimer.js
+          grep -q '^        async startInterval(' ClockTimer.js
+          grep -q '^        async endInterval(' ClockTimer.js
+          grep -q 'return "offline"' ClockTimer.js
+      - name: Commit generated source
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Integrate ClockTimer with PHP API"
+          git push origin HEAD:rename-prestart-latency
