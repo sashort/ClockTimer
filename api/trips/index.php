@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $method = require_method('POST', 'PATCH', 'DELETE');
 $input = json_input();
+require_csrf();
 
 if ($method === 'POST') {
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
@@ -29,7 +30,6 @@ if ($method === 'POST') {
     json_response(['tripId' => $tripId], 201);
 }
 
-require_csrf();
 $tripId = require_positive_int($input, 'tripId');
 
 if ($method === 'DELETE') {

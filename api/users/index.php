@@ -3,12 +3,41 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 
-$method = require_method('GET', 'POST');
+$method = require_method('GET', 'POST', 'DELETE');
 
 if ($method === 'GET') {
     json_response([
         'user' => current_user(),
         'csrfToken' => csrf_token(),
+    ]);
+}
+
+if ($method === 'DELETE') {
+    authenticated_user_id();
+    require_csrf();
+
+    $_SESSION = [];
+
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(
+            session_name(),
+            '',
+            [
+                'expires' => time() - 42000,
+                'path' => $params['path'],
+                'domain' => $params['domain'],
+                'secure' => $params['secure'],
+                'httponly' => $params['httponly'],
+                'samesite' => $params['samesite'] ?? 'Lax',
+            ]
+        );
+    }
+
+    session_destroy();
+
+    json_response([
+        'connected' => false,
     ]);
 }
 

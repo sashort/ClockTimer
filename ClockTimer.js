@@ -1784,6 +1784,7 @@
             }
             const data = await this.#apiRequest("trips", {
                 method: "POST",
+                csrf: true,
                 body: this.#tripPersistencePayload()
             });
             const tripId = Number(data.tripId);
@@ -1879,6 +1880,37 @@
             }
 
             return { connected: true, user: data.user };
+        }
+
+        async disconnect() {
+            const wasConnected =
+                this.#connectionState === "connected" &&
+                Boolean(this.#csrfToken);
+
+            let remote = false;
+
+            try {
+                if (wasConnected) {
+                    await this.#apiRequest("users", {
+                        method: "DELETE",
+                        csrf: true
+                    });
+                    remote = true;
+                }
+            }
+            catch (error) {
+                if (!error?.clockTimerOffline) {
+                    throw error;
+                }
+            }
+            finally {
+                this.#setOffline();
+            }
+
+            return {
+                connected: false,
+                remote
+            };
         }
 
         async start(options = {}) {
