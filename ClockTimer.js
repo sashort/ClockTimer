@@ -1239,8 +1239,7 @@
                 new Set([
                     "start-time",
                     "end-time",
-                    "range-length",
-                    "overwrite"
+                    "range-length"
                 ]);
 
             const attributes = {};
@@ -1698,8 +1697,7 @@
                     new Set([
                         "start-time",
                         "end-time",
-                        "range-length",
-                        "overwrite"
+                        "range-length"
                     ]);
 
                 const events = [];
@@ -6528,9 +6526,9 @@
                 )
             );
 
-            currentRange?.removeAttribute(
-                "overwrite"
-            );
+            if (currentRange) {
+                delete currentRange.clockTimerOverwriteType;
+            }
 
             this.#setRangeStart(
                 nextRange,
@@ -6663,9 +6661,7 @@
                 return;
             }
 
-            currentRange.removeAttribute(
-                "overwrite"
-            );
+            delete currentRange.clockTimerOverwriteType;
 
             this.#setRangeEnd(
                 currentRange,
@@ -16885,7 +16881,6 @@
             const ignored =
                 new Set([
                     "type",
-                    "overwrite",
                     "start-time",
                     "end-time",
                     "range-length"
@@ -17082,11 +17077,6 @@
                     continue;
                 }
 
-                const rightOverwrite =
-                    right.getAttribute(
-                        "overwrite"
-                    );
-
                 const preserveRangeLength =
                     left.hasAttribute(
                         "range-length"
@@ -17095,10 +17085,6 @@
                         "range-length"
                     );
 
-                left.removeAttribute(
-                    "overwrite"
-                );
-
                 this.#setRangeTiming(
                     left,
                     start,
@@ -17106,12 +17092,6 @@
                     preserveRangeLength
                 );
 
-                if (rightOverwrite !== null) {
-                    left.setAttribute(
-                        "overwrite",
-                        rightOverwrite
-                    );
-                }
 
                 if (
                     right.timeRangeFullEntry ===
@@ -20838,9 +20818,10 @@
                     .filter(
                         range =>
                             range.timeRangeExiting !== true &&
-                            range.hasAttribute(
-                                "overwrite"
-                            )
+                            typeof range.clockTimerOverwriteType ===
+                                "string" &&
+                            range.clockTimerOverwriteType.trim() !==
+                                ""
                     );
 
             for (const range of ranges) {
@@ -20857,17 +20838,9 @@
                 }
 
                 const overwriteType =
-                    range.getAttribute(
-                        "overwrite"
-                    )?.trim();
+                    range.clockTimerOverwriteType.trim();
 
-                range.removeAttribute(
-                    "overwrite"
-                );
-
-                if (!overwriteType) {
-                    continue;
-                }
+                delete range.clockTimerOverwriteType;
 
                 this.overwrite({
                     type: overwriteType
