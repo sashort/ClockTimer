@@ -114,6 +114,14 @@
 
         #tripId;
 
+        #connectionState =
+            "offline";
+
+        #csrfToken;
+
+        #apiBase =
+            "api";
+
         #scheduledStart;
 
         #scheduledStartMilliseconds;
@@ -1615,7 +1623,412 @@
             this.#transitionShowTolerance();
         }
 
+        #setOffline() {
+            this.#connectionState = "offline";
+            this.#csrfToken = undefined;
+        }
+
+        #apiURL(endpoint) {
+            return `${String(this.#apiBase).replace(/\/+$/, "")}/${endpoint}/`;
+        }
+
+        async #apiRequest(endpoint, { method = "GET", body, csrf = false } = {}) {
+            const headers = { "Accept": "application/json" };
+            if (body !== undefined) {
+                headers["Content-Type"] = "application/json";
+            }
+            if (csrf) {
+                if (!this.#csrfToken) {
+                    const error = new Error("A CSRF token is required.");
+                    error.clockTimerOffline = true;
+                    throw error;
+                }
+                headers["X-CSRF-Token"] = this.#csrfToken;
+            }
+
+            let response;
+            try {
+                response = await fetch(this.#apiURL(endpoint), {
+                    method,
+                    credentials: "same-origin",
+                    headers,
+                    body: body === undefined ? undefined : JSON.stringify(body)
+                });
+            }
+            catch (cause) {
+                this.#setOffline();
+                const error = new Error("The API is unavailable.", { cause });
+                error.clockTimerOffline = true;
+                throw error;
+            }
+
+            let data = {};
+            try {
+                data = await response.json();
+            }
+            catch {}
+
+            if (!response.ok) {
+                const error = new Error(
+                    data.message || `API request failed (${response.status}).`
+                );
+                if (response.status === 401 || data.error === "invalid_csrf") {
+                    this.#setOffline();
+                    error.clockTimerOffline = true;
+                }
+                throw error;
+            }
+            return data;
+        }
+
+        async #resumeSession() {
+            try {
+                const data = await this.#apiRequest("users");
+                if (typeof data.csrfToken !== "string" || data.csrfToken.length < 32) {
+                    this.#setOffline();
+                    return false;
+                }
+                this.#csrfToken = data.csrfToken;
+                this.#connectionState = "connected";
+                return true;
+            }
+            catch {
+                this.#setOffline();
+                return false;
+            }
+        }
+
+        async #ensureConnected() {
+            if (this.#connectionState === "connected" && this.#csrfToken) {
+                return true;
+            }
+            return this.#resumeSession();
+        }
+
+        #timelineToISO(milliseconds) {
+            const creationDate = this.#getJSONCreationDate();
+            if (!creationDate || !Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+            return new Date(creationDate.getTime() + milliseconds).toISOString();
+        }
+
+        #tripPersistencePayload() {
+            const startTime = this.#timelineToISO(this.#getStartTimeMilliseconds());
+            const endTime = this.#timelineToISO(this.#calculatedEndTime);
+            if (!startTime || !endTime) {
+                throw new Error("The trip does not have persistable timing data.");
+            }
+            return { startTime, endTime };
+        }
+
+        #intervalRecords() {
+            return this.#insertedRanges.filter(
+                record => this.#isIntervalType(record.type)
+            );
+        }
+
+        #stripIntervalDatabaseId(record) {
+            delete record.intervalId;
+            delete record.clockTimerSyncedEnd;
+            if (record.otherAttributes) {
+                for (const name of Object.keys(record.otherAttributes)) {
+                    if (name.toLowerCase() === "interval-id") {
+                        delete record.otherAttributes[name];
+                    }
+                }
+            }
+            for (const range of this.#getManagedTimeRanges()) {
+                if (range.clockTimerInserted === record.id) {
+                    this.#ensureIntervalIdAttribute(range, undefined);
+                }
+            }
+        }
+
+        #assignIntervalDatabaseId(record, intervalId) {
+            const numeric = Number(intervalId);
+            if (!Number.isInteger(numeric) || numeric < 1) {
+                throw new Error("The API returned an invalid interval id.");
+            }
+            record.intervalId = numeric;
+            record.otherAttributes = {
+                ...(record.otherAttributes ?? {}),
+                "interval-id": String(numeric)
+            };
+            for (const range of this.#getManagedTimeRanges()) {
+                if (range.clockTimerInserted === record.id) {
+                    this.#ensureIntervalIdAttribute(range, numeric);
+                }
+            }
+        }
+
+        #intervalPayload(record) {
+            const attributes = { ...(record.otherAttributes ?? {}) };
+            for (const name of Object.keys(attributes)) {
+                if (name.toLowerCase() === "interval-id") {
+                    delete attributes[name];
+                }
+            }
+            const startTime = record.startDate?.toISOString?.();
+            const endTime = record.clockTimerPersistenceEnd ??
+                record.endDate?.toISOString?.() ?? null;
+            if (!startTime) {
+                throw new Error("The interval does not have a persistable start time.");
+            }
+            return { type: String(record.type), startTime, endTime, attributes };
+        }
+
+        async #ensureTripPersisted() {
+            if (Number.isInteger(this.#tripId) && this.#tripId > 0) {
+                return this.#tripId;
+            }
+            const data = await this.#apiRequest("trips", {
+                method: "POST",
+                body: this.#tripPersistencePayload()
+            });
+            const tripId = Number(data.tripId);
+            if (!Number.isInteger(tripId) || tripId < 1) {
+                throw new Error("The API returned an invalid trip id.");
+            }
+            this.#tripId = tripId;
+            if (this.#startResetState) {
+                this.#startResetState.args.tripId = tripId;
+            }
+            if (this.#originalStartArguments) {
+                this.#originalStartArguments.tripId = tripId;
+            }
+            return tripId;
+        }
+
+        async #syncIntervalRecord(record) {
+            const tripId = await this.#ensureTripPersisted();
+            const payload = this.#intervalPayload(record);
+            const intervalId = Number(record.intervalId);
+
+            if (!Number.isInteger(intervalId) || intervalId < 1) {
+                const data = await this.#apiRequest("intervals", {
+                    method: "POST",
+                    csrf: true,
+                    body: { tripId, ...payload }
+                });
+                this.#assignIntervalDatabaseId(record, data.intervalId);
+                record.clockTimerSyncedEnd = payload.endTime;
+                return;
+            }
+
+            if (payload.endTime !== null && record.clockTimerSyncedEnd !== payload.endTime) {
+                await this.#apiRequest("intervals", {
+                    method: "PATCH",
+                    csrf: true,
+                    body: { intervalId, endTime: payload.endTime }
+                });
+                record.clockTimerSyncedEnd = payload.endTime;
+            }
+        }
+
+        async #syncIntervals() {
+            for (const record of this.#intervalRecords()) {
+                await this.#syncIntervalRecord(record);
+            }
+        }
+
+        async #protectedSync(action) {
+            if (!(await this.#ensureConnected())) {
+                return false;
+            }
+            try {
+                await action();
+                return true;
+            }
+            catch (error) {
+                if (error?.clockTimerOffline) {
+                    return false;
+                }
+                throw error;
+            }
+        }
+
+        #mutationResult(synced, record) {
+            return {
+                synced: Boolean(synced),
+                tripId: Number.isInteger(this.#tripId) ? this.#tripId : undefined,
+                intervalId: Number.isInteger(Number(record?.intervalId))
+                    ? Number(record.intervalId)
+                    : undefined
+            };
+        }
+
+        async connect(username, password) {
+            if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
+                throw new TypeError("username and password are required.");
+            }
+            const data = await this.#apiRequest("users", {
+                method: "POST",
+                body: { username: username.trim(), password }
+            });
+            if (typeof data.csrfToken !== "string" || data.csrfToken.length < 32) {
+                this.#setOffline();
+                throw new Error("The API did not return a CSRF token.");
+            }
+            this.#csrfToken = data.csrfToken;
+            this.#connectionState = "connected";
+
+            if (this.#hasStartProperties()) {
+                await this.#ensureTripPersisted();
+                await this.#syncIntervals();
+            }
+
+            return { connected: true, user: data.user };
+        }
+
+        async start(options = {}) {
+            if (options === null || typeof options !== "object" || Array.isArray(options)) {
+                throw new TypeError("start options must be an object.");
+            }
+            const { tripId: ignoredTripId, ...localOptions } = options;
+            const localResult = this.#startLocal({ ...localOptions, tripId: undefined });
+            if (!localResult) {
+                throw new Error("The trip could not be started.");
+            }
+            this.#tripId = undefined;
+
+            let synced = false;
+            if (this.#connectionState === "connected") {
+                try {
+                    await this.#ensureTripPersisted();
+                    synced = true;
+                }
+                catch (error) {
+                    if (!error?.clockTimerOffline) {
+                        throw error;
+                    }
+                }
+            }
+            return this.#mutationResult(synced);
+        }
+
+        async stop(stopTime = this.#dateToStandardTime(new Date())) {
+            const parsed = this.#validateClockTime(stopTime, "stopTime");
+            const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
+            const persistedEnd = this.#timelineToISO(stopTimeline);
+            const localResult = this.#stopLocal(stopTime);
+            if (!localResult || !persistedEnd) {
+                throw new Error("The trip could not be stopped.");
+            }
+
+            const synced = await this.#protectedSync(async () => {
+                const tripId = await this.#ensureTripPersisted();
+                await this.#syncIntervals();
+                await this.#apiRequest("trips", {
+                    method: "PATCH",
+                    csrf: true,
+                    body: { tripId, action: "stop", endTime: persistedEnd }
+                });
+            });
+            return this.#mutationResult(synced);
+        }
+
+        async clear() {
+            const oldTripId = this.#tripId;
+            let synced = false;
+
+            if (this.#hasStartProperties()) {
+                synced = await this.#protectedSync(async () => {
+                    const tripId = await this.#ensureTripPersisted();
+                    await this.#syncIntervals();
+                    await this.#apiRequest("trips", {
+                        method: "DELETE",
+                        csrf: true,
+                        body: { tripId }
+                    });
+                });
+            }
+
+            const localResult = this.#clearLocal();
+            if (!localResult) {
+                throw new Error("The trip could not be cleared.");
+            }
+            const resultTripId = this.#tripId ?? oldTripId;
+            this.#tripId = undefined;
+            return {
+                synced,
+                tripId: Number.isInteger(resultTripId) ? resultTripId : undefined,
+                intervalId: undefined
+            };
+        }
+
+        async reset() {
+            const localResult = this.#resetLocal();
+            if (!localResult) {
+                throw new Error("The trip could not be reset.");
+            }
+
+            const synced = await this.#protectedSync(async () => {
+                const tripId = await this.#ensureTripPersisted();
+                await this.#apiRequest("trips", {
+                    method: "PATCH",
+                    csrf: true,
+                    body: { tripId, action: "reset", ...this.#tripPersistencePayload() }
+                });
+                for (const record of this.#intervalRecords()) {
+                    this.#stripIntervalDatabaseId(record);
+                }
+                await this.#syncIntervals();
+            });
+            return this.#mutationResult(synced);
+        }
+
+        async startInterval(type, length, attributes) {
+            const localResult = this.#startIntervalLocal(type, length, attributes);
+            if (!localResult) {
+                throw new Error("The interval could not be started.");
+            }
+            const current = this.#getCurrentInterval(this.#getCurrentTimelineTime());
+            const record = current?.source === "inserted" ? current.record : undefined;
+            if (!record) {
+                throw new Error("The interval record could not be resolved.");
+            }
+
+            const synced = await this.#protectedSync(async () => {
+                await this.#ensureTripPersisted();
+                await this.#syncIntervals();
+            });
+            return this.#mutationResult(synced, record);
+        }
+
+        async endInterval() {
+            const nowDate = new Date();
+            const now = this.#getCurrentTimelineTime(nowDate);
+            const current = this.#getCurrentInterval(now);
+            const record = current?.source === "inserted" ? current.record : undefined;
+            const localResult = this.#endIntervalLocal();
+            if (!localResult) {
+                throw new Error("The interval could not be ended.");
+            }
+            if (record && !current.open) {
+                record.clockTimerPersistenceEnd = this.#timelineToISO(now);
+            }
+
+            const synced = await this.#protectedSync(async () => {
+                await this.#ensureTripPersisted();
+                await this.#syncIntervals();
+            });
+            return this.#mutationResult(synced, record);
+        }
+
+        get state() {
+            return this.status;
+        }
+
+        get connected() {
+            return this.#connectionState === "connected";
+        }
+
         get status() {
+            if (this.#connectionState !== "connected") {
+                return "offline";
+            }
+
             if (!this.#hasStartProperties()) {
                 return "ready";
             }
@@ -1970,14 +2383,14 @@
             return this.#scheduledStartMilliseconds;
         }
 
-        suspendUpdate() {
+        #suspendUpdate() {
             this.#updatesSuspended =
                 true;
 
             return this;
         }
 
-        resumeUpdate() {
+        #resumeUpdate() {
             if (!this.#updatesSuspended) {
                 return this;
             }
@@ -2015,7 +2428,7 @@
             return this;
         }
 
-        stop(
+        #stopLocal(
             stopTime = this.#dateToStandardTime(
                 new Date()
             )
@@ -3005,43 +3418,43 @@
                 for (const operation of operations) {
                     switch (operation.type) {
                         case "start":
-                            this.start(operation.args);
+                            this.#startLocal(operation.args);
                             break;
 
                         case "stop":
-                            this.stop();
+                            this.#stopLocal();
                             break;
 
                         case "insert":
-                            this.insert(operation.args);
+                            this.#insert(operation.args);
                             break;
 
                         case "overwrite":
-                            this.overwrite(operation.args);
+                            this.#overwrite(operation.args);
                             break;
 
                         case "reset":
-                            this.reset();
+                            this.#resetLocal();
                             break;
 
                         case "replaceWithNext":
-                            this.replaceWithNext();
+                            this.#replaceWithNext();
                             break;
 
                         case "replaceToNext":
-                            this.replaceToNext(operation.value);
+                            this.#replaceToNext(operation.value);
                             break;
 
                         case "replaceWithPrevious":
-                            this.replaceWithPrevious();
+                            this.#replaceWithPrevious();
                             break;
 
                         case "replaceToPrevious":
-                            this.replaceToPrevious(operation.value);
+                            this.#replaceToPrevious(operation.value);
                             break;
 
                         case "startInterval":
-                            this.startInterval(
+                            this.#startIntervalLocal(
                                 operation.intervalType,
                                 operation.length,
                                 operation.attributes
@@ -3049,11 +3462,11 @@
                             break;
 
                         case "closeInterval":
-                            this.closeInterval();
+                            this.#endIntervalLocal();
                             break;
 
                         case "clear":
-                            this.clear();
+                            this.#clearLocal();
                             break;
 
                         case "percent-goal":
@@ -3101,7 +3514,7 @@
             }
         }
 
-        start({
+        #startLocal({
             tripId,
             standardTime,
             creationTime,
@@ -3109,9 +3522,15 @@
             scheduledStart
         } = {}) {
             try {
-                if (!Number.isInteger(tripId)) {
+                if (
+                    tripId !== undefined &&
+                    (
+                        !Number.isInteger(tripId) ||
+                        tripId < 1
+                    )
+                ) {
                     throw new TypeError(
-                        "tripId must be a non-null integer."
+                        "tripId must be a positive integer when supplied."
                     );
                 }
 
@@ -3179,7 +3598,7 @@
                 true;
 
             try {
-                this.clear();
+                this.#clearLocal();
             }
             finally {
                 this.#preserveInsertedOnClear =
@@ -3420,7 +3839,7 @@
             }));
         }
 
-        reset() {
+        #resetLocal() {
             if (
                 !this.#startResetState
             ) {
@@ -3474,7 +3893,7 @@
                 true;
 
             try {
-                this.start({
+                this.#startLocal({
                     ...baseline.args
                 });
 
@@ -3529,7 +3948,7 @@
                 duration;
         }
 
-        insert({
+        #insert({
             type,
             startTime,
             endTime,
@@ -3784,7 +4203,7 @@
             return insertedElement;
         }
 
-        overwrite({
+        #overwrite({
             type,
             startTime,
             endTime,
@@ -4752,43 +5171,25 @@
                 );
         }
 
-        #createIntervalId() {
-            return (
-                globalThis.crypto
-                    ?.randomUUID?.() ??
-                `interval-${Date.now()}-${Math.random()}`
-            );
-        }
-
         #getIntervalIdFromAttributes(
             attributes
         ) {
             if (
                 !attributes ||
-                typeof attributes !==
-                    "object"
+                typeof attributes !== "object"
             ) {
                 return undefined;
             }
 
-            for (
-                const [name, value] of
-                    Object.entries(attributes)
-            ) {
-                if (
-                    String(name)
-                        .toLowerCase() !==
-                    "interval-id"
-                ) {
+            for (const [name, value] of Object.entries(attributes)) {
+                if (String(name).toLowerCase() !== "interval-id") {
                     continue;
                 }
 
-                const normalized =
-                    String(value ?? "")
-                        .trim();
-
-                return normalized ||
-                    undefined;
+                const numeric = Number(value);
+                return Number.isInteger(numeric) && numeric > 0
+                    ? numeric
+                    : undefined;
             }
 
             return undefined;
@@ -4799,50 +5200,33 @@
         ) {
             if (
                 !record ||
-                !this.#isIntervalType(
-                    record.type
-                )
+                !this.#isIntervalType(record.type)
             ) {
                 return undefined;
             }
 
-            const intervalId =
-                String(
-                    record.intervalId ??
-                    this.#getIntervalIdFromAttributes(
-                        record.otherAttributes
-                    ) ??
-                    this.#createIntervalId()
-                ).trim();
+            const intervalId = Number(
+                record.intervalId ??
+                this.#getIntervalIdFromAttributes(record.otherAttributes)
+            );
 
-            record.intervalId =
-                intervalId;
-
-            if (
-                record.otherAttributes &&
-                typeof record.otherAttributes ===
-                    "object"
-            ) {
-                for (
-                    const name of
-                        Object.keys(
-                            record.otherAttributes
-                        )
-                ) {
-                    if (
-                        name.toLowerCase() ===
-                            "interval-id"
-                    ) {
-                        delete record
-                            .otherAttributes[name];
+            if (!Number.isInteger(intervalId) || intervalId < 1) {
+                delete record.intervalId;
+                if (record.otherAttributes) {
+                    for (const name of Object.keys(record.otherAttributes)) {
+                        if (name.toLowerCase() === "interval-id") {
+                            delete record.otherAttributes[name];
+                        }
                     }
                 }
-
-                record.otherAttributes[
-                    "interval-id"
-                ] = intervalId;
+                return undefined;
             }
 
+            record.intervalId = intervalId;
+            record.otherAttributes = {
+                ...(record.otherAttributes ?? {}),
+                "interval-id": String(intervalId)
+            };
             return intervalId;
         }
 
@@ -4852,47 +5236,20 @@
         ) {
             if (
                 !range ||
-                range.localName !==
-                    "time-range" ||
-                !this.#isIntervalType(
-                    range.getAttribute(
-                        "type"
-                    )
-                )
+                range.localName !== "time-range" ||
+                !this.#isIntervalType(range.getAttribute("type"))
             ) {
                 return undefined;
             }
 
-            const requested =
-                intervalId === undefined ||
-                intervalId === null
-                    ? ""
-                    : String(intervalId)
-                        .trim();
-
-            const existing =
-                range.getAttribute(
-                    "interval-id"
-                )?.trim() ??
-                "";
-
-            const value =
-                requested ||
-                existing ||
-                this.#createIntervalId();
-
-            if (
-                range.getAttribute(
-                    "interval-id"
-                ) !== value
-            ) {
-                range.setAttribute(
-                    "interval-id",
-                    value
-                );
+            const numeric = Number(intervalId);
+            if (!Number.isInteger(numeric) || numeric < 1) {
+                range.removeAttribute("interval-id");
+                return undefined;
             }
 
-            return value;
+            range.setAttribute("interval-id", String(numeric));
+            return numeric;
         }
 
         #shiftPlannedRangesAfter(
@@ -5170,7 +5527,7 @@
             );
         }
 
-        delete(timeRange) {
+        #delete(timeRange) {
             if (
                 !timeRange ||
                 timeRange.localName !==
@@ -5751,7 +6108,7 @@
             return created;
         }
 
-        startInterval(
+        #startIntervalLocal(
             type,
             length,
             attributes
@@ -5792,6 +6149,18 @@
                     this.#normalizeIntervalAttributes(
                         attributes
                     );
+
+                for (
+                    const name of
+                        Object.keys(normalizedAttributes)
+                ) {
+                    if (
+                        name.toLowerCase() ===
+                            "interval-id"
+                    ) {
+                        delete normalizedAttributes[name];
+                    }
+                }
             }
             catch {
                 return false;
@@ -5858,7 +6227,7 @@
                     );
 
             const inserted =
-                this.insert({
+                this.#insert({
                     type:
                         intervalType,
                     startTime:
@@ -5870,10 +6239,10 @@
                         normalizedAttributes
                 });
 
-            return Boolean(inserted);
+            return inserted || false;
         }
 
-        closeInterval() {
+        #endIntervalLocal() {
             if (!this.#started) {
                 return false;
             }
@@ -5920,7 +6289,7 @@
             );
         }
 
-        replaceWithNext() {
+        #replaceWithNext() {
             if (
                 this.#updatesSuspended &&
                 !this.#processingAsyncBatch
@@ -6094,7 +6463,7 @@
             return nextRange;
         }
 
-        replaceToNext(
+        #replaceToNext(
             type
         ) {
             if (!this.#hasStartProperties()) {
@@ -6255,7 +6624,7 @@
             return replacement;
         }
 
-        replaceWithPrevious() {
+        #replaceWithPrevious() {
             if (!this.#hasStartProperties()) {
                 return;
             }
@@ -6376,7 +6745,7 @@
             return previousRange;
         }
 
-        replaceToPrevious(
+        #replaceToPrevious(
             type
         ) {
             if (!this.#hasStartProperties()) {
@@ -6522,7 +6891,7 @@
             return replacement;
         }
 
-        clear() {
+        #clearLocal() {
             if (!this.#hasStartProperties()) {
                 return false;
             }
@@ -20388,7 +20757,7 @@
 
                 delete range.clockTimerOverwriteType;
 
-                this.overwrite({
+                this.#overwrite({
                     type: overwriteType
                 });
             }
