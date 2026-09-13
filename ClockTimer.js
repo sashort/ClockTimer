@@ -126,7 +126,6 @@
 
         #startResetState;
 
-        #json;
 
         #restoringStartState =
             false;
@@ -137,8 +136,6 @@
         #showTolerance =
             true;
 
-        #loadingFromJSON =
-            false;
 
         #toleranceTransitionState;
 
@@ -1572,598 +1569,6 @@
             return result;
         }
 
-        fromJSON(json) {
-            if (this.status !== "ready") {
-                return false;
-            }
-
-            try {
-                const jsonString =
-                    typeof json === "string"
-                        ? json
-                        : JSON.stringify(
-                            json
-                        );
-
-                const data =
-                    typeof json === "string"
-                        ? JSON.parse(json)
-                        : json;
-
-                if (
-                    !data ||
-                    typeof data !== "object" ||
-                    Array.isArray(data) ||
-                    data.tripId === null ||
-                    !Number.isInteger(data.tripId) ||
-                    typeof data.creationDate !== "string" ||
-                    typeof data.standardTime !== "string" ||
-                    typeof data.scheduledStart !== "string" ||
-                    !Array.isArray(data.records)
-                ) {
-                    return false;
-                }
-
-                const creationMatch =
-                    data.creationDate.match(
-                        /^(\d{4})-(\d{2})-(\d{2})$/
-                    );
-
-                if (!creationMatch) {
-                    return false;
-                }
-
-                const creationDate =
-                    new Date(
-                        Number(creationMatch[1]),
-                        Number(creationMatch[2]) - 1,
-                        Number(creationMatch[3])
-                    );
-
-                if (
-                    creationDate.getFullYear() !== Number(creationMatch[1]) ||
-                    creationDate.getMonth() !== Number(creationMatch[2]) - 1 ||
-                    creationDate.getDate() !== Number(creationMatch[3])
-                ) {
-                    return false;
-                }
-
-                const parseTimestamp =
-                    value => {
-                        if (typeof value !== "string") {
-                            return undefined;
-                        }
-
-                        const match =
-                            value.match(
-                                /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})\.(\d{3})$/
-                            );
-
-                        if (!match) {
-                            return undefined;
-                        }
-
-                        const date =
-                            new Date(
-                                Number(match[1]),
-                                Number(match[2]) - 1,
-                                Number(match[3]),
-                                Number(match[4]),
-                                Number(match[5]),
-                                Number(match[6]),
-                                Number(match[7])
-                            );
-
-                        if (
-                            date.getFullYear() !== Number(match[1]) ||
-                            date.getMonth() !== Number(match[2]) - 1 ||
-                            date.getDate() !== Number(match[3]) ||
-                            date.getHours() !== Number(match[4]) ||
-                            date.getMinutes() !== Number(match[5]) ||
-                            date.getSeconds() !== Number(match[6]) ||
-                            date.getMilliseconds() !== Number(match[7])
-                        ) {
-                            return undefined;
-                        }
-
-                        return date.getTime() - creationDate.getTime();
-                    };
-
-                const standard =
-                    this.#validateDurationTime(
-                        data.standardTime,
-                        "standardTime"
-                    );
-
-                const scheduled =
-                    this.#validateClockTime(
-                        data.scheduledStart,
-                        "scheduledStart"
-                    );
-
-                const reserved =
-                    new Set([
-                        "trip",
-                        "tolerance",
-                        "overtime",
-                        "earlystart",
-                        "latency",
-                        "elapsed",
-                        "remaining",
-                        "wave"
-                    ]);
-
-                const excludedAttributes =
-                    new Set([
-                        "start-time",
-                        "end-time",
-                        "range-length"
-                    ]);
-
-                const events = [];
-
-                for (const record of data.records) {
-                    if (
-                        !record ||
-                        typeof record !== "object" ||
-                        Array.isArray(record)
-                    ) {
-                        return false;
-                    }
-
-                    const entries = Object.entries(record);
-
-                    if (entries.length !== 1) {
-                        return false;
-                    }
-
-                    const [time, value] = entries[0];
-                    const milliseconds =
-                        parseTimestamp(time);
-
-                    if (
-                        !Number.isFinite(milliseconds) ||
-                        !value ||
-                        typeof value !== "object" ||
-                        Array.isArray(value) ||
-                        typeof value.type !== "string" ||
-                        !value.type.trim()
-                    ) {
-                        return false;
-                    }
-
-                    const type = value.type.trim();
-
-                    if (
-                        reserved.has(type) ||
-                        ![
-                            "start",
-                            "resume",
-                            "end"
-                        ].includes(type) &&
-                        Object.keys(value).some(
-                            name =>
-                                name !== "type" &&
-                                excludedAttributes.has(
-                                    name.toLowerCase()
-                                )
-                        )
-                    ) {
-                        return false;
-                    }
-
-                    const attributes = {};
-
-                    for (const [name, attributeValue] of Object.entries(value)) {
-                        if (name === "type") {
-                            continue;
-                        }
-
-                        if (typeof attributeValue !== "string") {
-                            return false;
-                        }
-
-                        attributes[name] = attributeValue;
-                    }
-
-                    events.push({
-                        time,
-                        milliseconds,
-                        type,
-                        attributes
-                    });
-                }
-
-                events.sort(
-                    (a, b) =>
-                        a.milliseconds - b.milliseconds
-                );
-
-                const starts =
-                    events.filter(
-                        event => event.type === "start"
-                    );
-
-                const ends =
-                    events.filter(
-                        event => event.type === "end"
-                    );
-
-                if (
-                    starts.length !== 1 ||
-                    ends.length !== 1 ||
-                    starts[0].milliseconds >= ends[0].milliseconds ||
-                    events[0] !== starts[0] ||
-                    events[events.length - 1] !== ends[0]
-                ) {
-                    return false;
-                }
-
-                for (let index = 1; index < events.length - 1; index++) {
-                    if (
-                        events[index].type === "start" ||
-                        events[index].type === "end"
-                    ) {
-                        return false;
-                    }
-                }
-
-                const lateStarts = [];
-
-                for (let index = 1; index < events.length - 1; index++) {
-                    const event = events[index];
-
-                    if (["start", "resume", "end"].includes(event.type)) {
-                        continue;
-                    }
-
-                    const allowedEntry =
-                        Object.entries(event.attributes)
-                            .find(([name]) =>
-                                name.toLowerCase() === "allowed"
-                            );
-
-                    if (!allowedEntry) {
-                        continue;
-                    }
-
-                    const allowedMinutes =
-                        Number(allowedEntry[1]);
-
-                    if (
-                        !Number.isFinite(allowedMinutes) ||
-                        allowedMinutes < 0
-                    ) {
-                        return false;
-                    }
-
-                    const next = events[index + 1];
-
-                    if (next?.type !== "resume") {
-                        continue;
-                    }
-
-                    const allowedEnd =
-                        event.milliseconds +
-                        allowedMinutes * 60 * 1000;
-
-                    if (next.milliseconds > allowedEnd) {
-                        lateStarts.push({
-                            start: allowedEnd,
-                            end: next.milliseconds
-                        });
-                    }
-                }
-
-                const startTimeMilliseconds =
-                    starts[0].milliseconds;
-
-                const terminal =
-                    ends[0].milliseconds;
-
-                const scheduledStartMilliseconds =
-                    this.#resolveNear(
-                        scheduled.total,
-                        startTimeMilliseconds
-                    );
-
-                const creationMilliseconds =
-                    (
-                        startTimeMilliseconds % ClockTimer.#DAY +
-                        ClockTimer.#DAY
-                    ) % ClockTimer.#DAY;
-
-                this.#tripId =
-                    data.tripId;
-
-                this.#creationMilliseconds =
-                    creationMilliseconds;
-
-                this.#creationTime =
-                    this.#formatStandardTime(
-                        creationMilliseconds,
-                        { clock: true }
-                    );
-
-                this.#scheduledStartMilliseconds =
-                    scheduledStartMilliseconds;
-
-                this.#scheduledStart =
-                    this.#formatTimelineTime(
-                        scheduledStartMilliseconds
-                    );
-
-                this.#standardDuration =
-                    standard.total;
-
-                this.#standardTime =
-                    this.#formatStandardTime(
-                        standard.total
-                    );
-
-                this.#calculatedEndTime =
-                    this.#scheduledStartMilliseconds +
-                    this.#standardDuration;
-
-                this.#percentGoal =
-                    this.#getPercentGoal();
-
-                this.#ringAnchor =
-                    creationMilliseconds;
-
-                this.#startedAtEpoch =
-                    creationDate.getTime();
-
-                if (
-                    !Number.isFinite(
-                        this.#tickAlignmentMilliseconds
-                    )
-                ) {
-                    this.#tickAlignmentMilliseconds =
-                        this.#millisecondsComponent(
-                            this.#scheduledStartMilliseconds
-                        );
-                }
-
-                this.#setIndicatorSymbolVisible(false);
-
-                this.#loadingFromJSON =
-                    true;
-
-                this.#started =
-                    true;
-
-                this.#starting =
-                    true;
-
-                try {
-                    this.#buildPlannedRanges(
-                        startTimeMilliseconds
-                    );
-
-                    const restoredCalculatedEndTime =
-                        this.#calculatedEndTime;
-
-                    const coverageEnd =
-                        Math.max(
-                            terminal,
-                            restoredCalculatedEndTime ?? terminal
-                        );
-
-                    if (
-                        Number.isFinite(this.#standardEnd) &&
-                        coverageEnd > this.#standardEnd
-                    ) {
-                        this.#createSpan(
-                            "overtime",
-                            this.#standardEnd,
-                            coverageEnd
-                        );
-                    }
-
-                    this.#calculatedEndTime =
-                        coverageEnd;
-
-                    let elapsedCursor =
-                        startTimeMilliseconds;
-
-                    while (elapsedCursor < terminal) {
-                        const ringIndex =
-                            this.#getTimerRingIndex(
-                                elapsedCursor
-                            );
-
-                        const segmentEnd =
-                            Math.min(
-                                terminal,
-                                this.#getTimerRingEnd(ringIndex)
-                            );
-
-                        const ring =
-                            this.#ensureRing(
-                                ringIndex
-                            );
-
-                        const elapsedRange =
-                            this.#createTimeRange(
-                                "elapsed",
-                                elapsedCursor,
-                                segmentEnd
-                            );
-
-                        elapsedRange.setAttribute(
-                            "overlapping",
-                            ""
-                        );
-
-                        elapsedRange.clockTimerImportedElapsed =
-                            "";
-
-                        elapsedRange.timeRangeFullEntry =
-                            true;
-
-                        ring.appendChild(
-                            elapsedRange
-                        );
-
-                        elapsedCursor =
-                            segmentEnd;
-                    }
-
-                    for (let index = 1; index < events.length - 1; index++) {
-                        const event = events[index];
-
-                        if (event.type === "resume") {
-                            continue;
-                        }
-
-                        const next = events[index + 1];
-
-                        if (
-                            !next ||
-                            next.milliseconds <= event.milliseconds
-                        ) {
-                            return false;
-                        }
-
-                        let cursor =
-                            event.milliseconds;
-
-                        while (cursor < next.milliseconds) {
-                            const ringIndex =
-                                this.#getTimerRingIndex(cursor);
-
-                            const segmentEnd =
-                                Math.min(
-                                    next.milliseconds,
-                                    this.#getTimerRingEnd(ringIndex)
-                                );
-
-                            const ring =
-                                this.#ensureRing(ringIndex);
-
-                            const range =
-                                this.#createTimeRange(
-                                    event.type,
-                                    cursor,
-                                    segmentEnd
-                                );
-
-                            this.#applyOtherAttributes(
-                                range,
-                                event.attributes
-                            );
-
-                            ring.appendChild(range);
-
-                            cursor = segmentEnd;
-                        }
-                    }
-
-                    for (const lateStart of lateStarts) {
-                        let cursor = lateStart.start;
-
-                        while (cursor < lateStart.end) {
-                            const ringIndex =
-                                this.#getTimerRingIndex(cursor);
-
-                            const segmentEnd =
-                                Math.min(
-                                    lateStart.end,
-                                    this.#getTimerRingEnd(ringIndex)
-                                );
-
-                            const ring =
-                                this.#ensureRing(ringIndex);
-
-                            const range =
-                                this.#createTimeRange(
-                                    "latency",
-                                    cursor,
-                                    segmentEnd
-                                );
-
-                            range.setAttribute(
-                                "overlapping",
-                                ""
-                            );
-
-                            ring.appendChild(range);
-
-                            cursor = segmentEnd;
-                        }
-                    }
-
-                    if (
-                        this.#getTimerMode() ===
-                            "remaining"
-                    ) {
-                        this.#updateRemainingRanges(
-                            terminal
-                        );
-                    }
-
-                    this.#refreshRingLayout(
-                        coverageEnd,
-                        {
-                            refreshTickMarks: true
-                        }
-                    );
-
-                    this.#snapTimerRangeAngles();
-                }
-                finally {
-                    this.#starting =
-                        false;
-
-                    this.#started =
-                        false;
-
-                    this.#loadingFromJSON =
-                        false;
-                }
-
-                for (const ring of this.#rings.values()) {
-                    const targetWidth =
-                        ring.clockTimerTargetWidth;
-
-                    if (targetWidth) {
-                        ring.setAttribute(
-                            "width",
-                            targetWidth
-                        );
-
-                        delete ring.clockTimerTargetWidth;
-                    }
-                }
-
-                this.#refreshRingLayout(
-                    Math.max(
-                        terminal,
-                        this.#calculatedEndTime ?? terminal
-                    ),
-                    {
-                        refreshTickMarks: true
-                    }
-                );
-
-                this.#originalStartArguments =
-                    undefined;
-
-                this.#startResetState =
-                    undefined;
-
-                this.#stopTickTimer();
-
-                this.#json =
-                    jsonString;
-
-                return new Date();
-            }
-            catch {
-                return false;
-            }
-        }
 
         get showTolerance() {
             return this.#showTolerance;
@@ -2202,9 +1607,7 @@
 
             if (
                 !this.#started ||
-                this.#percentGoal <= 1 ||
-                this.#json !== undefined ||
-                this.#loadingFromJSON
+                this.#percentGoal <= 1
             ) {
                 return;
             }
@@ -4019,7 +3422,6 @@
 
         reset() {
             if (
-                this.#json === undefined &&
                 !this.#startResetState
             ) {
                 return false;
@@ -4034,22 +3436,6 @@
                 });
 
                 return new Date();
-            }
-
-            if (this.#json !== undefined) {
-                const json =
-                    this.#json;
-
-                const result =
-                    this.clear();
-
-                if (result === false) {
-                    return false;
-                }
-
-                return this.fromJSON(
-                    json
-                );
             }
 
             const baseline =
@@ -7155,9 +6541,6 @@
 
                 return new Date();
             }
-
-            this.#json =
-                undefined;
 
             this.#cancelToleranceTransition();
             this.#cancelStateChangeVisuals(false);
@@ -14729,9 +14112,7 @@
 
             const liveToleranceUsesVisibleEnd =
                 this.#percentGoal > 1 &&
-                this.#started &&
-                this.#json === undefined &&
-                !this.#loadingFromJSON;
+                this.#started;
 
             if (
                 !liveToleranceUsesVisibleEnd &&
@@ -16651,9 +16032,7 @@
             now = undefined
         ) {
             if (
-                this.#percentGoal <= 1 ||
-                this.#loadingFromJSON ||
-                this.#json !== undefined
+                this.#percentGoal <= 1
             ) {
                 return undefined;
             }
@@ -19915,9 +19294,7 @@
 
             const latestEnd =
                 this.#percentGoal > 1 &&
-                this.#started &&
-                this.#json === undefined &&
-                !this.#loadingFromJSON
+                this.#started
                     ? visibleTimerEnd
                     : (
                         Number.isFinite(
@@ -21053,8 +20430,6 @@
             if (
                 !this.#showTolerance &&
                 this.#percentGoal > 1 &&
-                this.#json === undefined &&
-                !this.#loadingFromJSON &&
                 !this.#toleranceTransitionState
             ) {
                 this.#reconcilePlannedRanges();
