@@ -138,6 +138,12 @@
 
         #tripTotals;
 
+        #nonProduction =
+            false;
+
+        #nonProductionFilter =
+            "none";
+
         #autoSyncTripGoal =
             false;
 
@@ -1516,6 +1522,10 @@
                     this.standardTime,
                 scheduledStart:
                     this.scheduledStart,
+                nonProduction:
+                    this.#nonProduction,
+                nonProductionFilter:
+                    this.#nonProductionFilter,
                 records: []
             };
 
@@ -1909,7 +1919,9 @@
             return {
                 startTime,
                 endTime,
-                standardTimeMilliseconds
+                standardTimeMilliseconds,
+                nonProduction:
+                    this.#nonProduction
             };
         }
 
@@ -2143,7 +2155,9 @@
                 startTime:
                     start.toISOString(),
                 endTime:
-                    end.toISOString()
+                    end.toISOString(),
+                nonProductionFilter:
+                    this.#nonProductionFilter
             };
 
             if (
@@ -2195,7 +2209,9 @@
                     end.toISOString(),
                 tripCount,
                 standardTimeMilliseconds,
-                actualTimeMilliseconds
+                actualTimeMilliseconds,
+                nonProductionFilter:
+                    this.#nonProductionFilter
             };
 
             this.#handleTripGoalChange();
@@ -2431,7 +2447,9 @@
                 scheduledStartTime:
                     this.#timelineToISO(
                         scheduledStartTime
-                    )
+                    ),
+                nonProduction:
+                    this.#nonProduction
             });
             return result;
         }
@@ -2624,6 +2642,61 @@
 
         get connected() {
             return this.#connectionState === "connected";
+        }
+
+        get nonProduction() {
+            return this.#nonProduction;
+        }
+
+        get nonProductionFilter() {
+            return this.#nonProductionFilter;
+        }
+
+        set nonProductionFilter(value) {
+            if (typeof value !== "string") {
+                throw new TypeError(
+                    "nonProductionFilter must be a string."
+                );
+            }
+
+            const normalized =
+                value.trim().toLowerCase();
+
+            if (
+                !new Set([
+                    "all",
+                    "helpful",
+                    "productive",
+                    "none"
+                ]).has(normalized)
+            ) {
+                throw new RangeError(
+                    "nonProductionFilter must be all, helpful, productive, or none."
+                );
+            }
+
+            if (
+                normalized ===
+                    this.#nonProductionFilter
+            ) {
+                return;
+            }
+
+            this.#nonProductionFilter =
+                normalized;
+
+            if (this.#tripTotals) {
+                this.#tripTotals = {
+                    startTime:
+                        this.#tripTotals.startTime,
+                    endTime:
+                        this.#tripTotals.endTime,
+                    nonProductionFilter:
+                        normalized
+                };
+            }
+
+            this.#handleTripGoalChange();
         }
 
         get autoSyncTripGoal() {
@@ -4141,7 +4214,8 @@
             standardTime,
             creationTime,
             startTime,
-            scheduledStart
+            scheduledStart,
+            nonProduction = false
         } = {}) {
             try {
                 if (
@@ -4153,6 +4227,12 @@
                 ) {
                     throw new TypeError(
                         "tripId must be a positive integer when supplied."
+                    );
+                }
+
+                if (typeof nonProduction !== "boolean") {
+                    throw new TypeError(
+                        "nonProduction must be a boolean."
                     );
                 }
 
@@ -4191,7 +4271,8 @@
                 standardTime,
                 creationTime,
                 startTime,
-                scheduledStart
+                scheduledStart,
+                nonProduction
             };
 
             if (
@@ -4203,7 +4284,8 @@
                     standardTime,
                     creationTime,
                     startTime,
-                    scheduledStart
+                    scheduledStart,
+                    nonProduction
                 };
 
                 this.#recordStartTickAlignment(args);
@@ -4229,6 +4311,9 @@
 
             this.#tripId =
                 tripId;
+
+            this.#nonProduction =
+                nonProduction;
 
             const standard =
                 this.#validateDurationTime(
@@ -7575,6 +7660,9 @@
 
             this.#originalStartArguments =
                 undefined;
+
+            this.#nonProduction =
+                false;
 
             this.#startedAtEpoch =
                 undefined;

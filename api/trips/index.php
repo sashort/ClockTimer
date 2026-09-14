@@ -67,10 +67,28 @@ if ($method === 'GET') {
         }
     }
 
+    $nonProductionFilterInput = $_GET['nonProductionFilter'] ?? 'none';
+    if (!is_string($nonProductionFilterInput)) {
+        api_error(
+            'nonProductionFilter must be all, helpful, productive, or none.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $nonProductionFilter = strtolower(trim($nonProductionFilterInput));
+    if (!in_array($nonProductionFilter, ['all', 'helpful', 'productive', 'none'], true)) {
+        api_error(
+            'nonProductionFilter must be all, helpful, productive, or none.',
+            422,
+            'invalid_argument'
+        );
+    }
+
     $where =
-        'user_id = :user_id '
-        . 'AND start_time >= :min_date_time '
-        . 'AND start_time <= :max_date_time';
+        't.user_id = :user_id '
+        . 'AND t.start_time >= :min_date_time '
+        . 'AND t.start_time <= :max_date_time';
 
     $parameters = [
         ':user_id' => $userId,
@@ -79,19 +97,85 @@ if ($method === 'GET') {
     ];
 
     if ($excludeTripId !== null) {
-        $where .= ' AND id <> :exclude_trip_id';
+        $where .= ' AND t.id <> :exclude_trip_id';
         $parameters[':exclude_trip_id'] = $excludeTripId;
+    }
+
+    if ($nonProductionFilter === 'none') {
+        $where .= ' AND t.non_production = 0';
+    }
+    elseif ($nonProductionFilter === 'productive') {
+        $where .=
+            ' AND (t.non_production = 0 OR '
+            . '(t.non_production = 1 AND '
+            . 't.standard_time_ms * 1000.0 >= '
+            . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)))';
+    }
+    elseif ($nonProductionFilter === 'helpful') {
+        $productionSql =
+            'SELECT COUNT(*) AS trip_count, '
+            . 'COALESCE(SUM(standard_time_ms), 0) AS standard_time_ms, '
+            . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, start_time, end_time)), 0) AS actual_time_us '
+            . 'FROM trips '
+            . 'WHERE user_id = :production_user_id '
+            . 'AND start_time >= :production_min_date_time '
+            . 'AND start_time <= :production_max_date_time '
+            . 'AND non_production = 0';
+
+        $productionParameters = [
+            ':production_user_id' => $userId,
+            ':production_min_date_time' => $minDateTime,
+            ':production_max_date_time' => $maxDateTime,
+        ];
+
+        if ($excludeTripId !== null) {
+            $productionSql .= ' AND id <> :production_exclude_trip_id';
+            $productionParameters[':production_exclude_trip_id'] = $excludeTripId;
+        }
+
+        $productionStatement = db()->prepare($productionSql);
+        $productionStatement->execute($productionParameters);
+        $productionRow = $productionStatement->fetch();
+
+        $productionCount = (int) ($productionRow['trip_count'] ?? 0);
+        $productionStandardMilliseconds =
+            (int) ($productionRow['standard_time_ms'] ?? 0);
+        $productionActualMicroseconds =
+            (int) ($productionRow['actual_time_us'] ?? 0);
+
+        if (
+            $productionCount < 1 ||
+            $productionStandardMilliseconds <= 0 ||
+            $productionActualMicroseconds <= 0
+        ) {
+            $where .= ' AND t.non_production = 0';
+        }
+        else {
+            $productionRatio =
+                ($productionStandardMilliseconds * 1000.0) /
+                $productionActualMicroseconds;
+
+            $where .=
+                ' AND (t.non_production = 0 OR '
+                . '(t.non_production = 1 AND '
+                . '(t.standard_time_ms * 1000.0 / '
+                . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)) '
+                . '> :production_ratio))';
+
+            $parameters[':production_ratio'] = $productionRatio;
+        }
     }
 
     if ($result === 'count') {
         $statement = db()->prepare(
-            'SELECT COUNT(*) AS trip_count FROM trips WHERE ' . $where
+            'SELECT COUNT(*) AS trip_count FROM trips t WHERE ' . $where
         );
         $statement->execute($parameters);
         $row = $statement->fetch();
 
         json_response([
             'tripCount' => (int) ($row['trip_count'] ?? 0),
+            'nonProductionFilter' => $nonProductionFilter,
         ]);
     }
 
@@ -126,10 +210,11 @@ if ($method === 'GET') {
         }
 
         $statement = db()->prepare(
-            'SELECT id, user_id, start_time, end_time, standard_time_ms, created_at, '
-            . 'TIMESTAMPDIFF(MICROSECOND, start_time, end_time) AS actual_time_us '
-            . 'FROM trips WHERE ' . $where . ' '
-            . 'ORDER BY start_time ASC, id ASC '
+            'SELECT t.id, t.user_id, t.start_time, t.end_time, '
+            . 't.standard_time_ms, t.non_production, t.created_at, '
+            . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
+            . 'FROM trips t WHERE ' . $where . ' '
+            . 'ORDER BY t.start_time ASC, t.id ASC '
             . 'LIMIT ' . $limit . ' OFFSET ' . $offset
         );
         $statement->execute($parameters);
@@ -147,6 +232,7 @@ if ($method === 'GET') {
                 'endTime' => (string) $row['end_time'],
                 'standardTimeMilliseconds' => (int) $row['standard_time_ms'],
                 'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
+                'nonProduction' => ((int) $row['non_production']) === 1,
             ];
 
             if ($verbose) {
@@ -223,14 +309,15 @@ if ($method === 'GET') {
             'offset' => $offset,
             'returnedCount' => count($trips),
             'verbose' => $verbose,
+            'nonProductionFilter' => $nonProductionFilter,
         ]);
     }
 
     $statement = db()->prepare(
         'SELECT COUNT(*) AS trip_count, '
-        . 'COALESCE(SUM(standard_time_ms), 0) AS standard_time_ms, '
-        . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, start_time, end_time)), 0) AS actual_time_us '
-        . 'FROM trips WHERE ' . $where
+        . 'COALESCE(SUM(t.standard_time_ms), 0) AS standard_time_ms, '
+        . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)), 0) AS actual_time_us '
+        . 'FROM trips t WHERE ' . $where
     );
     $statement->execute($parameters);
     $row = $statement->fetch();
@@ -241,6 +328,7 @@ if ($method === 'GET') {
         'tripCount' => (int) ($row['trip_count'] ?? 0),
         'standardTimeMilliseconds' => (int) ($row['standard_time_ms'] ?? 0),
         'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
+        'nonProductionFilter' => $nonProductionFilter,
     ]);
 }
 
@@ -252,21 +340,28 @@ if ($method === 'POST') {
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
     $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
 
+    $nonProduction = $input['nonProduction'] ?? false;
+    if (!is_bool($nonProduction)) {
+        api_error('nonProduction must be a boolean.', 422, 'invalid_argument');
+    }
+    $nonProductionValue = $nonProduction ? 1 : 0;
+
     if ($endTime <= $startTime) {
         api_error('endTime must be later than startTime.', 422, 'invalid_argument');
     }
 
     $tripId = audited_write(
-        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds): int {
+        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue): int {
             $statement = $pdo->prepare(
-                'INSERT INTO trips (user_id, start_time, end_time, standard_time_ms) '
-                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms)'
+                'INSERT INTO trips (user_id, start_time, end_time, standard_time_ms, non_production) '
+                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :non_production)'
             );
             $statement->execute([
                 ':user_id' => authenticated_user_id(),
                 ':start_time' => $startTime,
                 ':end_time' => $endTime,
                 ':standard_time_ms' => $standardTimeMilliseconds,
+                ':non_production' => $nonProductionValue,
             ]);
             return (int) $pdo->lastInsertId();
         }

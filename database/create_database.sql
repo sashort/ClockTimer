@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `trips` (
     `start_time` DATETIME(3) NOT NULL,
     `end_time` DATETIME(3) NOT NULL,
     `standard_time_ms` BIGINT UNSIGNED NOT NULL,
+    `non_production` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     KEY `idx_trips_user_id` (`user_id`),
@@ -65,7 +66,9 @@ CREATE TABLE IF NOT EXISTS `trips` (
     CONSTRAINT `chk_trips_time_order`
         CHECK (`end_time` > `start_time`),
     CONSTRAINT `chk_trips_standard_time`
-        CHECK (`standard_time_ms` > 0)
+        CHECK (`standard_time_ms` > 0),
+    CONSTRAINT `chk_trips_non_production`
+        CHECK (`non_production` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `intervals` (
@@ -333,6 +336,7 @@ BEGIN
              'start_time', NEW.`start_time`,
              'end_time', NEW.`end_time`,
              'standard_time_ms', NEW.`standard_time_ms`,
+             'non_production', NEW.`non_production`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -359,6 +363,7 @@ BEGIN
              'start_time', OLD.`start_time`,
              'end_time', OLD.`end_time`,
              'standard_time_ms', OLD.`standard_time_ms`,
+             'non_production', OLD.`non_production`,
              'created_at', OLD.`created_at`
          ),
          JSON_OBJECT(
@@ -367,6 +372,7 @@ BEGIN
              'start_time', NEW.`start_time`,
              'end_time', NEW.`end_time`,
              'standard_time_ms', NEW.`standard_time_ms`,
+             'non_production', NEW.`non_production`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -393,6 +399,7 @@ BEGIN
              'start_time', OLD.`start_time`,
              'end_time', OLD.`end_time`,
              'standard_time_ms', OLD.`standard_time_ms`,
+             'non_production', OLD.`non_production`,
              'created_at', OLD.`created_at`
          ),
          NULL,
