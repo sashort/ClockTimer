@@ -231,6 +231,8 @@
 
         #openOverwriteLastTick;
 
+        #pendingIntervalRecord;
+
         #preserveInsertedOnClear =
             false;
 
@@ -1865,7 +1867,7 @@
             }
             const data = await this.#apiRequest("users", {
                 method: "POST",
-                body: { username: username.trim(), password }
+                body: { action: "connect", username: username.trim(), password }
             });
             if (typeof data.csrfToken !== "string" || data.csrfToken.length < 32) {
                 this.#setOffline();
@@ -1892,8 +1894,9 @@
             try {
                 if (wasConnected) {
                     await this.#apiRequest("users", {
-                        method: "DELETE",
-                        csrf: true
+                        method: "POST",
+                        csrf: true,
+                        body: { action: "disconnect" }
                     });
                     remote = true;
                 }
@@ -1923,6 +1926,7 @@
                 throw new Error("The trip could not be started.");
             }
             this.#tripId = undefined;
+            this.#pendingIntervalRecord = undefined;
 
             let synced = false;
             if (this.#connectionState === "connected") {
@@ -1947,6 +1951,7 @@
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
             }
+            this.#pendingIntervalRecord = undefined;
 
             const synced = await this.#protectedSync(async () => {
                 const tripId = await this.#ensureTripPersisted();
@@ -1982,6 +1987,7 @@
             }
             const resultTripId = this.#tripId ?? oldTripId;
             this.#tripId = undefined;
+            this.#pendingIntervalRecord = undefined;
             return {
                 synced,
                 tripId: Number.isInteger(resultTripId) ? resultTripId : undefined,
@@ -1994,6 +2000,7 @@
             if (!localResult) {
                 throw new Error("The trip could not be reset.");
             }
+            this.#pendingIntervalRecord = undefined;
 
             const synced = await this.#protectedSync(async () => {
                 const tripId = await this.#ensureTripPersisted();
@@ -2032,12 +2039,26 @@
             const nowDate = new Date();
             const now = this.#getCurrentTimelineTime(nowDate);
             const current = this.#getCurrentInterval(now);
-            const record = current?.source === "inserted" ? current.record : undefined;
+            const pending = this.#pendingIntervalRecord;
+            const record =
+                pending ??
+                (current?.source === "inserted"
+                    ? current.record
+                    : undefined);
+            const scheduledEnd =
+                pending
+                    ? this.#getIntervalRecordEnd(pending)
+                    : undefined;
+            const endedEarly =
+                Number.isFinite(scheduledEnd) &&
+                now < scheduledEnd;
+
             const localResult = this.#endIntervalLocal();
             if (!localResult) {
                 throw new Error("The interval could not be ended.");
             }
-            if (record && !current.open) {
+
+            if (record && endedEarly) {
                 record.clockTimerPersistenceEnd = this.#timelineToISO(now);
             }
 
@@ -5842,6 +5863,10 @@
                 const record of
                     this.#insertedRanges
             ) {
+                if (record.clockTimerExplicitlyEnded === true) {
+                    continue;
+                }
+
                 const start =
                     this.#dateToTimelineTime(
                         record.startDate
@@ -6038,106 +6063,199 @@
             return false;
         }
 
-        #createIntervalEarlystartOverlay(
-            interval,
-            start,
-            end
-        ) {
+        #getIntervalRecordEnd(record) {
+            if (!record || record.openEnded === true) {
+                return undefined;
+            }
+
+            const start =
+                this.#dateToTimelineTime(
+                    record.startDate
+                );
+
+            if (!Number.isFinite(start)) {
+                return undefined;
+            }
+
+            if (Number.isFinite(record.rangeLength)) {
+                return start + record.rangeLength;
+            }
+
             if (
-                !interval ||
-                !Number.isFinite(start) ||
+                record.endDate instanceof Date &&
+                !Number.isNaN(record.endDate.getTime())
+            ) {
+                return this.#dateToTimelineTime(
+                    record.endDate
+                );
+            }
+
+            return undefined;
+        }
+
+        #getCurrentReplaceableRange(now) {
+            if (!Number.isFinite(now)) {
+                return undefined;
+            }
+
+            const ring =
+                this.#rings.get(
+                    this.#getTimerRingIndex(now)
+                );
+
+            if (!ring) {
+                return undefined;
+            }
+
+            let current;
+            let currentStart =
+                -Infinity;
+
+            for (
+                const range of
+                    ring.querySelectorAll(
+                        ":scope > time-range"
+                    )
+            ) {
+                if (
+                    range.hasAttribute("overlapping") ||
+                    range.timeRangeExiting === true
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(range.clockTimerStart);
+
+                const end =
+                    Number(range.clockTimerEnd);
+
+                if (
+                    Number.isFinite(start) &&
+                    Number.isFinite(end) &&
+                    start <= now &&
+                    end > now &&
+                    start > currentStart
+                ) {
+                    current = range;
+                    currentStart = start;
+                }
+            }
+
+            return current;
+        }
+
+        #updateIntervalLatency(now) {
+            const record =
+                this.#pendingIntervalRecord;
+
+            if (!record || !Number.isFinite(now)) {
+                return false;
+            }
+
+            const end =
+                this.#getIntervalRecordEnd(
+                    record
+                );
+
+            if (
                 !Number.isFinite(end) ||
-                end <= start
+                now < end
             ) {
                 return false;
             }
 
-            const identity =
-                interval.record?.id ??
-                `${interval.type}:${interval.start}:${interval.end}`;
+            const current =
+                this.#getCurrentReplaceableRange(
+                    now
+                );
 
-            const alreadyClosed =
-                this.#getManagedTimeRanges()
-                    .some(
-                        range =>
-                            range.clockTimerIntervalClose ===
-                                identity &&
-                            range.isConnected
-                    );
-
-            if (alreadyClosed) {
+            if (!current) {
                 return false;
             }
 
-            let cursor =
-                start;
-
-            let created =
-                false;
-
-            while (cursor < end) {
-                const ringIndex =
-                    this.#getTimerRingIndex(
-                        cursor
-                    );
-
-                const segmentEnd =
-                    Math.min(
-                        end,
-                        this.#getTimerRingEnd(
-                            ringIndex
-                        )
-                    );
-
-                const ring =
-                    this.#ensureRing(
-                        ringIndex
-                    );
-
-                const range =
-                    this.#createTimeRange(
-                        "earlystart",
-                        cursor,
-                        segmentEnd,
-                        {
-                            dynamic: true
-                        }
-                    );
-
-                delete range.clockTimerDynamic;
-
-                range.setAttribute(
-                    "overlapping",
-                    ""
-                );
-
-                range.clockTimerIntervalClose =
-                    identity;
-
-                range.timeRangeFullEntry =
-                    true;
-
-                ring.appendChild(
-                    range
-                );
-
-                created =
-                    true;
-
-                cursor =
-                    segmentEnd;
+            if (
+                current.getAttribute("type") ===
+                    "latency" &&
+                current.clockTimerIntervalLatency ===
+                    record.id
+            ) {
+                return true;
             }
 
-            if (created) {
-                this.#refreshRingLayout(
-                    start,
-                    {
-                        refreshTickMarks: true
-                    }
-                );
+            if (
+                current.getAttribute("type") !==
+                    "trip"
+            ) {
+                return false;
             }
 
-            return created;
+            const replacement =
+                this.#replaceToNext(
+                    "latency"
+                );
+
+            if (!replacement) {
+                return false;
+            }
+
+            replacement.clockTimerIntervalLatency =
+                record.id;
+
+            return true;
+        }
+
+        #endPendingInterval(now) {
+            const record =
+                this.#pendingIntervalRecord;
+
+            if (!record || !Number.isFinite(now)) {
+                return false;
+            }
+
+            const end =
+                this.#getIntervalRecordEnd(
+                    record
+                );
+
+            if (!Number.isFinite(end)) {
+                return false;
+            }
+
+            if (now < end) {
+                const replacement =
+                    this.#replaceToNext(
+                        "earlystart"
+                    );
+
+                if (!replacement) {
+                    return false;
+                }
+
+                record.clockTimerExplicitlyEnded = true;
+                record.clockTimerExplicitEndTimeline = now;
+                this.#pendingIntervalRecord = undefined;
+                return true;
+            }
+
+            this.#updateIntervalLatency(now);
+
+            const current =
+                this.#getCurrentReplaceableRange(now);
+
+            if (
+                current?.getAttribute("type") ===
+                    "latency" &&
+                current.clockTimerIntervalLatency ===
+                    record.id
+            ) {
+                this.#replaceToNext("trip");
+            }
+
+            record.clockTimerExplicitlyEnded = true;
+            record.clockTimerExplicitEndTimeline = end;
+            this.#pendingIntervalRecord = undefined;
+            return true;
         }
 
         #startIntervalLocal(
@@ -6210,6 +6328,10 @@
                     nowDate
                 );
 
+            if (this.#pendingIntervalRecord) {
+                return false;
+            }
+
             const currentInterval =
                 this.#getCurrentInterval(
                     now
@@ -6271,6 +6393,15 @@
                         normalizedAttributes
                 });
 
+            if (inserted && Number.isFinite(duration)) {
+                this.#pendingIntervalRecord =
+                    this.#insertedRanges.find(
+                        record =>
+                            record.id ===
+                                inserted.clockTimerInserted
+                    );
+            }
+
             return inserted || false;
         }
 
@@ -6292,7 +6423,10 @@
                     now
                 );
 
-            if (!interval) {
+            if (
+                !interval &&
+                !this.#pendingIntervalRecord
+            ) {
                 return false;
             }
 
@@ -6307,6 +6441,10 @@
                 return true;
             }
 
+            if (this.#pendingIntervalRecord) {
+                return this.#endPendingInterval(now);
+            }
+
             if (interval.open) {
                 return this.#closeOpenIntervalAt(
                     nowDate,
@@ -6314,11 +6452,7 @@
                 );
             }
 
-            return this.#createIntervalEarlystartOverlay(
-                interval,
-                now,
-                interval.end
-            );
+            return false;
         }
 
         #replaceWithNext() {
@@ -18137,7 +18271,10 @@
             );
 
             const effectiveEnd =
-                record.openEnded
+                record.clockTimerExplicitlyEnded === true &&
+                Number.isFinite(record.clockTimerExplicitEndTimeline)
+                    ? record.clockTimerExplicitEndTimeline
+                    : record.openEnded
                     ? (
                         Number.isFinite(
                             this.#openEndedLastTick
@@ -20835,6 +20972,8 @@
             ) {
                 this.#reconcilePlannedRanges();
             }
+
+            this.#updateIntervalLatency(now);
 
             this.#processElapsedOverwriteRanges(
                 now
