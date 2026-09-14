@@ -903,6 +903,38 @@
             );
         }
 
+        #getTimingDetail(actualTime, scheduledTime) {
+            if (
+                !Number.isFinite(actualTime) ||
+                !Number.isFinite(scheduledTime)
+            ) {
+                return {
+                    timing: "unscheduled",
+                    early: false,
+                    late: false,
+                    onTime: false,
+                    timeDifferenceMilliseconds: null
+                };
+            }
+
+            const difference =
+                actualTime - scheduledTime;
+
+            return {
+                timing:
+                    difference < 0
+                        ? "early"
+                        : difference > 0
+                            ? "late"
+                            : "on-time",
+                early: difference < 0,
+                late: difference > 0,
+                onTime: difference === 0,
+                timeDifferenceMilliseconds:
+                    Math.abs(difference)
+            };
+        }
+
         #emitClockTimerEvent(name, detail = {}, { cancelable = false } = {}) {
             if (!this.#eventsReady) {
                 return true;
@@ -2381,7 +2413,26 @@
             }
 
             const result = this.#mutationResult(synced);
-            this.#emitClockTimerEvent("start", result);
+            const actualStartTime =
+                this.#getStartTimeMilliseconds();
+            const scheduledStartTime =
+                this.#scheduledStartMilliseconds;
+
+            this.#emitClockTimerEvent("start", {
+                ...result,
+                ...this.#getTimingDetail(
+                    actualStartTime,
+                    scheduledStartTime
+                ),
+                actualStartTime:
+                    this.#timelineToISO(
+                        actualStartTime
+                    ),
+                scheduledStartTime:
+                    this.#timelineToISO(
+                        scheduledStartTime
+                    )
+            });
             return result;
         }
 
@@ -2517,8 +2568,8 @@
                     ? current.record
                     : undefined);
             const scheduledEnd =
-                pending
-                    ? this.#getIntervalRecordEnd(pending)
+                record
+                    ? this.#getIntervalRecordEnd(record)
                     : undefined;
             const endedEarly =
                 Number.isFinite(scheduledEnd) &&
@@ -2550,9 +2601,19 @@
             this.#checkGoalMisses(this.#getCurrentTimelineTime());
             this.#emitClockTimerEvent("intervalEnd", {
                 ...result,
+                ...this.#getTimingDetail(
+                    now,
+                    scheduledEnd
+                ),
                 type: record?.type,
                 startTime: record?.startDate?.toISOString?.(),
-                endTime: record?.clockTimerPersistenceEnd ?? record?.endDate?.toISOString?.()
+                endTime: record?.clockTimerPersistenceEnd ?? record?.endDate?.toISOString?.(),
+                actualEndTime:
+                    this.#timelineToISO(now),
+                scheduledEndTime:
+                    this.#timelineToISO(
+                        scheduledEnd
+                    )
             });
             return result;
         }
