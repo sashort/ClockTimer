@@ -48,6 +48,25 @@ if ($method === 'GET') {
         );
     }
 
+    $verbose = false;
+    if (array_key_exists('verbose', $_GET) && $_GET['verbose'] !== '') {
+        $verboseInput = $_GET['verbose'];
+        if (!is_string($verboseInput)) {
+            api_error('verbose must be true, false, 1, or 0.', 422, 'invalid_argument');
+        }
+
+        $verboseText = strtolower(trim($verboseInput));
+        if ($verboseText === 'true' || $verboseText === '1') {
+            $verbose = true;
+        }
+        elseif ($verboseText === 'false' || $verboseText === '0') {
+            $verbose = false;
+        }
+        else {
+            api_error('verbose must be true, false, 1, or 0.', 422, 'invalid_argument');
+        }
+    }
+
     $where =
         'user_id = :user_id '
         . 'AND start_time >= :min_date_time '
@@ -107,7 +126,7 @@ if ($method === 'GET') {
         }
 
         $statement = db()->prepare(
-            'SELECT id, start_time, end_time, standard_time_ms, '
+            'SELECT id, user_id, start_time, end_time, standard_time_ms, created_at, '
             . 'TIMESTAMPDIFF(MICROSECOND, start_time, end_time) AS actual_time_us '
             . 'FROM trips WHERE ' . $where . ' '
             . 'ORDER BY start_time ASC, id ASC '
@@ -116,16 +135,86 @@ if ($method === 'GET') {
         $statement->execute($parameters);
 
         $trips = [];
+        $tripIndexes = [];
+
         while ($row = $statement->fetch()) {
             $actualMicroseconds = (int) ($row['actual_time_us'] ?? 0);
+            $tripId = (int) $row['id'];
 
-            $trips[] = [
-                'id' => (int) $row['id'],
+            $trip = [
+                'id' => $tripId,
                 'startTime' => (string) $row['start_time'],
                 'endTime' => (string) $row['end_time'],
                 'standardTimeMilliseconds' => (int) $row['standard_time_ms'],
                 'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
             ];
+
+            if ($verbose) {
+                $trip['userId'] = (int) $row['user_id'];
+                $trip['createdAt'] = (string) $row['created_at'];
+                $trip['intervalCount'] = 0;
+                $trip['intervals'] = [];
+                $tripIndexes[$tripId] = count($trips);
+            }
+
+            $trips[] = $trip;
+        }
+
+        if ($verbose && $tripIndexes !== []) {
+            $intervalParameters = [];
+            $placeholders = [];
+
+            foreach (array_keys($tripIndexes) as $index => $tripId) {
+                $placeholder = ':trip_id_' . $index;
+                $placeholders[] = $placeholder;
+                $intervalParameters[$placeholder] = $tripId;
+            }
+
+            $intervalStatement = db()->prepare(
+                'SELECT i.trip_id, i.id, i.type, i.start_time, i.end_time, '
+                . 'a.id AS attribute_id, a.name AS attribute_name, a.value AS attribute_value '
+                . 'FROM intervals i '
+                . 'LEFT JOIN attributes a ON a.interval_id = i.id '
+                . 'WHERE i.trip_id IN (' . implode(', ', $placeholders) . ') '
+                . 'ORDER BY i.trip_id ASC, i.start_time ASC, i.id ASC, a.id ASC'
+            );
+            $intervalStatement->execute($intervalParameters);
+
+            $intervalIndexes = [];
+
+            while ($row = $intervalStatement->fetch()) {
+                $tripId = (int) $row['trip_id'];
+                $intervalId = (int) $row['id'];
+                $tripIndex = $tripIndexes[$tripId];
+
+                if (!isset($intervalIndexes[$tripId][$intervalId])) {
+                    $intervalIndex = count($trips[$tripIndex]['intervals']);
+                    $intervalIndexes[$tripId][$intervalId] = $intervalIndex;
+
+                    $trips[$tripIndex]['intervals'][] = [
+                        'id' => $intervalId,
+                        'type' => (string) $row['type'],
+                        'startTime' => (string) $row['start_time'],
+                        'endTime' => $row['end_time'] === null
+                            ? null
+                            : (string) $row['end_time'],
+                        'attributes' => [],
+                    ];
+                }
+
+                if ($row['attribute_id'] !== null) {
+                    $intervalIndex = $intervalIndexes[$tripId][$intervalId];
+                    $trips[$tripIndex]['intervals'][$intervalIndex]['attributes'][
+                        (string) $row['attribute_name']
+                    ] = (string) $row['attribute_value'];
+                }
+            }
+
+            foreach ($tripIndexes as $tripId => $tripIndex) {
+                $trips[$tripIndex]['intervalCount'] = count(
+                    $trips[$tripIndex]['intervals']
+                );
+            }
         }
 
         json_response([
@@ -133,6 +222,7 @@ if ($method === 'GET') {
             'limit' => $limit,
             'offset' => $offset,
             'returnedCount' => count($trips),
+            'verbose' => $verbose,
         ]);
     }
 
