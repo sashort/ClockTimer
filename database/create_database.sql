@@ -53,15 +53,19 @@ CREATE TABLE IF NOT EXISTS `trips` (
     `user_id` BIGINT UNSIGNED NOT NULL,
     `start_time` DATETIME(3) NOT NULL,
     `end_time` DATETIME(3) NOT NULL,
+    `standard_time_ms` BIGINT UNSIGNED NOT NULL,
     `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     KEY `idx_trips_user_id` (`user_id`),
+    KEY `idx_trips_user_start` (`user_id`, `start_time`),
     CONSTRAINT `fk_trips_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT `chk_trips_time_order`
-        CHECK (`end_time` > `start_time`)
+        CHECK (`end_time` > `start_time`),
+    CONSTRAINT `chk_trips_standard_time`
+        CHECK (`standard_time_ms` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `intervals` (
@@ -328,6 +332,7 @@ BEGIN
              'user_id', NEW.`user_id`,
              'start_time', NEW.`start_time`,
              'end_time', NEW.`end_time`,
+             'standard_time_ms', NEW.`standard_time_ms`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -353,6 +358,7 @@ BEGIN
              'user_id', OLD.`user_id`,
              'start_time', OLD.`start_time`,
              'end_time', OLD.`end_time`,
+             'standard_time_ms', OLD.`standard_time_ms`,
              'created_at', OLD.`created_at`
          ),
          JSON_OBJECT(
@@ -360,6 +366,7 @@ BEGIN
              'user_id', NEW.`user_id`,
              'start_time', NEW.`start_time`,
              'end_time', NEW.`end_time`,
+             'standard_time_ms', NEW.`standard_time_ms`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -385,6 +392,7 @@ BEGIN
              'user_id', OLD.`user_id`,
              'start_time', OLD.`start_time`,
              'end_time', OLD.`end_time`,
+             'standard_time_ms', OLD.`standard_time_ms`,
              'created_at', OLD.`created_at`
          ),
          NULL,

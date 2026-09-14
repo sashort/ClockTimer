@@ -1,7 +1,8 @@
 (() => {
     class ClockTimer extends HTMLElement {
         static observedAttributes = [
-            "percent-goal",
+            "trip-goal",
+            "total-goal",
             "timer-type",
             "timer-mode",
             "military-time",
@@ -138,8 +139,10 @@
         #restoringStartState =
             false;
 
-        #percentGoal =
+        #tripGoal =
             1;
+
+        #tripTotals;
 
         #showTolerance =
             true;
@@ -1086,17 +1089,18 @@
                     );
                     break;
 
-                case "percent-goal":
+                case "trip-goal":
+                case "total-goal":
                     if (
                         this.#updatesSuspended &&
                         !this.#processingAsyncBatch
                     ) {
                         this.#queueAsyncOperation({
-                            type: "percent-goal"
+                            type: "trip-goal"
                         });
                     }
                     else {
-                        this.#handlePercentGoalChange();
+                        this.#handleTripGoalChange();
                     }
                     break;
 
@@ -1617,7 +1621,7 @@
 
             if (
                 !this.#started ||
-                this.#percentGoal <= 1
+                this.#tripGoal <= 1
             ) {
                 return;
             }
@@ -1630,11 +1634,37 @@
             this.#csrfToken = undefined;
         }
 
-        #apiURL(endpoint) {
-            return `${String(this.#apiBase).replace(/\/+$/, "")}/${endpoint}/`;
+        #apiURL(endpoint, query) {
+            const path =
+                `${String(this.#apiBase).replace(/\/+$/, "")}/${endpoint}/`;
+
+            if (!query || typeof query !== "object") {
+                return path;
+            }
+
+            const parameters =
+                new URLSearchParams();
+
+            for (const [name, value] of Object.entries(query)) {
+                if (value === undefined || value === null) {
+                    continue;
+                }
+
+                parameters.set(
+                    name,
+                    String(value)
+                );
+            }
+
+            const text =
+                parameters.toString();
+
+            return text
+                ? `${path}?${text}`
+                : path;
         }
 
-        async #apiRequest(endpoint, { method = "GET", body, csrf = false } = {}) {
+        async #apiRequest(endpoint, { method = "GET", body, csrf = false, query } = {}) {
             const headers = { "Accept": "application/json" };
             if (body !== undefined) {
                 headers["Content-Type"] = "application/json";
@@ -1650,7 +1680,7 @@
 
             let response;
             try {
-                response = await fetch(this.#apiURL(endpoint), {
+                response = await fetch(this.#apiURL(endpoint, query), {
                     method,
                     credentials: "same-origin",
                     headers,
@@ -1718,10 +1748,25 @@
         #tripPersistencePayload() {
             const startTime = this.#timelineToISO(this.#getStartTimeMilliseconds());
             const endTime = this.#timelineToISO(this.#calculatedEndTime);
-            if (!startTime || !endTime) {
+            const standardTimeMilliseconds =
+                Math.round(
+                    this.#standardDuration
+                );
+
+            if (
+                !startTime ||
+                !endTime ||
+                !Number.isInteger(standardTimeMilliseconds) ||
+                standardTimeMilliseconds < 1
+            ) {
                 throw new Error("The trip does not have persistable timing data.");
             }
-            return { startTime, endTime };
+
+            return {
+                startTime,
+                endTime,
+                standardTimeMilliseconds
+            };
         }
 
         #intervalRecords() {
@@ -1861,6 +1906,161 @@
             };
         }
 
+        #normalizeTripTotalsDateTime(
+            value,
+            name
+        ) {
+            let candidate =
+                value;
+
+            if (typeof candidate === "string") {
+                candidate =
+                    candidate.trim();
+
+                if (!candidate) {
+                    throw new TypeError(
+                        `${name} must be a date/time.`
+                    );
+                }
+
+                if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
+                    throw new TypeError(
+                        `${name} must include a time.`
+                    );
+                }
+
+                if (/^\d{4}-\d{2}-\d{2}\s/.test(candidate)) {
+                    candidate =
+                        candidate.replace(
+                            " ",
+                            "T"
+                        );
+                }
+            }
+
+            const date =
+                value instanceof Date
+                    ? new Date(
+                        value.getTime()
+                    )
+                    : new Date(candidate);
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+                throw new RangeError(
+                    `${name} must be a valid date/time.`
+                );
+            }
+
+            return date;
+        }
+
+        async calculateTripTotals(
+            startTime,
+            endTime
+        ) {
+            const start =
+                this.#normalizeTripTotalsDateTime(
+                    startTime,
+                    "startTime"
+                );
+
+            const end =
+                this.#normalizeTripTotalsDateTime(
+                    endTime,
+                    "endTime"
+                );
+
+            if (
+                end.getTime() <=
+                    start.getTime()
+            ) {
+                throw new RangeError(
+                    "endTime must be later than startTime."
+                );
+            }
+
+            if (!(await this.#ensureConnected())) {
+                const error =
+                    new Error(
+                        "ClockTimer is offline."
+                    );
+
+                error.clockTimerOffline =
+                    true;
+
+                throw error;
+            }
+
+            const query = {
+                startTime:
+                    start.toISOString(),
+                endTime:
+                    end.toISOString()
+            };
+
+            if (
+                Number.isInteger(
+                    this.#tripId
+                ) &&
+                this.#tripId > 0
+            ) {
+                query.excludeTripId =
+                    this.#tripId;
+            }
+
+            const data =
+                await this.#apiRequest(
+                    "trips",
+                    { query }
+                );
+
+            const tripCount =
+                Number(data.tripCount);
+
+            const standardTimeMilliseconds =
+                Number(
+                    data.standardTimeMilliseconds
+                );
+
+            const actualTimeMilliseconds =
+                Number(
+                    data.actualTimeMilliseconds
+                );
+
+            if (
+                !Number.isInteger(tripCount) ||
+                tripCount < 0 ||
+                !Number.isFinite(standardTimeMilliseconds) ||
+                standardTimeMilliseconds < 0 ||
+                !Number.isFinite(actualTimeMilliseconds) ||
+                actualTimeMilliseconds < 0
+            ) {
+                throw new Error(
+                    "The API returned invalid trip totals."
+                );
+            }
+
+            this.#tripTotals = {
+                startTime:
+                    start.toISOString(),
+                endTime:
+                    end.toISOString(),
+                tripCount,
+                standardTimeMilliseconds,
+                actualTimeMilliseconds
+            };
+
+            this.#handleTripGoalChange();
+
+            return {
+                ...this.#tripTotals
+            };
+        }
+
         async connect(username, password) {
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");
@@ -1959,7 +2159,15 @@
                 await this.#apiRequest("trips", {
                     method: "PATCH",
                     csrf: true,
-                    body: { tripId, action: "stop", endTime: persistedEnd }
+                    body: {
+                        tripId,
+                        action: "stop",
+                        endTime: persistedEnd,
+                        standardTimeMilliseconds:
+                            Math.round(
+                                this.#standardDuration
+                            )
+                    }
                 });
             });
             return this.#mutationResult(synced);
@@ -1988,6 +2196,7 @@
             const resultTripId = this.#tripId ?? oldTripId;
             this.#tripId = undefined;
             this.#pendingIntervalRecord = undefined;
+            this.#tripTotals = undefined;
             return {
                 synced,
                 tripId: Number.isInteger(resultTripId) ? resultTripId : undefined,
@@ -2171,6 +2380,15 @@
                 this.#calculatedEndTime +=
                     parsed.total -
                     previousDuration;
+            }
+
+            if (
+                this.hasAttribute(
+                    "total-goal"
+                ) &&
+                this.#tripTotals
+            ) {
+                this.#handleTripGoalChange();
             }
 
             this.#refreshAfterStartPropertyChange(
@@ -2817,11 +3035,11 @@
                     );
             }
 
-            if (operation.type === "percent-goal") {
+            if (operation.type === "trip-goal") {
                 this.#asyncOperationBuffer =
                     this.#asyncOperationBuffer.filter(
                         item =>
-                            item.type !== "percent-goal"
+                            item.type !== "trip-goal"
                     );
             }
 
@@ -3522,8 +3740,8 @@
                             this.#clearLocal();
                             break;
 
-                        case "percent-goal":
-                            this.#handlePercentGoalChange();
+                        case "trip-goal":
+                            this.#handleTripGoalChange();
                             break;
 
                         case "spin":
@@ -3760,8 +3978,8 @@
                 this.#scheduledStartMilliseconds +
                 this.#standardDuration;
 
-            this.#percentGoal =
-                this.#getPercentGoal();
+            this.#tripGoal =
+                this.#getEffectiveTripGoal();
 
             this.#started =
                 true;
@@ -3847,9 +4065,13 @@
                         this.#startedAtEpoch,
                     tickAlignmentMilliseconds:
                         this.#tickAlignmentMilliseconds,
-                    percentGoal:
+                    tripGoal:
                         this.getAttribute(
-                            "percent-goal"
+                            "trip-goal"
+                        ),
+                    totalGoal:
+                        this.getAttribute(
+                            "total-goal"
                         ),
                     insertedRanges:
                         this.#cloneInsertedRecords(
@@ -3930,15 +4152,27 @@
             this.#openEndedLastTick =
                 baseline.openEndedLastTick;
 
-            if (baseline.percentGoal === null) {
+            if (baseline.tripGoal === null) {
                 this.removeAttribute(
-                    "percent-goal"
+                    "trip-goal"
                 );
             }
             else {
                 this.setAttribute(
-                    "percent-goal",
-                    baseline.percentGoal
+                    "trip-goal",
+                    baseline.tripGoal
+                );
+            }
+
+            if (baseline.totalGoal === null) {
+                this.removeAttribute(
+                    "total-goal"
+                );
+            }
+            else {
+                this.setAttribute(
+                    "total-goal",
+                    baseline.totalGoal
                 );
             }
 
@@ -7284,11 +7518,11 @@
 
             if (
                 !this.hasAttribute(
-                    "percent-goal"
+                    "trip-goal"
                 )
             ) {
                 this.setAttribute(
-                    "percent-goal",
+                    "trip-goal",
                     "100%"
                 );
             }
@@ -14146,7 +14380,7 @@
             );
         }
 
-        #captureRadialFittedPercentGoalAnimation(
+        #captureRadialFittedTripGoalAnimation(
             now
         ) {
             if (
@@ -14221,7 +14455,7 @@
             };
         }
 
-        #prepareRadialFittedPercentGoalAnimation(
+        #prepareRadialFittedTripGoalAnimation(
             snapshot,
             now
         ) {
@@ -14444,12 +14678,12 @@
             }
         }
 
-        #handlePercentGoalChange() {
+        #handleTripGoalChange() {
             const goal =
-                this.#getPercentGoal();
+                this.#getEffectiveTripGoal();
 
             const previousGoal =
-                this.#percentGoal;
+                this.#tripGoal;
 
             const stateChangeVisual =
                 this.#started &&
@@ -14457,8 +14691,8 @@
                     ? this.#beginStateChangeVisuals()
                     : undefined;
 
-            const percentGoalAnimation =
-                this.#captureRadialFittedPercentGoalAnimation(
+            const tripGoalAnimation =
+                this.#captureRadialFittedTripGoalAnimation(
                     this.#started
                         ? this.#getCurrentTimelineTime()
                         : undefined
@@ -14468,7 +14702,7 @@
                 previousGoal < 1 &&
                 goal >= 1;
 
-            this.#percentGoal =
+            this.#tripGoal =
                 goal;
 
             if (
@@ -14500,8 +14734,8 @@
 
             this.#reapplyOverwriteRanges();
 
-            this.#prepareRadialFittedPercentGoalAnimation(
-                percentGoalAnimation,
+            this.#prepareRadialFittedTripGoalAnimation(
+                tripGoalAnimation,
                 now
             );
 
@@ -14646,7 +14880,7 @@
             }
 
             const liveToleranceUsesVisibleEnd =
-                this.#percentGoal > 1 &&
+                this.#tripGoal > 1 &&
                 this.#started;
 
             if (
@@ -16567,7 +16801,7 @@
             now = undefined
         ) {
             if (
-                this.#percentGoal <= 1
+                this.#tripGoal <= 1
             ) {
                 return undefined;
             }
@@ -16655,10 +16889,10 @@
                 tripStart +
                 (
                     this.#standardDuration /
-                    this.#percentGoal
+                    this.#tripGoal
                 );
 
-            if (this.#percentGoal > 1) {
+            if (this.#tripGoal > 1) {
                 this.#tripEnd =
                     this.#calculatedEnd;
 
@@ -16701,7 +16935,7 @@
                     end: this.#standardEnd
                 });
 
-                if (this.#percentGoal < 1) {
+                if (this.#tripGoal < 1) {
                     spans.push({
                         type: "overtime",
                         start: this.#standardEnd,
@@ -17280,24 +17514,22 @@
             return ranges;
         }
 
-        #getPercentGoal() {
-            const raw =
-                this.getAttribute(
-                    "percent-goal"
-                );
-
+        #parseGoalValue(
+            raw,
+            fallback = 1
+        ) {
             if (
                 typeof raw !==
                     "string"
             ) {
-                return 1;
+                return fallback;
             }
 
             let text =
                 raw.trim();
 
             if (!text) {
-                return 1;
+                return fallback;
             }
 
             const trailingPercent =
@@ -17305,9 +17537,7 @@
                     "%"
                 );
 
-            if (
-                trailingPercent
-            ) {
+            if (trailingPercent) {
                 text =
                     text.slice(
                         0,
@@ -17321,40 +17551,111 @@
                 );
 
             if (
-                !Number.isFinite(
-                    value
-                ) ||
-                value <=
-                    0
+                !Number.isFinite(value) ||
+                value <= 0
             ) {
-                return 1;
+                return fallback;
             }
+
+            if (trailingPercent) {
+                value /= 100;
+            }
+            else if (value > 1.5) {
+                value /= 100;
+            }
+
+            return (
+                Number.isFinite(value) &&
+                value > 0
+            )
+                ? value
+                : fallback;
+        }
+
+        #getTripGoal() {
+            return this.#parseGoalValue(
+                this.getAttribute(
+                    "trip-goal"
+                ),
+                1
+            );
+        }
+
+        #getTotalGoal() {
+            if (
+                !this.hasAttribute(
+                    "total-goal"
+                )
+            ) {
+                return undefined;
+            }
+
+            return this.#parseGoalValue(
+                this.getAttribute(
+                    "total-goal"
+                ),
+                1
+            );
+        }
+
+        #getEffectiveTripGoal() {
+            const tripGoal =
+                this.#getTripGoal();
+
+            const totalGoal =
+                this.#getTotalGoal();
+
+            const totals =
+                this.#tripTotals;
 
             if (
-                trailingPercent
-            ) {
-                value /=
-                    100;
-            }
-            else if (
-                value >
-                    1.5
-            ) {
-                value /=
-                    100;
-            }
-
-            if (
+                !Number.isFinite(totalGoal) ||
+                totalGoal <= 0 ||
+                !totals ||
                 !Number.isFinite(
-                    value
+                    totals.standardTimeMilliseconds
                 ) ||
-                value <=
-                    0
+                !Number.isFinite(
+                    totals.actualTimeMilliseconds
+                ) ||
+                !Number.isFinite(
+                    this.#standardDuration
+                ) ||
+                this.#standardDuration <= 0
             ) {
-                return 1;
+                return tripGoal;
             }
 
-            return value;
+            const combinedStandard =
+                totals.standardTimeMilliseconds +
+                this.#standardDuration;
+
+            const targetCombinedActual =
+                combinedStandard /
+                totalGoal;
+
+            const targetCurrentActual =
+                targetCombinedActual -
+                totals.actualTimeMilliseconds;
+
+            if (!Number.isFinite(targetCurrentActual)) {
+                return tripGoal;
+            }
+
+            if (targetCurrentActual <= 0) {
+                return Number.MAX_SAFE_INTEGER;
+            }
+
+            const derived =
+                this.#standardDuration /
+                targetCurrentActual;
+
+            return (
+                Number.isFinite(derived) &&
+                derived > 0
+            )
+                ? derived
+                : tripGoal;
         }
 
         #parseInsertDateTime(
@@ -19455,11 +19756,11 @@
                 tripStart +
                 (
                     this.#standardDuration /
-                    this.#percentGoal
+                    this.#tripGoal
                 );
 
             if (
-                this.#percentGoal >
+                this.#tripGoal >
                     1
             ) {
                 this.#tripEnd =
@@ -19507,7 +19808,7 @@
             );
 
             if (
-                this.#percentGoal <
+                this.#tripGoal <
                     1
             ) {
                 this.#createSpan(
@@ -19831,7 +20132,7 @@
                 this.#getLatestTimerEnd();
 
             const latestEnd =
-                this.#percentGoal > 1 &&
+                this.#tripGoal > 1 &&
                 this.#started
                     ? visibleTimerEnd
                     : (
@@ -20967,7 +21268,7 @@
 
             if (
                 !this.#showTolerance &&
-                this.#percentGoal > 1 &&
+                this.#tripGoal > 1 &&
                 !this.#toleranceTransitionState
             ) {
                 this.#reconcilePlannedRanges();
