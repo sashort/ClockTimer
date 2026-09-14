@@ -2061,6 +2061,12 @@
             };
         }
 
+        calculateTotalGoalRequirements() {
+            return {
+                ...this.#calculateTotalGoalRequirements()
+            };
+        }
+
         async connect(username, password) {
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");
@@ -2237,6 +2243,15 @@
                 throw new Error("The interval record could not be resolved.");
             }
 
+            if (
+                this.hasAttribute(
+                    "total-goal"
+                ) &&
+                this.#tripTotals
+            ) {
+                this.#handleTripGoalChange();
+            }
+
             const synced = await this.#protectedSync(async () => {
                 await this.#ensureTripPersisted();
                 await this.#syncIntervals();
@@ -2269,6 +2284,15 @@
 
             if (record && endedEarly) {
                 record.clockTimerPersistenceEnd = this.#timelineToISO(now);
+            }
+
+            if (
+                this.hasAttribute(
+                    "total-goal"
+                ) &&
+                this.#tripTotals
+            ) {
+                this.#handleTripGoalChange();
             }
 
             const synced = await this.#protectedSync(async () => {
@@ -17598,15 +17622,139 @@
             );
         }
 
-        #getEffectiveTripGoal() {
-            const tripGoal =
-                this.#getTripGoal();
+        #emptyTotalGoalRequirements() {
+            return {
+                tripGoal: null,
+                adjustedTimeElapsed: null,
+                adjustedEndTime: null
+            };
+        }
+
+        #getIntervalAdjustmentThrough(
+            endTime
+        ) {
+            if (!Number.isFinite(endTime)) {
+                return undefined;
+            }
+
+            const segments = [];
+
+            for (const range of
+                this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.timeRangeExiting === true ||
+                    !this.#isIntervalType(
+                        range.getAttribute(
+                            "type"
+                        )
+                    )
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(end) ||
+                    end <= start ||
+                    start >= endTime
+                ) {
+                    continue;
+                }
+
+                const clippedEnd =
+                    Math.min(
+                        end,
+                        endTime
+                    );
+
+                if (clippedEnd <= start) {
+                    continue;
+                }
+
+                segments.push([
+                    start,
+                    clippedEnd
+                ]);
+            }
+
+            segments.sort(
+                (left, right) =>
+                    left[0] - right[0] ||
+                    left[1] - right[1]
+            );
+
+            let total =
+                0;
+
+            let currentStart;
+            let currentEnd;
+
+            for (const [start, end] of segments) {
+                if (
+                    !Number.isFinite(currentStart) ||
+                    start > currentEnd
+                ) {
+                    if (
+                        Number.isFinite(currentStart) &&
+                        Number.isFinite(currentEnd)
+                    ) {
+                        total +=
+                            currentEnd - currentStart;
+                    }
+
+                    currentStart =
+                        start;
+
+                    currentEnd =
+                        end;
+
+                    continue;
+                }
+
+                currentEnd =
+                    Math.max(
+                        currentEnd,
+                        end
+                    );
+            }
+
+            if (
+                Number.isFinite(currentStart) &&
+                Number.isFinite(currentEnd)
+            ) {
+                total +=
+                    currentEnd - currentStart;
+            }
+
+            return total;
+        }
+
+        #calculateTotalGoalRequirements() {
+            const empty =
+                this.#emptyTotalGoalRequirements();
 
             const totalGoal =
                 this.#getTotalGoal();
 
             const totals =
                 this.#tripTotals;
+
+            const actualStart =
+                this.#getStartTimeMilliseconds();
+
+            const scheduledStart =
+                this.#scheduledStartMilliseconds;
 
             if (
                 !Number.isFinite(totalGoal) ||
@@ -17621,9 +17769,11 @@
                 !Number.isFinite(
                     this.#standardDuration
                 ) ||
-                this.#standardDuration <= 0
+                this.#standardDuration <= 0 ||
+                !Number.isFinite(actualStart) ||
+                !Number.isFinite(scheduledStart)
             ) {
-                return tripGoal;
+                return empty;
             }
 
             const combinedStandard =
@@ -17634,28 +17784,103 @@
                 combinedStandard /
                 totalGoal;
 
-            const targetCurrentActual =
+            const requiredCurrentActual =
                 targetCombinedActual -
                 totals.actualTimeMilliseconds;
 
-            if (!Number.isFinite(targetCurrentActual)) {
-                return tripGoal;
+            if (
+                !Number.isFinite(requiredCurrentActual) ||
+                requiredCurrentActual <= 0
+            ) {
+                return empty;
             }
 
-            if (targetCurrentActual <= 0) {
-                return Number.MAX_SAFE_INTEGER;
+            const adjustedEndTimeline =
+                actualStart +
+                requiredCurrentActual;
+
+            const now =
+                this.#started
+                    ? this.#getCurrentTimelineTime()
+                    : undefined;
+
+            if (
+                Number.isFinite(now) &&
+                adjustedEndTimeline < now
+            ) {
+                return empty;
             }
 
-            const derived =
+            if (
+                this.#openEndedRange &&
+                (
+                    !Number.isFinite(now) ||
+                    adjustedEndTimeline > now
+                )
+            ) {
+                return empty;
+            }
+
+            const intervalAdjustment =
+                this.#getIntervalAdjustmentThrough(
+                    adjustedEndTimeline
+                );
+
+            if (!Number.isFinite(intervalAdjustment)) {
+                return empty;
+            }
+
+            const adjustedTimeElapsed =
+                adjustedEndTimeline -
+                scheduledStart -
+                intervalAdjustment;
+
+            if (
+                !Number.isFinite(adjustedTimeElapsed) ||
+                adjustedTimeElapsed <= 0
+            ) {
+                return empty;
+            }
+
+            const tripGoal =
                 this.#standardDuration /
-                targetCurrentActual;
+                adjustedTimeElapsed;
+
+            const adjustedEndTime =
+                this.#timelineToISO(
+                    adjustedEndTimeline
+                );
+
+            if (
+                !Number.isFinite(tripGoal) ||
+                tripGoal <= 0 ||
+                !adjustedEndTime
+            ) {
+                return empty;
+            }
+
+            return {
+                tripGoal,
+                adjustedTimeElapsed:
+                    Math.round(
+                        adjustedTimeElapsed
+                    ),
+                adjustedEndTime
+            };
+        }
+
+        #getEffectiveTripGoal() {
+            const calculated =
+                this.#calculateTotalGoalRequirements();
 
             return (
-                Number.isFinite(derived) &&
-                derived > 0
+                Number.isFinite(
+                    calculated.tripGoal
+                ) &&
+                calculated.tripGoal > 0
             )
-                ? derived
-                : tripGoal;
+                ? calculated.tripGoal
+                : this.#getTripGoal();
         }
 
         #parseInsertDateTime(
