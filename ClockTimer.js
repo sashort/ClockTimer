@@ -144,6 +144,9 @@
 
         #tripTotals;
 
+        #autoSyncTripGoal =
+            false;
+
         #showTolerance =
             true;
 
@@ -2073,6 +2076,44 @@
             };
         }
 
+        setTripGoalToTotalGoal() {
+            const reason =
+                this.#getTotalGoalRequirementFailureReason();
+
+            if (reason) {
+                return {
+                    applied: false,
+                    ...this.#emptyGoalRequirements(),
+                    reason
+                };
+            }
+
+            const requirements =
+                this.#calculateTotalGoalRequirements();
+
+            if (
+                !Number.isFinite(requirements.tripGoal) ||
+                requirements.tripGoal <= 0
+            ) {
+                return {
+                    applied: false,
+                    ...this.#emptyGoalRequirements(),
+                    reason: "insufficient-time"
+                };
+            }
+
+            this.setAttribute(
+                "trip-goal",
+                `${requirements.tripGoal * 100}%`
+            );
+
+            return {
+                applied: true,
+                ...requirements,
+                reason: null
+            };
+        }
+
         async connect(username, password) {
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");
@@ -2132,6 +2173,17 @@
             if (options === null || typeof options !== "object" || Array.isArray(options)) {
                 throw new TypeError("start options must be an object.");
             }
+
+            const tripTotalsWindow =
+                this.#tripTotals &&
+                typeof this.#tripTotals.startTime === "string" &&
+                typeof this.#tripTotals.endTime === "string"
+                    ? {
+                        startTime: this.#tripTotals.startTime,
+                        endTime: this.#tripTotals.endTime
+                    }
+                    : undefined;
+
             const { tripId: ignoredTripId, ...localOptions } = options;
             const localResult = this.#startLocal({ ...localOptions, tripId: undefined });
             if (!localResult) {
@@ -2152,6 +2204,27 @@
                     }
                 }
             }
+
+            if (this.#autoSyncTripGoal) {
+                if (tripTotalsWindow) {
+                    this.#tripTotals = undefined;
+
+                    if (this.#connectionState === "connected") {
+                        try {
+                            await this.calculateTripTotals(
+                                tripTotalsWindow.startTime,
+                                tripTotalsWindow.endTime
+                            );
+                        }
+                        catch {
+                            this.#tripTotals = undefined;
+                        }
+                    }
+                }
+
+                this.setTripGoalToTotalGoal();
+            }
+
             return this.#mutationResult(synced);
         }
 
@@ -2314,6 +2387,21 @@
 
         get connected() {
             return this.#connectionState === "connected";
+        }
+
+        get autoSyncTripGoal() {
+            return this.#autoSyncTripGoal;
+        }
+
+        set autoSyncTripGoal(value) {
+            if (typeof value !== "boolean") {
+                throw new TypeError(
+                    "autoSyncTripGoal must be a boolean."
+                );
+            }
+
+            this.#autoSyncTripGoal =
+                value;
         }
 
         get status() {
@@ -17873,6 +17961,88 @@
                     tripGoal,
                 tripGoal
             );
+        }
+
+        #getTotalGoalRequirementFailureReason() {
+            const totalGoal =
+                this.#getTotalGoal();
+
+            if (
+                !this.hasAttribute("total-goal") ||
+                !Number.isFinite(totalGoal) ||
+                totalGoal <= 0
+            ) {
+                return "missing-total-goal";
+            }
+
+            const totals =
+                this.#tripTotals;
+
+            if (
+                !totals ||
+                !Number.isFinite(totals.standardTimeMilliseconds) ||
+                totals.standardTimeMilliseconds < 0 ||
+                !Number.isFinite(totals.actualTimeMilliseconds) ||
+                totals.actualTimeMilliseconds < 0
+            ) {
+                return "missing-trip-totals";
+            }
+
+            if (
+                !Number.isFinite(this.#standardDuration) ||
+                this.#standardDuration <= 0 ||
+                !Number.isFinite(this.#scheduledStartMilliseconds)
+            ) {
+                return "missing-trip";
+            }
+
+            const combinedStandard =
+                totals.standardTimeMilliseconds +
+                this.#standardDuration;
+
+            const adjustedTimeElapsed =
+                combinedStandard /
+                    totalGoal -
+                totals.actualTimeMilliseconds;
+
+            if (
+                !Number.isFinite(adjustedTimeElapsed) ||
+                adjustedTimeElapsed <= 0
+            ) {
+                return "insufficient-time";
+            }
+
+            const adjustedEndTimeline =
+                this.#calculateAdjustedEndTimeline(
+                    adjustedTimeElapsed
+                );
+
+            if (!Number.isFinite(adjustedEndTimeline)) {
+                if (
+                    this.#openEndedRange &&
+                    this.#isIntervalType(
+                        this.#openEndedRange.type
+                    )
+                ) {
+                    return "open-interval";
+                }
+
+                return "insufficient-time";
+            }
+
+            const now =
+                this.#started
+                    ? this.#getCurrentTimelineTime()
+                    : undefined;
+
+            if (
+                Number.isFinite(now) &&
+                adjustedEndTimeline < now
+            ) {
+                return "insufficient-time";
+            }
+
+            return null;
         }
 
         #calculateTotalGoalRequirements() {
