@@ -133,18 +133,21 @@
 
         #originalStartArguments;
 
-        #startResetState;
-
-
-        #restoringStartState =
-            false;
-
         #tripGoal =
             1;
 
         #tripTotals;
 
         #autoSyncTripGoal =
+            false;
+
+        #tripGoalMissedState =
+            false;
+
+        #totalGoalMissedState =
+            false;
+
+        #eventsReady =
             false;
 
         #showTolerance =
@@ -900,6 +903,22 @@
             );
         }
 
+        #emitClockTimerEvent(name, detail = {}, { cancelable = false } = {}) {
+            if (!this.#eventsReady) {
+                return true;
+            }
+
+            return this.dispatchEvent(new CustomEvent(name, {
+                detail: {
+                    ...detail,
+                    connected: this.#connectionState === "connected"
+                },
+                bubbles: true,
+                composed: true,
+                cancelable
+            }));
+        }
+
         connectedCallback() {
             this.#captureFaceBackground();
 
@@ -956,6 +975,8 @@
             ) {
                 this.#startTickTimer();
             }
+
+            this.#eventsReady = true;
         }
 
         disconnectedCallback() {
@@ -1094,6 +1115,15 @@
 
                 case "trip-goal":
                 case "total-goal":
+                    this.#emitClockTimerEvent("goalChange", {
+                        goal: name === "trip-goal" ? "trip" : "total",
+                        attribute: name,
+                        previousValue: oldValue,
+                        value: newValue,
+                        tripGoal: this.#getTripGoal(),
+                        totalGoal: this.#getTotalGoal()
+                    });
+
                     if (
                         this.#updatesSuspended &&
                         !this.#processingAsyncBatch
@@ -1632,9 +1662,55 @@
             this.#transitionShowTolerance();
         }
 
-        #setOffline() {
-            this.#connectionState = "offline";
-            this.#csrfToken = undefined;
+        #setConnected(csrfToken, detail = {}) {
+            const wasConnected =
+                this.#connectionState ===
+                    "connected";
+
+            this.#csrfToken =
+                csrfToken;
+
+            this.#connectionState =
+                "connected";
+
+            if (!wasConnected) {
+                this.#emitClockTimerEvent(
+                    "connected",
+                    detail
+                );
+            }
+        }
+
+        #connectionFailed(source, error) {
+            this.#emitClockTimerEvent(
+                "connectionFailed",
+                {
+                    source,
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : String(error ?? "Connection failed.")
+                }
+            );
+        }
+
+        #setOffline(detail = {}) {
+            const wasConnected =
+                this.#connectionState ===
+                    "connected";
+
+            this.#connectionState =
+                "offline";
+
+            this.#csrfToken =
+                undefined;
+
+            if (wasConnected) {
+                this.#emitClockTimerEvent(
+                    "disconnected",
+                    detail
+                );
+            }
         }
 
         #apiURL(endpoint, query) {
@@ -1691,7 +1767,10 @@
                 });
             }
             catch (cause) {
-                this.#setOffline();
+                this.#setOffline({
+                    source: "api",
+                    reason: "unavailable"
+                });
                 const error = new Error("The API is unavailable.", { cause });
                 error.clockTimerOffline = true;
                 throw error;
@@ -1708,7 +1787,13 @@
                     data.message || `API request failed (${response.status}).`
                 );
                 if (response.status === 401 || data.error === "invalid_csrf") {
-                    this.#setOffline();
+                    this.#setOffline({
+                        source: "api",
+                        reason:
+                            response.status === 401
+                                ? "unauthorized"
+                                : "invalid-csrf"
+                    });
                     error.clockTimerOffline = true;
                 }
                 throw error;
@@ -1718,17 +1803,41 @@
 
         async #resumeSession() {
             try {
-                const data = await this.#apiRequest("users");
-                if (typeof data.csrfToken !== "string" || data.csrfToken.length < 32) {
-                    this.#setOffline();
-                    return false;
+                const data =
+                    await this.#apiRequest(
+                        "users"
+                    );
+
+                if (
+                    typeof data.csrfToken !== "string" ||
+                    data.csrfToken.length < 32
+                ) {
+                    throw new Error(
+                        "The API did not return a CSRF token."
+                    );
                 }
-                this.#csrfToken = data.csrfToken;
-                this.#connectionState = "connected";
+
+                this.#setConnected(
+                    data.csrfToken,
+                    {
+                        source: "resume",
+                        user: data.user
+                    }
+                );
+
                 return true;
             }
-            catch {
-                this.#setOffline();
+            catch (error) {
+                this.#setOffline({
+                    source: "resume",
+                    reason: "failed"
+                });
+
+                this.#connectionFailed(
+                    "resume",
+                    error
+                );
+
                 return false;
             }
         }
@@ -1842,9 +1951,6 @@
                 throw new Error("The API returned an invalid trip id.");
             }
             this.#tripId = tripId;
-            if (this.#startResetState) {
-                this.#startResetState.args.tripId = tripId;
-            }
             if (this.#originalStartArguments) {
                 this.#originalStartArguments.tripId = tripId;
             }
@@ -1902,6 +2008,9 @@
         #mutationResult(synced, record) {
             return {
                 synced: Boolean(synced),
+                connected:
+                    this.#connectionState ===
+                        "connected",
                 tripId: Number.isInteger(this.#tripId) ? this.#tripId : undefined,
                 intervalId: Number.isInteger(Number(record?.intervalId))
                     ? Number(record.intervalId)
@@ -2076,16 +2185,31 @@
             };
         }
 
+        #goalChangeFailure(reason) {
+            const result = {
+                applied: false,
+                connected:
+                    this.#connectionState ===
+                        "connected",
+                ...this.#emptyGoalRequirements(),
+                reason
+            };
+
+            this.#emitClockTimerEvent("goalChangeFailed", {
+                ...result,
+                tripGoal: this.#getTripGoal(),
+                totalGoal: this.#getTotalGoal()
+            });
+
+            return result;
+        }
+
         setTripGoalToTotalGoal() {
             const reason =
                 this.#getTotalGoalRequirementFailureReason();
 
             if (reason) {
-                return {
-                    applied: false,
-                    ...this.#emptyGoalRequirements(),
-                    reason
-                };
+                return this.#goalChangeFailure(reason);
             }
 
             const requirements =
@@ -2095,11 +2219,7 @@
                 !Number.isFinite(requirements.tripGoal) ||
                 requirements.tripGoal <= 0
             ) {
-                return {
-                    applied: false,
-                    ...this.#emptyGoalRequirements(),
-                    reason: "insufficient-time"
-                };
+                return this.#goalChangeFailure("insufficient-time");
             }
 
             this.setAttribute(
@@ -2109,6 +2229,9 @@
 
             return {
                 applied: true,
+                connected:
+                    this.#connectionState ===
+                        "connected",
                 ...requirements,
                 reason: null
             };
@@ -2118,16 +2241,45 @@
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");
             }
-            const data = await this.#apiRequest("users", {
-                method: "POST",
-                body: { action: "connect", username: username.trim(), password }
-            });
-            if (typeof data.csrfToken !== "string" || data.csrfToken.length < 32) {
-                this.#setOffline();
-                throw new Error("The API did not return a CSRF token.");
+
+            let data;
+
+            try {
+                data = await this.#apiRequest("users", {
+                    method: "POST",
+                    body: { action: "connect", username: username.trim(), password }
+                });
+
+                if (
+                    typeof data.csrfToken !== "string" ||
+                    data.csrfToken.length < 32
+                ) {
+                    throw new Error(
+                        "The API did not return a CSRF token."
+                    );
+                }
             }
-            this.#csrfToken = data.csrfToken;
-            this.#connectionState = "connected";
+            catch (error) {
+                this.#setOffline({
+                    source: "connect",
+                    reason: "failed"
+                });
+
+                this.#connectionFailed(
+                    "connect",
+                    error
+                );
+
+                throw error;
+            }
+
+            this.#setConnected(
+                data.csrfToken,
+                {
+                    source: "connect",
+                    user: data.user
+                }
+            );
 
             if (this.#hasStartProperties()) {
                 await this.#ensureTripPersisted();
@@ -2160,7 +2312,10 @@
                 }
             }
             finally {
-                this.#setOffline();
+                this.#setOffline({
+                    source: "disconnect",
+                    remote
+                });
             }
 
             return {
@@ -2225,13 +2380,17 @@
                 this.setTripGoalToTotalGoal();
             }
 
-            return this.#mutationResult(synced);
+            const result = this.#mutationResult(synced);
+            this.#emitClockTimerEvent("start", result);
+            return result;
         }
 
         async stop(stopTime = this.#dateToStandardTime(new Date())) {
             const parsed = this.#validateClockTime(stopTime, "stopTime");
             const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
             const persistedEnd = this.#timelineToISO(stopTimeline);
+
+            this.#checkGoalMisses(stopTimeline);
             const localResult = this.#stopLocal(stopTime);
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
@@ -2255,11 +2414,32 @@
                     }
                 });
             });
-            return this.#mutationResult(synced);
+            const result = this.#mutationResult(synced);
+            this.#emitClockTimerEvent("stop", result);
+            return result;
         }
 
         async clear() {
             const oldTripId = this.#tripId;
+            const connected = this.#connectionState === "connected";
+            const proceed = this.#emitClockTimerEvent("clear", {
+                tripId: Number.isInteger(oldTripId) ? oldTripId : undefined
+            }, {
+                cancelable: !connected
+            });
+
+            if (!proceed) {
+                return {
+                    synced: false,
+                    connected:
+                        this.#connectionState ===
+                            "connected",
+                    tripId: Number.isInteger(oldTripId) ? oldTripId : undefined,
+                    intervalId: undefined,
+                    canceled: true
+                };
+            }
+
             let synced = false;
 
             if (this.#hasStartProperties()) {
@@ -2281,34 +2461,14 @@
             const resultTripId = this.#tripId ?? oldTripId;
             this.#tripId = undefined;
             this.#pendingIntervalRecord = undefined;
-            this.#tripTotals = undefined;
             return {
                 synced,
+                connected:
+                    this.#connectionState ===
+                        "connected",
                 tripId: Number.isInteger(resultTripId) ? resultTripId : undefined,
                 intervalId: undefined
             };
-        }
-
-        async reset() {
-            const localResult = this.#resetLocal();
-            if (!localResult) {
-                throw new Error("The trip could not be reset.");
-            }
-            this.#pendingIntervalRecord = undefined;
-
-            const synced = await this.#protectedSync(async () => {
-                const tripId = await this.#ensureTripPersisted();
-                await this.#apiRequest("trips", {
-                    method: "PATCH",
-                    csrf: true,
-                    body: { tripId, action: "reset", ...this.#tripPersistencePayload() }
-                });
-                for (const record of this.#intervalRecords()) {
-                    this.#stripIntervalDatabaseId(record);
-                }
-                await this.#syncIntervals();
-            });
-            return this.#mutationResult(synced);
         }
 
         async startInterval(type, length, attributes) {
@@ -2335,7 +2495,15 @@
                 await this.#ensureTripPersisted();
                 await this.#syncIntervals();
             });
-            return this.#mutationResult(synced, record);
+            const result = this.#mutationResult(synced, record);
+            this.#checkGoalMisses(this.#getCurrentTimelineTime());
+            this.#emitClockTimerEvent("intervalStart", {
+                ...result,
+                type: record.type,
+                startTime: record.startDate?.toISOString?.(),
+                endTime: record.endDate?.toISOString?.()
+            });
+            return result;
         }
 
         async endInterval() {
@@ -2378,7 +2546,15 @@
                 await this.#ensureTripPersisted();
                 await this.#syncIntervals();
             });
-            return this.#mutationResult(synced, record);
+            const result = this.#mutationResult(synced, record);
+            this.#checkGoalMisses(this.#getCurrentTimelineTime());
+            this.#emitClockTimerEvent("intervalEnd", {
+                ...result,
+                type: record?.type,
+                startTime: record?.startDate?.toISOString?.(),
+                endTime: record?.clockTimerPersistenceEnd ?? record?.endDate?.toISOString?.()
+            });
+            return result;
         }
 
         get state() {
@@ -3822,10 +3998,6 @@
                             this.#overwrite(operation.args);
                             break;
 
-                        case "reset":
-                            this.#resetLocal();
-                            break;
-
                         case "replaceWithNext":
                             this.#replaceWithNext();
                             break;
@@ -4159,48 +4331,11 @@
             this.#stopTickTimer();
             this.#scheduleNextTick();
 
-            if (!this.#restoringStartState) {
-                this.#originalStartArguments = {
-                    ...suppliedStartArguments
-                };
-
-                this.#startResetState = {
-                    args: {
-                        tripId:
-                            this.#tripId,
-                        standardTime:
-                            this.#standardTime,
-                        creationTime:
-                            this.#creationTime,
-                        startTime:
-                            this.#formatTimelineTime(
-                                startTimeMilliseconds
-                            ),
-                        scheduledStart:
-                            this.#scheduledStart
-                    },
-                    startedAtEpoch:
-                        this.#startedAtEpoch,
-                    tickAlignmentMilliseconds:
-                        this.#tickAlignmentMilliseconds,
-                    tripGoal:
-                        this.getAttribute(
-                            "trip-goal"
-                        ),
-                    totalGoal:
-                        this.getAttribute(
-                            "total-goal"
-                        ),
-                    insertedRanges:
-                        this.#cloneInsertedRecords(
-                            this.#insertedRanges
-                        ),
-                    openEndedRangeId:
-                        this.#openEndedRange?.id,
-                    openEndedLastTick:
-                        this.#openEndedLastTick
-                };
-            }
+            this.#originalStartArguments = {
+                ...suppliedStartArguments
+            };
+            this.#tripGoalMissedState = false;
+            this.#totalGoalMissedState = false;
 
             return new Date();
         }
@@ -4230,94 +4365,6 @@
                             }
                         }))
             }));
-        }
-
-        #resetLocal() {
-            if (
-                !this.#startResetState
-            ) {
-                return false;
-            }
-
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#queueAsyncOperation({
-                    type: "reset"
-                });
-
-                return new Date();
-            }
-
-            const baseline =
-                this.#startResetState;
-
-            this.#insertedRanges =
-                this.#cloneInsertedRecords(
-                    baseline.insertedRanges
-                );
-
-            this.#openEndedRange =
-                baseline.openEndedRangeId
-                    ? this.#insertedRanges.find(
-                        record =>
-                            record.id ===
-                                baseline.openEndedRangeId
-                    )
-                    : undefined;
-
-            this.#openEndedLastTick =
-                baseline.openEndedLastTick;
-
-            if (baseline.tripGoal === null) {
-                this.removeAttribute(
-                    "trip-goal"
-                );
-            }
-            else {
-                this.setAttribute(
-                    "trip-goal",
-                    baseline.tripGoal
-                );
-            }
-
-            if (baseline.totalGoal === null) {
-                this.removeAttribute(
-                    "total-goal"
-                );
-            }
-            else {
-                this.setAttribute(
-                    "total-goal",
-                    baseline.totalGoal
-                );
-            }
-
-            this.#restoringStartState =
-                true;
-
-            try {
-                this.#startLocal({
-                    ...baseline.args
-                });
-
-                this.#startedAtEpoch =
-                    baseline.startedAtEpoch;
-
-                this.#tickAlignmentMilliseconds =
-                    baseline.tickAlignmentMilliseconds;
-
-                this.#stopTickTimer();
-                this.#tick();
-                this.#scheduleNextTick();
-            }
-            finally {
-                this.#restoringStartState =
-                    false;
-            }
-
-            return new Date();
         }
 
         #typeExtendsCalculatedEndTime(type) {
@@ -6554,6 +6601,15 @@
             replacement.clockTimerIntervalLatency =
                 record.id;
 
+            this.#emitClockTimerEvent("latencyStart", {
+                intervalId: Number.isInteger(Number(record.intervalId))
+                    ? Number(record.intervalId)
+                    : undefined,
+                intervalType: record.type,
+                intervalEndTime: this.#timelineToISO(end),
+                latencyStartTime: this.#timelineToISO(now)
+            });
+
             return true;
         }
 
@@ -6591,6 +6647,8 @@
             }
 
             this.#updateIntervalLatency(now);
+
+            this.#checkGoalMisses(now);
 
             const current =
                 this.#getCurrentReplaceableRange(now);
@@ -7454,13 +7512,8 @@
             this.#standardDuration =
                 undefined;
 
-            if (!this.#restoringStartState) {
-                this.#originalStartArguments =
-                    undefined;
-
-                this.#startResetState =
-                    undefined;
-            }
+            this.#originalStartArguments =
+                undefined;
 
             this.#startedAtEpoch =
                 undefined;
@@ -7496,6 +7549,9 @@
 
             this.#started =
                 false;
+
+            this.#tripGoalMissedState = false;
+            this.#totalGoalMissedState = false;
 
             this.#tickAlignmentMilliseconds =
                 undefined;
@@ -14873,6 +14929,8 @@
                 stateChangeVisual,
                 this.#getStateChangeAnimationDuration()
             );
+
+            this.#checkGoalMisses(now);
         }
 
         #getRangeAnimationDuration() {
@@ -17941,6 +17999,68 @@
                     ),
                 adjustedEndTime
             };
+        }
+
+        #getTotalGoalAdjustedTimeElapsed() {
+            const totalGoal = this.#getTotalGoal();
+            const totals = this.#tripTotals;
+
+            if (!Number.isFinite(totalGoal) || totalGoal <= 0 || !totals ||
+                !Number.isFinite(totals.standardTimeMilliseconds) ||
+                !Number.isFinite(totals.actualTimeMilliseconds) ||
+                !Number.isFinite(this.#standardDuration) || this.#standardDuration <= 0) {
+                return undefined;
+            }
+
+            const adjusted =
+                (totals.standardTimeMilliseconds + this.#standardDuration) /
+                    totalGoal - totals.actualTimeMilliseconds;
+
+            return Number.isFinite(adjusted) && adjusted > 0 ? adjusted : undefined;
+        }
+
+        #checkGoalMisses(now) {
+            if (!this.#started || !Number.isFinite(now)) {
+                this.#tripGoalMissedState = false;
+                this.#totalGoalMissedState = false;
+                return;
+            }
+
+            const tripGoal = this.#getTripGoal();
+            const tripAdjusted = Number.isFinite(tripGoal) && tripGoal > 0 &&
+                Number.isFinite(this.#standardDuration)
+                    ? this.#standardDuration / tripGoal
+                    : undefined;
+            const tripDeadline = Number.isFinite(tripAdjusted)
+                ? this.#calculateAdjustedEndTimeline(tripAdjusted)
+                : undefined;
+            const tripMissed = Number.isFinite(tripDeadline) && now > tripDeadline;
+
+            if (tripMissed && !this.#tripGoalMissedState) {
+                this.#emitClockTimerEvent("tripGoalMissed", {
+                    goal: tripGoal,
+                    deadline: this.#timelineToISO(tripDeadline),
+                    currentTime: this.#timelineToISO(now)
+                });
+            }
+            this.#tripGoalMissedState = tripMissed;
+
+            const totalGoal = this.#getTotalGoal();
+            const totalAdjusted = this.#getTotalGoalAdjustedTimeElapsed();
+            const totalDeadline = Number.isFinite(totalAdjusted)
+                ? this.#calculateAdjustedEndTimeline(totalAdjusted)
+                : undefined;
+            const totalMissed = this.hasAttribute("total-goal") &&
+                Number.isFinite(totalDeadline) && now > totalDeadline;
+
+            if (totalMissed && !this.#totalGoalMissedState) {
+                this.#emitClockTimerEvent("totalGoalMissed", {
+                    goal: totalGoal,
+                    deadline: this.#timelineToISO(totalDeadline),
+                    currentTime: this.#timelineToISO(now)
+                });
+            }
+            this.#totalGoalMissedState = totalMissed;
         }
 
         #calculateTripGoalRequirements() {

@@ -148,43 +148,4 @@ if ($action === 'stop') {
     json_response(['tripId' => $tripId]);
 }
 
-if ($action === 'reset') {
-    $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
-    $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
-
-    if ($endTime <= $startTime) {
-        api_error('endTime must be later than startTime.', 422, 'invalid_argument');
-    }
-
-    audited_write(
-        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds): void {
-            require_trip_owner($pdo, $tripId);
-
-            $deleteAttributes = $pdo->prepare(
-                'DELETE a FROM attributes a INNER JOIN intervals i ON i.id = a.interval_id WHERE i.trip_id = :trip_id'
-            );
-            $deleteAttributes->execute([':trip_id' => $tripId]);
-
-            $deleteIntervals = $pdo->prepare('DELETE FROM intervals WHERE trip_id = :trip_id');
-            $deleteIntervals->execute([':trip_id' => $tripId]);
-
-            $updateTrip = $pdo->prepare(
-                'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                . 'standard_time_ms = :standard_time_ms '
-                . 'WHERE id = :trip_id AND user_id = :user_id'
-            );
-            $updateTrip->execute([
-                ':start_time' => $startTime,
-                ':end_time' => $endTime,
-                ':standard_time_ms' => $standardTimeMilliseconds,
-                ':trip_id' => $tripId,
-                ':user_id' => authenticated_user_id(),
-            ]);
-        }
-    );
-
-    json_response(['tripId' => $tripId]);
-}
-
 api_error('Unknown trip action.', 422, 'invalid_action');
