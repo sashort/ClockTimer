@@ -8,18 +8,36 @@ $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 if ($method === 'GET') {
     $userId = authenticated_user_id();
 
-    $startInput = $_GET['startTime'] ?? null;
-    $endInput = $_GET['endTime'] ?? null;
-
-    if (!is_string($startInput) || !is_string($endInput)) {
-        api_error('startTime and endTime are required.', 422, 'invalid_argument');
+    $result = $_GET['result'] ?? 'totals';
+    if (!is_string($result)) {
+        api_error('result must be totals, list, or count.', 422, 'invalid_argument');
     }
 
-    $startTime = normalize_datetime($startInput, 'startTime');
-    $endTime = normalize_datetime($endInput, 'endTime');
+    $result = strtolower(trim($result));
+    if (!in_array($result, ['totals', 'list', 'count'], true)) {
+        api_error('result must be totals, list, or count.', 422, 'invalid_argument');
+    }
 
-    if ($endTime <= $startTime) {
-        api_error('endTime must be later than startTime.', 422, 'invalid_argument');
+    $minInput = $_GET['minDateTime'] ?? $_GET['startTime'] ?? null;
+    $maxInput = $_GET['maxDateTime'] ?? $_GET['endTime'] ?? null;
+
+    if (!is_string($minInput) || !is_string($maxInput)) {
+        api_error(
+            'minDateTime and maxDateTime are required.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $minDateTime = normalize_datetime($minInput, 'minDateTime');
+    $maxDateTime = normalize_datetime($maxInput, 'maxDateTime');
+
+    if ($maxDateTime < $minDateTime) {
+        api_error(
+            'maxDateTime must be greater than or equal to minDateTime.',
+            422,
+            'invalid_argument'
+        );
     }
 
     $excludeTripId = null;
@@ -30,27 +48,100 @@ if ($method === 'GET') {
         );
     }
 
-    $sql =
-        'SELECT COUNT(*) AS trip_count, '
-        . 'COALESCE(SUM(standard_time_ms), 0) AS standard_time_ms, '
-        . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, start_time, end_time)), 0) AS actual_time_us '
-        . 'FROM trips '
-        . 'WHERE user_id = :user_id '
-        . 'AND start_time >= :start_time '
-        . 'AND start_time <= :end_time';
+    $where =
+        'user_id = :user_id '
+        . 'AND start_time >= :min_date_time '
+        . 'AND start_time <= :max_date_time';
 
     $parameters = [
         ':user_id' => $userId,
-        ':start_time' => $startTime,
-        ':end_time' => $endTime,
+        ':min_date_time' => $minDateTime,
+        ':max_date_time' => $maxDateTime,
     ];
 
     if ($excludeTripId !== null) {
-        $sql .= ' AND id <> :exclude_trip_id';
+        $where .= ' AND id <> :exclude_trip_id';
         $parameters[':exclude_trip_id'] = $excludeTripId;
     }
 
-    $statement = db()->prepare($sql);
+    if ($result === 'count') {
+        $statement = db()->prepare(
+            'SELECT COUNT(*) AS trip_count FROM trips WHERE ' . $where
+        );
+        $statement->execute($parameters);
+        $row = $statement->fetch();
+
+        json_response([
+            'tripCount' => (int) ($row['trip_count'] ?? 0),
+        ]);
+    }
+
+    if ($result === 'list') {
+        $limit = 100;
+        if (isset($_GET['limit']) && $_GET['limit'] !== '') {
+            $limitInput = $_GET['limit'];
+            if (
+                !is_string($limitInput) ||
+                !preg_match('/^[1-9]\d*$/', $limitInput)
+            ) {
+                api_error('limit must be a positive integer.', 422, 'invalid_argument');
+            }
+
+            $limit = (int) $limitInput;
+            if ($limit > 1000) {
+                api_error('limit must not exceed 1000.', 422, 'invalid_argument');
+            }
+        }
+
+        $offset = 0;
+        if (isset($_GET['offset']) && $_GET['offset'] !== '') {
+            $offsetInput = $_GET['offset'];
+            if (
+                !is_string($offsetInput) ||
+                !preg_match('/^\d+$/', $offsetInput)
+            ) {
+                api_error('offset must be a non-negative integer.', 422, 'invalid_argument');
+            }
+
+            $offset = (int) $offsetInput;
+        }
+
+        $statement = db()->prepare(
+            'SELECT id, start_time, end_time, standard_time_ms, '
+            . 'TIMESTAMPDIFF(MICROSECOND, start_time, end_time) AS actual_time_us '
+            . 'FROM trips WHERE ' . $where . ' '
+            . 'ORDER BY start_time ASC, id ASC '
+            . 'LIMIT ' . $limit . ' OFFSET ' . $offset
+        );
+        $statement->execute($parameters);
+
+        $trips = [];
+        while ($row = $statement->fetch()) {
+            $actualMicroseconds = (int) ($row['actual_time_us'] ?? 0);
+
+            $trips[] = [
+                'id' => (int) $row['id'],
+                'startTime' => (string) $row['start_time'],
+                'endTime' => (string) $row['end_time'],
+                'standardTimeMilliseconds' => (int) $row['standard_time_ms'],
+                'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
+            ];
+        }
+
+        json_response([
+            'trips' => $trips,
+            'limit' => $limit,
+            'offset' => $offset,
+            'returnedCount' => count($trips),
+        ]);
+    }
+
+    $statement = db()->prepare(
+        'SELECT COUNT(*) AS trip_count, '
+        . 'COALESCE(SUM(standard_time_ms), 0) AS standard_time_ms, '
+        . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, start_time, end_time)), 0) AS actual_time_us '
+        . 'FROM trips WHERE ' . $where
+    );
     $statement->execute($parameters);
     $row = $statement->fetch();
 
