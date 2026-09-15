@@ -178,6 +178,8 @@
         #showTolerance =
             true;
 
+        #intervalElapsedBehavior =
+            "latency";
 
         #toleranceTransitionState;
 
@@ -1482,6 +1484,7 @@
                     "overtime",
                     "earlystart",
                     "latency",
+                    "end-buffer-extension",
                     "elapsed",
                     "discrepancy"
                 ]);
@@ -1803,6 +1806,69 @@
             }
 
             this.#transitionShowTolerance();
+        }
+
+        #normalizeIntervalElapsedBehavior(
+            value,
+            fallback = undefined
+        ) {
+            if (typeof value !== "string") {
+                return fallback;
+            }
+
+            const normalized =
+                value.trim().toLowerCase();
+
+            return (
+                normalized === "latency" ||
+                normalized === "extend"
+            )
+                ? normalized
+                : fallback;
+        }
+
+        get intervalElapsedBehavior() {
+            return this.#intervalElapsedBehavior;
+        }
+
+        set intervalElapsedBehavior(value) {
+            if (typeof value !== "string") {
+                throw new TypeError(
+                    "intervalElapsedBehavior must be a string."
+                );
+            }
+
+            const normalized =
+                this.#normalizeIntervalElapsedBehavior(
+                    value
+                );
+
+            if (!normalized) {
+                throw new RangeError(
+                    "intervalElapsedBehavior must be latency or extend."
+                );
+            }
+
+            if (
+                normalized ===
+                    this.#intervalElapsedBehavior
+            ) {
+                return;
+            }
+
+            const previousValue =
+                this.#intervalElapsedBehavior;
+
+            this.#intervalElapsedBehavior =
+                normalized;
+
+            this.#emitClockTimerEvent(
+                "intervalElapsedBehaviorChange",
+                {
+                    previousValue,
+                    value: normalized
+                }
+            );
         }
 
         #setConnected(csrfToken, detail = {}) {
@@ -3396,9 +3462,22 @@
                 (current?.source === "inserted"
                     ? current.record
                     : undefined);
+            const elapsedBoundary =
+                Number(
+                    record?.clockTimerElapsedBoundaryTimeline
+                );
+
             const scheduledEnd =
                 record
-                    ? this.#getIntervalRecordEnd(record)
+                    ? (
+                        Number.isFinite(
+                            elapsedBoundary
+                        )
+                            ? elapsedBoundary
+                            : this.#getIntervalRecordEnd(
+                                record
+                            )
+                    )
                     : undefined;
             const endedEarly =
                 Number.isFinite(scheduledEnd) &&
@@ -6809,6 +6888,7 @@
                 "overtime",
                 "earlystart",
                 "latency",
+                "end-buffer-extension",
                 "elapsed",
                 "remaining",
                 "wave",
@@ -8626,7 +8706,7 @@
             );
         }
 
-        #getPendingIntervalLatencyEnd(
+        #getPendingIntervalElapsedBoundary(
             record
         ) {
             const endBuffer =
@@ -8658,11 +8738,125 @@
             );
         }
 
-        #updateIntervalLatency(now) {
-            const record =
-                this.#pendingIntervalRecord;
+        #getIntervalElapsedBoundaryType(
+            record
+        ) {
+            return this.#getIntervalBufferRecord(
+                record,
+                "end"
+            )
+                ? "end-buffer"
+                : "interval";
+        }
 
-            if (!record || !Number.isFinite(now)) {
+        #dispatchIntervalElapsed(
+            record,
+            boundary,
+            now
+        ) {
+            const defaultBehavior =
+                this.#intervalElapsedBehavior;
+
+            let behavior =
+                defaultBehavior;
+
+            const detail = {
+                connected:
+                    this.#connectionState ===
+                        "connected",
+                intervalId:
+                    Number.isInteger(
+                        Number(
+                            record?.intervalId
+                        )
+                    )
+                        ? Number(
+                            record.intervalId
+                        )
+                        : undefined,
+                intervalType:
+                    record?.type,
+                boundaryType:
+                    this.#getIntervalElapsedBoundaryType(
+                        record
+                    ),
+                boundaryTime:
+                    this.#timelineToISO(
+                        boundary
+                    ),
+                intervalEndTime:
+                    this.#timelineToISO(
+                        this.#getIntervalRecordEnd(
+                            record
+                        )
+                    ),
+                currentTime:
+                    this.#timelineToISO(
+                        now
+                    ),
+                defaultBehavior
+            };
+
+            Object.defineProperty(
+                detail,
+                "behavior",
+                {
+                    enumerable: true,
+                    configurable: false,
+                    get: () => behavior,
+                    set: value => {
+                        const normalized =
+                            this.#normalizeIntervalElapsedBehavior(
+                                value
+                            );
+
+                        if (!normalized) {
+                            throw new RangeError(
+                                "intervalElapsed behavior must be latency or extend."
+                            );
+                        }
+
+                        behavior =
+                            normalized;
+                    }
+                }
+            );
+
+            if (this.#eventsReady) {
+                this.dispatchEvent(
+                    new CustomEvent(
+                        "intervalElapsed",
+                        {
+                            detail,
+                            bubbles: true,
+                            composed: true
+                        }
+                    )
+                );
+            }
+
+            return {
+                defaultBehavior,
+                behavior,
+                overridden:
+                    behavior !==
+                        defaultBehavior,
+                boundaryType:
+                    detail.boundaryType
+            };
+        }
+
+        #startIntervalExtension(
+            record,
+            boundary,
+            now,
+            decision
+        ) {
+            if (
+                !record ||
+                !Number.isFinite(boundary) ||
+                !Number.isFinite(now)
+            ) {
                 return false;
             }
 
@@ -8671,17 +8865,350 @@
                     record
                 );
 
-            const latencyEnd =
-                this.#getPendingIntervalLatencyEnd(
-                    record
+            const endBuffer =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "end"
                 );
 
+            const extensionTarget =
+                endBuffer
+                    ? "end-buffer"
+                    : "interval";
+
+            record.clockTimerExtensionOriginalEndTimeline =
+                intervalEnd;
+
+            record.clockTimerExtensionBoundaryTimeline =
+                boundary;
+
+            record.clockTimerExtensionTarget =
+                extensionTarget;
+
+            let extensionRecord =
+                record;
+
+            if (endBuffer) {
+                const inserted =
+                    this.#insert({
+                        type:
+                            "end-buffer-extension",
+                        startTime:
+                            this.#formatTimelineTime(
+                                boundary
+                            ),
+                        otherAttributes: {}
+                    });
+
+                if (!inserted) {
+                    return false;
+                }
+
+                extensionRecord =
+                    this.#insertedRanges.find(
+                        candidate =>
+                            candidate.id ===
+                                inserted.clockTimerInserted
+                    );
+
+                if (!extensionRecord) {
+                    return false;
+                }
+
+                extensionRecord.clockTimerGeneratedEndBufferExtension =
+                    true;
+
+                extensionRecord.clockTimerIntervalExtensionFor =
+                    record.id;
+
+                record.clockTimerExtensionRecordId =
+                    extensionRecord.id;
+            }
+            else {
+                record.clockTimerExtensionOriginalEndDate =
+                    record.endDate instanceof Date
+                        ? new Date(
+                            record.endDate.getTime()
+                        )
+                        : undefined;
+
+                record.clockTimerExtensionOriginalRangeLength =
+                    record.rangeLength;
+
+                record.openEnded =
+                    true;
+
+                record.endDate =
+                    undefined;
+
+                record.rangeLength =
+                    undefined;
+
+                this.#openEndedRange =
+                    record;
+
+                this.#openEndedLastTick =
+                    boundary;
+
+                this.#syncOpenEndedRangeElements(
+                    record,
+                    boundary
+                );
+            }
+
+            record.clockTimerExtensionActive =
+                true;
+
+            if (now > boundary) {
+                this.#updateOpenEndedRangeTo(
+                    now
+                );
+            }
+
+            this.#emitClockTimerEvent(
+                "intervalExtended",
+                {
+                    intervalId:
+                        Number.isInteger(
+                            Number(
+                                record.intervalId
+                            )
+                        )
+                            ? Number(
+                                record.intervalId
+                            )
+                            : undefined,
+                    intervalType:
+                        record.type,
+                    boundaryType:
+                        decision.boundaryType,
+                    boundaryTime:
+                        this.#timelineToISO(
+                            boundary
+                        ),
+                    extensionTarget,
+                    extensionType:
+                        extensionTarget ===
+                            "end-buffer"
+                            ? "end-buffer-extension"
+                            : record.type,
+                    extensionStartTime:
+                        this.#timelineToISO(
+                            boundary
+                        ),
+                    currentTime:
+                        this.#timelineToISO(
+                            now
+                        ),
+                    defaultBehavior:
+                        decision.defaultBehavior,
+                    behavior:
+                        "extend",
+                    overridden:
+                        decision.overridden,
+                    calculatedEndTime:
+                        this.#timelineToISO(
+                            this.#calculatedEndTime
+                        )
+                }
+            );
+
+            return true;
+        }
+
+        #finishIntervalExtension(
+            record,
+            now
+        ) {
             if (
-                !Number.isFinite(latencyEnd) ||
-                now < latencyEnd
+                !record?.clockTimerExtensionActive ||
+                !Number.isFinite(now)
             ) {
                 return false;
             }
+
+            const extensionTarget =
+                record.clockTimerExtensionTarget;
+
+            const extensionRecord =
+                extensionTarget ===
+                    "end-buffer"
+                    ? this.#insertedRanges.find(
+                        candidate =>
+                            candidate.id ===
+                                record.clockTimerExtensionRecordId
+                    )
+                    : record;
+
+            if (
+                !extensionRecord ||
+                this.#openEndedRange !==
+                    extensionRecord
+            ) {
+                return false;
+            }
+
+            this.#updateOpenEndedRangeTo(
+                now
+            );
+
+            const extensionStart =
+                this.#dateToTimelineTime(
+                    extensionRecord.startDate
+                );
+
+            if (!Number.isFinite(extensionStart)) {
+                return false;
+            }
+
+            extensionRecord.openEnded =
+                false;
+
+            extensionRecord.rangeLength =
+                Math.max(
+                    0,
+                    now - extensionStart
+                );
+
+            extensionRecord.endDate =
+                new Date(
+                    extensionRecord.startDate.getTime() +
+                        extensionRecord.rangeLength
+                );
+
+            this.#openEndedRange =
+                undefined;
+
+            this.#openEndedLastTick =
+                undefined;
+
+            record.clockTimerExtensionActive =
+                false;
+
+            record.clockTimerExplicitlyEnded =
+                true;
+
+            record.clockTimerExplicitEndTimeline =
+                extensionTarget ===
+                    "interval"
+                    ? now
+                    : record.clockTimerExtensionOriginalEndTimeline;
+
+            if (extensionTarget === "interval") {
+                record.clockTimerPersistenceEnd =
+                    this.#timelineToISO(
+                        now
+                    );
+            }
+
+            this.#pendingIntervalRecord =
+                undefined;
+
+            this.#renderAllInsertedRanges();
+
+            return true;
+        }
+
+        #updateIntervalElapsed(now) {
+            const record =
+                this.#pendingIntervalRecord;
+
+            if (!record || !Number.isFinite(now)) {
+                return false;
+            }
+
+            let boundary =
+                Number(
+                    record.clockTimerElapsedBoundaryTimeline
+                );
+
+            if (!Number.isFinite(boundary)) {
+                boundary =
+                    this.#getPendingIntervalElapsedBoundary(
+                        record
+                    );
+            }
+
+            if (
+                !Number.isFinite(boundary) ||
+                now < boundary
+            ) {
+                return false;
+            }
+
+            let decision;
+
+            if (
+                record.clockTimerElapsedDispatched !==
+                    true
+            ) {
+                record.clockTimerElapsedBoundaryTimeline =
+                    boundary;
+
+                decision =
+                    this.#dispatchIntervalElapsed(
+                        record,
+                        boundary,
+                        now
+                    );
+
+                record.clockTimerElapsedDispatched =
+                    true;
+                record.clockTimerElapsedDefaultBehavior =
+                    decision.defaultBehavior;
+                record.clockTimerElapsedBehavior =
+                    decision.behavior;
+                record.clockTimerElapsedOverridden =
+                    decision.overridden;
+                record.clockTimerElapsedBoundaryType =
+                    decision.boundaryType;
+            }
+            else {
+                decision = {
+                    defaultBehavior:
+                        record.clockTimerElapsedDefaultBehavior ??
+                            this.#intervalElapsedBehavior,
+                    behavior:
+                        record.clockTimerElapsedBehavior ??
+                            this.#intervalElapsedBehavior,
+                    overridden:
+                        record.clockTimerElapsedOverridden ===
+                            true,
+                    boundaryType:
+                        record.clockTimerElapsedBoundaryType ??
+                            this.#getIntervalElapsedBoundaryType(
+                                record
+                            )
+                };
+            }
+
+            if (
+                decision.behavior ===
+                    "extend"
+            ) {
+                if (
+                    record.clockTimerExtensionActive ===
+                        true
+                ) {
+                    return true;
+                }
+
+                return this.#startIntervalExtension(
+                    record,
+                    boundary,
+                    now,
+                    decision
+                );
+            }
+
+            const intervalEnd =
+                Number.isFinite(
+                    record.clockTimerExtensionOriginalEndTimeline
+                )
+                    ? record.clockTimerExtensionOriginalEndTimeline
+                    : this.#getIntervalRecordEnd(
+                        record
+                    );
 
             const current =
                 this.#getCurrentReplaceableRange(
@@ -8720,22 +9247,47 @@
             replacement.clockTimerIntervalLatency =
                 record.id;
 
-            this.#emitClockTimerEvent("latencyStart", {
-                intervalId: Number.isInteger(Number(record.intervalId))
-                    ? Number(record.intervalId)
-                    : undefined,
-                intervalType: record.type,
-                intervalEndTime:
-                    this.#timelineToISO(
-                        intervalEnd
-                    ),
-                latencyEligibleTime:
-                    this.#timelineToISO(
-                        latencyEnd
-                    ),
-                latencyStartTime:
-                    this.#timelineToISO(now)
-            });
+            this.#emitClockTimerEvent(
+                "latencyStart",
+                {
+                    intervalId:
+                        Number.isInteger(
+                            Number(
+                                record.intervalId
+                            )
+                        )
+                            ? Number(
+                                record.intervalId
+                            )
+                            : undefined,
+                    intervalType:
+                        record.type,
+                    boundaryType:
+                        decision.boundaryType,
+                    boundaryTime:
+                        this.#timelineToISO(
+                            boundary
+                        ),
+                    intervalEndTime:
+                        this.#timelineToISO(
+                            intervalEnd
+                        ),
+                    latencyEligibleTime:
+                        this.#timelineToISO(
+                            boundary
+                        ),
+                    latencyStartTime:
+                        this.#timelineToISO(
+                            now
+                        ),
+                    defaultBehavior:
+                        decision.defaultBehavior,
+                    behavior:
+                        "latency",
+                    overridden:
+                        decision.overridden
+                }
+            );
 
             return true;
         }
@@ -8746,6 +9298,16 @@
 
             if (!record || !Number.isFinite(now)) {
                 return false;
+            }
+
+            if (
+                record.clockTimerExtensionActive ===
+                    true
+            ) {
+                return this.#finishIntervalExtension(
+                    record,
+                    now
+                );
             }
 
             const end =
@@ -8773,7 +9335,17 @@
                 return true;
             }
 
-            this.#updateIntervalLatency(now);
+            this.#updateIntervalElapsed(now);
+
+            if (
+                record.clockTimerExtensionActive ===
+                    true
+            ) {
+                return this.#finishIntervalExtension(
+                    record,
+                    now
+                );
+            }
 
             this.#checkGoalMisses(now);
 
@@ -23122,20 +23694,18 @@
             }
         }
 
-        #updateOpenEndedRange(
-            nowDate
+        #updateOpenEndedRangeTo(
+            now
         ) {
             const record =
                 this.#openEndedRange;
 
-            if (!record) {
+            if (
+                !record ||
+                !Number.isFinite(now)
+            ) {
                 return;
             }
-
-            const now =
-                this.#dateToTimelineTime(
-                    nowDate
-                );
 
             const start =
                 this.#dateToTimelineTime(
@@ -23180,6 +23750,16 @@
                 this.#started
                     ? this.#getCurrentTimelineTime()
                     : now
+            );
+        }
+
+        #updateOpenEndedRange(
+            nowDate
+        ) {
+            this.#updateOpenEndedRangeTo(
+                this.#dateToTimelineTime(
+                    nowDate
+                )
             );
         }
 
@@ -25240,7 +25820,7 @@
                 this.#reconcilePlannedRanges();
             }
 
-            this.#updateIntervalLatency(now);
+            this.#updateIntervalElapsed(now);
 
             this.#processElapsedOverwriteRanges(
                 now
