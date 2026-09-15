@@ -26554,8 +26554,8 @@
             return this.getAttribute(
                 "military-time"
             ) === "false"
-                ? "h:mm:ss AM/PM"
-                : "HHmmss";
+                ? "h:mm AM/PM"
+                : "HHmm";
         }
 
         #normalizeFormat() {
