@@ -140,6 +140,11 @@
         #percentMode =
             "auto";
 
+        #renderedTimeMode =
+            "remaining";
+
+        #renderedTime;
+
         #renderedPercentGoalSourceOverride;
 
         #percentModeChangeContext;
@@ -3278,6 +3283,82 @@
 
         get renderedPercentGoal() {
             return this.#renderedPercentGoal;
+        }
+
+        get renderedTimeMode() {
+            return this.#renderedTimeMode;
+        }
+
+        set renderedTimeMode(value) {
+            if (typeof value !== "string") {
+                throw new TypeError(
+                    "renderedTimeMode must be a string."
+                );
+            }
+
+            const normalized =
+                value.trim().toLowerCase();
+
+            if (
+                !new Set([
+                    "remaining",
+                    "elapsed",
+                    "calculated-end"
+                ]).has(normalized)
+            ) {
+                throw new RangeError(
+                    "renderedTimeMode must be remaining, elapsed, or calculated-end."
+                );
+            }
+
+            if (
+                normalized ===
+                    this.#renderedTimeMode
+            ) {
+                return;
+            }
+
+            const previousValue =
+                this.#renderedTimeMode;
+
+            const now =
+                new Date();
+
+            const renderedTime =
+                this.#calculateRenderedTime(
+                    now,
+                    normalized
+                );
+
+            this.#renderedTimeMode =
+                normalized;
+
+            this.#renderedTime =
+                renderedTime;
+
+            this.#emitClockTimerEvent(
+                "renderedTimeModeChange",
+                {
+                    previousValue,
+                    value: normalized,
+                    userInitiated: true,
+                    renderedTime
+                }
+            );
+
+            if (
+                this.#timeElement &&
+                renderedTime !== undefined
+            ) {
+                this.#timeElement.textContent =
+                    renderedTime;
+
+                this.#scheduleFontSizing();
+            }
+        }
+
+        get renderedTime() {
+            return this.#renderedTime;
         }
 
         get nonProduction() {
@@ -23961,6 +24042,343 @@
             );
         }
 
+        #formatClockDisplayTime(
+            value
+        ) {
+            if (
+                !(value instanceof Date) ||
+                Number.isNaN(
+                    value.getTime()
+                )
+            ) {
+                return undefined;
+            }
+
+            const military =
+                this.getAttribute(
+                    "military-time"
+                ) !== "false";
+
+            const format =
+                this.getAttribute(
+                    "time-format"
+                ) ??
+                this.#getDefaultFormat();
+
+            let result =
+                TemporalFormat.formatTime(
+                    value,
+                    format,
+                    military
+                );
+
+            if (
+                result === undefined ||
+                military
+            ) {
+                return result;
+            }
+
+            const pm =
+                value.getHours() >= 12;
+
+            const suffixes = {
+                "a/p": pm ? "p" : "a",
+                "A/P": pm ? "P" : "A",
+                "AM/PM": pm ? "PM" : "AM",
+                "A.M./P.M.": pm ? "P.M." : "A.M.",
+                "am/pm": pm ? "pm" : "am",
+                "a.m./p.m.": pm ? "p.m." : "a.m."
+            };
+
+            return result.replace(
+                /(A\.M\.\/P\.M\.|a\.m\.\/p\.m\.|AM\/PM|am\/pm|A\/P|a\/p)/,
+                token => suffixes[token]
+            );
+        }
+
+        #getClosedIntervalSegments() {
+            const segments = [];
+
+            const openInsertedId =
+                this.#openEndedRange?.id;
+
+            const openOverwriteId =
+                this.#openOverwriteRange?.id;
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+            ) {
+                if (
+                    range.timeRangeExiting === true ||
+                    !this.#isIntervalType(
+                        range.getAttribute(
+                            "type"
+                        )
+                    ) ||
+                    (
+                        openInsertedId !== undefined &&
+                        range.clockTimerInserted ===
+                            openInsertedId
+                    ) ||
+                    (
+                        openOverwriteId !== undefined &&
+                        range.clockTimerOverwrite ===
+                            openOverwriteId
+                    )
+                ) {
+                    continue;
+                }
+
+                const start =
+                    Number(
+                        range.clockTimerStart
+                    );
+
+                const end =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(end) ||
+                    end <= start
+                ) {
+                    continue;
+                }
+
+                segments.push([
+                    start,
+                    end
+                ]);
+            }
+
+            segments.sort(
+                (left, right) =>
+                    left[0] - right[0] ||
+                    left[1] - right[1]
+            );
+
+            const merged = [];
+
+            for (const segment of segments) {
+                const previous =
+                    merged[
+                        merged.length - 1
+                    ];
+
+                if (
+                    !previous ||
+                    segment[0] > previous[1]
+                ) {
+                    merged.push([
+                        ...segment
+                    ]);
+                    continue;
+                }
+
+                previous[1] =
+                    Math.max(
+                        previous[1],
+                        segment[1]
+                    );
+            }
+
+            return merged;
+        }
+
+        #getClosedIntervalDuration(
+            start,
+            end
+        ) {
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                return 0;
+            }
+
+            let total =
+                0;
+
+            for (
+                const [
+                    intervalStart,
+                    intervalEnd
+                ] of
+                    this.#getClosedIntervalSegments()
+            ) {
+                if (intervalEnd <= start) {
+                    continue;
+                }
+
+                if (intervalStart >= end) {
+                    break;
+                }
+
+                total +=
+                    Math.max(
+                        0,
+                        Math.min(
+                            end,
+                            intervalEnd
+                        ) -
+                        Math.max(
+                            start,
+                            intervalStart
+                        )
+                    );
+            }
+
+            return total;
+        }
+
+        #formatSignedRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            const rounded =
+                Math.round(
+                    milliseconds
+                );
+
+            const formatted =
+                TemporalFormat.formatDuration(
+                    Math.abs(
+                        rounded
+                    )
+                );
+
+            if (formatted === undefined) {
+                return undefined;
+            }
+
+            return rounded < 0
+                ? `-${formatted}`
+                : formatted;
+        }
+
+        #calculateRenderedTime(
+            now,
+            mode = this.#renderedTimeMode
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                return undefined;
+            }
+
+            if (
+                !this.#started ||
+                !Number.isFinite(
+                    this.#calculatedEnd
+                ) ||
+                !Number.isFinite(
+                    this.#scheduledStartMilliseconds
+                )
+            ) {
+                return this.#formatClockDisplayTime(
+                    now
+                );
+            }
+
+            const synchronizedNow =
+                this.#normalizeTickDate(
+                    new Date(
+                        now.getTime()
+                    )
+                );
+
+            const timelineNow =
+                this.#getCurrentTimelineTime(
+                    synchronizedNow
+                );
+
+            if (!Number.isFinite(timelineNow)) {
+                return undefined;
+            }
+
+            if (mode === "calculated-end") {
+                const creationDate =
+                    this.#getJSONCreationDate();
+
+                if (!creationDate) {
+                    return this.#formatClockDisplayTime(
+                        synchronizedNow
+                    );
+                }
+
+                const effectiveEnd =
+                    timelineNow >
+                        this.#calculatedEnd
+                        ? timelineNow
+                        : this.#calculatedEnd;
+
+                return this.#formatClockDisplayTime(
+                    new Date(
+                        creationDate.getTime() +
+                        effectiveEnd
+                    )
+                );
+            }
+
+            let milliseconds;
+
+            if (mode === "elapsed") {
+                const start =
+                    this.#scheduledStartMilliseconds;
+
+                const end =
+                    Math.max(
+                        start,
+                        timelineNow
+                    );
+
+                milliseconds =
+                    end -
+                    start -
+                    this.#getClosedIntervalDuration(
+                        start,
+                        end
+                    );
+            }
+            else {
+                const difference =
+                    this.#calculatedEnd -
+                    timelineNow;
+
+                if (difference >= 0) {
+                    milliseconds =
+                        difference -
+                        this.#getClosedIntervalDuration(
+                            timelineNow,
+                            this.#calculatedEnd
+                        );
+                }
+                else {
+                    milliseconds =
+                        difference +
+                        this.#getClosedIntervalDuration(
+                            this.#calculatedEnd,
+                            timelineNow
+                        );
+                }
+            }
+
+            return this.#formatSignedRenderedDuration(
+                milliseconds
+            );
+        }
+
         #updateDisplay(
             now
         ) {
@@ -23983,46 +24401,17 @@
                     )
                     : "";
 
-            const military =
-                this.getAttribute(
-                    "military-time"
-                ) !== "false";
-
-            const format =
-                this.getAttribute(
-                    "time-format"
-                ) ??
-                this.#getDefaultFormat();
-
-            let result =
-                TemporalFormat.formatTime(
-                    now,
-                    format,
-                    military
+            const result =
+                this.#calculateRenderedTime(
+                    now
                 );
 
             if (result === undefined) {
                 return;
             }
 
-            if (!military) {
-                const pm =
-                    now.getHours() >= 12;
-
-                const suffixes = {
-                    "a/p": pm ? "p" : "a",
-                    "A/P": pm ? "P" : "A",
-                    "AM/PM": pm ? "PM" : "AM",
-                    "A.M./P.M.": pm ? "P.M." : "A.M.",
-                    "am/pm": pm ? "pm" : "am",
-                    "a.m./p.m.": pm ? "p.m." : "a.m."
-                };
-
-                result = result.replace(
-                    /(A\.M\.\/P\.M\.|a\.m\.\/p\.m\.|AM\/PM|am\/pm|A\/P|a\/p)/,
-                    token => suffixes[token]
-                );
-            }
+            this.#renderedTime =
+                result;
 
             this.#timeElement.textContent =
                 result;
