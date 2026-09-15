@@ -518,7 +518,8 @@
 
         const percentMode = numberPadState.mode === "percent";
         numberPadContext.dataset.context = percentMode ? "percent" : "settings";
-        numberPadContext.disabled = percentMode;
+        numberPadContext.disabled = false;
+        numberPadContext.setAttribute("aria-disabled", String(percentMode));
         numberPadContext.setAttribute("aria-label", percentMode ? "Percent" : "Number pad settings");
 
         document.querySelectorAll("#numberPadGrid [data-number]").forEach(button => {
