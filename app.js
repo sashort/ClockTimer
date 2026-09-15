@@ -31,6 +31,8 @@
     const profileDialog = $("#profileDialog");
     const graphicalDialog = $("#graphicalSettingsDialog");
     const stateDialog = $("#stateSettingsDialog");
+    const profileMenuButton = $("#profileMenuButton");
+    const authButton = $("#authButton");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -64,9 +66,17 @@
         return [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
     }
 
+    function syncConnectionUI(connected) {
+        profileMenuButton.hidden = !connected;
+        authButton.textContent = connected ? "Logout" : "Login";
+        authButton.classList.toggle("logout-button", connected);
+    }
+
     function setOffline(offline) {
         app.classList.toggle("is-offline", offline);
         app.dataset.state = offline ? "offline" : (clockTimer.status === "running" ? "running" : "ready");
+        syncConnectionUI(!offline);
+
         if (offline && !loginDialog.open) loginDialog.showModal();
         if (!offline && loginDialog.open) loginDialog.close();
     }
@@ -170,9 +180,15 @@
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("click", () => {
+            if (button.dataset.dialog === "profileDialog" && !clockTimer.connected) {
+                openDialog("loginDialog");
+                return;
+            }
+
             if (button.dataset.dialog === "graphicalSettingsDialog") {
                 fillGraphicalForm(getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS));
             }
+
             openDialog(button.dataset.dialog);
         });
     });
@@ -221,8 +237,14 @@
         }
     });
 
-    $("#logoutButton").addEventListener("click", async () => {
+    authButton.addEventListener("click", async () => {
         $("#mainMenu")?.hidePopover?.();
+
+        if (!clockTimer.connected) {
+            if (!loginDialog.open) loginDialog.showModal();
+            return;
+        }
+
         try { await clockTimer.disconnect(); }
         finally { setOffline(true); }
     });
@@ -281,6 +303,9 @@
     for (const eventName of ["tick", "start", "clear", "goalChange", "percentModeChange"]) {
         clockTimer.addEventListener(eventName, updateSummaryValues);
     }
+
+    clockTimer.addEventListener("connect", () => setOffline(false));
+    clockTimer.addEventListener("disconnect", () => setOffline(true));
 
     const graphicalSettings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
     applyGraphicalSettings(graphicalSettings);
