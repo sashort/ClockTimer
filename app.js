@@ -2,10 +2,12 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
+    const GRAPHICAL_SETTINGS_VERSION = 2;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
-        graphicalSettings: "wmof.clock.graphicalSettings"
+        graphicalSettings: "wmof.clock.graphicalSettings",
+        graphicalSettingsVersion: "wmof.clock.graphicalSettingsVersion"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
@@ -19,6 +21,24 @@
         visibleHours: "12,3,6,9",
         tickMarks: "[10]",
         indicatorSymbol: "▲",
+        hourHandLength: "28%",
+        hourHandWidth: "5px",
+        hourHandColor: "#ffffff",
+        minuteHandLength: "38%",
+        minuteHandWidth: "4px",
+        minuteHandColor: "#ffffff",
+        secondHandLength: "42%",
+        secondHandWidth: "2px",
+        secondHandColor: "#ffc220",
+        hourFont: "Helvetica, Arial, sans-serif",
+        hourFontSize: "24px",
+        hourColor: "#ffffff",
+        timeFont: "Helvetica, Arial, sans-serif",
+        timeFontSize: "48px",
+        timeColor: "#ffffff",
+        activeRingWidth: "12px",
+        inactiveRingWidth: "6px",
+        borderWidth: "7px",
         grayscale: "0",
         grayscaleRamp: "333ms"
     };
@@ -58,6 +78,27 @@
         }
     }
 
+    function getGraphicalSettings() {
+        const settings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
+        const version = Number(safeStorageGet(STORAGE.graphicalSettingsVersion) || 0);
+
+        if (version < GRAPHICAL_SETTINGS_VERSION) {
+            if (!settings.timeFormat || settings.timeFormat === "HHmmss") settings.timeFormat = "HHmm";
+            if (!settings.visibleHours) settings.visibleHours = GRAPHICAL_DEFAULTS.visibleHours;
+            if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
+            if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;
+            safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+            safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
+        }
+
+        return settings;
+    }
+
+    function saveGraphicalSettings(settings) {
+        safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+        safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
+    }
+
     function formatDuration(milliseconds) {
         const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
         const hours = Math.floor(totalSeconds / 3600);
@@ -76,7 +117,6 @@
         app.classList.toggle("is-offline", offline);
         app.dataset.state = offline ? "offline" : (clockTimer.status === "running" ? "running" : "ready");
         syncConnectionUI(!offline);
-
         if (offline && !loginDialog.open) loginDialog.showModal();
         if (!offline && loginDialog.open) loginDialog.close();
     }
@@ -109,46 +149,92 @@
         const standard = clockTimer.standardTime;
         $("#standardTimeValue").textContent = typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent = clockTimer.renderedTime || "---";
-
         const goal = Number(clockTimer.renderedPercentGoal);
         $("#goalPercentValue").textContent = Number.isFinite(goal) ? `${Math.round(goal * 100)}%` : "100%";
     }
 
+    function setOptionalAttribute(target, name, value) {
+        if (value === "" || value === null || value === undefined) target.removeAttribute(name);
+        else target.setAttribute(name, value);
+    }
+
+    function setClockVariable(target, name, value) {
+        if (value === "" || value === null || value === undefined) target.style.removeProperty(name);
+        else target.style.setProperty(name, value);
+    }
+
     function applyGraphicalSettings(settings, target = clockTimer) {
-        target.setAttribute("timer-type", settings.timerType);
-        target.setAttribute("timer-mode", settings.timerMode);
+        target.setAttribute("timer-type", settings.timerType || GRAPHICAL_DEFAULTS.timerType);
+        target.setAttribute("timer-mode", settings.timerMode || GRAPHICAL_DEFAULTS.timerMode);
         target.setAttribute("military-time", String(Boolean(settings.militaryTime)));
         target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmm" : "h:mm AM/PM"));
 
-        for (const [name, value] of [
-            ["date-format", settings.dateFormat],
-            ["visible-hours", settings.visibleHours],
-            ["tick-marks", settings.tickMarks],
-            ["indicator-symbol", settings.indicatorSymbol]
-        ]) {
-            if (value === "" || value === null || value === undefined) target.removeAttribute(name);
-            else target.setAttribute(name, value);
-        }
-
+        setOptionalAttribute(target, "date-format", settings.dateFormat);
+        setOptionalAttribute(target, "visible-hours", settings.visibleHours);
+        setOptionalAttribute(target, "tick-marks", settings.tickMarks);
+        setOptionalAttribute(target, "indicator-symbol", settings.indicatorSymbol);
         target.setAttribute("grayscale", `${Math.max(0, Math.min(100, Number(settings.grayscale) || 0))}%`);
         target.setAttribute("grayscale-ramp", settings.grayscaleRamp || "333ms");
         target.showTolerance = Boolean(settings.showTolerance);
+
+        const variables = {
+            "--clock-timer-hour-hand-length": settings.hourHandLength,
+            "--clock-timer-hour-hand-width": settings.hourHandWidth,
+            "--clock-timer-hour-hand-color": settings.hourHandColor,
+            "--clock-timer-minute-hand-length": settings.minuteHandLength,
+            "--clock-timer-minute-hand-width": settings.minuteHandWidth,
+            "--clock-timer-minute-hand-color": settings.minuteHandColor,
+            "--clock-timer-second-hand-length": settings.secondHandLength,
+            "--clock-timer-second-hand-width": settings.secondHandWidth,
+            "--clock-timer-second-hand-color": settings.secondHandColor,
+            "--clock-timer-hour-font": settings.hourFont,
+            "--clock-timer-hour-font-size": settings.hourFontSize,
+            "--clock-timer-time-font": settings.timeFont,
+            "--clock-timer-time-font-size": settings.timeFontSize,
+            "--clock-timer-time-color": settings.timeColor,
+            "--clock-timer-active-ring-width": settings.activeRingWidth,
+            "--clock-timer-inactive-ring-width": settings.inactiveRingWidth,
+            "--clock-timer-border-width": settings.borderWidth,
+            "--clock-timer-tick-color": settings.hourColor
+        };
+
+        for (const [name, value] of Object.entries(variables)) setClockVariable(target, name, value);
+        target.style.color = settings.hourColor || GRAPHICAL_DEFAULTS.hourColor;
     }
 
     function settingsFromForm(form) {
         const data = new FormData(form);
+        const text = name => String(data.get(name) || "").trim();
         return {
-            timerType: data.get("timerType"),
-            timerMode: data.get("timerMode"),
+            timerType: text("timerType"),
+            timerMode: text("timerMode"),
             showTolerance: form.elements.showTolerance.checked,
             militaryTime: form.elements.militaryTime.checked,
-            timeFormat: String(data.get("timeFormat") || "").trim(),
-            dateFormat: String(data.get("dateFormat") || "").trim(),
-            visibleHours: String(data.get("visibleHours") || "").trim(),
-            tickMarks: String(data.get("tickMarks") || "").trim(),
-            indicatorSymbol: String(data.get("indicatorSymbol") || "").trim(),
-            grayscale: String(data.get("grayscale") || "0"),
-            grayscaleRamp: String(data.get("grayscaleRamp") || "333ms").trim()
+            timeFormat: text("timeFormat"),
+            dateFormat: text("dateFormat"),
+            visibleHours: text("visibleHours"),
+            tickMarks: text("tickMarks"),
+            indicatorSymbol: text("indicatorSymbol"),
+            hourHandLength: text("hourHandLength"),
+            hourHandWidth: text("hourHandWidth"),
+            hourHandColor: text("hourHandColor"),
+            minuteHandLength: text("minuteHandLength"),
+            minuteHandWidth: text("minuteHandWidth"),
+            minuteHandColor: text("minuteHandColor"),
+            secondHandLength: text("secondHandLength"),
+            secondHandWidth: text("secondHandWidth"),
+            secondHandColor: text("secondHandColor"),
+            hourFont: text("hourFont"),
+            hourFontSize: text("hourFontSize"),
+            hourColor: text("hourColor"),
+            timeFont: text("timeFont"),
+            timeFontSize: text("timeFontSize"),
+            timeColor: text("timeColor"),
+            activeRingWidth: text("activeRingWidth"),
+            inactiveRingWidth: text("inactiveRingWidth"),
+            borderWidth: text("borderWidth"),
+            grayscale: text("grayscale") || "0",
+            grayscaleRamp: text("grayscaleRamp") || "333ms"
         };
     }
 
@@ -169,7 +255,6 @@
         const military = form.elements.militaryTime.checked;
         const militaryDefaults = new Set(["HHmm", "HHmmss"]);
         const standardDefaults = new Set(["h:mm AM/PM", "h:mm:ss AM/PM"]);
-
         if (military) {
             if (!current || standardDefaults.has(current)) control.value = "HHmm";
         }
@@ -195,12 +280,10 @@
 
     clockTimer.addEventListener("pointerdown", () => {
         if (clockTimer.getAttribute("timer-type") !== "radial-overflow") return;
-
         clockTimer.setAttribute("timer-type", "radial-fitted");
-
-        const settings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
+        const settings = getGraphicalSettings();
         settings.timerType = "radial-fitted";
-        safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+        saveGraphicalSettings(settings);
     });
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
@@ -209,11 +292,7 @@
                 openDialog("loginDialog");
                 return;
             }
-
-            if (button.dataset.dialog === "graphicalSettingsDialog") {
-                fillGraphicalForm(getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS));
-            }
-
+            if (button.dataset.dialog === "graphicalSettingsDialog") fillGraphicalForm(getGraphicalSettings());
             openDialog(button.dataset.dialog);
         });
     });
@@ -223,24 +302,19 @@
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
-        if (event.target.name === "militaryTime") {
-            syncTimeFormatForMilitaryToggle(event.currentTarget);
-        }
-
-        if (event.target.matches("input, select")) {
-            applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
-        }
+        if (event.target.name === "militaryTime") syncTimeFormatForMilitaryToggle(event.currentTarget);
+        if (event.target.matches("input, select")) applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
     });
 
     $("#graphicalSettingsForm").addEventListener("submit", event => {
         event.preventDefault();
         const settings = settingsFromForm(event.currentTarget);
         applyGraphicalSettings(settings);
-        safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+        saveGraphicalSettings(settings);
         graphicalDialog.close();
     });
 
-    $("#resetGraphicalSettings").addEventListener("click", () => fillGraphicalForm(GRAPHICAL_DEFAULTS));
+    $("#resetGraphicalSettings").addEventListener("click", () => fillGraphicalForm({ ...GRAPHICAL_DEFAULTS }));
 
     $("#stateSettingsForm").addEventListener("submit", event => {
         event.preventDefault();
@@ -270,12 +344,10 @@
 
     authButton.addEventListener("click", async () => {
         $("#mainMenu")?.hidePopover?.();
-
         if (!clockTimer.connected) {
             if (!loginDialog.open) loginDialog.showModal();
             return;
         }
-
         try { await clockTimer.disconnect(); }
         finally { setOffline(true); }
     });
@@ -338,7 +410,7 @@
     clockTimer.addEventListener("connect", () => setOffline(false));
     clockTimer.addEventListener("disconnect", () => setOffline(true));
 
-    const graphicalSettings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
+    const graphicalSettings = getGraphicalSettings();
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
