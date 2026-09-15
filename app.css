@@ -422,11 +422,28 @@ clock-timer::part(major-tick-mark) {
 }
 
 .dialog-close {
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    place-items: center;
     border: 0;
+    border-radius: 0;
     color: var(--wm-white);
     background: transparent;
-    font-size: 42px;
+    font-size: 0;
     line-height: 1;
+}
+
+.dialog-close::before {
+    content: "";
+    width: 28px;
+    height: 28px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .login-dialog { width: min(420px, 88vw); }
