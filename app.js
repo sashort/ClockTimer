@@ -126,6 +126,9 @@
         if (loginDialog.open) return;
         loginDialog.classList.add("initial-login-opening");
         loginDialog.showModal();
+        requestAnimationFrame(() => {
+            $("#loginUsername")?.focus({ preventScroll: true });
+        });
         setTimeout(() => {
             loginDialog.classList.remove("initial-login-opening");
         }, INITIAL_LOGIN_FADE_DURATION);
