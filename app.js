@@ -14,11 +14,11 @@
         timerMode: "elapsed",
         showTolerance: true,
         militaryTime: true,
-        timeFormat: "HHmmss",
+        timeFormat: "HHmm",
         dateFormat: "",
-        visibleHours: "",
-        tickMarks: "",
-        indicatorSymbol: "",
+        visibleHours: "12,3,6,9",
+        tickMarks: "[10]",
+        indicatorSymbol: "↑",
         grayscale: "0",
         grayscaleRamp: "333ms"
     };
@@ -118,7 +118,7 @@
         target.setAttribute("timer-type", settings.timerType);
         target.setAttribute("timer-mode", settings.timerMode);
         target.setAttribute("military-time", String(Boolean(settings.militaryTime)));
-        target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmmss" : "h:mm:ss AM/PM"));
+        target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmm" : "h:mm AM/PM"));
 
         for (const [name, value] of [
             ["date-format", settings.dateFormat],
@@ -161,6 +161,21 @@
             else control.value = value;
         }
         applyGraphicalSettings(settings, clockPreview);
+    }
+
+    function syncTimeFormatForMilitaryToggle(form) {
+        const control = form.elements.timeFormat;
+        const current = String(control.value || "").trim();
+        const military = form.elements.militaryTime.checked;
+        const militaryDefaults = new Set(["HHmm", "HHmmss"]);
+        const standardDefaults = new Set(["h:mm AM/PM", "h:mm:ss AM/PM"]);
+
+        if (military) {
+            if (!current || standardDefaults.has(current)) control.value = "HHmm";
+        }
+        else if (!current || militaryDefaults.has(current)) {
+            control.value = "h:mm AM/PM";
+        }
     }
 
     function openDialog(id) {
@@ -208,7 +223,13 @@
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
-        if (event.target.matches("input, select")) applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
+        if (event.target.name === "militaryTime") {
+            syncTimeFormatForMilitaryToggle(event.currentTarget);
+        }
+
+        if (event.target.matches("input, select")) {
+            applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
+        }
     });
 
     $("#graphicalSettingsForm").addEventListener("submit", event => {
