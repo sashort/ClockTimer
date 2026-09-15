@@ -1,0 +1,65 @@
+name: Patch stopped rendered time
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Show rendered time for stopped trips
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.js')
+          text = path.read_text()
+
+          old = '''        $("#renderedTimeValue").textContent =
+            clockTimer.status === "running"
+                ? (clockTimer.renderedTime || "---")
+                : "---";
+'''
+          new = '''        $("#renderedTimeValue").textContent =
+            ["running", "stopped"].includes(clockTimer.status)
+                ? (clockTimer.renderedTime || "---")
+                : "---";
+'''
+          if old not in text:
+              raise SystemExit('Expected renderedTimeValue status block not found')
+          text = text.replace(old, new, 1)
+
+          old_events = '    for (const eventName of ["tick", "start", "clear", "goalChange", "percentModeChange"]) {'
+          new_events = '    for (const eventName of ["tick", "start", "stop", "clear", "goalChange", "percentModeChange"]) {'
+          if old_events not in text:
+              raise SystemExit('Expected summary event list not found')
+          text = text.replace(old_events, new_events, 1)
+
+          path.write_text(text)
+          PY
+
+          node --check app.js
+          grep -F '["running", "stopped"].includes(clockTimer.status)' app.js
+          grep -F '["tick", "start", "stop", "clear", "goalChange", "percentModeChange"]' app.js
+
+      - name: Commit source change
+        run: |
+          if git diff --quiet -- app.js; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add app.js
+          git commit -m "Show rendered time for stopped trips"
+          git push origin HEAD:rename-prestart-latency
