@@ -190,9 +190,53 @@ clock-timer {
     --clock-timer-hour-font: Helvetica, Arial, sans-serif;
     --clock-timer-time-font-size: 48px;
     --clock-timer-hour-font-size: 24px;
+    --clock-timer-hour-hand-length: 28%;
     --clock-timer-hour-hand-width: 5px;
+    --clock-timer-hour-hand-color: var(--wm-white);
+    --clock-timer-minute-hand-length: 38%;
     --clock-timer-minute-hand-width: 4px;
+    --clock-timer-minute-hand-color: var(--wm-white);
+    --clock-timer-second-hand-length: 42%;
     --clock-timer-second-hand-width: 2px;
+    --clock-timer-second-hand-color: var(--wm-yellow);
+    --clock-timer-time-color: var(--wm-white);
+    --clock-timer-tick-color: var(--wm-white);
+}
+
+clock-timer::part(hour-hand),
+clock-timer::part(minute-hand),
+clock-timer::part(second-hand) {
+    display: block;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+clock-timer::part(hour-hand) {
+    width: var(--clock-timer-hour-hand-width, 5px);
+    height: var(--clock-timer-hour-hand-length, 28%);
+    background: var(--clock-timer-hour-hand-color, currentColor);
+}
+
+clock-timer::part(minute-hand) {
+    width: var(--clock-timer-minute-hand-width, 4px);
+    height: var(--clock-timer-minute-hand-length, 38%);
+    background: var(--clock-timer-minute-hand-color, currentColor);
+}
+
+clock-timer::part(second-hand) {
+    width: var(--clock-timer-second-hand-width, 2px);
+    height: var(--clock-timer-second-hand-length, 42%);
+    background: var(--clock-timer-second-hand-color, var(--wm-yellow));
+}
+
+clock-timer::part(time) {
+    color: var(--clock-timer-time-color, currentColor);
+    font-weight: 700;
+}
+
+clock-timer::part(tick-mark),
+clock-timer::part(major-tick-mark) {
+    background: var(--clock-timer-tick-color, currentColor);
 }
 
 .trip-log-button {
@@ -267,7 +311,7 @@ clock-timer {
 }
 
 .login-dialog { width: min(420px, 88vw); }
-.settings-dialog { width: min(920px, 90vw); max-height: 88dvh; overflow: auto; }
+.settings-dialog { width: min(940px, 94vw); max-height: 90dvh; overflow: auto; }
 
 .app-dialog fieldset {
     margin: 0;
@@ -292,6 +336,12 @@ clock-timer {
     background: rgb(4 30 66 / 78%);
 }
 
+.app-dialog input[type="color"] {
+    min-height: 42px;
+    padding: 4px;
+    cursor: pointer;
+}
+
 .app-dialog option { color: var(--wm-white); background: var(--wm-blue-dark); }
 .app-dialog .toggle-row { grid-template-columns: 1fr auto; }
 .app-dialog .toggle-row input { width: 24px; height: 24px; }
@@ -313,9 +363,70 @@ clock-timer {
     border-color: var(--wm-white);
 }
 
-.settings-grid { display: grid; grid-template-columns: 1fr 0.9fr; gap: 14px; }
+.settings-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    gap: 16px;
+    align-items: start;
+}
+
 .settings-groups { display: grid; gap: 12px; }
-.clock-preview { display: grid; place-items: center; min-height: 360px; border: 1px solid rgb(255 255 255 / 75%); border-radius: 12px; }
-.clock-preview clock-timer { width: min(34vw, 320px); height: min(34vw, 320px); }
+
+.style-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.style-row > span { font-size: 16px; }
+
+.three-control-row {
+    grid-template-columns: minmax(90px, 0.8fr) repeat(3, minmax(0, 1fr));
+    align-items: end;
+}
+
+.three-control-row > label {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    font-size: 13px;
+}
+
+.clock-preview {
+    position: sticky;
+    top: 0;
+    min-height: 430px;
+    padding: 16px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    place-items: center;
+    gap: 10px;
+    border: 1px solid rgb(255 255 255 / 75%);
+    border-radius: 12px;
+    background: rgb(4 30 66 / 28%);
+}
+
+.preview-title {
+    justify-self: stretch;
+    text-align: center;
+    font-size: 18px;
+}
+
+.clock-preview clock-timer {
+    width: min(34vw, 330px);
+    height: min(34vw, 330px);
+    min-width: 240px;
+    min-height: 240px;
+}
 
 .form-error { min-height: 1.2em; margin: 0; color: #ffb8b4; text-align: center; }
+
+@media (max-width: 720px) {
+    .settings-dialog { width: 94vw; max-height: 92dvh; }
+    .settings-grid { grid-template-columns: 1fr; }
+    .clock-preview { position: static; min-height: 330px; }
+    .clock-preview clock-timer { width: min(68vw, 310px); height: min(68vw, 310px); }
+    .three-control-row { grid-template-columns: 1fr 1fr 1fr; }
+    .three-control-row > span { grid-column: 1 / -1; }
+}
