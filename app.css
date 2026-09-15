@@ -253,6 +253,24 @@ clock-timer::part(major-tick-mark) {
     font-weight: 700;
 }
 
+[popover] {
+    opacity: 0;
+    transition-property: opacity, display, overlay;
+    transition-duration: 750ms;
+    transition-timing-function: linear;
+    transition-behavior: normal, allow-discrete, allow-discrete;
+}
+
+[popover]:popover-open {
+    opacity: 1;
+}
+
+@starting-style {
+    [popover]:popover-open {
+        opacity: 0;
+    }
+}
+
 .main-menu {
     width: min(430px, 74vw);
     margin: 0;
@@ -359,9 +377,33 @@ clock-timer::part(major-tick-mark) {
     border: 2px solid var(--wm-white);
     border-radius: 16px;
     box-shadow: 0 18px 50px rgb(0 0 0 / 42%);
+    opacity: 0;
+    transition-property: opacity, display, overlay;
+    transition-duration: 750ms;
+    transition-timing-function: linear;
+    transition-behavior: normal, allow-discrete, allow-discrete;
 }
 
-.app-dialog::backdrop { background: rgb(0 0 0 / 48%); }
+.app-dialog[open] {
+    opacity: 1;
+}
+
+.app-dialog::backdrop {
+    background: rgb(0 0 0 / 48%);
+    opacity: 0;
+    transition: opacity 750ms linear;
+}
+
+.app-dialog[open]::backdrop {
+    opacity: 1;
+}
+
+@starting-style {
+    .app-dialog[open],
+    .app-dialog[open]::backdrop {
+        opacity: 0;
+    }
+}
 .app-dialog form { display: grid; gap: 16px; }
 .app-dialog h2 { margin: 0; text-align: center; font-size: 28px; }
 
