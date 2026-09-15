@@ -256,7 +256,7 @@ clock-timer::part(major-tick-mark) {
 [popover] {
     opacity: 0;
     transition-property: opacity, display, overlay;
-    transition-duration: 750ms;
+    transition-duration: 250ms;
     transition-timing-function: linear;
     transition-behavior: normal, allow-discrete, allow-discrete;
 }
@@ -379,9 +379,13 @@ clock-timer::part(major-tick-mark) {
     box-shadow: 0 18px 50px rgb(0 0 0 / 42%);
     opacity: 0;
     transition-property: opacity, display, overlay;
-    transition-duration: 750ms;
+    transition-duration: 250ms;
     transition-timing-function: linear;
     transition-behavior: normal, allow-discrete, allow-discrete;
+}
+
+.login-dialog.initial-login-opening {
+    transition-duration: 750ms;
 }
 
 .app-dialog[open] {
@@ -391,7 +395,11 @@ clock-timer::part(major-tick-mark) {
 .app-dialog::backdrop {
     background: rgb(0 0 0 / 48%);
     opacity: 0;
-    transition: opacity 750ms linear;
+    transition: opacity 250ms linear;
+}
+
+.login-dialog.initial-login-opening::backdrop {
+    transition-duration: 750ms;
 }
 
 .app-dialog[open]::backdrop {

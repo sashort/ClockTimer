@@ -62,6 +62,7 @@
     const STARTUP_CONNECTION_DELAY = 2000;
     const STARTUP_GRAYSCALE_RAMP = 2000;
     const LOGIN_GRAYSCALE_RAMP = 750;
+    const INITIAL_LOGIN_FADE_DURATION = 750;
 
     function safeStorageGet(key) {
         try { return localStorage.getItem(key); }
@@ -121,6 +122,21 @@
         authButton.classList.toggle("logout-button", connected);
     }
 
+    function showInitialLoginDialog() {
+        if (loginDialog.open) return;
+        loginDialog.classList.add("initial-login-opening");
+        loginDialog.showModal();
+        setTimeout(() => {
+            loginDialog.classList.remove("initial-login-opening");
+        }, INITIAL_LOGIN_FADE_DURATION);
+    }
+
+    function closeDialog(dialog) {
+        if (!dialog?.open) return;
+        dialog.classList.remove("initial-login-opening");
+        dialog.close();
+    }
+
     function setOffline(offline, { login = false, startup = false } = {}) {
         clearTimeout(loginPromptTimeout);
         clearTimeout(grayscaleReleaseTimeout);
@@ -135,12 +151,12 @@
             app.classList.add("is-offline");
             loginPromptTimeout = setTimeout(() => {
                 loginPromptTimeout = undefined;
-                if (!clockTimer.connected && !loginDialog.open) loginDialog.showModal();
+                if (!clockTimer.connected && !loginDialog.open) showInitialLoginDialog();
             }, STARTUP_CONNECTION_DELAY);
             return;
         }
 
-        if (loginDialog.open) loginDialog.close();
+        if (loginDialog.open) closeDialog(loginDialog);
         if (!app.classList.contains("is-offline")) return;
 
         const ramp = login ? LOGIN_GRAYSCALE_RAMP : STARTUP_GRAYSCALE_RAMP;
@@ -338,7 +354,7 @@
     });
 
     document.querySelectorAll("[data-close-dialog]").forEach(button => {
-        button.addEventListener("click", () => button.closest("dialog")?.close());
+        button.addEventListener("click", () => closeDialog(button.closest("dialog")));
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
@@ -351,7 +367,7 @@
         const settings = settingsFromForm(event.currentTarget);
         applyGraphicalSettings(settings);
         saveGraphicalSettings(settings);
-        graphicalDialog.close();
+        closeDialog(graphicalDialog);
     });
 
     $("#resetGraphicalSettings").addEventListener("click", () => fillGraphicalForm({ ...GRAPHICAL_DEFAULTS }));
@@ -361,7 +377,7 @@
         const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
-        stateDialog.close();
+        closeDialog(stateDialog);
     });
 
     $("#loginForm").addEventListener("submit", async event => {
@@ -403,7 +419,7 @@
 
     $("#profileForm").addEventListener("submit", event => {
         event.preventDefault();
-        profileDialog.close();
+        closeDialog(profileDialog);
         window.dispatchEvent(new CustomEvent("wmof:profile-save", {
             detail: Object.fromEntries(new FormData(event.currentTarget))
         }));
