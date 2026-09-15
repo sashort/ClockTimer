@@ -182,7 +182,7 @@ clock-timer {
     width: 56vw;
     height: 56vw;
     display: block;
-    border: 18px solid var(--wm-blue-dark);
+    border: 0;
     border-radius: 50%;
     color: var(--wm-white);
     background: transparent;
@@ -201,6 +201,7 @@ clock-timer {
     --clock-timer-second-hand-color: var(--wm-yellow);
     --clock-timer-time-color: var(--wm-white);
     --clock-timer-tick-color: var(--wm-white);
+    --clock-timer-border-color: var(--wm-blue-dark);
 }
 
 clock-timer::part(hour-hand),

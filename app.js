@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 2;
+    const GRAPHICAL_SETTINGS_VERSION = 3;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -38,7 +38,7 @@
         timeColor: "#ffffff",
         activeRingWidth: "12px",
         inactiveRingWidth: "6px",
-        borderWidth: "7px",
+        borderWidth: "5px",
         grayscale: "0",
         grayscaleRamp: "333ms"
     };
@@ -87,6 +87,7 @@
             if (!settings.visibleHours) settings.visibleHours = GRAPHICAL_DEFAULTS.visibleHours;
             if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
             if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;
+            if (!settings.borderWidth || settings.borderWidth === "7px") settings.borderWidth = GRAPHICAL_DEFAULTS.borderWidth;
             safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
             safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
         }
