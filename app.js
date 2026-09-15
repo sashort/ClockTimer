@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 3;
+    const GRAPHICAL_SETTINGS_VERSION = 4;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -38,9 +38,7 @@
         timeColor: "#ffffff",
         activeRingWidth: "12px",
         inactiveRingWidth: "6px",
-        borderWidth: "5px",
-        grayscale: "0",
-        grayscaleRamp: "333ms"
+        borderWidth: "5px"
     };
 
     const $ = selector => document.querySelector(selector);
@@ -90,6 +88,8 @@
         const version = Number(safeStorageGet(STORAGE.graphicalSettingsVersion) || 0);
 
         if (version < GRAPHICAL_SETTINGS_VERSION) {
+            delete settings.grayscale;
+            delete settings.grayscaleRamp;
             if (!settings.timeFormat || settings.timeFormat === "HHmmss") settings.timeFormat = "HHmm";
             if (!settings.visibleHours) settings.visibleHours = GRAPHICAL_DEFAULTS.visibleHours;
             if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
@@ -215,8 +215,8 @@
         setOptionalAttribute(target, "visible-hours", settings.visibleHours);
         setOptionalAttribute(target, "tick-marks", settings.tickMarks);
         setOptionalAttribute(target, "indicator-symbol", settings.indicatorSymbol);
-        target.setAttribute("grayscale", `${Math.max(0, Math.min(100, Number(settings.grayscale) || 0))}%`);
-        target.setAttribute("grayscale-ramp", settings.grayscaleRamp || "333ms");
+        target.removeAttribute("grayscale");
+        target.removeAttribute("grayscale-ramp");
         target.showTolerance = Boolean(settings.showTolerance);
 
         const variables = {
@@ -274,9 +274,7 @@
             timeColor: text("timeColor"),
             activeRingWidth: text("activeRingWidth"),
             inactiveRingWidth: text("inactiveRingWidth"),
-            borderWidth: text("borderWidth"),
-            grayscale: text("grayscale") || "0",
-            grayscaleRamp: text("grayscaleRamp") || "333ms"
+            borderWidth: text("borderWidth")
         };
     }
 
