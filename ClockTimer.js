@@ -500,7 +500,7 @@
                         var(
                             --clock-timer-ring-resize-duration
                         ),
-                        750ms;
+                        1500ms;
 
                     transition-timing-function:
                         linear, linear;
@@ -522,7 +522,7 @@
                         var(
                             --clock-timer-ring-resize-duration
                         ),
-                        750ms;
+                        1500ms;
 
                     transition-timing-function:
                         linear, linear;

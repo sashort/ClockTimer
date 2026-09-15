@@ -59,6 +59,11 @@
     let timerInterval;
     let loginPromptTimeout;
     let grayscaleReleaseTimeout;
+    let loginPending = false;
+
+    const STARTUP_CONNECTION_DELAY = 2000;
+    const STARTUP_GRAYSCALE_RAMP = 2000;
+    const LOGIN_GRAYSCALE_RAMP = 750;
 
     function safeStorageGet(key) {
         try { return localStorage.getItem(key); }
@@ -116,7 +121,7 @@
         authButton.classList.toggle("logout-button", connected);
     }
 
-    function setOffline(offline) {
+    function setOffline(offline, { login = false, startup = false } = {}) {
         clearTimeout(loginPromptTimeout);
         clearTimeout(grayscaleReleaseTimeout);
         loginPromptTimeout = undefined;
@@ -126,21 +131,27 @@
         syncConnectionUI(!offline);
 
         if (offline) {
+            app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
             app.classList.add("is-offline");
             loginPromptTimeout = setTimeout(() => {
                 loginPromptTimeout = undefined;
                 if (!clockTimer.connected && !loginDialog.open) loginDialog.showModal();
-            }, 1000);
+            }, STARTUP_CONNECTION_DELAY);
             return;
         }
 
         if (loginDialog.open) loginDialog.close();
         if (!app.classList.contains("is-offline")) return;
 
+        const ramp = login ? LOGIN_GRAYSCALE_RAMP : STARTUP_GRAYSCALE_RAMP;
+        const delay = startup ? STARTUP_CONNECTION_DELAY : 0;
+        app.style.setProperty("--app-grayscale-ramp", `${ramp}ms`);
+
         grayscaleReleaseTimeout = setTimeout(() => {
             grayscaleReleaseTimeout = undefined;
-            if (clockTimer.connected) app.classList.remove("is-offline");
-        }, 1000);
+            if (!clockTimer.connected) return;
+            requestAnimationFrame(() => app.classList.remove("is-offline"));
+        }, delay);
     }
 
     function syncScopeUI(persist = false) {
@@ -361,14 +372,18 @@
         const password = $("#loginPassword").value;
         const error = $("#loginError");
         error.textContent = "";
+        loginPending = true;
         try {
             const result = await clockTimer.connect(username, password);
             if (!result?.connected) throw new Error("Login failed.");
             $("#profileUsername").value = result.user?.username || username;
-            setOffline(false);
+            setOffline(false, { login: true });
         }
         catch (failure) {
             error.textContent = failure?.message || "Unable to login.";
+        }
+        finally {
+            loginPending = false;
         }
     });
 
@@ -444,7 +459,7 @@
         updateSummaryValues();
     });
 
-    clockTimer.addEventListener("connect", () => setOffline(false));
+    clockTimer.addEventListener("connect", () => setOffline(false, { login: loginPending }));
     clockTimer.addEventListener("disconnect", () => setOffline(true));
 
     const graphicalSettings = getGraphicalSettings();
@@ -453,5 +468,5 @@
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
-    setOffline(!clockTimer.connected);
+    setOffline(!clockTimer.connected, { startup: true });
 })();
