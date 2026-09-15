@@ -1482,7 +1482,8 @@
                     "overtime",
                     "earlystart",
                     "latency",
-                    "elapsed"
+                    "elapsed",
+                    "discrepancy"
                 ]);
 
             const ranges =
@@ -2044,6 +2045,7 @@
         #stripIntervalDatabaseId(record) {
             delete record.intervalId;
             delete record.clockTimerSyncedEnd;
+            delete record.clockTimerSyncedAttributes;
             if (record.otherAttributes) {
                 for (const name of Object.keys(record.otherAttributes)) {
                     if (name.toLowerCase() === "interval-id") {
@@ -2111,36 +2113,173 @@
             return tripId;
         }
 
-        async #syncIntervalRecord(record) {
-            const tripId = await this.#ensureTripPersisted();
-            const payload = this.#intervalPayload(record);
-            const intervalId = Number(record.intervalId);
+        #intervalAttributesSignature(attributes) {
+            return JSON.stringify(
+                Object.entries(
+                    attributes ?? {}
+                )
+                    .map(
+                        ([name, value]) => [
+                            String(name),
+                            String(value)
+                        ]
+                    )
+                    .sort(
+                        (left, right) =>
+                            left[0].localeCompare(
+                                right[0]
+                            ) ||
+                            left[1].localeCompare(
+                                right[1]
+                            )
+                    )
+            );
+        }
 
-            if (!Number.isInteger(intervalId) || intervalId < 1) {
-                const data = await this.#apiRequest("intervals", {
-                    method: "POST",
-                    csrf: true,
-                    body: { tripId, ...payload }
-                });
-                this.#assignIntervalDatabaseId(record, data.intervalId);
-                record.clockTimerSyncedEnd = payload.endTime;
+        async #syncIntervalRecord(record) {
+            const intervalId =
+                Number(record.intervalId);
+
+            if (
+                record.clockTimerPendingDelete ===
+                    true
+            ) {
+                if (
+                    !Number.isInteger(intervalId) ||
+                    intervalId < 1
+                ) {
+                    record.clockTimerDeleteSynced =
+                        true;
+                    return;
+                }
+
+                await this.#apiRequest(
+                    "intervals",
+                    {
+                        method: "DELETE",
+                        csrf: true,
+                        body: { intervalId }
+                    }
+                );
+
+                record.clockTimerDeleteSynced =
+                    true;
                 return;
             }
 
-            if (payload.endTime !== null && record.clockTimerSyncedEnd !== payload.endTime) {
-                await this.#apiRequest("intervals", {
-                    method: "PATCH",
-                    csrf: true,
-                    body: { intervalId, endTime: payload.endTime }
-                });
-                record.clockTimerSyncedEnd = payload.endTime;
+            const tripId =
+                await this.#ensureTripPersisted();
+
+            const payload =
+                this.#intervalPayload(record);
+
+            const attributeSignature =
+                this.#intervalAttributesSignature(
+                    payload.attributes
+                );
+
+            if (
+                !Number.isInteger(intervalId) ||
+                intervalId < 1
+            ) {
+                const data =
+                    await this.#apiRequest(
+                        "intervals",
+                        {
+                            method: "POST",
+                            csrf: true,
+                            body: {
+                                tripId,
+                                ...payload
+                            }
+                        }
+                    );
+
+                this.#assignIntervalDatabaseId(
+                    record,
+                    data.intervalId
+                );
+
+                record.clockTimerSyncedEnd =
+                    payload.endTime;
+
+                record.clockTimerSyncedAttributes =
+                    attributeSignature;
+
+                return;
+            }
+
+            const patch = {
+                intervalId
+            };
+
+            if (
+                payload.endTime !== null &&
+                record.clockTimerSyncedEnd !==
+                    payload.endTime
+            ) {
+                patch.endTime =
+                    payload.endTime;
+            }
+
+            if (
+                record.clockTimerSyncedAttributes !==
+                    attributeSignature
+            ) {
+                patch.attributes =
+                    payload.attributes;
+            }
+
+            if (
+                Object.keys(patch).length > 1
+            ) {
+                await this.#apiRequest(
+                    "intervals",
+                    {
+                        method: "PATCH",
+                        csrf: true,
+                        body: patch
+                    }
+                );
+            }
+
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    patch,
+                    "endTime"
+                )
+            ) {
+                record.clockTimerSyncedEnd =
+                    payload.endTime;
+            }
+
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    patch,
+                    "attributes"
+                )
+            ) {
+                record.clockTimerSyncedAttributes =
+                    attributeSignature;
             }
         }
 
         async #syncIntervals() {
-            for (const record of this.#intervalRecords()) {
-                await this.#syncIntervalRecord(record);
+            for (
+                const record of
+                    [...this.#intervalRecords()]
+            ) {
+                await this.#syncIntervalRecord(
+                    record
+                );
             }
+
+            this.#insertedRanges =
+                this.#insertedRanges.filter(
+                    record =>
+                        record.clockTimerDeleteSynced !==
+                            true
+                );
         }
 
         async #protectedSync(action) {
@@ -3306,6 +3445,93 @@
                     )
             });
             return result;
+        }
+
+        async toggleIntervalApproval(
+            interval
+        ) {
+            const record =
+                this.#resolveIntervalApprovalRecord(
+                    interval
+                );
+
+            const current =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            return this.#commitIntervalApproval(
+                record,
+                current.state === "approved"
+                    ? "unapproved"
+                    : "approved",
+                current.value,
+                "intervalApprovalToggle"
+            );
+        }
+
+        async setIntervalApproval(
+            interval,
+            value
+        ) {
+            const record =
+                this.#resolveIntervalApprovalRecord(
+                    interval
+                );
+
+            const current =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            const normalized =
+                this.#normalizeIntervalApprovalDuration(
+                    value
+                );
+
+            if (
+                current.value ===
+                    normalized.value
+            ) {
+                return {
+                    ...this.#mutationResult(
+                        true,
+                        record
+                    ),
+                    state:
+                        current.state,
+                    value:
+                        current.value,
+                    effectiveDurationMilliseconds:
+                        this.#getIntervalEffectiveDuration(
+                            record
+                        ),
+                    calculatedEndTime:
+                        this.#timelineToISO(
+                            this.#calculatedEndTime
+                        )
+                };
+            }
+
+            return this.#commitIntervalApproval(
+                record,
+                current.state,
+                normalized.value,
+                "intervalApprovalChange"
+            );
+        }
+
+        async deleteInterval(
+            interval
+        ) {
+            const record =
+                this.#resolveIntervalApprovalRecord(
+                    interval
+                );
+
+            return this.#commitIntervalDeletion(
+                record
+            );
         }
 
         get state() {
@@ -5355,7 +5581,8 @@
                 "earlystart",
                 "latency",
                 "overtime",
-                "remaining"
+                "remaining",
+                "discrepancy"
             ]).has(
                 String(type).trim()
             );
@@ -5568,6 +5795,16 @@
             this.#ensureIntervalRecordId(
                 record
             );
+
+            if (
+                record.openEnded === true &&
+                this.#isIntervalType(
+                    record.type
+                )
+            ) {
+                record.clockTimerApprovalManaged =
+                    true;
+            }
 
             const startTimeline =
                 this.#dateToTimelineTime(
@@ -6574,7 +6811,8 @@
                 "latency",
                 "elapsed",
                 "remaining",
-                "wave"
+                "wave",
+                "discrepancy"
             ]);
         }
 
@@ -6884,7 +7122,9 @@
                 }
 
                 const duration =
-                    end - start;
+                    this.#getIntervalEffectiveDuration(
+                        record
+                    );
 
                 this.#extendCalculatedEndTime(
                     duration,
@@ -6989,6 +7229,12 @@
                     ) ?? ""
                 ).trim();
 
+            if (type === "discrepancy") {
+                throw new Error(
+                    "discrepancy ranges are derived and cannot be modified."
+                );
+            }
+
             if (
                 this.#getProtectedRangeTypes()
                     .has(type)
@@ -7008,6 +7254,21 @@
                         candidate =>
                             candidate.id === insertedId
                     );
+
+                if (
+                    record &&
+                    this.#isIntervalApprovalManaged(
+                        record
+                    ) &&
+                    record.openEnded !==
+                        true
+                ) {
+                    void this.#commitIntervalDeletion(
+                        record
+                    );
+
+                    return new Date();
+                }
 
                 this.#insertedRanges =
                     this.#insertedRanges.filter(
@@ -7036,6 +7297,10 @@
                 ) {
                     range.remove();
                 }
+
+                this.#removeDiscrepancyRangesForRecord(
+                    record
+                );
             }
             else if (overwriteId !== undefined) {
                 const record =
@@ -7191,6 +7456,810 @@
             return normalized;
         }
 
+        #findIntervalAttribute(
+            record,
+            attributeName
+        ) {
+            const attributes =
+                record?.otherAttributes ?? {};
+
+            const target =
+                String(
+                    attributeName
+                ).toLowerCase();
+
+            for (
+                const [name, value] of
+                    Object.entries(attributes)
+            ) {
+                if (
+                    String(name).toLowerCase() ===
+                        target
+                ) {
+                    return {
+                        name,
+                        value:
+                            String(value)
+                    };
+                }
+            }
+
+            return undefined;
+        }
+
+        #isIntervalApprovalManaged(record) {
+            return Boolean(
+                record &&
+                (
+                    record.clockTimerApprovalManaged ===
+                        true ||
+                    this.#findIntervalAttribute(
+                        record,
+                        "approved"
+                    ) ||
+                    this.#findIntervalAttribute(
+                        record,
+                        "unapproved"
+                    )
+                )
+            );
+        }
+
+        #getIntervalApprovalState(record) {
+            if (!record) {
+                return undefined;
+            }
+
+            const approved =
+                this.#findIntervalAttribute(
+                    record,
+                    "approved"
+                );
+
+            const unapproved =
+                this.#findIntervalAttribute(
+                    record,
+                    "unapproved"
+                );
+
+            if (approved && unapproved) {
+                throw new Error(
+                    "A closed interval must have exactly one of approved or unapproved."
+                );
+            }
+
+            const entry =
+                approved ??
+                unapproved;
+
+            if (!entry) {
+                return undefined;
+            }
+
+            let duration;
+
+            try {
+                duration =
+                    this.#parseInsertRangeLength(
+                        entry.value
+                    );
+            }
+            catch {
+                throw new RangeError(
+                    "approved/unapproved must be a human-readable duration in [h:]m:ss[.ms] format."
+                );
+            }
+
+            return {
+                state:
+                    approved
+                        ? "approved"
+                        : "unapproved",
+                value:
+                    entry.value,
+                duration
+            };
+        }
+
+        #getIntervalActualDuration(record) {
+            if (!record) {
+                return undefined;
+            }
+
+            const start =
+                this.#dateToTimelineTime(
+                    record.startDate
+                );
+
+            if (!Number.isFinite(start)) {
+                return undefined;
+            }
+
+            let end;
+
+            if (record.openEnded === true) {
+                end =
+                    record ===
+                        this.#openEndedRange &&
+                    Number.isFinite(
+                        this.#openEndedLastTick
+                    )
+                        ? this.#openEndedLastTick
+                        : start;
+            }
+            else {
+                end =
+                    this.#getIntervalRecordEnd(
+                        record
+                    );
+            }
+
+            if (
+                !Number.isFinite(end) ||
+                end < start
+            ) {
+                return undefined;
+            }
+
+            return end - start;
+        }
+
+        #getIntervalEffectiveDuration(record) {
+            if (
+                record?.clockTimerPendingDelete ===
+                    true
+            ) {
+                return 0;
+            }
+
+            const actual =
+                this.#getIntervalActualDuration(
+                    record
+                );
+
+            if (!Number.isFinite(actual)) {
+                return undefined;
+            }
+
+            if (
+                !this.#isIntervalApprovalManaged(
+                    record
+                ) ||
+                record.openEnded === true
+            ) {
+                return actual;
+            }
+
+            const approval =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            if (!approval) {
+                return actual;
+            }
+
+            return approval.state ===
+                "approved"
+                ? approval.duration
+                : 0;
+        }
+
+        #formatSignedIntervalDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            const rounded =
+                Math.round(
+                    milliseconds
+                );
+
+            return `${rounded < 0 ? "-" : "+"}${this.#formatStandardTime(Math.abs(rounded))}`;
+        }
+
+        #normalizeIntervalApprovalDuration(
+            value
+        ) {
+            if (typeof value !== "string") {
+                throw new TypeError(
+                    "approval duration must be a string in [h:]m:ss[.ms] format."
+                );
+            }
+
+            let duration;
+
+            try {
+                duration =
+                    this.#parseInsertRangeLength(
+                        value.trim()
+                    );
+            }
+            catch {
+                throw new RangeError(
+                    "approval duration must be a human-readable duration in [h:]m:ss[.ms] format."
+                );
+            }
+
+            return {
+                duration,
+                value:
+                    this.#formatStandardTime(
+                        duration
+                    )
+            };
+        }
+
+        #setIntervalApprovalAttributes(
+            record,
+            state,
+            value
+        ) {
+            if (
+                state !== "approved" &&
+                state !== "unapproved"
+            ) {
+                throw new RangeError(
+                    "approval state must be approved or unapproved."
+                );
+            }
+
+            const attributes = {
+                ...(record.otherAttributes ?? {})
+            };
+
+            for (const name of Object.keys(attributes)) {
+                const normalized =
+                    name.toLowerCase();
+
+                if (
+                    normalized === "approved" ||
+                    normalized === "unapproved"
+                ) {
+                    delete attributes[name];
+                }
+            }
+
+            attributes[state] =
+                String(value);
+
+            record.otherAttributes =
+                attributes;
+
+            record.clockTimerApprovalManaged =
+                true;
+        }
+
+        #initializeClosedIntervalApproval(
+            record
+        ) {
+            if (
+                !record ||
+                record.openEnded === true ||
+                !this.#isIntervalApprovalManaged(
+                    record
+                )
+            ) {
+                return false;
+            }
+
+            if (
+                this.#getIntervalApprovalState(
+                    record
+                )
+            ) {
+                return false;
+            }
+
+            const duration =
+                this.#getIntervalActualDuration(
+                    record
+                );
+
+            if (
+                !Number.isFinite(duration) ||
+                duration <= 0
+            ) {
+                return false;
+            }
+
+            this.#setIntervalApprovalAttributes(
+                record,
+                "approved",
+                this.#formatStandardTime(
+                    duration
+                )
+            );
+
+            record.clockTimerApprovalInitialized =
+                true;
+
+            return true;
+        }
+
+        #resolveIntervalApprovalRecord(
+            target
+        ) {
+            if (
+                target?.localName ===
+                    "time-range" &&
+                target.getAttribute(
+                    "type"
+                ) === "discrepancy"
+            ) {
+                throw new Error(
+                    "discrepancy ranges are derived and cannot be modified."
+                );
+            }
+
+            let record;
+
+            if (
+                target?.localName ===
+                    "time-range"
+            ) {
+                const localId =
+                    target.clockTimerInserted;
+
+                record =
+                    this.#insertedRanges.find(
+                        candidate =>
+                            candidate.id ===
+                                localId
+                    );
+            }
+            else if (
+                Number.isInteger(
+                    Number(target)
+                ) &&
+                Number(target) > 0
+            ) {
+                const intervalId =
+                    Number(target);
+
+                record =
+                    this.#insertedRanges.find(
+                        candidate =>
+                            Number(
+                                candidate.intervalId
+                            ) === intervalId
+                    );
+            }
+            else if (typeof target === "string") {
+                record =
+                    this.#insertedRanges.find(
+                        candidate =>
+                            candidate.id === target
+                    );
+            }
+
+            if (!record) {
+                throw new RangeError(
+                    "The interval could not be resolved."
+                );
+            }
+
+            if (
+                record.openEnded === true ||
+                !this.#isIntervalApprovalManaged(
+                    record
+                ) ||
+                !this.#getIntervalApprovalState(
+                    record
+                )
+            ) {
+                throw new Error(
+                    "Only a previously open interval that has been closed can be approved or unapproved."
+                );
+            }
+
+            return record;
+        }
+
+        #reapplyIntervalScheduleShifts() {
+            const records =
+                [...this.#insertedRanges]
+                    .sort(
+                        (left, right) =>
+                            this.#dateToTimelineTime(
+                                left.startDate
+                            ) -
+                            this.#dateToTimelineTime(
+                                right.startDate
+                            )
+                    );
+
+            for (const record of records) {
+                if (
+                    !this.#typeExtendsCalculatedEndTime(
+                        record.type
+                    )
+                ) {
+                    continue;
+                }
+
+                const start =
+                    this.#dateToTimelineTime(
+                        record.startDate
+                    );
+
+                const duration =
+                    this.#getIntervalEffectiveDuration(
+                        record
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(duration) ||
+                    duration <= 0
+                ) {
+                    continue;
+                }
+
+                this.#shiftPlannedRangesAfter(
+                    start,
+                    duration
+                );
+
+                this.#shiftScheduleMarkers(
+                    start,
+                    duration
+                );
+            }
+        }
+
+        async #commitIntervalApproval(
+            record,
+            nextState,
+            nextValue,
+            eventName
+        ) {
+            const previous =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            if (!previous) {
+                throw new Error(
+                    "The interval does not have approval state."
+                );
+            }
+
+            const previousEffectiveDuration =
+                this.#getIntervalEffectiveDuration(
+                    record
+                );
+
+            const previousCalculatedEndTime =
+                this.#calculatedEndTime;
+
+            this.#setIntervalApprovalAttributes(
+                record,
+                nextState,
+                nextValue
+            );
+
+            const next =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            const effectiveDuration =
+                this.#getIntervalEffectiveDuration(
+                    record
+                );
+
+            if (
+                Number.isFinite(previousEffectiveDuration) &&
+                Number.isFinite(effectiveDuration)
+            ) {
+                this.#adjustCalculatedEndTime(
+                    effectiveDuration -
+                    previousEffectiveDuration
+                );
+            }
+
+            const preparedRenderedPercentGoal =
+                this.#calculateRenderedPercentGoal();
+
+            const detail = {
+                ...this.#mutationResult(
+                    false,
+                    record
+                ),
+                previousState:
+                    previous.state,
+                state:
+                    next.state,
+                previousValue:
+                    previous.value,
+                value:
+                    next.value,
+                previousEffectiveDurationMilliseconds:
+                    previousEffectiveDuration,
+                effectiveDurationMilliseconds:
+                    effectiveDuration,
+                previousCalculatedEndTime:
+                    this.#timelineToISO(
+                        previousCalculatedEndTime
+                    ),
+                calculatedEndTime:
+                    this.#timelineToISO(
+                        this.#calculatedEndTime
+                    ),
+                preparedRenderedPercentGoal,
+                userInitiated: true
+            };
+
+            this.#emitClockTimerEvent(
+                eventName,
+                detail
+            );
+
+            if (this.#started) {
+                this.#handleTripGoalChange(
+                    "user"
+                );
+            }
+
+            if (
+                previous.state !==
+                    next.state
+            ) {
+                if (
+                    next.state ===
+                        "unapproved"
+                ) {
+                    this.#collapseIntervalApprovalVisualGroup(
+                        record
+                    );
+                }
+                else {
+                    this.#animateIntervalApprovalGroupIn(
+                        record
+                    );
+                }
+            }
+            else if (
+                next.state ===
+                    "approved"
+            ) {
+                this.#transitionIntervalApprovalValueVisual(
+                    record
+                );
+            }
+
+            if (this.#started) {
+                const now =
+                    this.#getCurrentTimelineTime();
+
+                this.#updateElapsedRange(
+                    now
+                );
+
+                this.#updateOvertimeRanges(
+                    now
+                );
+
+                this.#updateRemainingRanges(
+                    now
+                );
+
+                this.#updateDisplay(
+                    new Date()
+                );
+
+                this.#checkGoalMisses(
+                    now
+                );
+
+                this.#refreshRingLayout(
+                    now,
+                    {
+                        refreshTickMarks: true
+                    }
+                );
+            }
+
+            const synced =
+                await this.#protectedSync(
+                    async () => {
+                        await this.#ensureTripPersisted();
+                        await this.#syncIntervalRecord(
+                            record
+                        );
+                    }
+                );
+
+            return {
+                ...this.#mutationResult(
+                    synced,
+                    record
+                ),
+                state:
+                    next.state,
+                value:
+                    next.value,
+                effectiveDurationMilliseconds:
+                    effectiveDuration,
+                calculatedEndTime:
+                    this.#timelineToISO(
+                        this.#calculatedEndTime
+                    )
+            };
+        }
+
+        async #commitIntervalDeletion(
+            record
+        ) {
+            if (
+                record.clockTimerPendingDelete ===
+                    true
+            ) {
+                throw new Error(
+                    "The interval is already pending deletion."
+                );
+            }
+
+            const approval =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            const previousEffectiveDuration =
+                this.#getIntervalEffectiveDuration(
+                    record
+                );
+
+            const previousCalculatedEndTime =
+                this.#calculatedEndTime;
+
+            const persisted =
+                Number.isInteger(
+                    Number(record.intervalId)
+                ) &&
+                Number(record.intervalId) > 0;
+
+            record.clockTimerPendingDelete =
+                true;
+
+            if (
+                Number.isFinite(
+                    previousEffectiveDuration
+                )
+            ) {
+                this.#adjustCalculatedEndTime(
+                    -previousEffectiveDuration
+                );
+            }
+
+            const preparedRenderedPercentGoal =
+                this.#calculateRenderedPercentGoal();
+
+            if (!persisted) {
+                this.#insertedRanges =
+                    this.#insertedRanges.filter(
+                        candidate =>
+                            candidate !== record
+                    );
+            }
+
+            if (
+                this.#pendingIntervalRecord ===
+                    record
+            ) {
+                this.#pendingIntervalRecord =
+                    undefined;
+            }
+
+            const detail = {
+                ...this.#mutationResult(
+                    false,
+                    record
+                ),
+                state:
+                    approval?.state,
+                value:
+                    approval?.value,
+                previousEffectiveDurationMilliseconds:
+                    previousEffectiveDuration,
+                effectiveDurationMilliseconds: 0,
+                previousCalculatedEndTime:
+                    this.#timelineToISO(
+                        previousCalculatedEndTime
+                    ),
+                calculatedEndTime:
+                    this.#timelineToISO(
+                        this.#calculatedEndTime
+                    ),
+                preparedRenderedPercentGoal,
+                persisted,
+                pendingSync:
+                    persisted,
+                irreversible:
+                    !persisted,
+                userInitiated: true
+            };
+
+            this.#emitClockTimerEvent(
+                "intervalDelete",
+                detail
+            );
+
+            if (this.#started) {
+                this.#handleTripGoalChange(
+                    "user"
+                );
+            }
+
+            this.#collapseIntervalApprovalVisualGroup(
+                record
+            );
+
+            if (this.#started) {
+                const now =
+                    this.#getCurrentTimelineTime();
+
+                this.#updateElapsedRange(now);
+                this.#updateOvertimeRanges(now);
+                this.#updateRemainingRanges(now);
+                this.#updateDisplay(new Date());
+                this.#checkGoalMisses(now);
+                this.#refreshRingLayout(
+                    now,
+                    {
+                        refreshTickMarks: true
+                    }
+                );
+            }
+
+            let synced =
+                !persisted;
+
+            if (persisted) {
+                synced =
+                    await this.#protectedSync(
+                        async () => {
+                            await this.#syncIntervalRecord(
+                                record
+                            );
+                        }
+                    );
+
+                if (
+                    synced &&
+                    record.clockTimerDeleteSynced ===
+                        true
+                ) {
+                    this.#insertedRanges =
+                        this.#insertedRanges.filter(
+                            candidate =>
+                                candidate !== record
+                        );
+                }
+            }
+
+            return {
+                ...this.#mutationResult(
+                    synced,
+                    record
+                ),
+                deleted: true,
+                persisted,
+                pendingSync:
+                    persisted &&
+                    !synced,
+                irreversible:
+                    !persisted,
+                calculatedEndTime:
+                    this.#timelineToISO(
+                        this.#calculatedEndTime
+                    )
+            };
+        }
+
         #getCurrentInterval(
             now
         ) {
@@ -7244,7 +8313,12 @@
                 const record of
                     this.#insertedRanges
             ) {
-                if (record.clockTimerExplicitlyEnded === true) {
+                if (
+                    record.clockTimerPendingDelete ===
+                        true ||
+                    record.clockTimerExplicitlyEnded ===
+                        true
+                ) {
                     continue;
                 }
 
@@ -7388,6 +8462,10 @@
                             record.startDate
                         )
                     );
+
+                this.#initializeClosedIntervalApproval(
+                    record
+                );
 
                 this.#openEndedRange =
                     undefined;
@@ -16151,6 +17229,8 @@
                 counterclockwiseOvertimeRemoval
             });
 
+            this.#reapplyIntervalScheduleShifts();
+
             this.#removeOvertimeRanges();
 
             this.#updateElapsedRange(
@@ -19049,14 +20129,37 @@
 
             const segments = [];
 
-            for (const range of
-                this.#getManagedTimeRanges()
+            const approvalManagedIds =
+                new Set(
+                    this.#insertedRanges
+                        .filter(
+                            record =>
+                                this.#isIntervalApprovalManaged(
+                                    record
+                                )
+                        )
+                        .map(
+                            record =>
+                                record.id
+                        )
+                );
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
             ) {
                 if (
                     range.timeRangeExiting === true ||
                     !this.#isIntervalType(
                         range.getAttribute(
                             "type"
+                        )
+                    ) ||
+                    (
+                        range.clockTimerInserted !==
+                            undefined &&
+                        approvalManagedIds.has(
+                            range.clockTimerInserted
                         )
                     )
                 ) {
@@ -19072,6 +20175,55 @@
                     Number(
                         range.clockTimerEnd
                     );
+
+                if (
+                    !Number.isFinite(rangeStart) ||
+                    !Number.isFinite(rangeEnd) ||
+                    rangeEnd <= rangeStart ||
+                    rangeEnd <= startTime
+                ) {
+                    continue;
+                }
+
+                segments.push([
+                    Math.max(
+                        rangeStart,
+                        startTime
+                    ),
+                    rangeEnd
+                ]);
+            }
+
+            for (
+                const record of
+                    this.#insertedRanges
+            ) {
+                if (
+                    !approvalManagedIds.has(
+                        record.id
+                    ) ||
+                    !this.#isIntervalType(
+                        record.type
+                    )
+                ) {
+                    continue;
+                }
+
+                const rangeStart =
+                    this.#dateToTimelineTime(
+                        record.startDate
+                    );
+
+                const duration =
+                    this.#getIntervalEffectiveDuration(
+                        record
+                    );
+
+                const rangeEnd =
+                    Number.isFinite(rangeStart) &&
+                    Number.isFinite(duration)
+                        ? rangeStart + duration
+                        : undefined;
 
                 if (
                     !Number.isFinite(rangeStart) ||
@@ -20797,9 +21949,553 @@
             }
         }
 
+        #getIntervalApprovalVisualRanges(
+            record
+        ) {
+            if (!record) {
+                return [];
+            }
+
+            return this.#getManagedTimeRanges()
+                .filter(
+                    range =>
+                        range.timeRangeExiting !==
+                            true &&
+                        (
+                            range.clockTimerInserted ===
+                                record.id ||
+                            range.clockTimerDiscrepancyFor ===
+                                record.id
+                        )
+                );
+        }
+
+        #collapseIntervalApprovalVisualGroup(
+            record,
+            collapseTimeline = undefined
+        ) {
+            const start =
+                Number.isFinite(
+                    collapseTimeline
+                )
+                    ? collapseTimeline
+                    : this.#dateToTimelineTime(
+                        record?.startDate
+                    );
+
+            if (!Number.isFinite(start)) {
+                return false;
+            }
+
+            const collapseTime =
+                this.#formatTimelineTime(
+                    start
+                );
+
+            for (
+                const range of
+                    this.#getIntervalApprovalVisualRanges(
+                        record
+                    )
+            ) {
+                this.#releaseTimeRangeTimingAnimation(
+                    range
+                );
+
+                range.clockTimerInternalMutation =
+                    true;
+
+                try {
+                    if (
+                        typeof range.removeAnimated ===
+                            "function"
+                    ) {
+                        range.removeAnimated({
+                            targetStart:
+                                collapseTime,
+                            targetEnd:
+                                collapseTime
+                        });
+                    }
+                    else {
+                        range.remove();
+                    }
+                }
+                finally {
+                    delete range.clockTimerInternalMutation;
+                }
+            }
+
+            return true;
+        }
+
+        #syncIntervalApprovalVisualAttributes(
+            record
+        ) {
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            candidate =>
+                                candidate.clockTimerInserted ===
+                                    record.id &&
+                                candidate.timeRangeExiting !==
+                                    true
+                        )
+            ) {
+                range.clockTimerInternalMutation =
+                    true;
+
+                try {
+                    this.#applyOtherAttributes(
+                        range,
+                        record.otherAttributes
+                    );
+                }
+                finally {
+                    delete range.clockTimerInternalMutation;
+                }
+
+                range.clockTimerApprovalReadOnly =
+                    true;
+            }
+        }
+
+        #transitionIntervalApprovalValueVisual(
+            record
+        ) {
+            const approval =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            if (
+                !approval ||
+                approval.state !== "approved"
+            ) {
+                return false;
+            }
+
+            const start =
+                this.#dateToTimelineTime(
+                    record.startDate
+                );
+
+            const actualEnd =
+                this.#getIntervalRecordEnd(
+                    record
+                );
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(actualEnd) ||
+                actualEnd <= start
+            ) {
+                return false;
+            }
+
+            const actualDuration =
+                actualEnd - start;
+
+            const renderedEnd =
+                start +
+                Math.min(
+                    approval.duration,
+                    actualDuration
+                );
+
+            const difference =
+                approval.duration -
+                actualDuration;
+
+            const attachment =
+                difference < 0
+                    ? renderedEnd
+                    : actualEnd;
+
+            const attachmentTime =
+                this.#formatTimelineTime(
+                    attachment
+                );
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            candidate =>
+                                candidate.clockTimerDiscrepancyFor ===
+                                    record.id &&
+                                candidate.timeRangeExiting !==
+                                    true
+                        )
+            ) {
+                this.#releaseTimeRangeTimingAnimation(
+                    range
+                );
+
+                range.clockTimerInternalMutation =
+                    true;
+
+                try {
+                    range.removeAnimated({
+                        targetStart:
+                            attachmentTime,
+                        targetEnd:
+                            attachmentTime
+                    });
+                }
+                finally {
+                    delete range.clockTimerInternalMutation;
+                }
+            }
+
+            this.#syncOpenEndedRangeElements(
+                record,
+                renderedEnd
+            );
+
+            this.#syncIntervalApprovalVisualAttributes(
+                record
+            );
+
+            if (difference === 0) {
+                return true;
+            }
+
+            const discrepancyStart =
+                difference < 0
+                    ? renderedEnd
+                    : actualEnd;
+
+            const discrepancyEnd =
+                difference < 0
+                    ? actualEnd
+                    : actualEnd + difference;
+
+            this.#appendApprovalRangeSegments({
+                record,
+                type: "discrepancy",
+                start:
+                    discrepancyStart,
+                end:
+                    discrepancyEnd,
+                attributes: {
+                    difference:
+                        this.#formatSignedIntervalDuration(
+                            difference
+                        )
+                },
+                discrepancy: true,
+                animateFrom:
+                    attachment
+            });
+
+            return true;
+        }
+
+        #animateIntervalApprovalGroupIn(
+            record
+        ) {
+            const start =
+                this.#dateToTimelineTime(
+                    record?.startDate
+                );
+
+            const actualEnd =
+                this.#getIntervalRecordEnd(
+                    record
+                );
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(actualEnd)
+            ) {
+                return false;
+            }
+
+            return this.#renderApprovalManagedRecord(
+                record,
+                start,
+                actualEnd,
+                {
+                    animateFromStart:
+                        true
+                }
+            );
+        }
+
+        #removeDiscrepancyRangesForRecord(
+            record
+        ) {
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            candidate =>
+                                candidate.clockTimerDiscrepancyFor ===
+                                    record.id
+                        )
+            ) {
+                range.clockTimerInternalMutation =
+                    true;
+
+                try {
+                    range.remove();
+                }
+                finally {
+                    delete range.clockTimerInternalMutation;
+                }
+            }
+        }
+
+        #appendApprovalRangeSegments({
+            record,
+            type,
+            start,
+            end,
+            attributes,
+            discrepancy = false,
+            animateFrom = undefined
+        }) {
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start
+            ) {
+                return;
+            }
+
+            let cursor =
+                start;
+
+            while (cursor < end) {
+                const ringIndex =
+                    this.#getTimerRingIndex(
+                        cursor
+                    );
+
+                const ringEnd =
+                    this.#getTimerRingEnd(
+                        ringIndex
+                    );
+
+                const segmentEnd =
+                    Math.min(
+                        end,
+                        ringEnd
+                    );
+
+                const ring =
+                    this.#ensureRing(
+                        ringIndex
+                    );
+
+                const range =
+                    this.#createTimeRange(
+                        type,
+                        cursor,
+                        segmentEnd,
+                        {
+                            dynamic: true
+                        }
+                    );
+
+                delete range.clockTimerDynamic;
+
+                if (
+                    Number.isFinite(
+                        animateFrom
+                    )
+                ) {
+                    range.timeRangeFullEntry =
+                        true;
+                }
+
+                if (discrepancy) {
+                    range.clockTimerDiscrepancyFor =
+                        record.id;
+
+                    range.setAttribute(
+                        "overlapping",
+                        ""
+                    );
+                }
+                else {
+                    range.clockTimerInserted =
+                        record.id;
+                }
+
+                this.#applyOtherAttributes(
+                    range,
+                    attributes
+                );
+
+                ring.appendChild(
+                    range
+                );
+
+                if (discrepancy) {
+                    range.clockTimerDerivedReadOnly =
+                        true;
+                }
+                else if (
+                    this.#isIntervalApprovalManaged(
+                        record
+                    )
+                ) {
+                    range.clockTimerApprovalReadOnly =
+                        true;
+                }
+
+                if (
+                    Number.isFinite(
+                        animateFrom
+                    ) &&
+                    typeof range.animateFromCollapsed ===
+                        "function"
+                ) {
+                    range.clockTimerInternalMutation =
+                        true;
+
+                    try {
+                        range.animateFromCollapsed(
+                            this.#formatTimelineTime(
+                                animateFrom
+                            )
+                        );
+                    }
+                    finally {
+                        delete range.clockTimerInternalMutation;
+                    }
+                }
+
+                cursor =
+                    segmentEnd;
+            }
+        }
+
+        #renderApprovalManagedRecord(
+            record,
+            start,
+            actualEnd,
+            {
+                animateFromStart = false
+            } = {}
+        ) {
+            if (
+                !this.#isIntervalApprovalManaged(
+                    record
+                ) ||
+                record.openEnded === true ||
+                record.clockTimerPendingDelete ===
+                    true
+            ) {
+                return false;
+            }
+
+            const approval =
+                this.#getIntervalApprovalState(
+                    record
+                );
+
+            if (!approval) {
+                return false;
+            }
+
+            this.#removeDiscrepancyRangesForRecord(
+                record
+            );
+
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(actualEnd) ||
+                actualEnd <= start
+            ) {
+                return true;
+            }
+
+            if (
+                approval.state ===
+                    "unapproved"
+            ) {
+                return true;
+            }
+
+            const actualDuration =
+                actualEnd - start;
+
+            const renderedDuration =
+                Math.min(
+                    approval.duration,
+                    actualDuration
+                );
+
+            const animateFrom =
+                animateFromStart
+                    ? start
+                    : undefined;
+
+            this.#appendApprovalRangeSegments({
+                record,
+                type:
+                    record.type,
+                start,
+                end:
+                    start +
+                    renderedDuration,
+                attributes:
+                    record.otherAttributes,
+                animateFrom
+            });
+
+            const difference =
+                approval.duration -
+                actualDuration;
+
+            if (difference === 0) {
+                return true;
+            }
+
+            const discrepancyStart =
+                difference < 0
+                    ? start + approval.duration
+                    : actualEnd;
+
+            const discrepancyEnd =
+                difference < 0
+                    ? actualEnd
+                    : actualEnd + difference;
+
+            this.#appendApprovalRangeSegments({
+                record,
+                type: "discrepancy",
+                start:
+                    discrepancyStart,
+                end:
+                    discrepancyEnd,
+                attributes: {
+                    difference:
+                        this.#formatSignedIntervalDuration(
+                            difference
+                        )
+                },
+                discrepancy: true,
+                animateFrom
+            });
+
+            return true;
+        }
+
         #renderInsertedRecord(
             record
         ) {
+            if (
+                record?.clockTimerPendingDelete ===
+                    true
+            ) {
+                return;
+            }
+
             const start =
                 this.#dateToTimelineTime(
                     record.startDate
@@ -20829,6 +22525,16 @@
                             )
                             : undefined
                     );
+
+            if (
+                this.#renderApprovalManagedRecord(
+                    record,
+                    start,
+                    effectiveEnd
+                )
+            ) {
+                return;
+            }
 
             if (
                 !Number.isFinite(
@@ -21016,6 +22722,28 @@
                             range,
                             best.attributes
                         );
+                    }
+
+                    if (
+                        this.#isIntervalApprovalManaged(
+                            record
+                        )
+                    ) {
+                        range.clockTimerInternalMutation =
+                            true;
+
+                        try {
+                            this.#applyOtherAttributes(
+                                range,
+                                record.otherAttributes
+                            );
+                        }
+                        finally {
+                            delete range.clockTimerInternalMutation;
+                        }
+
+                        range.clockTimerApprovalReadOnly =
+                            true;
                     }
                 }
             }

@@ -480,6 +480,89 @@ class TimeRange extends HTMLElement {
         );
     }
 
+    #assertClockTimerMutationAllowed(
+        name = undefined
+    ) {
+        if (
+            this.clockTimerInternalMutation ===
+                true
+        ) {
+            return;
+        }
+
+        if (
+            this.clockTimerDerivedReadOnly ===
+                true
+        ) {
+            throw new Error(
+                "Derived discrepancy ranges cannot be modified."
+            );
+        }
+
+        const normalized =
+            name === undefined
+                ? undefined
+                : String(name).toLowerCase();
+
+        if (
+            this.clockTimerApprovalReadOnly ===
+                true &&
+            (
+                normalized === "approved" ||
+                normalized === "unapproved"
+            )
+        ) {
+            throw new Error(
+                "Interval approval attributes must be changed through ClockTimer."
+            );
+        }
+    }
+
+    setAttribute(
+        name,
+        value
+    ) {
+        this.#assertClockTimerMutationAllowed(
+            name
+        );
+
+        return super.setAttribute(
+            name,
+            value
+        );
+    }
+
+    removeAttribute(
+        name
+    ) {
+        this.#assertClockTimerMutationAllowed(
+            name
+        );
+
+        return super.removeAttribute(
+            name
+        );
+    }
+
+    toggleAttribute(
+        name,
+        force
+    ) {
+        this.#assertClockTimerMutationAllowed(
+            name
+        );
+
+        return super.toggleAttribute(
+            name,
+            force
+        );
+    }
+
+    remove() {
+        this.#assertClockTimerMutationAllowed();
+        return super.remove();
+    }
+
     connectedCallback() {
         if (
             TimeRange.#reordering
@@ -2599,11 +2682,81 @@ class TimeRange extends HTMLElement {
         return this;
     }
 
+    animateFromCollapsed(
+        value
+    ) {
+        if (
+            this.clockTimerInternalMutation !==
+                true
+        ) {
+            throw new Error(
+                "Collapsed-entry animations are ClockTimer-managed."
+            );
+        }
+
+        const collapsed =
+            value instanceof Date
+                ? this.#cloneDate(value)
+                : this.#uniformDate(
+                    value,
+                    false
+                );
+
+        if (
+            !(collapsed instanceof Date) ||
+            !(this.#startTime instanceof Date) ||
+            !(this.#endTime instanceof Date)
+        ) {
+            return false;
+        }
+
+        if (
+            this.#animationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                this.#animationFrame
+            );
+
+            this.#animationFrame =
+                undefined;
+        }
+
+        this.#renderStartTime =
+            this.#cloneDate(collapsed);
+
+        this.#renderEndTime =
+            this.#cloneDate(collapsed);
+
+        this.#updateClipPath();
+
+        this.#startTimingAnimation(
+            collapsed,
+            collapsed,
+            this.#startTime,
+            this.#endTime,
+            false
+        );
+
+        return true;
+    }
+
     removeAnimated({
         collapseTo = "end",
         targetStart,
         targetEnd
     } = {}) {
+        if (
+            this.clockTimerDerivedReadOnly ===
+                true &&
+            this.clockTimerInternalMutation !==
+                true
+        ) {
+            throw new Error(
+                "Derived discrepancy ranges cannot be modified."
+            );
+        }
+
         if (
             this.#pendingRemoval
         ) {
@@ -2640,15 +2793,33 @@ class TimeRange extends HTMLElement {
         const visual =
             this.#getVisualTiming();
 
+        const normalizeTarget =
+            value => {
+                if (value instanceof Date) {
+                    return this.#cloneDate(
+                        value
+                    );
+                }
+
+                if (typeof value === "string") {
+                    return this.#uniformDate(
+                        value,
+                        false
+                    );
+                }
+
+                return undefined;
+            };
+
         let finalStart =
-            targetStart instanceof Date
-                ? targetStart
-                : undefined;
+            normalizeTarget(
+                targetStart
+            );
 
         let finalEnd =
-            targetEnd instanceof Date
-                ? targetEnd
-                : undefined;
+            normalizeTarget(
+                targetEnd
+            );
 
         if (
             !(finalStart instanceof Date) ||
