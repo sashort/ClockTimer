@@ -1,0 +1,46 @@
+name: Patch ClockTimer default format
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Update ClockTimer default formats
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('ClockTimer.js')
+          text = path.read_text()
+          pattern = r'(#getDefaultFormat\(\)\s*\{.*?\?\s*)"h:mm:ss AM/PM"(\s*:\s*)"HHmmss"'
+          updated, count = re.subn(pattern, r'\1"h:mm AM/PM"\2"HHmm"', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'Expected one #getDefaultFormat replacement, found {count}')
+          path.write_text(updated)
+          PY
+          node --check ClockTimer.js
+
+      - name: Commit source change
+        run: |
+          if git diff --quiet -- ClockTimer.js; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js
+          git commit -m "Use minute precision for default clock format"
+          git push origin HEAD:rename-prestart-latency
