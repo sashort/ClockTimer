@@ -3,6 +3,7 @@
         static observedAttributes = [
             "trip-goal",
             "total-goal",
+            "percent-mode",
             "timer-type",
             "timer-mode",
             "military-time",
@@ -133,8 +134,13 @@
 
         #originalStartArguments;
 
-        #tripGoal =
+        #renderedPercentGoal =
             1;
+
+        #percentMode =
+            "auto";
+
+        #renderedPercentGoalSourceOverride;
 
         #tripTotals;
 
@@ -1151,6 +1157,58 @@
                     );
                     break;
 
+                case "percent-mode": {
+                    const normalized =
+                        this.#normalizePercentMode(
+                            newValue
+                        );
+
+                    if (newValue !== normalized) {
+                        this.setAttribute(
+                            "percent-mode",
+                            normalized
+                        );
+                        break;
+                    }
+
+                    const previousMode =
+                        this.#percentMode;
+
+                    this.#percentMode =
+                        normalized;
+
+                    if (previousMode !== normalized) {
+                        this.#emitClockTimerEvent(
+                            "percentModeChange",
+                            {
+                                attribute: "percent-mode",
+                                previousValue: previousMode,
+                                value: normalized,
+                                userInitiated: true
+                            }
+                        );
+
+                        if (
+                            this.#updatesSuspended &&
+                            !this.#processingAsyncBatch
+                        ) {
+                            this.#queueAsyncOperation({
+                                type: "trip-goal",
+                                source:
+                                    this.#renderedPercentGoalSourceOverride ??
+                                    "user"
+                            });
+                        }
+                        else {
+                            this.#handleTripGoalChange(
+                                this.#renderedPercentGoalSourceOverride ??
+                                "user"
+                            );
+                        }
+                    }
+                    break;
+                }
+
                 case "trip-goal":
                 case "total-goal":
                     this.#emitClockTimerEvent("goalChange", {
@@ -1167,11 +1225,17 @@
                         !this.#processingAsyncBatch
                     ) {
                         this.#queueAsyncOperation({
-                            type: "trip-goal"
+                            type: "trip-goal",
+                            source:
+                                this.#renderedPercentGoalSourceOverride ??
+                                "user"
                         });
                     }
                     else {
-                        this.#handleTripGoalChange();
+                        this.#handleTripGoalChange(
+                            this.#renderedPercentGoalSourceOverride ??
+                            "user"
+                        );
                     }
                     break;
 
@@ -1696,7 +1760,7 @@
 
             if (
                 !this.#started ||
-                this.#tripGoal <= 1
+                this.#renderedPercentGoal <= 1
             ) {
                 return;
             }
@@ -2214,7 +2278,10 @@
                     this.#nonProductionFilter
             };
 
-            this.#handleTripGoalChange();
+            this.#handleTripGoalChange(
+                this.#renderedPercentGoalSourceOverride ??
+                "user"
+            );
 
             return {
                 ...this.#tripTotals
@@ -2409,23 +2476,35 @@
             }
 
             if (this.#autoSyncTripGoal) {
-                if (tripTotalsWindow) {
-                    this.#tripTotals = undefined;
+                const previousRenderedPercentGoalSourceOverride =
+                    this.#renderedPercentGoalSourceOverride;
 
-                    if (this.#connectionState === "connected") {
-                        try {
-                            await this.calculateTripTotals(
-                                tripTotalsWindow.startTime,
-                                tripTotalsWindow.endTime
-                            );
-                        }
-                        catch {
-                            this.#tripTotals = undefined;
+                this.#renderedPercentGoalSourceOverride =
+                    "start";
+
+                try {
+                    if (tripTotalsWindow) {
+                        this.#tripTotals = undefined;
+
+                        if (this.#connectionState === "connected") {
+                            try {
+                                await this.calculateTripTotals(
+                                    tripTotalsWindow.startTime,
+                                    tripTotalsWindow.endTime
+                                );
+                            }
+                            catch {
+                                this.#tripTotals = undefined;
+                            }
                         }
                     }
-                }
 
-                this.setTripGoalToTotalGoal();
+                    this.setTripGoalToTotalGoal();
+                }
+                finally {
+                    this.#renderedPercentGoalSourceOverride =
+                        previousRenderedPercentGoalSourceOverride;
+                }
             }
 
             const result = this.#mutationResult(synced);
@@ -2644,6 +2723,42 @@
             return this.#connectionState === "connected";
         }
 
+        get percentMode() {
+            return this.#percentMode;
+        }
+
+        set percentMode(value) {
+            if (typeof value !== "string") {
+                throw new TypeError(
+                    "percentMode must be a string."
+                );
+            }
+
+            const normalized =
+                value.trim().toLowerCase();
+
+            if (
+                !new Set([
+                    "trip",
+                    "total",
+                    "auto"
+                ]).has(normalized)
+            ) {
+                throw new RangeError(
+                    "percentMode must be trip, total, or auto."
+                );
+            }
+
+            this.setAttribute(
+                "percent-mode",
+                normalized
+            );
+        }
+
+        get renderedPercentGoal() {
+            return this.#renderedPercentGoal;
+        }
+
         get nonProduction() {
             return this.#nonProduction;
         }
@@ -2696,7 +2811,9 @@
                 };
             }
 
-            this.#handleTripGoalChange();
+            this.#handleTripGoalChange(
+                "user"
+            );
         }
 
         get autoSyncTripGoal() {
@@ -4165,7 +4282,10 @@
                             break;
 
                         case "trip-goal":
-                            this.#handleTripGoalChange();
+                            this.#handleTripGoalChange(
+                                operation.source ??
+                                "automatic"
+                            );
                             break;
 
                         case "spin":
@@ -4414,8 +4534,10 @@
                 this.#scheduledStartMilliseconds +
                 this.#standardDuration;
 
-            this.#tripGoal =
-                this.#getEffectiveTripGoal();
+            this.#setRenderedPercentGoal(
+                this.#calculateRenderedPercentGoal(),
+                "start"
+            );
 
             this.#started =
                 true;
@@ -7699,6 +7821,13 @@
             this.#started =
                 false;
 
+            if (!this.#preserveInsertedOnClear) {
+                this.#setRenderedPercentGoal(
+                    1,
+                    "user"
+                );
+            }
+
             this.#tripGoalMissedState = false;
             this.#totalGoalMissedState = false;
 
@@ -7847,6 +7976,17 @@
                 this.setAttribute(
                     "trip-goal",
                     "100%"
+                );
+            }
+
+            if (
+                !this.hasAttribute(
+                    "percent-mode"
+                )
+            ) {
+                this.setAttribute(
+                    "percent-mode",
+                    "auto"
                 );
             }
 
@@ -15001,12 +15141,16 @@
             }
         }
 
-        #handleTripGoalChange() {
+        #handleTripGoalChange(
+            source =
+                this.#renderedPercentGoalSourceOverride ??
+                "automatic"
+        ) {
             const goal =
-                this.#getEffectiveTripGoal();
+                this.#calculateRenderedPercentGoal();
 
             const previousGoal =
-                this.#tripGoal;
+                this.#renderedPercentGoal;
 
             const stateChangeVisual =
                 this.#started &&
@@ -15025,8 +15169,10 @@
                 previousGoal < 1 &&
                 goal >= 1;
 
-            this.#tripGoal =
-                goal;
+            this.#setRenderedPercentGoal(
+                goal,
+                source
+            );
 
             if (
                 !this.#started
@@ -15205,7 +15351,7 @@
             }
 
             const liveToleranceUsesVisibleEnd =
-                this.#tripGoal > 1 &&
+                this.#renderedPercentGoal > 1 &&
                 this.#started;
 
             if (
@@ -17126,7 +17272,7 @@
             now = undefined
         ) {
             if (
-                this.#tripGoal <= 1
+                this.#renderedPercentGoal <= 1
             ) {
                 return undefined;
             }
@@ -17214,10 +17360,10 @@
                 tripStart +
                 (
                     this.#standardDuration /
-                    this.#tripGoal
+                    this.#renderedPercentGoal
                 );
 
-            if (this.#tripGoal > 1) {
+            if (this.#renderedPercentGoal > 1) {
                 this.#tripEnd =
                     this.#calculatedEnd;
 
@@ -17260,7 +17406,7 @@
                     end: this.#standardEnd
                 });
 
-                if (this.#tripGoal < 1) {
+                if (this.#renderedPercentGoal < 1) {
                     spans.push({
                         type: "overtime",
                         start: this.#standardEnd,
@@ -18175,6 +18321,15 @@
                 return;
             }
 
+            if (
+                this.#calculateRenderedPercentGoal() !==
+                    this.#renderedPercentGoal
+            ) {
+                this.#handleTripGoalChange(
+                    "automatic"
+                );
+            }
+
             const tripGoal = this.#getTripGoal();
             const tripAdjusted = Number.isFinite(tripGoal) && tripGoal > 0 &&
                 Number.isFinite(this.#standardDuration)
@@ -18225,11 +18380,42 @@
                 return this.#emptyGoalRequirements();
             }
 
-            return this.#requirementsFromAdjustedTime(
-                this.#standardDuration /
-                    tripGoal,
-                tripGoal
-            );
+            const requirements =
+                this.#requirementsFromAdjustedTime(
+                    this.#standardDuration /
+                        tripGoal,
+                    tripGoal
+                );
+
+            if (
+                !Number.isFinite(
+                    requirements.tripGoal
+                )
+            ) {
+                return this.#emptyGoalRequirements();
+            }
+
+            if (this.#started) {
+                const deadline =
+                    this.#calculateAdjustedEndTimeline(
+                        requirements.adjustedTimeElapsed
+                    );
+
+                const now =
+                    this.#getCurrentTimelineTime();
+
+                if (
+                    !Number.isFinite(deadline) ||
+                    (
+                        Number.isFinite(now) &&
+                        now > deadline
+                    )
+                ) {
+                    return this.#emptyGoalRequirements();
+                }
+            }
+
+            return requirements;
         }
 
         #getTotalGoalRequirementFailureReason() {
@@ -18443,18 +18629,82 @@
                 : tripRequirements;
         }
 
-        #getEffectiveTripGoal() {
-            const calculated =
-                this.#calculateGoalRequirements();
+        #normalizePercentMode(value) {
+            const normalized =
+                String(value ?? "auto")
+                    .trim()
+                    .toLowerCase();
 
-            return (
-                Number.isFinite(
-                    calculated.tripGoal
-                ) &&
-                calculated.tripGoal > 0
-            )
-                ? calculated.tripGoal
-                : this.#getTripGoal();
+            return new Set([
+                "trip",
+                "total",
+                "auto"
+            ]).has(normalized)
+                ? normalized
+                : "auto";
+        }
+
+        #setRenderedPercentGoal(
+            value,
+            source = "automatic"
+        ) {
+            const normalized =
+                Number.isFinite(value) && value > 0
+                    ? value
+                    : 1;
+
+            const previousValue =
+                this.#renderedPercentGoal;
+
+            if (previousValue === normalized) {
+                return false;
+            }
+
+            this.#renderedPercentGoal =
+                normalized;
+
+            this.#emitClockTimerEvent(
+                "renderedPercentGoalChange",
+                {
+                    previousValue,
+                    value: normalized,
+                    source,
+                    userInitiated:
+                        source === "user",
+                    percentMode:
+                        this.#percentMode,
+                    tripGoal:
+                        this.#getTripGoal(),
+                    totalGoal:
+                        this.#getTotalGoal()
+                }
+            );
+
+            return true;
+        }
+
+        #calculateRenderedPercentGoal() {
+            let requirements;
+
+            if (this.#percentMode === "trip") {
+                requirements =
+                    this.#calculateTripGoalRequirements();
+            }
+            else if (this.#percentMode === "total") {
+                requirements =
+                    this.#calculateTotalGoalRequirements();
+            }
+            else {
+                requirements =
+                    this.#calculateGoalRequirements();
+            }
+
+            const goal =
+                Number(requirements?.tripGoal);
+
+            return Number.isFinite(goal) && goal > 0
+                ? goal
+                : 1;
         }
 
         #parseInsertDateTime(
@@ -20555,11 +20805,11 @@
                 tripStart +
                 (
                     this.#standardDuration /
-                    this.#tripGoal
+                    this.#renderedPercentGoal
                 );
 
             if (
-                this.#tripGoal >
+                this.#renderedPercentGoal >
                     1
             ) {
                 this.#tripEnd =
@@ -20607,7 +20857,7 @@
             );
 
             if (
-                this.#tripGoal <
+                this.#renderedPercentGoal <
                     1
             ) {
                 this.#createSpan(
@@ -20931,7 +21181,7 @@
                 this.#getLatestTimerEnd();
 
             const latestEnd =
-                this.#tripGoal > 1 &&
+                this.#renderedPercentGoal > 1 &&
                 this.#started
                     ? visibleTimerEnd
                     : (
@@ -22067,7 +22317,7 @@
 
             if (
                 !this.#showTolerance &&
-                this.#tripGoal > 1 &&
+                this.#renderedPercentGoal > 1 &&
                 !this.#toleranceTransitionState
             ) {
                 this.#reconcilePlannedRanges();
