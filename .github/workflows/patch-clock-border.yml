@@ -1,0 +1,96 @@
+name: Patch clock border
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Update clock border defaults
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          # app.css: remove the separate host border so only ClockTimer's own
+          # border ring is visible, and give that ring the app's navy color.
+          path = Path('app.css')
+          text = path.read_text()
+          old = '    border: 18px solid var(--wm-blue-dark);\n    border-radius: 50%;'
+          new = '    border: 0;\n    border-radius: 50%;'
+          if old not in text:
+              raise SystemExit('Expected clock-timer host border not found')
+          text = text.replace(old, new, 1)
+          marker = '    --clock-timer-time-color: var(--wm-white);\n    --clock-timer-tick-color: var(--wm-white);'
+          replacement = '    --clock-timer-time-color: var(--wm-white);\n    --clock-timer-tick-color: var(--wm-white);\n    --clock-timer-border-color: var(--wm-blue-dark);'
+          if marker not in text:
+              raise SystemExit('Expected clock-timer variable block not found')
+          text = text.replace(marker, replacement, 1)
+          path.write_text(text)
+
+          # app.js: reduce the persisted graphical default and migrate the
+          # previous 7px default without overwriting custom user values.
+          path = Path('app.js')
+          text = path.read_text()
+          text, count = re.subn(r'const GRAPHICAL_SETTINGS_VERSION = 2;', 'const GRAPHICAL_SETTINGS_VERSION = 3;', text, count=1)
+          if count != 1:
+              raise SystemExit('Expected graphical settings version 2 not found')
+          text, count = re.subn(r'borderWidth: "7px",', 'borderWidth: "5px",', text, count=1)
+          if count != 1:
+              raise SystemExit('Expected 7px graphical border default not found')
+          needle = '            if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;\n'
+          insert = needle + '            if (!settings.borderWidth || settings.borderWidth === "7px") settings.borderWidth = GRAPHICAL_DEFAULTS.borderWidth;\n'
+          if needle not in text:
+              raise SystemExit('Expected graphical migration marker not found')
+          text = text.replace(needle, insert, 1)
+          path.write_text(text)
+
+          # index.html: keep the form's initial value in sync with the app default.
+          path = Path('index.html')
+          text = path.read_text()
+          old = '<label>Border Width<input name="borderWidth" value="7px"></label>'
+          new = '<label>Border Width<input name="borderWidth" value="5px"></label>'
+          if old not in text:
+              raise SystemExit('Expected border-width control default not found')
+          path.write_text(text.replace(old, new, 1))
+
+          # ClockTimer.js: reduce the component's own fallback border width.
+          path = Path('ClockTimer.js')
+          text = path.read_text()
+          pattern = r'var\(--clock-timer-border-width, clamp\(2px, 1\.5cqi, 7px\)\)'
+          updated, count = re.subn(pattern, 'var(--clock-timer-border-width, clamp(1px, 1cqi, 5px))', text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one ClockTimer border fallback replacement, found {count}')
+          path.write_text(updated)
+          PY
+
+          node --check app.js
+          node --check ClockTimer.js
+          grep -F 'border: 0;' app.css
+          grep -F -- '--clock-timer-border-color: var(--wm-blue-dark);' app.css
+          grep -F 'borderWidth: "5px"' app.js
+          grep -F 'value="5px"' index.html
+          grep -F 'var(--clock-timer-border-width, clamp(1px, 1cqi, 5px))' ClockTimer.js
+
+      - name: Commit source changes
+        run: |
+          if git diff --quiet -- ClockTimer.js app.css app.js index.html; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ClockTimer.js app.css app.js index.html
+          git commit -m "Reduce idle clock border"
+          git push origin HEAD:rename-prestart-latency
