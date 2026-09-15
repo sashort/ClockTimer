@@ -266,18 +266,29 @@ clock-timer::part(major-tick-mark) {
     backdrop-filter: blur(10px);
 }
 
-.main-menu::before {
+.main-menu::before,
+.main-menu::after {
     content: "";
     position: absolute;
-    top: -10px;
     left: 14px;
-    width: 18px;
-    height: 18px;
-    border-top: 1px solid rgb(255 255 255 / 70%);
-    border-left: 1px solid rgb(255 255 255 / 70%);
-    background: rgb(4 30 66 / 94%);
-    transform: translateX(-50%) rotate(45deg);
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
     pointer-events: none;
+}
+
+.main-menu::before {
+    top: -14px;
+    border-left: 13px solid transparent;
+    border-right: 13px solid transparent;
+    border-bottom: 14px solid rgb(255 255 255 / 78%);
+}
+
+.main-menu::after {
+    top: -11px;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-bottom: 12px solid rgb(4 30 66 / 96%);
 }
 
 .main-menu:popover-open {
@@ -296,6 +307,10 @@ clock-timer::part(major-tick-mark) {
     background: transparent;
     text-align: left;
     font-size: 18px;
+}
+
+.main-menu button[hidden] {
+    display: none;
 }
 
 .main-menu button::before {

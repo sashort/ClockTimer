@@ -122,12 +122,18 @@
         if (!offline && loginDialog.open) loginDialog.close();
     }
 
-    function applyScope(mode, persist = true) {
-        const next = mode === "total" ? "total" : "trip";
-        clockTimer.percentMode = next;
-        $("#scopeToggle").textContent = next === "trip" ? "Trip" : "Total";
+    function syncScopeUI(persist = false) {
+        const actual = clockTimer.percentMode === "total" ? "total" : "trip";
+        $("#scopeToggle").textContent = actual === "total" ? "Total" : "Trip";
         updateSummaryLabels();
-        if (persist) safeStorageSet(STORAGE.percentMode, next);
+        if (persist) safeStorageSet(STORAGE.percentMode, actual);
+        return actual;
+    }
+
+    function applyScope(mode, persist = true) {
+        const requested = mode === "total" ? "total" : "trip";
+        clockTimer.percentMode = requested;
+        return syncScopeUI(persist);
     }
 
     function applyRenderedTimeMode(mode, persist = true) {
@@ -406,9 +412,14 @@
         $("#independentTimerValue").value = "---";
     });
 
-    for (const eventName of ["tick", "start", "stop", "clear", "goalChange", "percentModeChange"]) {
+    for (const eventName of ["tick", "start", "stop", "clear", "goalChange"]) {
         clockTimer.addEventListener(eventName, updateSummaryValues);
     }
+
+    clockTimer.addEventListener("percentModeChange", () => {
+        syncScopeUI(true);
+        updateSummaryValues();
+    });
 
     clockTimer.addEventListener("connect", () => setOffline(false));
     clockTimer.addEventListener("disconnect", () => setOffline(true));
