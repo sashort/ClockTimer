@@ -16,11 +16,11 @@
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
-            <button type="button" data-dialog="profileDialog">Profile</button>
+            <button id="profileMenuButton" type="button" data-dialog="profileDialog">Profile</button>
             <button type="button" data-dialog="stateSettingsDialog">Clock State Settings</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
             <hr>
-            <button id="logoutButton" class="logout-button" type="button">Logout</button>
+            <button id="authButton" type="button">Login</button>
         </nav>
 
         <section class="trip-summary" aria-label="Trip summary">
@@ -67,7 +67,10 @@
 
     <dialog id="loginDialog" class="app-dialog login-dialog">
         <form id="loginForm" method="dialog">
-            <header><h2>Login</h2></header>
+            <header class="dialog-header">
+                <h2>Login</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
             <label>Username<input id="loginUsername" name="username" autocomplete="username" required></label>
             <label>Password<input id="loginPassword" name="password" type="password" autocomplete="current-password" required></label>
             <p id="loginError" class="form-error" role="alert"></p>
