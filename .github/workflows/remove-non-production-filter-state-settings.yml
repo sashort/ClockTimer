@@ -1,0 +1,68 @@
+name: Remove non-production filter from state settings
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Remove non-production filter from modal
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          html = Path('index.html')
+          text = html.read_text()
+          block = '''                <label>Non-Production Filter
+                    <select name="nonProductionFilter">
+                        <option value="none">None</option>
+                        <option value="all">All</option>
+                        <option value="helpful">Helpful</option>
+                        <option value="productive">Productive</option>
+                    </select>
+                </label>
+'''
+          if block not in text:
+              raise SystemExit('Non-production filter control not found in index.html')
+          html.write_text(text.replace(block, '', 1))
+
+          js = Path('app.js')
+          text = js.read_text()
+          line = '        clockTimer.nonProductionFilter = form.elements.nonProductionFilter.value;\n'
+          if line not in text:
+              raise SystemExit('Non-production filter assignment not found in app.js')
+          js.write_text(text.replace(line, '', 1))
+          PY
+
+          node --check app.js
+          if grep -q 'nonProductionFilter' index.html; then
+            echo 'nonProductionFilter still present in index.html'
+            exit 1
+          fi
+          if grep -q 'form.elements.nonProductionFilter' app.js; then
+            echo 'state settings still writes nonProductionFilter'
+            exit 1
+          fi
+
+      - name: Commit source changes
+        run: |
+          if git diff --quiet -- index.html app.js; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html app.js
+          git commit -m "Remove non-production filter from state settings"
+          git push origin HEAD:rename-prestart-latency
