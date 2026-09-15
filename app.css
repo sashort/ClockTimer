@@ -270,7 +270,7 @@ clock-timer::part(major-tick-mark) {
 .main-menu::after {
     content: "";
     position: absolute;
-    left: 14px;
+    left: 26px;
     width: 0;
     height: 0;
     transform: translateX(-50%);
@@ -293,7 +293,7 @@ clock-timer::part(major-tick-mark) {
 
 .main-menu:popover-open {
     position: fixed;
-    inset: 60px auto auto 12px;
+    inset: 60px auto auto 0;
 }
 
 .main-menu button {

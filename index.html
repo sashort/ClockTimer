@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="app.css">
 </head>
 <body>
-    <main id="app" class="app" data-state="ready">
+    <main id="app" class="app is-offline" data-state="offline">
         <header class="app-header">
             <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
                 <span></span><span></span><span></span>
@@ -16,7 +16,7 @@
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
-            <button id="profileMenuButton" type="button" data-dialog="profileDialog">Profile</button>
+            <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
             <button type="button" data-dialog="stateSettingsDialog">Clock State Settings</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
             <hr>

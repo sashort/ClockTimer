@@ -57,6 +57,8 @@
     let timerStartedAt = 0;
     let timerAccumulated = 0;
     let timerInterval;
+    let loginPromptTimeout;
+    let grayscaleReleaseTimeout;
 
     function safeStorageGet(key) {
         try { return localStorage.getItem(key); }
@@ -115,11 +117,30 @@
     }
 
     function setOffline(offline) {
-        app.classList.toggle("is-offline", offline);
+        clearTimeout(loginPromptTimeout);
+        clearTimeout(grayscaleReleaseTimeout);
+        loginPromptTimeout = undefined;
+        grayscaleReleaseTimeout = undefined;
+
         app.dataset.state = offline ? "offline" : (clockTimer.status === "running" ? "running" : "ready");
         syncConnectionUI(!offline);
-        if (offline && !loginDialog.open) loginDialog.showModal();
-        if (!offline && loginDialog.open) loginDialog.close();
+
+        if (offline) {
+            app.classList.add("is-offline");
+            loginPromptTimeout = setTimeout(() => {
+                loginPromptTimeout = undefined;
+                if (!clockTimer.connected && !loginDialog.open) loginDialog.showModal();
+            }, 1000);
+            return;
+        }
+
+        if (loginDialog.open) loginDialog.close();
+        if (!app.classList.contains("is-offline")) return;
+
+        grayscaleReleaseTimeout = setTimeout(() => {
+            grayscaleReleaseTimeout = undefined;
+            if (clockTimer.connected) app.classList.remove("is-offline");
+        }, 1000);
     }
 
     function syncScopeUI(persist = false) {
@@ -354,6 +375,8 @@
     authButton.addEventListener("click", async () => {
         $("#mainMenu")?.hidePopover?.();
         if (!clockTimer.connected) {
+            clearTimeout(loginPromptTimeout);
+            loginPromptTimeout = undefined;
             if (!loginDialog.open) loginDialog.showModal();
             return;
         }

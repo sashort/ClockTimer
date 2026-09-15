@@ -490,6 +490,22 @@
                         linear;
                 }
 
+                #hand-layer {
+                    opacity: 0;
+
+                    transition-property:
+                        inset, opacity;
+
+                    transition-duration:
+                        var(
+                            --clock-timer-ring-resize-duration
+                        ),
+                        750ms;
+
+                    transition-timing-function:
+                        linear, linear;
+                }
+
                 #tick-marks {
                     position: absolute;
 
@@ -25941,6 +25957,11 @@
             this.#secondHandAnimation =
                 undefined;
 
+            if (this.#handLayer) {
+                this.#handLayer.style.opacity =
+                    "0";
+            }
+
             this.#handsStarted =
                 false;
         }
@@ -26075,6 +26096,19 @@
 
             this.#handsStarted =
                 true;
+
+            requestAnimationFrame(
+                () => {
+                    if (
+                        this.#handsStarted &&
+                        this.isConnected &&
+                        this.#handLayer
+                    ) {
+                        this.#handLayer.style.opacity =
+                            "1";
+                    }
+                }
+            );
         }
 
         #getCurrentTimelineTime(
