@@ -322,7 +322,6 @@
         const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
-        clockTimer.nonProductionFilter = form.elements.nonProductionFilter.value;
         stateDialog.close();
     });
 
