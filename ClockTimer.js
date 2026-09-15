@@ -179,7 +179,7 @@
             true;
 
         #intervalElapsedBehavior =
-            "latency";
+            "startLatency";
 
         #toleranceTransitionState;
 
@@ -1819,12 +1819,19 @@
             const normalized =
                 value.trim().toLowerCase();
 
-            return (
-                normalized === "latency" ||
-                normalized === "extend"
-            )
-                ? normalized
-                : fallback;
+            if (normalized === "startlatency") {
+                return "startLatency";
+            }
+
+            if (normalized === "extendboundary") {
+                return "extendBoundary";
+            }
+
+            if (normalized === "extendinterval") {
+                return "extendInterval";
+            }
+
+            return fallback;
         }
 
         get intervalElapsedBehavior() {
@@ -1845,7 +1852,7 @@
 
             if (!normalized) {
                 throw new RangeError(
-                    "intervalElapsedBehavior must be latency or extend."
+                    "intervalElapsedBehavior must be startLatency, extendBoundary, or extendInterval."
                 );
             }
 
@@ -8754,6 +8761,11 @@
             boundary,
             now
         ) {
+            const boundaryType =
+                this.#getIntervalElapsedBoundaryType(
+                    record
+                );
+
             const defaultBehavior =
                 this.#intervalElapsedBehavior;
 
@@ -8776,10 +8788,7 @@
                         : undefined,
                 intervalType:
                     record?.type,
-                boundaryType:
-                    this.#getIntervalElapsedBoundaryType(
-                        record
-                    ),
+                boundaryType,
                 boundaryTime:
                     this.#timelineToISO(
                         boundary
@@ -8812,7 +8821,7 @@
 
                         if (!normalized) {
                             throw new RangeError(
-                                "intervalElapsed behavior must be latency or extend."
+                                "intervalElapsed behavior must be startLatency, extendBoundary, or extendInterval."
                             );
                         }
 
@@ -9003,7 +9012,7 @@
                     defaultBehavior:
                         decision.defaultBehavior,
                     behavior:
-                        "extend",
+                        decision.behavior,
                     overridden:
                         decision.overridden,
                     calculatedEndTime:
@@ -9182,10 +9191,16 @@
                 };
             }
 
-            if (
-                decision.behavior ===
-                    "extend"
-            ) {
+            const extendInterval =
+                decision.behavior === "extendBoundary" ||
+                (
+                    decision.behavior ===
+                        "extendInterval" &&
+                    decision.boundaryType ===
+                        "interval"
+                );
+
+            if (extendInterval) {
                 if (
                     record.clockTimerExtensionActive ===
                         true
@@ -9283,7 +9298,7 @@
                     defaultBehavior:
                         decision.defaultBehavior,
                     behavior:
-                        "latency",
+                        "startLatency",
                     overridden:
                         decision.overridden
                 }
