@@ -1,0 +1,46 @@
+name: Patch startup visual behavior
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-startup-visuals.yml'
+      - '.github/scripts/patch_startup_visuals.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply startup visual patch
+        run: python .github/scripts/patch_startup_visuals.py
+      - name: Validate
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+          grep -Fq 'class="app is-offline" data-state="offline"' index.html
+          grep -Fq 'data-dialog="profileDialog" hidden' index.html
+          grep -Fq 'inset: 60px auto auto 0;' app.css
+          grep -Fq 'left: 26px;' app.css
+          grep -Fq 'if (clockTimer.connected) app.classList.remove("is-offline");' app.js
+          grep -Fq '}, 1000);' app.js
+          grep -Fq '#hand-layer {' ClockTimer.js
+          grep -Fq '750ms;' ClockTimer.js
+          grep -Fq 'this.#handLayer.style.opacity =' ClockTimer.js
+      - name: Commit source changes and cleanup
+        run: |
+          rm -f .github/scripts/patch_startup_visuals.py
+          rm -f .github/workflows/patch-startup-visuals.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css index.html ClockTimer.js .github/scripts/patch_startup_visuals.py .github/workflows/patch-startup-visuals.yml
+          git commit -m "Refine startup connection visuals"
+          git push origin HEAD:rename-prestart-latency
