@@ -3145,13 +3145,38 @@
             };
         }
 
-        async startInterval(type, length, attributes) {
-            const localResult = this.#startIntervalLocal(type, length, attributes);
+        async startInterval(
+            type,
+            length,
+            attributes,
+            startBuffer,
+            endBuffer
+        ) {
+            const localResult =
+                this.#startIntervalLocal(
+                    type,
+                    length,
+                    attributes,
+                    startBuffer,
+                    endBuffer
+                );
+
             if (!localResult) {
                 throw new Error("The interval could not be started.");
             }
-            const current = this.#getCurrentInterval(this.#getCurrentTimelineTime());
-            const record = current?.source === "inserted" ? current.record : undefined;
+
+            const insertedId =
+                localResult?.clockTimerInserted;
+
+            const record =
+                insertedId !== undefined
+                    ? this.#insertedRanges.find(
+                        candidate =>
+                            candidate.id ===
+                                insertedId
+                    )
+                    : undefined;
+
             if (!record) {
                 throw new Error("The interval record could not be resolved.");
             }
@@ -3169,14 +3194,56 @@
                 await this.#ensureTripPersisted();
                 await this.#syncIntervals();
             });
-            const result = this.#mutationResult(synced, record);
-            this.#checkGoalMisses(this.#getCurrentTimelineTime());
+
+            const result =
+                this.#mutationResult(
+                    synced,
+                    record
+                );
+
+            const startBufferRecord =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "start"
+                );
+
+            const endBufferRecord =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "end"
+                );
+
+            this.#checkGoalMisses(
+                this.#getCurrentTimelineTime()
+            );
+
             this.#emitClockTimerEvent("intervalStart", {
                 ...result,
                 type: record.type,
                 startTime: record.startDate?.toISOString?.(),
-                endTime: record.endDate?.toISOString?.()
+                endTime: record.endDate?.toISOString?.(),
+                startBufferIntervalId:
+                    Number.isInteger(
+                        Number(
+                            startBufferRecord?.intervalId
+                        )
+                    )
+                        ? Number(
+                            startBufferRecord.intervalId
+                        )
+                        : undefined,
+                endBufferIntervalId:
+                    Number.isInteger(
+                        Number(
+                            endBufferRecord?.intervalId
+                        )
+                    )
+                        ? Number(
+                            endBufferRecord.intervalId
+                        )
+                        : undefined
             });
+
             return result;
         }
 
@@ -4872,7 +4939,9 @@
                             this.#startIntervalLocal(
                                 operation.intervalType,
                                 operation.length,
-                                operation.attributes
+                                operation.attributes,
+                                operation.startBuffer,
+                                operation.endBuffer
                             );
                             break;
 
@@ -7457,6 +7526,60 @@
             return current;
         }
 
+        #getIntervalBufferRecord(
+            record,
+            position
+        ) {
+            const id =
+                position === "start"
+                    ? record?.clockTimerStartBufferRecordId
+                    : position === "end"
+                        ? record?.clockTimerEndBufferRecordId
+                        : undefined;
+
+            if (id === undefined) {
+                return undefined;
+            }
+
+            return this.#insertedRanges.find(
+                candidate =>
+                    candidate.id === id &&
+                    candidate.type === "buffer"
+            );
+        }
+
+        #getPendingIntervalLatencyEnd(
+            record
+        ) {
+            const endBuffer =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "end"
+                );
+
+            const bufferedEnd =
+                this.#getIntervalRecordEnd(
+                    endBuffer
+                );
+
+            if (Number.isFinite(bufferedEnd)) {
+                return bufferedEnd;
+            }
+
+            const storedBufferedEnd =
+                Number(
+                    record?.clockTimerBufferedEndTimeline
+                );
+
+            if (Number.isFinite(storedBufferedEnd)) {
+                return storedBufferedEnd;
+            }
+
+            return this.#getIntervalRecordEnd(
+                record
+            );
+        }
+
         #updateIntervalLatency(now) {
             const record =
                 this.#pendingIntervalRecord;
@@ -7465,14 +7588,19 @@
                 return false;
             }
 
-            const end =
+            const intervalEnd =
                 this.#getIntervalRecordEnd(
                     record
                 );
 
+            const latencyEnd =
+                this.#getPendingIntervalLatencyEnd(
+                    record
+                );
+
             if (
-                !Number.isFinite(end) ||
-                now < end
+                !Number.isFinite(latencyEnd) ||
+                now < latencyEnd
             ) {
                 return false;
             }
@@ -7519,8 +7647,16 @@
                     ? Number(record.intervalId)
                     : undefined,
                 intervalType: record.type,
-                intervalEndTime: this.#timelineToISO(end),
-                latencyStartTime: this.#timelineToISO(now)
+                intervalEndTime:
+                    this.#timelineToISO(
+                        intervalEnd
+                    ),
+                latencyEligibleTime:
+                    this.#timelineToISO(
+                        latencyEnd
+                    ),
+                latencyStartTime:
+                    this.#timelineToISO(now)
             });
 
             return true;
@@ -7584,10 +7720,14 @@
         #startIntervalLocal(
             type,
             length,
-            attributes
+            attributes,
+            startBuffer,
+            endBuffer
         ) {
             let intervalType;
             let duration;
+            let startBufferDuration;
+            let endBufferDuration;
             let normalizedAttributes;
 
             try {
@@ -7616,6 +7756,30 @@
                         this.#parseIntervalLength(
                             length
                         );
+                }
+
+                if (startBuffer !== undefined) {
+                    startBufferDuration =
+                        this.#parseIntervalLength(
+                            startBuffer
+                        );
+                }
+
+                if (endBuffer !== undefined) {
+                    endBufferDuration =
+                        this.#parseIntervalLength(
+                            endBuffer
+                        );
+                }
+
+                if (
+                    (
+                        startBufferDuration !== undefined ||
+                        endBufferDuration !== undefined
+                    ) &&
+                    duration === undefined
+                ) {
+                    return false;
                 }
 
                 normalizedAttributes =
@@ -7680,7 +7844,9 @@
                     intervalType,
                     length,
                     attributes:
-                        normalizedAttributes
+                        normalizedAttributes,
+                    startBuffer,
+                    endBuffer
                 });
 
                 return true;
@@ -7696,6 +7862,41 @@
                 return false;
             }
 
+            let cursor =
+                now;
+
+            let startBufferRecord;
+
+            if (Number.isFinite(startBufferDuration)) {
+                const startBufferElement =
+                    this.#insert({
+                        type: "buffer",
+                        startTime:
+                            this.#formatTimelineTime(
+                                cursor
+                            ),
+                        rangeLength:
+                            this.#formatStandardTime(
+                                startBufferDuration
+                            ),
+                        otherAttributes: {}
+                    });
+
+                if (!startBufferElement) {
+                    return false;
+                }
+
+                startBufferRecord =
+                    this.#insertedRanges.find(
+                        record =>
+                            record.id ===
+                                startBufferElement.clockTimerInserted
+                    );
+
+                cursor +=
+                    startBufferDuration;
+            }
+
             const rangeLength =
                 duration === undefined
                     ? undefined
@@ -7709,23 +7910,103 @@
                         intervalType,
                     startTime:
                         this.#formatTimelineTime(
-                            now
+                            cursor
                         ),
                     rangeLength,
                     otherAttributes:
                         normalizedAttributes
                 });
 
-            if (inserted && Number.isFinite(duration)) {
-                this.#pendingIntervalRecord =
+            if (!inserted) {
+                return false;
+            }
+
+            const record =
+                this.#insertedRanges.find(
+                    candidate =>
+                        candidate.id ===
+                            inserted.clockTimerInserted
+                );
+
+            if (!record) {
+                return false;
+            }
+
+            let endBufferRecord;
+
+            if (Number.isFinite(endBufferDuration)) {
+                const explicitEnd =
+                    cursor +
+                    duration;
+
+                const endBufferElement =
+                    this.#insert({
+                        type: "buffer",
+                        startTime:
+                            this.#formatTimelineTime(
+                                explicitEnd
+                            ),
+                        rangeLength:
+                            this.#formatStandardTime(
+                                endBufferDuration
+                            ),
+                        otherAttributes: {}
+                    });
+
+                if (!endBufferElement) {
+                    return false;
+                }
+
+                endBufferRecord =
                     this.#insertedRanges.find(
-                        record =>
-                            record.id ===
-                                inserted.clockTimerInserted
+                        candidate =>
+                            candidate.id ===
+                                endBufferElement.clockTimerInserted
                     );
             }
 
-            return inserted || false;
+            if (startBufferRecord) {
+                startBufferRecord.clockTimerBufferPosition =
+                    "start";
+
+                startBufferRecord.clockTimerBufferedIntervalRecordId =
+                    record.id;
+
+                record.clockTimerStartBufferRecordId =
+                    startBufferRecord.id;
+            }
+
+            if (endBufferRecord) {
+                endBufferRecord.clockTimerBufferPosition =
+                    "end";
+
+                endBufferRecord.clockTimerBufferedIntervalRecordId =
+                    record.id;
+
+                record.clockTimerEndBufferRecordId =
+                    endBufferRecord.id;
+            }
+
+            if (Number.isFinite(duration)) {
+                record.clockTimerBufferedStartTimeline =
+                    now;
+
+                record.clockTimerBufferedEndTimeline =
+                    cursor +
+                    duration +
+                    (
+                        Number.isFinite(
+                            endBufferDuration
+                        )
+                            ? endBufferDuration
+                            : 0
+                    );
+
+                this.#pendingIntervalRecord =
+                    record;
+            }
+
+            return inserted;
         }
 
         #endIntervalLocal() {
