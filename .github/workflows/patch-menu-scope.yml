@@ -1,0 +1,47 @@
+name: Patch menu and scope behavior
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/scripts/patch_menu_scope.py'
+      - '.github/workflows/patch-menu-scope.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply menu and scope patch
+        run: python .github/scripts/patch_menu_scope.py
+
+      - name: Validate
+        run: |
+          node --check app.js
+          grep -Fq 'profileMenuButton.hidden = !connected;' app.js
+          grep -Fq 'function syncScopeUI' app.js
+          grep -Fq 'clockTimer.addEventListener("percentModeChange"' app.js
+          grep -Fq '.main-menu button[hidden]' app.css
+          grep -Fq '.main-menu::after' app.css
+
+      - name: Commit source changes and cleanup
+        run: |
+          rm -f .github/scripts/patch_menu_scope.py
+          rm -f .github/workflows/patch-menu-scope.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css .github/scripts/patch_menu_scope.py .github/workflows/patch-menu-scope.yml
+          git commit -m "Refine menu notch and scope toggle"
+          git push origin HEAD:rename-prestart-latency
