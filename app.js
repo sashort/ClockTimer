@@ -51,6 +51,10 @@
     const stateDialog = $("#stateSettingsDialog");
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
+    const numberPadDialog = $("#numberPadDialog");
+    const numberPadDisplay = $("#numberPadDisplay");
+    const numberPadAction = $("#numberPadAction");
+    const numberPadContext = $("#numberPadContext");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -58,7 +62,12 @@
     let loginPromptTimeout;
     let grayscaleReleaseTimeout;
     let loginPending = false;
+    let stagedStandardTime;
+    let numberPadState;
+    let numberPadLongPressTimer;
+    let numberPadLongPressed = false;
 
+    const NUMBER_PAD_LONG_PRESS = 750;
     const STARTUP_CONNECTION_DELAY = 2000;
     const STARTUP_GRAYSCALE_RAMP = 2000;
     const LOGIN_GRAYSCALE_RAMP = 750;
@@ -208,7 +217,7 @@
     }
 
     function updateSummaryValues() {
-        const standard = clockTimer.standardTime;
+        const standard = clockTimer.standardTime || stagedStandardTime;
         $("#standardTimeValue").textContent = typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent =
             ["running", "stopped"].includes(clockTimer.status)
@@ -436,13 +445,229 @@
         window.dispatchEvent(new CustomEvent("wmof:reset-password-request", { detail: { apiBase: API_BASE } }));
     });
 
-    for (const id of ["newTripButton", "standardTimeButton"]) {
-        $("#" + id).addEventListener("click", () => {
-            window.dispatchEvent(new CustomEvent("wmof:number-pad-request", {
-                detail: { source: id === "newTripButton" ? "new-trip" : "standard-time" }
-            }));
+    function normalizeTimeDigits(value) {
+        const text = String(value || "").trim();
+        if (!text) return "";
+        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+        if (!match) return "";
+        const hours = match[1] || "";
+        const minutes = match[2];
+        const seconds = match[3];
+        if (Number(minutes) > 59 || Number(seconds) > 59) return "";
+        return hours ? `${hours}${minutes.padStart(2, "0")}${seconds}` : `${minutes}${seconds}`;
+    }
+
+    function formatTimeDigits(raw) {
+        if (!/^\d+$/.test(raw)) return undefined;
+        const secondsText = raw.slice(-2).padStart(2, "0");
+        const seconds = Number(secondsText);
+        if (seconds > 59) return undefined;
+
+        if (raw.length <= 2) return `0:${secondsText}`;
+
+        if (raw.length <= 4) {
+            const minutesText = raw.slice(0, -2);
+            const minutes = Number(minutesText);
+            if (minutes > 59) return undefined;
+            return `${minutesText}:${secondsText}`;
+        }
+
+        const minuteText = raw.slice(-4, -2);
+        if (Number(minuteText) > 59) return undefined;
+        const hourText = raw.slice(0, -4).replace(/^0+(?=\d)/, "");
+        return `${hourText}:${minuteText}:${secondsText}`;
+    }
+
+    function timeDigitsValid(raw) {
+        return raw === "" || formatTimeDigits(raw) !== undefined;
+    }
+
+    function normalizePercentDigits(value) {
+        const match = String(value || "").trim().match(/^(\d+)(?:%)?$/);
+        return match ? String(Number(match[1])) : "";
+    }
+
+    function getNumberPadAction() {
+        if (!numberPadState) return "close";
+        if (numberPadState.pending === "" || numberPadState.pending === numberPadState.initial) return "close";
+        return numberPadState.initial ? "reset" : "clear";
+    }
+
+    function canAppendNumberPadDigit(digit) {
+        if (!numberPadState) return false;
+        const candidate = numberPadState.pending + digit;
+        if (numberPadState.mode === "percent") {
+            if (candidate === "0") return false;
+            return /^\d+$/.test(candidate);
+        }
+        return timeDigitsValid(candidate);
+    }
+
+    function refreshNumberPad() {
+        if (!numberPadState) return;
+
+        const formatted = numberPadState.mode === "percent"
+            ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "")
+            : (numberPadState.pending ? (formatTimeDigits(numberPadState.pending) || "") : "");
+
+        numberPadDisplay.textContent = formatted;
+
+        const action = getNumberPadAction();
+        numberPadAction.dataset.action = action;
+        numberPadAction.setAttribute("aria-label", action[0].toUpperCase() + action.slice(1));
+
+        const percentMode = numberPadState.mode === "percent";
+        numberPadContext.dataset.context = percentMode ? "percent" : "settings";
+        numberPadContext.disabled = percentMode;
+        numberPadContext.setAttribute("aria-label", percentMode ? "Percent" : "Number pad settings");
+
+        document.querySelectorAll("#numberPadGrid [data-number]").forEach(button => {
+            button.disabled = !canAppendNumberPadDigit(button.dataset.number);
         });
     }
+
+    function openNumberPad({ mode, source, initialValue = "" }) {
+        const initial = mode === "percent"
+            ? normalizePercentDigits(initialValue)
+            : normalizeTimeDigits(initialValue);
+
+        numberPadState = { mode, source, initial, pending: initial };
+        refreshNumberPad();
+        $("#mainMenu")?.hidePopover?.();
+        if (!numberPadDialog.open) numberPadDialog.showModal();
+    }
+
+    function closeNumberPad() {
+        clearTimeout(numberPadLongPressTimer);
+        numberPadLongPressTimer = undefined;
+        numberPadLongPressed = false;
+        if (numberPadDialog.open) numberPadDialog.close();
+        numberPadState = undefined;
+    }
+
+    function getPercentGoalValue() {
+        const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
+        const raw = clockTimer.getAttribute(attribute);
+        if (raw) return raw;
+        const goal = Number(clockTimer.renderedPercentGoal);
+        return Number.isFinite(goal) && goal > 0 ? `${Math.round(goal * 100)}%` : "100%";
+    }
+
+    async function commitNumberPad() {
+        if (!numberPadState) return;
+        const state = { ...numberPadState };
+
+        if (state.mode === "percent") {
+            const percent = Number(state.pending);
+            if (Number.isInteger(percent) && percent > 0) {
+                const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
+                clockTimer.setAttribute(attribute, `${percent}%`);
+                updateSummaryValues();
+            }
+            return;
+        }
+
+        if (!state.pending) return;
+        const formatted = formatTimeDigits(state.pending);
+        if (!formatted) return;
+
+        stagedStandardTime = formatted;
+
+        if (state.source === "new-trip") {
+            await clockTimer.start({ standardTime: formatted });
+        }
+        else if (clockTimer.standardTime !== undefined) {
+            clockTimer.standardTime = formatted;
+        }
+
+        updateSummaryValues();
+    }
+
+    function runNumberPadShortAction() {
+        if (!numberPadState) return;
+        const action = getNumberPadAction();
+        if (action === "close") {
+            closeNumberPad();
+            return;
+        }
+        numberPadState.pending = action === "reset" ? numberPadState.initial : "";
+        refreshNumberPad();
+    }
+
+    document.querySelectorAll("#numberPadGrid [data-number]").forEach(button => {
+        button.addEventListener("click", () => {
+            if (!numberPadState || button.disabled) return;
+            numberPadState.pending += button.dataset.number;
+            refreshNumberPad();
+        });
+    });
+
+    numberPadAction.addEventListener("pointerdown", event => {
+        if (!numberPadState) return;
+        numberPadLongPressed = false;
+        numberPadAction.setPointerCapture?.(event.pointerId);
+        clearTimeout(numberPadLongPressTimer);
+        numberPadLongPressTimer = setTimeout(async () => {
+            numberPadLongPressTimer = undefined;
+            numberPadLongPressed = true;
+            try { await commitNumberPad(); }
+            finally { closeNumberPad(); }
+        }, NUMBER_PAD_LONG_PRESS);
+    });
+
+    numberPadAction.addEventListener("pointerup", event => {
+        if (numberPadAction.hasPointerCapture?.(event.pointerId)) numberPadAction.releasePointerCapture(event.pointerId);
+        if (numberPadLongPressTimer !== undefined) {
+            clearTimeout(numberPadLongPressTimer);
+            numberPadLongPressTimer = undefined;
+        }
+        if (numberPadLongPressed) {
+            numberPadLongPressed = false;
+            return;
+        }
+        runNumberPadShortAction();
+    });
+
+    numberPadAction.addEventListener("pointercancel", () => {
+        clearTimeout(numberPadLongPressTimer);
+        numberPadLongPressTimer = undefined;
+        numberPadLongPressed = false;
+    });
+
+    numberPadContext.addEventListener("click", () => {
+        if (!numberPadState || numberPadState.mode === "percent") return;
+        closeNumberPad();
+        setTimeout(() => openDialog("stateSettingsDialog"), 250);
+    });
+
+    numberPadDialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        closeNumberPad();
+    });
+
+    $("#newTripButton").addEventListener("click", () => {
+        openNumberPad({
+            mode: "time",
+            source: "new-trip",
+            initialValue: stagedStandardTime || clockTimer.standardTime || ""
+        });
+    });
+
+    $("#standardTimeButton").addEventListener("click", () => {
+        openNumberPad({
+            mode: "time",
+            source: "standard-time",
+            initialValue: clockTimer.standardTime || stagedStandardTime || ""
+        });
+    });
+
+    $("#goalPercentValue").addEventListener("click", () => {
+        openNumberPad({
+            mode: "percent",
+            source: "percent-goal",
+            initialValue: getPercentGoalValue()
+        });
+    });
 
     function renderIndependentTimer() {
         const active = timerStartedAt ? Date.now() - timerStartedAt : 0;

@@ -35,7 +35,7 @@
             <div class="percent-summary" aria-live="polite">
                 <strong id="currentPercentValue">---</strong>
                 <span>/</span>
-                <strong id="goalPercentValue">100%</strong>
+                <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="Edit percent goal">100%</button>
             </div>
         </section>
 
@@ -64,6 +64,26 @@
 
         <button id="tripLogButton" class="trip-log-button" type="button">Trip Log</button>
     </main>
+
+    <dialog id="numberPadDialog" class="number-pad-dialog" aria-label="Number pad">
+        <section class="number-pad-shell">
+            <output id="numberPadDisplay" class="number-pad-display" aria-live="polite"></output>
+            <div id="numberPadGrid" class="number-pad-grid">
+                <button class="number-pad-key" type="button" data-number="1">1</button>
+                <button class="number-pad-key" type="button" data-number="2">2</button>
+                <button class="number-pad-key" type="button" data-number="3">3</button>
+                <button class="number-pad-key" type="button" data-number="4">4</button>
+                <button class="number-pad-key" type="button" data-number="5">5</button>
+                <button class="number-pad-key" type="button" data-number="6">6</button>
+                <button class="number-pad-key" type="button" data-number="7">7</button>
+                <button class="number-pad-key" type="button" data-number="8">8</button>
+                <button class="number-pad-key" type="button" data-number="9">9</button>
+                <button id="numberPadAction" class="number-pad-key number-pad-special number-pad-action" type="button" aria-label="Close"></button>
+                <button class="number-pad-key" type="button" data-number="0">0</button>
+                <button id="numberPadContext" class="number-pad-key number-pad-special number-pad-context" type="button" aria-label="Number pad settings"></button>
+            </div>
+        </section>
+    </dialog>
 
     <dialog id="loginDialog" class="app-dialog login-dialog">
         <form id="loginForm" method="dialog">
