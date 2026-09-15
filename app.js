@@ -178,6 +178,16 @@
         applyRenderedTimeMode(RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length]);
     });
 
+    clockTimer.addEventListener("pointerdown", () => {
+        if (clockTimer.getAttribute("timer-type") !== "radial-overflow") return;
+
+        clockTimer.setAttribute("timer-type", "radial-fitted");
+
+        const settings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
+        settings.timerType = "radial-fitted";
+        safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+    });
+
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("click", () => {
             if (button.dataset.dialog === "profileDialog" && !clockTimer.connected) {
