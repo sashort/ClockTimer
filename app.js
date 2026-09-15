@@ -150,7 +150,7 @@
         const standard = clockTimer.standardTime;
         $("#standardTimeValue").textContent = typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent =
-            clockTimer.status === "running"
+            ["running", "stopped"].includes(clockTimer.status)
                 ? (clockTimer.renderedTime || "---")
                 : "---";
         const goal = Number(clockTimer.renderedPercentGoal);
@@ -406,7 +406,7 @@
         $("#independentTimerValue").value = "---";
     });
 
-    for (const eventName of ["tick", "start", "clear", "goalChange", "percentModeChange"]) {
+    for (const eventName of ["tick", "start", "stop", "clear", "goalChange", "percentModeChange"]) {
         clockTimer.addEventListener(eventName, updateSummaryValues);
     }
 
