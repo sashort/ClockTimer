@@ -1,0 +1,47 @@
+name: Remove initial login close outline
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-initial-login-x-outline.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove initial login close outline
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app.css')
+          s = p.read_text()
+          needle = '''.dialog-close::before {
+'''
+          insert = '''.login-dialog .dialog-close,
+.login-dialog .dialog-close:focus,
+.login-dialog .dialog-close:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+.dialog-close::before {
+'''
+          if insert in s:
+              raise SystemExit('already patched')
+          if needle not in s:
+              raise SystemExit('target not found')
+          p.write_text(s.replace(needle, insert, 1))
+          PY
+      - name: Commit source change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.css
+          git commit -m 'Remove initial login close button outline'
+          git push
+      - name: Remove temporary workflow
+        run: |
+          git rm .github/workflows/remove-initial-login-x-outline.yml
+          git commit -m 'Remove initial login close outline workflow'
+          git push
