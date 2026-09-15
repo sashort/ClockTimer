@@ -137,6 +137,10 @@
         dialog.close();
     }
 
+    loginDialog.addEventListener("cancel", () => {
+        loginDialog.classList.remove("initial-login-opening");
+    });
+
     function setOffline(offline, { login = false, startup = false } = {}) {
         clearTimeout(loginPromptTimeout);
         clearTimeout(grayscaleReleaseTimeout);
