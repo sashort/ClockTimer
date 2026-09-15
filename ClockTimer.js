@@ -142,7 +142,15 @@
 
         #renderedPercentGoalSourceOverride;
 
+        #percentModeChangeContext;
+
         #tripTotals;
+
+        #totalGoalNotPossibleState =
+            false;
+
+        #tripAddedToAggregate =
+            false;
 
         #nonProduction =
             false;
@@ -1178,15 +1186,32 @@
                         normalized;
 
                     if (previousMode !== normalized) {
+                        const context =
+                            this.#percentModeChangeContext;
+
+                        const source =
+                            context?.source ??
+                            "user";
+
                         this.#emitClockTimerEvent(
                             "percentModeChange",
                             {
                                 attribute: "percent-mode",
                                 previousValue: previousMode,
                                 value: normalized,
-                                userInitiated: true
+                                source,
+                                reason: context?.reason ?? null,
+                                userInitiated:
+                                    source === "user"
                             }
                         );
+
+                        if (
+                            context?.recalculate ===
+                                false
+                        ) {
+                            break;
+                        }
 
                         if (
                             this.#updatesSuspended &&
@@ -1195,14 +1220,20 @@
                             this.#queueAsyncOperation({
                                 type: "trip-goal",
                                 source:
-                                    this.#renderedPercentGoalSourceOverride ??
-                                    "user"
+                                    source === "start"
+                                        ? "start"
+                                        : source === "user"
+                                            ? "user"
+                                            : "automatic"
                             });
                         }
                         else {
                             this.#handleTripGoalChange(
-                                this.#renderedPercentGoalSourceOverride ??
-                                "user"
+                                source === "start"
+                                    ? "start"
+                                    : source === "user"
+                                        ? "user"
+                                        : "automatic"
                             );
                         }
                     }
@@ -1817,6 +1848,16 @@
                     detail
                 );
             }
+
+            if (
+                this.#percentMode === "total" &&
+                !this.#canSelectTotalMode()
+            ) {
+                this.#setPercentModeAutomatically(
+                    "trip",
+                    "total-aggregate-unavailable"
+                );
+            }
         }
 
         #apiURL(endpoint, query) {
@@ -2178,6 +2219,408 @@
             return date;
         }
 
+        #emptyTripAggregateSummary() {
+            return {
+                tripCount: 0,
+                standardTimeMilliseconds: 0,
+                actualTimeMilliseconds: 0
+            };
+        }
+
+        #normalizeTripAggregateSummary(
+            value,
+            name
+        ) {
+            const tripCount =
+                Number(value?.tripCount);
+
+            const standardTimeMilliseconds =
+                Number(
+                    value?.standardTimeMilliseconds
+                );
+
+            const actualTimeMilliseconds =
+                Number(
+                    value?.actualTimeMilliseconds
+                );
+
+            if (
+                !Number.isInteger(tripCount) ||
+                tripCount < 0 ||
+                !Number.isFinite(standardTimeMilliseconds) ||
+                standardTimeMilliseconds < 0 ||
+                !Number.isFinite(actualTimeMilliseconds) ||
+                actualTimeMilliseconds < 0
+            ) {
+                throw new Error(
+                    `The API returned invalid ${name} aggregate data.`
+                );
+            }
+
+            return {
+                tripCount,
+                standardTimeMilliseconds,
+                actualTimeMilliseconds
+            };
+        }
+
+        #addTripAggregateSummary(
+            target,
+            source
+        ) {
+            target.tripCount +=
+                source.tripCount;
+
+            target.standardTimeMilliseconds +=
+                source.standardTimeMilliseconds;
+
+            target.actualTimeMilliseconds +=
+                source.actualTimeMilliseconds;
+
+            return target;
+        }
+
+        #buildAggregateBreakdown(
+            production,
+            nonProductionTrips
+        ) {
+            const normalizedProduction =
+                this.#normalizeTripAggregateSummary(
+                    production,
+                    "production"
+                );
+
+            if (!Array.isArray(nonProductionTrips)) {
+                throw new Error(
+                    "The API returned invalid non-production aggregate data."
+                );
+            }
+
+            const trips =
+                nonProductionTrips.map(
+                    trip => {
+                        const standardTimeMilliseconds =
+                            Number(
+                                trip?.standardTimeMilliseconds
+                            );
+
+                        const actualTimeMilliseconds =
+                            Number(
+                                trip?.actualTimeMilliseconds
+                            );
+
+                        if (
+                            !Number.isFinite(standardTimeMilliseconds) ||
+                            standardTimeMilliseconds < 0 ||
+                            !Number.isFinite(actualTimeMilliseconds) ||
+                            actualTimeMilliseconds <= 0
+                        ) {
+                            throw new Error(
+                                "The API returned invalid non-production trip aggregate data."
+                            );
+                        }
+
+                        return {
+                            standardTimeMilliseconds,
+                            actualTimeMilliseconds
+                        };
+                    }
+                );
+
+            const all =
+                this.#emptyTripAggregateSummary();
+
+            const helpful =
+                this.#emptyTripAggregateSummary();
+
+            const nonHelpful =
+                this.#emptyTripAggregateSummary();
+
+            const productive =
+                this.#emptyTripAggregateSummary();
+
+            const productionRatio =
+                normalizedProduction.tripCount > 0 &&
+                normalizedProduction.standardTimeMilliseconds > 0 &&
+                normalizedProduction.actualTimeMilliseconds > 0
+                    ? normalizedProduction.standardTimeMilliseconds /
+                        normalizedProduction.actualTimeMilliseconds
+                    : undefined;
+
+            for (const trip of trips) {
+                const summary = {
+                    tripCount: 1,
+                    standardTimeMilliseconds:
+                        trip.standardTimeMilliseconds,
+                    actualTimeMilliseconds:
+                        trip.actualTimeMilliseconds
+                };
+
+                this.#addTripAggregateSummary(
+                    all,
+                    summary
+                );
+
+                const tripRatio =
+                    trip.standardTimeMilliseconds /
+                    trip.actualTimeMilliseconds;
+
+                const isHelpful =
+                    Number.isFinite(productionRatio) &&
+                    tripRatio > productionRatio;
+
+                this.#addTripAggregateSummary(
+                    isHelpful
+                        ? helpful
+                        : nonHelpful,
+                    summary
+                );
+
+                if (tripRatio >= 1) {
+                    this.#addTripAggregateSummary(
+                        productive,
+                        summary
+                    );
+                }
+            }
+
+            return {
+                production: {
+                    ...normalizedProduction
+                },
+                nonProduction: {
+                    all,
+                    helpful,
+                    nonHelpful,
+                    productive,
+                    trips
+                }
+            };
+        }
+
+        #normalizeAggregateBreakdown(
+            value
+        ) {
+            return this.#buildAggregateBreakdown(
+                value?.production,
+                value?.nonProduction?.trips
+            );
+        }
+
+        #composeAggregateSummary(
+            breakdown,
+            filter = this.#nonProductionFilter
+        ) {
+            const result = {
+                ...breakdown.production
+            };
+
+            const extra =
+                filter === "all"
+                    ? breakdown.nonProduction.all
+                    : filter === "helpful"
+                        ? breakdown.nonProduction.helpful
+                        : filter === "productive"
+                            ? breakdown.nonProduction.productive
+                            : undefined;
+
+            if (extra) {
+                this.#addTripAggregateSummary(
+                    result,
+                    extra
+                );
+            }
+
+            return result;
+        }
+
+        #hasUsableAggregateSnapshot() {
+            const totals =
+                this.#tripTotals;
+
+            return Boolean(
+                totals &&
+                typeof totals.startTime === "string" &&
+                typeof totals.endTime === "string" &&
+                totals.aggregateBreakdown &&
+                Number.isInteger(totals.tripCount) &&
+                totals.tripCount >= 0 &&
+                Number.isFinite(
+                    totals.standardTimeMilliseconds
+                ) &&
+                totals.standardTimeMilliseconds >= 0 &&
+                Number.isFinite(
+                    totals.actualTimeMilliseconds
+                ) &&
+                totals.actualTimeMilliseconds >= 0
+            );
+        }
+
+        #canSelectTotalMode() {
+            return (
+                this.hasAttribute(
+                    "total-goal"
+                ) &&
+                this.#hasUsableAggregateSnapshot()
+            );
+        }
+
+        #recomposeCachedTripTotals(
+            filter = this.#nonProductionFilter
+        ) {
+            if (!this.#hasUsableAggregateSnapshot()) {
+                return false;
+            }
+
+            const breakdown =
+                this.#buildAggregateBreakdown(
+                    this.#tripTotals.aggregateBreakdown.production,
+                    this.#tripTotals.aggregateBreakdown.nonProduction.trips
+                );
+
+            const selected =
+                this.#composeAggregateSummary(
+                    breakdown,
+                    filter
+                );
+
+            this.#tripTotals = {
+                startTime:
+                    this.#tripTotals.startTime,
+                endTime:
+                    this.#tripTotals.endTime,
+                ...selected,
+                nonProductionFilter:
+                    filter,
+                aggregateBreakdown:
+                    breakdown
+            };
+
+            return true;
+        }
+
+        #addCompletedTripToCachedTotals({
+            startTime,
+            standardTimeMilliseconds,
+            actualTimeMilliseconds,
+            nonProduction
+        }) {
+            if (
+                !this.#hasUsableAggregateSnapshot() ||
+                typeof startTime !== "string" ||
+                !Number.isFinite(standardTimeMilliseconds) ||
+                standardTimeMilliseconds <= 0 ||
+                !Number.isFinite(actualTimeMilliseconds) ||
+                actualTimeMilliseconds <= 0
+            ) {
+                return false;
+            }
+
+            const tripStart =
+                Date.parse(startTime);
+
+            const windowStart =
+                Date.parse(
+                    this.#tripTotals.startTime
+                );
+
+            const windowEnd =
+                Date.parse(
+                    this.#tripTotals.endTime
+                );
+
+            if (
+                !Number.isFinite(tripStart) ||
+                !Number.isFinite(windowStart) ||
+                !Number.isFinite(windowEnd) ||
+                tripStart < windowStart ||
+                tripStart > windowEnd
+            ) {
+                return false;
+            }
+
+            const production = {
+                ...this.#tripTotals.aggregateBreakdown.production
+            };
+
+            const nonProductionTrips =
+                this.#tripTotals.aggregateBreakdown.nonProduction.trips
+                    .map(
+                        trip => ({
+                            ...trip
+                        })
+                    );
+
+            if (nonProduction) {
+                nonProductionTrips.push({
+                    standardTimeMilliseconds,
+                    actualTimeMilliseconds
+                });
+            }
+            else {
+                this.#addTripAggregateSummary(
+                    production,
+                    {
+                        tripCount: 1,
+                        standardTimeMilliseconds,
+                        actualTimeMilliseconds
+                    }
+                );
+            }
+
+            const breakdown =
+                this.#buildAggregateBreakdown(
+                    production,
+                    nonProductionTrips
+                );
+
+            const selected =
+                this.#composeAggregateSummary(
+                    breakdown,
+                    this.#nonProductionFilter
+                );
+
+            this.#tripTotals = {
+                startTime:
+                    this.#tripTotals.startTime,
+                endTime:
+                    this.#tripTotals.endTime,
+                ...selected,
+                nonProductionFilter:
+                    this.#nonProductionFilter,
+                aggregateBreakdown:
+                    breakdown
+            };
+
+            return true;
+        }
+
+        #invalidateAggregateSnapshot(
+            source = "automatic"
+        ) {
+            if (!this.#tripTotals) {
+                return;
+            }
+
+            this.#tripTotals =
+                undefined;
+
+            if (
+                this.#percentMode ===
+                    "total"
+            ) {
+                this.#setPercentModeAutomatically(
+                    "trip",
+                    "total-aggregate-unavailable"
+                );
+                return;
+            }
+
+            this.#handleTripGoalChange(
+                source
+            );
+        }
+
         async calculateTripTotals(
             startTime,
             endTime
@@ -2203,7 +2646,30 @@
                 );
             }
 
+            const normalizedStart =
+                start.toISOString();
+
+            const normalizedEnd =
+                end.toISOString();
+
+            const criteriaChanged =
+                Boolean(
+                    this.#tripTotals &&
+                    (
+                        this.#tripTotals.startTime !==
+                            normalizedStart ||
+                        this.#tripTotals.endTime !==
+                            normalizedEnd
+                    )
+                );
+
             if (!(await this.#ensureConnected())) {
+                if (criteriaChanged) {
+                    this.#invalidateAggregateSnapshot(
+                        "automatic"
+                    );
+                }
+
                 const error =
                     new Error(
                         "ClockTimer is offline."
@@ -2217,9 +2683,9 @@
 
             const query = {
                 startTime:
-                    start.toISOString(),
+                    normalizedStart,
                 endTime:
-                    end.toISOString(),
+                    normalizedEnd,
                 nonProductionFilter:
                     this.#nonProductionFilter
             };
@@ -2234,48 +2700,49 @@
                     this.#tripId;
             }
 
-            const data =
-                await this.#apiRequest(
-                    "trips",
-                    { query }
-                );
+            let data;
 
-            const tripCount =
-                Number(data.tripCount);
-
-            const standardTimeMilliseconds =
-                Number(
-                    data.standardTimeMilliseconds
-                );
-
-            const actualTimeMilliseconds =
-                Number(
-                    data.actualTimeMilliseconds
-                );
-
-            if (
-                !Number.isInteger(tripCount) ||
-                tripCount < 0 ||
-                !Number.isFinite(standardTimeMilliseconds) ||
-                standardTimeMilliseconds < 0 ||
-                !Number.isFinite(actualTimeMilliseconds) ||
-                actualTimeMilliseconds < 0
-            ) {
-                throw new Error(
-                    "The API returned invalid trip totals."
-                );
+            try {
+                data =
+                    await this.#apiRequest(
+                        "trips",
+                        { query }
+                    );
             }
+            catch (error) {
+                if (
+                    criteriaChanged &&
+                    error?.clockTimerOffline
+                ) {
+                    this.#invalidateAggregateSnapshot(
+                        "automatic"
+                    );
+                }
+
+                throw error;
+            }
+
+            const breakdown =
+                this.#normalizeAggregateBreakdown(
+                    data.aggregateBreakdown
+                );
+
+            const selected =
+                this.#composeAggregateSummary(
+                    breakdown,
+                    this.#nonProductionFilter
+                );
 
             this.#tripTotals = {
                 startTime:
-                    start.toISOString(),
+                    normalizedStart,
                 endTime:
-                    end.toISOString(),
-                tripCount,
-                standardTimeMilliseconds,
-                actualTimeMilliseconds,
+                    normalizedEnd,
+                ...selected,
                 nonProductionFilter:
-                    this.#nonProductionFilter
+                    this.#nonProductionFilter,
+                aggregateBreakdown:
+                    breakdown
             };
 
             this.#handleTripGoalChange(
@@ -2284,7 +2751,32 @@
             );
 
             return {
-                ...this.#tripTotals
+                ...this.#tripTotals,
+                aggregateBreakdown: {
+                    production: {
+                        ...breakdown.production
+                    },
+                    nonProduction: {
+                        all: {
+                            ...breakdown.nonProduction.all
+                        },
+                        helpful: {
+                            ...breakdown.nonProduction.helpful
+                        },
+                        nonHelpful: {
+                            ...breakdown.nonProduction.nonHelpful
+                        },
+                        productive: {
+                            ...breakdown.nonProduction.productive
+                        },
+                        trips:
+                            breakdown.nonProduction.trips.map(
+                                trip => ({
+                                    ...trip
+                                })
+                            )
+                    }
+                }
             };
         }
 
@@ -2483,20 +2975,17 @@
                     "start";
 
                 try {
-                    if (tripTotalsWindow) {
-                        this.#tripTotals = undefined;
-
-                        if (this.#connectionState === "connected") {
-                            try {
-                                await this.calculateTripTotals(
-                                    tripTotalsWindow.startTime,
-                                    tripTotalsWindow.endTime
-                                );
-                            }
-                            catch {
-                                this.#tripTotals = undefined;
-                            }
+                    if (
+                        tripTotalsWindow &&
+                        this.#connectionState === "connected"
+                    ) {
+                        try {
+                            await this.calculateTripTotals(
+                                tripTotalsWindow.startTime,
+                                tripTotalsWindow.endTime
+                            );
                         }
+                        catch {}
                     }
 
                     this.setTripGoalToTotalGoal();
@@ -2537,6 +3026,16 @@
             const parsed = this.#validateClockTime(stopTime, "stopTime");
             const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
             const persistedEnd = this.#timelineToISO(stopTimeline);
+            const aggregateStartTimeline =
+                this.#getStartTimeMilliseconds();
+            const aggregateStartTime =
+                this.#timelineToISO(
+                    aggregateStartTimeline
+                );
+            const aggregateStandardTime =
+                this.#standardDuration;
+            const aggregateNonProduction =
+                this.#nonProduction;
 
             this.#checkGoalMisses(stopTimeline);
             const localResult = this.#stopLocal(stopTime);
@@ -2544,6 +3043,28 @@
                 throw new Error("The trip could not be stopped.");
             }
             this.#pendingIntervalRecord = undefined;
+
+            if (
+                !this.#tripAddedToAggregate &&
+                Number.isFinite(
+                    aggregateStartTimeline
+                )
+            ) {
+                this.#addCompletedTripToCachedTotals({
+                    startTime:
+                        aggregateStartTime,
+                    standardTimeMilliseconds:
+                        aggregateStandardTime,
+                    actualTimeMilliseconds:
+                        stopTimeline -
+                        aggregateStartTimeline,
+                    nonProduction:
+                        aggregateNonProduction
+                });
+
+                this.#tripAddedToAggregate =
+                    true;
+            }
 
             const synced = await this.#protectedSync(async () => {
                 const tripId = await this.#ensureTripPersisted();
@@ -2800,15 +3321,16 @@
             this.#nonProductionFilter =
                 normalized;
 
-            if (this.#tripTotals) {
-                this.#tripTotals = {
-                    startTime:
-                        this.#tripTotals.startTime,
-                    endTime:
-                        this.#tripTotals.endTime,
-                    nonProductionFilter:
-                        normalized
-                };
+            if (
+                this.#hasUsableAggregateSnapshot()
+            ) {
+                this.#recomposeCachedTripTotals(
+                    normalized
+                );
+            }
+            else if (this.#tripTotals) {
+                this.#tripTotals =
+                    undefined;
             }
 
             this.#handleTripGoalChange(
@@ -4534,13 +5056,39 @@
                 this.#scheduledStartMilliseconds +
                 this.#standardDuration;
 
-            this.#setRenderedPercentGoal(
-                this.#calculateRenderedPercentGoal(),
-                "start"
-            );
+            if (
+                this.#percentMode === "total" &&
+                !this.#canSelectTotalMode()
+            ) {
+                this.#setPercentModeAutomatically(
+                    "trip",
+                    "total-aggregate-unavailable",
+                    {
+                        recalculate: false
+                    }
+                );
+            }
+
+            const previousRenderedPercentGoal =
+                this.#renderedPercentGoal;
+
+            const renderedGoalChanged =
+                this.#setRenderedPercentGoal(
+                    this.#calculateRenderedPercentGoal(),
+                    "start",
+                    {
+                        emit: false
+                    }
+                );
 
             this.#started =
                 true;
+
+            this.#tripAddedToAggregate =
+                false;
+
+            this.#totalGoalNotPossibleState =
+                false;
 
             if (
                 !Number.isFinite(
@@ -4565,22 +5113,38 @@
 
                 this.#renderAllInsertedRanges();
 
-                this.#refreshRingLayout(
-                    this.#getCurrentTimelineTime(),
-                    {
-                        refreshTickMarks: true
-                    }
-                );
-
-                if (!this.#processingAsyncBatch) {
-                    this.#tick();
-                }
-
                 this.#snapTimerRangeAngles();
             }
             finally {
                 this.#starting =
                     false;
+            }
+
+            const startNow =
+                this.#getCurrentTimelineTime();
+
+            this.#updateTotalGoalNotPossibleState(
+                "start",
+                startNow
+            );
+
+            if (renderedGoalChanged) {
+                this.#emitRenderedPercentGoalChange(
+                    previousRenderedPercentGoal,
+                    this.#renderedPercentGoal,
+                    "start"
+                );
+            }
+
+            this.#refreshRingLayout(
+                startNow,
+                {
+                    refreshTickMarks: true
+                }
+            );
+
+            if (!this.#processingAsyncBatch) {
+                this.#tick();
             }
 
             this.#animateStartedRingWidths();
@@ -15146,17 +15710,22 @@
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic"
         ) {
+            if (
+                this.#percentMode === "total" &&
+                !this.#canSelectTotalMode()
+            ) {
+                this.#setPercentModeAutomatically(
+                    "trip",
+                    "total-aggregate-unavailable"
+                );
+                return;
+            }
+
             const goal =
                 this.#calculateRenderedPercentGoal();
 
             const previousGoal =
                 this.#renderedPercentGoal;
-
-            const stateChangeVisual =
-                this.#started &&
-                goal !== previousGoal
-                    ? this.#beginStateChangeVisuals()
-                    : undefined;
 
             const tripGoalAnimation =
                 this.#captureRadialFittedTripGoalAnimation(
@@ -15169,25 +15738,58 @@
                 previousGoal < 1 &&
                 goal >= 1;
 
-            this.#setRenderedPercentGoal(
-                goal,
-                source
-            );
+            const renderedGoalChanged =
+                this.#setRenderedPercentGoal(
+                    goal,
+                    source,
+                    {
+                        emit: false
+                    }
+                );
 
             if (
                 !this.#started
             ) {
+                this.#totalGoalNotPossibleState =
+                    false;
+
+                if (renderedGoalChanged) {
+                    this.#emitRenderedPercentGoalChange(
+                        previousGoal,
+                        this.#renderedPercentGoal,
+                        source
+                    );
+                }
+
                 return;
             }
+
+            const now =
+                this.#getCurrentTimelineTime();
+
+            this.#updateTotalGoalNotPossibleState(
+                source,
+                now
+            );
+
+            if (renderedGoalChanged) {
+                this.#emitRenderedPercentGoalChange(
+                    previousGoal,
+                    this.#renderedPercentGoal,
+                    source
+                );
+            }
+
+            const stateChangeVisual =
+                renderedGoalChanged
+                    ? this.#beginStateChangeVisuals()
+                    : undefined;
 
             this.#reconcilePlannedRanges({
                 counterclockwiseOvertimeRemoval
             });
 
             this.#removeOvertimeRanges();
-
-            const now =
-                this.#getCurrentTimelineTime();
 
             this.#updateElapsedRange(
                 now
@@ -15214,7 +15816,6 @@
                     refreshTickMarks: true
                 }
             );
-
 
             this.#activateStateChangeVisuals(
                 stateChangeVisual
@@ -18314,12 +18915,174 @@
             return Number.isFinite(adjusted) && adjusted > 0 ? adjusted : undefined;
         }
 
+        #getTotalGoalImpossibility(
+            now = this.#started
+                ? this.#getCurrentTimelineTime()
+                : undefined
+        ) {
+            const totalGoal =
+                this.#getTotalGoal();
+
+            const totals =
+                this.#tripTotals;
+
+            if (
+                !this.#started ||
+                !this.hasAttribute(
+                    "total-goal"
+                ) ||
+                !Number.isFinite(totalGoal) ||
+                totalGoal <= 0 ||
+                !this.#hasUsableAggregateSnapshot() ||
+                !totals ||
+                !Number.isFinite(
+                    this.#standardDuration
+                ) ||
+                this.#standardDuration <= 0 ||
+                !Number.isFinite(
+                    this.#scheduledStartMilliseconds
+                )
+            ) {
+                return {
+                    impossible: false,
+                    reason: null,
+                    adjustedTimeElapsed: null,
+                    deadline: undefined
+                };
+            }
+
+            const adjustedTimeElapsed =
+                (
+                    totals.standardTimeMilliseconds +
+                    this.#standardDuration
+                ) /
+                    totalGoal -
+                totals.actualTimeMilliseconds;
+
+            if (
+                !Number.isFinite(adjustedTimeElapsed) ||
+                adjustedTimeElapsed <= 0
+            ) {
+                return {
+                    impossible: true,
+                    reason: "insufficient-time",
+                    adjustedTimeElapsed:
+                        Number.isFinite(adjustedTimeElapsed)
+                            ? adjustedTimeElapsed
+                            : null,
+                    deadline: undefined
+                };
+            }
+
+            const deadline =
+                this.#calculateAdjustedEndTimeline(
+                    adjustedTimeElapsed
+                );
+
+            if (!Number.isFinite(deadline)) {
+                if (
+                    this.#openEndedRange &&
+                    this.#isIntervalType(
+                        this.#openEndedRange.type
+                    )
+                ) {
+                    return {
+                        impossible: false,
+                        reason: null,
+                        adjustedTimeElapsed,
+                        deadline: undefined
+                    };
+                }
+
+                return {
+                    impossible: true,
+                    reason: "insufficient-time",
+                    adjustedTimeElapsed,
+                    deadline: undefined
+                };
+            }
+
+            if (
+                Number.isFinite(now) &&
+                now > deadline
+            ) {
+                return {
+                    impossible: true,
+                    reason: "deadline-passed",
+                    adjustedTimeElapsed,
+                    deadline
+                };
+            }
+
+            return {
+                impossible: false,
+                reason: null,
+                adjustedTimeElapsed,
+                deadline
+            };
+        }
+
+        #updateTotalGoalNotPossibleState(
+            source = "automatic",
+            now = this.#started
+                ? this.#getCurrentTimelineTime()
+                : undefined
+        ) {
+            const state =
+                this.#getTotalGoalImpossibility(
+                    now
+                );
+
+            if (
+                state.impossible &&
+                !this.#totalGoalNotPossibleState
+            ) {
+                this.#emitClockTimerEvent(
+                    "totalGoalNotPossible",
+                    {
+                        source,
+                        goal:
+                            this.#getTotalGoal(),
+                        reason:
+                            state.reason,
+                        adjustedTimeElapsed:
+                            Number.isFinite(
+                                state.adjustedTimeElapsed
+                            )
+                                ? Math.round(
+                                    state.adjustedTimeElapsed
+                                )
+                                : null,
+                        deadline:
+                            this.#timelineToISO(
+                                state.deadline
+                            ) ?? null,
+                        currentTime:
+                            this.#timelineToISO(
+                                now
+                            ) ?? null
+                    }
+                );
+            }
+
+            this.#totalGoalNotPossibleState =
+                state.impossible;
+
+            return state;
+        }
+
         #checkGoalMisses(now) {
             if (!this.#started || !Number.isFinite(now)) {
                 this.#tripGoalMissedState = false;
                 this.#totalGoalMissedState = false;
+                this.#totalGoalNotPossibleState = false;
                 return;
             }
+
+            this.#updateTotalGoalNotPossibleState(
+                "automatic",
+                now
+            );
 
             if (
                 this.#calculateRenderedPercentGoal() !==
@@ -18644,9 +19407,82 @@
                 : "auto";
         }
 
+        #setPercentModeAutomatically(
+            value,
+            reason,
+            {
+                recalculate = true
+            } = {}
+        ) {
+            const normalized =
+                this.#normalizePercentMode(
+                    value
+                );
+
+            if (
+                normalized ===
+                    this.#percentMode &&
+                this.getAttribute(
+                    "percent-mode"
+                ) === normalized
+            ) {
+                return false;
+            }
+
+            const previousContext =
+                this.#percentModeChangeContext;
+
+            this.#percentModeChangeContext = {
+                source: "automatic",
+                reason,
+                recalculate
+            };
+
+            try {
+                this.setAttribute(
+                    "percent-mode",
+                    normalized
+                );
+            }
+            finally {
+                this.#percentModeChangeContext =
+                    previousContext;
+            }
+
+            return true;
+        }
+
+        #emitRenderedPercentGoalChange(
+            previousValue,
+            value,
+            source
+        ) {
+            this.#emitClockTimerEvent(
+                "renderedPercentGoalChange",
+                {
+                    previousValue,
+                    value,
+                    source,
+                    userInitiated:
+                        source === "user",
+                    percentMode:
+                        this.#percentMode,
+                    tripGoal:
+                        this.#getTripGoal(),
+                    totalGoal:
+                        this.#getTotalGoal(),
+                    totalAggregateAvailable:
+                        this.#hasUsableAggregateSnapshot()
+                }
+            );
+        }
+
         #setRenderedPercentGoal(
             value,
-            source = "automatic"
+            source = "automatic",
+            {
+                emit = true
+            } = {}
         ) {
             const normalized =
                 Number.isFinite(value) && value > 0
@@ -18663,22 +19499,13 @@
             this.#renderedPercentGoal =
                 normalized;
 
-            this.#emitClockTimerEvent(
-                "renderedPercentGoalChange",
-                {
+            if (emit) {
+                this.#emitRenderedPercentGoalChange(
                     previousValue,
-                    value: normalized,
-                    source,
-                    userInitiated:
-                        source === "user",
-                    percentMode:
-                        this.#percentMode,
-                    tripGoal:
-                        this.#getTripGoal(),
-                    totalGoal:
-                        this.#getTotalGoal()
-                }
-            );
+                    normalized,
+                    source
+                );
+            }
 
             return true;
         }

@@ -101,6 +101,9 @@ if ($method === 'GET') {
         $parameters[':exclude_trip_id'] = $excludeTripId;
     }
 
+    $aggregateBaseWhere = $where;
+    $aggregateBaseParameters = $parameters;
+
     if ($nonProductionFilter === 'none') {
         $where .= ' AND t.non_production = 0';
     }
@@ -324,11 +327,130 @@ if ($method === 'GET') {
 
     $actualMicroseconds = (int) ($row['actual_time_us'] ?? 0);
 
+    $breakdownStatement = db()->prepare(
+        'SELECT t.standard_time_ms, t.non_production, '
+        . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
+        . 'FROM trips t WHERE ' . $aggregateBaseWhere . ' '
+        . 'ORDER BY t.start_time ASC, t.id ASC'
+    );
+    $breakdownStatement->execute($aggregateBaseParameters);
+
+    $emptyAggregate = static fn (): array => [
+        'tripCount' => 0,
+        'standardTimeMilliseconds' => 0,
+        'actualTimeMilliseconds' => 0,
+    ];
+
+    $addAggregate = static function (array &$aggregate, int $standard, int $actual): void {
+        $aggregate['tripCount']++;
+        $aggregate['standardTimeMilliseconds'] += $standard;
+        $aggregate['actualTimeMilliseconds'] += $actual;
+    };
+
+    $productionAggregate = $emptyAggregate();
+    $nonProductionTrips = [];
+
+    while ($breakdownRow = $breakdownStatement->fetch()) {
+        $standardMilliseconds =
+            (int) ($breakdownRow['standard_time_ms'] ?? 0);
+        $tripActualMicroseconds =
+            (int) ($breakdownRow['actual_time_us'] ?? 0);
+        $tripActualMilliseconds =
+            intdiv($tripActualMicroseconds, 1000);
+
+        if ($tripActualMilliseconds <= 0) {
+            continue;
+        }
+
+        if (((int) ($breakdownRow['non_production'] ?? 0)) === 1) {
+            $nonProductionTrips[] = [
+                'standardTimeMilliseconds' => $standardMilliseconds,
+                'actualTimeMilliseconds' => $tripActualMilliseconds,
+            ];
+        }
+        else {
+            $addAggregate(
+                $productionAggregate,
+                $standardMilliseconds,
+                $tripActualMilliseconds
+            );
+        }
+    }
+
+    $allNonProductionAggregate = $emptyAggregate();
+    $helpfulAggregate = $emptyAggregate();
+    $nonHelpfulAggregate = $emptyAggregate();
+    $productiveAggregate = $emptyAggregate();
+
+    $productionRatio = null;
+    if (
+        $productionAggregate['tripCount'] > 0 &&
+        $productionAggregate['standardTimeMilliseconds'] > 0 &&
+        $productionAggregate['actualTimeMilliseconds'] > 0
+    ) {
+        $productionRatio =
+            $productionAggregate['standardTimeMilliseconds'] /
+            $productionAggregate['actualTimeMilliseconds'];
+    }
+
+    foreach ($nonProductionTrips as $trip) {
+        $standardMilliseconds =
+            $trip['standardTimeMilliseconds'];
+        $tripActualMilliseconds =
+            $trip['actualTimeMilliseconds'];
+
+        $addAggregate(
+            $allNonProductionAggregate,
+            $standardMilliseconds,
+            $tripActualMilliseconds
+        );
+
+        $tripRatio =
+            $standardMilliseconds /
+            $tripActualMilliseconds;
+
+        if (
+            $productionRatio !== null &&
+            $tripRatio > $productionRatio
+        ) {
+            $addAggregate(
+                $helpfulAggregate,
+                $standardMilliseconds,
+                $tripActualMilliseconds
+            );
+        }
+        else {
+            $addAggregate(
+                $nonHelpfulAggregate,
+                $standardMilliseconds,
+                $tripActualMilliseconds
+            );
+        }
+
+        if ($tripRatio >= 1.0) {
+            $addAggregate(
+                $productiveAggregate,
+                $standardMilliseconds,
+                $tripActualMilliseconds
+            );
+        }
+    }
+
     json_response([
         'tripCount' => (int) ($row['trip_count'] ?? 0),
         'standardTimeMilliseconds' => (int) ($row['standard_time_ms'] ?? 0),
         'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
         'nonProductionFilter' => $nonProductionFilter,
+        'aggregateBreakdown' => [
+            'production' => $productionAggregate,
+            'nonProduction' => [
+                'all' => $allNonProductionAggregate,
+                'helpful' => $helpfulAggregate,
+                'nonHelpful' => $nonHelpfulAggregate,
+                'productive' => $productiveAggregate,
+                'trips' => $nonProductionTrips,
+            ],
+        ],
     ]);
 }
 
