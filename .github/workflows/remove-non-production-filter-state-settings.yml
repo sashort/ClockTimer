@@ -22,21 +22,15 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           html = Path('index.html')
           text = html.read_text()
-          block = '''                <label>Non-Production Filter
-                    <select name="nonProductionFilter">
-                        <option value="none">None</option>
-                        <option value="all">All</option>
-                        <option value="helpful">Helpful</option>
-                        <option value="productive">Productive</option>
-                    </select>
-                </label>
-'''
-          if block not in text:
-              raise SystemExit('Non-production filter control not found in index.html')
-          html.write_text(text.replace(block, '', 1))
+          pattern = r'\s*<label>Non-Production Filter\s*<select name="nonProductionFilter">.*?</select>\s*</label>'
+          updated, count = re.subn(pattern, '', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'Expected one non-production filter control, found {count}')
+          html.write_text(updated)
 
           js = Path('app.js')
           text = js.read_text()
