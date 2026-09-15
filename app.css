@@ -45,7 +45,7 @@ button { cursor: pointer; }
 
 .app-header {
     display: grid;
-    grid-template-columns: 52px 1fr;
+    grid-template-columns: auto 1fr;
     margin: 0;
     padding: 0;
 }
@@ -60,6 +60,10 @@ button { cursor: pointer; }
 }
 
 .hamburger-button {
+    height: 100%;
+    width: auto;
+    aspect-ratio: 1 / 1;
+    justify-self: start;
     display: grid;
     align-content: center;
     justify-items: center;
