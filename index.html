@@ -112,10 +112,65 @@
                 <h2>Clock Graphical Settings</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
-            <div class="settings-grid">
+
+            <div class="settings-grid graphical-settings-grid">
                 <div class="settings-groups">
                     <fieldset>
-                        <legend>Clock Layout</legend>
+                        <legend>Time Display</legend>
+                        <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
+                        <label>Time Format<input name="timeFormat" value="HHmm"></label>
+                        <label>Date Format<input name="dateFormat" placeholder="hidden"></label>
+                        <label>Visible Hours<input name="visibleHours" value="12,3,6,9"></label>
+                        <label>Tick Marks<input name="tickMarks" value="[10]"></label>
+                        <label>Indicator Symbol<input name="indicatorSymbol" value="▲"></label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Hand Styling</legend>
+                        <div class="style-row three-control-row">
+                            <span>Hour Hand</span>
+                            <label>Length<input name="hourHandLength" value="28%"></label>
+                            <label>Width<input name="hourHandWidth" value="5px"></label>
+                            <label>Color<input name="hourHandColor" type="color" value="#ffffff"></label>
+                        </div>
+                        <div class="style-row three-control-row">
+                            <span>Minute Hand</span>
+                            <label>Length<input name="minuteHandLength" value="38%"></label>
+                            <label>Width<input name="minuteHandWidth" value="4px"></label>
+                            <label>Color<input name="minuteHandColor" type="color" value="#ffffff"></label>
+                        </div>
+                        <div class="style-row three-control-row">
+                            <span>Second Hand</span>
+                            <label>Length<input name="secondHandLength" value="42%"></label>
+                            <label>Width<input name="secondHandWidth" value="2px"></label>
+                            <label>Color<input name="secondHandColor" type="color" value="#ffc220"></label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Hour Number Styling</legend>
+                        <label>Font<input name="hourFont" value="Helvetica, Arial, sans-serif"></label>
+                        <label>Font Size<input name="hourFontSize" value="24px"></label>
+                        <label>Color<input name="hourColor" type="color" value="#ffffff"></label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Current Time Styling</legend>
+                        <label>Font<input name="timeFont" value="Helvetica, Arial, sans-serif"></label>
+                        <label>Font Size<input name="timeFontSize" value="48px"></label>
+                        <label>Color<input name="timeColor" type="color" value="#ffffff"></label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Ring Styling</legend>
+                        <label>Active Ring Width<input name="activeRingWidth" value="12px"></label>
+                        <label>Inactive Ring Width<input name="inactiveRingWidth" value="6px"></label>
+                        <label>Border Width<input name="borderWidth" value="7px"></label>
+                        <label class="toggle-row">Show Tolerance<input name="showTolerance" type="checkbox" checked></label>
+                    </fieldset>
+
+                    <fieldset class="advanced-graphical-settings">
+                        <legend>Additional Display</legend>
                         <label>Timer Type
                             <select name="timerType">
                                 <option value="radial-overflow">Radial Overflow</option>
@@ -128,30 +183,24 @@
                                 <option value="remaining">Remaining</option>
                             </select>
                         </label>
-                        <label class="toggle-row">Show Tolerance<input name="showTolerance" type="checkbox" checked></label>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Time Display</legend>
-                        <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
-                        <label>Time Format<input name="timeFormat" value="HHmm"></label>
-                        <label>Date Format<input name="dateFormat" placeholder="hidden"></label>
-                        <label>Visible Hours<input name="visibleHours" value="12,3,6,9"></label>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Markers</legend>
-                        <label>Tick Marks<input name="tickMarks" value="[10]"></label>
-                        <label>Indicator Symbol<input name="indicatorSymbol" value="▲"></label>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Appearance</legend>
                         <label>Grayscale<input name="grayscale" type="number" min="0" max="100" step="1" value="0"></label>
                         <label>Grayscale Ramp<input name="grayscaleRamp" value="333ms"></label>
                     </fieldset>
                 </div>
-                <div class="clock-preview" aria-label="Clock preview">
-                    <clock-timer id="clockPreview" military-time="true"></clock-timer>
-                </div>
+
+                <aside class="clock-preview" aria-label="Clock preview">
+                    <div class="preview-title">Live Preview</div>
+                    <clock-timer
+                        id="clockPreview"
+                        military-time="true"
+                        time-format="HHmm"
+                        visible-hours="12,3,6,9"
+                        tick-marks="[10]"
+                        indicator-symbol="▲"
+                    ></clock-timer>
+                </aside>
             </div>
+
             <div class="dialog-actions three-actions">
                 <button id="resetGraphicalSettings" type="button">Reset to Defaults</button>
                 <button type="button" data-close-dialog>Cancel</button>
