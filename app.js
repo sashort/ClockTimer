@@ -149,7 +149,10 @@
     function updateSummaryValues() {
         const standard = clockTimer.standardTime;
         $("#standardTimeValue").textContent = typeof standard === "string" && standard ? standard : "---";
-        $("#renderedTimeValue").textContent = clockTimer.renderedTime || "---";
+        $("#renderedTimeValue").textContent =
+            clockTimer.status === "running"
+                ? (clockTimer.renderedTime || "---")
+                : "---";
         const goal = Number(clockTimer.renderedPercentGoal);
         $("#goalPercentValue").textContent = Number.isFinite(goal) ? `${Math.round(goal * 100)}%` : "100%";
     }
