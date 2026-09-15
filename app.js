@@ -18,7 +18,7 @@
         dateFormat: "",
         visibleHours: "12,3,6,9",
         tickMarks: "[10]",
-        indicatorSymbol: "↑",
+        indicatorSymbol: "▲",
         grayscale: "0",
         grayscaleRamp: "333ms"
     };
