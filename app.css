@@ -67,14 +67,15 @@ button { cursor: pointer; }
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: 5px;
+    gap: 0.2em;
     padding: 0;
+    font-size: 24px;
 }
 
 .hamburger-button span {
-    width: 28px;
-    height: 4px;
-    border-radius: 2px;
+    width: 1em;
+    height: 0.14em;
+    border-radius: 0.07em;
     background: var(--wm-white);
 }
 
