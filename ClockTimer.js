@@ -513,6 +513,20 @@
 
                     z-index: 10;
 
+                    opacity: 0;
+
+                    transition-property:
+                        inset, opacity;
+
+                    transition-duration:
+                        var(
+                            --clock-timer-ring-resize-duration
+                        ),
+                        750ms;
+
+                    transition-timing-function:
+                        linear, linear;
+
                     pointer-events:
                         none;
                 }
@@ -25962,6 +25976,11 @@
                     "0";
             }
 
+            if (this.#tickMarkLayer) {
+                this.#tickMarkLayer.style.opacity =
+                    "0";
+            }
+
             this.#handsStarted =
                 false;
         }
@@ -26101,11 +26120,17 @@
                 () => {
                     if (
                         this.#handsStarted &&
-                        this.isConnected &&
-                        this.#handLayer
+                        this.isConnected
                     ) {
-                        this.#handLayer.style.opacity =
-                            "1";
+                        if (this.#handLayer) {
+                            this.#handLayer.style.opacity =
+                                "1";
+                        }
+
+                        if (this.#tickMarkLayer) {
+                            this.#tickMarkLayer.style.opacity =
+                                "1";
+                        }
                     }
                 }
             );
