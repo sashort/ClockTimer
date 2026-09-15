@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ClockTimer</title>
+    <link rel="stylesheet" href="app.css">
+</head>
+<body>
+    <main id="app" class="app" data-state="ready">
+        <header class="app-header">
+            <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
+                <span></span><span></span><span></span>
+            </button>
+            <button id="scopeToggle" class="header-button scope-toggle" type="button">Trip</button>
+        </header>
+
+        <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
+            <button type="button" data-dialog="profileDialog">Profile</button>
+            <button type="button" data-dialog="stateSettingsDialog">Clock State Settings</button>
+            <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
+            <hr>
+            <button id="logoutButton" class="logout-button" type="button">Logout</button>
+        </nav>
+
+        <section class="trip-summary" aria-label="Trip summary">
+            <button id="standardTimeButton" class="summary-cell" type="button">
+                <span class="summary-label" id="standardTimeLabel">Trip Standard Time</span>
+                <strong id="standardTimeValue">---</strong>
+            </button>
+            <button id="renderedTimeButton" class="summary-cell" type="button">
+                <span class="summary-label" id="renderedTimeLabel">Trip Time Remaining</span>
+                <strong id="renderedTimeValue">---</strong>
+            </button>
+            <div class="percent-summary" aria-live="polite">
+                <strong id="currentPercentValue">---</strong>
+                <span>/</span>
+                <strong id="goalPercentValue">100%</strong>
+            </div>
+        </section>
+
+        <button id="newTripButton" class="new-trip-button" type="button">New Trip</button>
+
+        <div class="summary-spacer" aria-hidden="true"></div>
+
+        <section class="independent-timer" aria-label="Independent timer">
+            <output id="independentTimerValue" class="independent-timer-value">---</output>
+            <div class="independent-timer-controls">
+                <button id="independentStart" type="button" aria-label="Start independent timer"><span class="play-icon">▶</span></button>
+                <button id="independentStop" type="button" aria-label="Stop independent timer"><span class="stop-icon"></span></button>
+                <button id="independentReset" type="button">Reset</button>
+            </div>
+        </section>
+
+        <section class="clock-region" aria-label="Clock">
+            <clock-timer
+                id="clockTimer"
+                percent-mode="trip"
+                military-time="true"
+                timer-type="radial-overflow"
+                timer-mode="elapsed"
+            ></clock-timer>
+        </section>
+
+        <button id="tripLogButton" class="trip-log-button" type="button">Trip Log</button>
+    </main>
+
+    <dialog id="loginDialog" class="app-dialog login-dialog">
+        <form id="loginForm" method="dialog">
+            <header><h2>Login</h2></header>
+            <label>Username<input id="loginUsername" name="username" autocomplete="username" required></label>
+            <label>Password<input id="loginPassword" name="password" type="password" autocomplete="current-password" required></label>
+            <p id="loginError" class="form-error" role="alert"></p>
+            <div class="dialog-actions two-actions">
+                <button id="loginButton" class="primary-action" type="submit" value="login">Login</button>
+                <button id="newUserButton" type="button">New User</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="profileDialog" class="app-dialog settings-dialog">
+        <form id="profileForm" method="dialog">
+            <header class="dialog-header">
+                <h2>Profile Settings</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <fieldset>
+                <legend>Account Information</legend>
+                <label>Username<input id="profileUsername" name="username" autocomplete="username"></label>
+                <label>Password<input id="profilePassword" name="password" type="password" value="••••••••" disabled></label>
+                <button id="resetPasswordButton" class="secondary-action" type="button">Reset Password…</button>
+            </fieldset>
+            <fieldset>
+                <legend>Personal Information</legend>
+                <label>First Name<input id="firstName" name="firstName" autocomplete="given-name"></label>
+                <label>Last Name<input id="lastName" name="lastName" autocomplete="family-name"></label>
+                <label>Preferred Name<input id="preferredName" name="preferredName" autocomplete="nickname"></label>
+            </fieldset>
+            <div class="dialog-actions two-actions">
+                <button type="button" data-close-dialog>Cancel</button>
+                <button class="primary-action" type="submit" value="save">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">
+        <form id="graphicalSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <h2>Clock Graphical Settings</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <div class="settings-grid">
+                <div class="settings-groups">
+                    <fieldset>
+                        <legend>Clock Layout</legend>
+                        <label>Timer Type
+                            <select name="timerType">
+                                <option value="radial-overflow">Radial Overflow</option>
+                                <option value="radial-fitted">Radial Fitted</option>
+                            </select>
+                        </label>
+                        <label>Timer Mode
+                            <select name="timerMode">
+                                <option value="elapsed">Elapsed</option>
+                                <option value="remaining">Remaining</option>
+                            </select>
+                        </label>
+                        <label class="toggle-row">Show Tolerance<input name="showTolerance" type="checkbox" checked></label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Time Display</legend>
+                        <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
+                        <label>Time Format<input name="timeFormat" value="HHmmss"></label>
+                        <label>Date Format<input name="dateFormat" placeholder="hidden"></label>
+                        <label>Visible Hours<input name="visibleHours" placeholder="all"></label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Markers</legend>
+                        <label>Tick Marks<input name="tickMarks" placeholder="off"></label>
+                        <label>Indicator Symbol<input name="indicatorSymbol" placeholder="hidden"></label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Appearance</legend>
+                        <label>Grayscale<input name="grayscale" type="number" min="0" max="100" step="1" value="0"></label>
+                        <label>Grayscale Ramp<input name="grayscaleRamp" value="333ms"></label>
+                    </fieldset>
+                </div>
+                <div class="clock-preview" aria-label="Clock preview">
+                    <clock-timer id="clockPreview" military-time="true"></clock-timer>
+                </div>
+            </div>
+            <div class="dialog-actions three-actions">
+                <button id="resetGraphicalSettings" type="button">Reset to Defaults</button>
+                <button type="button" data-close-dialog>Cancel</button>
+                <button class="primary-action" type="submit" value="save">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="stateSettingsDialog" class="app-dialog settings-dialog state-dialog">
+        <form id="stateSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <h2>Clock State Settings</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <fieldset>
+                <legend>Interval Behavior</legend>
+                <label>When an interval elapses
+                    <select name="intervalElapsedBehavior">
+                        <option value="startLatency">Start Latency</option>
+                        <option value="extendBoundary">Keep Boundary Open</option>
+                        <option value="extendInterval">Extend Interval Only</option>
+                    </select>
+                </label>
+                <label class="toggle-row">Auto Sync Trip Goal<input name="autoSyncTripGoal" type="checkbox"></label>
+                <label>Non-Production Filter
+                    <select name="nonProductionFilter">
+                        <option value="none">None</option>
+                        <option value="all">All</option>
+                        <option value="helpful">Helpful</option>
+                        <option value="productive">Productive</option>
+                    </select>
+                </label>
+            </fieldset>
+            <div class="dialog-actions two-actions">
+                <button type="button" data-close-dialog>Cancel</button>
+                <button class="primary-action" type="submit" value="save">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="TemporalFormat.js"></script>
+    <script src="RingContainer.js"></script>
+    <script src="TimeRange.js"></script>
+    <script src="ClockTimer.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
