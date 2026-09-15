@@ -1,0 +1,42 @@
+name: Implement number pad
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/implement-number-pad.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/implement_number_pad.py
+      - name: Validate
+        run: |
+          node --check app.js
+          grep -q 'id="numberPadDialog"' index.html
+          grep -q 'grid-template-columns: repeat(3, calc(100% / 3))' app.css
+          grep -q 'NUMBER_PAD_LONG_PRESS = 750' app.js
+          grep -q 'number-pad-key:disabled' app.css
+      - name: Commit source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html app.css app.js
+          git commit -m "Implement contextual number pad"
+          git push origin HEAD:rename-prestart-latency
+      - name: Cleanup patch files
+        run: |
+          git pull --rebase origin rename-prestart-latency
+          git rm .github/workflows/implement-number-pad.yml .github/scripts/implement_number_pad.py
+          git commit -m "Remove number pad patch files"
+          git push origin HEAD:rename-prestart-latency
