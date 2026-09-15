@@ -120,5 +120,9 @@ old_logout = '.main-menu .logout-button { color: #ff554d; }\n'
 new_logout = '''.main-menu .logout-button { color: var(--wm-white); }
 .main-menu .logout-button::before { background: #ff554d; }
 '''
-css = replace_once(css, old_logout, new_logout, "logout color")
+if old_logout in css:
+    css = css.replace(old_logout, new_logout, 1)
+elif new_logout not in css:
+    raise SystemExit("Expected logout color block not found")
+
 css_path.write_text(css)
