@@ -1,0 +1,105 @@
+name: Implement latest timer UI rules
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/implement_latest_ui_rules.py
+      - .github/workflows/implement-latest-ui-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply changes
+        run: python .github/scripts/implement_latest_ui_rules.py
+
+      - name: Validate JavaScript and patch invariants
+        shell: bash
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+
+          clock = Path('ClockTimer.js').read_text()
+          app = Path('app.js').read_text()
+          css = Path('app.css').read_text()
+          html = Path('index.html').read_text()
+
+          # Main UI precision contract.
+          elapsed_start = clock.index('        #formatElapsedRenderedDuration(')
+          elapsed_end = clock.index('        #calculateRenderedTime(', elapsed_start)
+          formatting = clock[elapsed_start:elapsed_end]
+          required_clock = [
+              'Math.ceil(',
+              'Math.trunc(',
+              'value.getMilliseconds()',
+          ]
+          for needle in required_clock:
+              if needle not in clock:
+                  raise SystemExit(f'missing ClockTimer rule: {needle}')
+          for forbidden in ('`⁺${formatted}`', '`-${formatted}`'):
+              if forbidden in formatting:
+                  raise SystemExit(f'legacy sign formatting remains: {forbidden}')
+
+          # Main UI sign is a suffix and only appended to a real existing value.
+          required_app = [
+              'function getMainRenderedTimeValue(selected)',
+              'if (!renderedTime) return undefined;',
+              'intervalState?.open !== false',
+              'return `${renderedTime}${mode === "remaining" ? "⁺" : "⁻"}`;',
+              'connectionAnimationStartedAt',
+              '"awaiting-login"',
+              'function syncTripStartsNowButtonContent(active)',
+              'classList.toggle("is-exiting", tripStartsNowExiting)',
+          ]
+          for needle in required_app:
+              if needle not in app:
+                  raise SystemExit(f'missing app rule: {needle}')
+
+          if 'tripStartsNowExiting ||\n                Boolean(' in app:
+              raise SystemExit('trip Now button is still disabled for the exit animation')
+
+          required_html = [
+              'class="trip-now-start-copy"',
+              'class="trip-now-value-copy"',
+              'class="trip-now-now-label"',
+              'class="trip-now-timestamp-label"',
+          ]
+          for needle in required_html:
+              if needle not in html:
+                  raise SystemExit(f'missing structured button markup: {needle}')
+
+          required_css = [
+              '[data-connection-phase="awaiting-login"] .number-pad-settings-gear',
+              '.trip-now-actions.is-selecting .trip-now-start-copy',
+              '.trip-now-actions.is-exiting .trip-now-start-copy',
+              '.trip-now-actions.is-selecting .trip-now-timestamp-label',
+          ]
+          for needle in required_css:
+              if needle not in css:
+                  raise SystemExit(f'missing CSS rule: {needle}')
+          PY
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          rm -f .github/scripts/implement_latest_ui_rules.py
+          rm -f .github/workflows/implement-latest-ui-rules.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement finalized timer UI display and transitions"
+          git push origin HEAD:rename-prestart-latency
