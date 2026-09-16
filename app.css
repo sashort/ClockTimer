@@ -1408,3 +1408,79 @@ button:active:not(:disabled) {
     height: 100%;
     aspect-ratio: auto;
 }
+
+
+/* compact-trip-settings-v2 */
+.trip-time-copy {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55em;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.trip-time-copy strong {
+    flex: 0 0 auto;
+}
+
+.trip-time-separator {
+    flex: 0 0 auto;
+    color: rgb(255 255 255 / 48%);
+}
+
+.trip-time-description,
+.trip-goal-sync-status {
+    color: rgb(255 255 255 / 74%);
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.trip-time-description {
+    min-width: 0;
+}
+
+.trip-now-action {
+    min-height: 48px;
+    padding: 10px 16px;
+    border: 1.5px solid rgb(190 224 255 / 84%);
+    border-radius: 10px;
+    color: var(--wm-white);
+    background: var(--ui-blue-gradient);
+    box-shadow: var(--ui-inner-highlight), 0 5px 12px rgb(0 0 0 / 18%);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.trip-now-action:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+.trip-goal-sync-label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6em;
+    min-width: 0;
+}
+
+.trip-goal-sync-option.is-unavailable .trip-goal-sync-text {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    opacity: 0.62;
+}
+
+.trip-goal-sync-status {
+    flex: 0 0 auto;
+    text-decoration: none;
+}
+
+@media (max-width: 620px) {
+    .trip-time-copy {
+        gap: 0.45em;
+    }
+
+    .trip-time-description,
+    .trip-goal-sync-status {
+        font-size: 12px;
+    }
+}

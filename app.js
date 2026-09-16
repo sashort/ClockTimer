@@ -58,6 +58,9 @@
     const tripSettingsForm = $("#tripSettingsForm");
     const tripSettingsTitle = $("#tripSettingsTitle");
     const tripSettingsPrimary = $("#tripSettingsPrimary");
+    const tripSetStartsNow = $("#tripSetStartsNow");
+    const tripGoalSyncOption = $("#tripGoalSyncOption");
+    const tripGoalSyncNoData = $("#tripGoalSyncNoData");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -936,6 +939,22 @@
         return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     }
 
+    function formatTimelineDateTime(date, creationDate) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
+        const base = parseDateInput(creationDate);
+        if (!base) return undefined;
+        const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const timeMilliseconds =
+            (((date.getHours() * 60) + date.getMinutes()) * 60 + date.getSeconds()) * 1000 +
+            date.getMilliseconds();
+        const timelineMilliseconds = day.getTime() - base.getTime() + timeMilliseconds;
+        const formatted = formatTimelineMilliseconds(timelineMilliseconds);
+        if (!formatted) return undefined;
+        return date.getMilliseconds() === 0
+            ? formatted
+            : `${formatted}.${String(date.getMilliseconds()).padStart(3, "0")}`;
+    }
+
     function autocorrectAbsoluteState(state) {
         const parts = splitAbsoluteDigits(state.pending);
         if (!parts) return;
@@ -1385,10 +1404,24 @@
         frame.state.startsTripOnConfirm = true;
     }
 
+    function tripDraftCanStart(draft = tripDraft) {
+        if (!draft || !parseDateInput(draft.creationDate)) return false;
+        const standardTime = parseTimelineTime(draft.standardTime);
+        const creationTime = parseTimelineTime(draft.creationTime);
+        const scheduledStart = parseTimelineTime(draft.scheduledStart);
+        const actualStart = parseTimelineTime(draft.startTime);
+        return (
+            Number.isFinite(standardTime) && standardTime > 0 &&
+            Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 24 * 60 * 60 * 1000 &&
+            Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
+            Number.isFinite(actualStart) && actualStart >= 0
+        );
+    }
+
     async function startTripDraft() {
         const draft = tripDraft;
         const standardTime = String(draft?.standardTime || "").trim();
-        if (!draft || !standardTime) return false;
+        if (!tripDraftCanStart(draft)) return false;
 
         await clockTimer.start({
             standardTime,
@@ -1438,6 +1471,8 @@
             button.disabled = !live && !draft;
         });
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
+        tripSetStartsNow.hidden = !draft;
+        tripSetStartsNow.disabled = Boolean(draft && !parseDateInput(draft.creationDate));
         const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
         const aggregateGoalAvailable = clockTimer.hasAggregateTrips === true;
         if (!aggregateGoalAvailable && clockTimer.autoSyncTripGoal) {
@@ -1445,9 +1480,11 @@
         }
         autoSyncTripGoal.disabled = !aggregateGoalAvailable;
         autoSyncTripGoal.checked = aggregateGoalAvailable && clockTimer.autoSyncTripGoal;
+        tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable);
+        tripGoalSyncNoData.hidden = aggregateGoalAvailable;
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
-        tripSettingsPrimary.disabled = Boolean(draft && !draft.standardTime);
+        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(draft));
     }
 
     function openTripSettingsDialog(reason = "number-pad-settings", { duration = 250 } = {}) {
@@ -1648,6 +1685,16 @@
                 }
             })();
         });
+    });
+
+    tripSetStartsNow.addEventListener("pointerup", () => {
+        if (!tripDraft || tripIsLive()) return;
+        const now = new Date();
+        const value = formatTimelineDateTime(now, tripDraft.creationDate);
+        if (!value) return;
+        tripDraft.scheduledStart = value;
+        tripDraft.startTime = value;
+        refreshTripSettingsValues();
     });
 
     tripSettingsForm.addEventListener("submit", event => {

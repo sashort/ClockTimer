@@ -251,7 +251,8 @@
                 <article class="trip-time-row" data-trip-time-row="standard-time">
                     <div class="trip-time-copy">
                         <strong>Standard Time</strong>
-                        <span>Expected duration.</span>
+                        <span class="trip-time-separator" aria-hidden="true">—</span>
+                        <span class="trip-time-description">Expected duration.</span>
                     </div>
                     <output id="tripStandardTime" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time"><span aria-hidden="true"></span></button>
@@ -259,7 +260,8 @@
                 <article class="trip-time-row" data-trip-time-row="scheduled-start">
                     <div class="trip-time-copy">
                         <strong>Scheduled Start</strong>
-                        <span>Planned start time.</span>
+                        <span class="trip-time-separator" aria-hidden="true">—</span>
+                        <span class="trip-time-description">Planned start time.</span>
                     </div>
                     <output id="tripScheduledStart" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="scheduled-start" aria-label="Edit scheduled start"><span aria-hidden="true"></span></button>
@@ -267,7 +269,8 @@
                 <article class="trip-time-row" data-trip-time-row="actual-start">
                     <div class="trip-time-copy">
                         <strong>Actual Start</strong>
-                        <span>When the trip actually started.</span>
+                        <span class="trip-time-separator" aria-hidden="true">—</span>
+                        <span class="trip-time-description">When the trip actually started.</span>
                     </div>
                     <output id="tripActualStart" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="actual-start" aria-label="Edit actual start"><span aria-hidden="true"></span></button>
@@ -275,16 +278,26 @@
                 <article class="trip-time-row" data-trip-time-row="creation-time">
                     <div class="trip-time-copy">
                         <strong>Creation Time</strong>
-                        <span>When the trip was created.</span>
+                        <span class="trip-time-separator" aria-hidden="true">—</span>
+                        <span class="trip-time-description">When the trip was created.</span>
                     </div>
                     <output id="tripCreationTime" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="creation-time" aria-label="Edit creation time"><span aria-hidden="true"></span></button>
                 </article>
             
             </section>
+
+            <button id="tripSetStartsNow" class="trip-now-action" type="button" hidden>Set Scheduled/Actual Start to Now</button>
+
             <fieldset class="trip-settings-behavior">
                 <legend>Options</legend>
-                <label class="toggle-row">Match Trip Goal to Total<input name="autoSyncTripGoal" type="checkbox"></label>
+                <label id="tripGoalSyncOption" class="toggle-row trip-goal-sync-option">
+                    <span class="trip-goal-sync-label">
+                        <span class="trip-goal-sync-text">Match Trip Goal To Total</span>
+                        <span id="tripGoalSyncNoData" class="trip-goal-sync-status" hidden>(No Data)</span>
+                    </span>
+                    <input name="autoSyncTripGoal" type="checkbox">
+                </label>
             </fieldset>
 
             <div class="dialog-actions two-actions">
