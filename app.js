@@ -1208,7 +1208,11 @@
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
         if (numberPadHasChanges()) return "reset";
-        return peekUIReturnFrame() ? "back" : "close";
+        if (peekUIReturnFrame()) return "back";
+        if (numberPadState.source === "standard-time" && !numberPadState.everEdited) {
+            return "home";
+        }
+        return "close";
     }
 
     function refreshNumberPad() {
@@ -1243,7 +1247,9 @@
                 ? "Reset"
                 : clearAction === "back"
                     ? "Back"
-                    : "Close"
+                    : clearAction === "home"
+                        ? "Home"
+                        : "Close"
         );
 
         const valid = numberPadValueValid();
@@ -1317,7 +1323,8 @@
                 : "settled",
             connectionStatusToken: ++numberPadConnectionSequence,
             tripDefaults,
-            startsTripOnConfirm: Boolean(startsTripOnConfirm)
+            startsTripOnConfirm: Boolean(startsTripOnConfirm),
+            everEdited: false
         };
         numberPadState = state;
         refreshNumberPad();
@@ -1512,7 +1519,7 @@
     function runNumberPadClearShortAction() {
         if (!numberPadState) return;
         const action = getNumberPadClearAction();
-        if (action === "close" || action === "back") {
+        if (action === "close" || action === "back" || action === "home") {
             void requestNumberPadClose().catch(() => {});
             return;
         }
@@ -1525,6 +1532,7 @@
         if (!parts) return;
         const previous = numberPadState.meridiem;
         const target = previous === next ? null : next;
+        if (target !== previous) numberPadState.everEdited = true;
         let hour = parts.hour;
         if (previous && !target) {
             hour = previous === "AM"
@@ -1732,6 +1740,7 @@
         numberPadDialog.querySelectorAll("[data-number]").forEach(button => {
             button.addEventListener("pointerup", () => {
                 if (!numberPadState) return;
+                const previousPending = numberPadState.pending;
                 if (numberPadState.replaceOnNextDigit) {
                     numberPadState.pending = "";
                     numberPadState.replaceOnNextDigit = false;
@@ -1739,6 +1748,7 @@
                 const candidate = numberPadState.pending + button.dataset.number;
                 if (numberPadState.mode === "absolute" && candidate.length > 6) return;
                 numberPadState.pending = candidate;
+                if (candidate !== previousPending) numberPadState.everEdited = true;
                 refreshNumberPad();
             });
         });
@@ -1749,6 +1759,9 @@
 
         numberPadDate.addEventListener("input", () => {
             if (!numberPadState || numberPadState.mode !== "absolute") return;
+            if (numberPadState.pendingDate !== numberPadDate.value) {
+                numberPadState.everEdited = true;
+            }
             numberPadState.pendingDate = numberPadDate.value;
             refreshNumberPad();
         });
