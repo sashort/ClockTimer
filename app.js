@@ -56,6 +56,7 @@
     const breakDialog = $("#breakDialog");
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
+    const tripSettingsTitle = $("#tripSettingsTitle");
     const tripSettingsPrimary = $("#tripSettingsPrimary");
 
     let timerStartedAt = 0;
@@ -1436,8 +1437,14 @@
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
             button.disabled = !live && !draft;
         });
-        tripSettingsForm.elements.intervalElapsedBehavior.value = clockTimer.intervalElapsedBehavior;
-        tripSettingsForm.elements.autoSyncTripGoal.checked = clockTimer.autoSyncTripGoal;
+        tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
+        const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
+        const aggregateGoalAvailable = clockTimer.hasAggregateTrips === true;
+        if (!aggregateGoalAvailable && clockTimer.autoSyncTripGoal) {
+            clockTimer.autoSyncTripGoal = false;
+        }
+        autoSyncTripGoal.disabled = !aggregateGoalAvailable;
+        autoSyncTripGoal.checked = aggregateGoalAvailable && clockTimer.autoSyncTripGoal;
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
         tripSettingsPrimary.disabled = Boolean(draft && !draft.standardTime);
@@ -1646,8 +1653,9 @@
     tripSettingsForm.addEventListener("submit", event => {
         event.preventDefault();
         const form = event.currentTarget;
-        clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
-        clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
+        clockTimer.autoSyncTripGoal =
+            !form.elements.autoSyncTripGoal.disabled &&
+            form.elements.autoSyncTripGoal.checked;
 
         void (async () => {
             if (tripDraft && !tripIsLive()) {

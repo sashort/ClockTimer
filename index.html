@@ -243,18 +243,18 @@
     <dialog id="tripSettingsDialog" class="app-dialog trip-settings-dialog">
         <form id="tripSettingsForm" method="dialog">
             <header class="dialog-header">
-                <h2>Trip Settings</h2>
+                <h2 id="tripSettingsTitle">Edit Trip Settings</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
 
             <section class="trip-settings-times" aria-label="Trip times">
-                <article class="trip-time-row" data-trip-time-row="creation-time">
+                <article class="trip-time-row" data-trip-time-row="standard-time">
                     <div class="trip-time-copy">
-                        <strong>Creation Time</strong>
-                        <span>When the trip was created.</span>
+                        <strong>Standard Time</strong>
+                        <span>Expected duration.</span>
                     </div>
-                    <output id="tripCreationTime" class="trip-time-value">---</output>
-                    <button class="trip-time-edit" type="button" data-trip-time-field="creation-time" aria-label="Edit creation time"><span aria-hidden="true"></span></button>
+                    <output id="tripStandardTime" class="trip-time-value">---</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time"><span aria-hidden="true"></span></button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="scheduled-start">
                     <div class="trip-time-copy">
@@ -272,26 +272,19 @@
                     <output id="tripActualStart" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="actual-start" aria-label="Edit actual start"><span aria-hidden="true"></span></button>
                 </article>
-                <article class="trip-time-row" data-trip-time-row="standard-time">
+                <article class="trip-time-row" data-trip-time-row="creation-time">
                     <div class="trip-time-copy">
-                        <strong>Standard Time</strong>
-                        <span>Expected duration.</span>
+                        <strong>Creation Time</strong>
+                        <span>When the trip was created.</span>
                     </div>
-                    <output id="tripStandardTime" class="trip-time-value">---</output>
-                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time"><span aria-hidden="true"></span></button>
+                    <output id="tripCreationTime" class="trip-time-value">---</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="creation-time" aria-label="Edit creation time"><span aria-hidden="true"></span></button>
                 </article>
+            
             </section>
-
             <fieldset class="trip-settings-behavior">
-                <legend>Interval Behavior</legend>
-                <label>When an interval elapses
-                    <select name="intervalElapsedBehavior">
-                        <option value="startLatency">Start Latency</option>
-                        <option value="extendBoundary">Keep Boundary Open</option>
-                        <option value="extendInterval">Extend Interval Only</option>
-                    </select>
-                </label>
-                <label class="toggle-row">Auto Sync Trip Goal<input name="autoSyncTripGoal" type="checkbox"></label>
+                <legend>Options</legend>
+                <label class="toggle-row">Match Trip Goal to Total<input name="autoSyncTripGoal" type="checkbox"></label>
             </fieldset>
 
             <div class="dialog-actions two-actions">

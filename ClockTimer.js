@@ -4116,6 +4116,15 @@
             );
         }
 
+        get hasAggregateTrips() {
+            return Boolean(
+                this.#hasUsableAggregateSnapshot() &&
+                this.#tripTotals.tripCount > 0 &&
+                this.#tripTotals.standardTimeMilliseconds > 0 &&
+                this.#tripTotals.actualTimeMilliseconds > 0
+            );
+        }
+
         get autoSyncTripGoal() {
             return this.#autoSyncTripGoal;
         }
