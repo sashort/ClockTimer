@@ -256,21 +256,39 @@
         });
     }
 
-    function setOffline(offline, { login = false, startup = false } = {}) {
+    function syncNetworkStatusUI({ login = false, startup = false } = {}) {
         clearTimeout(loginPromptTimeout);
         clearTimeout(grayscaleReleaseTimeout);
         loginPromptTimeout = undefined;
         grayscaleReleaseTimeout = undefined;
 
-        app.dataset.state = offline ? "offline" : (clockTimer.status === "running" ? "running" : "ready");
-        syncConnectionUI(!offline);
+        const networkStatus =
+            clockTimer.networkStatus;
+
+        const offline =
+            networkStatus === "offline";
+
+        app.dataset.state =
+            clockTimer.status;
+
+        app.dataset.networkStatus =
+            networkStatus;
+
+        syncConnectionUI(
+            networkStatus === "online"
+        );
 
         if (offline) {
             app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
             app.classList.add("is-offline");
             loginPromptTimeout = setTimeout(() => {
                 loginPromptTimeout = undefined;
-                if (!clockTimer.connected && !loginDialog.open) showInitialLoginDialog();
+                if (
+                    clockTimer.networkStatus === "offline" &&
+                    !loginDialog.open
+                ) {
+                    showInitialLoginDialog();
+                }
             }, STARTUP_CONNECTION_DELAY);
             return;
         }
@@ -284,7 +302,7 @@
 
         grayscaleReleaseTimeout = setTimeout(() => {
             grayscaleReleaseTimeout = undefined;
-            if (!clockTimer.connected) return;
+            if (clockTimer.networkStatus !== "online") return;
             requestAnimationFrame(() => app.classList.remove("is-offline"));
         }, delay);
     }
@@ -505,7 +523,7 @@
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
-            if (button.dataset.dialog === "profileDialog" && !clockTimer.connected) {
+            if (button.dataset.dialog === "profileDialog" && clockTimer.networkStatus !== "online") {
                 openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
                 return;
             }
@@ -552,7 +570,7 @@
             const result = await clockTimer.connect(username, password);
             if (!result?.connected) throw new Error("Login failed.");
             $("#profileUsername").value = result.user?.username || username;
-            setOffline(false, { login: true });
+            syncNetworkStatusUI({ login: true });
         }
         catch (failure) {
             error.textContent = failure?.message || "Unable to login.";
@@ -563,7 +581,7 @@
     });
 
     authButton.addEventListener("pointerup", async () => {
-        if (!clockTimer.connected) {
+        if (clockTimer.networkStatus !== "online") {
             clearTimeout(loginPromptTimeout);
             loginPromptTimeout = undefined;
             initialLoginAttemptPending = false;
@@ -573,7 +591,7 @@
         mainMenu?.hidePopover?.();
         try { await clockTimer.disconnect(); }
         catch {}
-        finally { setOffline(true); }
+        finally { syncNetworkStatusUI(); }
     });
 
     $("#newUserButton").addEventListener("click", () => {
@@ -903,7 +921,7 @@
 
         numberPadSettings.hidden = percentMode;
         if (!percentMode) {
-            numberPadSettings.dataset.persistence = numberPadState.persistence || (clockTimer.connected ? "online" : "offline");
+            numberPadSettings.dataset.persistence = numberPadState.persistence || clockTimer.networkStatus;
             numberPadSettings.setAttribute(
                 "aria-label",
                 numberPadSettings.dataset.persistence === "pending"
@@ -944,8 +962,8 @@
             meridiem: initialMeridiem,
             replaceOnNextDigit: source !== "new-trip",
             persistence: source === "new-trip"
-                ? (clockTimer.connected ? "pending" : "offline")
-                : (clockTimer.connected ? "online" : "offline"),
+                ? (clockTimer.networkStatus === "online" ? "pending" : "offline")
+                : clockTimer.networkStatus,
             returnToTripSettings
         };
         numberPadState = state;
@@ -1488,6 +1506,7 @@
 
     function setTripControlState(running) {
         app.dataset.tripState = running ? "running" : "ready";
+        app.dataset.state = clockTimer.status;
         activeTripControls.hidden = !running;
     }
 
@@ -1548,12 +1567,8 @@
         queueSummaryRefresh();
     });
 
-    clockTimer.addEventListener("connected", () => {
-        setOffline(false, { login: loginPending });
-        queueSummaryRefresh();
-    });
-    clockTimer.addEventListener("disconnected", () => {
-        setOffline(true);
+    clockTimer.addEventListener("networkStatusChanged", () => {
+        syncNetworkStatusUI({ login: loginPending });
         queueSummaryRefresh();
     });
 
@@ -1563,5 +1578,5 @@
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
-    setOffline(!clockTimer.connected, { startup: true });
+    syncNetworkStatusUI({ startup: true });
 })();

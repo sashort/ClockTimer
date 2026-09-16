@@ -1004,7 +1004,8 @@
             return this.dispatchEvent(new CustomEvent(name, {
                 detail: {
                     ...detail,
-                    connected: this.#connectionState === "connected"
+                    connected: this.#connectionState === "connected",
+                    networkStatus: this.networkStatus
                 },
                 bubbles: true,
                 composed: true,
@@ -1924,6 +1925,9 @@
         }
 
         #setConnected(csrfToken, detail = {}) {
+            const previousNetworkStatus =
+                this.networkStatus;
+
             const wasConnected =
                 this.#connectionState ===
                     "connected";
@@ -1933,6 +1937,20 @@
 
             this.#connectionState =
                 "connected";
+
+            const networkStatus =
+                this.networkStatus;
+
+            if (networkStatus !== previousNetworkStatus) {
+                this.#emitClockTimerEvent(
+                    "networkStatusChanged",
+                    {
+                        ...detail,
+                        previousValue: previousNetworkStatus,
+                        value: networkStatus
+                    }
+                );
+            }
 
             if (!wasConnected) {
                 this.#emitClockTimerEvent(
@@ -1956,6 +1974,9 @@
         }
 
         #setOffline(detail = {}) {
+            const previousNetworkStatus =
+                this.networkStatus;
+
             const wasConnected =
                 this.#connectionState ===
                     "connected";
@@ -1965,6 +1986,20 @@
 
             this.#csrfToken =
                 undefined;
+
+            const networkStatus =
+                this.networkStatus;
+
+            if (networkStatus !== previousNetworkStatus) {
+                this.#emitClockTimerEvent(
+                    "networkStatusChanged",
+                    {
+                        ...detail,
+                        previousValue: previousNetworkStatus,
+                        value: networkStatus
+                    }
+                );
+            }
 
             if (wasConnected) {
                 this.#emitClockTimerEvent(
@@ -3898,8 +3933,14 @@
             return this.status;
         }
 
+        get networkStatus() {
+            return this.#connectionState === "connected"
+                ? "online"
+                : "offline";
+        }
+
         get connected() {
-            return this.#connectionState === "connected";
+            return this.networkStatus === "online";
         }
 
         get percentMode() {
@@ -4082,10 +4123,6 @@
         }
 
         get status() {
-            if (this.#connectionState !== "connected") {
-                return "offline";
-            }
-
             if (!this.#hasStartProperties()) {
                 return "ready";
             }
