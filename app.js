@@ -56,6 +56,7 @@
     const breakDialog = $("#breakDialog");
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
+    const tripSettingsPrimary = $("#tripSettingsPrimary");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -64,6 +65,7 @@
     let grayscaleReleaseTimeout;
     let loginPending = false;
     let stagedStandardTime;
+    let tripDraft;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
@@ -1028,9 +1030,18 @@
 
         const valid = numberPadValueValid();
         const autocorrect = changed && !percentMode && numberPadState.pending !== "" && !valid;
-        numberPadConfirm.dataset.action = autocorrect ? "autocorrect" : "confirm";
-        numberPadConfirm.setAttribute("aria-label", autocorrect ? "Auto-Correct" : "Confirm");
-        numberPadConfirm.disabled = !changed || (!autocorrect && !valid);
+        const startsTrip = Boolean(numberPadState.startsTripOnConfirm);
+        const confirmAction = autocorrect ? "autocorrect" : startsTrip ? "start" : "confirm";
+        numberPadConfirm.dataset.action = confirmAction;
+        numberPadConfirm.setAttribute(
+            "aria-label",
+            autocorrect ? "Auto-Correct" : startsTrip ? "Start Trip" : "Confirm"
+        );
+        numberPadConfirm.disabled = autocorrect
+            ? false
+            : startsTrip
+                ? !valid
+                : (!changed || !valid);
 
         numberPadSettings.hidden = percentMode;
         if (!percentMode) {
@@ -1046,7 +1057,7 @@
         }
     }
 
-    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, tripDefaults, duration = 250 } = {}) {
+    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, tripDefaults, startsTripOnConfirm = false, duration = 250 } = {}) {
         await ensureNumberPadLoaded();
         const normalizedMode = mode === "percent" ? "percent" : mode === "absolute" ? "absolute" : "duration";
         let initial;
@@ -1077,7 +1088,8 @@
             persistence: source === "new-trip"
                 ? (clockTimer.networkStatus === "online" ? "pending" : "offline")
                 : clockTimer.networkStatus,
-            tripDefaults
+            tripDefaults,
+            startsTripOnConfirm: Boolean(startsTripOnConfirm)
         };
         numberPadState = state;
         refreshNumberPad();
@@ -1158,6 +1170,8 @@
 
         if (caller) popUIReturnFrame(caller);
         if (discardPrepared && state?.source === "new-trip") {
+            tripDraft = undefined;
+            uiReturnStack.length = 0;
             clockTimer.discardPreparedTrip?.().catch?.(() => {});
         }
         return true;
@@ -1176,8 +1190,9 @@
     }
 
     async function commitNumberPad() {
-        if (!numberPadState || !numberPadHasChanges() || !numberPadValueValid()) return false;
+        if (!numberPadState || !numberPadValueValid()) return false;
         const state = { ...numberPadState };
+        if (!numberPadHasChanges() && !state.startsTripOnConfirm) return false;
         if (state.mode === "percent") {
             const percent = Number(state.pending);
             const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
@@ -1235,26 +1250,27 @@
         const formatted = renderTimeDigits(state.pending);
         if (!formatted) return false;
         stagedStandardTime = formatted;
-        if (state.source === "standard-time" && !tripIsLive()) {
-            const parentNumberPad = findUIReturnFrame("number-pad")?.state;
-            if (parentNumberPad) {
-                parentNumberPad.pending = state.pending;
-                parentNumberPad.replaceOnNextDigit = false;
+
+        if (!tripIsLive() && tripDraft) {
+            tripDraft.standardTime = formatted;
+            if (state.source === "standard-time") {
+                syncDraftStandardTimeReturnFrame(formatted);
             }
-        }
-        if (state.source === "new-trip") {
-            const tripDefaults = state.tripDefaults;
-            await clockTimer.start({
-                standardTime: formatted,
-                creationTime: tripDefaults?.creationTime,
-                scheduledStart: tripDefaults?.scheduledStart,
-                startTime: tripDefaults?.startTime
-            });
-            if (tripDefaults?.creationDate && clockTimer.creationDate !== tripDefaults.creationDate) {
-                clockTimer.creationDate = tripDefaults.creationDate;
+            if (state.startsTripOnConfirm) {
+                return startTripDraft();
             }
+            return true;
         }
-        else if (clockTimer.standardTime !== undefined) {
+
+        if (state.startsTripOnConfirm) {
+            tripDraft = {
+                ...(state.tripDefaults || {}),
+                standardTime: formatted
+            };
+            return startTripDraft();
+        }
+
+        if (clockTimer.standardTime !== undefined) {
             clockTimer.standardTime = formatted;
             if (clockTimer.standardTime !== formatted) return false;
         }
@@ -1358,44 +1374,73 @@
         return app.dataset.tripState === "running";
     }
 
+    function syncDraftStandardTimeReturnFrame(formatted) {
+        const frame = findUIReturnFrame("number-pad");
+        if (!frame?.state || frame.state.source !== "new-trip") return;
+        const digits = normalizeTimeDigits(formatted);
+        frame.state.initial = digits;
+        frame.state.pending = digits;
+        frame.state.replaceOnNextDigit = false;
+        frame.state.startsTripOnConfirm = true;
+    }
+
+    async function startTripDraft() {
+        const draft = tripDraft;
+        const standardTime = String(draft?.standardTime || "").trim();
+        if (!draft || !standardTime) return false;
+
+        await clockTimer.start({
+            standardTime,
+            creationTime: draft.creationTime,
+            scheduledStart: draft.scheduledStart,
+            startTime: draft.startTime
+        });
+        if (draft.creationDate && clockTimer.creationDate !== draft.creationDate) {
+            clockTimer.creationDate = draft.creationDate;
+        }
+
+        stagedStandardTime = standardTime;
+        tripDraft = undefined;
+        uiReturnStack.length = 0;
+        return true;
+    }
+
     function refreshTripSettingsValues() {
         const live = tripIsLive();
-        const snapshot = getTripSettingsPadSnapshot();
-        const pendingField = getTripSettingsPendingField(snapshot);
-        const tripDefaults = snapshot?.tripDefaults;
+        const draft = !live ? tripDraft : undefined;
         const values = {
             "creation-time": live
                 ? formatTripTimeDisplay(clockTimer.creationTime, clockTimer.creationDate)
-                : tripDefaults
-                    ? formatTripTimeDisplay(tripDefaults.creationTime, tripDefaults.creationDate)
+                : draft
+                    ? formatTripTimeDisplay(draft.creationTime, draft.creationDate)
                     : "---",
             "scheduled-start": live
                 ? formatTripTimeDisplay(clockTimer.scheduledStart, clockTimer.creationDate)
-                : tripDefaults
-                    ? formatTripTimeDisplay(tripDefaults.scheduledStart, tripDefaults.creationDate)
+                : draft
+                    ? formatTripTimeDisplay(draft.scheduledStart, draft.creationDate)
                     : "---",
             "actual-start": live
                 ? formatTripTimeDisplay(clockTimer.startTime, clockTimer.creationDate)
-                : tripDefaults
-                    ? formatTripTimeDisplay(tripDefaults.startTime, tripDefaults.creationDate)
+                : draft
+                    ? formatTripTimeDisplay(draft.startTime, draft.creationDate)
                     : "---",
-            "standard-time": live && clockTimer.standardTime ? clockTimer.standardTime : "---"
+            "standard-time": live
+                ? (clockTimer.standardTime || "---")
+                : (draft?.standardTime || "---")
         };
-
-        if (pendingField) {
-            values[pendingField] = formatTripSettingsPendingValue(snapshot);
-        }
 
         $("#tripCreationTime").textContent = values["creation-time"];
         $("#tripScheduledStart").textContent = values["scheduled-start"];
         $("#tripActualStart").textContent = values["actual-start"];
         $("#tripStandardTime").textContent = values["standard-time"];
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
-            const field = button.dataset.tripTimeField;
-            button.disabled = !live && !tripDefaults && !(field === "standard-time" && pendingField === "standard-time");
+            button.disabled = !live && !draft;
         });
         tripSettingsForm.elements.intervalElapsedBehavior.value = clockTimer.intervalElapsedBehavior;
         tripSettingsForm.elements.autoSyncTripGoal.checked = clockTimer.autoSyncTripGoal;
+        tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
+        tripSettingsPrimary.value = draft ? "start" : "save";
+        tripSettingsPrimary.disabled = Boolean(draft && !draft.standardTime);
     }
 
     function openTripSettingsDialog(reason = "number-pad-settings", { duration = 250 } = {}) {
@@ -1403,34 +1448,24 @@
         return openDialogElement(tripSettingsDialog, { duration, reason });
     }
 
-    function getTripFieldValue(field, snapshot = getTripSettingsPadSnapshot()) {
-        const defaults = !tripIsLive() ? snapshot?.tripDefaults : undefined;
-        if (field === "creation-time") return defaults?.creationTime || clockTimer.creationTime || "";
-        if (field === "scheduled-start") return defaults?.scheduledStart || clockTimer.scheduledStart || "";
-        if (field === "actual-start") return defaults?.startTime || clockTimer.startTime || "";
-        if (field === "standard-time") return clockTimer.standardTime || "";
+    function getTripFieldValue(field) {
+        const draft = !tripIsLive() ? tripDraft : undefined;
+        if (field === "creation-time") return draft?.creationTime || clockTimer.creationTime || "";
+        if (field === "scheduled-start") return draft?.scheduledStart || clockTimer.scheduledStart || "";
+        if (field === "actual-start") return draft?.startTime || clockTimer.startTime || "";
+        if (field === "standard-time") return draft?.standardTime || clockTimer.standardTime || "";
         return "";
     }
 
     function openTripFieldNumberPad(field) {
-        const snapshot = getTripSettingsPadSnapshot();
-        const pendingField = getTripSettingsPendingField(snapshot);
-
-        if (pendingField === field && snapshot) {
-            return restoreNumberPadState({
-                ...snapshot,
-                source: field,
-                title: getNumberPadTitle(field),
-            });
-        }
-
-        if (!tripIsLive() && !snapshot?.tripDefaults) return Promise.resolve();
+        if (!tripIsLive() && !tripDraft) return Promise.resolve();
         const absolute = field !== "standard-time";
         return openNumberPad({
             mode: absolute ? "absolute" : "time",
             source: field,
-            initialValue: getTripFieldValue(field, snapshot),
-            tripDefaults: snapshot?.tripDefaults,
+            initialValue: getTripFieldValue(field),
+            tripDefaults: !tripIsLive() ? tripDraft : undefined,
+            startsTripOnConfirm: false,
             duration: 0
         });
     }
@@ -1528,6 +1563,10 @@
 
         numberPadSettings.addEventListener("pointerup", () => {
             if (!numberPadState || numberPadState.mode === "percent") return;
+            if (tripDraft && numberPadState.source === "new-trip" && numberPadValueValid()) {
+                const formatted = renderTimeDigits(numberPadState.pending);
+                if (formatted) tripDraft.standardTime = formatted;
+            }
             const caller = captureNumberPadReturnFrame();
             if (!caller) return;
             pushUIReturnFrame(caller);
@@ -1609,9 +1648,21 @@
         const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
-        void closeDialogWithReturn(tripSettingsDialog, {
-            reason: "trip-settings-save"
-        }).catch(() => {});
+
+        void (async () => {
+            if (tripDraft && !tripIsLive()) {
+                if (!await startTripDraft()) {
+                    refreshTripSettingsValues();
+                    return;
+                }
+                closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
+                return;
+            }
+
+            await closeDialogWithReturn(tripSettingsDialog, {
+                reason: "trip-settings-save"
+            });
+        })().catch(() => {});
     });
 
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
@@ -1625,6 +1676,10 @@
                 ? ""
                 : (stagedStandardTime || "")
         );
+        tripDraft = {
+            ...tripDefaults,
+            standardTime: newTripInitialValue || ""
+        };
 
         let preparationPromise;
         try {
@@ -1649,7 +1704,8 @@
             source: "new-trip",
             initialValue: newTripInitialValue,
             preparationPromise,
-            tripDefaults
+            tripDefaults: tripDraft,
+            startsTripOnConfirm: true
         });
     }
 
