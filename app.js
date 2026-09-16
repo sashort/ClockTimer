@@ -66,6 +66,7 @@
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
     const tripSettingsTitle = $("#tripSettingsTitle");
+    const tripSettingsCloud = $("#tripSettingsCloud");
     const tripSettingsPrimary = $("#tripSettingsPrimary");
     const tripSetStartsNow = $("#tripSetStartsNow");
     const tripGoalSyncOption = $("#tripGoalSyncOption");
@@ -84,7 +85,9 @@
     let numberPadLoadPromise;
     let numberPadDialog;
     let numberPadDisplay;
+    let numberPadSettingsArea;
     let numberPadSettings;
+    let numberPadConnection;
     let numberPadClear;
     let numberPadConfirm;
     let numberPadContext;
@@ -99,7 +102,10 @@
     let numberPadLastClearPointerDown = 0;
     let initialLoginSuppressed = false;
     let initialLoginAttemptPending = true;
+    let numberPadConnectionSequence = 0;
+    let connectionResumePromise;
 
+    const CONNECTION_INDICATOR_MINIMUM = 1000;
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
@@ -197,6 +203,99 @@
         profileMenuButton.hidden = !connected;
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
+    }
+
+    function wait(milliseconds) {
+        return new Promise(resolve => setTimeout(resolve, Math.max(0, milliseconds)));
+    }
+
+    function normalizedConnectionStatus(value = clockTimer.networkStatus) {
+        return value === "online" ? "online" : "offline";
+    }
+
+    function syncTripSettingsCloud(status = clockTimer.networkStatus) {
+        if (!tripSettingsCloud) return;
+        const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
+        tripSettingsCloud.dataset.networkStatus = normalized;
+        tripSettingsCloud.setAttribute("aria-busy", String(normalized === "pending"));
+        tripSettingsCloud.setAttribute(
+            "aria-label",
+            normalized === "pending"
+                ? "Checking connection"
+                : normalized === "online"
+                    ? "Connected"
+                    : "Offline. Retry connection"
+        );
+        tripSettingsCloud.setAttribute("aria-disabled", String(normalized !== "offline"));
+    }
+
+    function updateNumberPadConnectionStatus(token, status) {
+        const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
+        if (numberPadState?.connectionStatusToken === token) {
+            numberPadState.persistence = normalized;
+            refreshNumberPad();
+        }
+        for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
+            const frame = uiReturnStack[index];
+            if (
+                frame?.type === "number-pad" &&
+                frame.state?.connectionStatusToken === token
+            ) {
+                frame.state.persistence = normalized;
+                break;
+            }
+        }
+    }
+
+    async function settleInitialNumberPadConnection(state, preparationPromise) {
+        const startedAt = performance.now();
+        try {
+            await Promise.resolve(preparationPromise);
+        }
+        catch {}
+        const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
+        if (remaining > 0) await wait(remaining);
+        updateNumberPadConnectionStatus(
+            state.connectionStatusToken,
+            clockTimer.networkStatus
+        );
+    }
+
+    async function resumeConnectionFromCloud({ numberPad = false } = {}) {
+        const startedAt = performance.now();
+        let token;
+
+        if (numberPad && numberPadState) {
+            token = numberPadState.connectionStatusToken || ++numberPadConnectionSequence;
+            numberPadState.connectionStatusToken = token;
+            updateNumberPadConnectionStatus(token, "pending");
+        }
+        syncTripSettingsCloud("pending");
+
+        if (!connectionResumePromise) {
+            connectionResumePromise = Promise.resolve()
+                .then(() => clockTimer.resumeConnection())
+                .catch(() => false)
+                .finally(() => {
+                    connectionResumePromise = undefined;
+                });
+        }
+
+        await connectionResumePromise;
+        const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
+        if (remaining > 0) await wait(remaining);
+
+        const status = normalizedConnectionStatus();
+        if (token) {
+            updateNumberPadConnectionStatus(token, status);
+        }
+        else {
+            const frame = findUIReturnFrame("number-pad");
+            if (frame?.state) frame.state.persistence = status;
+        }
+        syncTripSettingsCloud(status);
+        syncNetworkStatusUI();
+        return status === "online";
     }
 
     function emitUIEvent(target, name, detail = {}, cancelable = false) {
@@ -400,6 +499,7 @@
         syncConnectionUI(
             networkStatus === "online"
         );
+        syncTripSettingsCloud(networkStatus);
 
         if (offline) {
             app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
@@ -781,7 +881,9 @@
                 document.body.append(template.content.cloneNode(true));
                 numberPadDialog = $("#numberPadDialog");
                 numberPadDisplay = $("#numberPadDisplay");
+                numberPadSettingsArea = $("#numberPadSettingsArea");
                 numberPadSettings = $("#numberPadSettings");
+                numberPadConnection = $("#numberPadConnection");
                 numberPadClear = $("#numberPadClear");
                 numberPadConfirm = $("#numberPadConfirm");
                 numberPadContext = $("#numberPadContext");
@@ -1132,17 +1234,21 @@
                 ? !valid
                 : (!changed || !valid);
 
-        numberPadSettings.hidden = percentMode;
+        numberPadSettingsArea.hidden = percentMode;
         if (!percentMode) {
-            numberPadSettings.dataset.persistence = numberPadState.persistence || clockTimer.networkStatus;
-            numberPadSettings.setAttribute(
+            const status = numberPadState.persistence || normalizedConnectionStatus();
+            numberPadSettingsArea.dataset.persistence = status;
+            numberPadSettings.setAttribute("aria-label", "Trip settings");
+            numberPadConnection.setAttribute(
                 "aria-label",
-                numberPadSettings.dataset.persistence === "pending"
-                    ? "Trip settings; trip persistence pending"
-                    : numberPadSettings.dataset.persistence === "online"
-                        ? "Trip settings; trip persisted online"
-                        : "Trip settings; trip local and not persisted"
+                status === "pending"
+                    ? "Checking connection"
+                    : status === "online"
+                        ? "Connected"
+                        : "Offline. Retry connection"
             );
+            numberPadConnection.setAttribute("aria-busy", String(status === "pending"));
+            numberPadConnection.setAttribute("aria-disabled", String(status !== "offline"));
         }
     }
 
@@ -1175,8 +1281,9 @@
             meridiem: initialMeridiem,
             replaceOnNextDigit: source !== "new-trip",
             persistence: source === "new-trip"
-                ? (clockTimer.networkStatus === "online" ? "pending" : "offline")
-                : clockTimer.networkStatus,
+                ? "pending"
+                : normalizedConnectionStatus(),
+            connectionStatusToken: ++numberPadConnectionSequence,
             tripDefaults,
             startsTripOnConfirm: Boolean(startsTripOnConfirm)
         };
@@ -1190,16 +1297,11 @@
             });
         }
 
-        if (preparationPromise) {
-            Promise.resolve(preparationPromise).then(result => {
-                if (numberPadState !== state) return;
-                state.persistence = result?.persisted ? "online" : "offline";
-                refreshNumberPad();
-            }).catch(() => {
-                if (numberPadState !== state) return;
-                state.persistence = "offline";
-                refreshNumberPad();
-            });
+        if (source === "new-trip") {
+            void settleInitialNumberPadConnection(
+                state,
+                preparationPromise ?? Promise.resolve()
+            );
         }
     }
 
@@ -1515,6 +1617,7 @@
     }
 
     function refreshTripSettingsValues() {
+        syncTripSettingsCloud();
         const live = tripIsLive();
         const draft = !live ? tripDraft : undefined;
         const values = {
@@ -1684,6 +1787,15 @@
             if (event.detail === 0) runNumberPadClearShortAction();
         });
 
+        numberPadConnection.addEventListener("click", () => {
+            if (
+                !numberPadState ||
+                numberPadState.mode === "percent" ||
+                numberPadSettingsArea.dataset.persistence !== "offline"
+            ) return;
+            void resumeConnectionFromCloud({ numberPad: true }).catch(() => {});
+        });
+
         numberPadSettings.addEventListener("pointerup", () => {
             if (!numberPadState || numberPadState.mode === "percent") return;
             if (tripDraft && numberPadState.source === "new-trip" && numberPadValueValid()) {
@@ -1730,6 +1842,11 @@
 
     tripSettingsDialog.addEventListener("opening", () => {
         refreshTripSettingsValues();
+    });
+
+    tripSettingsCloud.addEventListener("click", () => {
+        if (tripSettingsCloud.dataset.networkStatus !== "offline") return;
+        void resumeConnectionFromCloud().catch(() => {});
     });
 
     tripSettingsForm.elements.autoSyncTripGoal.addEventListener("change", event => {

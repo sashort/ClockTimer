@@ -3217,6 +3217,10 @@
             };
         }
 
+        async resumeConnection() {
+            return this.#ensureConnected();
+        }
+
         async connect(username, password) {
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");

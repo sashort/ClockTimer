@@ -241,8 +241,11 @@
 
     <dialog id="tripSettingsDialog" class="app-dialog trip-settings-dialog">
         <form id="tripSettingsForm" method="dialog">
-            <header class="dialog-header">
-                <h2 id="tripSettingsTitle">Edit Trip Settings</h2>
+            <header class="dialog-header trip-settings-header">
+                <div class="trip-settings-heading">
+                    <button id="tripSettingsCloud" class="trip-settings-cloud" type="button" data-network-status="offline" aria-label="Offline. Retry connection"></button>
+                    <h2 id="tripSettingsTitle">Edit Trip Settings</h2>
+                </div>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
 

@@ -11,10 +11,12 @@
                 </label>
                 <button id="numberPadPM" class="number-pad-meridiem number-pad-pm" type="button" data-meridiem="PM" aria-label="PM">PM</button>
             </div>
-            <button id="numberPadSettings" class="number-pad-settings" type="button" aria-label="Trip settings" data-persistence="offline">
-                <span class="number-pad-settings-gear" aria-hidden="true"></span>
-                <span class="number-pad-persistence-badge" aria-hidden="true"></span>
-            </button>
+            <div id="numberPadSettingsArea" class="number-pad-settings" data-persistence="offline">
+                <button id="numberPadSettings" class="number-pad-settings-control" type="button" aria-label="Trip settings">
+                    <span class="number-pad-settings-gear" aria-hidden="true"></span>
+                </button>
+                <button id="numberPadConnection" class="number-pad-persistence-badge" type="button" aria-label="Offline. Retry connection"></button>
+            </div>
         </div>
         <div id="numberPadGrid" class="number-pad-grid">
             <button class="number-pad-key" type="button" data-number="1">1</button>
