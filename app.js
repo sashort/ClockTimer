@@ -1191,10 +1191,10 @@
         numberPadContext.textContent = numberPadState.title;
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
-            ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "")
+            ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "---")
             : absoluteMode
-                ? (numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "")
-                : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "");
+                ? (numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "---")
+                : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "---");
 
         numberPadDateRow.hidden = !absoluteMode;
         numberPadAM.hidden = !absoluteMode;

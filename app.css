@@ -762,8 +762,17 @@ clock-timer::part(major-tick-mark) {
 }
 
 .number-pad-settings[data-persistence="pending"] .number-pad-persistence-badge { display: none; }
+.number-pad-settings[data-persistence="online"] .number-pad-persistence-badge,
+.number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge {
+    animation: number-pad-cloud-fade-in 250ms linear both;
+}
 .number-pad-settings[data-persistence="online"] .number-pad-persistence-badge { background: var(--wm-blue); }
 .number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge { background: var(--wm-gray); }
+
+@keyframes number-pad-cloud-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
 .number-pad-settings[data-persistence="online"] .number-pad-persistence-badge::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black'/%3E%3C/svg%3E");
