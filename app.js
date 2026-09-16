@@ -1924,10 +1924,17 @@
 
     function finishTripStartsNowExit() {
         clearTimeout(tripStartsNowExitTimer);
-        tripStartsNowExitTimer = undefined;
-        if (!tripStartsNowExiting) return;
-        tripStartsNowExiting = false;
-        if (!tripStartsNowState) syncTripStartsNowUI();
+        if (!tripStartsNowExiting) {
+            tripStartsNowExitTimer = undefined;
+            return;
+        }
+
+        tripStartsNowExitTimer = setTimeout(() => {
+            tripStartsNowExitTimer = undefined;
+            if (!tripStartsNowExiting) return;
+            tripStartsNowExiting = false;
+            if (!tripStartsNowState) syncTripStartsNowUI();
+        }, TRIP_START_TRANSITION_DURATION);
     }
 
     function beginTripStartsNowExit() {
