@@ -1015,10 +1015,14 @@ button:active:not(:disabled) {
 }
 
 /* Trip settings */
+.settings-dialog,
+.trip-settings-dialog {
+    overflow: auto;
+}
+
 .trip-settings-dialog {
     width: min(760px, 94vw);
     max-height: 92dvh;
-    overflow: auto;
 }
 
 .trip-settings-times {
