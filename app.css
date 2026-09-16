@@ -27,7 +27,15 @@ body {
 }
 
 button, input, select { font: inherit; }
-button { cursor: pointer; }
+button {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled) {
+    text-shadow: 0 2px 3px rgb(0 0 0 / 48%), 0 0 5px rgb(255 255 255 / 18%);
+    box-shadow: inset 0 4px 8px rgb(0 0 0 / 38%), inset 0 1px 2px rgb(0 0 0 / 52%);
+}
 
 .app {
     width: 100vw;

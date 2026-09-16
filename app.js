@@ -2049,6 +2049,7 @@
     });
 
     $("#standardTimeButton").addEventListener("pointerup", () => {
+        if (!tripIsLive() || clockTimer.percentMode === "total") return;
         void openNumberPad({
             mode: "time",
             source: "standard-time",
