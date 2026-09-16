@@ -529,7 +529,12 @@
     });
 
     document.querySelectorAll("[data-close-dialog]").forEach(button => {
-        button.addEventListener("pointerup", () => closeDialog(button.closest("dialog")));
+        button.addEventListener("pointerup", () => {
+            const dialog = button.closest("dialog");
+            closeDialog(dialog, {
+                immediate: dialog === tripSettingsDialog && tripSettingsPadStack.length > 0
+            });
+        });
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
@@ -949,7 +954,7 @@
         }
     }
 
-    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, returnToTripSettings = false, tripDefaults } = {}) {
+    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, returnToTripSettings = false, tripDefaults, duration = 250 } = {}) {
         await ensureNumberPadLoaded();
         const normalizedMode = mode === "percent" ? "percent" : mode === "absolute" ? "absolute" : "duration";
         let initial;
@@ -988,7 +993,7 @@
         mainMenu?.hidePopover?.();
         if (!numberPadDialog.open) {
             openDialogElement(numberPadDialog, {
-                duration: 250,
+                duration,
                 reason: `number-pad:${source}`
             });
         }
@@ -1006,14 +1011,14 @@
         }
     }
 
-    async function restoreNumberPadState(snapshot) {
+    async function restoreNumberPadState(snapshot, { duration = 0 } = {}) {
         if (!snapshot) return;
         await ensureNumberPadLoaded();
         numberPadState = { ...snapshot };
         refreshNumberPad();
         if (!numberPadDialog.open) {
             openDialogElement(numberPadDialog, {
-                duration: 250,
+                duration,
                 reason: "trip-settings-return"
             });
         }
@@ -1039,10 +1044,14 @@
         }
     }
 
-    function closeNumberPad({ discardPrepared = true, allowChanged = false, suppressReturn = false } = {}) {
+    function closeNumberPad({ discardPrepared = true, allowChanged = false, suppressReturn = false, immediate = false } = {}) {
         const state = numberPadState;
         if (!allowChanged && numberPadHasChanges()) return false;
-        if (numberPadDialog?.open && !closeDialog(numberPadDialog, { reason: "number-pad" })) {
+        const tripSettingsHandoff = suppressReturn || Boolean(state?.returnToTripSettings);
+        if (numberPadDialog?.open && !closeDialog(numberPadDialog, {
+            reason: "number-pad",
+            immediate: immediate || tripSettingsHandoff
+        })) {
             return false;
         }
         numberPadClosedState = suppressReturn && state ? { ...state, returnToTripSettings: false } : state;
@@ -1281,9 +1290,9 @@
         tripSettingsForm.elements.autoSyncTripGoal.checked = clockTimer.autoSyncTripGoal;
     }
 
-    function openTripSettingsDialog(reason = "number-pad-settings") {
+    function openTripSettingsDialog(reason = "number-pad-settings", { duration = 250 } = {}) {
         refreshTripSettingsValues();
-        return openDialogElement(tripSettingsDialog, { duration: 250, reason });
+        return openDialogElement(tripSettingsDialog, { duration, reason });
     }
 
     function getTripFieldValue(field, snapshot = getTripSettingsPadSnapshot()) {
@@ -1315,7 +1324,8 @@
             source: field,
             initialValue: getTripFieldValue(field, snapshot),
             tripDefaults: snapshot?.tripDefaults,
-            returnToTripSettings: true
+            returnToTripSettings: true,
+            duration: 0
         });
     }
 
@@ -1429,11 +1439,11 @@
             numberPadClosedState = undefined;
             if (tripSettingsOpenAfterPadClose) {
                 tripSettingsOpenAfterPadClose = false;
-                openTripSettingsDialog();
+                openTripSettingsDialog("number-pad-settings", { duration: 0 });
                 return;
             }
             if (state?.returnToTripSettings) {
-                openTripSettingsDialog("number-pad-return");
+                openTripSettingsDialog("number-pad-return", { duration: 0 });
             }
         });
     }
@@ -1471,7 +1481,10 @@
         const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
-        closeDialog(tripSettingsDialog, { reason: "trip-settings-save" });
+        closeDialog(tripSettingsDialog, {
+            reason: "trip-settings-save",
+            immediate: tripSettingsPadStack.length > 0
+        });
     });
 
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {

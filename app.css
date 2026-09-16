@@ -642,7 +642,7 @@ clock-timer::part(major-tick-mark) {
     background: transparent;
     opacity: 0;
     transition-property: opacity, display, overlay;
-    transition-duration: 250ms;
+    transition-duration: var(--app-dialog-transition-duration, 250ms);
     transition-timing-function: linear;
     transition-behavior: normal, allow-discrete, allow-discrete;
 }
@@ -652,7 +652,7 @@ clock-timer::part(major-tick-mark) {
 .number-pad-dialog::backdrop {
     background: rgb(0 0 0 / 55%);
     opacity: 0;
-    transition: opacity 250ms linear;
+    transition: opacity var(--app-dialog-transition-duration, 250ms) linear;
 }
 
 .number-pad-dialog[open]::backdrop { opacity: 1; }
@@ -1351,4 +1351,55 @@ button:active:not(:disabled) {
         padding-inline: clamp(10px, 3vw, 14px);
         font-size: clamp(36px, 9.7vw, 40px);
     }
+}
+
+
+/* fullscreen-trip-editor-v1 */
+.trip-settings-dialog,
+.number-pad-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.trip-settings-dialog {
+    overflow: auto;
+}
+
+.trip-settings-dialog form {
+    min-height: 100%;
+}
+
+.number-pad-dialog {
+    overflow: hidden;
+    background: var(--wm-blue-dark);
+}
+
+.number-pad-shell {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.number-pad-grid {
+    min-height: 0;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+
+.number-pad-key {
+    height: 100%;
+    aspect-ratio: auto;
 }
