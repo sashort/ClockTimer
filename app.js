@@ -331,14 +331,18 @@
         const standard = selected?.standardTime ||
             (scope === "trip" ? (clockTimer.standardTime || stagedStandardTime) : undefined);
 
+        const stoppedTrip = scope === "trip" && clockTimer.status === "stopped";
+
         $("#standardTimeValue").textContent =
             typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent =
-            typeof selected?.renderedTime === "string" && selected.renderedTime
-                ? selected.renderedTime
-                : "---";
+            stoppedTrip && clockTimer.renderedTimeMode === "calculated-end"
+                ? "---"
+                : typeof selected?.renderedTime === "string" && selected.renderedTime
+                    ? selected.renderedTime
+                    : "---";
         $("#currentPercentValue").textContent =
-            selected?.available === false
+            stoppedTrip || selected?.available === false
                 ? "---"
                 : formatSummaryPercent(selected?.countedPercent);
         $("#goalPercentValue").textContent =
@@ -695,7 +699,6 @@
         numberPadConfirm.dataset.action = autocorrect ? "autocorrect" : "confirm";
         numberPadConfirm.setAttribute("aria-label", autocorrect ? "Auto-Correct" : "Confirm");
         numberPadConfirm.disabled = !changed || (!autocorrect && !valid);
-        numberPadSettings.disabled = changed;
 
         const header = numberPadDialog.querySelector(".number-pad-header");
         header?.classList.toggle("percent-mode", percentMode);
@@ -767,7 +770,6 @@
             numberPadConfirm.setAttribute("aria-label", "Confirm");
             numberPadConfirm.disabled = true;
         }
-        if (numberPadSettings) numberPadSettings.disabled = false;
     }
 
     function closeNumberPad({ discardPrepared = true, allowChanged = false } = {}) {
@@ -911,7 +913,7 @@
         });
 
         numberPadSettings.addEventListener("pointerup", () => {
-            if (!numberPadState || numberPadState.mode === "percent" || numberPadHasChanges()) return;
+            if (!numberPadState || numberPadState.mode === "percent") return;
             const state = numberPadState;
             const reopenOptions = {
                 mode: state.mode,
@@ -920,12 +922,16 @@
                     ? state.initial
                     : (state.initial ? renderTimeDigits(state.initial) : "")
             };
+            const pending = state.pending;
+            const replaceOnNextDigit = state.replaceOnNextDigit;
             const persistence = state.persistence;
-            if (!closeNumberPad({ discardPrepared: false })) return;
+            if (!closeNumberPad({ discardPrepared: false, allowChanged: true })) return;
             const reopen = () => {
                 stateDialog.removeEventListener("closed", reopen);
                 void openNumberPad(reopenOptions).then(() => {
                     if (!numberPadState) return;
+                    numberPadState.pending = pending;
+                    numberPadState.replaceOnNextDigit = replaceOnNextDigit;
                     numberPadState.persistence = persistence;
                     refreshNumberPad();
                 }).catch(() => {});
@@ -944,7 +950,13 @@
         });
     }
 
-    async function beginNewTripWorkflow() {
+    async function beginNewTripWorkflow({ initialValue } = {}) {
+        const newTripInitialValue = initialValue ?? (
+            clockTimer.status === "stopped"
+                ? ""
+                : (stagedStandardTime || "")
+        );
+
         let preparationPromise;
         try {
             preparationPromise = Promise.resolve(
@@ -966,7 +978,7 @@
         return openNumberPad({
             mode: "time",
             source: "new-trip",
-            initialValue: stagedStandardTime || clockTimer.standardTime || "",
+            initialValue: newTripInitialValue,
             preparationPromise
         });
     }
@@ -1037,12 +1049,6 @@
 
     function updatePostStopSummary(summary) {
         updateSummaryValues(summary);
-        if (clockTimer.percentMode === "total") return;
-
-        $("#currentPercentValue").textContent = "---";
-        if (clockTimer.renderedTimeMode === "calculated-end") {
-            $("#renderedTimeValue").textContent = "---";
-        }
     }
 
     clockTimer.addEventListener("cadenceTick", event => {
@@ -1056,8 +1062,9 @@
 
     clockTimer.addEventListener("stopped", event => {
         setTripControlState(false);
+        stagedStandardTime = undefined;
         updatePostStopSummary(event.detail?.summary);
-        void beginNewTripWorkflow().catch(() => {});
+        void beginNewTripWorkflow({ initialValue: "" }).catch(() => {});
     });
 
     const summaryRefreshEvents = [

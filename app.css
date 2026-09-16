@@ -698,6 +698,7 @@ clock-timer::part(major-tick-mark) {
     font-weight: 700;
     line-height: 1;
     text-align: center;
+    cursor: pointer;
 }
 
 .number-pad-settings {
@@ -715,7 +716,6 @@ clock-timer::part(major-tick-mark) {
 }
 
 .number-pad-settings[hidden] { display: none; }
-.number-pad-settings:disabled { opacity: 0.38; cursor: not-allowed; }
 .number-pad-header.percent-mode { grid-template-columns: 1fr; }
 .number-pad-header.percent-mode .number-pad-readout { grid-column: 1 / -1; }
 
