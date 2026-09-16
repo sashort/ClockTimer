@@ -1,0 +1,57 @@
+name: Refine trip preferences
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/refine-trip-preferences.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+
+      - name: Apply trip preferences refinement
+        run: python .github/scripts/refine-trip-preferences.py
+
+      - name: Syntax check
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+
+      - name: Verify trip preferences refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '>Trip Preferences</button>' index.html
+          grep -q '<h2>Trip Preferences</h2>' index.html
+          grep -q 'When I End Break Late' index.html
+          grep -q 'value="startLatency">Show Late Window' index.html
+          grep -q 'value="rollover">Auto-Restart Trip' index.html
+          grep -q 'Match Trip Goal To Total<input name="matchTripGoalToTotal"' index.html
+          grep -q 'id="tripSettingsPreferences"' index.html
+          grep -q 'normalized === "rollover"' ClockTimer.js
+          grep -q 'decision.behavior === "rollover"' ClockTimer.js
+          grep -q 'event.detail?.behavior !== "rollover"' app.js
+          grep -q 'tripSettingsPreferences.hidden = !preferencesVisible' app.js
+          grep -q 'autoSyncTripGoal.checked = selectedGoalSync' app.js
+          grep -q 'matchTripGoalToTotal: tripPreferences.matchTripGoalToTotal' app.js
+
+      - name: Commit update and cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/scripts/refine-trip-preferences.py
+          rm -f .github/workflows/refine-trip-preferences.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js ClockTimer.js index.html .github/scripts/refine-trip-preferences.py .github/workflows/refine-trip-preferences.yml
+          git commit -m 'Align trip preference defaults and rollover behavior'
+          git push origin HEAD:rename-prestart-latency
