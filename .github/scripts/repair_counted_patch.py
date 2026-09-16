@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Repair duplicate API anchors in the aggregate patch helper.
 path = Path('.github/scripts/patch_counted_aggregates.py')
 text = path.read_text()
 
@@ -24,8 +25,22 @@ s = s.replace(post_insert_args_old, post_insert_args_new, 1)'''
 
 for old, new in replacements:
     if text.count(old) != 1:
-        raise RuntimeError('expected one patch helper statement')
+        raise RuntimeError('expected one aggregate patch helper statement')
     text = text.replace(old, new, 1)
 
 path.write_text(text)
-print('repaired counted aggregate patch helper')
+
+# Repair the generic !#started anchor in the cadence helper so it targets #tick only.
+path = Path('.github/scripts/patch_cadence_clock.py')
+text = path.read_text()
+old = '''s = one(s,
+''' + "'''            if (\\n                !this.#started\\n            ) {\\n                return;\\n            }'''" + ''',
+''' + "'''            if (\\n                !this.#started\\n            ) {\\n                this.#emitCadenceTick(\\n                    nowDate\\n                );\\n                return;\\n            }'''" + ''', "nonstarted cadence")'''
+new = '''s = one(s,
+''' + "'''            this.#updateOpenOverwriteRange(\\n                nowDate\\n            );\\n\\n            if (\\n                !this.#started\\n            ) {\\n                return;\\n            }'''" + ''',
+''' + "'''            this.#updateOpenOverwriteRange(\\n                nowDate\\n            );\\n\\n            if (\\n                !this.#started\\n            ) {\\n                this.#emitCadenceTick(\\n                    nowDate\\n                );\\n                return;\\n            }'''" + ''', "nonstarted cadence")'''
+if text.count(old) != 1:
+    raise RuntimeError('expected one generic nonstarted cadence helper statement')
+path.write_text(text.replace(old, new, 1))
+
+print('repaired aggregate and cadence patch helpers')
