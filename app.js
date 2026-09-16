@@ -13,7 +13,7 @@
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
     const TRIP_PREFERENCE_DEFAULTS = {
-        intervalElapsedBehavior: "startLatency",
+        lateBreakBehavior: "showLateWindow",
         matchTripGoalToTotal: false
     };
     const GRAPHICAL_DEFAULTS = {
@@ -58,6 +58,10 @@
     const authButton = $("#authButton");
     const mainMenu = $("#mainMenu");
     const activeTripControls = $("#activeTripControls");
+    const endTripButton = $("#endTripButton");
+    const tripActionRow = $(".trip-action-row");
+    const breakButton = $("#breakButton");
+    const downButton = $("#downButton");
     const breakDialog = $("#breakDialog");
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
@@ -125,11 +129,15 @@
 
     function getTripPreferences() {
         const stored = getStoredJSON(STORAGE.tripPreferences, TRIP_PREFERENCE_DEFAULTS);
+        const legacy = stored.intervalElapsedBehavior === "rollover"
+            ? "autoRestartTrip"
+            : "showLateWindow";
         return {
-            intervalElapsedBehavior:
-                stored.intervalElapsedBehavior === "rollover"
-                    ? "rollover"
-                    : "startLatency",
+            lateBreakBehavior: stored.lateBreakBehavior === "autoRestartTrip"
+                ? "autoRestartTrip"
+                : stored.lateBreakBehavior === "showLateWindow"
+                    ? "showLateWindow"
+                    : legacy,
             matchTripGoalToTotal: Boolean(stored.matchTripGoalToTotal)
         };
     }
@@ -140,7 +148,7 @@
 
     function fillTripPreferencesForm(preferences = getTripPreferences()) {
         const form = $("#stateSettingsForm");
-        form.elements.intervalElapsedBehavior.value = preferences.intervalElapsedBehavior;
+        form.elements.lateBreakBehavior.value = preferences.lateBreakBehavior;
         form.elements.matchTripGoalToTotal.checked = Boolean(preferences.matchTripGoalToTotal);
     }
 
@@ -687,15 +695,17 @@
         event.preventDefault();
         const form = event.currentTarget;
         const preferences = {
-            intervalElapsedBehavior:
-                form.elements.intervalElapsedBehavior.value === "rollover"
-                    ? "rollover"
-                    : "startLatency",
+            lateBreakBehavior:
+                form.elements.lateBreakBehavior.value === "autoRestartTrip"
+                    ? "autoRestartTrip"
+                    : "showLateWindow",
             matchTripGoalToTotal: form.elements.matchTripGoalToTotal.checked
         };
         saveTripPreferences(preferences);
         if (!tripIsLive() && !tripDraft) {
-            clockTimer.intervalElapsedBehavior = preferences.intervalElapsedBehavior;
+            clockTimer.intervalElapsedBehavior = "startLatency";
+            clockTimer.autoRestartTripAfterLateBreak =
+                preferences.lateBreakBehavior === "autoRestartTrip";
         }
         void closeDialogWithReturn(stateDialog, { reason: "state-settings-save" }).catch(() => {});
     });
@@ -1475,10 +1485,9 @@
         if (!tripDraftCanStart(draft)) return false;
 
         clockTimer.autoSyncTripGoal = Boolean(draft.matchTripGoalToTotal);
-        clockTimer.intervalElapsedBehavior =
-            draft.intervalElapsedBehavior === "rollover"
-                ? "rollover"
-                : "startLatency";
+        clockTimer.intervalElapsedBehavior = "startLatency";
+        clockTimer.autoRestartTripAfterLateBreak =
+            draft.lateBreakBehavior === "autoRestartTrip";
 
         await clockTimer.start({
             standardTime,
@@ -1809,7 +1818,7 @@
         tripDraft = {
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
-            intervalElapsedBehavior: tripPreferences.intervalElapsedBehavior,
+            lateBreakBehavior: tripPreferences.lateBreakBehavior,
             matchTripGoalToTotal: tripPreferences.matchTripGoalToTotal
         };
 
@@ -1845,24 +1854,27 @@
         void beginNewTripWorkflow({ tripMoment: new Date() }).catch(() => {});
     });
 
-    $("#endTripButton").addEventListener("pointerup", () => {
-        const tripMoment = new Date();
-        void (async () => {
-            await clockTimer.stop();
-            await clockTimer.clear();
-            await beginNewTripWorkflow({
-                initialValue: "",
-                tripMoment
-            });
-        })().catch(() => {});
+    endTripButton.addEventListener("pointerup", () => {
+        void endCurrentIntervalOrTrip().catch(() => {});
     });
 
-    $("#breakButton").addEventListener("pointerup", () => {
+    breakButton.addEventListener("pointerup", () => {
         openDialog("breakDialog", { reason: "break" });
     });
 
-    $("#downButton").addEventListener("pointerup", () => {
-        void clockTimer.startInterval("down").catch(() => {});
+    downButton.addEventListener("pointerup", () => {
+        void clockTimer.startInterval("down").then(result => {
+            if (result) renderTripActionState();
+        }).catch(() => {});
+    });
+
+    breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
+        button.addEventListener("pointerup", () => {
+            void (async () => {
+                if (!await startBreakInterval(button.dataset.breakType)) return;
+                closeDialog(breakDialog, { reason: "break-type-selected" });
+            })().catch(() => {});
+        });
     });
 
     $("#standardTimeButton").addEventListener("pointerup", () => {
@@ -1908,14 +1920,111 @@
         $("#independentTimerValue").value = "---";
     });
 
+    function formatIntervalClock(milliseconds) {
+        const totalSeconds = Math.max(0, Math.floor(Number(milliseconds) / 1000) || 0);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function renderTripActionState(now = new Date()) {
+        if (!tripIsLive()) {
+            app.dataset.intervalState = "none";
+            endTripButton.textContent = "End Trip";
+            tripActionRow.hidden = false;
+            breakButton.hidden = false;
+            downButton.hidden = false;
+            return;
+        }
+
+        const instant = now instanceof Date && !Number.isNaN(now.getTime())
+            ? now
+            : new Date();
+        const interval = clockTimer.getActiveIntervalState?.(instant);
+        const intervalType = String(interval?.intervalType || "").toLowerCase();
+
+        if (intervalType === "down") {
+            app.dataset.intervalState = "down";
+            endTripButton.textContent =
+                `Resume Trip : ${formatIntervalClock(interval.elapsedMilliseconds)}`;
+            tripActionRow.hidden = false;
+            breakButton.hidden = false;
+            downButton.hidden = true;
+            return;
+        }
+
+        if (intervalType === "break" || intervalType === "lunch") {
+            app.dataset.intervalState = "break";
+            const label = intervalType === "lunch" ? "Lunch" : "Break";
+            endTripButton.textContent =
+                `End ${label} : ${formatIntervalClock(interval.remainingMilliseconds)}`;
+            tripActionRow.hidden = true;
+            breakButton.hidden = true;
+            downButton.hidden = true;
+            return;
+        }
+
+        app.dataset.intervalState = "normal";
+        endTripButton.textContent = "End Trip";
+        tripActionRow.hidden = false;
+        breakButton.hidden = false;
+        downButton.hidden = false;
+    }
+
+    async function endCurrentIntervalOrTrip() {
+        const interval = clockTimer.getActiveIntervalState?.(new Date());
+        const intervalType = String(interval?.intervalType || "").toLowerCase();
+
+        if (["break", "lunch", "down"].includes(intervalType)) {
+            await clockTimer.endInterval();
+            renderTripActionState();
+            return;
+        }
+
+        const tripMoment = new Date();
+        await clockTimer.stop();
+        await clockTimer.clear();
+        await beginNewTripWorkflow({
+            initialValue: "",
+            tripMoment
+        });
+    }
+
+    async function startBreakInterval(kind) {
+        const configs = {
+            break: { type: "break", length: "0:15:00", attributes: { breakType: "break" } },
+            lunch: { type: "lunch", length: "0:30:00", attributes: { breakType: "lunch" } },
+            "short-break": { type: "break", length: "0:10:00", attributes: { breakType: "short" } }
+        };
+        const config = configs[kind];
+        if (!config) return false;
+
+        const active = clockTimer.getActiveIntervalState?.(new Date());
+        if (String(active?.intervalType || "").toLowerCase() === "down") {
+            await clockTimer.endInterval();
+        }
+
+        const result = await clockTimer.startInterval(
+            config.type,
+            config.length,
+            config.attributes,
+            "0:02:30",
+            "0:02:30"
+        );
+        if (result) renderTripActionState();
+        return Boolean(result);
+    }
+
     function setTripControlState(running) {
         app.dataset.tripState = running ? "running" : "ready";
         app.dataset.state = clockTimer.status;
         activeTripControls.hidden = !running;
+        renderTripActionState();
     }
 
     clockTimer.addEventListener("cadenceTick", event => {
         updateSummaryValues(event.detail?.summary);
+        renderTripActionState(event.detail?.now);
     });
 
     clockTimer.addEventListener("started", event => {
@@ -1923,17 +2032,22 @@
         updateSummaryValues(event.detail?.summary);
     });
 
-    clockTimer.addEventListener("intervalElapsed", event => {
-        if (
-            event.detail?.intervalType !== "break" ||
-            event.detail?.behavior !== "rollover"
-        ) {
-            return;
-        }
 
-        queueMicrotask(() => {
-            void clockTimer.endInterval().catch(() => {});
-        });
+    clockTimer.addEventListener("downTimeStarted", () => {
+        renderTripActionState();
+    });
+
+    clockTimer.addEventListener("tripAutomaticallyRestarted", () => {
+        setTripControlState(true);
+        renderTripActionState();
+    });
+
+    clockTimer.addEventListener("intervalStarted", () => {
+        renderTripActionState();
+    });
+
+    clockTimer.addEventListener("intervalEnded", () => {
+        renderTripActionState();
     });
 
     const summaryRefreshEvents = [
@@ -1985,7 +2099,9 @@
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     fillTripPreferencesForm(tripPreferences);
-    clockTimer.intervalElapsedBehavior = tripPreferences.intervalElapsedBehavior;
+    clockTimer.intervalElapsedBehavior = "startLatency";
+    clockTimer.autoRestartTripAfterLateBreak =
+        tripPreferences.lateBreakBehavior === "autoRestartTrip";
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();

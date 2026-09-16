@@ -1505,3 +1505,56 @@ button:active:not(:disabled) {
     transform: none;
     text-shadow: none;
 }
+
+
+/* Active interval controls */
+.app[data-interval-state="break"] .active-trip-controls {
+    grid-template-rows: 1fr;
+}
+
+.app[data-interval-state="down"] .trip-action-row {
+    grid-template-columns: 1fr;
+}
+
+.app[data-interval-state="down"] .break-button {
+    grid-column: 1 / -1;
+}
+
+.break-dialog {
+    width: min(680px, calc(100vw - 24px));
+}
+
+.break-dialog-content {
+    display: grid;
+    gap: 20px;
+}
+
+.break-type-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 8px 4px 4px;
+}
+
+.break-type-button {
+    min-height: 88px;
+    margin: 0;
+    padding: 12px 8px;
+    border: 3px solid #000;
+    border-radius: 15px;
+    color: var(--wm-white);
+    background: var(--wm-blue-dark);
+    font-size: clamp(18px, 4vw, 28px);
+    font-weight: 700;
+    line-height: 1.05;
+}
+
+.break-type-button.lunch {
+    color: var(--wm-blue-dark);
+    background: var(--wm-yellow);
+}
+
+@media (max-width: 480px) {
+    .break-type-actions { gap: 8px; }
+    .break-type-button { min-height: 78px; }
+}

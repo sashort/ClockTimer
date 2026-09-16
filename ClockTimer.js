@@ -183,6 +183,9 @@
         #intervalElapsedBehavior =
             "startLatency";
 
+        #autoRestartTripAfterLateBreak =
+            false;
+
         #toleranceTransitionState;
 
         #startedAtEpoch;
@@ -3771,6 +3774,18 @@
                         : undefined
             });
 
+
+            if (
+                String(record.type).toLowerCase() === "down" &&
+                record.openEnded === true
+            ) {
+                this.#emitClockTimerEvent("downTimeStarted", {
+                    ...result,
+                    type: record.type,
+                    startTime: record.startDate?.toISOString?.(),
+                    endTime: undefined
+                });
+            }
             return result;
         }
 
@@ -3940,6 +3955,76 @@
                 throw new TypeError("now must be a valid Date.");
             }
             return this.#buildSummarySnapshot(now);
+        }
+
+        get autoRestartTripAfterLateBreak() {
+            return this.#autoRestartTripAfterLateBreak;
+        }
+
+        set autoRestartTripAfterLateBreak(value) {
+            this.#autoRestartTripAfterLateBreak = Boolean(value);
+        }
+
+        getActiveIntervalState(now = new Date()) {
+            if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+                throw new TypeError("now must be a valid Date.");
+            }
+
+            const timelineNow = this.#getCurrentTimelineTime(now);
+            const current = this.#getCurrentInterval(timelineNow);
+            let record = current?.record;
+            let currentType = current?.type;
+            let intervalType = current?.type;
+            let phase = current?.type;
+            let start = current?.start;
+            let end = current?.end;
+            let open = current?.open === true;
+
+            if (record?.clockTimerBufferedIntervalRecordId) {
+                const buffered = this.#insertedRanges.find(
+                    candidate => candidate.id === record.clockTimerBufferedIntervalRecordId
+                );
+                if (buffered) {
+                    intervalType = buffered.type;
+                    phase = `${record.clockTimerBufferPosition || "buffer"}-buffer`;
+                }
+            }
+
+            if (!current && this.#pendingIntervalRecord) {
+                record = this.#pendingIntervalRecord;
+                currentType = "latency";
+                intervalType = record.type;
+                phase = record.clockTimerElapsedDispatched === true ? "latency" : "pending";
+                start = this.#dateToTimelineTime(record.startDate);
+                end = Number(record.clockTimerElapsedBoundaryTimeline);
+                if (!Number.isFinite(end)) {
+                    end = this.#getPendingIntervalElapsedBoundary(record);
+                }
+                open = false;
+            }
+
+            if (!record || !Number.isFinite(start)) {
+                return undefined;
+            }
+
+            const elapsedMilliseconds = Math.max(0, timelineNow - start);
+            const remainingMilliseconds = Number.isFinite(end)
+                ? Math.max(0, end - timelineNow)
+                : undefined;
+
+            return {
+                intervalId: Number.isInteger(Number(record.intervalId))
+                    ? Number(record.intervalId)
+                    : undefined,
+                type: currentType,
+                intervalType: String(intervalType || currentType || "").trim(),
+                phase: String(phase || currentType || "").trim(),
+                open,
+                startTime: this.#timelineToISO(start),
+                boundaryTime: Number.isFinite(end) ? this.#timelineToISO(end) : undefined,
+                elapsedMilliseconds,
+                remainingMilliseconds
+            };
         }
 
         get state() {
@@ -9865,6 +9950,24 @@
                 }
             );
 
+
+            if (
+                this.#autoRestartTripAfterLateBreak &&
+                decision.boundaryType === "end-buffer" &&
+                ["break", "lunch"].includes(String(record.type).toLowerCase()) &&
+                this.#endPendingInterval(now)
+            ) {
+                this.#emitClockTimerEvent("tripAutomaticallyRestarted", {
+                    intervalId: Number.isInteger(Number(record.intervalId))
+                        ? Number(record.intervalId)
+                        : undefined,
+                    intervalType: record.type,
+                    boundaryType: decision.boundaryType,
+                    boundaryTime: this.#timelineToISO(boundary),
+                    restartTime: this.#timelineToISO(now)
+                });
+                return true;
+            }
             return true;
         }
 

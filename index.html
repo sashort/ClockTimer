@@ -225,9 +225,9 @@
             <fieldset>
                 <legend>Defaults</legend>
                 <label>When I End Break Late
-                    <select name="intervalElapsedBehavior">
-                        <option value="startLatency">Show Late Window</option>
-                        <option value="rollover">Auto-Restart Trip</option>
+                    <select name="lateBreakBehavior">
+                        <option value="showLateWindow">Show Late Window</option>
+                        <option value="autoRestartTrip">Auto-Restart Trip</option>
                     </select>
                 </label>
                 <label class="toggle-row">Match Trip Goal To Total<input name="matchTripGoalToTotal" type="checkbox"></label>
@@ -309,10 +309,14 @@
     <dialog id="breakDialog" class="app-dialog break-dialog">
         <section class="break-dialog-content">
             <header class="dialog-header">
-                <h2>Break</h2>
+                <h2>Select Break Type</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
-            <p>Break options will be added here.</p>
+            <div class="break-type-actions" role="group" aria-label="Break type">
+                <button class="break-type-button" type="button" data-break-type="break">Break</button>
+                <button class="break-type-button lunch" type="button" data-break-type="lunch">Lunch</button>
+                <button class="break-type-button" type="button" data-break-type="short-break">Short Break</button>
+            </div>
         </section>
     </dialog>
 
