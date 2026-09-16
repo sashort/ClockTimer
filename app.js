@@ -668,11 +668,14 @@
         return timeDigitsValid(numberPadState.pending);
     }
 
+    function numberPadHasChanges() {
+        return Boolean(numberPadState) &&
+            numberPadState.pending !== numberPadState.initial;
+    }
+
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
-        return numberPadState.pending === "" || numberPadState.pending === numberPadState.initial
-            ? "close"
-            : "clear";
+        return numberPadHasChanges() ? "reset" : "close";
     }
 
     function refreshNumberPad() {
@@ -682,15 +685,17 @@
             ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "")
             : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "");
 
+        const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
         numberPadClear.dataset.action = clearAction;
-        numberPadClear.setAttribute("aria-label", clearAction === "clear" ? "Clear" : "Close");
+        numberPadClear.setAttribute("aria-label", clearAction === "reset" ? "Reset" : "Close");
 
         const valid = numberPadValueValid();
-        const autocorrect = !percentMode && numberPadState.pending !== "" && !valid;
+        const autocorrect = changed && !percentMode && numberPadState.pending !== "" && !valid;
         numberPadConfirm.dataset.action = autocorrect ? "autocorrect" : "confirm";
         numberPadConfirm.setAttribute("aria-label", autocorrect ? "Auto-Correct" : "Confirm");
-        numberPadConfirm.disabled = !autocorrect && !valid;
+        numberPadConfirm.disabled = !changed || (!autocorrect && !valid);
+        numberPadSettings.disabled = changed;
 
         const header = numberPadDialog.querySelector(".number-pad-header");
         header?.classList.toggle("percent-mode", percentMode);
@@ -713,14 +718,12 @@
         const initial = mode === "percent"
             ? normalizePercentDigits(initialValue)
             : normalizeTimeDigits(initialValue);
-        const locked = source === "standard-time" && typeof clockTimer.standardTime === "string" && clockTimer.standardTime !== "";
         const state = {
             mode,
             source,
             initial,
             pending: initial,
             replaceOnNextDigit: source !== "new-trip",
-            locked,
             persistence: source === "new-trip"
                 ? (clockTimer.connected ? "pending" : "offline")
                 : (clockTimer.connected ? "online" : "offline")
@@ -764,10 +767,12 @@
             numberPadConfirm.setAttribute("aria-label", "Confirm");
             numberPadConfirm.disabled = true;
         }
+        if (numberPadSettings) numberPadSettings.disabled = false;
     }
 
-    function closeNumberPad({ discardPrepared = true } = {}) {
+    function closeNumberPad({ discardPrepared = true, allowChanged = false } = {}) {
         const state = numberPadState;
+        if (!allowChanged && numberPadHasChanges()) return false;
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, { reason: "number-pad" })) {
             return false;
         }
@@ -779,7 +784,6 @@
     }
 
     function requestNumberPadClose() {
-        if (numberPadState?.locked) return false;
         return closeNumberPad();
     }
 
@@ -792,7 +796,7 @@
     }
 
     async function commitNumberPad() {
-        if (!numberPadState || !numberPadValueValid()) return false;
+        if (!numberPadState || !numberPadHasChanges() || !numberPadValueValid()) return false;
         const state = { ...numberPadState };
         if (state.mode === "percent") {
             const percent = Number(state.pending);
@@ -814,15 +818,20 @@
         return true;
     }
 
+    function resetNumberPadPendingValue() {
+        if (!numberPadState) return;
+        numberPadState.pending = numberPadState.initial;
+        numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
+        refreshNumberPad();
+    }
+
     function runNumberPadClearShortAction() {
         if (!numberPadState) return;
         if (getNumberPadClearAction() === "close") {
             requestNumberPadClose();
             return;
         }
-        numberPadState.pending = numberPadState.initial;
-        numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
-        refreshNumberPad();
+        resetNumberPadPendingValue();
     }
 
     function bindNumberPadEvents() {
@@ -847,7 +856,7 @@
                 return;
             }
             try {
-                if (await commitNumberPad()) closeNumberPad({ discardPrepared: false });
+                if (await commitNumberPad()) closeNumberPad({ discardPrepared: false, allowChanged: true });
             }
             catch {
                 if (numberPadState) {
@@ -858,7 +867,7 @@
         });
 
         numberPadClear.addEventListener("pointerdown", event => {
-            if (!numberPadState || getNumberPadClearAction() !== "clear") return;
+            if (!numberPadState || getNumberPadClearAction() !== "reset") return;
             const now = performance.now();
             const doublePress = now - numberPadLastClearPointerDown <= NUMBER_PAD_DOUBLE_PRESS;
             numberPadLastClearPointerDown = now;
@@ -867,18 +876,14 @@
             clearTimeout(numberPadLongPressTimer);
             if (doublePress) {
                 numberPadLongPressed = true;
-                numberPadState.pending = "";
-                refreshNumberPad();
-                if (!numberPadState.locked) closeNumberPad();
+                resetNumberPadPendingValue();
                 return;
             }
             numberPadLongPressTimer = setTimeout(() => {
                 numberPadLongPressTimer = undefined;
                 numberPadLongPressed = true;
                 if (!numberPadState) return;
-                numberPadState.pending = "";
-                refreshNumberPad();
-                if (!numberPadState.locked) closeNumberPad();
+                resetNumberPadPendingValue();
             }, NUMBER_PAD_LONG_PRESS);
         });
 
@@ -906,7 +911,7 @@
         });
 
         numberPadSettings.addEventListener("pointerup", () => {
-            if (!numberPadState || numberPadState.mode === "percent") return;
+            if (!numberPadState || numberPadState.mode === "percent" || numberPadHasChanges()) return;
             const state = numberPadState;
             const reopenOptions = {
                 mode: state.mode,
