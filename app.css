@@ -1705,3 +1705,67 @@ button:active:not(:disabled) {
     from { opacity: 0.35; transform: scale(0.92); }
     to { opacity: 1; transform: scale(1); }
 }
+
+
+/* staged-trip-settings-timestamp-v1 */
+.trip-now-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.trip-now-actions[hidden],
+.trip-now-cancel[hidden],
+.trip-time-edit[hidden],
+.trip-time-now-toggle[hidden] {
+    display: none;
+}
+
+.trip-now-actions.is-selecting {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.trip-now-actions.is-selecting .trip-now-action {
+    min-width: 0;
+    padding-inline: 10px;
+    font-size: clamp(13px, 3vw, 16px);
+}
+
+.trip-now-cancel {
+    min-height: 48px;
+    padding: 10px 16px;
+    border: 1.5px solid rgb(255 255 255 / 72%);
+    border-radius: 10px;
+    color: var(--wm-white);
+    background: var(--ui-charcoal-gradient);
+    box-shadow: var(--ui-inner-highlight), 0 5px 12px rgb(0 0 0 / 18%);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.trip-time-now-toggle {
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid rgb(215 241 255 / 92%);
+    border-radius: 12px;
+    color: var(--wm-white);
+    background: linear-gradient(145deg, #70ceff 0%, #35abef 52%, #1687d7 100%);
+    box-shadow: var(--ui-inner-highlight), 0 5px 12px rgb(0 0 0 / 18%);
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.trip-time-now-toggle[aria-pressed="true"] {
+    box-shadow: inset 0 2px 5px rgb(0 0 0 / 24%), 0 4px 10px rgb(0 0 0 / 18%);
+}
+
+@media (max-width: 620px) {
+    .trip-time-now-toggle {
+        width: 50px;
+        height: 50px;
+    }
+}

@@ -68,7 +68,10 @@
     const tripSettingsTitle = $("#tripSettingsTitle");
     const tripSettingsCloud = $("#tripSettingsCloud");
     const tripSettingsPrimary = $("#tripSettingsPrimary");
+    const tripSetStartsNowActions = $("#tripSetStartsNowActions");
     const tripSetStartsNow = $("#tripSetStartsNow");
+    const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
+    const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
     const tripGoalSyncOption = $("#tripGoalSyncOption");
     const tripGoalSyncNoData = $("#tripGoalSyncNoData");
     const tripSettingsPreferences = $("#tripSettingsPreferences");
@@ -81,6 +84,8 @@
     let loginPending = false;
     let stagedStandardTime;
     let tripDraft;
+    let tripSettingsSession;
+    let tripStartsNowState;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
@@ -929,12 +934,21 @@
     document.querySelectorAll("[data-close-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
             const dialog = button.closest("dialog");
+            if (dialog === tripSettingsDialog) {
+                void cancelTripSettingsDialog("trip-settings-cancel").catch(() => {});
+                return;
+            }
             void closeDialogWithReturn(dialog, { reason: "dialog-close" }).catch(() => {});
         });
     });
 
     document.querySelectorAll("dialog").forEach(dialog => {
         dialog.addEventListener("cancel", event => {
+            if (dialog === tripSettingsDialog) {
+                event.preventDefault();
+                void cancelTripSettingsDialog("trip-settings-cancel").catch(() => {});
+                return;
+            }
             if (!peekUIReturnFrame()) return;
             event.preventDefault();
             void closeDialogWithReturn(dialog, { reason: "dialog-cancel" }).catch(() => {});
@@ -1560,6 +1574,26 @@
         }
 
         if (state.mode === "absolute") {
+            if (tripSettingsSession && ["creation-time", "scheduled-start", "actual-start"].includes(state.source)) {
+                const values = tripSettingsSession.values;
+                if (state.source === "creation-time") {
+                    const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                    if (!value) return false;
+                    values.creationTime = value;
+                    values.creationDate = state.pendingDate;
+                    return true;
+                }
+
+                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state));
+                if (!value) return false;
+                if (state.source === "scheduled-start") {
+                    values.scheduledStart = value;
+                    return true;
+                }
+                values.startTime = value;
+                return true;
+            }
+
             if (!tripIsLive() && state.tripDefaults) {
                 if (state.source === "creation-time") {
                     const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
@@ -1608,6 +1642,10 @@
 
         const formatted = renderTimeDigits(state.pending);
         if (!formatted) return false;
+        if (tripSettingsSession && state.source === "standard-time") {
+            tripSettingsSession.values.standardTime = formatted;
+            return true;
+        }
         stagedStandardTime = formatted;
 
         if (!tripIsLive() && tripDraft) {
@@ -1785,29 +1823,174 @@
         return true;
     }
 
+
+    function cloneTripSettingsValues(values) {
+        return values ? { ...values } : undefined;
+    }
+
+    function getCurrentTripSettingsValues() {
+        const live = tripIsLive();
+        const draft = !live ? tripDraft : undefined;
+        if (!live && !draft) return undefined;
+        return {
+            standardTime: live ? (clockTimer.standardTime || "") : (draft.standardTime || ""),
+            creationTime: live ? (clockTimer.creationTime || "") : (draft.creationTime || ""),
+            creationDate: live ? (clockTimer.creationDate || "") : (draft.creationDate || ""),
+            scheduledStart: live ? (clockTimer.scheduledStart || "") : (draft.scheduledStart || ""),
+            startTime: live ? (clockTimer.startTime || "") : (draft.startTime || ""),
+            matchTripGoalToTotal: live
+                ? Boolean(clockTimer.autoSyncTripGoal)
+                : Boolean(draft.matchTripGoalToTotal)
+        };
+    }
+
+    function beginTripSettingsSession() {
+        if (tripSettingsSession) return tripSettingsSession;
+        const values = getCurrentTripSettingsValues();
+        if (!values) return undefined;
+        tripSettingsSession = {
+            live: tripIsLive(),
+            original: cloneTripSettingsValues(values),
+            values: cloneTripSettingsValues(values)
+        };
+        return tripSettingsSession;
+    }
+
+    function getTripSettingsCandidateDraft() {
+        if (!tripDraft) return undefined;
+        const values = tripSettingsSession?.values;
+        if (!values) return tripDraft;
+        return {
+            ...tripDraft,
+            standardTime: values.standardTime,
+            creationTime: values.creationTime,
+            creationDate: values.creationDate,
+            scheduledStart: values.scheduledStart,
+            startTime: values.startTime,
+            matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+        };
+    }
+
+    function formatTripTimeOnly(value, creationDate) {
+        const formatted = formatTripTimeDisplay(value, creationDate);
+        return formatted === "---" ? formatted : formatted.split(" · ")[0];
+    }
+
+    function syncTripStartsNowUI() {
+        const draft = !tripIsLive() ? tripDraft : undefined;
+        const active = Boolean(draft && tripStartsNowState);
+        const values = tripSettingsSession?.values;
+        tripSetStartsNowActions.hidden = !draft;
+        tripSetStartsNowActions.classList.toggle("is-selecting", active);
+        tripSetStartsNowCancel.hidden = !active;
+        tripSettingsDialog.classList.toggle("is-setting-starts-now", active);
+
+        tripSettingsDialog.querySelectorAll(".trip-time-edit").forEach(button => {
+            button.hidden = active;
+        });
+
+        tripStartNowToggles.forEach(button => {
+            const key = button.dataset.tripStartNowTarget === "scheduled-start"
+                ? "scheduled"
+                : "actual";
+            const selected = Boolean(active && tripStartsNowState[key]);
+            button.hidden = !active;
+            button.textContent = selected ? "✓" : "-";
+            button.setAttribute("aria-pressed", String(selected));
+        });
+
+        if (!active) {
+            tripSetStartsNow.textContent = "Set Scheduled/Actual Start to Now";
+            tripSetStartsNow.disabled = Boolean(draft && !parseDateInput(values?.creationDate || draft.creationDate));
+            return;
+        }
+
+        tripSetStartsNow.textContent = `Set To ${tripStartsNowState.label}`;
+        tripSetStartsNow.disabled = !tripStartsNowState.scheduled && !tripStartsNowState.actual;
+    }
+
+    function restoreDraftFromTripSettingsOriginal() {
+        if (!tripDraft || tripSettingsSession?.live || !tripSettingsSession?.original) return;
+        const values = tripSettingsSession.original;
+        Object.assign(tripDraft, {
+            standardTime: values.standardTime,
+            creationTime: values.creationTime,
+            creationDate: values.creationDate,
+            scheduledStart: values.scheduledStart,
+            startTime: values.startTime,
+            matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+        });
+    }
+
+    function applyTripSettingsSession() {
+        const session = tripSettingsSession;
+        if (!session) return true;
+        const values = session.values;
+
+        if (!session.live) {
+            if (!tripDraft) return false;
+            Object.assign(tripDraft, {
+                standardTime: values.standardTime,
+                creationTime: values.creationTime,
+                creationDate: values.creationDate,
+                scheduledStart: values.scheduledStart,
+                startTime: values.startTime,
+                matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+            });
+            return true;
+        }
+
+        try {
+            if (clockTimer.creationDate !== values.creationDate) clockTimer.creationDate = values.creationDate;
+            if (clockTimer.creationTime !== values.creationTime) clockTimer.creationTime = values.creationTime;
+            if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
+            if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
+            if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
+            clockTimer.autoSyncTripGoal = Boolean(values.matchTripGoalToTotal);
+            stagedStandardTime = values.standardTime || stagedStandardTime;
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
+    function syncTripSettingsCallerAfterSave() {
+        const frame = findUIReturnFrame("number-pad");
+        const standardTime = tripSettingsSession?.values?.standardTime;
+        if (!frame?.state || frame.state.source !== "standard-time" || !standardTime) return;
+        const digits = normalizeTimeDigits(standardTime);
+        if (!digits) return;
+        const changed = digits !== frame.state.initial;
+        frame.state.initial = digits;
+        frame.state.pending = digits;
+        frame.state.replaceOnNextDigit = false;
+        frame.state.everEdited = Boolean(frame.state.everEdited || changed);
+    }
+
+    async function cancelTripSettingsDialog(reason = "trip-settings-cancel") {
+        tripStartsNowState = undefined;
+        tripSettingsSession = undefined;
+        return closeDialogWithReturn(tripSettingsDialog, { reason });
+    }
+
     function refreshTripSettingsValues() {
         syncTripSettingsCloud();
         const live = tripIsLive();
         const draft = !live ? tripDraft : undefined;
+        const settingsValues = tripSettingsSession?.values || getCurrentTripSettingsValues();
+        const creationDate = settingsValues?.creationDate || draft?.creationDate || clockTimer.creationDate;
         const values = {
-            "creation-time": live
-                ? formatTripTimeDisplay(clockTimer.creationTime, clockTimer.creationDate)
-                : draft
-                    ? formatTripTimeDisplay(draft.creationTime, draft.creationDate)
-                    : "---",
-            "scheduled-start": live
-                ? formatTripTimeDisplay(clockTimer.scheduledStart, clockTimer.creationDate)
-                : draft
-                    ? formatTripTimeDisplay(draft.scheduledStart, draft.creationDate)
-                    : "---",
-            "actual-start": live
-                ? formatTripTimeDisplay(clockTimer.startTime, clockTimer.creationDate)
-                : draft
-                    ? formatTripTimeDisplay(draft.startTime, draft.creationDate)
-                    : "---",
-            "standard-time": live
-                ? (clockTimer.standardTime || "---")
-                : (draft?.standardTime || "---")
+            "creation-time": settingsValues
+                ? formatTripTimeDisplay(settingsValues.creationTime, creationDate)
+                : "---",
+            "scheduled-start": settingsValues
+                ? formatTripTimeDisplay(settingsValues.scheduledStart, creationDate)
+                : "---",
+            "actual-start": settingsValues
+                ? formatTripTimeDisplay(settingsValues.startTime, creationDate)
+                : "---",
+            "standard-time": settingsValues?.standardTime || "---"
         };
 
         $("#tripCreationTime").textContent = values["creation-time"];
@@ -1818,37 +2001,42 @@
             button.disabled = !live && !draft;
         });
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
-        tripSetStartsNow.hidden = !draft;
-        tripSetStartsNow.disabled = Boolean(draft && !parseDateInput(draft.creationDate));
         const preferencesVisible = Boolean(draft || live);
         tripSettingsPreferences.hidden = !preferencesVisible;
         const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
         const aggregateGoalAvailable = clockTimer.hasAggregateData === true;
-        const selectedGoalSync = draft
-            ? Boolean(draft.matchTripGoalToTotal)
-            : live
-                ? Boolean(clockTimer.autoSyncTripGoal)
-                : Boolean(getTripPreferences().matchTripGoalToTotal);
+        const selectedGoalSync = settingsValues
+            ? Boolean(settingsValues.matchTripGoalToTotal)
+            : Boolean(getTripPreferences().matchTripGoalToTotal);
         autoSyncTripGoal.disabled = !aggregateGoalAvailable || !preferencesVisible;
         autoSyncTripGoal.checked = selectedGoalSync;
         tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable);
         tripGoalSyncNoData.hidden = aggregateGoalAvailable;
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
-        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(draft));
+        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));
+        syncTripStartsNowUI();
     }
 
     function openTripSettingsDialog(reason = "number-pad-settings", { duration = 250 } = {}) {
+        const existingSession = Boolean(tripSettingsSession);
+        if (!existingSession) beginTripSettingsSession();
         refreshTripSettingsValues();
-        return openDialogElement(tripSettingsDialog, { duration, reason });
+        const opened = openDialogElement(tripSettingsDialog, { duration, reason });
+        if (!opened && !existingSession) {
+            tripSettingsSession = undefined;
+            tripStartsNowState = undefined;
+        }
+        return opened;
     }
 
     function getTripFieldValue(field) {
-        const draft = !tripIsLive() ? tripDraft : undefined;
-        if (field === "creation-time") return draft?.creationTime || clockTimer.creationTime || "";
-        if (field === "scheduled-start") return draft?.scheduledStart || clockTimer.scheduledStart || "";
-        if (field === "actual-start") return draft?.startTime || clockTimer.startTime || "";
-        if (field === "standard-time") return draft?.standardTime || clockTimer.standardTime || "";
+        const values = tripSettingsSession?.values || getCurrentTripSettingsValues();
+        if (!values) return "";
+        if (field === "creation-time") return values.creationTime || "";
+        if (field === "scheduled-start") return values.scheduledStart || "";
+        if (field === "actual-start") return values.startTime || "";
+        if (field === "standard-time") return values.standardTime || "";
         return "";
     }
 
@@ -2024,12 +2212,9 @@
     });
 
     tripSettingsForm.elements.autoSyncTripGoal.addEventListener("change", event => {
-        const checked = event.currentTarget.checked;
-        if (tripDraft && !tripIsLive()) {
-            tripDraft.matchTripGoalToTotal = checked;
-        }
-        else if (tripIsLive()) {
-            clockTimer.autoSyncTripGoal = checked;
+        if (!tripSettingsSession) beginTripSettingsSession();
+        if (tripSettingsSession) {
+            tripSettingsSession.values.matchTripGoalToTotal = event.currentTarget.checked;
         }
     });
 
@@ -2069,34 +2254,86 @@
 
     tripSetStartsNow.addEventListener("pointerup", () => {
         if (!tripDraft || tripIsLive()) return;
-        const now = new Date();
-        const value = formatTimelineDateTime(now, tripDraft.creationDate);
-        if (!value) return;
-        tripDraft.scheduledStart = value;
-        tripDraft.startTime = value;
+        if (!tripSettingsSession) beginTripSettingsSession();
+        const values = tripSettingsSession?.values;
+        if (!values) return;
+
+        if (!tripStartsNowState) {
+            const now = new Date();
+            const value = formatTimelineDateTime(now, values.creationDate);
+            if (!value) return;
+            const label = formatTripTimeOnly(value, values.creationDate);
+            if (!label || label === "---") return;
+            tripStartsNowState = {
+                value,
+                label,
+                scheduled: false,
+                actual: false
+            };
+            syncTripStartsNowUI();
+            return;
+        }
+
+        if (tripStartsNowState.scheduled) values.scheduledStart = tripStartsNowState.value;
+        if (tripStartsNowState.actual) values.startTime = tripStartsNowState.value;
+        tripStartsNowState = undefined;
         refreshTripSettingsValues();
+    });
+
+    tripSetStartsNowCancel.addEventListener("pointerup", () => {
+        if (!tripStartsNowState) return;
+        tripStartsNowState = undefined;
+        refreshTripSettingsValues();
+    });
+
+    tripStartNowToggles.forEach(button => {
+        button.addEventListener("pointerup", () => {
+            if (!tripStartsNowState) return;
+            const key = button.dataset.tripStartNowTarget === "scheduled-start"
+                ? "scheduled"
+                : "actual";
+            tripStartsNowState[key] = !tripStartsNowState[key];
+            syncTripStartsNowUI();
+        });
     });
 
     tripSettingsForm.addEventListener("submit", event => {
         event.preventDefault();
-        const form = event.currentTarget;
-        if (tripDraft && !tripIsLive()) {
-            tripDraft.matchTripGoalToTotal = form.elements.autoSyncTripGoal.checked;
-        }
-        else if (tripIsLive()) {
-            clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
+        if (!tripSettingsSession) beginTripSettingsSession();
+        if (tripSettingsSession) {
+            tripSettingsSession.values.matchTripGoalToTotal =
+                event.currentTarget.elements.autoSyncTripGoal.checked;
         }
 
         void (async () => {
-            if (tripDraft && !tripIsLive()) {
-                if (!await startTripDraft()) {
+            const startingDraft = Boolean(tripDraft && !tripIsLive());
+            if (!applyTripSettingsSession()) {
+                refreshTripSettingsValues();
+                return;
+            }
+
+            if (startingDraft) {
+                try {
+                    if (!await startTripDraft()) {
+                        restoreDraftFromTripSettingsOriginal();
+                        refreshTripSettingsValues();
+                        return;
+                    }
+                }
+                catch {
+                    restoreDraftFromTripSettingsOriginal();
                     refreshTripSettingsValues();
                     return;
                 }
+                tripStartsNowState = undefined;
+                tripSettingsSession = undefined;
                 closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
                 return;
             }
 
+            syncTripSettingsCallerAfterSave();
+            tripStartsNowState = undefined;
+            tripSettingsSession = undefined;
             await closeDialogWithReturn(tripSettingsDialog, {
                 reason: "trip-settings-save"
             });

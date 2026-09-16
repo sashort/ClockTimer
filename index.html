@@ -267,6 +267,7 @@
                     </div>
                     <output id="tripScheduledStart" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="scheduled-start" aria-label="Edit scheduled start"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-now-toggle" type="button" data-trip-start-now-target="scheduled-start" aria-label="Set scheduled start to timestamp" aria-pressed="false" hidden>-</button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="actual-start">
                     <div class="trip-time-copy">
@@ -276,6 +277,7 @@
                     </div>
                     <output id="tripActualStart" class="trip-time-value">---</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="actual-start" aria-label="Edit actual start"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-now-toggle" type="button" data-trip-start-now-target="actual-start" aria-label="Set actual start to timestamp" aria-pressed="false" hidden>-</button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="creation-time">
                     <div class="trip-time-copy">
@@ -289,7 +291,10 @@
             
             </section>
 
-            <button id="tripSetStartsNow" class="trip-now-action" type="button" hidden>Set Scheduled/Actual Start to Now</button>
+            <div id="tripSetStartsNowActions" class="trip-now-actions" hidden>
+                <button id="tripSetStartsNow" class="trip-now-action" type="button">Set Scheduled/Actual Start to Now</button>
+                <button id="tripSetStartsNowCancel" class="trip-now-cancel" type="button" hidden>Cancel</button>
+            </div>
 
             <fieldset id="tripSettingsPreferences" class="trip-settings-behavior">
                 <legend>Trip Preferences</legend>
