@@ -530,9 +530,11 @@
     document.querySelectorAll("[data-close-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
             const dialog = button.closest("dialog");
-            closeDialog(dialog, {
-                immediate: dialog === tripSettingsDialog && tripSettingsPadStack.length > 0
-            });
+            if (dialog === tripSettingsDialog && tripSettingsPadStack.length > 0) {
+                void returnToNumberPadFromTripSettings("trip-settings-close").catch(() => {});
+                return;
+            }
+            closeDialog(dialog);
         });
     });
 
@@ -870,7 +872,7 @@
 
     function getNumberPadTitle(source) {
         const titles = {
-            "new-trip": "Start Time",
+            "new-trip": "Standard Time",
             "standard-time": "Standard Time",
             "creation-time": "Creation Time",
             "scheduled-start": "Scheduled Start",
@@ -1303,6 +1305,23 @@
         return openDialogElement(tripSettingsDialog, { duration, reason });
     }
 
+    async function returnToNumberPadFromTripSettings(reason = "trip-settings-return") {
+        const snapshot = getTripSettingsPadSnapshot();
+        if (!snapshot) return closeDialog(tripSettingsDialog, { reason });
+
+        await restoreNumberPadState(snapshot, { duration: 0 });
+        if (!numberPadDialog?.open) return false;
+
+        tripSettingsPadStack.pop();
+        tripSettingsOpeningEditor = true;
+        if (!closeDialog(tripSettingsDialog, { reason, immediate: true })) {
+            tripSettingsOpeningEditor = false;
+            tripSettingsPadStack.push(snapshot);
+            return false;
+        }
+        return true;
+    }
+
     function getTripFieldValue(field, snapshot = getTripSettingsPadSnapshot()) {
         const defaults = !tripIsLive() ? snapshot?.tripDefaults : undefined;
         if (field === "creation-time") return defaults?.creationTime || clockTimer.creationTime || "";
@@ -1464,24 +1483,30 @@
     tripSettingsDialog.addEventListener("closed", () => {
         if (tripSettingsOpeningEditor) {
             tripSettingsOpeningEditor = false;
-            return;
         }
-        const snapshot = tripSettingsPadStack.pop();
-        if (snapshot) void restoreNumberPadState(snapshot).catch(() => {});
+    });
+
+    tripSettingsDialog.addEventListener("cancel", event => {
+        if (tripSettingsPadStack.length === 0) return;
+        event.preventDefault();
+        void returnToNumberPadFromTripSettings("trip-settings-cancel").catch(() => {});
     });
 
     tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
         button.addEventListener("pointerup", () => {
             if (button.disabled) return;
             const field = button.dataset.tripTimeField;
-            tripSettingsOpeningEditor = true;
-            if (!closeDialog(tripSettingsDialog, { reason: `trip-settings:${field}`, immediate: true })) {
-                tripSettingsOpeningEditor = false;
-                return;
-            }
-            setTimeout(() => {
-                void openTripFieldNumberPad(field).catch(() => {});
-            }, 0);
+            void (async () => {
+                try {
+                    await openTripFieldNumberPad(field);
+                    if (!numberPadDialog?.open) return;
+                    tripSettingsOpeningEditor = true;
+                    if (!closeDialog(tripSettingsDialog, { reason: `trip-settings:${field}`, immediate: true })) {
+                        tripSettingsOpeningEditor = false;
+                    }
+                }
+                catch {}
+            })();
         });
     });
 
@@ -1490,10 +1515,11 @@
         const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
-        closeDialog(tripSettingsDialog, {
-            reason: "trip-settings-save",
-            immediate: tripSettingsPadStack.length > 0
-        });
+        if (tripSettingsPadStack.length > 0) {
+            void returnToNumberPadFromTripSettings("trip-settings-save").catch(() => {});
+            return;
+        }
+        closeDialog(tripSettingsDialog, { reason: "trip-settings-save" });
     });
 
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
