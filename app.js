@@ -194,6 +194,7 @@
         const actual = clockTimer.percentMode === "total" ? "total" : "trip";
         $("#scopeToggle").textContent = actual === "total" ? "Total" : "Trip";
         updateSummaryLabels();
+        updateSummaryValues();
         if (persist) safeStorageSet(STORAGE.percentMode, actual);
         return actual;
     }
@@ -220,15 +221,48 @@
         $("#renderedTimeLabel").textContent = `${scope} ${suffix}`;
     }
 
-    function updateSummaryValues() {
-        const standard = clockTimer.standardTime || stagedStandardTime;
-        $("#standardTimeValue").textContent = typeof standard === "string" && standard ? standard : "---";
+    function formatSummaryPercent(value, fallback = "---") {
+        const numeric = Number(value);
+        return Number.isFinite(numeric)
+            ? `${Math.round(numeric * 100)}%`
+            : fallback;
+    }
+
+    function updateSummaryValues(summary) {
+        let snapshot = summary;
+        if (!snapshot?.selected) {
+            try {
+                snapshot = clockTimer.getSummarySnapshot?.(new Date());
+            }
+            catch {
+                snapshot = undefined;
+            }
+        }
+
+        const scope = clockTimer.percentMode === "total" ? "total" : "trip";
+        const selected = snapshot?.[scope] ?? snapshot?.selected;
+        const standard = selected?.standardTime ||
+            (scope === "trip" ? (clockTimer.standardTime || stagedStandardTime) : undefined);
+
+        $("#standardTimeValue").textContent =
+            typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent =
-            ["running", "stopped"].includes(clockTimer.status)
-                ? (clockTimer.renderedTime || "---")
+            typeof selected?.renderedTime === "string" && selected.renderedTime
+                ? selected.renderedTime
                 : "---";
-        const goal = Number(clockTimer.renderedPercentGoal);
-        $("#goalPercentValue").textContent = Number.isFinite(goal) ? `${Math.round(goal * 100)}%` : "100%";
+        $("#currentPercentValue").textContent =
+            selected?.available === false
+                ? "---"
+                : formatSummaryPercent(selected?.countedPercent);
+        $("#goalPercentValue").textContent =
+            formatSummaryPercent(selected?.percentGoal, "100%");
+    }
+
+    function queueSummaryRefresh() {
+        queueMicrotask(() => {
+            updateSummaryLabels();
+            updateSummaryValues();
+        });
     }
 
     function setOptionalAttribute(target, name, value) {
@@ -840,17 +874,45 @@
         $("#independentTimerValue").value = "---";
     });
 
-    for (const eventName of ["tick", "start", "stop", "clear", "goalChange"]) {
-        clockTimer.addEventListener(eventName, updateSummaryValues);
+    clockTimer.addEventListener("cadenceTick", event => {
+        updateSummaryValues(event.detail?.summary);
+    });
+
+    const summaryRefreshEvents = [
+        "start",
+        "stop",
+        "cleared",
+        "goalChange",
+        "renderedPercentGoalChange",
+        "renderedTimeModeChange",
+        "standardTimeChange",
+        "intervalStart",
+        "intervalEnd",
+        "intervalElapsed",
+        "intervalExtended",
+        "intervalApprovalToggle",
+        "intervalApprovalChange",
+        "intervalDelete",
+        "goalChangeFailed"
+    ];
+
+    for (const eventName of summaryRefreshEvents) {
+        clockTimer.addEventListener(eventName, queueSummaryRefresh);
     }
 
     clockTimer.addEventListener("percentModeChange", () => {
         syncScopeUI(true);
-        updateSummaryValues();
+        queueSummaryRefresh();
     });
 
-    clockTimer.addEventListener("connect", () => setOffline(false, { login: loginPending }));
-    clockTimer.addEventListener("disconnect", () => setOffline(true));
+    clockTimer.addEventListener("connected", () => {
+        setOffline(false, { login: loginPending });
+        queueSummaryRefresh();
+    });
+    clockTimer.addEventListener("disconnected", () => {
+        setOffline(true);
+        queueSummaryRefresh();
+    });
 
     const graphicalSettings = getGraphicalSettings();
     applyGraphicalSettings(graphicalSettings);

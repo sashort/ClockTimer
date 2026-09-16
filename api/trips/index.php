@@ -216,7 +216,7 @@ if ($method === 'GET') {
 
         $statement = db()->prepare(
             'SELECT t.id, t.user_id, t.start_time, t.end_time, '
-            . 't.standard_time_ms, t.non_production, t.created_at, '
+            . 't.standard_time_ms, t.counted_time_ms, t.non_production, t.created_at, '
             . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
             . 'FROM trips t WHERE ' . $where . ' '
             . 'ORDER BY t.start_time ASC, t.id ASC '
@@ -237,6 +237,7 @@ if ($method === 'GET') {
                 'endTime' => (string) $row['end_time'],
                 'standardTimeMilliseconds' => (int) $row['standard_time_ms'],
                 'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
+                'countedTimeMilliseconds' => (int) ($row['counted_time_ms'] ?? 0),
                 'nonProduction' => ((int) $row['non_production']) === 1,
             ];
 
@@ -321,6 +322,7 @@ if ($method === 'GET') {
     $statement = db()->prepare(
         'SELECT COUNT(*) AS trip_count, '
         . 'COALESCE(SUM(t.standard_time_ms), 0) AS standard_time_ms, '
+        . 'COALESCE(SUM(t.counted_time_ms), 0) AS counted_time_ms, '
         . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)), 0) AS actual_time_us '
         . 'FROM trips t WHERE ' . $where
     );
@@ -330,7 +332,7 @@ if ($method === 'GET') {
     $actualMicroseconds = (int) ($row['actual_time_us'] ?? 0);
 
     $breakdownStatement = db()->prepare(
-        'SELECT t.standard_time_ms, t.non_production, '
+        'SELECT t.standard_time_ms, t.counted_time_ms, t.non_production, '
         . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
         . 'FROM trips t WHERE ' . $aggregateBaseWhere . ' '
         . 'ORDER BY t.start_time ASC, t.id ASC'
@@ -341,12 +343,14 @@ if ($method === 'GET') {
         'tripCount' => 0,
         'standardTimeMilliseconds' => 0,
         'actualTimeMilliseconds' => 0,
+        'countedTimeMilliseconds' => 0,
     ];
 
-    $addAggregate = static function (array &$aggregate, int $standard, int $actual): void {
+    $addAggregate = static function (array &$aggregate, int $standard, int $actual, int $counted): void {
         $aggregate['tripCount']++;
         $aggregate['standardTimeMilliseconds'] += $standard;
         $aggregate['actualTimeMilliseconds'] += $actual;
+        $aggregate['countedTimeMilliseconds'] += $counted;
     };
 
     $productionAggregate = $emptyAggregate();
@@ -359,6 +363,8 @@ if ($method === 'GET') {
             (int) ($breakdownRow['actual_time_us'] ?? 0);
         $tripActualMilliseconds =
             intdiv($tripActualMicroseconds, 1000);
+        $tripCountedMilliseconds =
+            (int) ($breakdownRow['counted_time_ms'] ?? 0);
 
         if ($tripActualMilliseconds <= 0) {
             continue;
@@ -368,13 +374,15 @@ if ($method === 'GET') {
             $nonProductionTrips[] = [
                 'standardTimeMilliseconds' => $standardMilliseconds,
                 'actualTimeMilliseconds' => $tripActualMilliseconds,
+                'countedTimeMilliseconds' => $tripCountedMilliseconds,
             ];
         }
         else {
             $addAggregate(
                 $productionAggregate,
                 $standardMilliseconds,
-                $tripActualMilliseconds
+                $tripActualMilliseconds,
+                $tripCountedMilliseconds
             );
         }
     }
@@ -404,7 +412,8 @@ if ($method === 'GET') {
         $addAggregate(
             $allNonProductionAggregate,
             $standardMilliseconds,
-            $tripActualMilliseconds
+            $tripActualMilliseconds,
+            $tripCountedMilliseconds
         );
 
         $tripRatio =
@@ -418,14 +427,16 @@ if ($method === 'GET') {
             $addAggregate(
                 $helpfulAggregate,
                 $standardMilliseconds,
-                $tripActualMilliseconds
+                $tripActualMilliseconds,
+                $tripCountedMilliseconds
             );
         }
         else {
             $addAggregate(
                 $nonHelpfulAggregate,
                 $standardMilliseconds,
-                $tripActualMilliseconds
+                $tripActualMilliseconds,
+                $tripCountedMilliseconds
             );
         }
 
@@ -433,7 +444,8 @@ if ($method === 'GET') {
             $addAggregate(
                 $productiveAggregate,
                 $standardMilliseconds,
-                $tripActualMilliseconds
+                $tripActualMilliseconds,
+                $tripCountedMilliseconds
             );
         }
     }
@@ -442,6 +454,7 @@ if ($method === 'GET') {
         'tripCount' => (int) ($row['trip_count'] ?? 0),
         'standardTimeMilliseconds' => (int) ($row['standard_time_ms'] ?? 0),
         'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
+        'countedTimeMilliseconds' => (int) ($row['counted_time_ms'] ?? 0),
         'nonProductionFilter' => $nonProductionFilter,
         'aggregateBreakdown' => [
             'production' => $productionAggregate,
@@ -458,6 +471,14 @@ if ($method === 'GET') {
 
 $input = json_input();
 require_csrf();
+
+$requireNonNegativeMilliseconds = static function (array $source, string $name): int {
+    if (!array_key_exists($name, $source)) return 0;
+    $value = $source[$name];
+    if (is_int($value) && $value >= 0) return $value;
+    if (is_string($value) && preg_match('/^\d+$/', $value)) return (int) $value;
+    api_error($name . ' must be a non-negative integer.', 422, 'invalid_argument');
+};
 
 $normalizeClientToken = static function (mixed $value): ?string {
     if ($value === null || $value === '') {
@@ -506,8 +527,8 @@ if ($method === 'POST') {
 
                 $statement = $pdo->prepare(
                     'INSERT INTO trips '
-                    . '(user_id, start_time, end_time, standard_time_ms, non_production, pending, client_token) '
-                    . 'VALUES (:user_id, :start_time, :end_time, 1, 0, 1, :client_token)'
+                    . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
+                    . 'VALUES (:user_id, :start_time, :end_time, 1, 0, 0, 1, :client_token)'
                 );
                 $statement->execute([
                     ':user_id' => authenticated_user_id(),
@@ -525,6 +546,7 @@ if ($method === 'POST') {
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
     $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
     $nonProduction = $input['nonProduction'] ?? false;
     if (!is_bool($nonProduction)) {
@@ -537,7 +559,7 @@ if ($method === 'POST') {
     }
 
     $tripId = audited_write(
-        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue, $clientToken): int {
+        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $clientToken): int {
             if ($clientToken !== null) {
                 $existing = $pdo->prepare(
                     'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1 FOR UPDATE'
@@ -550,13 +572,14 @@ if ($method === 'POST') {
                 if ($existingId > 0) {
                     $update = $pdo->prepare(
                         'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                        . 'standard_time_ms = :standard_time_ms, non_production = :non_production, pending = 0 '
+                        . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, pending = 0 '
                         . 'WHERE id = :trip_id AND user_id = :user_id'
                     );
                     $update->execute([
                         ':start_time' => $startTime,
                         ':end_time' => $endTime,
                         ':standard_time_ms' => $standardTimeMilliseconds,
+                        ':counted_time_ms' => $countedTimeMilliseconds,
                         ':non_production' => $nonProductionValue,
                         ':trip_id' => $existingId,
                         ':user_id' => authenticated_user_id(),
@@ -567,14 +590,15 @@ if ($method === 'POST') {
 
             $statement = $pdo->prepare(
                 'INSERT INTO trips '
-                . '(user_id, start_time, end_time, standard_time_ms, non_production, pending, client_token) '
-                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :non_production, 0, :client_token)'
+                . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
+                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :counted_time_ms, :non_production, 0, :client_token)'
             );
             $statement->execute([
                 ':user_id' => authenticated_user_id(),
                 ':start_time' => $startTime,
                 ':end_time' => $endTime,
                 ':standard_time_ms' => $standardTimeMilliseconds,
+                ':counted_time_ms' => $countedTimeMilliseconds,
                 ':non_production' => $nonProductionValue,
                 ':client_token' => $clientToken,
             ]);
@@ -632,6 +656,7 @@ if ($action === 'start') {
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
     $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
     $nonProduction = $input['nonProduction'] ?? false;
     if (!is_bool($nonProduction)) {
         api_error('nonProduction must be a boolean.', 422, 'invalid_argument');
@@ -642,17 +667,18 @@ if ($action === 'start') {
     }
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue): void {
+        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue): void {
             require_trip_owner($pdo, $tripId);
             $statement = $pdo->prepare(
                 'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                . 'standard_time_ms = :standard_time_ms, non_production = :non_production, pending = 0 '
+                . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, pending = 0 '
                 . 'WHERE id = :trip_id AND user_id = :user_id'
             );
             $statement->execute([
                 ':start_time' => $startTime,
                 ':end_time' => $endTime,
                 ':standard_time_ms' => $standardTimeMilliseconds,
+                ':counted_time_ms' => $countedTimeMilliseconds,
                 ':non_production' => $nonProductionValue,
                 ':trip_id' => $tripId,
                 ':user_id' => authenticated_user_id(),
@@ -666,9 +692,10 @@ if ($action === 'start') {
 if ($action === 'stop') {
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
     $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $endTime, $standardTimeMilliseconds): void {
+        static function (PDO $pdo) use ($tripId, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds): void {
             $trip = require_trip_owner($pdo, $tripId);
 
             if ($endTime <= (string) $trip['start_time']) {
@@ -676,12 +703,13 @@ if ($action === 'stop') {
             }
 
             $statement = $pdo->prepare(
-                'UPDATE trips SET end_time = :end_time, standard_time_ms = :standard_time_ms '
+                'UPDATE trips SET end_time = :end_time, standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms '
                 . 'WHERE id = :trip_id AND user_id = :user_id'
             );
             $statement->execute([
                 ':end_time' => $endTime,
                 ':standard_time_ms' => $standardTimeMilliseconds,
+                ':counted_time_ms' => $countedTimeMilliseconds,
                 ':trip_id' => $tripId,
                 ':user_id' => authenticated_user_id(),
             ]);
