@@ -1,0 +1,31 @@
+name: Match trip start toggle gradient
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/match-trip-start-toggle-gradient.py
+      - .github/workflows/match-trip-start-toggle-gradient.yml
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply gradient match
+        run: python .github/scripts/match-trip-start-toggle-gradient.py
+      - name: Validate
+        run: |
+          grep -F 'background: var(--ui-blue-gradient);' app.css
+      - name: Commit and cleanup
+        run: |
+          rm .github/scripts/match-trip-start-toggle-gradient.py
+          rm .github/workflows/match-trip-start-toggle-gradient.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.css .github/scripts/match-trip-start-toggle-gradient.py .github/workflows/match-trip-start-toggle-gradient.yml
+          git commit -m 'Match timestamp toggles to pencil gradient'
+          git push
