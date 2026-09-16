@@ -1533,7 +1533,7 @@
         const preferencesVisible = Boolean(draft || live);
         tripSettingsPreferences.hidden = !preferencesVisible;
         const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
-        const aggregateGoalAvailable = clockTimer.hasAggregateTrips === true;
+        const aggregateGoalAvailable = clockTimer.hasAggregateData === true;
         const selectedGoalSync = draft
             ? Boolean(draft.matchTripGoalToTotal)
             : live

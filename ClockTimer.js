@@ -4120,6 +4120,10 @@
             );
         }
 
+        get hasAggregateData() {
+            return this.#hasUsableAggregateSnapshot();
+        }
+
         get hasAggregateTrips() {
             return Boolean(
                 this.#hasUsableAggregateSnapshot() &&
