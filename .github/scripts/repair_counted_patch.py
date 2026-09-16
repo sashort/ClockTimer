@@ -33,12 +33,8 @@ path.write_text(text)
 # Repair the generic !#started anchor in the cadence helper so it targets #tick only.
 path = Path('.github/scripts/patch_cadence_clock.py')
 text = path.read_text()
-old = '''s = one(s,
-''' + "'''            if (\\n                !this.#started\\n            ) {\\n                return;\\n            }'''" + ''',
-''' + "'''            if (\\n                !this.#started\\n            ) {\\n                this.#emitCadenceTick(\\n                    nowDate\\n                );\\n                return;\\n            }'''" + ''', "nonstarted cadence")'''
-new = '''s = one(s,
-''' + "'''            this.#updateOpenOverwriteRange(\\n                nowDate\\n            );\\n\\n            if (\\n                !this.#started\\n            ) {\\n                return;\\n            }'''" + ''',
-''' + "'''            this.#updateOpenOverwriteRange(\\n                nowDate\\n            );\\n\\n            if (\\n                !this.#started\\n            ) {\\n                this.#emitCadenceTick(\\n                    nowDate\\n                );\\n                return;\\n            }'''" + ''', "nonstarted cadence")'''
+old = "s = one(s,\n'''            if (\n                !this.#started\n            ) {\n                return;\n            }''',\n'''            if (\n                !this.#started\n            ) {\n                this.#emitCadenceTick(\n                    nowDate\n                );\n                return;\n            }''', \"nonstarted cadence\")"
+new = "s = one(s,\n'''            this.#updateOpenOverwriteRange(\n                nowDate\n            );\n\n            if (\n                !this.#started\n            ) {\n                return;\n            }''',\n'''            this.#updateOpenOverwriteRange(\n                nowDate\n            );\n\n            if (\n                !this.#started\n            ) {\n                this.#emitCadenceTick(\n                    nowDate\n                );\n                return;\n            }''', \"nonstarted cadence\")"
 if text.count(old) != 1:
     raise RuntimeError('expected one generic nonstarted cadence helper statement')
 path.write_text(text.replace(old, new, 1))
