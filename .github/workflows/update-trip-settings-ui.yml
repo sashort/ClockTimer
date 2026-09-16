@@ -50,7 +50,11 @@ jobs:
           assert 'Edit Trip Settings' in app
           assert 'clockTimer.hasAggregateTrips === true' in app
           assert 'autoSyncTripGoal.disabled = !aggregateGoalAvailable' in app
-          assert 'clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value' not in app
+          trip_submit = app[
+              app.index('tripSettingsForm.addEventListener("submit"'):
+              app.index('async function beginNewTripWorkflow')
+          ]
+          assert 'intervalElapsedBehavior' not in trip_submit
           assert 'get hasAggregateTrips()' in clock
           PY
 
