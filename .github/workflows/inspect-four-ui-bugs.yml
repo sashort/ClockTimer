@@ -1,0 +1,48 @@
+name: Inspect four UI bugs
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/inspect-four-ui-bugs.yml
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Inspect relevant source
+        shell: bash
+        run: |
+          show() {
+            file="$1"
+            pattern="$2"
+            before="${3:-20}"
+            after="${4:-160}"
+            line="$(grep -nF "$pattern" "$file" | head -1 | cut -d: -f1)"
+            echo
+            echo "===== $file :: $pattern :: line ${line:-missing} ====="
+            if [ -n "$line" ]; then
+              start=$(( line > before ? line - before : 1 ))
+              end=$(( line + after ))
+              sed -n "${start},${end}p" "$file"
+            fi
+          }
+
+          show app.js 'function syncTimeFormatForMilitaryToggle' 20 100
+          show app.js '#graphicalSettingsForm").addEventListener("input"' 30 100
+          show app.js 'clockTimer.addEventListener("click"' 30 100
+          show app.js 'timerType' 10 80
+
+          show ClockTimer.js '#normalizeFormat()' 30 120
+          show ClockTimer.js '#formatElapsedRenderedDuration(' 40 180
+          show ClockTimer.js '#calculateRenderedTime(' 40 220
+          show ClockTimer.js '#syncOpenEndedRangeElements(' 40 260
+          show ClockTimer.js '#updateOpenEndedRangeTo(' 40 220
+          show ClockTimer.js '#renderInsertedRecord(' 40 260
+          show ClockTimer.js '#shiftRangesAfter(' 40 220
+          show ClockTimer.js '#ensureRing(' 30 140
