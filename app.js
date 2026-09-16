@@ -793,9 +793,9 @@
         return parseDateInput(clockTimer.creationDate) || new Date(new Date().setHours(0, 0, 0, 0));
     }
 
-    function getAbsolutePadInitial(value) {
+    function getAbsolutePadInitial(value, creationDate) {
         const milliseconds = parseTimelineTime(value);
-        const base = getTripBaseDate();
+        const base = parseDateInput(creationDate) || getTripBaseDate();
         const date = new Date(base.getTime() + (Number.isFinite(milliseconds) ? milliseconds : 0));
         const hour24 = date.getHours();
         const military = clockTimer.getAttribute("military-time") !== "false";
@@ -960,7 +960,7 @@
         let initialDate;
         let initialMeridiem;
         if (normalizedMode === "absolute") {
-            const absolute = getAbsolutePadInitial(initialValue);
+            const absolute = getAbsolutePadInitial(initialValue, tripDefaults?.creationDate);
             initial = absolute.digits;
             initialDate = absolute.date;
             initialMeridiem = absolute.meridiem;
