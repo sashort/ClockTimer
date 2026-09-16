@@ -1,0 +1,37 @@
+name: Fullscreen trip editor handoff
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fullscreen-trip-editor-handoff.yml'
+      - '.github/scripts/fullscreen_trip_editor_handoff.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply fullscreen handoff update
+        run: python .github/scripts/fullscreen_trip_editor_handoff.py
+      - name: Syntax check
+        run: node --check app.js
+      - name: Verify fullscreen handoff behavior
+        run: |
+          grep -Fq '/* fullscreen-trip-editor-v1 */' app.css
+          grep -Fq 'transition-duration: var(--app-dialog-transition-duration, 250ms);' app.css
+          grep -Fq 'openTripSettingsDialog("number-pad-settings", { duration: 0 });' app.js
+          grep -Fq 'returnToTripSettings: true,' app.js
+          grep -Fq 'duration: 0' app.js
+      - name: Commit update and cleanup
+        run: |
+          rm -f .github/scripts/fullscreen_trip_editor_handoff.py
+          rm -f .github/workflows/fullscreen-trip-editor-handoff.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css .github/scripts/fullscreen_trip_editor_handoff.py .github/workflows/fullscreen-trip-editor-handoff.yml
+          git commit -m "Make trip editor handoffs fullscreen and immediate"
+          git push origin rename-prestart-latency
