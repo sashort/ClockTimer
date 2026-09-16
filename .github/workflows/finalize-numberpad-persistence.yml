@@ -25,6 +25,7 @@ jobs:
           node --check ClockTimer.js
           php -l api/trips/index.php
           grep -q "AND pending = 0" api/trips/index.php
+          grep -q "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" ClockTimer.js
       - name: Commit source
         run: |
           git config user.name 'github-actions[bot]'
