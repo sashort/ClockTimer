@@ -2,8 +2,8 @@ from pathlib import Path
 
 api_path = Path('api/trips/index.php')
 api = api_path.read_text()
-old = "            . 'AND start_time <= :production_max_date_time\\n'\n            . 'AND non_production = 0';"
-new = "            . 'AND start_time <= :production_max_date_time\\n'\n            . 'AND pending = 0\\n'\n            . 'AND non_production = 0';"
+old = "            . 'AND start_time <= :production_max_date_time '\n            . 'AND non_production = 0';"
+new = "            . 'AND start_time <= :production_max_date_time '\n            . 'AND pending = 0 '\n            . 'AND non_production = 0';"
 if old not in api:
     raise RuntimeError('production aggregate anchor not found')
 api = api.replace(old, new, 1)
