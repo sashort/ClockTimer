@@ -2672,11 +2672,18 @@
     });
 
     breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
-        button.addEventListener("pointerup", () => {
-            void (async () => {
-                if (!await startBreakInterval(button.dataset.breakType)) return;
-                closeDialog(breakDialog, { reason: "break-type-selected" });
-            })().catch(() => {});
+        button.addEventListener("click", () => {
+            const startPromise =
+                startBreakInterval(
+                    button.dataset.breakType
+                );
+
+            closeDialog(
+                breakDialog,
+                { reason: "break-type-selected" }
+            );
+
+            void startPromise.catch(() => {});
         });
     });
 
@@ -2818,7 +2825,6 @@
             "0:02:30",
             "0:02:30"
         );
-        if (result) renderTripActionState();
         return Boolean(result);
     }
 

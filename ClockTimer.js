@@ -999,6 +999,76 @@
             };
         }
 
+        #getSemanticIntervalEventName(type, phase) {
+            const normalized =
+                String(type ?? "")
+                    .trim()
+                    .toLowerCase();
+
+            const names = {
+                break: {
+                    started: "breakStarted",
+                    ended: "breakEnded"
+                },
+                lunch: {
+                    started: "lunchStarted",
+                    ended: "lunchEnded"
+                },
+                down: {
+                    started: "downTimeStarted",
+                    ended: "downTimeEnded"
+                }
+            };
+
+            return names[normalized]?.[phase];
+        }
+
+        #getSemanticIntervalDetail(record, detail = {}) {
+            const attributes =
+                record?.otherAttributes &&
+                typeof record.otherAttributes === "object"
+                    ? { ...record.otherAttributes }
+                    : {};
+
+            let breakType;
+            for (const [name, value] of Object.entries(attributes)) {
+                if (name.toLowerCase() === "breaktype") {
+                    breakType = value;
+                    break;
+                }
+            }
+
+            return {
+                ...detail,
+                intervalType: record?.type,
+                breakType:
+                    breakType === undefined
+                        ? undefined
+                        : String(breakType),
+                attributes
+            };
+        }
+
+        #emitSemanticIntervalEvent(phase, record, detail = {}) {
+            const eventName =
+                this.#getSemanticIntervalEventName(
+                    record?.type,
+                    phase
+                );
+
+            if (!eventName) {
+                return true;
+            }
+
+            return this.#emitClockTimerEvent(
+                eventName,
+                this.#getSemanticIntervalDetail(
+                    record,
+                    detail
+                )
+            );
+        }
+
         #emitClockTimerEvent(name, detail = {}, { cancelable = false } = {}) {
             if (!this.#eventsReady) {
                 return true;
@@ -3783,7 +3853,7 @@
                 this.#getCurrentTimelineTime()
             );
 
-            this.#emitClockTimerEvent("intervalStarted", {
+            const intervalStartedDetail = {
                 ...result,
                 type: record.type,
                 startTime: record.startDate?.toISOString?.(),
@@ -3808,20 +3878,19 @@
                             endBufferRecord.intervalId
                         )
                         : undefined
-            });
+            };
 
+            this.#emitClockTimerEvent(
+                "intervalStarted",
+                intervalStartedDetail
+            );
 
-            if (
-                String(record.type).toLowerCase() === "down" &&
-                record.openEnded === true
-            ) {
-                this.#emitClockTimerEvent("downTimeStarted", {
-                    ...result,
-                    type: record.type,
-                    startTime: record.startDate?.toISOString?.(),
-                    endTime: undefined
-                });
-            }
+            this.#emitSemanticIntervalEvent(
+                "started",
+                record,
+                intervalStartedDetail
+            );
+
             return result;
         }
 
@@ -3852,6 +3921,23 @@
                             )
                     )
                     : undefined;
+            const lifecycleScheduledEnd =
+                record
+                    ? (
+                        Number.isFinite(
+                            Number(
+                                record.clockTimerExtensionOriginalEndTimeline
+                            )
+                        )
+                            ? Number(
+                                record.clockTimerExtensionOriginalEndTimeline
+                            )
+                            : this.#getIntervalRecordEnd(
+                                record
+                            )
+                    )
+                    : undefined;
+
             const endedEarly =
                 Number.isFinite(scheduledEnd) &&
                 now < scheduledEnd;
@@ -3880,7 +3966,8 @@
             });
             const result = this.#mutationResult(synced, record);
             this.#checkGoalMisses(this.#getCurrentTimelineTime());
-            this.#emitClockTimerEvent("intervalEnded", {
+
+            const intervalEndedDetail = {
                 ...result,
                 ...this.#getTimingDetail(
                     now,
@@ -3894,8 +3981,37 @@
                 scheduledEndTime:
                     this.#timelineToISO(
                         scheduledEnd
-                    )
-            });
+                    ),
+                automaticRestart: false,
+                endReason: "manual"
+            };
+
+            this.#emitClockTimerEvent(
+                "intervalEnded",
+                intervalEndedDetail
+            );
+
+            const lifecycleTiming =
+                this.#getTimingDetail(
+                    now,
+                    lifecycleScheduledEnd
+                );
+
+            this.#emitSemanticIntervalEvent(
+                "ended",
+                record,
+                {
+                    ...intervalEndedDetail,
+                    ...lifecycleTiming,
+                    completion:
+                        lifecycleTiming.timing,
+                    scheduledEndTime:
+                        this.#timelineToISO(
+                            lifecycleScheduledEnd
+                        )
+                }
+            );
+
             return result;
         }
 
@@ -9990,19 +10106,73 @@
             if (
                 this.#autoRestartTripAfterLateBreak &&
                 decision.boundaryType === "end-buffer" &&
-                ["break", "lunch"].includes(String(record.type).toLowerCase()) &&
-                this.#endPendingInterval(now)
+                ["break", "lunch"].includes(String(record.type).toLowerCase())
             ) {
-                this.#emitClockTimerEvent("tripAutomaticallyRestarted", {
-                    intervalId: Number.isInteger(Number(record.intervalId))
-                        ? Number(record.intervalId)
-                        : undefined,
-                    intervalType: record.type,
-                    boundaryType: decision.boundaryType,
-                    boundaryTime: this.#timelineToISO(boundary),
-                    restartTime: this.#timelineToISO(now)
-                });
-                return true;
+                const lifecycleScheduledEnd =
+                    Number.isFinite(
+                        Number(
+                            record.clockTimerExtensionOriginalEndTimeline
+                        )
+                    )
+                        ? Number(
+                            record.clockTimerExtensionOriginalEndTimeline
+                        )
+                        : this.#getIntervalRecordEnd(
+                            record
+                        );
+
+                if (this.#endPendingInterval(now)) {
+                    const lifecycleTiming =
+                        this.#getTimingDetail(
+                            now,
+                            lifecycleScheduledEnd
+                        );
+
+                    const intervalEndedDetail = {
+                        ...this.#mutationResult(
+                            false,
+                            record
+                        ),
+                        ...lifecycleTiming,
+                        completion:
+                            lifecycleTiming.timing,
+                        type: record.type,
+                        startTime:
+                            record.startDate?.toISOString?.(),
+                        endTime:
+                            this.#timelineToISO(now),
+                        actualEndTime:
+                            this.#timelineToISO(now),
+                        scheduledEndTime:
+                            this.#timelineToISO(
+                                lifecycleScheduledEnd
+                            ),
+                        automaticRestart: true,
+                        endReason: "automatic-restart"
+                    };
+
+                    this.#emitClockTimerEvent(
+                        "intervalEnded",
+                        intervalEndedDetail
+                    );
+
+                    this.#emitSemanticIntervalEvent(
+                        "ended",
+                        record,
+                        intervalEndedDetail
+                    );
+
+                    this.#emitClockTimerEvent("tripAutomaticallyRestarted", {
+                        intervalId: Number.isInteger(Number(record.intervalId))
+                            ? Number(record.intervalId)
+                            : undefined,
+                        intervalType: record.type,
+                        boundaryType: decision.boundaryType,
+                        boundaryTime: this.#timelineToISO(boundary),
+                        restartTime: this.#timelineToISO(now)
+                    });
+                    return true;
+                }
             }
             return true;
         }
