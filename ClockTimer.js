@@ -2242,6 +2242,51 @@
             return true;
         }
 
+        async #refreshAggregateSnapshotAfterReconnect() {
+            if (!this.#aggregateReconnectPending) {
+                return false;
+            }
+
+            const totals =
+                this.#tripTotals;
+
+            if (
+                !totals ||
+                typeof totals.startTime !== "string" ||
+                typeof totals.endTime !== "string"
+            ) {
+                this.#aggregateReconnectPending =
+                    false;
+
+                this.#aggregateReconnectSnapshot =
+                    undefined;
+
+                return false;
+            }
+
+            // Compare the server refresh against the aggregate snapshot the user
+            // actually sees immediately before synchronization. Offline work may
+            // have changed the cached totals since the connection was lost.
+            this.#aggregateReconnectSnapshot =
+                this.#cloneAggregateSnapshot(
+                    totals
+                );
+
+            try {
+                await this.calculateTripTotals(
+                    totals.startTime,
+                    totals.endTime
+                );
+
+                return true;
+            }
+            catch {
+                // Aggregate refresh is supplementary to reconnect/persistence.
+                // A failed refresh must not make an otherwise successful sync fail.
+                return false;
+            }
+        }
+
         #setConnected(csrfToken, detail = {}) {
             const previousNetworkStatus =
                 this.networkStatus;
@@ -2807,6 +2852,7 @@
             }
             try {
                 await action();
+                await this.#refreshAggregateSnapshotAfterReconnect();
                 return true;
             }
             catch (error) {
@@ -3587,7 +3633,30 @@
         }
 
         async resumeConnection() {
-            return this.#ensureConnected();
+            const connected =
+                await this.#ensureConnected();
+
+            if (!connected) {
+                return false;
+            }
+
+            try {
+                if (this.#hasStartProperties()) {
+                    await this.#ensureTripPersisted();
+                    await this.#syncIntervals();
+                }
+
+                await this.#refreshAggregateSnapshotAfterReconnect();
+            }
+            catch (error) {
+                if (error?.clockTimerOffline) {
+                    return false;
+                }
+
+                throw error;
+            }
+
+            return true;
         }
 
         async connect(username, password) {
@@ -3638,6 +3707,8 @@
                 await this.#ensureTripPersisted();
                 await this.#syncIntervals();
             }
+
+            await this.#refreshAggregateSnapshotAfterReconnect();
 
             return { connected: true, user: data.user };
         }
