@@ -128,17 +128,26 @@
     }
 
     function getTripPreferences() {
-        const stored = getStoredJSON(STORAGE.tripPreferences, TRIP_PREFERENCE_DEFAULTS);
-        const legacy = stored.intervalElapsedBehavior === "rollover"
+        let stored = {};
+        try {
+            stored = JSON.parse(safeStorageGet(STORAGE.tripPreferences) || "{}");
+        }
+        catch {}
+
+        const lateBreakBehavior = stored.lateBreakBehavior === "autoRestartTrip"
             ? "autoRestartTrip"
-            : "showLateWindow";
+            : stored.lateBreakBehavior === "showLateWindow"
+                ? "showLateWindow"
+                : stored.intervalElapsedBehavior === "rollover"
+                    ? "autoRestartTrip"
+                    : TRIP_PREFERENCE_DEFAULTS.lateBreakBehavior;
+
         return {
-            lateBreakBehavior: stored.lateBreakBehavior === "autoRestartTrip"
-                ? "autoRestartTrip"
-                : stored.lateBreakBehavior === "showLateWindow"
-                    ? "showLateWindow"
-                    : legacy,
-            matchTripGoalToTotal: Boolean(stored.matchTripGoalToTotal)
+            lateBreakBehavior,
+            matchTripGoalToTotal: Boolean(
+                stored.matchTripGoalToTotal ??
+                TRIP_PREFERENCE_DEFAULTS.matchTripGoalToTotal
+            )
         };
     }
 
