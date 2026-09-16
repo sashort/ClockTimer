@@ -7,10 +7,15 @@
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
-        graphicalSettingsVersion: "wmof.clock.graphicalSettingsVersion"
+        graphicalSettingsVersion: "wmof.clock.graphicalSettingsVersion",
+        tripPreferences: "wmof.clock.tripPreferences"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
+    const TRIP_PREFERENCE_DEFAULTS = {
+        intervalElapsedBehavior: "startLatency",
+        matchTripGoalToTotal: false
+    };
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
         timerMode: "elapsed",
@@ -61,6 +66,7 @@
     const tripSetStartsNow = $("#tripSetStartsNow");
     const tripGoalSyncOption = $("#tripGoalSyncOption");
     const tripGoalSyncNoData = $("#tripGoalSyncNoData");
+    const tripSettingsPreferences = $("#tripSettingsPreferences");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -115,6 +121,27 @@
         catch {
             return { ...fallback };
         }
+    }
+
+    function getTripPreferences() {
+        const stored = getStoredJSON(STORAGE.tripPreferences, TRIP_PREFERENCE_DEFAULTS);
+        return {
+            intervalElapsedBehavior:
+                stored.intervalElapsedBehavior === "rollover"
+                    ? "rollover"
+                    : "startLatency",
+            matchTripGoalToTotal: Boolean(stored.matchTripGoalToTotal)
+        };
+    }
+
+    function saveTripPreferences(preferences) {
+        safeStorageSet(STORAGE.tripPreferences, JSON.stringify(preferences));
+    }
+
+    function fillTripPreferencesForm(preferences = getTripPreferences()) {
+        const form = $("#stateSettingsForm");
+        form.elements.intervalElapsedBehavior.value = preferences.intervalElapsedBehavior;
+        form.elements.matchTripGoalToTotal.checked = Boolean(preferences.matchTripGoalToTotal);
     }
 
     function getGraphicalSettings() {
@@ -621,6 +648,7 @@
                 return;
             }
             if (button.dataset.dialog === "graphicalSettingsDialog") fillGraphicalForm(getGraphicalSettings());
+            if (button.dataset.dialog === "stateSettingsDialog") fillTripPreferencesForm();
             openDialog(button.dataset.dialog, { fromPopover: true, reason: "popover-handoff" });
         });
     });
@@ -658,8 +686,17 @@
     $("#stateSettingsForm").addEventListener("submit", event => {
         event.preventDefault();
         const form = event.currentTarget;
-        clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
-        clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
+        const preferences = {
+            intervalElapsedBehavior:
+                form.elements.intervalElapsedBehavior.value === "rollover"
+                    ? "rollover"
+                    : "startLatency",
+            matchTripGoalToTotal: form.elements.matchTripGoalToTotal.checked
+        };
+        saveTripPreferences(preferences);
+        if (!tripIsLive() && !tripDraft) {
+            clockTimer.intervalElapsedBehavior = preferences.intervalElapsedBehavior;
+        }
         void closeDialogWithReturn(stateDialog, { reason: "state-settings-save" }).catch(() => {});
     });
 
@@ -1437,6 +1474,12 @@
         const standardTime = String(draft?.standardTime || "").trim();
         if (!tripDraftCanStart(draft)) return false;
 
+        clockTimer.autoSyncTripGoal = Boolean(draft.matchTripGoalToTotal);
+        clockTimer.intervalElapsedBehavior =
+            draft.intervalElapsedBehavior === "rollover"
+                ? "rollover"
+                : "startLatency";
+
         await clockTimer.start({
             standardTime,
             creationTime: draft.creationTime,
@@ -1487,13 +1530,17 @@
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
         tripSetStartsNow.hidden = !draft;
         tripSetStartsNow.disabled = Boolean(draft && !parseDateInput(draft.creationDate));
+        const preferencesVisible = Boolean(draft || live);
+        tripSettingsPreferences.hidden = !preferencesVisible;
         const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
         const aggregateGoalAvailable = clockTimer.hasAggregateTrips === true;
-        if (!aggregateGoalAvailable && clockTimer.autoSyncTripGoal) {
-            clockTimer.autoSyncTripGoal = false;
-        }
-        autoSyncTripGoal.disabled = !aggregateGoalAvailable;
-        autoSyncTripGoal.checked = aggregateGoalAvailable && clockTimer.autoSyncTripGoal;
+        const selectedGoalSync = draft
+            ? Boolean(draft.matchTripGoalToTotal)
+            : live
+                ? Boolean(clockTimer.autoSyncTripGoal)
+                : Boolean(getTripPreferences().matchTripGoalToTotal);
+        autoSyncTripGoal.disabled = !aggregateGoalAvailable || !preferencesVisible;
+        autoSyncTripGoal.checked = selectedGoalSync;
         tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable);
         tripGoalSyncNoData.hidden = aggregateGoalAvailable;
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
@@ -1667,6 +1714,16 @@
         refreshTripSettingsValues();
     });
 
+    tripSettingsForm.elements.autoSyncTripGoal.addEventListener("change", event => {
+        const checked = event.currentTarget.checked;
+        if (tripDraft && !tripIsLive()) {
+            tripDraft.matchTripGoalToTotal = checked;
+        }
+        else if (tripIsLive()) {
+            clockTimer.autoSyncTripGoal = checked;
+        }
+    });
+
     tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
         button.addEventListener("pointerup", () => {
             if (button.disabled) return;
@@ -1714,9 +1771,12 @@
     tripSettingsForm.addEventListener("submit", event => {
         event.preventDefault();
         const form = event.currentTarget;
-        clockTimer.autoSyncTripGoal =
-            !form.elements.autoSyncTripGoal.disabled &&
-            form.elements.autoSyncTripGoal.checked;
+        if (tripDraft && !tripIsLive()) {
+            tripDraft.matchTripGoalToTotal = form.elements.autoSyncTripGoal.checked;
+        }
+        else if (tripIsLive()) {
+            clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
+        }
 
         void (async () => {
             if (tripDraft && !tripIsLive()) {
@@ -1740,6 +1800,7 @@
             ? new Date(tripMoment.getTime())
             : new Date();
         const tripDefaults = getTripMomentDefaults(moment);
+        const tripPreferences = getTripPreferences();
         const newTripInitialValue = initialValue ?? (
             clockTimer.status === "stopped"
                 ? ""
@@ -1747,7 +1808,9 @@
         );
         tripDraft = {
             ...tripDefaults,
-            standardTime: newTripInitialValue || ""
+            standardTime: newTripInitialValue || "",
+            intervalElapsedBehavior: tripPreferences.intervalElapsedBehavior,
+            matchTripGoalToTotal: tripPreferences.matchTripGoalToTotal
         };
 
         let preparationPromise;
@@ -1860,6 +1923,19 @@
         updateSummaryValues(event.detail?.summary);
     });
 
+    clockTimer.addEventListener("intervalElapsed", event => {
+        if (
+            event.detail?.intervalType !== "break" ||
+            event.detail?.behavior !== "rollover"
+        ) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            void clockTimer.endInterval().catch(() => {});
+        });
+    });
+
     const summaryRefreshEvents = [
         "cleared",
         "goalChanged",
@@ -1905,8 +1981,11 @@
     });
 
     const graphicalSettings = getGraphicalSettings();
+    const tripPreferences = getTripPreferences();
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
+    fillTripPreferencesForm(tripPreferences);
+    clockTimer.intervalElapsedBehavior = tripPreferences.intervalElapsedBehavior;
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();

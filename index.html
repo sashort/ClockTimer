@@ -17,7 +17,7 @@
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
             <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
-            <button type="button" data-dialog="stateSettingsDialog">Clock State Settings</button>
+            <button type="button" data-dialog="stateSettingsDialog">Trip Preferences</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
             <hr>
             <button id="authButton" type="button">Login</button>
@@ -219,19 +219,18 @@
     <dialog id="stateSettingsDialog" class="app-dialog settings-dialog state-dialog">
         <form id="stateSettingsForm" method="dialog">
             <header class="dialog-header">
-                <h2>Clock State Settings</h2>
+                <h2>Trip Preferences</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
             <fieldset>
-                <legend>Interval Behavior</legend>
-                <label>When an interval elapses
+                <legend>Defaults</legend>
+                <label>When I End Break Late
                     <select name="intervalElapsedBehavior">
-                        <option value="startLatency">Start Latency</option>
-                        <option value="extendBoundary">Keep Boundary Open</option>
-                        <option value="extendInterval">Extend Interval Only</option>
+                        <option value="startLatency">Show Late Window</option>
+                        <option value="rollover">Auto-Restart Trip</option>
                     </select>
                 </label>
-                <label class="toggle-row">Auto Sync Trip Goal<input name="autoSyncTripGoal" type="checkbox"></label>
+                <label class="toggle-row">Match Trip Goal To Total<input name="matchTripGoalToTotal" type="checkbox"></label>
             </fieldset>
             <div class="dialog-actions two-actions">
                 <button type="button" data-close-dialog>Cancel</button>
@@ -289,7 +288,7 @@
 
             <button id="tripSetStartsNow" class="trip-now-action" type="button" hidden>Set Scheduled/Actual Start to Now</button>
 
-            <fieldset class="trip-settings-behavior">
+            <fieldset id="tripSettingsPreferences" class="trip-settings-behavior">
                 <legend>Trip Preferences</legend>
                 <label id="tripGoalSyncOption" class="toggle-row trip-goal-sync-option">
                     <span class="trip-goal-sync-label">

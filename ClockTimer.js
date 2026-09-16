@@ -1877,6 +1877,10 @@
                 return "extendInterval";
             }
 
+            if (normalized === "rollover") {
+                return "rollover";
+            }
+
             return fallback;
         }
 
@@ -1898,7 +1902,7 @@
 
             if (!normalized) {
                 throw new RangeError(
-                    "intervalElapsedBehavior must be startLatency, extendBoundary, or extendInterval."
+                    "intervalElapsedBehavior must be startLatency, extendBoundary, extendInterval, or rollover."
                 );
             }
 
@@ -9370,7 +9374,7 @@
 
                         if (!normalized) {
                             throw new RangeError(
-                                "intervalElapsed behavior must be startLatency, extendBoundary, or extendInterval."
+                                "intervalElapsed behavior must be startLatency, extendBoundary, extendInterval, or rollover."
                             );
                         }
 
@@ -9763,6 +9767,10 @@
                     now,
                     decision
                 );
+            }
+
+            if (decision.behavior === "rollover") {
+                return true;
             }
 
             const intervalEnd =
