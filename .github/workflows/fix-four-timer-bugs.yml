@@ -1,0 +1,413 @@
+name: Fix four timer bugs
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/fix-four-timer-bugs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"missing anchor: {label}")
+              return text.replace(old, new, 1)
+
+          # 1 + 4: graphical time controls stay mutually consistent; clock face toggles both radial types.
+          path = Path('app.js')
+          app = path.read_text()
+
+          old = '''    function syncTimeFormatForMilitaryToggle(form) {
+        const control = form.elements.timeFormat;
+        const current = String(control.value || "").trim();
+        const military = form.elements.militaryTime.checked;
+        const militaryDefaults = new Set(["HHmm", "HHmmss"]);
+        const standardDefaults = new Set(["h:mm AM/PM", "h:mm:ss AM/PM"]);
+        if (military) {
+            if (!current || standardDefaults.has(current)) control.value = "HHmm";
+        }
+        else if (!current || militaryDefaults.has(current)) {
+            control.value = "h:mm AM/PM";
+        }
+    }
+'''
+          new = '''    function getGraphicalTimeFormatType(value) {
+        const format = String(value || "").trim();
+        if (!format) return undefined;
+
+        const formatType =
+            globalThis.TemporalFormat?.getFormatType?.(
+                format
+            );
+
+        return formatType?.type === "time"
+            ? formatType["time-type"]
+            : undefined;
+    }
+
+    function syncTimeFormatForMilitaryToggle(form) {
+        const control = form.elements.timeFormat;
+        const current = String(control.value || "").trim();
+        const military = form.elements.militaryTime.checked;
+        const formatType = getGraphicalTimeFormatType(current);
+        const conflict = military
+            ? formatType !== "military"
+            : formatType !== "12-hour";
+
+        if (!current || conflict) {
+            const includesSeconds = /s/i.test(current);
+            control.value = military
+                ? (includesSeconds ? "HHmmss" : "HHmm")
+                : (includesSeconds ? "h:mm:ss AM/PM" : "h:mm AM/PM");
+        }
+    }
+
+    function syncMilitaryToggleForTimeFormat(form) {
+        const formatType = getGraphicalTimeFormatType(
+            form.elements.timeFormat.value
+        );
+
+        if (formatType === "military") {
+            form.elements.militaryTime.checked = true;
+        }
+        else if (formatType === "12-hour") {
+            form.elements.militaryTime.checked = false;
+        }
+    }
+'''
+          app = replace_once(app, old, new, 'graphical time sync helpers')
+
+          old = '''    function fillGraphicalForm(settings) {
+        const form = $("#graphicalSettingsForm");
+        for (const [key, value] of Object.entries(settings)) {
+            const control = form.elements[key];
+            if (!control) continue;
+            if (control.type === "checkbox") control.checked = Boolean(value);
+            else control.value = value;
+        }
+        applyGraphicalSettings(settings, clockPreview);
+    }
+'''
+          new = '''    function fillGraphicalForm(settings) {
+        const form = $("#graphicalSettingsForm");
+        for (const [key, value] of Object.entries(settings)) {
+            const control = form.elements[key];
+            if (!control) continue;
+            if (control.type === "checkbox") control.checked = Boolean(value);
+            else control.value = value;
+        }
+        syncTimeFormatForMilitaryToggle(form);
+        applyGraphicalSettings(
+            settingsFromForm(form),
+            clockPreview
+        );
+    }
+'''
+          app = replace_once(app, old, new, 'normalize graphical form on fill')
+
+          old = '''    clockTimer.addEventListener("pointerdown", () => {
+        if (clockTimer.getAttribute("timer-type") !== "radial-overflow") return;
+        clockTimer.setAttribute("timer-type", "radial-fitted");
+        const settings = getGraphicalSettings();
+        settings.timerType = "radial-fitted";
+        saveGraphicalSettings(settings);
+    });
+'''
+          new = '''    clockTimer.addEventListener("pointerdown", () => {
+        const current =
+            clockTimer.getAttribute("timer-type") === "radial-fitted"
+                ? "radial-fitted"
+                : "radial-overflow";
+
+        const next =
+            current === "radial-overflow"
+                ? "radial-fitted"
+                : "radial-overflow";
+
+        clockTimer.setAttribute(
+            "timer-type",
+            next
+        );
+
+        const settings = getGraphicalSettings();
+        settings.timerType = next;
+        saveGraphicalSettings(settings);
+    });
+'''
+          app = replace_once(app, old, new, 'reversible timer type click')
+
+          old = '''    $("#graphicalSettingsForm").addEventListener("input", event => {
+        if (event.target.name === "militaryTime") syncTimeFormatForMilitaryToggle(event.currentTarget);
+        if (event.target.matches("input, select")) applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
+    });
+
+    $("#graphicalSettingsForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const settings = settingsFromForm(event.currentTarget);
+'''
+          new = '''    $("#graphicalSettingsForm").addEventListener("input", event => {
+        const form = event.currentTarget;
+
+        if (event.target.name === "militaryTime") {
+            syncTimeFormatForMilitaryToggle(form);
+        }
+        else if (event.target.name === "timeFormat") {
+            syncMilitaryToggleForTimeFormat(form);
+        }
+
+        if (event.target.matches("input, select")) {
+            applyGraphicalSettings(
+                settingsFromForm(form),
+                clockPreview
+            );
+        }
+    });
+
+    $("#graphicalSettingsForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        syncMilitaryToggleForTimeFormat(form);
+        syncTimeFormatForMilitaryToggle(form);
+        const settings = settingsFromForm(form);
+'''
+          app = replace_once(app, old, new, 'reciprocal graphical settings input')
+          path.write_text(app)
+
+          # 2 + 3: complementary whole-second remaining display and non-growing
+          # radial-overflow pending interval ranges.
+          path = Path('ClockTimer.js')
+          clock = path.read_text()
+
+          old = '''        #formatSignedRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            const rounded =
+                Math.round(
+                    milliseconds
+                );
+
+            const formatted =
+                TemporalFormat.formatDuration(
+                    Math.abs(
+                        rounded
+                    )
+                );
+
+            if (formatted === undefined) {
+                return undefined;
+            }
+
+            return rounded < 0
+                ? `-${formatted}`
+                : formatted;
+        }
+
+        #calculateRenderedTime(
+'''
+          new = '''        #formatSignedRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            const rounded =
+                Math.round(
+                    milliseconds
+                );
+
+            const formatted =
+                TemporalFormat.formatDuration(
+                    Math.abs(
+                        rounded
+                    )
+                );
+
+            if (formatted === undefined) {
+                return undefined;
+            }
+
+            return rounded < 0
+                ? `-${formatted}`
+                : formatted;
+        }
+
+        #formatRemainingRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            // Elapsed time truncates to the completed whole second. Remaining
+            // time uses the complementary ceiling so the two displays agree at
+            // whole-second precision and never expose interval milliseconds.
+            const rounded =
+                Math.ceil(
+                    milliseconds /
+                    1000
+                ) *
+                1000;
+
+            const formatted =
+                TemporalFormat.formatDuration(
+                    Math.abs(
+                        rounded
+                    )
+                );
+
+            if (formatted === undefined) {
+                return undefined;
+            }
+
+            if (rounded < 0) {
+                return `-${formatted}`;
+            }
+
+            if (rounded > 0) {
+                return `⁺${formatted}`;
+            }
+
+            return formatted;
+        }
+
+        #calculateRenderedTime(
+'''
+          clock = replace_once(clock, old, new, 'remaining formatter')
+
+          old = '''            return mode === "elapsed"
+                ? this.#formatElapsedRenderedDuration(
+                    milliseconds
+                )
+                : this.#formatSignedRenderedDuration(
+                    milliseconds
+                );
+'''
+          new = '''            return mode === "elapsed"
+                ? this.#formatElapsedRenderedDuration(
+                    milliseconds
+                )
+                : this.#formatRemainingRenderedDuration(
+                    milliseconds
+                );
+'''
+          clock = replace_once(clock, old, new, 'clock-face remaining formatter')
+
+          old = '''            else {
+                renderedTime = this.#formatSignedRenderedDuration(remainingMilliseconds);
+            }
+'''
+          new = '''            else {
+                renderedTime = this.#formatRemainingRenderedDuration(
+                    remainingMilliseconds
+                );
+            }
+'''
+          clock = replace_once(clock, old, new, 'total-summary remaining formatter')
+
+          old = '''            this.#syncOpenEndedRangeElements(
+                record,
+                now
+            );
+
+            this.#refreshRingLayout(
+'''
+          new = '''            if (
+                this.#getTimerType() !==
+                    "radial-overflow"
+            ) {
+                this.#syncOpenEndedRangeElements(
+                    record,
+                    now
+                );
+            }
+
+            this.#refreshRingLayout(
+'''
+          clock = replace_once(clock, old, new, 'radial-overflow open interval growth')
+          path.write_text(clock)
+          PY
+
+      - name: Validate
+        shell: bash
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          app = Path('app.js').read_text()
+          clock = Path('ClockTimer.js').read_text()
+
+          required_app = [
+              'function getGraphicalTimeFormatType(value)',
+              'function syncMilitaryToggleForTimeFormat(form)',
+              'current === "radial-overflow"',
+              '? "radial-fitted"',
+              ': "radial-overflow"'
+          ]
+          required_clock = [
+              '#formatRemainingRenderedDuration(',
+              'Math.ceil(',
+              'return `⁺${formatted}`;',
+              'this.#getTimerType() !==\n                    "radial-overflow"'
+          ]
+
+          for needle in required_app:
+              if needle not in app:
+                  raise SystemExit(f'missing app assertion: {needle}')
+          for needle in required_clock:
+              if needle not in clock:
+                  raise SystemExit(f'missing ClockTimer assertion: {needle}')
+
+          # The open-ended tick path must displace first, then skip re-timing the
+          # pending range in radial-overflow.
+          start = clock.index('        #updateOpenEndedRangeTo(')
+          end = clock.index('        #updateOpenEndedRange(', start + 1)
+          block = clock[start:end]
+          if block.index('this.#shiftRangesAfter(') > block.index('this.#syncOpenEndedRangeElements('):
+              raise SystemExit('open-ended displacement no longer precedes range sync')
+
+          # Complement check: elapsed=floor and remaining=ceil at second precision.
+          samples = [0, 1, 999, 1000, 1001, 59999, 60001, -1, -999, -1001]
+          import math
+          for value in samples:
+              elapsed = math.trunc(value / 1000) * 1000
+              remaining = math.ceil((-value) / 1000) * 1000
+              if (elapsed + remaining) != 0:
+                  raise SystemExit(f'complement check failed for {value}')
+          PY
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix-four-timer-bugs.yml
+          rm -f .github/workflows/inspect-four-ui-bugs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix timer settings, remaining display, and radial intervals"
+          git push origin HEAD:rename-prestart-latency
