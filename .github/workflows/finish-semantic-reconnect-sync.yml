@@ -1,0 +1,76 @@
+name: Finish semantic reconnect sync
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/finish-semantic-reconnect-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply reconnect aggregate sync patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('ClockTimer.js')
+          text = path.read_text()
+
+          old = '''        #setConnected(csrfToken, detail = {}) {\n'''
+          helper = '''        async #refreshAggregateSnapshotAfterReconnect() {\n            if (!this.#aggregateReconnectPending) {\n                return false;\n            }\n\n            const totals =\n                this.#tripTotals;\n\n            if (\n                !totals ||\n                typeof totals.startTime !== "string" ||\n                typeof totals.endTime !== "string"\n            ) {\n                this.#aggregateReconnectPending =\n                    false;\n\n                this.#aggregateReconnectSnapshot =\n                    undefined;\n\n                return false;\n            }\n\n            // Compare the server refresh against the aggregate snapshot the user\n            // actually sees immediately before synchronization. Offline work may\n            // have changed the cached totals since the connection was lost.\n            this.#aggregateReconnectSnapshot =\n                this.#cloneAggregateSnapshot(\n                    totals\n                );\n\n            try {\n                await this.calculateTripTotals(\n                    totals.startTime,\n                    totals.endTime\n                );\n\n                return true;\n            }\n            catch {\n                // Aggregate refresh is supplementary to reconnect/persistence.\n                // A failed refresh must not make an otherwise successful sync fail.\n                return false;\n            }\n        }\n\n        #setConnected(csrfToken, detail = {}) {\n'''
+          if old not in text:
+              raise SystemExit('missing setConnected anchor')
+          text = text.replace(old, helper, 1)
+
+          old = '''        async #protectedSync(action) {\n            if (!(await this.#ensureConnected())) {\n                return false;\n            }\n            try {\n                await action();\n                return true;\n            }\n            catch (error) {\n                if (error?.clockTimerOffline) {\n                    return false;\n                }\n                throw error;\n            }\n        }\n'''
+          new = '''        async #protectedSync(action) {\n            if (!(await this.#ensureConnected())) {\n                return false;\n            }\n            try {\n                await action();\n                await this.#refreshAggregateSnapshotAfterReconnect();\n                return true;\n            }\n            catch (error) {\n                if (error?.clockTimerOffline) {\n                    return false;\n                }\n                throw error;\n            }\n        }\n'''
+          if old not in text:
+              raise SystemExit('missing protectedSync anchor')
+          text = text.replace(old, new, 1)
+
+          old = '''        async resumeConnection() {\n            return this.#ensureConnected();\n        }\n'''
+          new = '''        async resumeConnection() {\n            const connected =\n                await this.#ensureConnected();\n\n            if (!connected) {\n                return false;\n            }\n\n            try {\n                if (this.#hasStartProperties()) {\n                    await this.#ensureTripPersisted();\n                    await this.#syncIntervals();\n                }\n\n                await this.#refreshAggregateSnapshotAfterReconnect();\n            }\n            catch (error) {\n                if (error?.clockTimerOffline) {\n                    return false;\n                }\n\n                throw error;\n            }\n\n            return true;\n        }\n'''
+          if old not in text:
+              raise SystemExit('missing resumeConnection anchor')
+          text = text.replace(old, new, 1)
+
+          old = '''            if (this.#hasStartProperties()) {\n                await this.#ensureTripPersisted();\n                await this.#syncIntervals();\n            }\n\n            return { connected: true, user: data.user };\n'''
+          new = '''            if (this.#hasStartProperties()) {\n                await this.#ensureTripPersisted();\n                await this.#syncIntervals();\n            }\n\n            await this.#refreshAggregateSnapshotAfterReconnect();\n\n            return { connected: true, user: data.user };\n'''
+          if old not in text:
+              raise SystemExit('missing connect sync anchor')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Validate
+        shell: bash
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+          grep -q 'async #refreshAggregateSnapshotAfterReconnect()' ClockTimer.js
+          grep -q 'await this.#refreshAggregateSnapshotAfterReconnect();' ClockTimer.js
+          grep -q 'aggregatesSynced' ClockTimer.js
+          grep -q 'aggregatesSynced: onAggregatesSynced' app.js
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          rm -f .github/workflows/finish-semantic-reconnect-sync.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finish semantic reconnect aggregate sync"
+          git push origin HEAD:rename-prestart-latency
