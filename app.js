@@ -113,6 +113,135 @@
     const STARTUP_GRAYSCALE_RAMP = 2000;
     const LOGIN_GRAYSCALE_RAMP = 750;
     const INITIAL_LOGIN_FADE_DURATION = 750;
+    const BUTTON_PRESS_IN_DURATION = 120;
+    const BUTTON_PRESS_OUT_DURATION = 140;
+    const buttonPressStates = new WeakMap();
+    const pointerPressButtons = new Map();
+
+    function getPressedShadow(baseShadow, pressedShadow) {
+        return !baseShadow || baseShadow === "none"
+            ? pressedShadow
+            : `${baseShadow}, ${pressedShadow}`;
+    }
+
+    function getPressedTextShadow(baseShadow) {
+        const pressed = "0 2px 3px rgb(0 0 0 / 48%), 0 0 5px rgb(255 255 255 / 18%)";
+        return !baseShadow || baseShadow === "none"
+            ? pressed
+            : `${baseShadow}, ${pressed}`;
+    }
+
+    function finishButtonPressFeedback(button, state) {
+        if (!state || state.releaseStarted) return;
+        state.releaseStarted = true;
+        state.releaseAnimation = button.animate([
+            {
+                boxShadow: state.pressedBoxShadow,
+                textShadow: state.pressedTextShadow
+            },
+            {
+                boxShadow: state.baseBoxShadow,
+                textShadow: state.baseTextShadow
+            }
+        ], {
+            duration: BUTTON_PRESS_OUT_DURATION,
+            easing: "ease-in-out",
+            fill: "forwards"
+        });
+        state.releaseAnimation.finished
+            .catch(() => {})
+            .finally(() => {
+                state.pressAnimation?.cancel();
+                state.releaseAnimation?.cancel();
+                if (buttonPressStates.get(button) === state) {
+                    buttonPressStates.delete(button);
+                }
+            });
+    }
+
+    function beginButtonPressFeedback(button) {
+        if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+        if (buttonPressStates.has(button)) return;
+
+        const style = getComputedStyle(button);
+        const baseBoxShadow = style.boxShadow || "none";
+        const baseTextShadow = style.textShadow || "none";
+        const state = {
+            released: false,
+            pressFinished: false,
+            releaseStarted: false,
+            baseBoxShadow,
+            baseTextShadow,
+            pressedBoxShadow: getPressedShadow(
+                baseBoxShadow,
+                "inset 0 4px 8px rgb(0 0 0 / 38%), inset 0 1px 2px rgb(0 0 0 / 52%)"
+            ),
+            pressedTextShadow: getPressedTextShadow(baseTextShadow)
+        };
+        buttonPressStates.set(button, state);
+        state.pressAnimation = button.animate([
+            {
+                boxShadow: state.baseBoxShadow,
+                textShadow: state.baseTextShadow
+            },
+            {
+                boxShadow: state.pressedBoxShadow,
+                textShadow: state.pressedTextShadow
+            }
+        ], {
+            duration: BUTTON_PRESS_IN_DURATION,
+            easing: "ease-out",
+            fill: "forwards"
+        });
+        state.pressAnimation.finished
+            .then(() => {
+                state.pressFinished = true;
+                if (state.released) finishButtonPressFeedback(button, state);
+            })
+            .catch(() => {});
+    }
+
+    function releaseButtonPressFeedback(button) {
+        const state = buttonPressStates.get(button);
+        if (!state) return;
+        state.released = true;
+        if (state.pressFinished) finishButtonPressFeedback(button, state);
+    }
+
+    function getEventButton(event) {
+        return event.composedPath().find(node => node instanceof HTMLButtonElement);
+    }
+
+    document.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        const button = getEventButton(event);
+        if (!button || button.disabled) return;
+        pointerPressButtons.set(event.pointerId, button);
+        beginButtonPressFeedback(button);
+    }, true);
+
+    ["pointerup", "pointercancel"].forEach(type => {
+        document.addEventListener(type, event => {
+            const button = pointerPressButtons.get(event.pointerId);
+            if (!button) return;
+            pointerPressButtons.delete(event.pointerId);
+            releaseButtonPressFeedback(button);
+        }, true);
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.repeat || (event.key !== " " && event.key !== "Enter")) return;
+        const button = getEventButton(event);
+        if (!button || button.disabled) return;
+        beginButtonPressFeedback(button);
+    }, true);
+
+    document.addEventListener("keyup", event => {
+        if (event.key !== " " && event.key !== "Enter") return;
+        const button = getEventButton(event);
+        if (!button) return;
+        releaseButtonPressFeedback(button);
+    }, true);
 
     function safeStorageGet(key) {
         try { return localStorage.getItem(key); }
