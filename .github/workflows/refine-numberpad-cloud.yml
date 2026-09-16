@@ -17,72 +17,27 @@ jobs:
           ref: rename-prestart-latency
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Apply number pad refinements
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          app = Path('app.js')
-          text = app.read_text()
-          replacements = [
-              ('numberPadState.pending ? `${Number(numberPadState.pending)}%` : ""',
-               'numberPadState.pending ? `${Number(numberPadState.pending)}%` : "---"'),
-              ('numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : ""',
-               'numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "---"'),
-              ('numberPadState.pending ? renderTimeDigits(numberPadState.pending) : ""',
-               'numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "---"'),
-          ]
-          for old, new in replacements:
-              if text.count(old) != 1:
-                  raise SystemExit(f'app.js replacement count for {old!r}={text.count(old)}')
-              text = text.replace(old, new, 1)
-          app.write_text(text)
-
-          css = Path('app.css')
-          text = css.read_text()
-          marker = '''.number-pad-settings[data-persistence="pending"] .number-pad-persistence-badge { display: none; }
-.number-pad-settings[data-persistence="online"] .number-pad-persistence-badge { background: var(--wm-blue); }
-.number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge { background: var(--wm-gray); }'''
-          replacement = '''.number-pad-settings[data-persistence="pending"] .number-pad-persistence-badge { display: none; }
-.number-pad-settings[data-persistence="online"] .number-pad-persistence-badge,
-.number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge {
-    animation: number-pad-cloud-fade-in 250ms linear both;
-}
-.number-pad-settings[data-persistence="online"] .number-pad-persistence-badge { background: var(--wm-blue); }
-.number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge { background: var(--wm-gray); }
-
-@keyframes number-pad-cloud-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}'''
-          if text.count(marker) != 1:
-              raise SystemExit(f'app.css persistence marker count={text.count(marker)}')
-          css.write_text(text.replace(marker, replacement, 1))
-          PY
+        run: python .github/scripts/refine-numberpad-cloud.py
 
       - name: Validate
         shell: bash
         run: |
           set -euo pipefail
           node --check app.js
-          grep -Fq 'numberPadState.pending ? `${Number(numberPadState.pending)}%` : "---"' app.js
-          grep -Fq 'numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "---"' app.js
-          grep -Fq 'numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "---"' app.js
-          grep -Fq 'animation: number-pad-cloud-fade-in 250ms linear both;' app.css
+          grep -Fq 'renderAbsoluteDigits(numberPadState.pending) : "---"' app.js
+          grep -Fq 'renderTimeDigits(numberPadState.pending) : "---"' app.js
+          grep -Fq 'number-pad-cloud-fade-in 250ms' app.css
           grep -Fq '@keyframes number-pad-cloud-fade-in' app.css
 
       - name: Commit and cleanup
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .github/scripts/refine-numberpad-cloud.py
           rm -f .github/workflows/refine-numberpad-cloud.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app.js app.css .github/workflows/refine-numberpad-cloud.yml
+          git add app.js app.css .github/scripts/refine-numberpad-cloud.py .github/workflows/refine-numberpad-cloud.yml
           git commit -m 'Refine number pad empty and cloud states'
           git push origin HEAD:rename-prestart-latency
