@@ -19,6 +19,9 @@ jobs:
           ref: rename-prestart-latency
           fetch-depth: 0
 
+      - name: Repair counted patch helper
+        run: python3 .github/scripts/repair_counted_patch.py
+
       - name: Apply counted aggregate changes
         run: python3 .github/scripts/patch_counted_aggregates.py
 
@@ -90,6 +93,6 @@ jobs:
 
       - name: Remove patch files
         run: |
-          git rm .github/scripts/patch_counted_aggregates.py .github/scripts/patch_cadence_clock.py .github/scripts/patch_summary_app.py .github/workflows/patch-cadence-summary.yml
+          git rm .github/scripts/repair_counted_patch.py .github/scripts/patch_counted_aggregates.py .github/scripts/patch_cadence_clock.py .github/scripts/patch_summary_app.py .github/workflows/patch-cadence-summary.yml
           git commit -m 'Remove cadence summary patch files'
           git push origin HEAD:rename-prestart-latency
