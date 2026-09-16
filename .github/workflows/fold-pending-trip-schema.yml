@@ -1,0 +1,48 @@
+name: Fold pending trip schema into database generation
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/fold-pending-trip-schema.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Fold schema into generation script
+        run: python3 .github/scripts/fold_pending_trip_schema_into_generation.py
+
+      - name: Remove migration
+        run: git rm database/migrations/20260915_add_pending_trip_reservations.sql
+
+      - name: Validate generation script
+        run: |
+          grep -q "'pending', NEW.\`pending\`" database/create_database.sql
+          grep -q "'client_token', NEW.\`client_token\`" database/create_database.sql
+          grep -q "'pending', OLD.\`pending\`" database/create_database.sql
+          grep -q "'client_token', OLD.\`client_token\`" database/create_database.sql
+          test ! -e database/migrations/20260915_add_pending_trip_reservations.sql
+
+      - name: Commit source changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add database/create_database.sql database/migrations/20260915_add_pending_trip_reservations.sql
+          git commit -m 'Fold pending trip schema into database generation'
+          git push origin HEAD:rename-prestart-latency
+
+      - name: Remove patch files
+        run: |
+          git rm -f .github/scripts/fold_pending_trip_schema_into_generation.py .github/workflows/fold-pending-trip-schema.yml
+          git commit -m 'Remove database generation fold-in patch files'
+          git push origin HEAD:rename-prestart-latency
