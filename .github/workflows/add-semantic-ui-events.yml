@@ -1,0 +1,249 @@
+name: Add semantic UI events
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/add-semantic-ui-events.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply semantic event patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          clock_path = Path('ClockTimer.js')
+          app_path = Path('app.js')
+          clock = clock_path.read_text()
+          app = app_path.read_text()
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing replacement anchor: {label}')
+              return text.replace(old, new, 1)
+
+          def replace_between(text, start_marker, end_marker, replacement, label):
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit(f'missing start marker: {label}')
+              end = text.find(end_marker, start)
+              if end < 0:
+                  raise SystemExit(f'missing end marker: {label}')
+              return text[:start] + replacement + text[end:]
+
+          # State used to distinguish semantic goal sources and reconnect aggregate syncs.
+          clock = replace_once(
+              clock,
+              '''        #renderedPercentGoalSourceOverride;\n\n        #percentModeChangeContext;''',
+              '''        #renderedPercentGoalSourceOverride;\n\n        #percentModeChangeContext;\n\n        #semanticGoalSetSource;\n\n        #aggregateReconnectPending =\n            false;\n\n        #aggregateReconnectSnapshot;''',
+              'semantic private state'
+          )
+
+          # Replace the first-pass interval semantic mapper with the canonical taxonomy.
+          semantic_helpers = '''        #getSemanticIntervalEventName(type, phase) {\n            const normalized =\n                String(type ?? "")\n                    .trim()\n                    .toLowerCase();\n\n            if (phase === "started") {\n                if (normalized === "break" || normalized === "lunch") {\n                    return "breakStarted";\n                }\n\n                if (normalized === "down") {\n                    return "downTimeStarted";\n                }\n            }\n\n            if (phase === "ended" && normalized === "down") {\n                return "tripResumed";\n            }\n\n            return undefined;\n        }\n\n        #getSemanticIntervalDetail(record, detail = {}) {\n            const attributes =\n                record?.otherAttributes &&\n                typeof record.otherAttributes === "object"\n                    ? { ...record.otherAttributes }\n                    : {};\n\n            const intervalType =\n                String(record?.type ?? "")\n                    .trim()\n                    .toLowerCase();\n\n            let breakType;\n            for (const [name, value] of Object.entries(attributes)) {\n                if (name.toLowerCase() === "breaktype") {\n                    breakType = value;\n                    break;\n                }\n            }\n\n            if (breakType === undefined) {\n                if (intervalType === "lunch") {\n                    breakType = "lunch";\n                }\n                else if (intervalType === "break") {\n                    breakType = "break";\n                }\n            }\n\n            return {\n                ...detail,\n                intervalType: record?.type,\n                breakType:\n                    breakType === undefined\n                        ? undefined\n                        : String(breakType),\n                isLunch:\n                    intervalType === "lunch",\n                attributes\n            };\n        }\n\n        #emitSemanticIntervalStarted(record, detail = {}) {\n            const eventName =\n                this.#getSemanticIntervalEventName(\n                    record?.type,\n                    "started"\n                );\n\n            if (!eventName) {\n                return true;\n            }\n\n            return this.#emitClockTimerEvent(\n                eventName,\n                this.#getSemanticIntervalDetail(\n                    record,\n                    detail\n                )\n            );\n        }\n\n        #emitSemanticIntervalEnded(\n            record,\n            detail = {},\n            {\n                automaticRestart = false,\n                actualEnd,\n                boundary\n            } = {}\n        ) {\n            const intervalType =\n                String(record?.type ?? "")\n                    .trim()\n                    .toLowerCase();\n\n            if (intervalType === "break" || intervalType === "lunch") {\n                const deadline =\n                    Number.isFinite(boundary)\n                        ? boundary\n                        : this.#getPendingIntervalElapsedBoundary(\n                            record\n                        );\n\n                let eventName;\n                let completion;\n\n                if (automaticRestart) {\n                    eventName =\n                        "breakEndedAutomatically";\n                    completion =\n                        "automatic";\n                }\n                else if (\n                    Number.isFinite(actualEnd) &&\n                    Number.isFinite(deadline) &&\n                    actualEnd > deadline\n                ) {\n                    eventName =\n                        "breakEndedLate";\n                    completion =\n                        "late";\n                }\n                else {\n                    eventName =\n                        "breakEndedEarly";\n                    completion =\n                        "early";\n                }\n\n                return this.#emitClockTimerEvent(\n                    eventName,\n                    this.#getSemanticIntervalDetail(\n                        record,\n                        {\n                            ...detail,\n                            completion,\n                            automaticRestart,\n                            endBufferEndTime:\n                                this.#timelineToISO(\n                                    deadline\n                                )\n                        }\n                    )\n                );\n            }\n\n            if (intervalType === "down") {\n                const semanticDetail =\n                    this.#getSemanticIntervalDetail(\n                        record,\n                        {\n                            ...detail,\n                            resumedFrom: "down"\n                        }\n                    );\n\n                // Compatibility event retained for lower-level observers.\n                this.#emitClockTimerEvent(\n                    "downTimeEnded",\n                    semanticDetail\n                );\n\n                return this.#emitClockTimerEvent(\n                    "tripResumed",\n                    semanticDetail\n                );\n            }\n\n            return true;\n        }\n\n'''
+          clock = replace_between(
+              clock,
+              '        #getSemanticIntervalEventName(',
+              '        #emitClockTimerEvent(',
+              semantic_helpers,
+              'semantic interval helpers'
+          )
+
+          # Canonical semantic goal set events while preserving goalChanged.
+          goal_case = '''                case "trip-goal":\n                case "total-goal": {\n                    const semanticSource =\n                        this.#semanticGoalSetSource ??\n                        this.#renderedPercentGoalSourceOverride ??\n                        "user";\n\n                    this.#emitClockTimerEvent("goalChanged", {\n                        goal: name === "trip-goal" ? "trip" : "total",\n                        attribute: name,\n                        previousValue: oldValue,\n                        value: newValue,\n                        tripGoal: this.#getTripGoal(),\n                        totalGoal: this.#getTotalGoal(),\n                        source: semanticSource\n                    });\n\n                    if (newValue !== null) {\n                        const semanticName =\n                            name === "total-goal"\n                                ? "totalGoalSet"\n                                : semanticSource === "user"\n                                    ? "tripGoalSet"\n                                    : "tripGoalAutomaticallySet";\n\n                        this.#emitClockTimerEvent(\n                            semanticName,\n                            {\n                                previousValue: oldValue,\n                                value: newValue,\n                                tripGoal: this.#getTripGoal(),\n                                totalGoal: this.#getTotalGoal(),\n                                source: semanticSource,\n                                userInitiated:\n                                    semanticSource === "user"\n                            }\n                        );\n                    }\n\n                    const goalUpdateSource =\n                        this.#renderedPercentGoalSourceOverride ??\n                        (\n                            semanticSource === "user"\n                                ? "user"\n                                : "automatic"\n                        );\n\n                    if (\n                        this.#updatesSuspended &&\n                        !this.#processingAsyncBatch\n                    ) {\n                        this.#queueAsyncOperation({\n                            type: "trip-goal",\n                            source: goalUpdateSource\n                        });\n                    }\n                    else {\n                        this.#handleTripGoalChange(\n                            goalUpdateSource\n                        );\n                    }\n                    break;\n                }\n\n'''
+          clock = replace_between(
+              clock,
+              '                case "trip-goal":\n                case "total-goal":',
+              '                case "military-time":',
+              goal_case,
+              'goal attribute cases'
+          )
+
+          # Semantic event when auto mode has to fall back from a higher rendered goal.
+          rendered_goal_fn = '''        #emitRenderedPercentGoalChange(\n            previousValue,\n            value,\n            source\n        ) {\n            const detail = {\n                previousValue,\n                value,\n                source,\n                userInitiated:\n                    source === "user",\n                percentMode:\n                    this.#percentMode\n            };\n\n            this.#emitClockTimerEvent(\n                "renderedPercentGoalChanged",\n                detail\n            );\n\n            if (\n                this.#percentMode === "auto" &&\n                source === "automatic" &&\n                Number.isFinite(previousValue) &&\n                Number.isFinite(value) &&\n                value < previousValue\n            ) {\n                this.#emitClockTimerEvent(\n                    "goalAutomaticallyAdjusted",\n                    {\n                        ...detail,\n                        previousGoal: previousValue,\n                        goal: value,\n                        reason:\n                            "higher-goal-no-longer-attainable"\n                    }\n                );\n            }\n        }\n\n'''
+          clock = replace_between(
+              clock,
+              '        #emitRenderedPercentGoalChange(',
+              '        #setRenderedPercentGoal(',
+              rendered_goal_fn,
+              'rendered percent goal event function'
+          )
+
+          # One-shot semantic goal failure aliases.
+          clock = replace_once(
+              clock,
+              '''            if (tripMissed && !this.#tripGoalMissedState) {\n                this.#emitClockTimerEvent("tripGoalMissed", {\n                    goal: tripGoal,\n                    deadline: this.#timelineToISO(tripDeadline),\n                    currentTime: this.#timelineToISO(now)\n                });\n            }''',
+              '''            if (tripMissed && !this.#tripGoalMissedState) {\n                const detail = {\n                    goal: tripGoal,\n                    deadline: this.#timelineToISO(tripDeadline),\n                    currentTime: this.#timelineToISO(now)\n                };\n\n                this.#emitClockTimerEvent(\n                    "tripGoalMissed",\n                    detail\n                );\n\n                this.#emitClockTimerEvent(\n                    "tripGoalFailed",\n                    detail\n                );\n            }''',
+              'trip goal failure'
+          )
+          clock = replace_once(
+              clock,
+              '''            if (totalMissed && !this.#totalGoalMissedState) {\n                this.#emitClockTimerEvent("totalGoalMissed", {\n                    goal: totalGoal,\n                    deadline: this.#timelineToISO(totalDeadline),\n                    currentTime: this.#timelineToISO(now)\n                });\n            }''',
+              '''            if (totalMissed && !this.#totalGoalMissedState) {\n                const detail = {\n                    goal: totalGoal,\n                    deadline: this.#timelineToISO(totalDeadline),\n                    currentTime: this.#timelineToISO(now)\n                };\n\n                this.#emitClockTimerEvent(\n                    "totalGoalMissed",\n                    detail\n                );\n\n                this.#emitClockTimerEvent(\n                    "totalGoalFailed",\n                    detail\n                );\n            }''',
+              'total goal failure'
+          )
+
+          # Mark trip-goal derivation from Total as automatic at the source.
+          clock = replace_once(
+              clock,
+              '''            this.setAttribute(\n                "trip-goal",\n                `${requirements.tripGoal * 100}%`\n            );''',
+              '''            const previousSemanticGoalSetSource =\n                this.#semanticGoalSetSource;\n\n            this.#semanticGoalSetSource =\n                this.#renderedPercentGoalSourceOverride === "start"\n                    ? "start"\n                    : "automatic-total";\n\n            try {\n                this.setAttribute(\n                    "trip-goal",\n                    `${requirements.tripGoal * 100}%`\n                );\n            }\n            finally {\n                this.#semanticGoalSetSource =\n                    previousSemanticGoalSetSource;\n            }''',
+              'automatic trip goal source'
+          )
+
+          # Aggregate snapshots are only announced when an offline->online refresh changes them.
+          aggregate_helpers = '''        #cloneAggregateSnapshot(value) {\n            if (!value || typeof value !== "object") {\n                return undefined;\n            }\n\n            try {\n                return JSON.parse(\n                    JSON.stringify(value)\n                );\n            }\n            catch {\n                return undefined;\n            }\n        }\n\n        #getAggregateSnapshotChanges(previous, current) {\n            if (!previous || !current) {\n                return undefined;\n            }\n\n            const keys = [\n                "startTime",\n                "endTime",\n                "tripCount",\n                "standardTimeMilliseconds",\n                "actualTimeMilliseconds",\n                "countedTimeMilliseconds",\n                "nonProductionFilter",\n                "aggregateBreakdown"\n            ];\n\n            const changes = {};\n\n            for (const key of keys) {\n                const before = previous[key];\n                const after = current[key];\n\n                if (\n                    JSON.stringify(before) !==\n                    JSON.stringify(after)\n                ) {\n                    changes[key] = {\n                        previous: before,\n                        value: after\n                    };\n                }\n            }\n\n            return Object.keys(changes).length > 0\n                ? changes\n                : undefined;\n        }\n\n        #emitAggregateReconnectSyncIfChanged() {\n            if (!this.#aggregateReconnectPending) {\n                return false;\n            }\n\n            const previous =\n                this.#aggregateReconnectSnapshot;\n\n            const current =\n                this.#cloneAggregateSnapshot(\n                    this.#tripTotals\n                );\n\n            const changes =\n                this.#getAggregateSnapshotChanges(\n                    previous,\n                    current\n                );\n\n            this.#aggregateReconnectPending =\n                false;\n\n            this.#aggregateReconnectSnapshot =\n                undefined;\n\n            if (!changes) {\n                return false;\n            }\n\n            this.#emitClockTimerEvent(\n                "aggregatesSynced",\n                {\n                    source: "reconnect",\n                    previous,\n                    current,\n                    changes\n                }\n            );\n\n            return true;\n        }\n\n'''
+          clock = replace_once(
+              clock,
+              '        #setConnected(csrfToken, detail = {}) {',
+              aggregate_helpers + '        #setConnected(csrfToken, detail = {}) {',
+              'aggregate sync helpers'
+          )
+
+          clock = replace_once(
+              clock,
+              '''            this.#connectionState =\n                "offline";\n\n            this.#csrfToken =\n                undefined;''',
+              '''            if (wasConnected) {\n                this.#aggregateReconnectPending =\n                    true;\n\n                this.#aggregateReconnectSnapshot =\n                    this.#cloneAggregateSnapshot(\n                        this.#tripTotals\n                    );\n            }\n\n            this.#connectionState =\n                "offline";\n\n            this.#csrfToken =\n                undefined;''',
+              'capture aggregate snapshot when going offline'
+          )
+
+          clock = replace_once(
+              clock,
+              '''            this.#tripTotals = {\n                startTime:\n                    normalizedStart,\n                endTime:\n                    normalizedEnd,\n                ...selected,\n                nonProductionFilter:\n                    this.#nonProductionFilter,\n                aggregateBreakdown:\n                    breakdown\n            };\n\n            this.#handleTripGoalChange(''',
+              '''            this.#tripTotals = {\n                startTime:\n                    normalizedStart,\n                endTime:\n                    normalizedEnd,\n                ...selected,\n                nonProductionFilter:\n                    this.#nonProductionFilter,\n                aggregateBreakdown:\n                    breakdown\n            };\n\n            this.#emitAggregateReconnectSyncIfChanged();\n\n            this.#handleTripGoalChange(''',
+              'emit aggregate sync after refresh'
+          )
+
+          # Actual start has a semantic alias distinct from scheduledStartChanged.
+          start_changed_block = '''                this.#emitClockTimerEvent(\n                    "startTimeChanged",\n                    {\n                        previousValue,\n                        value: currentValue,\n                        summary:\n                            this.#buildSummarySnapshot(\n                                new Date()\n                            )\n                    }\n                );'''
+          clock = replace_once(
+              clock,
+              start_changed_block,
+              start_changed_block + '''\n\n                this.#emitClockTimerEvent(\n                    "actualStartChanged",\n                    {\n                        previousValue,\n                        value: currentValue,\n                        summary:\n                            this.#buildSummarySnapshot(\n                                new Date()\n                            )\n                    }\n                );''',
+              'actual start semantic alias'
+          )
+
+          # Trip start emits one mutually-exclusive semantic start classification.
+          start_event_pattern = re.compile(
+              r'''            const summary = this\.#buildSummarySnapshot\(new Date\(\)\);\n            this\.#emitClockTimerEvent\("started", \{.*?\n            \}\);\n            return result;''',
+              re.S
+          )
+          start_match = start_event_pattern.search(clock)
+          if not start_match:
+              raise SystemExit('missing start event block')
+          start_replacement = '''            const summary = this.#buildSummarySnapshot(new Date());\n            const timing =\n                this.#getTimingDetail(\n                    actualStartTime,\n                    scheduledStartTime\n                );\n\n            const startedDetail = {\n                ...result,\n                summary,\n                ...timing,\n                actualStartTime:\n                    this.#timelineToISO(\n                        actualStartTime\n                    ),\n                scheduledStartTime:\n                    this.#timelineToISO(\n                        scheduledStartTime\n                    ),\n                nonProduction:\n                    this.#nonProduction\n            };\n\n            this.#emitClockTimerEvent(\n                "started",\n                startedDetail\n            );\n\n            this.#emitClockTimerEvent(\n                timing.early\n                    ? "tripStartedEarly"\n                    : timing.late\n                        ? "tripStartedLate"\n                        : "tripStarted",\n                startedDetail\n            );\n\n            return result;'''
+          clock = clock[:start_match.start()] + start_replacement + clock[start_match.end():]
+
+          # Trip stop has a semantic tripEnded event in addition to stopped.
+          clock = replace_once(
+              clock,
+              '''            this.#emitClockTimerEvent("stopped", {\n                ...result,\n                summary,\n                stopTime: persistedEnd\n            });\n            return result;''',
+              '''            const stoppedDetail = {\n                ...result,\n                summary,\n                stopTime: persistedEnd\n            };\n\n            this.#emitClockTimerEvent(\n                "stopped",\n                stoppedDetail\n            );\n\n            this.#emitClockTimerEvent(\n                "tripEnded",\n                stoppedDetail\n            );\n\n            return result;''',
+              'trip ended semantic event'
+          )
+
+          # Route interval lifecycle through the canonical semantic helpers.
+          clock = replace_once(
+              clock,
+              '''            this.#emitSemanticIntervalEvent(\n                "started",\n                record,\n                intervalStartedDetail\n            );''',
+              '''            this.#emitSemanticIntervalStarted(\n                record,\n                intervalStartedDetail\n            );''',
+              'semantic interval start call'
+          )
+
+          clock = replace_once(
+              clock,
+              '''            this.#emitSemanticIntervalEvent(\n                "ended",\n                record,\n                {\n                    ...intervalEndedDetail,\n                    ...lifecycleTiming,\n                    completion:\n                        lifecycleTiming.timing,\n                    scheduledEndTime:\n                        this.#timelineToISO(\n                            lifecycleScheduledEnd\n                        )\n                }\n            );''',
+              '''            this.#emitSemanticIntervalEnded(\n                record,\n                {\n                    ...intervalEndedDetail,\n                    ...lifecycleTiming,\n                    scheduledEndTime:\n                        this.#timelineToISO(\n                            lifecycleScheduledEnd\n                        )\n                },\n                {\n                    automaticRestart: false,\n                    actualEnd: now\n                }\n            );''',
+              'manual semantic interval end call'
+          )
+
+          clock = replace_once(
+              clock,
+              '''                    this.#emitSemanticIntervalEvent(\n                        "ended",\n                        record,\n                        intervalEndedDetail\n                    );''',
+              '''                    this.#emitSemanticIntervalEnded(\n                        record,\n                        intervalEndedDetail,\n                        {\n                            automaticRestart: true,\n                            actualEnd: now,\n                            boundary\n                        }\n                    );''',
+              'automatic semantic interval end call'
+          )
+
+          # UI listener stubs: named method bodies are intentionally no-op integration points.
+          listener_anchor = '''    clockTimer.addEventListener("networkStatusChanged", () => {\n        syncNetworkStatusUI({ login: loginPending });\n        queueSummaryRefresh();\n    });\n'''
+
+          listener_block = listener_anchor + '''\n    // Semantic ClockTimer event integration points.\n    // These bodies intentionally do not change UI yet; future speech synthesis and\n    // other user-facing reactions should be implemented here rather than decoding\n    // lower-level ClockTimer events elsewhere.\n    function reserveSemanticEvent(event, purpose) {\n        const detail = event.detail;\n        void detail;\n        void purpose;\n    }\n\n    function onTripStarted(event) {\n        reserveSemanticEvent(event, "Trip started on time");\n    }\n\n    function onTripStartedEarly(event) {\n        reserveSemanticEvent(event, "Trip started early");\n    }\n\n    function onTripStartedLate(event) {\n        reserveSemanticEvent(event, "Trip started late");\n    }\n\n    function onBreakStarted(event) {\n        reserveSemanticEvent(event, "Break or lunch started");\n    }\n\n    function onBreakEndedEarly(event) {\n        reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");\n    }\n\n    function onBreakEndedAutomatically(event) {\n        reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");\n    }\n\n    function onBreakEndedLate(event) {\n        reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");\n    }\n\n    function onDownTimeStarted(event) {\n        reserveSemanticEvent(event, "Down time started");\n    }\n\n    function onTripResumed(event) {\n        reserveSemanticEvent(event, "Trip resumed from down time");\n    }\n\n    function onTripEnded(event) {\n        reserveSemanticEvent(event, "Trip ended");\n    }\n\n    function onTotalGoalSet(event) {\n        reserveSemanticEvent(event, "Total goal explicitly set");\n    }\n\n    function onTripGoalSet(event) {\n        reserveSemanticEvent(event, "Trip goal explicitly set");\n    }\n\n    function onTripGoalAutomaticallySet(event) {\n        reserveSemanticEvent(event, "Trip goal derived automatically");\n    }\n\n    function onTripGoalFailed(event) {\n        reserveSemanticEvent(event, "Trip goal failed");\n    }\n\n    function onTotalGoalFailed(event) {\n        reserveSemanticEvent(event, "Total goal failed");\n    }\n\n    function onPercentModeChanged(event) {\n        reserveSemanticEvent(event, "Percent scope mode changed");\n    }\n\n    function onGoalAutomaticallyAdjusted(event) {\n        reserveSemanticEvent(event, "Higher automatic goal became unattainable and the rendered goal adjusted");\n    }\n\n    function onStandardTimeChanged(event) {\n        reserveSemanticEvent(event, "Standard time changed");\n    }\n\n    function onCreationTimeChanged(event) {\n        reserveSemanticEvent(event, "Creation time changed");\n    }\n\n    function onScheduledStartChanged(event) {\n        reserveSemanticEvent(event, "Scheduled start changed");\n    }\n\n    function onActualStartChanged(event) {\n        reserveSemanticEvent(event, "Actual start changed");\n    }\n\n    function onConnected(event) {\n        reserveSemanticEvent(event, "ClockTimer connected");\n    }\n\n    function onDisconnected(event) {\n        reserveSemanticEvent(event, "ClockTimer disconnected");\n    }\n\n    function onAggregatesSynced(event) {\n        reserveSemanticEvent(event, "Reconnect refreshed aggregate data and the aggregate snapshot changed");\n    }\n\n    const semanticClockTimerHandlers = {\n        tripStarted: onTripStarted,\n        tripStartedEarly: onTripStartedEarly,\n        tripStartedLate: onTripStartedLate,\n        breakStarted: onBreakStarted,\n        breakEndedEarly: onBreakEndedEarly,\n        breakEndedAutomatically: onBreakEndedAutomatically,\n        breakEndedLate: onBreakEndedLate,\n        downTimeStarted: onDownTimeStarted,\n        tripResumed: onTripResumed,\n        tripEnded: onTripEnded,\n        totalGoalSet: onTotalGoalSet,\n        tripGoalSet: onTripGoalSet,\n        tripGoalAutomaticallySet: onTripGoalAutomaticallySet,\n        tripGoalFailed: onTripGoalFailed,\n        totalGoalFailed: onTotalGoalFailed,\n        percentModeChanged: onPercentModeChanged,\n        goalAutomaticallyAdjusted: onGoalAutomaticallyAdjusted,\n        standardTimeChanged: onStandardTimeChanged,\n        creationTimeChanged: onCreationTimeChanged,\n        scheduledStartChanged: onScheduledStartChanged,\n        actualStartChanged: onActualStartChanged,\n        connected: onConnected,\n        disconnected: onDisconnected,\n        aggregatesSynced: onAggregatesSynced\n    };\n\n    for (const [eventName, handler] of Object.entries(semanticClockTimerHandlers)) {\n        clockTimer.addEventListener(eventName, handler);\n    }\n'''
+          app = replace_once(
+              app,
+              listener_anchor,
+              listener_block,
+              'semantic UI listeners'
+          )
+
+          clock_path.write_text(clock)
+          app_path.write_text(app)
+          PY
+
+      - name: Validate
+        shell: bash
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+          python3 <<'PY'
+          from pathlib import Path
+          clock = Path('ClockTimer.js').read_text()
+          app = Path('app.js').read_text()
+          required_clock = [
+              '"tripStarted"',
+              '"tripStartedEarly"',
+              '"tripStartedLate"',
+              '"breakStarted"',
+              '"breakEndedEarly"',
+              '"breakEndedAutomatically"',
+              '"breakEndedLate"',
+              '"downTimeStarted"',
+              '"tripResumed"',
+              '"tripEnded"',
+              '"totalGoalSet"',
+              '"tripGoalSet"',
+              '"tripGoalAutomaticallySet"',
+              '"tripGoalFailed"',
+              '"totalGoalFailed"',
+              '"goalAutomaticallyAdjusted"',
+              '"actualStartChanged"',
+              '"aggregatesSynced"'
+          ]
+          required_app = [
+              'onTripStarted(event)',
+              'onBreakEndedAutomatically(event)',
+              'onGoalAutomaticallyAdjusted(event)',
+              'onAggregatesSynced(event)',
+              'semanticClockTimerHandlers'
+          ]
+          missing = [value for value in required_clock if value not in clock]
+          missing += [value for value in required_app if value not in app]
+          if missing:
+              raise SystemExit('missing semantic markers: ' + ', '.join(missing))
+          if 'lunchStarted' in clock or 'lunchEnded' in clock:
+              raise SystemExit('lunch must remain a break subtype, not a separate semantic lifecycle')
+          print('semantic event validation passed')
+          PY
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/add-semantic-ui-events.yml
+          git add ClockTimer.js app.js
+          git commit -m "Add semantic ClockTimer event contract"
+          git push origin HEAD:rename-prestart-latency
