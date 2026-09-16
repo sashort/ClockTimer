@@ -124,6 +124,7 @@ if ($method === 'GET') {
             . 'WHERE user_id = :production_user_id '
             . 'AND start_time >= :production_min_date_time '
             . 'AND start_time <= :production_max_date_time '
+            . 'AND pending = 0 '
             . 'AND non_production = 0';
 
         $productionParameters = [
