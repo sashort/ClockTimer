@@ -1484,3 +1484,17 @@ button:active:not(:disabled) {
         font-size: 12px;
     }
 }
+
+
+/* trip-settings-disabled-primary-v1 */
+.trip-settings-dialog #tripSettingsPrimary:disabled {
+    color: rgb(255 255 255 / 68%);
+    background: var(--ui-gray-gradient);
+    border-color: rgb(255 255 255 / 32%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+    opacity: 0.5;
+    filter: grayscale(1) saturate(0.25);
+    cursor: not-allowed;
+    transform: none;
+    text-shadow: none;
+}
