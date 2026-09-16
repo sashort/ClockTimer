@@ -1,0 +1,38 @@
+name: Fix late break preference migration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-late-break-preference-migration.yml'
+      - '.github/scripts/fix_late_break_preference_migration.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply preference migration fix
+        run: python .github/scripts/fix_late_break_preference_migration.py
+      - name: Syntax check
+        run: node --check app.js
+      - name: Verify legacy migration
+        run: |
+          grep -Fq 'stored.intervalElapsedBehavior === "rollover"' app.js
+          grep -Fq 'TRIP_PREFERENCE_DEFAULTS.lateBreakBehavior' app.js
+      - name: Commit migration fix and cleanup
+        run: |
+          rm -f .github/scripts/fix_late_break_preference_migration.py
+          rm -f .github/workflows/fix-late-break-preference-migration.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js .github/scripts/fix_late_break_preference_migration.py .github/workflows/fix-late-break-preference-migration.yml
+          git commit -m "Preserve late break preference migration"
+          git push origin rename-prestart-latency
