@@ -1,0 +1,57 @@
+name: Refine numberpad settings and stopped summary
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/refine-numberpad-settings-stopped-mask.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Apply refinement
+        run: python .github/scripts/refine_numberpad_settings_stopped_mask.py
+      - name: Validate JavaScript syntax
+        run: node --check app.js
+      - name: Validate behavior anchors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          app = Path('app.js').read_text()
+          css = Path('app.css').read_text()
+          assert 'numberPadSettings.disabled = changed' not in app
+          assert 'numberPadSettings) numberPadSettings.disabled' not in app
+          assert 'numberPadState.mode === "percent" || numberPadHasChanges()' not in app
+          assert 'closeNumberPad({ discardPrepared: false, allowChanged: true })' in app
+          assert 'numberPadState.pending = pending;' in app
+          assert 'const stoppedTrip = scope === "trip" && clockTimer.status === "stopped";' in app
+          assert 'stoppedTrip && clockTimer.renderedTimeMode === "calculated-end"' in app
+          assert 'stoppedTrip || selected?.available === false' in app
+          assert 'stagedStandardTime = undefined;' in app
+          assert 'beginNewTripWorkflow({ initialValue: "" })' in app
+          assert 'clockTimer.status === "stopped"' in app
+          assert '.number-pad-settings:disabled' not in css
+          display = css[css.index('.number-pad-display {'):css.index('.number-pad-settings {')]
+          assert 'cursor: pointer;' in display
+          PY
+      - name: Commit source change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js app.css
+          git commit -m "Keep numberpad settings active and fix stopped trip state"
+          git push origin HEAD:rename-prestart-latency
+      - name: Remove temporary patch files
+        run: |
+          git rm -f .github/scripts/refine_numberpad_settings_stopped_mask.py .github/workflows/refine-numberpad-settings-stopped-mask.yml
+          git commit -m "Remove stopped trip refinement patch files"
+          git push origin HEAD:rename-prestart-latency
