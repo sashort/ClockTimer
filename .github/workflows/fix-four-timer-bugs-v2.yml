@@ -1,0 +1,48 @@
+name: Apply four timer bug fixes
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/fix-four-timer-bugs-v2.yml
+      - .github/scripts/fix_four_timer_bugs.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply fixes
+        run: python .github/scripts/fix_four_timer_bugs.py
+
+      - name: Validate
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          grep -q 'function syncMilitaryToggleForTimeFormat(form)' app.js
+          grep -q 'current === "radial-overflow"' app.js
+          grep -q '#formatRemainingRenderedDuration(' ClockTimer.js
+          grep -q 'return `⁺${formatted}`;' ClockTimer.js
+          grep -q 'this.#getTimerType() !==' ClockTimer.js
+
+      - name: Commit and cleanup
+        run: |
+          rm -f .github/scripts/fix_four_timer_bugs.py
+          rm -f .github/workflows/fix-four-timer-bugs-v2.yml
+          rm -f .github/workflows/fix-four-timer-bugs.yml
+          rm -f .github/workflows/inspect-four-ui-bugs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix timer settings, remaining display, and radial intervals"
+          git push origin HEAD:rename-prestart-latency
