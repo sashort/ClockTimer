@@ -123,11 +123,15 @@ app = replace_once(
 )
 app = replace_once(
     app,
-    '''        const form = event.currentTarget;
+    '''    tripSettingsForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
         clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
         clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
 ''',
-    '''        const form = event.currentTarget;
+    '''    tripSettingsForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
         clockTimer.autoSyncTripGoal =
             !form.elements.autoSyncTripGoal.disabled &&
             form.elements.autoSyncTripGoal.checked;
