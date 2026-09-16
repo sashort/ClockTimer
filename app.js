@@ -208,6 +208,9 @@
                 event.newState === "open" ? "opened" : "closed",
                 { oldState: event.oldState, newState: event.newState }
             );
+            if (event.newState === "closed" && popover.classList.contains("popover-immediate-close")) {
+                requestAnimationFrame(() => popover.classList.remove("popover-immediate-close"));
+            }
         });
     });
 
@@ -467,13 +470,13 @@
         });
     }
 
-    $("#scopeToggle").addEventListener("click", () => {
-        applyScope(clockTimer.percentMode === "total" ? "trip" : "total");
+    $("#scopeToggle").addEventListener("pointerup", () => {
+        clockTimer.percentMode = clockTimer.percentMode === "total" ? "trip" : "total";
     });
 
-    $("#renderedTimeButton").addEventListener("click", () => {
+    $("#renderedTimeButton").addEventListener("pointerup", () => {
         const index = RENDERED_TIME_MODES.indexOf(clockTimer.renderedTimeMode);
-        applyRenderedTimeMode(RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length]);
+        clockTimer.renderedTimeMode = RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length];
     });
 
     clockTimer.addEventListener("pointerdown", () => {
@@ -724,8 +727,13 @@
         };
         numberPadState = state;
         refreshNumberPad();
-        $("#mainMenu")?.hidePopover?.();
-        if (!numberPadDialog.open) numberPadDialog.showModal();
+        mainMenu?.hidePopover?.();
+        if (!numberPadDialog.open) {
+            openDialogElement(numberPadDialog, {
+                duration: 250,
+                reason: `number-pad:${source}`
+            });
+        }
 
         if (preparationPromise) {
             Promise.resolve(preparationPromise).then(result => {
@@ -746,17 +754,19 @@
         numberPadLongPressed = false;
         numberPadLastClearPointerDown = 0;
         const state = numberPadState;
-        if (numberPadDialog?.open) numberPadDialog.close();
+        if (numberPadDialog?.open && !closeDialog(numberPadDialog, { reason: "number-pad" })) {
+            return false;
+        }
         numberPadState = undefined;
         if (discardPrepared && state?.source === "new-trip") {
             clockTimer.discardPreparedTrip?.().catch?.(() => {});
         }
+        return true;
     }
 
     function requestNumberPadClose() {
         if (numberPadState?.locked) return false;
-        closeNumberPad();
-        return true;
+        return closeNumberPad();
     }
 
     function getPercentGoalValue() {
@@ -814,7 +824,7 @@
             });
         });
 
-        numberPadConfirm.addEventListener("click", async () => {
+        numberPadConfirm.addEventListener("pointerup", async () => {
             if (!numberPadState || numberPadConfirm.disabled) return;
             if (numberPadConfirm.dataset.action === "autocorrect") {
                 numberPadState.pending = autocorrectTimeDigits(numberPadState.pending);
@@ -881,16 +891,21 @@
             if (event.detail === 0) runNumberPadClearShortAction();
         });
 
-        numberPadSettings.addEventListener("click", () => {
+        numberPadSettings.addEventListener("pointerup", () => {
             if (!numberPadState || numberPadState.mode === "percent") return;
             const state = numberPadState;
-            numberPadDialog.close();
+            if (!closeDialog(numberPadDialog, { reason: "number-pad-settings" })) return;
             const reopen = () => {
                 stateDialog.removeEventListener("close", reopen);
-                if (numberPadState === state && !numberPadDialog.open) numberPadDialog.showModal();
+                if (numberPadState === state && !numberPadDialog.open) {
+                    openDialogElement(numberPadDialog, {
+                        duration: 250,
+                        reason: "number-pad-settings-return"
+                    });
+                }
             };
             stateDialog.addEventListener("close", reopen);
-            openDialog("stateSettingsDialog");
+            openDialog("stateSettingsDialog", { reason: "number-pad-settings" });
         });
 
         numberPadDialog.addEventListener("cancel", event => {
@@ -1021,7 +1036,6 @@
         "cleared",
         "goalChanged",
         "renderedPercentGoalChanged",
-        "renderedTimeModeChanged",
         "standardTimeChanged",
         "intervalStarted",
         "intervalEnded",
@@ -1046,6 +1060,11 @@
         queueSummaryRefresh();
     });
 
+    clockTimer.addEventListener("renderedTimeModeChanged", () => {
+        safeStorageSet(STORAGE.renderedTimeMode, clockTimer.renderedTimeMode);
+        queueSummaryRefresh();
+    });
+
     clockTimer.addEventListener("connected", () => {
         setOffline(false, { login: loginPending });
         queueSummaryRefresh();
@@ -1054,8 +1073,6 @@
         setOffline(true);
         queueSummaryRefresh();
     });
-
-    breakDialog?.addEventListener("opened", () => {});
 
     const graphicalSettings = getGraphicalSettings();
     applyGraphicalSettings(graphicalSettings);

@@ -9555,7 +9555,7 @@
                 record.id;
 
             this.#emitClockTimerEvent(
-                "latencyStart",
+                "latencyStarted",
                 {
                     intervalId:
                         Number.isInteger(
