@@ -55,10 +55,13 @@ CREATE TABLE IF NOT EXISTS `trips` (
     `end_time` DATETIME(3) NOT NULL,
     `standard_time_ms` BIGINT UNSIGNED NOT NULL,
     `non_production` TINYINT(1) NOT NULL DEFAULT 0,
+    `pending` TINYINT(1) NOT NULL DEFAULT 0,
+    `client_token` CHAR(36) NULL,
     `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     KEY `idx_trips_user_id` (`user_id`),
     KEY `idx_trips_user_start` (`user_id`, `start_time`),
+    UNIQUE KEY `uq_trips_client_token` (`client_token`),
     CONSTRAINT `fk_trips_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON UPDATE RESTRICT
@@ -68,7 +71,9 @@ CREATE TABLE IF NOT EXISTS `trips` (
     CONSTRAINT `chk_trips_standard_time`
         CHECK (`standard_time_ms` > 0),
     CONSTRAINT `chk_trips_non_production`
-        CHECK (`non_production` IN (0, 1))
+        CHECK (`non_production` IN (0, 1)),
+    CONSTRAINT `chk_trips_pending`
+        CHECK (`pending` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `intervals` (

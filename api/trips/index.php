@@ -87,6 +87,7 @@ if ($method === 'GET') {
 
     $where =
         't.user_id = :user_id '
+        . 'AND t.pending = 0 '
         . 'AND t.start_time >= :min_date_time '
         . 'AND t.start_time <= :max_date_time';
 
@@ -457,7 +458,69 @@ if ($method === 'GET') {
 $input = json_input();
 require_csrf();
 
+$normalizeClientToken = static function (mixed $value): ?string {
+    if ($value === null || $value === '') {
+        return null;
+    }
+    if (!is_string($value)) {
+        api_error('clientToken must be a UUID string.', 422, 'invalid_argument');
+    }
+    $token = strtolower(trim($value));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $token)) {
+        api_error('clientToken must be a UUID string.', 422, 'invalid_argument');
+    }
+    return $token;
+};
+
 if ($method === 'POST') {
+    $clientToken = $normalizeClientToken($input['clientToken'] ?? null);
+    $action = isset($input['action']) && is_string($input['action'])
+        ? strtolower(trim($input['action']))
+        : null;
+
+    if ($action === 'prepare') {
+        if ($clientToken === null) {
+            api_error('clientToken is required when preparing a trip.', 422, 'invalid_argument');
+        }
+        $startTime = isset($input['startTime'])
+            ? normalize_datetime(require_string($input, 'startTime'), 'startTime')
+            : (new DateTimeImmutable('now'))->format('Y-m-d H:i:s.v');
+        $endTime = (new DateTimeImmutable($startTime))
+            ->modify('+1 millisecond')
+            ->format('Y-m-d H:i:s.v');
+
+        $tripId = audited_write(
+            static function (PDO $pdo) use ($startTime, $endTime, $clientToken): int {
+                $existing = $pdo->prepare(
+                    'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1'
+                );
+                $existing->execute([
+                    ':user_id' => authenticated_user_id(),
+                    ':client_token' => $clientToken,
+                ]);
+                $existingId = (int) ($existing->fetchColumn() ?: 0);
+                if ($existingId > 0) {
+                    return $existingId;
+                }
+
+                $statement = $pdo->prepare(
+                    'INSERT INTO trips '
+                    . '(user_id, start_time, end_time, standard_time_ms, non_production, pending, client_token) '
+                    . 'VALUES (:user_id, :start_time, :end_time, 1, 0, 1, :client_token)'
+                );
+                $statement->execute([
+                    ':user_id' => authenticated_user_id(),
+                    ':start_time' => $startTime,
+                    ':end_time' => $endTime,
+                    ':client_token' => $clientToken,
+                ]);
+                return (int) $pdo->lastInsertId();
+            }
+        );
+
+        json_response(['tripId' => $tripId, 'pending' => true], 201);
+    }
+
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
     $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
@@ -473,10 +536,38 @@ if ($method === 'POST') {
     }
 
     $tripId = audited_write(
-        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue): int {
+        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue, $clientToken): int {
+            if ($clientToken !== null) {
+                $existing = $pdo->prepare(
+                    'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1 FOR UPDATE'
+                );
+                $existing->execute([
+                    ':user_id' => authenticated_user_id(),
+                    ':client_token' => $clientToken,
+                ]);
+                $existingId = (int) ($existing->fetchColumn() ?: 0);
+                if ($existingId > 0) {
+                    $update = $pdo->prepare(
+                        'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
+                        . 'standard_time_ms = :standard_time_ms, non_production = :non_production, pending = 0 '
+                        . 'WHERE id = :trip_id AND user_id = :user_id'
+                    );
+                    $update->execute([
+                        ':start_time' => $startTime,
+                        ':end_time' => $endTime,
+                        ':standard_time_ms' => $standardTimeMilliseconds,
+                        ':non_production' => $nonProductionValue,
+                        ':trip_id' => $existingId,
+                        ':user_id' => authenticated_user_id(),
+                    ]);
+                    return $existingId;
+                }
+            }
+
             $statement = $pdo->prepare(
-                'INSERT INTO trips (user_id, start_time, end_time, standard_time_ms, non_production) '
-                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :non_production)'
+                'INSERT INTO trips '
+                . '(user_id, start_time, end_time, standard_time_ms, non_production, pending, client_token) '
+                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :non_production, 0, :client_token)'
             );
             $statement->execute([
                 ':user_id' => authenticated_user_id(),
@@ -484,12 +575,30 @@ if ($method === 'POST') {
                 ':end_time' => $endTime,
                 ':standard_time_ms' => $standardTimeMilliseconds,
                 ':non_production' => $nonProductionValue,
+                ':client_token' => $clientToken,
             ]);
             return (int) $pdo->lastInsertId();
         }
     );
 
-    json_response(['tripId' => $tripId], 201);
+    json_response(['tripId' => $tripId, 'pending' => false], 201);
+}
+
+if ($method === 'DELETE' && !array_key_exists('tripId', $input)) {
+    $clientToken = $normalizeClientToken($input['clientToken'] ?? null);
+    if ($clientToken === null) {
+        api_error('tripId or clientToken is required.', 422, 'invalid_argument');
+    }
+    audited_write(static function (PDO $pdo) use ($clientToken): void {
+        $statement = $pdo->prepare(
+            'DELETE FROM trips WHERE user_id = :user_id AND client_token = :client_token AND pending = 1'
+        );
+        $statement->execute([
+            ':user_id' => authenticated_user_id(),
+            ':client_token' => $clientToken,
+        ]);
+    });
+    json_response(['clientToken' => $clientToken]);
 }
 
 $tripId = require_positive_int($input, 'tripId');
@@ -517,6 +626,41 @@ if ($method === 'DELETE') {
 }
 
 $action = require_string($input, 'action');
+
+if ($action === 'start') {
+    $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
+    $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
+    $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $nonProduction = $input['nonProduction'] ?? false;
+    if (!is_bool($nonProduction)) {
+        api_error('nonProduction must be a boolean.', 422, 'invalid_argument');
+    }
+    $nonProductionValue = $nonProduction ? 1 : 0;
+    if ($endTime <= $startTime) {
+        api_error('endTime must be later than startTime.', 422, 'invalid_argument');
+    }
+
+    audited_write(
+        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $nonProductionValue): void {
+            require_trip_owner($pdo, $tripId);
+            $statement = $pdo->prepare(
+                'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
+                . 'standard_time_ms = :standard_time_ms, non_production = :non_production, pending = 0 '
+                . 'WHERE id = :trip_id AND user_id = :user_id'
+            );
+            $statement->execute([
+                ':start_time' => $startTime,
+                ':end_time' => $endTime,
+                ':standard_time_ms' => $standardTimeMilliseconds,
+                ':non_production' => $nonProductionValue,
+                ':trip_id' => $tripId,
+                ':user_id' => authenticated_user_id(),
+            ]);
+        }
+    );
+
+    json_response(['tripId' => $tripId, 'pending' => false]);
+}
 
 if ($action === 'stop') {
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');

@@ -116,6 +116,8 @@
 
         #tripId;
 
+        #preparedTrip;
+
         #connectionState =
             "offline";
 
@@ -1999,7 +2001,7 @@
                 : path;
         }
 
-        async #apiRequest(endpoint, { method = "GET", body, csrf = false, query } = {}) {
+        async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
             const headers = { "Accept": "application/json" };
             if (body !== undefined) {
                 headers["Content-Type"] = "application/json";
@@ -2019,10 +2021,14 @@
                     method,
                     credentials: "same-origin",
                     headers,
-                    body: body === undefined ? undefined : JSON.stringify(body)
+                    body: body === undefined ? undefined : JSON.stringify(body),
+                    signal
                 });
             }
             catch (cause) {
+                if (cause?.name === "AbortError") {
+                    throw cause;
+                }
                 this.#setOffline({
                     source: "api",
                     reason: "unavailable"
@@ -2130,13 +2136,20 @@
                 throw new Error("The trip does not have persistable timing data.");
             }
 
-            return {
+            const payload = {
                 startTime,
                 endTime,
                 standardTimeMilliseconds,
                 nonProduction:
                     this.#nonProduction
             };
+
+            if (typeof this.#preparedTrip?.clientToken === "string") {
+                payload.clientToken =
+                    this.#preparedTrip.clientToken;
+            }
+
+            return payload;
         }
 
         #intervalRecords() {
@@ -2198,6 +2211,22 @@
 
         async #ensureTripPersisted() {
             if (Number.isInteger(this.#tripId) && this.#tripId > 0) {
+                if (
+                    this.#preparedTrip?.pending === true &&
+                    Number(this.#preparedTrip.tripId) === this.#tripId
+                ) {
+                    await this.#apiRequest("trips", {
+                        method: "PATCH",
+                        csrf: true,
+                        body: {
+                            tripId: this.#tripId,
+                            action: "start",
+                            ...this.#tripPersistencePayload()
+                        }
+                    });
+                    this.#preparedTrip.pending = false;
+                    this.#preparedTrip.persisted = true;
+                }
                 return this.#tripId;
             }
             const data = await this.#apiRequest("trips", {
@@ -2210,6 +2239,11 @@
                 throw new Error("The API returned an invalid trip id.");
             }
             this.#tripId = tripId;
+            if (this.#preparedTrip) {
+                this.#preparedTrip.tripId = tripId;
+                this.#preparedTrip.persisted = true;
+                this.#preparedTrip.pending = false;
+            }
             if (this.#originalStartArguments) {
                 this.#originalStartArguments.tripId = tripId;
             }
@@ -3178,6 +3212,117 @@
             };
         }
 
+        async prepareTrip({ timeout = 5000 } = {}) {
+            const timeoutMilliseconds = Number(timeout);
+            if (!Number.isFinite(timeoutMilliseconds) || timeoutMilliseconds <= 0) {
+                throw new RangeError("timeout must be a positive number of milliseconds.");
+            }
+
+            const now = new Date();
+            const time = this.#dateToStandardTime(now);
+            const clientToken =
+                globalThis.crypto?.randomUUID?.() ??
+                `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+            const prepared = {
+                clientToken,
+                creationTime: time,
+                startTime: time,
+                creationDate: now.toISOString(),
+                tripId: undefined,
+                persisted: false,
+                pending: true,
+                reason: this.#connectionState === "connected" ? "pending" : "offline"
+            };
+
+            this.#preparedTrip = prepared;
+
+            if (this.#connectionState !== "connected") {
+                return { ...prepared };
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMilliseconds);
+
+            try {
+                const data = await this.#apiRequest("trips", {
+                    method: "POST",
+                    csrf: true,
+                    signal: controller.signal,
+                    body: {
+                        action: "prepare",
+                        startTime: now.toISOString(),
+                        clientToken
+                    }
+                });
+
+                const tripId = Number(data.tripId);
+                if (!Number.isInteger(tripId) || tripId < 1) {
+                    throw new Error("The API returned an invalid trip id.");
+                }
+
+                if (this.#preparedTrip?.clientToken === clientToken) {
+                    this.#preparedTrip.tripId = tripId;
+                    this.#preparedTrip.persisted = true;
+                    this.#preparedTrip.pending = true;
+                    this.#preparedTrip.reason = "online";
+                    this.#tripId = tripId;
+                }
+
+                return {
+                    ...prepared,
+                    tripId,
+                    persisted: true,
+                    pending: true,
+                    reason: "online"
+                };
+            }
+            catch (error) {
+                const reason = error?.name === "AbortError" ? "timeout" : "offline";
+                if (this.#preparedTrip?.clientToken === clientToken) {
+                    this.#preparedTrip.persisted = false;
+                    this.#preparedTrip.reason = reason;
+                }
+                return {
+                    ...prepared,
+                    persisted: false,
+                    reason
+                };
+            }
+            finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        async discardPreparedTrip() {
+            const prepared = this.#preparedTrip;
+            if (!prepared) return { discarded: false, persisted: false };
+
+            this.#preparedTrip = undefined;
+            if (!this.#hasStartProperties()) {
+                this.#tripId = undefined;
+            }
+
+            if (this.#connectionState !== "connected") {
+                return { discarded: true, persisted: false };
+            }
+
+            try {
+                const body = Number.isInteger(Number(prepared.tripId)) && Number(prepared.tripId) > 0
+                    ? { tripId: Number(prepared.tripId) }
+                    : { clientToken: prepared.clientToken };
+                await this.#apiRequest("trips", {
+                    method: "DELETE",
+                    csrf: true,
+                    body
+                });
+                return { discarded: true, persisted: true };
+            }
+            catch {
+                return { discarded: true, persisted: false };
+            }
+        }
+
         async start(options = {}) {
             if (options === null || typeof options !== "object" || Array.isArray(options)) {
                 throw new TypeError("start options must be an object.");
@@ -3193,12 +3338,21 @@
                     }
                     : undefined;
 
+            const prepared = this.#preparedTrip;
             const { tripId: ignoredTripId, ...localOptions } = options;
-            const localResult = this.#startLocal({ ...localOptions, tripId: undefined });
+            if (prepared) {
+                if (localOptions.creationTime === undefined) localOptions.creationTime = prepared.creationTime;
+                if (localOptions.startTime === undefined) localOptions.startTime = prepared.startTime;
+                if (localOptions.scheduledStart === undefined) localOptions.scheduledStart = prepared.startTime;
+            }
+            const preparedTripId = Number.isInteger(Number(prepared?.tripId)) && Number(prepared.tripId) > 0
+                ? Number(prepared.tripId)
+                : undefined;
+            const localResult = this.#startLocal({ ...localOptions, tripId: preparedTripId });
             if (!localResult) {
                 throw new Error("The trip could not be started.");
             }
-            this.#tripId = undefined;
+            this.#tripId = preparedTripId;
             this.#pendingIntervalRecord = undefined;
 
             let synced = false;
@@ -3212,6 +3366,10 @@
                         throw error;
                     }
                 }
+            }
+
+            if (synced && prepared && this.#preparedTrip === prepared) {
+                this.#preparedTrip = undefined;
             }
 
             if (this.#autoSyncTripGoal) {
