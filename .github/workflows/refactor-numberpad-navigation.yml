@@ -26,6 +26,7 @@ jobs:
 
       - name: Validate
         run: |
+          git diff -- app.js app.css
           node --check app.js
           git diff --check
           python - <<'PY'
