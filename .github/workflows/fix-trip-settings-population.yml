@@ -1,0 +1,58 @@
+name: Fix trip settings population
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/fix-trip-settings-population.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply trip settings population fix
+        run: python .github/scripts/fix_trip_settings_population.py
+
+      - name: Validate JavaScript
+        run: node --check app.js
+
+      - name: Validate behavior anchors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('app.js').read_text()
+          checks = {
+              'live trip uses UI trip state': 'return app.dataset.tripState === "running";' in text,
+              'settings overlays pending keypad field': 'values[pendingField] = formatTripSettingsPendingValue(snapshot);' in text,
+              'new-trip maps pending value to standard time': 'snapshot.source === "new-trip" || snapshot.source === "standard-time"' in text,
+              'same field restores preserved keypad state': 'if (pendingField === field && snapshot)' in text,
+              'offline ClockTimer status is not used for trip settings': 'const active = clockTimer.status === "running";' not in text and 'if (clockTimer.status !== "running") return Promise.resolve();' not in text,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('failed checks: ' + ', '.join(failed))
+          PY
+          git diff --check
+
+      - name: Commit source change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git commit -m "Fix trip settings time population"
+          git push origin rename-prestart-latency
+
+      - name: Remove temporary patch files
+        run: |
+          git rm .github/scripts/fix_trip_settings_population.py .github/workflows/fix-trip-settings-population.yml
+          git commit -m "Remove trip settings population patch files"
+          git push origin rename-prestart-latency
