@@ -1,0 +1,40 @@
+name: Delay set label after animation
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/delay_set_label_after_animation.py
+      - .github/workflows/delay-set-label-after-animation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply delayed label hold
+        run: python .github/scripts/delay_set_label_after_animation.py
+
+      - name: Validate
+        run: |
+          node --check app.js
+          grep -q '}, TRIP_START_TRANSITION_DURATION);' app.js
+
+      - name: Commit and cleanup
+        run: |
+          rm .github/scripts/delay_set_label_after_animation.py
+          rm .github/workflows/delay-set-label-after-animation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Delay set label until after animation hold'
+          git push origin HEAD:rename-prestart-latency
