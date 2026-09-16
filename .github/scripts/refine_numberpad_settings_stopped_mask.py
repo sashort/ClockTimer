@@ -136,6 +136,54 @@ new = '''    function updatePostStopSummary(summary) {
 assert old in text
 text = text.replace(old, new, 1)
 
+old = '''    async function beginNewTripWorkflow() {
+        let preparationPromise;
+'''
+new = '''    async function beginNewTripWorkflow({ initialValue } = {}) {
+        const newTripInitialValue = initialValue ?? (
+            clockTimer.status === "stopped"
+                ? ""
+                : (stagedStandardTime || "")
+        );
+
+        let preparationPromise;
+'''
+assert old in text
+text = text.replace(old, new, 1)
+
+old = '''        return openNumberPad({
+            mode: "time",
+            source: "new-trip",
+            initialValue: stagedStandardTime || clockTimer.standardTime || "",
+            preparationPromise
+        });
+'''
+new = '''        return openNumberPad({
+            mode: "time",
+            source: "new-trip",
+            initialValue: newTripInitialValue,
+            preparationPromise
+        });
+'''
+assert old in text
+text = text.replace(old, new, 1)
+
+old = '''    clockTimer.addEventListener("stopped", event => {
+        setTripControlState(false);
+        updatePostStopSummary(event.detail?.summary);
+        void beginNewTripWorkflow().catch(() => {});
+    });
+'''
+new = '''    clockTimer.addEventListener("stopped", event => {
+        setTripControlState(false);
+        stagedStandardTime = undefined;
+        updatePostStopSummary(event.detail?.summary);
+        void beginNewTripWorkflow({ initialValue: "" }).catch(() => {});
+    });
+'''
+assert old in text
+text = text.replace(old, new, 1)
+
 app.write_text(text, encoding='utf-8')
 
 css = Path('app.css')
