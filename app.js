@@ -1584,6 +1584,7 @@
                     if (!value) return false;
                     values.creationTime = value;
                     values.creationDate = state.pendingDate;
+                    refreshTripSettingsValues();
                     return true;
                 }
 
@@ -1591,9 +1592,11 @@
                 if (!value) return false;
                 if (state.source === "scheduled-start") {
                     values.scheduledStart = value;
+                    refreshTripSettingsValues();
                     return true;
                 }
                 values.startTime = value;
+                refreshTripSettingsValues();
                 return true;
             }
 
@@ -1647,6 +1650,7 @@
         if (!formatted) return false;
         if (tripSettingsSession && state.source === "standard-time") {
             tripSettingsSession.values.standardTime = formatted;
+            refreshTripSettingsValues();
             return true;
         }
         stagedStandardTime = formatted;
@@ -2022,6 +2026,19 @@
         return closeDialogWithReturn(tripSettingsDialog, { reason });
     }
 
+    function getTripSettingsDerivedTotalGoalPercent(values) {
+        if (clockTimer.hasAggregateData !== true) return undefined;
+        const standardTime = String(values?.standardTime || "").trim();
+        if (!standardTime) return undefined;
+        const goal = Number(
+            clockTimer.calculateTripGoalFromTotal?.(
+                standardTime
+            )
+        );
+        if (!Number.isFinite(goal) || goal <= 0) return undefined;
+        return Math.round(goal * 100);
+    }
+
     function refreshTripSettingsValues() {
         syncTripSettingsCloud();
         const live = tripIsLive();
@@ -2053,13 +2070,28 @@
         tripSettingsPreferences.hidden = !preferencesVisible;
         const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
         const aggregateGoalAvailable = clockTimer.hasAggregateData === true;
+        const derivedTotalGoalPercent =
+            getTripSettingsDerivedTotalGoalPercent(
+                settingsValues
+            );
         const selectedGoalSync = settingsValues
             ? Boolean(settingsValues.matchTripGoalToTotal)
             : Boolean(getTripPreferences().matchTripGoalToTotal);
         autoSyncTripGoal.disabled = !aggregateGoalAvailable || !preferencesVisible;
         autoSyncTripGoal.checked = selectedGoalSync;
         tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable);
-        tripGoalSyncNoData.hidden = aggregateGoalAvailable;
+        if (!aggregateGoalAvailable) {
+            tripGoalSyncNoData.textContent = "(No Data)";
+            tripGoalSyncNoData.hidden = false;
+        }
+        else if (Number.isFinite(derivedTotalGoalPercent)) {
+            tripGoalSyncNoData.textContent = `(${derivedTotalGoalPercent}%)`;
+            tripGoalSyncNoData.hidden = false;
+        }
+        else {
+            tripGoalSyncNoData.textContent = "";
+            tripGoalSyncNoData.hidden = true;
+        }
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
         tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));

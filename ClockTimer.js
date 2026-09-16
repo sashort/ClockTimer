@@ -3153,6 +3153,38 @@
             };
         }
 
+        calculateTripGoalFromTotal(
+            standardTime = this.#standardTime
+        ) {
+            let standardDuration =
+                this.#standardDuration;
+
+            if (
+                standardTime !== this.#standardTime ||
+                !Number.isFinite(standardDuration)
+            ) {
+                try {
+                    standardDuration =
+                        this.#validateDurationTime(
+                            standardTime,
+                            "standardTime"
+                        ).total;
+                }
+                catch {
+                    return null;
+                }
+            }
+
+            const result =
+                this.#calculateTripGoalFromTotalDuration(
+                    standardDuration
+                );
+
+            return Number.isFinite(result.tripGoal)
+                ? result.tripGoal
+                : null;
+        }
+
         calculateTotalGoalRequirements() {
             return {
                 ...this.#calculateTotalGoalRequirements()
@@ -22035,9 +22067,13 @@
             return null;
         }
 
-        #calculateTotalGoalRequirements() {
-            const empty =
-                this.#emptyGoalRequirements();
+        #calculateTripGoalFromTotalDuration(
+            standardDuration = this.#standardDuration
+        ) {
+            const empty = {
+                tripGoal: null,
+                adjustedTimeElapsed: null
+            };
 
             const totalGoal =
                 this.#getTotalGoal();
@@ -22046,6 +22082,7 @@
                 this.#tripTotals;
 
             if (
+                !this.hasAttribute("total-goal") ||
                 !Number.isFinite(totalGoal) ||
                 totalGoal <= 0 ||
                 !totals ||
@@ -22055,28 +22092,50 @@
                 !Number.isFinite(
                     totals.actualTimeMilliseconds
                 ) ||
-                !Number.isFinite(
-                    this.#standardDuration
-                ) ||
-                this.#standardDuration <= 0 ||
-                !Number.isFinite(
-                    this.#scheduledStartMilliseconds
-                )
+                !Number.isFinite(standardDuration) ||
+                standardDuration <= 0
             ) {
                 return empty;
             }
 
             const combinedStandard =
                 totals.standardTimeMilliseconds +
-                this.#standardDuration;
+                standardDuration;
 
             const targetCombinedActual =
                 combinedStandard /
                 totalGoal;
 
-            const adjustedTimeElapsed =
+            const targetAdjustedTimeElapsed =
                 targetCombinedActual -
                 totals.actualTimeMilliseconds;
+
+            if (
+                !Number.isFinite(targetAdjustedTimeElapsed) ||
+                targetAdjustedTimeElapsed <= 0
+            ) {
+                return empty;
+            }
+
+            const rawTripGoal =
+                standardDuration /
+                targetAdjustedTimeElapsed;
+
+            if (
+                !Number.isFinite(rawTripGoal) ||
+                rawTripGoal <= 0
+            ) {
+                return empty;
+            }
+
+            const tripGoal =
+                Math.ceil(
+                    rawTripGoal * 100 - 1e-9
+                ) / 100;
+
+            const adjustedTimeElapsed =
+                standardDuration /
+                tripGoal;
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -22085,14 +22144,42 @@
                 return empty;
             }
 
-            const tripGoal =
-                this.#standardDuration /
-                adjustedTimeElapsed;
+            return {
+                tripGoal,
+                adjustedTimeElapsed
+            };
+        }
+
+        #calculateTotalGoalRequirements() {
+            const empty =
+                this.#emptyGoalRequirements();
+
+            if (
+                !Number.isFinite(
+                    this.#scheduledStartMilliseconds
+                )
+            ) {
+                return empty;
+            }
+
+            const calculated =
+                this.#calculateTripGoalFromTotalDuration();
+
+            if (
+                !Number.isFinite(calculated.tripGoal) ||
+                calculated.tripGoal <= 0 ||
+                !Number.isFinite(
+                    calculated.adjustedTimeElapsed
+                ) ||
+                calculated.adjustedTimeElapsed <= 0
+            ) {
+                return empty;
+            }
 
             const requirements =
                 this.#requirementsFromAdjustedTime(
-                    adjustedTimeElapsed,
-                    tripGoal
+                    calculated.adjustedTimeElapsed,
+                    calculated.tripGoal
                 );
 
             if (
@@ -22105,7 +22192,7 @@
 
             const adjustedEndTimeline =
                 this.#calculateAdjustedEndTimeline(
-                    adjustedTimeElapsed
+                    calculated.adjustedTimeElapsed
                 );
 
             const now =
