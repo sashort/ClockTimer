@@ -1,0 +1,41 @@
+name: Semantic interval lifecycle
+on:
+  push:
+    branches: [rename-prestart-latency]
+    paths:
+      - .github/workflows/semantic-interval-events.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/semantic-interval-events.py
+      - name: Validate
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+          grep -q 'breakStarted' ClockTimer.js
+          grep -q 'breakEnded' ClockTimer.js
+          grep -q 'lunchStarted' ClockTimer.js
+          grep -q 'lunchEnded' ClockTimer.js
+          grep -q 'downTimeStarted' ClockTimer.js
+          grep -q 'downTimeEnded' ClockTimer.js
+          grep -q 'automaticRestart: true' ClockTimer.js
+          grep -q 'completion:' ClockTimer.js
+          grep -q 'button.addEventListener("click"' app.js
+      - name: Commit and cleanup
+        run: |
+          rm -f .github/scripts/semantic-interval-events.py
+          rm -f .github/workflows/semantic-interval-events.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Emit semantic interval lifecycle events"
+          git push origin HEAD:rename-prestart-latency
