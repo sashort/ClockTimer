@@ -273,7 +273,12 @@
             dialog === tripSettingsDialog && caller?.type === "number-pad"
         );
         if (!closeDialog(dialog, { reason, immediate: handoffImmediate })) return false;
-        if (caller) popUIReturnFrame(caller);
+        if (caller) {
+            popUIReturnFrame(caller);
+            if (caller.type === "number-pad" && numberPadDialog?.open) {
+                refreshNumberPad();
+            }
+        }
         return true;
     }
 
