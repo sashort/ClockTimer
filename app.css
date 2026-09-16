@@ -1752,7 +1752,7 @@ button:active:not(:disabled) {
     border: 1.5px solid rgb(215 241 255 / 92%);
     border-radius: 12px;
     color: var(--wm-white);
-    background: linear-gradient(145deg, #70ceff 0%, #35abef 52%, #1687d7 100%);
+    background: var(--ui-blue-gradient);
     box-shadow: var(--ui-inner-highlight), 0 5px 12px rgb(0 0 0 / 18%);
     font-size: 30px;
     font-weight: 800;
