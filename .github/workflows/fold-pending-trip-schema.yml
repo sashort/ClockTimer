@@ -19,25 +19,27 @@ jobs:
           ref: rename-prestart-latency
           fetch-depth: 0
 
-      - name: Fold schema into generation script
+      - name: Fold schema and guard API-backed UI calls
         run: python3 .github/scripts/fold_pending_trip_schema_into_generation.py
 
-      - name: Remove migration
+      - name: Remove standalone migration
         run: git rm database/migrations/20260915_add_pending_trip_reservations.sql
 
-      - name: Validate generation script
+      - name: Validate
         run: |
+          node --check app.js
           grep -q "'pending', NEW.\`pending\`" database/create_database.sql
           grep -q "'client_token', NEW.\`client_token\`" database/create_database.sql
           grep -q "'pending', OLD.\`pending\`" database/create_database.sql
           grep -q "'client_token', OLD.\`client_token\`" database/create_database.sql
+          grep -q 'reason: "offline"' app.js
           test ! -e database/migrations/20260915_add_pending_trip_reservations.sql
 
       - name: Commit source changes
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add database/create_database.sql database/migrations/20260915_add_pending_trip_reservations.sql
+          git add -A app.js database
           git commit -m 'Fold pending trip schema into database generation'
           git push origin HEAD:rename-prestart-latency
 
