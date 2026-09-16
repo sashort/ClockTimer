@@ -361,18 +361,14 @@
         const standard = selected?.standardTime ||
             (scope === "trip" ? (clockTimer.standardTime || stagedStandardTime) : undefined);
 
-        const stoppedTrip = scope === "trip" && clockTimer.status === "stopped";
-
         $("#standardTimeValue").textContent =
             typeof standard === "string" && standard ? standard : "---";
         $("#renderedTimeValue").textContent =
-            stoppedTrip && clockTimer.renderedTimeMode === "calculated-end"
-                ? "---"
-                : typeof selected?.renderedTime === "string" && selected.renderedTime
-                    ? selected.renderedTime
-                    : "---";
+            typeof selected?.renderedTime === "string" && selected.renderedTime
+                ? selected.renderedTime
+                : "---";
         $("#currentPercentValue").textContent =
-            stoppedTrip || selected?.available === false
+            selected?.available === false
                 ? "---"
                 : formatSummaryPercent(selected?.countedPercent);
         $("#goalPercentValue").textContent =
@@ -1521,7 +1517,15 @@
     });
 
     $("#endTripButton").addEventListener("pointerup", () => {
-        void clockTimer.stop().catch(() => {});
+        const tripMoment = new Date();
+        void (async () => {
+            await clockTimer.stop();
+            await clockTimer.clear();
+            await beginNewTripWorkflow({
+                initialValue: "",
+                tripMoment
+            });
+        })().catch(() => {});
     });
 
     $("#breakButton").addEventListener("pointerup", () => {
@@ -1581,10 +1585,6 @@
         activeTripControls.hidden = !running;
     }
 
-    function updatePostStopSummary(summary) {
-        updateSummaryValues(summary);
-    }
-
     clockTimer.addEventListener("cadenceTick", event => {
         updateSummaryValues(event.detail?.summary);
     });
@@ -1592,19 +1592,6 @@
     clockTimer.addEventListener("started", event => {
         setTripControlState(true);
         updateSummaryValues(event.detail?.summary);
-    });
-
-    clockTimer.addEventListener("stopped", event => {
-        setTripControlState(false);
-        stagedStandardTime = undefined;
-        updatePostStopSummary(event.detail?.summary);
-        const stopMoment = event.detail?.stopTime
-            ? new Date(event.detail.stopTime)
-            : new Date();
-        void beginNewTripWorkflow({
-            initialValue: "",
-            tripMoment: Number.isNaN(stopMoment.getTime()) ? new Date() : stopMoment
-        }).catch(() => {});
     });
 
     const summaryRefreshEvents = [
@@ -1632,6 +1619,8 @@
 
     clockTimer.addEventListener("cleared", () => {
         setTripControlState(false);
+        stagedStandardTime = undefined;
+        updateSummaryValues();
     });
 
     clockTimer.addEventListener("percentModeChanged", () => {
