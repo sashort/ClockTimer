@@ -1,0 +1,66 @@
+name: Run corrected number pad navigation refactor
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/run-numberpad-navigation-refactor.py
+      - .github/workflows/run-numberpad-navigation-refactor.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply corrected refactor
+        run: python .github/scripts/run-numberpad-navigation-refactor.py
+
+      - name: Validate
+        run: |
+          node --check app.js
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          app = Path('app.js').read_text()
+          css = Path('app.css').read_text()
+          required = [
+              'let tripSettingsNavigation = {',
+              'numberPadState.backTarget === "trip-settings"',
+              'async function cancelNumberPad()',
+              'role: "trip-settings-field"',
+              'confirmTarget: "trip-settings"',
+              'setTripSettingsReturnToNumberPad(returnState)',
+              'await closeTripSettingsToNavigation("trip-settings-save")',
+              'numberPadState.role !== "trip-settings-field"',
+              'cancelTarget: "home"',
+              'confirmTarget: "home"'
+          ]
+          for marker in required:
+              assert marker in app, marker
+          assert 'captureNumberPadReturnFrame' not in app
+          assert 'if (peekUIReturnFrame()) return "back";' not in app
+          assert 'const caller = { type: "dialog", element: tripSettingsDialog };' not in app
+          assert '.number-pad-header.settings-hidden' in css
+          PY
+
+      - name: Commit and cleanup
+        run: |
+          rm -f .github/scripts/refactor-numberpad-navigation.py
+          rm -f .github/scripts/run-numberpad-navigation-refactor.py
+          rm -f .github/workflows/refactor-numberpad-navigation.yml
+          rm -f .github/workflows/run-numberpad-navigation-refactor.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'Replace number pad return stack with explicit navigation'
+          git push origin HEAD:rename-prestart-latency
