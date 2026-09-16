@@ -408,6 +408,8 @@ if ($method === 'GET') {
             $trip['standardTimeMilliseconds'];
         $tripActualMilliseconds =
             $trip['actualTimeMilliseconds'];
+        $tripCountedMilliseconds =
+            $trip['countedTimeMilliseconds'];
 
         $addAggregate(
             $allNonProductionAggregate,
