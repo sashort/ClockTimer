@@ -1017,7 +1017,8 @@
 
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
-        return numberPadHasChanges() ? "reset" : "close";
+        if (numberPadHasChanges()) return "reset";
+        return peekUIReturnFrame() ? "back" : "close";
     }
 
     function refreshNumberPad() {
@@ -1046,7 +1047,14 @@
         const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
         numberPadClear.dataset.action = clearAction;
-        numberPadClear.setAttribute("aria-label", clearAction === "reset" ? "Reset" : "Close");
+        numberPadClear.setAttribute(
+            "aria-label",
+            clearAction === "reset"
+                ? "Reset"
+                : clearAction === "back"
+                    ? "Back"
+                    : "Close"
+        );
 
         const valid = numberPadValueValid();
         const autocorrect = changed && !percentMode && numberPadState.pending !== "" && !valid;
@@ -1308,7 +1316,8 @@
 
     function runNumberPadClearShortAction() {
         if (!numberPadState) return;
-        if (getNumberPadClearAction() === "close") {
+        const action = getNumberPadClearAction();
+        if (action === "close" || action === "back") {
             void requestNumberPadClose().catch(() => {});
             return;
         }
