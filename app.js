@@ -86,6 +86,8 @@
     let tripDraft;
     let tripSettingsSession;
     let tripStartsNowState;
+    let tripStartsNowExiting = false;
+    let tripStartsNowExitTimer;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
@@ -120,6 +122,7 @@
     const INITIAL_LOGIN_FADE_DURATION = 750;
     const BUTTON_PRESS_IN_DURATION = 120;
     const BUTTON_PRESS_OUT_DURATION = 140;
+    const TRIP_START_TRANSITION_DURATION = 250;
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
 
@@ -1907,13 +1910,44 @@
         });
 
         if (!active) {
-            tripSetStartsNow.textContent = "Set Scheduled/Actual Start to Now";
-            tripSetStartsNow.disabled = Boolean(draft && !parseDateInput(values?.creationDate || draft.creationDate));
+            if (!tripStartsNowExiting) {
+                tripSetStartsNow.textContent = "Set Scheduled/Actual Start to Now";
+            }
+            tripSetStartsNow.disabled = tripStartsNowExiting ||
+                Boolean(draft && !parseDateInput(values?.creationDate || draft.creationDate));
             return;
         }
 
         tripSetStartsNow.textContent = `Set To ${tripStartsNowState.label}`;
         tripSetStartsNow.disabled = !tripStartsNowState.scheduled && !tripStartsNowState.actual;
+    }
+
+    function finishTripStartsNowExit() {
+        clearTimeout(tripStartsNowExitTimer);
+        tripStartsNowExitTimer = undefined;
+        if (!tripStartsNowExiting) return;
+        tripStartsNowExiting = false;
+        if (!tripStartsNowState) syncTripStartsNowUI();
+    }
+
+    function beginTripStartsNowExit() {
+        if (!tripStartsNowState || tripStartsNowExiting) return;
+        clearTimeout(tripStartsNowExitTimer);
+        tripStartsNowExiting = true;
+        tripStartsNowState = undefined;
+
+        const handleTransitionEnd = event => {
+            if (event.target !== tripSetStartsNow || event.propertyName !== "flex-basis") return;
+            tripSetStartsNow.removeEventListener("transitionend", handleTransitionEnd);
+            finishTripStartsNowExit();
+        };
+        tripSetStartsNow.addEventListener("transitionend", handleTransitionEnd);
+        tripStartsNowExitTimer = setTimeout(() => {
+            tripSetStartsNow.removeEventListener("transitionend", handleTransitionEnd);
+            finishTripStartsNowExit();
+        }, TRIP_START_TRANSITION_DURATION + 50);
+
+        refreshTripSettingsValues();
     }
 
     function restoreDraftFromTripSettingsOriginal() {
@@ -2283,14 +2317,12 @@
 
         if (tripStartsNowState.scheduled) values.scheduledStart = tripStartsNowState.value;
         if (tripStartsNowState.actual) values.startTime = tripStartsNowState.value;
-        tripStartsNowState = undefined;
-        refreshTripSettingsValues();
+        beginTripStartsNowExit();
     });
 
     tripSetStartsNowCancel.addEventListener("pointerup", () => {
         if (!tripStartsNowState) return;
-        tripStartsNowState = undefined;
-        refreshTripSettingsValues();
+        beginTripStartsNowExit();
     });
 
     tripStartNowToggles.forEach(button => {
