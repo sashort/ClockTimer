@@ -1,0 +1,44 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+  workflow_dispatch:
+
+concurrency:
+  group: clocktimer-lightsail-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_SSH_KEY: ${{ secrets.LAMP_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$LAMP_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -H "$LAMP_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy ClockTimer
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_USER: ${{ secrets.LAMP_USER }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            "$LAMP_USER@$LAMP_HOST" \
+            '$HOME/deploy-clocktimer.sh'
