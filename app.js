@@ -104,6 +104,10 @@
     let numberPadAM;
     let numberPadPM;
     const uiReturnStack = [];
+    let tripSettingsNavigation = {
+        returnTarget: "home",
+        numberPadState: undefined
+    };
     let numberPadLongPressTimer;
     let numberPadLongPressed = false;
     let numberPadLastClearPointerDown = 0;
@@ -374,16 +378,13 @@
             if (presentation) numberPadState.connectionPresentation = presentation;
             refreshNumberPad();
         }
-        for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
-            const frame = uiReturnStack[index];
-            if (
-                frame?.type === "number-pad" &&
-                frame.state?.connectionStatusToken === token
-            ) {
-                frame.state.persistence = normalized;
-                if (presentation) frame.state.connectionPresentation = presentation;
-                break;
-            }
+        const returnState =
+            tripSettingsNavigation.returnTarget === "number-pad"
+                ? tripSettingsNavigation.numberPadState
+                : undefined;
+        if (returnState?.connectionStatusToken === token) {
+            returnState.persistence = normalized;
+            if (presentation) returnState.connectionPresentation = presentation;
         }
     }
 
@@ -536,19 +537,28 @@
         return true;
     }
 
-    function captureNumberPadReturnFrame() {
-        return numberPadState
-            ? { type: "number-pad", state: { ...numberPadState } }
+    function resetTripSettingsNavigation() {
+        tripSettingsNavigation = {
+            returnTarget: "home",
+            numberPadState: undefined
+        };
+    }
+
+    function setTripSettingsReturnToNumberPad(state = numberPadState) {
+        tripSettingsNavigation = {
+            returnTarget: "number-pad",
+            numberPadState: state ? { ...state } : undefined
+        };
+    }
+
+    function getTripSettingsReturnNumberPadState() {
+        return tripSettingsNavigation.returnTarget === "number-pad"
+            ? tripSettingsNavigation.numberPadState
             : undefined;
     }
 
     async function restoreUIReturnFrame(frame, reason = "ui-return") {
         if (!frame) return false;
-
-        if (frame.type === "number-pad") {
-            await restoreNumberPadState(frame.state, { duration: 0 });
-            return Boolean(numberPadDialog?.open);
-        }
 
         if (frame.type === "dialog") {
             if (frame.element?.open) return true;
@@ -1354,8 +1364,12 @@
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
         if (numberPadHasChanges()) return "reset";
-        if (peekUIReturnFrame()) return "back";
-        if (numberPadState.source === "standard-time" && !numberPadState.everEdited) {
+        if (numberPadState.backTarget === "trip-settings") return "back";
+        if (
+            numberPadState.role === "root" &&
+            numberPadState.source === "standard-time" &&
+            !numberPadState.everEdited
+        ) {
             return "home";
         }
         return "close";
@@ -1413,8 +1427,15 @@
                 ? !valid
                 : (!changed || !valid);
 
-        numberPadSettingsArea.hidden = percentMode;
-        if (!percentMode) {
+        const settingsVisible =
+            !percentMode &&
+            numberPadState.role !== "trip-settings-field";
+        numberPadSettingsArea.hidden = !settingsVisible;
+        numberPadSettingsArea.parentElement?.classList.toggle(
+            "settings-hidden",
+            !settingsVisible
+        );
+        if (settingsVisible) {
             const status = numberPadState.persistence || normalizedConnectionStatus();
             numberPadSettingsArea.dataset.persistence = status;
             numberPadSettingsArea.dataset.connectionPhase =
@@ -1433,9 +1454,29 @@
         }
     }
 
-    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, tripDefaults, startsTripOnConfirm = false, duration = 250 } = {}) {
+    async function openNumberPad({
+        mode,
+        source,
+        initialValue = "",
+        preparationPromise,
+        tripDefaults,
+        startsTripOnConfirm = false,
+        role = "root",
+        workflow,
+        cancelTarget = "home",
+        confirmTarget,
+        backTarget,
+        duration = 250
+    } = {}) {
         await ensureNumberPadLoaded();
-        const normalizedMode = mode === "percent" ? "percent" : mode === "absolute" ? "absolute" : "duration";
+        const normalizedMode = mode === "percent"
+            ? "percent"
+            : mode === "absolute"
+                ? "absolute"
+                : "duration";
+        const normalizedRole = role === "trip-settings-field"
+            ? "trip-settings-field"
+            : "root";
         let initial;
         let initialDate;
         let initialMeridiem;
@@ -1470,6 +1511,25 @@
             connectionStatusToken: ++numberPadConnectionSequence,
             tripDefaults,
             startsTripOnConfirm: Boolean(startsTripOnConfirm),
+            role: normalizedRole,
+            workflow: workflow || (
+                source === "new-trip"
+                    ? "new-trip"
+                    : tripIsLive()
+                        ? "edit-trip"
+                        : null
+            ),
+            cancelTarget,
+            confirmTarget: confirmTarget || (
+                normalizedRole === "trip-settings-field"
+                    ? "trip-settings"
+                    : "home"
+            ),
+            backTarget: backTarget || (
+                normalizedRole === "trip-settings-field"
+                    ? "trip-settings"
+                    : undefined
+            ),
             everEdited: false
         };
         numberPadState = state;
@@ -1527,34 +1587,69 @@
         discardPrepared = true,
         allowChanged = false,
         immediate = false,
-        returnToCaller = true
+        destination
     } = {}) {
         const state = numberPadState;
+        if (!state) return false;
         if (!allowChanged && numberPadHasChanges()) return false;
-        const caller = returnToCaller ? peekUIReturnFrame() : undefined;
 
-        if (caller && !await restoreUIReturnFrame(caller, "number-pad-return")) {
-            return false;
+        const target = destination ?? state.cancelTarget ?? "home";
+        if (target === "trip-settings") {
+            if (!tripSettingsSession) beginTripSettingsSession();
+            if (!openTripSettingsDialog("number-pad-return", { duration: 0 })) {
+                return false;
+            }
         }
 
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, {
             reason: "number-pad",
-            immediate: immediate || Boolean(caller)
+            immediate: immediate || target === "trip-settings"
         })) {
+            if (target === "trip-settings" && tripSettingsDialog.open) {
+                closeDialog(tripSettingsDialog, {
+                    reason: "number-pad-return:rollback",
+                    immediate: true
+                });
+            }
             return false;
         }
 
-        if (caller) popUIReturnFrame(caller);
-        if (discardPrepared && state?.source === "new-trip") {
-            tripDraft = undefined;
-            uiReturnStack.length = 0;
-            clockTimer.discardPreparedTrip?.().catch?.(() => {});
+        if (target === "home") {
+            if (state.role === "trip-settings-field") {
+                tripStartsNowState = undefined;
+                tripSettingsSession = undefined;
+                resetTripSettingsNavigation();
+            }
+            if (discardPrepared && state.workflow === "new-trip") {
+                tripDraft = undefined;
+                tripStartsNowState = undefined;
+                tripSettingsSession = undefined;
+                resetTripSettingsNavigation();
+                clockTimer.discardPreparedTrip?.().catch?.(() => {});
+            }
         }
         return true;
     }
 
     async function requestNumberPadClose() {
-        return closeNumberPad();
+        if (!numberPadState) return false;
+        const action = getNumberPadClearAction();
+        const destination = action === "back"
+            ? numberPadState.backTarget
+            : numberPadState.cancelTarget;
+        return closeNumberPad({
+            destination,
+            discardPrepared: destination === "home"
+        });
+    }
+
+    async function cancelNumberPad() {
+        if (!numberPadState) return false;
+        return closeNumberPad({
+            destination: numberPadState.cancelTarget || "home",
+            discardPrepared: true,
+            allowChanged: true
+        });
     }
 
     function getPercentGoalValue() {
@@ -1740,7 +1835,7 @@
     }
 
     function getTripSettingsPadSnapshot() {
-        return findUIReturnFrame("number-pad")?.state;
+        return getTripSettingsReturnNumberPadState();
     }
 
     function getTripSettingsPendingField(snapshot = getTripSettingsPadSnapshot()) {
@@ -1781,13 +1876,13 @@
     }
 
     function syncDraftStandardTimeReturnFrame(formatted) {
-        const frame = findUIReturnFrame("number-pad");
-        if (!frame?.state || frame.state.source !== "new-trip") return;
+        const state = getTripSettingsReturnNumberPadState();
+        if (!state || state.source !== "new-trip") return;
         const digits = normalizeTimeDigits(formatted);
-        frame.state.initial = digits;
-        frame.state.pending = digits;
-        frame.state.replaceOnNextDigit = false;
-        frame.state.startsTripOnConfirm = true;
+        state.initial = digits;
+        state.pending = digits;
+        state.replaceOnNextDigit = false;
+        state.startsTripOnConfirm = true;
     }
 
     function tripDraftCanStart(draft = tripDraft) {
@@ -2008,22 +2103,48 @@
     }
 
     function syncTripSettingsCallerAfterSave() {
-        const frame = findUIReturnFrame("number-pad");
+        const state = getTripSettingsReturnNumberPadState();
         const standardTime = tripSettingsSession?.values?.standardTime;
-        if (!frame?.state || frame.state.source !== "standard-time" || !standardTime) return;
+        if (!state || state.source !== "standard-time" || !standardTime) return;
         const digits = normalizeTimeDigits(standardTime);
         if (!digits) return;
-        const changed = digits !== frame.state.initial;
-        frame.state.initial = digits;
-        frame.state.pending = digits;
-        frame.state.replaceOnNextDigit = false;
-        frame.state.everEdited = Boolean(frame.state.everEdited || changed);
+        const changed = digits !== state.initial;
+        state.initial = digits;
+        state.pending = digits;
+        state.replaceOnNextDigit = false;
+        state.everEdited = Boolean(state.everEdited || changed);
+    }
+
+    async function closeTripSettingsToNavigation(reason) {
+        const returnState = getTripSettingsReturnNumberPadState();
+        if (returnState) {
+            await restoreNumberPadState(returnState, { duration: 0 });
+        }
+
+        const closed = closeDialog(tripSettingsDialog, {
+            reason,
+            immediate: Boolean(returnState)
+        });
+        if (!closed) {
+            if (returnState && numberPadDialog?.open) {
+                await closeNumberPad({
+                    discardPrepared: false,
+                    allowChanged: true,
+                    immediate: true,
+                    destination: "none"
+                });
+            }
+            return false;
+        }
+
+        resetTripSettingsNavigation();
+        return true;
     }
 
     async function cancelTripSettingsDialog(reason = "trip-settings-cancel") {
         tripStartsNowState = undefined;
         tripSettingsSession = undefined;
-        return closeDialogWithReturn(tripSettingsDialog, { reason });
+        return closeTripSettingsToNavigation(reason);
     }
 
     function getTripSettingsDerivedTotalGoalPercent(values) {
@@ -2122,13 +2243,23 @@
 
     function openTripFieldNumberPad(field) {
         if (!tripIsLive() && !tripDraft) return Promise.resolve();
+        const live = tripIsLive();
         const absolute = field !== "standard-time";
+        const values = tripSettingsSession?.values || getCurrentTripSettingsValues();
+        const tripDefaults = live
+            ? { creationDate: values?.creationDate || clockTimer.creationDate }
+            : getTripSettingsCandidateDraft();
         return openNumberPad({
             mode: absolute ? "absolute" : "time",
             source: field,
             initialValue: getTripFieldValue(field),
-            tripDefaults: !tripIsLive() ? tripDraft : undefined,
+            tripDefaults,
             startsTripOnConfirm: false,
+            role: "trip-settings-field",
+            workflow: live ? "edit-trip" : "new-trip",
+            cancelTarget: "home",
+            confirmTarget: "trip-settings",
+            backTarget: "trip-settings",
             duration: 0
         });
     }
@@ -2174,7 +2305,12 @@
             }
             try {
                 if (await commitNumberPad()) {
-                    await closeNumberPad({ discardPrepared: false, allowChanged: true });
+                    const destination = numberPadState?.confirmTarget || "home";
+                    await closeNumberPad({
+                        discardPrepared: false,
+                        allowChanged: true,
+                        destination
+                    });
                 }
             }
             catch {
@@ -2239,17 +2375,21 @@
         });
 
         numberPadSettings.addEventListener("pointerup", () => {
-            if (!numberPadState || numberPadState.mode === "percent") return;
+            if (
+                !numberPadState ||
+                numberPadState.mode === "percent" ||
+                numberPadState.role === "trip-settings-field"
+            ) return;
             if (tripDraft && numberPadState.source === "new-trip" && numberPadValueValid()) {
                 const formatted = renderTimeDigits(numberPadState.pending);
                 if (formatted) tripDraft.standardTime = formatted;
             }
-            const caller = captureNumberPadReturnFrame();
-            if (!caller) return;
-            pushUIReturnFrame(caller);
+
+            const returnState = { ...numberPadState };
+            setTripSettingsReturnToNumberPad(returnState);
 
             if (!openTripSettingsDialog("number-pad-settings", { duration: 0 })) {
-                popUIReturnFrame(caller);
+                resetTripSettingsNavigation();
                 return;
             }
 
@@ -2257,22 +2397,22 @@
                 discardPrepared: false,
                 allowChanged: true,
                 immediate: true,
-                returnToCaller: false
+                destination: "none"
             }).then(closed => {
                 if (closed) return;
-                popUIReturnFrame(caller);
+                resetTripSettingsNavigation();
                 closeDialog(tripSettingsDialog, {
                     reason: "number-pad-settings:rollback",
                     immediate: true
                 });
             }).catch(() => {
-                popUIReturnFrame(caller);
+                resetTripSettingsNavigation();
             });
         });
 
         numberPadDialog.addEventListener("cancel", event => {
             event.preventDefault();
-            void requestNumberPadClose().catch(() => {});
+            void cancelNumberPad().catch(() => {});
         });
 
         numberPadDialog.addEventListener("close", () => {
@@ -2302,32 +2442,24 @@
         button.addEventListener("pointerup", () => {
             if (button.disabled) return;
             const field = button.dataset.tripTimeField;
-            const caller = { type: "dialog", element: tripSettingsDialog };
-            pushUIReturnFrame(caller);
 
             void (async () => {
                 try {
                     await openTripFieldNumberPad(field);
-                    if (!numberPadDialog?.open) {
-                        popUIReturnFrame(caller);
-                        return;
-                    }
+                    if (!numberPadDialog?.open) return;
                     if (!closeDialog(tripSettingsDialog, {
                         reason: `trip-settings:${field}`,
                         immediate: true
                     })) {
-                        popUIReturnFrame(caller);
                         await closeNumberPad({
                             discardPrepared: false,
                             allowChanged: true,
                             immediate: true,
-                            returnToCaller: false
+                            destination: "none"
                         });
                     }
                 }
-                catch {
-                    popUIReturnFrame(caller);
-                }
+                catch {}
             })();
         });
     });
@@ -2405,6 +2537,7 @@
                 }
                 tripStartsNowState = undefined;
                 tripSettingsSession = undefined;
+                resetTripSettingsNavigation();
                 closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
                 return;
             }
@@ -2412,14 +2545,15 @@
             syncTripSettingsCallerAfterSave();
             tripStartsNowState = undefined;
             tripSettingsSession = undefined;
-            await closeDialogWithReturn(tripSettingsDialog, {
-                reason: "trip-settings-save"
-            });
+            await closeTripSettingsToNavigation("trip-settings-save");
         })().catch(() => {});
     });
 
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
         uiReturnStack.length = 0;
+        resetTripSettingsNavigation();
+        tripSettingsSession = undefined;
+        tripStartsNowState = undefined;
         const moment = tripMoment instanceof Date && !Number.isNaN(tripMoment.getTime())
             ? new Date(tripMoment.getTime())
             : new Date();
@@ -2461,7 +2595,11 @@
             initialValue: newTripInitialValue,
             preparationPromise,
             tripDefaults: tripDraft,
-            startsTripOnConfirm: true
+            startsTripOnConfirm: true,
+            role: "root",
+            workflow: "new-trip",
+            cancelTarget: "home",
+            confirmTarget: "home"
         });
     }
 
@@ -2497,7 +2635,11 @@
         void openNumberPad({
             mode: "time",
             source: "standard-time",
-            initialValue: clockTimer.standardTime || stagedStandardTime || ""
+            initialValue: clockTimer.standardTime || stagedStandardTime || "",
+            role: "root",
+            workflow: "edit-trip",
+            cancelTarget: "home",
+            confirmTarget: "home"
         }).catch(() => {});
     });
 
@@ -2505,7 +2647,11 @@
         void openNumberPad({
             mode: "percent",
             source: "percent-goal",
-            initialValue: getPercentGoalValue()
+            initialValue: getPercentGoalValue(),
+            role: "root",
+            workflow: tripIsLive() ? "edit-trip" : null,
+            cancelTarget: "home",
+            confirmTarget: "home"
         }).catch(() => {});
     });
 

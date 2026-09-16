@@ -1840,6 +1840,11 @@ button:active:not(:disabled) {
 }
 
 
+/* explicit-numberpad-navigation-v1 */
+.number-pad-header.settings-hidden {
+    grid-template-columns: 1fr;
+}
+
 /* reversible-disabled-ui-v1 */
 .number-pad-key,
 .trip-time-edit,
