@@ -1157,7 +1157,6 @@
         }
 
         if (caller) popUIReturnFrame(caller);
-        if (!numberPadDialog?.open) resetNumberPad();
         if (discardPrepared && state?.source === "new-trip") {
             clockTimer.discardPreparedTrip?.().catch?.(() => {});
         }
