@@ -26486,6 +26486,20 @@
             return Number.isFinite(goal) && goal > 0 ? goal : undefined;
         }
 
+        #formatSummaryEndTime(value) {
+            if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+                return undefined;
+            }
+
+            return [
+                value.getHours(),
+                value.getMinutes(),
+                value.getSeconds()
+            ]
+                .map(part => String(part).padStart(2, "0"))
+                .join(":");
+        }
+
         #getTotalSummary(timelineNow, nowDate) {
             const base = this.#hasUsableAggregateSnapshot()
                 ? this.#tripTotals
@@ -26503,9 +26517,9 @@
                 countedTimeMilliseconds += this.#getCountedTimeElapsed(timelineNow);
             }
 
-            const countedPercent = actualTimeMilliseconds > 0
-                ? countedTimeMilliseconds / actualTimeMilliseconds
-                : 0;
+            const countedPercent = countedTimeMilliseconds > 0
+                ? standardTimeMilliseconds / countedTimeMilliseconds
+                : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
             const allowedTimeMilliseconds =
                 Number.isFinite(percentGoal) && percentGoal > 0
@@ -26518,7 +26532,7 @@
                 renderedTime = this.#formatSignedRenderedDuration(actualTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
-                renderedTime = this.#formatClockDisplayTime(
+                renderedTime = this.#formatSummaryEndTime(
                     new Date(nowDate.getTime() + remainingMilliseconds)
                 );
             }
@@ -26553,9 +26567,11 @@
             const tripCountedTimeElapsedMilliseconds = hasTrip
                 ? this.#getCountedTimeElapsed(timelineNow)
                 : 0;
-            const tripCountedPercent = tripActualTimeElapsedMilliseconds > 0
-                ? tripCountedTimeElapsedMilliseconds / tripActualTimeElapsedMilliseconds
-                : 0;
+            const tripCountedPercent =
+                tripCountedTimeElapsedMilliseconds > 0 &&
+                Number.isFinite(this.#standardDuration)
+                    ? this.#standardDuration / tripCountedTimeElapsedMilliseconds
+                    : undefined;
 
             const trip = {
                 available: hasTrip,
@@ -27451,7 +27467,7 @@
                     this.#getJSONCreationDate();
 
                 if (!creationDate) {
-                    return this.#formatClockDisplayTime(
+                    return this.#formatSummaryEndTime(
                         synchronizedNow
                     );
                 }
@@ -27462,7 +27478,7 @@
                         ? timelineNow
                         : this.#calculatedEnd;
 
-                return this.#formatClockDisplayTime(
+                return this.#formatSummaryEndTime(
                     new Date(
                         creationDate.getTime() +
                         effectiveEnd
