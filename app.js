@@ -430,6 +430,7 @@
             return;
         }
         try { await clockTimer.disconnect(); }
+        catch {}
         finally { setOffline(true); }
     });
 
@@ -770,13 +771,30 @@
     }
 
     $("#newTripButton").addEventListener("click", () => {
-        const preparationPromise = clockTimer.prepareTrip({ timeout: 5000 });
+        let preparationPromise;
+        try {
+            preparationPromise = Promise.resolve(
+                clockTimer.prepareTrip({ timeout: 5000 })
+            ).catch(() => ({
+                persisted: false,
+                pending: true,
+                reason: "offline"
+            }));
+        }
+        catch {
+            preparationPromise = Promise.resolve({
+                persisted: false,
+                pending: true,
+                reason: "offline"
+            });
+        }
+
         void openNumberPad({
             mode: "time",
             source: "new-trip",
             initialValue: stagedStandardTime || clockTimer.standardTime || "",
             preparationPromise
-        });
+        }).catch(() => {});
     });
 
     $("#standardTimeButton").addEventListener("click", () => {
@@ -784,7 +802,7 @@
             mode: "time",
             source: "standard-time",
             initialValue: clockTimer.standardTime || stagedStandardTime || ""
-        });
+        }).catch(() => {});
     });
 
     $("#goalPercentValue").addEventListener("click", () => {
@@ -792,7 +810,7 @@
             mode: "percent",
             source: "percent-goal",
             initialValue: getPercentGoalValue()
-        });
+        }).catch(() => {});
     });
 
     function renderIndependentTimer() {

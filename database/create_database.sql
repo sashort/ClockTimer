@@ -342,6 +342,8 @@ BEGIN
              'end_time', NEW.`end_time`,
              'standard_time_ms', NEW.`standard_time_ms`,
              'non_production', NEW.`non_production`,
+             'pending', NEW.`pending`,
+             'client_token', NEW.`client_token`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -369,6 +371,8 @@ BEGIN
              'end_time', OLD.`end_time`,
              'standard_time_ms', OLD.`standard_time_ms`,
              'non_production', OLD.`non_production`,
+             'pending', OLD.`pending`,
+             'client_token', OLD.`client_token`,
              'created_at', OLD.`created_at`
          ),
          JSON_OBJECT(
@@ -378,6 +382,8 @@ BEGIN
              'end_time', NEW.`end_time`,
              'standard_time_ms', NEW.`standard_time_ms`,
              'non_production', NEW.`non_production`,
+             'pending', NEW.`pending`,
+             'client_token', NEW.`client_token`,
              'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
@@ -405,6 +411,8 @@ BEGIN
              'end_time', OLD.`end_time`,
              'standard_time_ms', OLD.`standard_time_ms`,
              'non_production', OLD.`non_production`,
+             'pending', OLD.`pending`,
+             'client_token', OLD.`client_token`,
              'created_at', OLD.`created_at`
          ),
          NULL,
