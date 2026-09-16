@@ -51,6 +51,9 @@
     const stateDialog = $("#stateSettingsDialog");
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
+    const mainMenu = $("#mainMenu");
+    const activeTripControls = $("#activeTripControls");
+    const breakDialog = $("#breakDialog");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -69,6 +72,8 @@
     let numberPadLongPressTimer;
     let numberPadLongPressed = false;
     let numberPadLastClearPointerDown = 0;
+    let initialLoginSuppressed = false;
+    let initialLoginAttemptPending = true;
 
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
@@ -135,27 +140,106 @@
         authButton.classList.toggle("logout-button", connected);
     }
 
+    function emitUIEvent(target, name, detail = {}, cancelable = false) {
+        if (!target) return true;
+        return target.dispatchEvent(new CustomEvent(name, {
+            detail,
+            bubbles: true,
+            cancelable
+        }));
+    }
+
+    function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
+        if (!dialog || dialog.open) return false;
+        const proceed = emitUIEvent(dialog, "opening", { reason, duration }, true);
+        if (!proceed) return false;
+        dialog.style.setProperty("--app-dialog-transition-duration", `${duration}ms`);
+        dialog.showModal();
+        setTimeout(() => {
+            if (!dialog.open) return;
+            dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
+            emitUIEvent(dialog, "opened", { reason, duration });
+        }, duration);
+        return true;
+    }
+
+    function closeDialog(dialog, { reason = "user", immediate = false } = {}) {
+        if (!dialog?.open) return false;
+        const proceed = emitUIEvent(dialog, "closing", { reason, immediate }, true);
+        if (!proceed) return false;
+        if (immediate) dialog.style.setProperty("--app-dialog-transition-duration", "0ms");
+        dialog.close();
+        const duration = immediate ? 0 : 250;
+        setTimeout(() => {
+            dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
+            emitUIEvent(dialog, "closed", { reason, immediate });
+        }, duration);
+        return true;
+    }
+
+    function popoverIsOpen(popover) {
+        try { return Boolean(popover?.matches?.(":popover-open")); }
+        catch { return false; }
+    }
+
+    function hidePopoverForHandoff(popover) {
+        if (!popoverIsOpen(popover)) return true;
+        popover.classList.add("popover-immediate-close");
+        popover.hidePopover?.();
+        const closed = !popoverIsOpen(popover);
+        requestAnimationFrame(() => popover.classList.remove("popover-immediate-close"));
+        return closed;
+    }
+
+    document.querySelectorAll("[popover]").forEach(popover => {
+        popover.addEventListener("beforetoggle", event => {
+            const opening = event.newState === "open";
+            const proceed = emitUIEvent(
+                popover,
+                opening ? "opening" : "closing",
+                { oldState: event.oldState, newState: event.newState },
+                true
+            );
+            if (!proceed) event.preventDefault();
+        });
+        popover.addEventListener("toggle", event => {
+            emitUIEvent(
+                popover,
+                event.newState === "open" ? "opened" : "closed",
+                { oldState: event.oldState, newState: event.newState }
+            );
+        });
+    });
+
+    document.addEventListener("pointerdown", event => {
+        if (initialLoginAttemptPending && !loginDialog.open) {
+            initialLoginSuppressed = true;
+        }
+        const trigger = event.target.closest?.("[data-dialog], [popovertarget]");
+        const sourcePopover = trigger?.closest?.("[popover]");
+        if (sourcePopover && trigger !== $("#menuButton")) {
+            sourcePopover.classList.add("popover-immediate-close");
+        }
+    }, true);
+
+    loginDialog.addEventListener("opening", event => {
+        if (event.detail?.reason === "initial-login" && initialLoginSuppressed) {
+            event.preventDefault();
+        }
+    });
+
     function showInitialLoginDialog() {
         if (loginDialog.open) return;
-        loginDialog.classList.add("initial-login-opening");
-        loginDialog.showModal();
+        const opened = openDialogElement(loginDialog, {
+            duration: INITIAL_LOGIN_FADE_DURATION,
+            reason: "initial-login"
+        });
+        initialLoginAttemptPending = false;
+        if (!opened) return;
         requestAnimationFrame(() => {
             $("#loginUsername")?.focus({ preventScroll: true });
         });
-        setTimeout(() => {
-            loginDialog.classList.remove("initial-login-opening");
-        }, INITIAL_LOGIN_FADE_DURATION);
     }
-
-    function closeDialog(dialog) {
-        if (!dialog?.open) return;
-        dialog.classList.remove("initial-login-opening");
-        dialog.close();
-    }
-
-    loginDialog.addEventListener("cancel", () => {
-        loginDialog.classList.remove("initial-login-opening");
-    });
 
     function setOffline(offline, { login = false, startup = false } = {}) {
         clearTimeout(loginPromptTimeout);
@@ -373,10 +457,14 @@
         }
     }
 
-    function openDialog(id) {
+    function openDialog(id, { fromPopover = false, reason = "user" } = {}) {
         const dialog = document.getElementById(id);
-        if (dialog && !dialog.open) dialog.showModal();
-        $("#mainMenu")?.hidePopover?.();
+        if (!dialog || dialog.open) return false;
+        if (fromPopover && !hidePopoverForHandoff(mainMenu)) return false;
+        return openDialogElement(dialog, {
+            duration: fromPopover ? 750 : 250,
+            reason
+        });
     }
 
     $("#scopeToggle").addEventListener("click", () => {
@@ -397,18 +485,18 @@
     });
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
-        button.addEventListener("click", () => {
+        button.addEventListener("pointerup", () => {
             if (button.dataset.dialog === "profileDialog" && !clockTimer.connected) {
-                openDialog("loginDialog");
+                openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
                 return;
             }
             if (button.dataset.dialog === "graphicalSettingsDialog") fillGraphicalForm(getGraphicalSettings());
-            openDialog(button.dataset.dialog);
+            openDialog(button.dataset.dialog, { fromPopover: true, reason: "popover-handoff" });
         });
     });
 
     document.querySelectorAll("[data-close-dialog]").forEach(button => {
-        button.addEventListener("click", () => closeDialog(button.closest("dialog")));
+        button.addEventListener("pointerup", () => closeDialog(button.closest("dialog")));
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
@@ -455,14 +543,15 @@
         }
     });
 
-    authButton.addEventListener("click", async () => {
-        $("#mainMenu")?.hidePopover?.();
+    authButton.addEventListener("pointerup", async () => {
         if (!clockTimer.connected) {
             clearTimeout(loginPromptTimeout);
             loginPromptTimeout = undefined;
-            if (!loginDialog.open) loginDialog.showModal();
+            initialLoginAttemptPending = false;
+            openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
             return;
         }
+        mainMenu?.hidePopover?.();
         try { await clockTimer.disconnect(); }
         catch {}
         finally { setOffline(true); }
@@ -627,6 +716,7 @@
             source,
             initial,
             pending: initial,
+            replaceOnNextDigit: source !== "new-trip",
             locked,
             persistence: source === "new-trip"
                 ? (clockTimer.connected ? "pending" : "offline")
@@ -684,7 +774,6 @@
             const percent = Number(state.pending);
             const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
             clockTimer.setAttribute(attribute, `${percent}%`);
-            updateSummaryValues();
             return true;
         }
 
@@ -696,8 +785,8 @@
         }
         else if (clockTimer.standardTime !== undefined) {
             clockTimer.standardTime = formatted;
+            if (clockTimer.standardTime !== formatted) return false;
         }
-        updateSummaryValues();
         return true;
     }
 
@@ -707,14 +796,19 @@
             requestNumberPadClose();
             return;
         }
-        numberPadState.pending = "";
+        numberPadState.pending = numberPadState.initial;
+        numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
         refreshNumberPad();
     }
 
     function bindNumberPadEvents() {
         numberPadDialog.querySelectorAll("[data-number]").forEach(button => {
-            button.addEventListener("click", () => {
+            button.addEventListener("pointerup", () => {
                 if (!numberPadState) return;
+                if (numberPadState.replaceOnNextDigit) {
+                    numberPadState.pending = "";
+                    numberPadState.replaceOnNextDigit = false;
+                }
                 numberPadState.pending += button.dataset.number;
                 refreshNumberPad();
             });
@@ -724,6 +818,7 @@
             if (!numberPadState || numberPadConfirm.disabled) return;
             if (numberPadConfirm.dataset.action === "autocorrect") {
                 numberPadState.pending = autocorrectTimeDigits(numberPadState.pending);
+                numberPadState.replaceOnNextDigit = false;
                 refreshNumberPad();
                 return;
             }
@@ -804,7 +899,7 @@
         });
     }
 
-    $("#newTripButton").addEventListener("click", () => {
+    async function beginNewTripWorkflow() {
         let preparationPromise;
         try {
             preparationPromise = Promise.resolve(
@@ -823,15 +918,31 @@
             });
         }
 
-        void openNumberPad({
+        return openNumberPad({
             mode: "time",
             source: "new-trip",
             initialValue: stagedStandardTime || clockTimer.standardTime || "",
             preparationPromise
-        }).catch(() => {});
+        });
+    }
+
+    $("#newTripButton").addEventListener("pointerup", () => {
+        void beginNewTripWorkflow().catch(() => {});
     });
 
-    $("#standardTimeButton").addEventListener("click", () => {
+    $("#endTripButton").addEventListener("pointerup", () => {
+        void clockTimer.stop().catch(() => {});
+    });
+
+    $("#breakButton").addEventListener("pointerup", () => {
+        openDialog("breakDialog", { reason: "break" });
+    });
+
+    $("#downButton").addEventListener("pointerup", () => {
+        void clockTimer.startInterval("down").catch(() => {});
+    });
+
+    $("#standardTimeButton").addEventListener("pointerup", () => {
         void openNumberPad({
             mode: "time",
             source: "standard-time",
@@ -839,7 +950,7 @@
         }).catch(() => {});
     });
 
-    $("#goalPercentValue").addEventListener("click", () => {
+    $("#goalPercentValue").addEventListener("pointerup", () => {
         void openNumberPad({
             mode: "percent",
             source: "percent-goal",
@@ -874,25 +985,51 @@
         $("#independentTimerValue").value = "---";
     });
 
+    function setTripControlState(running) {
+        app.dataset.tripState = running ? "running" : "ready";
+        activeTripControls.hidden = !running;
+    }
+
+    function updatePostStopSummary(summary) {
+        if (clockTimer.percentMode === "total" && summary?.total) {
+            updateSummaryValues(summary);
+            return;
+        }
+        $("#standardTimeValue").textContent = "---";
+        $("#renderedTimeValue").textContent = "---";
+        $("#currentPercentValue").textContent = "---";
+        const goal = summary?.trip?.percentGoal ?? clockTimer.renderedPercentGoal;
+        $("#goalPercentValue").textContent = formatSummaryPercent(goal, "100%");
+    }
+
     clockTimer.addEventListener("cadenceTick", event => {
         updateSummaryValues(event.detail?.summary);
     });
 
+    clockTimer.addEventListener("started", event => {
+        setTripControlState(true);
+        updateSummaryValues(event.detail?.summary);
+    });
+
+    clockTimer.addEventListener("stopped", event => {
+        setTripControlState(false);
+        updatePostStopSummary(event.detail?.summary);
+        void beginNewTripWorkflow().catch(() => {});
+    });
+
     const summaryRefreshEvents = [
-        "start",
-        "stop",
         "cleared",
-        "goalChange",
-        "renderedPercentGoalChange",
-        "renderedTimeModeChange",
-        "standardTimeChange",
-        "intervalStart",
-        "intervalEnd",
+        "goalChanged",
+        "renderedPercentGoalChanged",
+        "renderedTimeModeChanged",
+        "standardTimeChanged",
+        "intervalStarted",
+        "intervalEnded",
         "intervalElapsed",
         "intervalExtended",
-        "intervalApprovalToggle",
-        "intervalApprovalChange",
-        "intervalDelete",
+        "intervalApprovalToggled",
+        "intervalApprovalChanged",
+        "intervalDeleted",
         "goalChangeFailed"
     ];
 
@@ -900,7 +1037,11 @@
         clockTimer.addEventListener(eventName, queueSummaryRefresh);
     }
 
-    clockTimer.addEventListener("percentModeChange", () => {
+    clockTimer.addEventListener("cleared", () => {
+        setTripControlState(false);
+    });
+
+    clockTimer.addEventListener("percentModeChanged", () => {
         syncScopeUI(true);
         queueSummaryRefresh();
     });
@@ -913,6 +1054,8 @@
         setOffline(true);
         queueSummaryRefresh();
     });
+
+    breakDialog?.addEventListener("opened", () => {});
 
     const graphicalSettings = getGraphicalSettings();
     applyGraphicalSettings(graphicalSettings);

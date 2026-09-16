@@ -1233,7 +1233,7 @@
                             "user";
 
                         this.#emitClockTimerEvent(
-                            "percentModeChange",
+                            "percentModeChanged",
                             {
                                 attribute: "percent-mode",
                                 previousValue: previousMode,
@@ -1281,7 +1281,7 @@
 
                 case "trip-goal":
                 case "total-goal":
-                    this.#emitClockTimerEvent("goalChange", {
+                    this.#emitClockTimerEvent("goalChanged", {
                         goal: name === "trip-goal" ? "trip" : "total",
                         attribute: name,
                         previousValue: oldValue,
@@ -1902,7 +1902,7 @@
                 normalized;
 
             this.#emitClockTimerEvent(
-                "intervalElapsedBehaviorChange",
+                "intervalElapsedBehaviorChanged",
                 {
                     previousValue,
                     value: normalized
@@ -3455,8 +3455,10 @@
             const scheduledStartTime =
                 this.#scheduledStartMilliseconds;
 
-            this.#emitClockTimerEvent("start", {
+            const summary = this.#buildSummarySnapshot(new Date());
+            this.#emitClockTimerEvent("started", {
                 ...result,
+                summary,
                 ...this.#getTimingDetail(
                     actualStartTime,
                     scheduledStartTime
@@ -3547,14 +3549,18 @@
                 });
             });
             const result = this.#mutationResult(synced);
-            this.#emitClockTimerEvent("stop", result);
+            const summary = this.#buildSummarySnapshot(new Date());
+            this.#emitClockTimerEvent("stopped", {
+                ...result,
+                summary
+            });
             return result;
         }
 
         async clear() {
             const oldTripId = this.#tripId;
             const connected = this.#connectionState === "connected";
-            const proceed = this.#emitClockTimerEvent("clear", {
+            const proceed = this.#emitClockTimerEvent("clearing", {
                 tripId: Number.isInteger(oldTripId) ? oldTripId : undefined
             }, {
                 cancelable: !connected
@@ -3677,7 +3683,7 @@
                 this.#getCurrentTimelineTime()
             );
 
-            this.#emitClockTimerEvent("intervalStart", {
+            this.#emitClockTimerEvent("intervalStarted", {
                 ...result,
                 type: record.type,
                 startTime: record.startDate?.toISOString?.(),
@@ -3762,7 +3768,7 @@
             });
             const result = this.#mutationResult(synced, record);
             this.#checkGoalMisses(this.#getCurrentTimelineTime());
-            this.#emitClockTimerEvent("intervalEnd", {
+            this.#emitClockTimerEvent("intervalEnded", {
                 ...result,
                 ...this.#getTimingDetail(
                     now,
@@ -3800,7 +3806,7 @@
                     ? "unapproved"
                     : "approved",
                 current.value,
-                "intervalApprovalToggle"
+                "intervalApprovalToggled"
             );
         }
 
@@ -3851,7 +3857,7 @@
                 record,
                 current.state,
                 normalized.value,
-                "intervalApprovalChange"
+                "intervalApprovalChanged"
             );
         }
 
@@ -3971,7 +3977,7 @@
                 renderedTime;
 
             this.#emitClockTimerEvent(
-                "renderedTimeModeChange",
+                "renderedTimeModeChanged",
                 {
                     previousValue,
                     value: normalized,
@@ -4140,10 +4146,34 @@
             const previousDuration =
                 this.#standardDuration;
 
-            this.#standardTime =
+            const nextValue =
                 this.#formatStandardTime(
                     parsed.total
                 );
+
+            if (nextValue === previousValue) {
+                return;
+            }
+
+            const proceed =
+                this.#emitClockTimerEvent(
+                    "standardTimeChanging",
+                    {
+                        previousValue,
+                        value: nextValue,
+                        standardTimeMilliseconds: parsed.total
+                    },
+                    {
+                        cancelable: true
+                    }
+                );
+
+            if (!proceed) {
+                return;
+            }
+
+            this.#standardTime =
+                nextValue;
 
             this.#standardDuration =
                 parsed.total;
@@ -4175,11 +4205,12 @@
             );
 
             this.#emitClockTimerEvent(
-                "standardTimeChange",
+                "standardTimeChanged",
                 {
                     previousValue,
                     value: this.#standardTime,
-                    standardTimeMilliseconds: this.#standardDuration
+                    standardTimeMilliseconds: this.#standardDuration,
+                    summary: this.#buildSummarySnapshot(new Date())
                 }
             );
         }
@@ -8532,7 +8563,7 @@
             };
 
             this.#emitClockTimerEvent(
-                "intervalDelete",
+                "intervalDeleted",
                 detail
             );
 
@@ -21820,7 +21851,7 @@
             source
         ) {
             this.#emitClockTimerEvent(
-                "renderedPercentGoalChange",
+                "renderedPercentGoalChanged",
                 {
                     previousValue,
                     value,

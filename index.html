@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="app.css">
 </head>
 <body>
-    <main id="app" class="app is-offline" data-state="offline">
+    <main id="app" class="app is-offline" data-state="offline" data-trip-state="ready">
         <header class="app-header">
             <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
                 <span></span><span></span><span></span>
@@ -39,7 +39,16 @@
             </div>
         </section>
 
-        <button id="newTripButton" class="new-trip-button" type="button">New Trip</button>
+        <section id="tripActionControls" class="trip-action-controls" aria-label="Trip controls">
+            <button id="newTripButton" class="new-trip-button" type="button">New Trip</button>
+            <div id="activeTripControls" class="active-trip-controls" hidden>
+                <button id="endTripButton" class="trip-action-button end-trip-button" type="button">End Trip</button>
+                <div class="trip-action-row">
+                    <button id="breakButton" class="trip-action-button break-button" type="button">Break</button>
+                    <button id="downButton" class="trip-action-button down-button" type="button">Down</button>
+                </div>
+            </div>
+        </section>
 
         <div class="summary-spacer" aria-hidden="true"></div>
 
@@ -229,6 +238,16 @@
                 <button class="primary-action" type="submit" value="save">Save</button>
             </div>
         </form>
+    </dialog>
+
+    <dialog id="breakDialog" class="app-dialog break-dialog">
+        <section class="break-dialog-content">
+            <header class="dialog-header">
+                <h2>Break</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <p>Break options will be added here.</p>
+        </section>
     </dialog>
 
     <script src="TemporalFormat.js"></script>
