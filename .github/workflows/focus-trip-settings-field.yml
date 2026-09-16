@@ -1,0 +1,55 @@
+name: Focus Trip Settings field
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/focus-trip-settings-field.py
+      - .github/workflows/focus-trip-settings-field.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python .github/scripts/focus-trip-settings-field.py
+
+      - name: Validate
+        run: |
+          node --check app.js
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          app = Path('app.js').read_text()
+          required = [
+              'const tripFieldAttentionAnimations = new WeakMap();',
+              'function drawAttentionToTripField(field)',
+              '{ duration = 250, focusField } = {}',
+              'focusField: "standard-time"',
+              'openTripSettingsDialog("summary-standard-time"'
+          ]
+          for marker in required:
+              assert marker in app, marker
+          assert 'source: "standard-time",\n            initialValue: clockTimer.standardTime' not in app
+          PY
+
+      - name: Commit and cleanup
+        run: |
+          rm .github/scripts/focus-trip-settings-field.py
+          rm .github/workflows/focus-trip-settings-field.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'Open Trip Settings from standard time summary'
+          git push origin HEAD:rename-prestart-latency
