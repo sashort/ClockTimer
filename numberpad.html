@@ -1,10 +1,17 @@
 <dialog id="numberPadDialog" class="number-pad-dialog" aria-label="Number pad">
     <section class="number-pad-shell">
+        <div id="numberPadContext" class="number-pad-context">Standard Time</div>
         <div class="number-pad-header">
-            <div class="number-pad-readout">
+            <div id="numberPadReadout" class="number-pad-readout">
                 <output id="numberPadDisplay" class="number-pad-display" aria-live="polite"></output>
+                <button id="numberPadAM" class="number-pad-meridiem number-pad-am" type="button" data-meridiem="AM" aria-label="AM">AM</button>
+                <label id="numberPadDateRow" class="number-pad-date-row">
+                    <span class="number-pad-calendar-icon" aria-hidden="true"></span>
+                    <input id="numberPadDate" type="date" aria-label="Date">
+                </label>
+                <button id="numberPadPM" class="number-pad-meridiem number-pad-pm" type="button" data-meridiem="PM" aria-label="PM">PM</button>
             </div>
-            <button id="numberPadSettings" class="number-pad-settings" type="button" aria-label="Number pad settings" data-persistence="offline">
+            <button id="numberPadSettings" class="number-pad-settings" type="button" aria-label="Trip settings" data-persistence="offline">
                 <span class="number-pad-settings-gear" aria-hidden="true"></span>
                 <span class="number-pad-persistence-badge" aria-hidden="true"></span>
             </button>

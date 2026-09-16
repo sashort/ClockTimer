@@ -187,6 +187,8 @@
 
         #startedAtEpoch;
 
+        #creationDateOverride;
+
         #ringAnchor;
 
         #rings =
@@ -1369,6 +1371,17 @@
         }
 
         #getJSONCreationDate() {
+            if (
+                this.#creationDateOverride instanceof Date &&
+                !Number.isNaN(
+                    this.#creationDateOverride.getTime()
+                )
+            ) {
+                return new Date(
+                    this.#creationDateOverride.getTime()
+                );
+            }
+
             if (
                 !Number.isFinite(
                     this.#startedAtEpoch
@@ -4115,6 +4128,90 @@
             );
         }
 
+        set creationDate(value) {
+            if (!this.#hasStartProperties()) {
+                return;
+            }
+
+            let next;
+
+            if (value instanceof Date) {
+                if (Number.isNaN(value.getTime())) {
+                    return;
+                }
+                next = new Date(
+                    value.getFullYear(),
+                    value.getMonth(),
+                    value.getDate()
+                );
+            }
+            else if (typeof value === "string") {
+                const match =
+                    value.trim().match(
+                        /^(\d{4})-(\d{2})-(\d{2})$/
+                    );
+
+                if (!match) {
+                    return;
+                }
+
+                next = new Date(
+                    Number(match[1]),
+                    Number(match[2]) - 1,
+                    Number(match[3])
+                );
+
+                if (
+                    next.getFullYear() !== Number(match[1]) ||
+                    next.getMonth() !== Number(match[2]) - 1 ||
+                    next.getDate() !== Number(match[3])
+                ) {
+                    return;
+                }
+            }
+            else {
+                return;
+            }
+
+            const previousValue =
+                this.creationDate;
+
+            const nextValue =
+                this.#formatJSONDate(next);
+
+            if (nextValue === previousValue) {
+                return;
+            }
+
+            if (
+                !this.#emitClockTimerEvent(
+                    "creationDateChanging",
+                    {
+                        previousValue,
+                        value: nextValue
+                    },
+                    { cancelable: true }
+                )
+            ) {
+                return;
+            }
+
+            this.#creationDateOverride =
+                next;
+
+            this.#emitClockTimerEvent(
+                "creationDateChanged",
+                {
+                    previousValue,
+                    value: nextValue,
+                    summary:
+                        this.#buildSummarySnapshot(
+                            new Date()
+                        )
+                }
+            );
+        }
+
         get standardTime() {
             return this.#standardTime;
         }
@@ -4220,6 +4317,22 @@
         }
 
         set creationTime(value) {
+            const previousValue =
+                this.creationTime;
+
+            if (
+                !this.#emitClockTimerEvent(
+                    "creationTimeChanging",
+                    {
+                        previousValue,
+                        value
+                    },
+                    { cancelable: true }
+                )
+            ) {
+                return;
+            }
+
             if (!this.#hasStartProperties()) {
                 return;
             }
@@ -4245,6 +4358,24 @@
 
             this.#creationMilliseconds =
                 parsed.total;
+
+
+            const currentValue =
+                this.creationTime;
+
+            if (currentValue !== previousValue) {
+                this.#emitClockTimerEvent(
+                    "creationTimeChanged",
+                    {
+                        previousValue,
+                        value: currentValue,
+                        summary:
+                            this.#buildSummarySnapshot(
+                                new Date()
+                            )
+                    }
+                );
+            }
         }
 
         get scheduledStart() {
@@ -4252,6 +4383,22 @@
         }
 
         set scheduledStart(value) {
+            const previousValue =
+                this.scheduledStart;
+
+            if (
+                !this.#emitClockTimerEvent(
+                    "scheduledStartChanging",
+                    {
+                        previousValue,
+                        value
+                    },
+                    { cancelable: true }
+                )
+            ) {
+                return;
+            }
+
             if (!this.#hasStartProperties()) {
                 return;
             }
@@ -4316,6 +4463,24 @@
             if (this.#needsTick()) {
                 this.#scheduleNextTick();
             }
+
+
+            const currentValue =
+                this.scheduledStart;
+
+            if (currentValue !== previousValue) {
+                this.#emitClockTimerEvent(
+                    "scheduledStartChanged",
+                    {
+                        previousValue,
+                        value: currentValue,
+                        summary:
+                            this.#buildSummarySnapshot(
+                                new Date()
+                            )
+                    }
+                );
+            }
         }
 
         get startTime() {
@@ -4334,6 +4499,22 @@
         }
 
         set startTime(value) {
+            const previousValue =
+                this.startTime;
+
+            if (
+                !this.#emitClockTimerEvent(
+                    "startTimeChanging",
+                    {
+                        previousValue,
+                        value
+                    },
+                    { cancelable: true }
+                )
+            ) {
+                return;
+            }
+
             if (!this.#hasStartProperties()) {
                 return;
             }
@@ -4360,6 +4541,24 @@
             this.#refreshAfterStartPropertyChange(
                 milliseconds
             );
+
+
+            const currentValue =
+                this.startTime;
+
+            if (currentValue !== previousValue) {
+                this.#emitClockTimerEvent(
+                    "startTimeChanged",
+                    {
+                        previousValue,
+                        value: currentValue,
+                        summary:
+                            this.#buildSummarySnapshot(
+                                new Date()
+                            )
+                    }
+                );
+            }
         }
 
         #refreshAfterStartPropertyChange(
@@ -5749,6 +5948,9 @@
 
             this.#ringAnchor =
                 creation.total;
+
+            this.#creationDateOverride =
+                undefined;
 
             this.#startedAtEpoch =
                 Date.now();
@@ -10670,6 +10872,9 @@
                 false;
 
             this.#startedAtEpoch =
+                undefined;
+
+            this.#creationDateOverride =
                 undefined;
 
             this.#ringAnchor =

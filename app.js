@@ -54,6 +54,8 @@
     const mainMenu = $("#mainMenu");
     const activeTripControls = $("#activeTripControls");
     const breakDialog = $("#breakDialog");
+    const tripSettingsDialog = $("#tripSettingsDialog");
+    const tripSettingsForm = $("#tripSettingsForm");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -69,6 +71,16 @@
     let numberPadSettings;
     let numberPadClear;
     let numberPadConfirm;
+    let numberPadContext;
+    let numberPadReadout;
+    let numberPadDate;
+    let numberPadDateRow;
+    let numberPadAM;
+    let numberPadPM;
+    let numberPadClosedState;
+    let tripSettingsOpenAfterPadClose = false;
+    const tripSettingsPadStack = [];
+    let tripSettingsOpeningEditor = false;
     let numberPadLongPressTimer;
     let numberPadLongPressed = false;
     let numberPadLastClearPointerDown = 0;
@@ -594,6 +606,12 @@
                 numberPadSettings = $("#numberPadSettings");
                 numberPadClear = $("#numberPadClear");
                 numberPadConfirm = $("#numberPadConfirm");
+                numberPadContext = $("#numberPadContext");
+                numberPadReadout = $("#numberPadReadout");
+                numberPadDate = $("#numberPadDate");
+                numberPadDateRow = $("#numberPadDateRow");
+                numberPadAM = $("#numberPadAM");
+                numberPadPM = $("#numberPadPM");
                 bindNumberPadEvents();
             })().catch(error => {
                 numberPadLoadPromise = undefined;
@@ -606,12 +624,25 @@
     function normalizeTimeDigits(value) {
         const text = String(value || "").trim();
         if (!text) return "";
-        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
         if (!match) return "";
         const hours = match[1] || "";
         const minutes = match[2];
         const seconds = match[3];
         return hours ? `${hours}${minutes.padStart(2, "0")}${seconds}` : `${minutes}${seconds}`;
+    }
+
+    function parseTimelineTime(value) {
+        const text = String(value || "").trim();
+        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
+        if (!match) return undefined;
+        const hours = Number(match[1] || 0);
+        const minutes = Number(match[2]);
+        const seconds = Number(match[3]);
+        const milliseconds = Number(String(match[4] || "0").padEnd(3, "0"));
+        if (![hours, minutes, seconds, milliseconds].every(Number.isFinite)) return undefined;
+        if (minutes > 59 || seconds > 59) return undefined;
+        return (((hours * 60) + minutes) * 60 + seconds) * 1000 + milliseconds;
     }
 
     function splitTimeDigits(raw) {
@@ -659,9 +690,158 @@
             : `${minutes}${String(seconds).padStart(2, "0")}`;
     }
 
+    function splitAbsoluteDigits(raw) {
+        if (!/^\d+$/.test(raw)) return undefined;
+        if (raw.length <= 2) {
+            return { hour: Number(raw), minute: 0, second: 0 };
+        }
+        if (raw.length <= 4) {
+            return {
+                hour: Number(raw.slice(0, -2)),
+                minute: Number(raw.slice(-2)),
+                second: 0
+            };
+        }
+        return {
+            hour: Number(raw.slice(0, -4)),
+            minute: Number(raw.slice(-4, -2)),
+            second: Number(raw.slice(-2))
+        };
+    }
+
+    function absoluteDigits(hour, minute, second) {
+        return `${Number(hour)}${String(minute).padStart(2, "0")}${String(second).padStart(2, "0")}`;
+    }
+
+    function absoluteDigitsValid(raw, meridiem) {
+        const parts = splitAbsoluteDigits(raw);
+        if (!parts) return false;
+        if (parts.minute > 59 || parts.second > 59) return false;
+        return meridiem ? parts.hour >= 1 && parts.hour <= 12 : parts.hour >= 0 && parts.hour <= 23;
+    }
+
+    function renderAbsoluteDigits(raw) {
+        const parts = splitAbsoluteDigits(raw);
+        if (!parts) return "";
+        return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")}`;
+    }
+
+    function formatDateInput(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+        const pad = value => String(value).padStart(2, "0");
+        return `${String(date.getFullYear()).padStart(4, "0")}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function parseDateInput(value) {
+        const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return undefined;
+        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        if (
+            date.getFullYear() !== Number(match[1]) ||
+            date.getMonth() !== Number(match[2]) - 1 ||
+            date.getDate() !== Number(match[3])
+        ) return undefined;
+        return date;
+    }
+
+    function shiftDateInput(value, days) {
+        const date = parseDateInput(value);
+        if (!date || !Number.isFinite(days)) return value;
+        date.setDate(date.getDate() + days);
+        return formatDateInput(date);
+    }
+
+    function getTripBaseDate() {
+        return parseDateInput(clockTimer.creationDate) || new Date(new Date().setHours(0, 0, 0, 0));
+    }
+
+    function getAbsolutePadInitial(value) {
+        const milliseconds = parseTimelineTime(value);
+        const base = getTripBaseDate();
+        const date = new Date(base.getTime() + (Number.isFinite(milliseconds) ? milliseconds : 0));
+        const hour24 = date.getHours();
+        const military = clockTimer.getAttribute("military-time") !== "false";
+        const meridiem = military ? null : (hour24 >= 12 ? "PM" : "AM");
+        const displayHour = meridiem ? (hour24 % 12 || 12) : hour24;
+        return {
+            digits: absoluteDigits(displayHour, date.getMinutes(), date.getSeconds()),
+            date: formatDateInput(date),
+            meridiem
+        };
+    }
+
+    function absoluteHour24(state) {
+        const parts = splitAbsoluteDigits(state.pending);
+        if (!parts) return undefined;
+        if (state.meridiem === "AM") return parts.hour === 12 ? 0 : parts.hour;
+        if (state.meridiem === "PM") return parts.hour === 12 ? 12 : parts.hour + 12;
+        return parts.hour;
+    }
+
+    function absoluteTimelineMilliseconds(state, { creation = false } = {}) {
+        if (!absoluteDigitsValid(state.pending, state.meridiem)) return undefined;
+        const date = parseDateInput(state.pendingDate);
+        if (!date) return undefined;
+        const hour = absoluteHour24(state);
+        if (!Number.isFinite(hour)) return undefined;
+        const parts = splitAbsoluteDigits(state.pending);
+        const timeMilliseconds = ((hour * 60 + parts.minute) * 60 + parts.second) * 1000;
+        if (creation) return timeMilliseconds;
+        const base = getTripBaseDate();
+        const dayMilliseconds = date.getTime() - base.getTime();
+        const result = dayMilliseconds + timeMilliseconds;
+        return result >= 0 ? result : undefined;
+    }
+
+    function formatTimelineMilliseconds(milliseconds) {
+        if (!Number.isFinite(milliseconds) || milliseconds < 0) return undefined;
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function autocorrectAbsoluteState(state) {
+        const parts = splitAbsoluteDigits(state.pending);
+        if (!parts) return;
+        let hour24;
+        if (state.meridiem === "AM") hour24 = parts.hour % 12;
+        else if (state.meridiem === "PM") hour24 = (parts.hour % 12) + 12;
+        else hour24 = parts.hour;
+        let totalSeconds = hour24 * 3600 + parts.minute * 60 + parts.second;
+        const dayOffset = Math.floor(totalSeconds / 86400);
+        totalSeconds = ((totalSeconds % 86400) + 86400) % 86400;
+        const correctedHour24 = Math.floor(totalSeconds / 3600);
+        const minute = Math.floor((totalSeconds % 3600) / 60);
+        const second = totalSeconds % 60;
+        state.pendingDate = shiftDateInput(state.pendingDate, dayOffset);
+        if (state.meridiem) {
+            state.meridiem = correctedHour24 >= 12 ? "PM" : "AM";
+            state.pending = absoluteDigits(correctedHour24 % 12 || 12, minute, second);
+        }
+        else {
+            state.pending = absoluteDigits(correctedHour24, minute, second);
+        }
+    }
+
     function normalizePercentDigits(value) {
         const match = String(value || "").trim().match(/^(\d+)(?:%)?$/);
         return match ? String(Number(match[1])) : "";
+    }
+
+    function getNumberPadTitle(source) {
+        const titles = {
+            "new-trip": "Start Time",
+            "standard-time": "Standard Time",
+            "creation-time": "Creation Time",
+            "scheduled-start": "Scheduled Start",
+            "actual-start": "Actual Start"
+        };
+        if (source === "percent-goal") {
+            return clockTimer.percentMode === "total" ? "Total Percent" : "Trip Percent";
+        }
+        return titles[source] || "Number Pad";
     }
 
     function numberPadValueValid() {
@@ -669,12 +849,17 @@
         if (numberPadState.mode === "percent") {
             return Number.isInteger(Number(numberPadState.pending)) && Number(numberPadState.pending) > 0;
         }
+        if (numberPadState.mode === "absolute") {
+            return Boolean(numberPadState.pendingDate) && absoluteDigitsValid(numberPadState.pending, numberPadState.meridiem);
+        }
         return timeDigitsValid(numberPadState.pending);
     }
 
     function numberPadHasChanges() {
-        return Boolean(numberPadState) &&
-            numberPadState.pending !== numberPadState.initial;
+        if (!numberPadState) return false;
+        return numberPadState.pending !== numberPadState.initial ||
+            numberPadState.pendingDate !== numberPadState.initialDate ||
+            numberPadState.meridiem !== numberPadState.initialMeridiem;
     }
 
     function getNumberPadClearAction() {
@@ -685,9 +870,25 @@
     function refreshNumberPad() {
         if (!numberPadState || !numberPadDialog) return;
         const percentMode = numberPadState.mode === "percent";
+        const absoluteMode = numberPadState.mode === "absolute";
+        numberPadContext.textContent = numberPadState.title;
+        numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
             ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "")
-            : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "");
+            : absoluteMode
+                ? (numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "")
+                : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "");
+
+        numberPadDateRow.hidden = !absoluteMode;
+        numberPadAM.hidden = !absoluteMode;
+        numberPadPM.hidden = !absoluteMode;
+        if (absoluteMode) {
+            numberPadDate.value = numberPadState.pendingDate || "";
+            numberPadAM.classList.toggle("is-selected", numberPadState.meridiem === "AM");
+            numberPadPM.classList.toggle("is-selected", numberPadState.meridiem === "PM");
+            numberPadAM.setAttribute("aria-pressed", String(numberPadState.meridiem === "AM"));
+            numberPadPM.setAttribute("aria-pressed", String(numberPadState.meridiem === "PM"));
+        }
 
         const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
@@ -700,36 +901,52 @@
         numberPadConfirm.setAttribute("aria-label", autocorrect ? "Auto-Correct" : "Confirm");
         numberPadConfirm.disabled = !changed || (!autocorrect && !valid);
 
-        const header = numberPadDialog.querySelector(".number-pad-header");
-        header?.classList.toggle("percent-mode", percentMode);
         numberPadSettings.hidden = percentMode;
         if (!percentMode) {
             numberPadSettings.dataset.persistence = numberPadState.persistence || (clockTimer.connected ? "online" : "offline");
             numberPadSettings.setAttribute(
                 "aria-label",
                 numberPadSettings.dataset.persistence === "pending"
-                    ? "Number pad settings; trip persistence pending"
+                    ? "Trip settings; trip persistence pending"
                     : numberPadSettings.dataset.persistence === "online"
-                        ? "Number pad settings; trip persisted online"
-                        : "Number pad settings; trip local and not persisted"
+                        ? "Trip settings; trip persisted online"
+                        : "Trip settings; trip local and not persisted"
             );
         }
     }
 
-    async function openNumberPad({ mode, source, initialValue = "", preparationPromise } = {}) {
+    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, returnToTripSettings = false } = {}) {
         await ensureNumberPadLoaded();
-        const initial = mode === "percent"
-            ? normalizePercentDigits(initialValue)
-            : normalizeTimeDigits(initialValue);
+        const normalizedMode = mode === "percent" ? "percent" : mode === "absolute" ? "absolute" : "duration";
+        let initial;
+        let initialDate;
+        let initialMeridiem;
+        if (normalizedMode === "absolute") {
+            const absolute = getAbsolutePadInitial(initialValue);
+            initial = absolute.digits;
+            initialDate = absolute.date;
+            initialMeridiem = absolute.meridiem;
+        }
+        else {
+            initial = normalizedMode === "percent"
+                ? normalizePercentDigits(initialValue)
+                : normalizeTimeDigits(initialValue);
+        }
         const state = {
-            mode,
+            mode: normalizedMode,
             source,
+            title: getNumberPadTitle(source),
             initial,
             pending: initial,
+            initialDate,
+            pendingDate: initialDate,
+            initialMeridiem,
+            meridiem: initialMeridiem,
             replaceOnNextDigit: source !== "new-trip",
             persistence: source === "new-trip"
                 ? (clockTimer.connected ? "pending" : "offline")
-                : (clockTimer.connected ? "online" : "offline")
+                : (clockTimer.connected ? "online" : "offline"),
+            returnToTripSettings
         };
         numberPadState = state;
         refreshNumberPad();
@@ -754,6 +971,19 @@
         }
     }
 
+    async function restoreNumberPadState(snapshot) {
+        if (!snapshot) return;
+        await ensureNumberPadLoaded();
+        numberPadState = { ...snapshot };
+        refreshNumberPad();
+        if (!numberPadDialog.open) {
+            openDialogElement(numberPadDialog, {
+                duration: 250,
+                reason: "trip-settings-return"
+            });
+        }
+    }
+
     function resetNumberPad() {
         clearTimeout(numberPadLongPressTimer);
         numberPadLongPressTimer = undefined;
@@ -761,6 +991,8 @@
         numberPadLastClearPointerDown = 0;
         numberPadState = undefined;
         if (numberPadDisplay) numberPadDisplay.textContent = "";
+        if (numberPadContext) numberPadContext.textContent = "Number Pad";
+        if (numberPadDate) numberPadDate.value = "";
         if (numberPadClear) {
             numberPadClear.dataset.action = "close";
             numberPadClear.setAttribute("aria-label", "Close");
@@ -772,12 +1004,13 @@
         }
     }
 
-    function closeNumberPad({ discardPrepared = true, allowChanged = false } = {}) {
+    function closeNumberPad({ discardPrepared = true, allowChanged = false, suppressReturn = false } = {}) {
         const state = numberPadState;
         if (!allowChanged && numberPadHasChanges()) return false;
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, { reason: "number-pad" })) {
             return false;
         }
+        numberPadClosedState = suppressReturn && state ? { ...state, returnToTripSettings: false } : state;
         resetNumberPad();
         if (discardPrepared && state?.source === "new-trip") {
             clockTimer.discardPreparedTrip?.().catch?.(() => {});
@@ -807,6 +1040,32 @@
             return true;
         }
 
+        if (state.mode === "absolute") {
+            if (state.source === "creation-time") {
+                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                if (!value) return false;
+                if (state.pendingDate !== clockTimer.creationDate) {
+                    clockTimer.creationDate = state.pendingDate;
+                    if (clockTimer.creationDate !== state.pendingDate) return false;
+                }
+                clockTimer.creationTime = value;
+                return clockTimer.creationTime === value;
+            }
+
+            const timeline = absoluteTimelineMilliseconds(state);
+            const value = formatTimelineMilliseconds(timeline);
+            if (!value) return false;
+            if (state.source === "scheduled-start") {
+                clockTimer.scheduledStart = value;
+                return clockTimer.scheduledStart === value;
+            }
+            if (state.source === "actual-start") {
+                clockTimer.startTime = value;
+                return clockTimer.startTime === value;
+            }
+            return false;
+        }
+
         const formatted = renderTimeDigits(state.pending);
         if (!formatted) return false;
         stagedStandardTime = formatted;
@@ -823,6 +1082,8 @@
     function resetNumberPadPendingValue() {
         if (!numberPadState) return;
         numberPadState.pending = numberPadState.initial;
+        numberPadState.pendingDate = numberPadState.initialDate;
+        numberPadState.meridiem = numberPadState.initialMeridiem;
         numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
         refreshNumberPad();
     }
@@ -836,6 +1097,87 @@
         resetNumberPadPendingValue();
     }
 
+    function changeNumberPadMeridiem(next) {
+        if (!numberPadState || numberPadState.mode !== "absolute") return;
+        const parts = splitAbsoluteDigits(numberPadState.pending);
+        if (!parts) return;
+        const previous = numberPadState.meridiem;
+        const target = previous === next ? null : next;
+        let hour = parts.hour;
+        if (previous && !target) {
+            hour = previous === "AM"
+                ? (hour === 12 ? 0 : hour)
+                : (hour === 12 ? 12 : hour + 12);
+        }
+        else if (!previous && target && hour > 12) {
+            hour = hour % 12 || 12;
+        }
+        numberPadState.meridiem = target;
+        numberPadState.pending = absoluteDigits(hour, parts.minute, parts.second);
+        numberPadState.replaceOnNextDigit = false;
+        refreshNumberPad();
+    }
+
+    function formatTripTimeDisplay(value) {
+        const milliseconds = parseTimelineTime(value);
+        if (!Number.isFinite(milliseconds)) return "---";
+        const base = getTripBaseDate();
+        const date = new Date(base.getTime() + milliseconds);
+        const military = clockTimer.getAttribute("military-time") !== "false";
+        const time = military
+            ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`
+            : `${date.getHours() % 12 || 12}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")} ${date.getHours() >= 12 ? "PM" : "AM"}`;
+        const dateText = new Intl.DateTimeFormat(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        }).format(date);
+        return `${time} · ${dateText}`;
+    }
+
+    function refreshTripSettingsValues() {
+        const active = clockTimer.status === "running";
+        const values = {
+            "creation-time": active ? formatTripTimeDisplay(clockTimer.creationTime) : "---",
+            "scheduled-start": active ? formatTripTimeDisplay(clockTimer.scheduledStart) : "---",
+            "actual-start": active ? formatTripTimeDisplay(clockTimer.startTime) : "---",
+            "standard-time": active && clockTimer.standardTime ? clockTimer.standardTime : "---"
+        };
+        $("#tripCreationTime").textContent = values["creation-time"];
+        $("#tripScheduledStart").textContent = values["scheduled-start"];
+        $("#tripActualStart").textContent = values["actual-start"];
+        $("#tripStandardTime").textContent = values["standard-time"];
+        tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
+            button.disabled = !active;
+        });
+        tripSettingsForm.elements.intervalElapsedBehavior.value = clockTimer.intervalElapsedBehavior;
+        tripSettingsForm.elements.autoSyncTripGoal.checked = clockTimer.autoSyncTripGoal;
+    }
+
+    function openTripSettingsDialog(reason = "number-pad-settings") {
+        refreshTripSettingsValues();
+        return openDialogElement(tripSettingsDialog, { duration: 250, reason });
+    }
+
+    function getTripFieldValue(field) {
+        if (field === "creation-time") return clockTimer.creationTime || "";
+        if (field === "scheduled-start") return clockTimer.scheduledStart || "";
+        if (field === "actual-start") return clockTimer.startTime || "";
+        if (field === "standard-time") return clockTimer.standardTime || "";
+        return "";
+    }
+
+    function openTripFieldNumberPad(field) {
+        if (clockTimer.status !== "running") return Promise.resolve();
+        const absolute = field !== "standard-time";
+        return openNumberPad({
+            mode: absolute ? "absolute" : "time",
+            source: field,
+            initialValue: getTripFieldValue(field),
+            returnToTripSettings: true
+        });
+    }
+
     function bindNumberPadEvents() {
         numberPadDialog.querySelectorAll("[data-number]").forEach(button => {
             button.addEventListener("pointerup", () => {
@@ -844,15 +1186,28 @@
                     numberPadState.pending = "";
                     numberPadState.replaceOnNextDigit = false;
                 }
-                numberPadState.pending += button.dataset.number;
+                const candidate = numberPadState.pending + button.dataset.number;
+                if (numberPadState.mode === "absolute" && candidate.length > 6) return;
+                numberPadState.pending = candidate;
                 refreshNumberPad();
             });
+        });
+
+        [numberPadAM, numberPadPM].forEach(button => {
+            button.addEventListener("pointerup", () => changeNumberPadMeridiem(button.dataset.meridiem));
+        });
+
+        numberPadDate.addEventListener("input", () => {
+            if (!numberPadState || numberPadState.mode !== "absolute") return;
+            numberPadState.pendingDate = numberPadDate.value;
+            refreshNumberPad();
         });
 
         numberPadConfirm.addEventListener("pointerup", async () => {
             if (!numberPadState || numberPadConfirm.disabled) return;
             if (numberPadConfirm.dataset.action === "autocorrect") {
-                numberPadState.pending = autocorrectTimeDigits(numberPadState.pending);
+                if (numberPadState.mode === "absolute") autocorrectAbsoluteState(numberPadState);
+                else numberPadState.pending = autocorrectTimeDigits(numberPadState.pending);
                 numberPadState.replaceOnNextDigit = false;
                 refreshNumberPad();
                 return;
@@ -914,30 +1269,9 @@
 
         numberPadSettings.addEventListener("pointerup", () => {
             if (!numberPadState || numberPadState.mode === "percent") return;
-            const state = numberPadState;
-            const reopenOptions = {
-                mode: state.mode,
-                source: state.source,
-                initialValue: state.mode === "percent"
-                    ? state.initial
-                    : (state.initial ? renderTimeDigits(state.initial) : "")
-            };
-            const pending = state.pending;
-            const replaceOnNextDigit = state.replaceOnNextDigit;
-            const persistence = state.persistence;
-            if (!closeNumberPad({ discardPrepared: false, allowChanged: true })) return;
-            const reopen = () => {
-                stateDialog.removeEventListener("closed", reopen);
-                void openNumberPad(reopenOptions).then(() => {
-                    if (!numberPadState) return;
-                    numberPadState.pending = pending;
-                    numberPadState.replaceOnNextDigit = replaceOnNextDigit;
-                    numberPadState.persistence = persistence;
-                    refreshNumberPad();
-                }).catch(() => {});
-            };
-            stateDialog.addEventListener("closed", reopen);
-            openDialog("stateSettingsDialog", { reason: "number-pad-settings" });
+            tripSettingsPadStack.push({ ...numberPadState });
+            tripSettingsOpenAfterPadClose = true;
+            closeNumberPad({ discardPrepared: false, allowChanged: true, suppressReturn: true });
         });
 
         numberPadDialog.addEventListener("cancel", event => {
@@ -948,7 +1282,56 @@
         numberPadDialog.addEventListener("close", () => {
             resetNumberPad();
         });
+
+        numberPadDialog.addEventListener("closed", () => {
+            const state = numberPadClosedState;
+            numberPadClosedState = undefined;
+            if (tripSettingsOpenAfterPadClose) {
+                tripSettingsOpenAfterPadClose = false;
+                openTripSettingsDialog();
+                return;
+            }
+            if (state?.returnToTripSettings) {
+                openTripSettingsDialog("number-pad-return");
+            }
+        });
     }
+
+    tripSettingsDialog.addEventListener("opening", () => {
+        refreshTripSettingsValues();
+    });
+
+    tripSettingsDialog.addEventListener("closed", () => {
+        if (tripSettingsOpeningEditor) {
+            tripSettingsOpeningEditor = false;
+            return;
+        }
+        const snapshot = tripSettingsPadStack.pop();
+        if (snapshot) void restoreNumberPadState(snapshot).catch(() => {});
+    });
+
+    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
+        button.addEventListener("pointerup", () => {
+            if (button.disabled) return;
+            const field = button.dataset.tripTimeField;
+            tripSettingsOpeningEditor = true;
+            if (!closeDialog(tripSettingsDialog, { reason: `trip-settings:${field}`, immediate: true })) {
+                tripSettingsOpeningEditor = false;
+                return;
+            }
+            setTimeout(() => {
+                void openTripFieldNumberPad(field).catch(() => {});
+            }, 0);
+        });
+    });
+
+    tripSettingsForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        clockTimer.intervalElapsedBehavior = form.elements.intervalElapsedBehavior.value;
+        clockTimer.autoSyncTripGoal = form.elements.autoSyncTripGoal.checked;
+        closeDialog(tripSettingsDialog, { reason: "trip-settings-save" });
+    });
 
     async function beginNewTripWorkflow({ initialValue } = {}) {
         const newTripInitialValue = initialValue ?? (
@@ -1072,6 +1455,10 @@
         "goalChanged",
         "renderedPercentGoalChanged",
         "standardTimeChanged",
+        "creationDateChanged",
+        "creationTimeChanged",
+        "scheduledStartChanged",
+        "startTimeChanged",
         "intervalStarted",
         "intervalEnded",
         "intervalElapsed",
