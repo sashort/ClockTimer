@@ -1,0 +1,44 @@
+name: Refine number pad home action
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply number pad home refinement
+        run: python .github/scripts/refine-numberpad-home.py
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app.js
+          grep -Fq 'return "home";' app.js
+          grep -Fq 'everEdited: false' app.js
+          grep -Fq 'numberPadState.everEdited = true' app.js
+          grep -Fq 'clearAction === "home"' app.js
+          grep -Fq 'action === "home"' app.js
+          grep -Fq '.number-pad-clear[data-action="home"]::before' app.css
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/scripts/refine-numberpad-home.py .github/workflows/refine-numberpad-home.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js app.css .github/scripts/refine-numberpad-home.py .github/workflows/refine-numberpad-home.yml
+          git commit -m 'Use home action for untouched standard time pad'
+          git push origin HEAD:rename-prestart-latency
