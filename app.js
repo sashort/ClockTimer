@@ -78,7 +78,6 @@
     let numberPadAM;
     let numberPadPM;
     let numberPadClosedState;
-    let tripSettingsOpenAfterPadClose = false;
     const tripSettingsPadStack = [];
     let tripSettingsOpeningEditor = false;
     let numberPadLongPressTimer;
@@ -1048,13 +1047,22 @@
         const state = numberPadState;
         if (!allowChanged && numberPadHasChanges()) return false;
         const tripSettingsHandoff = suppressReturn || Boolean(state?.returnToTripSettings);
+
+        if (tripSettingsHandoff && !tripSettingsDialog.open) {
+            const reason = suppressReturn ? "number-pad-settings" : "number-pad-return";
+            if (!openTripSettingsDialog(reason, { duration: 0 })) return false;
+        }
+
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, {
             reason: "number-pad",
             immediate: immediate || tripSettingsHandoff
         })) {
             return false;
         }
-        numberPadClosedState = suppressReturn && state ? { ...state, returnToTripSettings: false } : state;
+
+        numberPadClosedState = tripSettingsHandoff && state
+            ? { ...state, returnToTripSettings: false }
+            : state;
         resetNumberPad();
         if (discardPrepared && state?.source === "new-trip") {
             clockTimer.discardPreparedTrip?.().catch?.(() => {});
@@ -1421,8 +1429,14 @@
         numberPadSettings.addEventListener("pointerup", () => {
             if (!numberPadState || numberPadState.mode === "percent") return;
             tripSettingsPadStack.push({ ...numberPadState });
-            tripSettingsOpenAfterPadClose = true;
-            closeNumberPad({ discardPrepared: false, allowChanged: true, suppressReturn: true });
+            if (!closeNumberPad({
+                discardPrepared: false,
+                allowChanged: true,
+                suppressReturn: true,
+                immediate: true
+            })) {
+                tripSettingsPadStack.pop();
+            }
         });
 
         numberPadDialog.addEventListener("cancel", event => {
@@ -1437,12 +1451,7 @@
         numberPadDialog.addEventListener("closed", () => {
             const state = numberPadClosedState;
             numberPadClosedState = undefined;
-            if (tripSettingsOpenAfterPadClose) {
-                tripSettingsOpenAfterPadClose = false;
-                openTripSettingsDialog("number-pad-settings", { duration: 0 });
-                return;
-            }
-            if (state?.returnToTripSettings) {
+            if (state?.returnToTripSettings && !tripSettingsDialog.open) {
                 openTripSettingsDialog("number-pad-return", { duration: 0 });
             }
         });
