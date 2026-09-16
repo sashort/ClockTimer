@@ -1882,11 +1882,16 @@
         const values = tripSettingsSession?.values;
         tripSetStartsNowActions.hidden = !draft;
         tripSetStartsNowActions.classList.toggle("is-selecting", active);
-        tripSetStartsNowCancel.hidden = !active;
+        tripSetStartsNowCancel.hidden = false;
+        tripSetStartsNowCancel.disabled = !active;
+        tripSetStartsNowCancel.tabIndex = active ? 0 : -1;
+        tripSetStartsNowCancel.setAttribute("aria-hidden", String(!active));
         tripSettingsDialog.classList.toggle("is-setting-starts-now", active);
 
         tripSettingsDialog.querySelectorAll(".trip-time-edit").forEach(button => {
-            button.hidden = active;
+            button.hidden = false;
+            button.tabIndex = active ? -1 : 0;
+            button.setAttribute("aria-hidden", String(active));
         });
 
         tripStartNowToggles.forEach(button => {
@@ -1894,7 +1899,9 @@
                 ? "scheduled"
                 : "actual";
             const selected = Boolean(active && tripStartsNowState[key]);
-            button.hidden = !active;
+            button.hidden = false;
+            button.tabIndex = active ? 0 : -1;
+            button.setAttribute("aria-hidden", String(!active));
             button.textContent = selected ? "✓" : "-";
             button.setAttribute("aria-pressed", String(selected));
         });
