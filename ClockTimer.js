@@ -151,6 +151,13 @@
 
         #percentModeChangeContext;
 
+        #semanticGoalSetSource;
+
+        #aggregateReconnectPending =
+            false;
+
+        #aggregateReconnectSnapshot;
+
         #tripTotals;
 
         #totalGoalNotPossibleState =
@@ -1005,22 +1012,21 @@
                     .trim()
                     .toLowerCase();
 
-            const names = {
-                break: {
-                    started: "breakStarted",
-                    ended: "breakEnded"
-                },
-                lunch: {
-                    started: "lunchStarted",
-                    ended: "lunchEnded"
-                },
-                down: {
-                    started: "downTimeStarted",
-                    ended: "downTimeEnded"
+            if (phase === "started") {
+                if (normalized === "break" || normalized === "lunch") {
+                    return "breakStarted";
                 }
-            };
 
-            return names[normalized]?.[phase];
+                if (normalized === "down") {
+                    return "downTimeStarted";
+                }
+            }
+
+            if (phase === "ended" && normalized === "down") {
+                return "tripResumed";
+            }
+
+            return undefined;
         }
 
         #getSemanticIntervalDetail(record, detail = {}) {
@@ -1030,11 +1036,25 @@
                     ? { ...record.otherAttributes }
                     : {};
 
+            const intervalType =
+                String(record?.type ?? "")
+                    .trim()
+                    .toLowerCase();
+
             let breakType;
             for (const [name, value] of Object.entries(attributes)) {
                 if (name.toLowerCase() === "breaktype") {
                     breakType = value;
                     break;
+                }
+            }
+
+            if (breakType === undefined) {
+                if (intervalType === "lunch") {
+                    breakType = "lunch";
+                }
+                else if (intervalType === "break") {
+                    breakType = "break";
                 }
             }
 
@@ -1045,15 +1065,17 @@
                     breakType === undefined
                         ? undefined
                         : String(breakType),
+                isLunch:
+                    intervalType === "lunch",
                 attributes
             };
         }
 
-        #emitSemanticIntervalEvent(phase, record, detail = {}) {
+        #emitSemanticIntervalStarted(record, detail = {}) {
             const eventName =
                 this.#getSemanticIntervalEventName(
                     record?.type,
-                    phase
+                    "started"
                 );
 
             if (!eventName) {
@@ -1067,6 +1089,96 @@
                     detail
                 )
             );
+        }
+
+        #emitSemanticIntervalEnded(
+            record,
+            detail = {},
+            {
+                automaticRestart = false,
+                actualEnd,
+                boundary
+            } = {}
+        ) {
+            const intervalType =
+                String(record?.type ?? "")
+                    .trim()
+                    .toLowerCase();
+
+            if (intervalType === "break" || intervalType === "lunch") {
+                const deadline =
+                    Number.isFinite(boundary)
+                        ? boundary
+                        : this.#getPendingIntervalElapsedBoundary(
+                            record
+                        );
+
+                let eventName;
+                let completion;
+
+                if (automaticRestart) {
+                    eventName =
+                        "breakEndedAutomatically";
+                    completion =
+                        "automatic";
+                }
+                else if (
+                    Number.isFinite(actualEnd) &&
+                    Number.isFinite(deadline) &&
+                    actualEnd > deadline
+                ) {
+                    eventName =
+                        "breakEndedLate";
+                    completion =
+                        "late";
+                }
+                else {
+                    eventName =
+                        "breakEndedEarly";
+                    completion =
+                        "early";
+                }
+
+                return this.#emitClockTimerEvent(
+                    eventName,
+                    this.#getSemanticIntervalDetail(
+                        record,
+                        {
+                            ...detail,
+                            completion,
+                            automaticRestart,
+                            endBufferEndTime:
+                                this.#timelineToISO(
+                                    deadline
+                                )
+                        }
+                    )
+                );
+            }
+
+            if (intervalType === "down") {
+                const semanticDetail =
+                    this.#getSemanticIntervalDetail(
+                        record,
+                        {
+                            ...detail,
+                            resumedFrom: "down"
+                        }
+                    );
+
+                // Compatibility event retained for lower-level observers.
+                this.#emitClockTimerEvent(
+                    "downTimeEnded",
+                    semanticDetail
+                );
+
+                return this.#emitClockTimerEvent(
+                    "tripResumed",
+                    semanticDetail
+                );
+            }
+
+            return true;
         }
 
         #emitClockTimerEvent(name, detail = {}, { cancelable = false } = {}) {
@@ -1356,15 +1468,51 @@
                 }
 
                 case "trip-goal":
-                case "total-goal":
+                case "total-goal": {
+                    const semanticSource =
+                        this.#semanticGoalSetSource ??
+                        this.#renderedPercentGoalSourceOverride ??
+                        "user";
+
                     this.#emitClockTimerEvent("goalChanged", {
                         goal: name === "trip-goal" ? "trip" : "total",
                         attribute: name,
                         previousValue: oldValue,
                         value: newValue,
                         tripGoal: this.#getTripGoal(),
-                        totalGoal: this.#getTotalGoal()
+                        totalGoal: this.#getTotalGoal(),
+                        source: semanticSource
                     });
+
+                    if (newValue !== null) {
+                        const semanticName =
+                            name === "total-goal"
+                                ? "totalGoalSet"
+                                : semanticSource === "user"
+                                    ? "tripGoalSet"
+                                    : "tripGoalAutomaticallySet";
+
+                        this.#emitClockTimerEvent(
+                            semanticName,
+                            {
+                                previousValue: oldValue,
+                                value: newValue,
+                                tripGoal: this.#getTripGoal(),
+                                totalGoal: this.#getTotalGoal(),
+                                source: semanticSource,
+                                userInitiated:
+                                    semanticSource === "user"
+                            }
+                        );
+                    }
+
+                    const goalUpdateSource =
+                        this.#renderedPercentGoalSourceOverride ??
+                        (
+                            semanticSource === "user"
+                                ? "user"
+                                : "automatic"
+                        );
 
                     if (
                         this.#updatesSuspended &&
@@ -1372,18 +1520,16 @@
                     ) {
                         this.#queueAsyncOperation({
                             type: "trip-goal",
-                            source:
-                                this.#renderedPercentGoalSourceOverride ??
-                                "user"
+                            source: goalUpdateSource
                         });
                     }
                     else {
                         this.#handleTripGoalChange(
-                            this.#renderedPercentGoalSourceOverride ??
-                            "user"
+                            goalUpdateSource
                         );
                     }
                     break;
+                }
 
                 case "military-time":
                     this.#normalizeMilitaryTime();
@@ -2001,6 +2147,101 @@
             );
         }
 
+        #cloneAggregateSnapshot(value) {
+            if (!value || typeof value !== "object") {
+                return undefined;
+            }
+
+            try {
+                return JSON.parse(
+                    JSON.stringify(value)
+                );
+            }
+            catch {
+                return undefined;
+            }
+        }
+
+        #getAggregateSnapshotChanges(previous, current) {
+            if (!previous || !current) {
+                return undefined;
+            }
+
+            const keys = [
+                "startTime",
+                "endTime",
+                "tripCount",
+                "standardTimeMilliseconds",
+                "actualTimeMilliseconds",
+                "countedTimeMilliseconds",
+                "nonProductionFilter",
+                "aggregateBreakdown"
+            ];
+
+            const changes = {};
+
+            for (const key of keys) {
+                const before = previous[key];
+                const after = current[key];
+
+                if (
+                    JSON.stringify(before) !==
+                    JSON.stringify(after)
+                ) {
+                    changes[key] = {
+                        previous: before,
+                        value: after
+                    };
+                }
+            }
+
+            return Object.keys(changes).length > 0
+                ? changes
+                : undefined;
+        }
+
+        #emitAggregateReconnectSyncIfChanged() {
+            if (!this.#aggregateReconnectPending) {
+                return false;
+            }
+
+            const previous =
+                this.#aggregateReconnectSnapshot;
+
+            const current =
+                this.#cloneAggregateSnapshot(
+                    this.#tripTotals
+                );
+
+            const changes =
+                this.#getAggregateSnapshotChanges(
+                    previous,
+                    current
+                );
+
+            this.#aggregateReconnectPending =
+                false;
+
+            this.#aggregateReconnectSnapshot =
+                undefined;
+
+            if (!changes) {
+                return false;
+            }
+
+            this.#emitClockTimerEvent(
+                "aggregatesSynced",
+                {
+                    source: "reconnect",
+                    previous,
+                    current,
+                    changes
+                }
+            );
+
+            return true;
+        }
+
         #setConnected(csrfToken, detail = {}) {
             const previousNetworkStatus =
                 this.networkStatus;
@@ -2057,6 +2298,16 @@
             const wasConnected =
                 this.#connectionState ===
                     "connected";
+
+            if (wasConnected) {
+                this.#aggregateReconnectPending =
+                    true;
+
+                this.#aggregateReconnectSnapshot =
+                    this.#cloneAggregateSnapshot(
+                        this.#tripTotals
+                    );
+            }
 
             this.#connectionState =
                 "offline";
@@ -3188,6 +3439,8 @@
                     breakdown
             };
 
+            this.#emitAggregateReconnectSyncIfChanged();
+
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride ??
                 "user"
@@ -3304,10 +3557,24 @@
                 return this.#goalChangeFailure("insufficient-time");
             }
 
-            this.setAttribute(
-                "trip-goal",
-                `${requirements.tripGoal * 100}%`
-            );
+            const previousSemanticGoalSetSource =
+                this.#semanticGoalSetSource;
+
+            this.#semanticGoalSetSource =
+                this.#renderedPercentGoalSourceOverride === "start"
+                    ? "start"
+                    : "automatic-total";
+
+            try {
+                this.setAttribute(
+                    "trip-goal",
+                    `${requirements.tripGoal * 100}%`
+                );
+            }
+            finally {
+                this.#semanticGoalSetSource =
+                    previousSemanticGoalSetSource;
+            }
 
             return {
                 applied: true,
@@ -3625,13 +3892,16 @@
                 this.#scheduledStartMilliseconds;
 
             const summary = this.#buildSummarySnapshot(new Date());
-            this.#emitClockTimerEvent("started", {
-                ...result,
-                summary,
-                ...this.#getTimingDetail(
+            const timing =
+                this.#getTimingDetail(
                     actualStartTime,
                     scheduledStartTime
-                ),
+                );
+
+            const startedDetail = {
+                ...result,
+                summary,
+                ...timing,
                 actualStartTime:
                     this.#timelineToISO(
                         actualStartTime
@@ -3642,7 +3912,22 @@
                     ),
                 nonProduction:
                     this.#nonProduction
-            });
+            };
+
+            this.#emitClockTimerEvent(
+                "started",
+                startedDetail
+            );
+
+            this.#emitClockTimerEvent(
+                timing.early
+                    ? "tripStartedEarly"
+                    : timing.late
+                        ? "tripStartedLate"
+                        : "tripStarted",
+                startedDetail
+            );
+
             return result;
         }
 
@@ -3719,11 +4004,22 @@
             });
             const result = this.#mutationResult(synced);
             const summary = this.#buildSummarySnapshot(new Date());
-            this.#emitClockTimerEvent("stopped", {
+            const stoppedDetail = {
                 ...result,
                 summary,
                 stopTime: persistedEnd
-            });
+            };
+
+            this.#emitClockTimerEvent(
+                "stopped",
+                stoppedDetail
+            );
+
+            this.#emitClockTimerEvent(
+                "tripEnded",
+                stoppedDetail
+            );
+
             return result;
         }
 
@@ -3885,8 +4181,7 @@
                 intervalStartedDetail
             );
 
-            this.#emitSemanticIntervalEvent(
-                "started",
+            this.#emitSemanticIntervalStarted(
                 record,
                 intervalStartedDetail
             );
@@ -3997,18 +4292,19 @@
                     lifecycleScheduledEnd
                 );
 
-            this.#emitSemanticIntervalEvent(
-                "ended",
+            this.#emitSemanticIntervalEnded(
                 record,
                 {
                     ...intervalEndedDetail,
                     ...lifecycleTiming,
-                    completion:
-                        lifecycleTiming.timing,
                     scheduledEndTime:
                         this.#timelineToISO(
                             lifecycleScheduledEnd
                         )
+                },
+                {
+                    automaticRestart: false,
+                    actualEnd: now
                 }
             );
 
@@ -4849,6 +5145,18 @@
             if (currentValue !== previousValue) {
                 this.#emitClockTimerEvent(
                     "startTimeChanged",
+                    {
+                        previousValue,
+                        value: currentValue,
+                        summary:
+                            this.#buildSummarySnapshot(
+                                new Date()
+                            )
+                    }
+                );
+
+                this.#emitClockTimerEvent(
+                    "actualStartChanged",
                     {
                         previousValue,
                         value: currentValue,
@@ -10156,10 +10464,14 @@
                         intervalEndedDetail
                     );
 
-                    this.#emitSemanticIntervalEvent(
-                        "ended",
+                    this.#emitSemanticIntervalEnded(
                         record,
-                        intervalEndedDetail
+                        intervalEndedDetail,
+                        {
+                            automaticRestart: true,
+                            actualEnd: now,
+                            boundary
+                        }
                     );
 
                     this.#emitClockTimerEvent("tripAutomaticallyRestarted", {
@@ -22078,11 +22390,21 @@
             const tripMissed = Number.isFinite(tripDeadline) && now > tripDeadline;
 
             if (tripMissed && !this.#tripGoalMissedState) {
-                this.#emitClockTimerEvent("tripGoalMissed", {
+                const detail = {
                     goal: tripGoal,
                     deadline: this.#timelineToISO(tripDeadline),
                     currentTime: this.#timelineToISO(now)
-                });
+                };
+
+                this.#emitClockTimerEvent(
+                    "tripGoalMissed",
+                    detail
+                );
+
+                this.#emitClockTimerEvent(
+                    "tripGoalFailed",
+                    detail
+                );
             }
             this.#tripGoalMissedState = tripMissed;
 
@@ -22095,11 +22417,21 @@
                 Number.isFinite(totalDeadline) && now > totalDeadline;
 
             if (totalMissed && !this.#totalGoalMissedState) {
-                this.#emitClockTimerEvent("totalGoalMissed", {
+                const detail = {
                     goal: totalGoal,
                     deadline: this.#timelineToISO(totalDeadline),
                     currentTime: this.#timelineToISO(now)
-                });
+                };
+
+                this.#emitClockTimerEvent(
+                    "totalGoalMissed",
+                    detail
+                );
+
+                this.#emitClockTimerEvent(
+                    "totalGoalFailed",
+                    detail
+                );
             }
             this.#totalGoalMissedState = totalMissed;
         }
@@ -22486,24 +22818,39 @@
             value,
             source
         ) {
+            const detail = {
+                previousValue,
+                value,
+                source,
+                userInitiated:
+                    source === "user",
+                percentMode:
+                    this.#percentMode
+            };
+
             this.#emitClockTimerEvent(
                 "renderedPercentGoalChanged",
-                {
-                    previousValue,
-                    value,
-                    source,
-                    userInitiated:
-                        source === "user",
-                    percentMode:
-                        this.#percentMode,
-                    tripGoal:
-                        this.#getTripGoal(),
-                    totalGoal:
-                        this.#getTotalGoal(),
-                    totalAggregateAvailable:
-                        this.#hasUsableAggregateSnapshot()
-                }
+                detail
             );
+
+            if (
+                this.#percentMode === "auto" &&
+                source === "automatic" &&
+                Number.isFinite(previousValue) &&
+                Number.isFinite(value) &&
+                value < previousValue
+            ) {
+                this.#emitClockTimerEvent(
+                    "goalAutomaticallyAdjusted",
+                    {
+                        ...detail,
+                        previousGoal: previousValue,
+                        goal: value,
+                        reason:
+                            "higher-goal-no-longer-attainable"
+                    }
+                );
+            }
         }
 
         #setRenderedPercentGoal(

@@ -2907,6 +2907,143 @@
         queueSummaryRefresh();
     });
 
+    // Semantic ClockTimer event integration points.
+    // These bodies intentionally do not change UI yet; future speech synthesis and
+    // other user-facing reactions should be implemented here rather than decoding
+    // lower-level ClockTimer events elsewhere.
+    function reserveSemanticEvent(event, purpose) {
+        const detail = event.detail;
+        void detail;
+        void purpose;
+    }
+
+    function onTripStarted(event) {
+        reserveSemanticEvent(event, "Trip started on time");
+    }
+
+    function onTripStartedEarly(event) {
+        reserveSemanticEvent(event, "Trip started early");
+    }
+
+    function onTripStartedLate(event) {
+        reserveSemanticEvent(event, "Trip started late");
+    }
+
+    function onBreakStarted(event) {
+        reserveSemanticEvent(event, "Break or lunch started");
+    }
+
+    function onBreakEndedEarly(event) {
+        reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
+    }
+
+    function onBreakEndedAutomatically(event) {
+        reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
+    }
+
+    function onBreakEndedLate(event) {
+        reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
+    }
+
+    function onDownTimeStarted(event) {
+        reserveSemanticEvent(event, "Down time started");
+    }
+
+    function onTripResumed(event) {
+        reserveSemanticEvent(event, "Trip resumed from down time");
+    }
+
+    function onTripEnded(event) {
+        reserveSemanticEvent(event, "Trip ended");
+    }
+
+    function onTotalGoalSet(event) {
+        reserveSemanticEvent(event, "Total goal explicitly set");
+    }
+
+    function onTripGoalSet(event) {
+        reserveSemanticEvent(event, "Trip goal explicitly set");
+    }
+
+    function onTripGoalAutomaticallySet(event) {
+        reserveSemanticEvent(event, "Trip goal derived automatically");
+    }
+
+    function onTripGoalFailed(event) {
+        reserveSemanticEvent(event, "Trip goal failed");
+    }
+
+    function onTotalGoalFailed(event) {
+        reserveSemanticEvent(event, "Total goal failed");
+    }
+
+    function onPercentModeChanged(event) {
+        reserveSemanticEvent(event, "Percent scope mode changed");
+    }
+
+    function onGoalAutomaticallyAdjusted(event) {
+        reserveSemanticEvent(event, "Higher automatic goal became unattainable and the rendered goal adjusted");
+    }
+
+    function onStandardTimeChanged(event) {
+        reserveSemanticEvent(event, "Standard time changed");
+    }
+
+    function onCreationTimeChanged(event) {
+        reserveSemanticEvent(event, "Creation time changed");
+    }
+
+    function onScheduledStartChanged(event) {
+        reserveSemanticEvent(event, "Scheduled start changed");
+    }
+
+    function onActualStartChanged(event) {
+        reserveSemanticEvent(event, "Actual start changed");
+    }
+
+    function onConnected(event) {
+        reserveSemanticEvent(event, "ClockTimer connected");
+    }
+
+    function onDisconnected(event) {
+        reserveSemanticEvent(event, "ClockTimer disconnected");
+    }
+
+    function onAggregatesSynced(event) {
+        reserveSemanticEvent(event, "Reconnect refreshed aggregate data and the aggregate snapshot changed");
+    }
+
+    const semanticClockTimerHandlers = {
+        tripStarted: onTripStarted,
+        tripStartedEarly: onTripStartedEarly,
+        tripStartedLate: onTripStartedLate,
+        breakStarted: onBreakStarted,
+        breakEndedEarly: onBreakEndedEarly,
+        breakEndedAutomatically: onBreakEndedAutomatically,
+        breakEndedLate: onBreakEndedLate,
+        downTimeStarted: onDownTimeStarted,
+        tripResumed: onTripResumed,
+        tripEnded: onTripEnded,
+        totalGoalSet: onTotalGoalSet,
+        tripGoalSet: onTripGoalSet,
+        tripGoalAutomaticallySet: onTripGoalAutomaticallySet,
+        tripGoalFailed: onTripGoalFailed,
+        totalGoalFailed: onTotalGoalFailed,
+        percentModeChanged: onPercentModeChanged,
+        goalAutomaticallyAdjusted: onGoalAutomaticallyAdjusted,
+        standardTimeChanged: onStandardTimeChanged,
+        creationTimeChanged: onCreationTimeChanged,
+        scheduledStartChanged: onScheduledStartChanged,
+        actualStartChanged: onActualStartChanged,
+        connected: onConnected,
+        disconnected: onDisconnected,
+        aggregatesSynced: onAggregatesSynced
+    };
+
+    for (const [eventName, handler] of Object.entries(semanticClockTimerHandlers)) {
+        clockTimer.addEventListener(eventName, handler);
+    }
+
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();
     applyGraphicalSettings(graphicalSettings);
