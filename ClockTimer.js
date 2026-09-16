@@ -27581,6 +27581,11 @@
                 return undefined;
             }
 
+            value = new Date(
+                value.getTime() -
+                value.getMilliseconds()
+            );
+
             return [
                 value.getHours(),
                 value.getMinutes(),
@@ -28518,32 +28523,23 @@
         #formatElapsedRenderedDuration(
             milliseconds
         ) {
-            return this.#formatSignedRenderedDuration(
-                milliseconds
-            );
-        }
-
-        #formatSignedRenderedDuration(
-            milliseconds
-        ) {
             if (!Number.isSafeInteger(milliseconds)) {
                 return undefined;
             }
 
-            const formatted =
-                TemporalFormat.formatDuration(
-                    Math.abs(
-                        milliseconds
-                    )
-                );
+            const displayMilliseconds =
+                milliseconds % 1000 === 0
+                    ? milliseconds
+                    : Math.ceil(
+                        milliseconds /
+                        1000
+                    ) * 1000;
 
-            if (formatted === undefined) {
-                return undefined;
-            }
-
-            return milliseconds < 0
-                ? `-${formatted}`
-                : formatted;
+            return TemporalFormat.formatDuration(
+                Math.abs(
+                    displayMilliseconds
+                )
+            );
         }
 
         #formatRemainingRenderedDuration(
@@ -28553,26 +28549,17 @@
                 return undefined;
             }
 
-            const formatted =
-                TemporalFormat.formatDuration(
-                    Math.abs(
-                        milliseconds
-                    )
-                );
+            const displayMilliseconds =
+                Math.trunc(
+                    milliseconds /
+                    1000
+                ) * 1000;
 
-            if (formatted === undefined) {
-                return undefined;
-            }
-
-            if (milliseconds < 0) {
-                return `-${formatted}`;
-            }
-
-            if (milliseconds > 0) {
-                return `⁺${formatted}`;
-            }
-
-            return formatted;
+            return TemporalFormat.formatDuration(
+                Math.abs(
+                    displayMilliseconds
+                )
+            );
         }
 
         #calculateRenderedTime(

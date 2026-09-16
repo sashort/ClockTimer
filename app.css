@@ -1868,3 +1868,86 @@ button:active:not(:disabled) {
         border-color 250ms ease-in-out,
         box-shadow 250ms ease-in-out;
 }
+
+
+/* connection-failure-login-handoff-v1 */
+.number-pad-settings[data-connection-phase="awaiting-login"] .number-pad-settings-gear {
+    animation: number-pad-gear-spin 800ms linear infinite;
+}
+
+/* trip-start-now-content-transition-v1 */
+.trip-now-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.trip-now-start-copy {
+    width: var(--trip-now-start-copy-width, auto);
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 1;
+    transform-origin: left center;
+    transition:
+        width var(--trip-start-transition-duration) ease-in-out,
+        opacity var(--trip-start-transition-duration) linear;
+}
+
+.trip-now-actions.is-selecting .trip-now-start-copy,
+.trip-now-actions.is-exiting .trip-now-start-copy {
+    width: 0;
+    opacity: 0;
+}
+
+.trip-now-value-copy {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: var(--trip-now-now-width, auto);
+    min-width: 0;
+    height: 1em;
+    line-height: 1;
+    overflow: visible;
+    transition: width var(--trip-start-transition-duration) ease-in-out;
+}
+
+.trip-now-actions.is-selecting .trip-now-value-copy {
+    width: var(--trip-now-timestamp-width, var(--trip-now-now-width, auto));
+}
+
+.trip-now-now-label,
+.trip-now-timestamp-label {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    display: inline-block;
+    width: max-content;
+    white-space: nowrap;
+    transition:
+        opacity var(--trip-start-transition-duration) linear,
+        transform var(--trip-start-transition-duration) ease-in-out;
+}
+
+.trip-now-now-label {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+.trip-now-timestamp-label {
+    opacity: 0;
+    transform: translateY(-35%) scale(0.94);
+}
+
+.trip-now-actions.is-selecting .trip-now-now-label {
+    opacity: 0;
+    transform: translateY(-65%) scale(0.94);
+}
+
+.trip-now-actions.is-selecting .trip-now-timestamp-label {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}

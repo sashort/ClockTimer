@@ -70,6 +70,10 @@
     const tripSettingsPrimary = $("#tripSettingsPrimary");
     const tripSetStartsNowActions = $("#tripSetStartsNowActions");
     const tripSetStartsNow = $("#tripSetStartsNow");
+    const tripSetStartsNowStartCopy = tripSetStartsNow.querySelector(".trip-now-start-copy");
+    const tripSetStartsNowValueCopy = tripSetStartsNow.querySelector(".trip-now-value-copy");
+    const tripSetStartsNowNowLabel = tripSetStartsNow.querySelector(".trip-now-now-label");
+    const tripSetStartsNowTimestampLabel = tripSetStartsNow.querySelector(".trip-now-timestamp-label");
     const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
     const tripGoalSyncOption = $("#tripGoalSyncOption");
@@ -390,7 +394,10 @@
     }
 
     async function settleInitialNumberPadConnection(state, preparationPromise) {
-        const startedAt = performance.now();
+        const startedAt =
+            Number.isFinite(state?.connectionAnimationStartedAt)
+                ? state.connectionAnimationStartedAt
+                : performance.now();
         try {
             await Promise.resolve(preparationPromise);
         }
@@ -409,10 +416,17 @@
             { presentation: "handoff" }
         );
         await wait(CONNECTION_CLOUD_FADE_DURATION);
+
+        const status = normalizedConnectionStatus();
         updateNumberPadConnectionStatus(
             state.connectionStatusToken,
-            clockTimer.networkStatus,
-            { presentation: "settled" }
+            status,
+            {
+                presentation:
+                    status === "offline" && !loginDialog.open
+                        ? "awaiting-login"
+                        : "settled"
+            }
         );
     }
 
@@ -648,6 +662,22 @@
         });
         initialLoginAttemptPending = false;
         if (!opened) return;
+
+        const connectionState =
+            numberPadState ??
+            findUIReturnFrame("number-pad")?.state;
+        if (
+            connectionState?.connectionPresentation ===
+                "awaiting-login" &&
+            connectionState.connectionStatusToken
+        ) {
+            updateNumberPadConnectionStatus(
+                connectionState.connectionStatusToken,
+                "offline",
+                { presentation: "settled" }
+            );
+        }
+
         requestAnimationFrame(() => {
             $("#loginUsername")?.focus({ preventScroll: true });
         });
@@ -745,6 +775,38 @@
             : fallback;
     }
 
+    function getMainRenderedTimeValue(selected) {
+        const renderedTime =
+            typeof selected?.renderedTime === "string"
+                ? selected.renderedTime
+                : "";
+
+        if (!renderedTime) return undefined;
+
+        const mode =
+            selected?.renderedTimeMode ??
+            clockTimer.renderedTimeMode;
+
+        if (mode !== "remaining" && mode !== "elapsed") {
+            return renderedTime;
+        }
+
+        let intervalState;
+        try {
+            intervalState =
+                clockTimer.getActiveIntervalState?.(
+                    new Date()
+                );
+        }
+        catch {}
+
+        if (intervalState?.open !== false) {
+            return renderedTime;
+        }
+
+        return `${renderedTime}${mode === "remaining" ? "⁺" : "⁻"}`;
+    }
+
     function updateSummaryValues(summary) {
         let snapshot = summary;
         if (!snapshot?.selected) {
@@ -763,10 +825,12 @@
 
         $("#standardTimeValue").textContent =
             typeof standard === "string" && standard ? standard : "---";
+        const mainRenderedTime =
+            getMainRenderedTimeValue(
+                selected
+            );
         $("#renderedTimeValue").textContent =
-            typeof selected?.renderedTime === "string" && selected.renderedTime
-                ? selected.renderedTime
-                : "---";
+            mainRenderedTime || "---";
         $("#currentPercentValue").textContent =
             selected?.available === false
                 ? "---"
@@ -1600,6 +1664,13 @@
         };
         numberPadState = state;
         refreshNumberPad();
+        if (
+            source === "new-trip" &&
+            state.persistence === "pending"
+        ) {
+            state.connectionAnimationStartedAt =
+                performance.now();
+        }
         mainMenu?.hidePopover?.();
         if (!numberPadDialog.open) {
             openDialogElement(numberPadDialog, {
@@ -2044,12 +2115,73 @@
         return formatted === "---" ? formatted : formatted.split(" · ")[0];
     }
 
+    function syncTripStartsNowButtonContent(active) {
+        if (
+            !tripSetStartsNowStartCopy ||
+            !tripSetStartsNowValueCopy ||
+            !tripSetStartsNowNowLabel ||
+            !tripSetStartsNowTimestampLabel
+        ) {
+            return;
+        }
+
+        if (active && tripStartsNowState?.label) {
+            tripSetStartsNowTimestampLabel.textContent =
+                tripStartsNowState.label;
+        }
+        else if (!tripStartsNowExiting) {
+            tripSetStartsNowTimestampLabel.textContent = "";
+        }
+
+        const startWidth =
+            tripSetStartsNowStartCopy.scrollWidth;
+        const nowWidth =
+            tripSetStartsNowNowLabel.scrollWidth;
+        const timestampWidth =
+            tripSetStartsNowTimestampLabel.scrollWidth;
+
+        if (startWidth > 0) {
+            tripSetStartsNow.style.setProperty(
+                "--trip-now-start-copy-width",
+                `${startWidth}px`
+            );
+        }
+        if (nowWidth > 0) {
+            tripSetStartsNow.style.setProperty(
+                "--trip-now-now-width",
+                `${nowWidth}px`
+            );
+        }
+        if (timestampWidth > 0) {
+            tripSetStartsNow.style.setProperty(
+                "--trip-now-timestamp-width",
+                `${timestampWidth}px`
+            );
+        }
+
+        tripSetStartsNowNowLabel.setAttribute(
+            "aria-hidden",
+            String(active)
+        );
+        tripSetStartsNowTimestampLabel.setAttribute(
+            "aria-hidden",
+            String(!active)
+        );
+        tripSetStartsNow.setAttribute(
+            "aria-label",
+            active && tripStartsNowState?.label
+                ? `Set To ${tripStartsNowState.label}`
+                : "Set Scheduled/Actual Start to Now"
+        );
+    }
+
     function syncTripStartsNowUI() {
         const draft = !tripIsLive() ? tripDraft : undefined;
         const active = Boolean(draft && tripStartsNowState);
         const values = tripSettingsSession?.values;
         tripSetStartsNowActions.hidden = !draft;
         tripSetStartsNowActions.classList.toggle("is-selecting", active);
+        tripSetStartsNowActions.classList.toggle("is-exiting", tripStartsNowExiting);
         tripSetStartsNowCancel.hidden = false;
         tripSetStartsNowCancel.disabled = !active;
         tripSetStartsNowCancel.tabIndex = active ? 0 : -1;
@@ -2074,17 +2206,23 @@
             button.setAttribute("aria-pressed", String(selected));
         });
 
+        syncTripStartsNowButtonContent(active);
+
         if (!active) {
-            if (!tripStartsNowExiting) {
-                tripSetStartsNow.textContent = "Set Scheduled/Actual Start to Now";
-            }
-            tripSetStartsNow.disabled = tripStartsNowExiting ||
-                Boolean(draft && !parseDateInput(values?.creationDate || draft.creationDate));
+            tripSetStartsNow.disabled =
+                Boolean(
+                    draft &&
+                    !parseDateInput(
+                        values?.creationDate ||
+                        draft.creationDate
+                    )
+                );
             return;
         }
 
-        tripSetStartsNow.textContent = `Set To ${tripStartsNowState.label}`;
-        tripSetStartsNow.disabled = !tripStartsNowState.scheduled && !tripStartsNowState.actual;
+        tripSetStartsNow.disabled =
+            !tripStartsNowState.scheduled &&
+            !tripStartsNowState.actual;
     }
 
     function finishTripStartsNowExit() {
