@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Apply patch
-        run: python3 .github/scripts/implement_numberpad_persistence.py
+        run: python3 .github/scripts/implement_numberpad_persistence_v2.py
 
       - name: Validate JavaScript
         run: |
@@ -51,6 +51,6 @@ jobs:
 
       - name: Remove patch files
         run: |
-          git rm .github/scripts/implement_numberpad_persistence.py .github/workflows/implement-numberpad-persistence.yml
+          git rm .github/scripts/implement_numberpad_persistence.py .github/scripts/implement_numberpad_persistence_v2.py .github/workflows/implement-numberpad-persistence.yml
           git commit -m 'Remove number pad persistence patch files'
           git push origin HEAD:rename-prestart-latency
