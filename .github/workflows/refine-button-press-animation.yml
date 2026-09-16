@@ -1,0 +1,42 @@
+name: Refine button press animation
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/refine-button-press-animation.py
+      - .github/workflows/refine-button-press-animation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply button press animation refinement
+        run: python .github/scripts/refine-button-press-animation.py
+      - name: Validate
+        run: |
+          node --check app.js
+          grep -q 'BUTTON_PRESS_IN_DURATION = 120' app.js
+          grep -q 'BUTTON_PRESS_OUT_DURATION = 140' app.js
+          grep -q 'pointerPressButtons' app.js
+          grep -q 'finishButtonPressFeedback' app.js
+          ! grep -q 'button:active:not(:disabled)' app.css
+          grep -q 'webkit-tap-highlight-color: transparent' app.css
+          grep -q 'if (!tripIsLive() || clockTimer.percentMode === "total") return;' app.js
+      - name: Commit and cleanup
+        run: |
+          rm .github/scripts/refine-button-press-animation.py
+          rm .github/workflows/refine-button-press-animation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js app.css .github/scripts/refine-button-press-animation.py .github/workflows/refine-button-press-animation.yml
+          git commit -m 'Run full button press feedback animations'
+          git push origin HEAD:rename-prestart-latency
