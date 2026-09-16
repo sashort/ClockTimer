@@ -762,8 +762,8 @@ clock-timer::part(major-tick-mark) {
 }
 
 .number-pad-settings[data-persistence="pending"] .number-pad-persistence-badge { display: none; }
-.number-pad-settings[data-persistence="online"] .number-pad-persistence-badge,
-.number-pad-settings[data-persistence="offline"] .number-pad-persistence-badge {
+.number-pad-settings[data-connection-phase="handoff"][data-persistence="online"] .number-pad-persistence-badge,
+.number-pad-settings[data-connection-phase="handoff"][data-persistence="offline"] .number-pad-persistence-badge {
     animation: number-pad-cloud-fade-in 250ms linear both;
 }
 .number-pad-settings[data-persistence="online"] .number-pad-persistence-badge { background: var(--wm-blue); }
@@ -1668,12 +1668,30 @@ button:active:not(:disabled) {
 }
 
 .trip-settings-cloud[data-network-status="pending"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black'/%3E%3C/svg%3E");
-    animation: trip-settings-cloud-pulse 700ms ease-in-out infinite alternate;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
+    animation: connection-cloud-pulse 700ms ease-in-out infinite alternate;
 }
 
-@keyframes trip-settings-cloud-pulse {
+.number-pad-settings[data-connection-phase="handoff"] .number-pad-settings-gear {
+    animation: number-pad-gear-spin 800ms linear infinite;
+}
+
+.number-pad-settings[data-connection-phase="retry"][data-persistence="pending"] .number-pad-settings-gear {
+    animation: none;
+}
+
+.number-pad-settings[data-connection-phase="retry"][data-persistence="pending"] .number-pad-persistence-badge {
+    display: grid;
+}
+
+.number-pad-settings[data-connection-phase="retry"][data-persistence="pending"] .number-pad-persistence-badge::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
+    animation: connection-cloud-pulse 700ms ease-in-out infinite alternate;
+}
+
+@keyframes connection-cloud-pulse {
     from { opacity: 0.35; transform: scale(0.92); }
     to { opacity: 1; transform: scale(1); }
 }

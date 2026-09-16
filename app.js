@@ -106,6 +106,7 @@
     let connectionResumePromise;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
+    const CONNECTION_CLOUD_FADE_DURATION = 250;
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
@@ -229,10 +230,11 @@
         tripSettingsCloud.setAttribute("aria-disabled", String(normalized !== "offline"));
     }
 
-    function updateNumberPadConnectionStatus(token, status) {
+    function updateNumberPadConnectionStatus(token, status, { presentation } = {}) {
         const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
         if (numberPadState?.connectionStatusToken === token) {
             numberPadState.persistence = normalized;
+            if (presentation) numberPadState.connectionPresentation = presentation;
             refreshNumberPad();
         }
         for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
@@ -242,6 +244,7 @@
                 frame.state?.connectionStatusToken === token
             ) {
                 frame.state.persistence = normalized;
+                if (presentation) frame.state.connectionPresentation = presentation;
                 break;
             }
         }
@@ -253,11 +256,24 @@
             await Promise.resolve(preparationPromise);
         }
         catch {}
-        const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
-        if (remaining > 0) await wait(remaining);
+
+        const fadeStartAt = Math.max(
+            startedAt + CONNECTION_INDICATOR_MINIMUM - CONNECTION_CLOUD_FADE_DURATION,
+            performance.now()
+        );
+        const beforeFade = fadeStartAt - performance.now();
+        if (beforeFade > 0) await wait(beforeFade);
+
         updateNumberPadConnectionStatus(
             state.connectionStatusToken,
-            clockTimer.networkStatus
+            clockTimer.networkStatus,
+            { presentation: "handoff" }
+        );
+        await wait(CONNECTION_CLOUD_FADE_DURATION);
+        updateNumberPadConnectionStatus(
+            state.connectionStatusToken,
+            clockTimer.networkStatus,
+            { presentation: "settled" }
         );
     }
 
@@ -268,7 +284,11 @@
         if (numberPad && numberPadState) {
             token = numberPadState.connectionStatusToken || ++numberPadConnectionSequence;
             numberPadState.connectionStatusToken = token;
-            updateNumberPadConnectionStatus(token, "pending");
+            updateNumberPadConnectionStatus(
+                token,
+                "pending",
+                { presentation: "retry" }
+            );
         }
         syncTripSettingsCloud("pending");
 
@@ -287,11 +307,18 @@
 
         const status = normalizedConnectionStatus();
         if (token) {
-            updateNumberPadConnectionStatus(token, status);
+            updateNumberPadConnectionStatus(
+                token,
+                status,
+                { presentation: "settled" }
+            );
         }
         else {
             const frame = findUIReturnFrame("number-pad");
-            if (frame?.state) frame.state.persistence = status;
+            if (frame?.state) {
+                frame.state.persistence = status;
+                frame.state.connectionPresentation = "settled";
+            }
         }
         syncTripSettingsCloud(status);
         syncNetworkStatusUI();
@@ -1238,6 +1265,8 @@
         if (!percentMode) {
             const status = numberPadState.persistence || normalizedConnectionStatus();
             numberPadSettingsArea.dataset.persistence = status;
+            numberPadSettingsArea.dataset.connectionPhase =
+                numberPadState.connectionPresentation || "settled";
             numberPadSettings.setAttribute("aria-label", "Trip settings");
             numberPadConnection.setAttribute(
                 "aria-label",
@@ -1283,6 +1312,9 @@
             persistence: source === "new-trip"
                 ? "pending"
                 : normalizedConnectionStatus(),
+            connectionPresentation: source === "new-trip"
+                ? "initial"
+                : "settled",
             connectionStatusToken: ++numberPadConnectionSequence,
             tripDefaults,
             startsTripOnConfirm: Boolean(startsTripOnConfirm)
