@@ -23,7 +23,7 @@ jobs:
             pattern="$2"
             before="${3:-20}"
             after="${4:-160}"
-            line="$(grep -nF "$pattern" "$file" | head -1 | cut -d: -f1)"
+            line="$(grep -nF "$pattern" "$file" | head -1 | cut -d: -f1 || true)"
             echo
             echo "===== $file :: $pattern :: line ${line:-missing} ====="
             if [ -n "$line" ]; then
@@ -35,14 +35,14 @@ jobs:
 
           show app.js 'function syncTimeFormatForMilitaryToggle' 20 100
           show app.js '#graphicalSettingsForm").addEventListener("input"' 30 100
-          show app.js 'clockTimer.addEventListener("click"' 30 100
-          show app.js 'timerType' 10 80
+          show app.js 'clockTimer.addEventListener("pointerdown"' 30 100
 
           show ClockTimer.js '#normalizeFormat()' 30 120
           show ClockTimer.js '#formatElapsedRenderedDuration(' 40 180
+          show ClockTimer.js '#formatSignedRenderedDuration(' 40 160
           show ClockTimer.js '#calculateRenderedTime(' 40 220
-          show ClockTimer.js '#syncOpenEndedRangeElements(' 40 260
-          show ClockTimer.js '#updateOpenEndedRangeTo(' 40 220
-          show ClockTimer.js '#renderInsertedRecord(' 40 260
-          show ClockTimer.js '#shiftRangesAfter(' 40 220
-          show ClockTimer.js '#ensureRing(' 30 140
+          show ClockTimer.js '#syncOpenEndedRangeElements(' 40 280
+          show ClockTimer.js '#updateOpenEndedRangeTo(' 40 240
+          show ClockTimer.js '#renderInsertedRecord(' 40 280
+          show ClockTimer.js '#shiftRangesAfter(' 40 240
+          show ClockTimer.js '#ensureRing(' 30 160
