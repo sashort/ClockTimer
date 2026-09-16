@@ -873,20 +873,56 @@
             if (control.type === "checkbox") control.checked = Boolean(value);
             else control.value = value;
         }
-        applyGraphicalSettings(settings, clockPreview);
+        syncTimeFormatForMilitaryToggle(form);
+        applyGraphicalSettings(
+            settingsFromForm(form),
+            clockPreview
+        );
+    }
+
+    function getGraphicalTimeFormatType(value) {
+        const format = String(value || "").trim();
+        if (!format || typeof TemporalFormat === "undefined") {
+            return undefined;
+        }
+
+        const formatType =
+            TemporalFormat.getFormatType(
+                format
+            );
+
+        return formatType?.type === "time"
+            ? formatType["time-type"]
+            : undefined;
     }
 
     function syncTimeFormatForMilitaryToggle(form) {
         const control = form.elements.timeFormat;
         const current = String(control.value || "").trim();
         const military = form.elements.militaryTime.checked;
-        const militaryDefaults = new Set(["HHmm", "HHmmss"]);
-        const standardDefaults = new Set(["h:mm AM/PM", "h:mm:ss AM/PM"]);
-        if (military) {
-            if (!current || standardDefaults.has(current)) control.value = "HHmm";
+        const formatType = getGraphicalTimeFormatType(current);
+        const conflict = military
+            ? formatType !== "military"
+            : formatType !== "12-hour";
+
+        if (!current || conflict) {
+            const includesSeconds = /s/i.test(current);
+            control.value = military
+                ? (includesSeconds ? "HHmmss" : "HHmm")
+                : (includesSeconds ? "h:mm:ss AM/PM" : "h:mm AM/PM");
         }
-        else if (!current || militaryDefaults.has(current)) {
-            control.value = "h:mm AM/PM";
+    }
+
+    function syncMilitaryToggleForTimeFormat(form) {
+        const formatType = getGraphicalTimeFormatType(
+            form.elements.timeFormat.value
+        );
+
+        if (formatType === "military") {
+            form.elements.militaryTime.checked = true;
+        }
+        else if (formatType === "12-hour") {
+            form.elements.militaryTime.checked = false;
         }
     }
 
@@ -926,10 +962,23 @@
     });
 
     clockTimer.addEventListener("pointerdown", () => {
-        if (clockTimer.getAttribute("timer-type") !== "radial-overflow") return;
-        clockTimer.setAttribute("timer-type", "radial-fitted");
+        const current =
+            clockTimer.getAttribute("timer-type") === "radial-fitted"
+                ? "radial-fitted"
+                : "radial-overflow";
+
+        const next =
+            current === "radial-overflow"
+                ? "radial-fitted"
+                : "radial-overflow";
+
+        clockTimer.setAttribute(
+            "timer-type",
+            next
+        );
+
         const settings = getGraphicalSettings();
-        settings.timerType = "radial-fitted";
+        settings.timerType = next;
         saveGraphicalSettings(settings);
     });
 
@@ -970,13 +1019,29 @@
     });
 
     $("#graphicalSettingsForm").addEventListener("input", event => {
-        if (event.target.name === "militaryTime") syncTimeFormatForMilitaryToggle(event.currentTarget);
-        if (event.target.matches("input, select")) applyGraphicalSettings(settingsFromForm(event.currentTarget), clockPreview);
+        const form = event.currentTarget;
+
+        if (event.target.name === "militaryTime") {
+            syncTimeFormatForMilitaryToggle(form);
+        }
+        else if (event.target.name === "timeFormat") {
+            syncMilitaryToggleForTimeFormat(form);
+        }
+
+        if (event.target.matches("input, select")) {
+            applyGraphicalSettings(
+                settingsFromForm(form),
+                clockPreview
+            );
+        }
     });
 
     $("#graphicalSettingsForm").addEventListener("submit", event => {
         event.preventDefault();
-        const settings = settingsFromForm(event.currentTarget);
+        const form = event.currentTarget;
+        syncMilitaryToggleForTimeFormat(form);
+        syncTimeFormatForMilitaryToggle(form);
+        const settings = settingsFromForm(form);
         applyGraphicalSettings(settings);
         saveGraphicalSettings(settings);
         void closeDialogWithReturn(graphicalDialog, { reason: "graphical-settings-save" }).catch(() => {});

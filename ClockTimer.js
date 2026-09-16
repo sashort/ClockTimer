@@ -25102,10 +25102,15 @@
                 false
             );
 
-            this.#syncOpenEndedRangeElements(
-                record,
-                now
-            );
+            if (
+                this.#getTimerType() !==
+                    "radial-overflow"
+            ) {
+                this.#syncOpenEndedRangeElements(
+                    record,
+                    now
+                );
+            }
 
             this.#refreshRingLayout(
                 this.#started
@@ -27622,7 +27627,9 @@
                 );
             }
             else {
-                renderedTime = this.#formatSignedRenderedDuration(remainingMilliseconds);
+                renderedTime = this.#formatRemainingRenderedDuration(
+                    remainingMilliseconds
+                );
             }
 
             return {
@@ -28548,6 +28555,45 @@
                 : formatted;
         }
 
+        #formatRemainingRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            // Elapsed time truncates to the completed whole second. Remaining
+            // time uses the complementary ceiling so the two displays agree at
+            // whole-second precision and never expose interval milliseconds.
+            const rounded =
+                Math.ceil(
+                    milliseconds /
+                    1000
+                ) *
+                1000;
+
+            const formatted =
+                TemporalFormat.formatDuration(
+                    Math.abs(
+                        rounded
+                    )
+                );
+
+            if (formatted === undefined) {
+                return undefined;
+            }
+
+            if (rounded < 0) {
+                return `-${formatted}`;
+            }
+
+            if (rounded > 0) {
+                return `⁺${formatted}`;
+            }
+
+            return formatted;
+        }
+
         #calculateRenderedTime(
             now,
             mode = this.#renderedTimeMode
@@ -28666,7 +28712,7 @@
                 ? this.#formatElapsedRenderedDuration(
                     milliseconds
                 )
-                : this.#formatSignedRenderedDuration(
+                : this.#formatRemainingRenderedDuration(
                     milliseconds
                 );
         }
