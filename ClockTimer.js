@@ -3297,13 +3297,20 @@
             };
         }
 
-        async prepareTrip({ timeout = 5000 } = {}) {
+        async prepareTrip({ timeout = 5000, at } = {}) {
             const timeoutMilliseconds = Number(timeout);
             if (!Number.isFinite(timeoutMilliseconds) || timeoutMilliseconds <= 0) {
                 throw new RangeError("timeout must be a positive number of milliseconds.");
             }
 
-            const now = new Date();
+            const now = at === undefined
+                ? new Date()
+                : at instanceof Date
+                    ? new Date(at.getTime())
+                    : new Date(at);
+            if (Number.isNaN(now.getTime())) {
+                throw new TypeError("at must be a valid Date or date-time value.");
+            }
             const time = this.#dateToStandardTime(now);
             const clientToken =
                 globalThis.crypto?.randomUUID?.() ??
@@ -3323,6 +3330,7 @@
             const prepared = {
                 clientToken,
                 creationTime: time,
+                scheduledStart: time,
                 startTime: time,
                 creationDate: now.toISOString(),
                 tripId: undefined,
@@ -3439,7 +3447,7 @@
             if (prepared) {
                 if (localOptions.creationTime === undefined) localOptions.creationTime = prepared.creationTime;
                 if (localOptions.startTime === undefined) localOptions.startTime = prepared.startTime;
-                if (localOptions.scheduledStart === undefined) localOptions.scheduledStart = prepared.startTime;
+                if (localOptions.scheduledStart === undefined) localOptions.scheduledStart = prepared.scheduledStart ?? prepared.startTime;
             }
             const preparedTripId = Number.isInteger(Number(prepared?.tripId)) && Number(prepared.tripId) > 0
                 ? Number(prepared.tripId)
@@ -3600,7 +3608,8 @@
             const summary = this.#buildSummarySnapshot(new Date());
             this.#emitClockTimerEvent("stopped", {
                 ...result,
-                summary
+                summary,
+                stopTime: persistedEnd
             });
             return result;
         }
@@ -25688,7 +25697,7 @@
                     "radial-fitted";
 
             const initialWidth =
-                "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))";
+                "var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))";
 
             if (
                 this.#starting ||
@@ -25866,9 +25875,9 @@
                 const width =
                     active
                         ?
-                        "var(--clock-timer-inactive-ring-width, clamp(4px, 2.5cqi, 12px))"
+                        "var(--clock-timer-active-ring-width, clamp(4px, 2.5cqi, 12px))"
                         :
-                        "var(--clock-timer-active-ring-width, clamp(2px, 1.25cqi, 6px))";
+                        "var(--clock-timer-inactive-ring-width, clamp(2px, 1.25cqi, 6px))";
 
                 if (
                     this.#starting ||
@@ -26802,7 +26811,7 @@
 
             let renderedTime;
             if (this.#renderedTimeMode === "elapsed") {
-                renderedTime = this.#formatSignedRenderedDuration(actualTimeMilliseconds);
+                renderedTime = this.#formatElapsedRenderedDuration(actualTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
                 renderedTime = this.#formatSummaryEndTime(
@@ -27664,6 +27673,50 @@
             return total;
         }
 
+        #getOpenIntervalDuration(
+            start,
+            end
+        ) {
+            if (
+                !Number.isFinite(start) ||
+                !Number.isFinite(end) ||
+                end <= start ||
+                !this.#openEndedRange?.openEnded
+            ) {
+                return 0;
+            }
+
+            const intervalStart =
+                this.#dateToTimelineTime(
+                    this.#openEndedRange.startDate
+                );
+
+            if (!Number.isFinite(intervalStart)) {
+                return 0;
+            }
+
+            return Math.max(
+                0,
+                end -
+                    Math.max(
+                        start,
+                        intervalStart
+                    )
+            );
+        }
+
+        #formatElapsedRenderedDuration(
+            milliseconds
+        ) {
+            if (!Number.isFinite(milliseconds)) {
+                return undefined;
+            }
+
+            return this.#formatSignedRenderedDuration(
+                Math.trunc(milliseconds / 1000) * 1000
+            );
+        }
+
         #formatSignedRenderedDuration(
             milliseconds
         ) {
@@ -27777,6 +27830,10 @@
                     this.#getClosedIntervalDuration(
                         start,
                         end
+                    ) -
+                    this.#getOpenIntervalDuration(
+                        start,
+                        end
                     );
             }
             else {
@@ -27802,9 +27859,13 @@
                 }
             }
 
-            return this.#formatSignedRenderedDuration(
-                milliseconds
-            );
+            return mode === "elapsed"
+                ? this.#formatElapsedRenderedDuration(
+                    milliseconds
+                )
+                : this.#formatSignedRenderedDuration(
+                    milliseconds
+                );
         }
 
         #updateDisplay(

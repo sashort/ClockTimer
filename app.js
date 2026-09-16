@@ -750,6 +750,26 @@
         return `${String(date.getFullYear()).padStart(4, "0")}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 
+    function getTripMomentDefaults(value = new Date()) {
+        const date = value instanceof Date
+            ? new Date(value.getTime())
+            : new Date(value);
+        if (Number.isNaN(date.getTime())) return undefined;
+        const milliseconds =
+            (((date.getHours() * 60) + date.getMinutes()) * 60 + date.getSeconds()) * 1000 +
+            date.getMilliseconds();
+        let time = formatTimelineMilliseconds(milliseconds);
+        if (date.getMilliseconds() !== 0) {
+            time += `.${String(date.getMilliseconds()).padStart(3, "0")}`;
+        }
+        return {
+            creationTime: time,
+            scheduledStart: time,
+            startTime: time,
+            creationDate: formatDateInput(date)
+        };
+    }
+
     function parseDateInput(value) {
         const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (!match) return undefined;
@@ -805,7 +825,7 @@
         const parts = splitAbsoluteDigits(state.pending);
         const timeMilliseconds = ((hour * 60 + parts.minute) * 60 + parts.second) * 1000;
         if (creation) return timeMilliseconds;
-        const base = getTripBaseDate();
+        const base = parseDateInput(state.tripDefaults?.creationDate) || getTripBaseDate();
         const dayMilliseconds = date.getTime() - base.getTime();
         const result = dayMilliseconds + timeMilliseconds;
         return result >= 0 ? result : undefined;
@@ -933,7 +953,7 @@
         }
     }
 
-    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, returnToTripSettings = false } = {}) {
+    async function openNumberPad({ mode, source, initialValue = "", preparationPromise, returnToTripSettings = false, tripDefaults } = {}) {
         await ensureNumberPadLoaded();
         const normalizedMode = mode === "percent" ? "percent" : mode === "absolute" ? "absolute" : "duration";
         let initial;
@@ -964,6 +984,7 @@
             persistence: source === "new-trip"
                 ? (clockTimer.networkStatus === "online" ? "pending" : "offline")
                 : clockTimer.networkStatus,
+            tripDefaults,
             returnToTripSettings
         };
         numberPadState = state;
@@ -1059,6 +1080,27 @@
         }
 
         if (state.mode === "absolute") {
+            if (!tripIsLive() && state.tripDefaults) {
+                if (state.source === "creation-time") {
+                    const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                    if (!value) return false;
+                    state.tripDefaults.creationTime = value;
+                    state.tripDefaults.creationDate = state.pendingDate;
+                    return true;
+                }
+
+                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state));
+                if (!value) return false;
+                if (state.source === "scheduled-start") {
+                    state.tripDefaults.scheduledStart = value;
+                    return true;
+                }
+                if (state.source === "actual-start") {
+                    state.tripDefaults.startTime = value;
+                    return true;
+                }
+            }
+
             if (state.source === "creation-time") {
                 const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
                 if (!value) return false;
@@ -1088,7 +1130,16 @@
         if (!formatted) return false;
         stagedStandardTime = formatted;
         if (state.source === "new-trip") {
-            await clockTimer.start({ standardTime: formatted });
+            const tripDefaults = state.tripDefaults;
+            await clockTimer.start({
+                standardTime: formatted,
+                creationTime: tripDefaults?.creationTime,
+                scheduledStart: tripDefaults?.scheduledStart,
+                startTime: tripDefaults?.startTime
+            });
+            if (tripDefaults?.creationDate && clockTimer.creationDate !== tripDefaults.creationDate) {
+                clockTimer.creationDate = tripDefaults.creationDate;
+            }
         }
         else if (clockTimer.standardTime !== undefined) {
             clockTimer.standardTime = formatted;
@@ -1136,10 +1187,10 @@
         refreshNumberPad();
     }
 
-    function formatTripTimeDisplay(value) {
+    function formatTripTimeDisplay(value, creationDate) {
         const milliseconds = parseTimelineTime(value);
         if (!Number.isFinite(milliseconds)) return "---";
-        const base = getTripBaseDate();
+        const base = parseDateInput(creationDate) || getTripBaseDate();
         const date = new Date(base.getTime() + milliseconds);
         const military = clockTimer.getAttribute("military-time") !== "false";
         const time = military
@@ -1198,10 +1249,23 @@
         const live = tripIsLive();
         const snapshot = getTripSettingsPadSnapshot();
         const pendingField = getTripSettingsPendingField(snapshot);
+        const tripDefaults = snapshot?.tripDefaults;
         const values = {
-            "creation-time": live ? formatTripTimeDisplay(clockTimer.creationTime) : "---",
-            "scheduled-start": live ? formatTripTimeDisplay(clockTimer.scheduledStart) : "---",
-            "actual-start": live ? formatTripTimeDisplay(clockTimer.startTime) : "---",
+            "creation-time": live
+                ? formatTripTimeDisplay(clockTimer.creationTime, clockTimer.creationDate)
+                : tripDefaults
+                    ? formatTripTimeDisplay(tripDefaults.creationTime, tripDefaults.creationDate)
+                    : "---",
+            "scheduled-start": live
+                ? formatTripTimeDisplay(clockTimer.scheduledStart, clockTimer.creationDate)
+                : tripDefaults
+                    ? formatTripTimeDisplay(tripDefaults.scheduledStart, tripDefaults.creationDate)
+                    : "---",
+            "actual-start": live
+                ? formatTripTimeDisplay(clockTimer.startTime, clockTimer.creationDate)
+                : tripDefaults
+                    ? formatTripTimeDisplay(tripDefaults.startTime, tripDefaults.creationDate)
+                    : "---",
             "standard-time": live && clockTimer.standardTime ? clockTimer.standardTime : "---"
         };
 
@@ -1215,7 +1279,7 @@
         $("#tripStandardTime").textContent = values["standard-time"];
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
             const field = button.dataset.tripTimeField;
-            button.disabled = !live && !(field === "standard-time" && pendingField === "standard-time");
+            button.disabled = !live && !tripDefaults && !(field === "standard-time" && pendingField === "standard-time");
         });
         tripSettingsForm.elements.intervalElapsedBehavior.value = clockTimer.intervalElapsedBehavior;
         tripSettingsForm.elements.autoSyncTripGoal.checked = clockTimer.autoSyncTripGoal;
@@ -1226,10 +1290,11 @@
         return openDialogElement(tripSettingsDialog, { duration: 250, reason });
     }
 
-    function getTripFieldValue(field) {
-        if (field === "creation-time") return clockTimer.creationTime || "";
-        if (field === "scheduled-start") return clockTimer.scheduledStart || "";
-        if (field === "actual-start") return clockTimer.startTime || "";
+    function getTripFieldValue(field, snapshot = getTripSettingsPadSnapshot()) {
+        const defaults = !tripIsLive() ? snapshot?.tripDefaults : undefined;
+        if (field === "creation-time") return defaults?.creationTime || clockTimer.creationTime || "";
+        if (field === "scheduled-start") return defaults?.scheduledStart || clockTimer.scheduledStart || "";
+        if (field === "actual-start") return defaults?.startTime || clockTimer.startTime || "";
         if (field === "standard-time") return clockTimer.standardTime || "";
         return "";
     }
@@ -1247,12 +1312,13 @@
             });
         }
 
-        if (!tripIsLive()) return Promise.resolve();
+        if (!tripIsLive() && !snapshot?.tripDefaults) return Promise.resolve();
         const absolute = field !== "standard-time";
         return openNumberPad({
             mode: absolute ? "absolute" : "time",
             source: field,
-            initialValue: getTripFieldValue(field),
+            initialValue: getTripFieldValue(field, snapshot),
+            tripDefaults: snapshot?.tripDefaults,
             returnToTripSettings: true
         });
     }
@@ -1412,7 +1478,11 @@
         closeDialog(tripSettingsDialog, { reason: "trip-settings-save" });
     });
 
-    async function beginNewTripWorkflow({ initialValue } = {}) {
+    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
+        const moment = tripMoment instanceof Date && !Number.isNaN(tripMoment.getTime())
+            ? new Date(tripMoment.getTime())
+            : new Date();
+        const tripDefaults = getTripMomentDefaults(moment);
         const newTripInitialValue = initialValue ?? (
             clockTimer.status === "stopped"
                 ? ""
@@ -1422,7 +1492,7 @@
         let preparationPromise;
         try {
             preparationPromise = Promise.resolve(
-                clockTimer.prepareTrip({ timeout: 5000 })
+                clockTimer.prepareTrip({ timeout: 5000, at: moment })
             ).catch(() => ({
                 persisted: false,
                 pending: true,
@@ -1441,12 +1511,13 @@
             mode: "time",
             source: "new-trip",
             initialValue: newTripInitialValue,
-            preparationPromise
+            preparationPromise,
+            tripDefaults
         });
     }
 
     $("#newTripButton").addEventListener("pointerup", () => {
-        void beginNewTripWorkflow().catch(() => {});
+        void beginNewTripWorkflow({ tripMoment: new Date() }).catch(() => {});
     });
 
     $("#endTripButton").addEventListener("pointerup", () => {
@@ -1527,7 +1598,13 @@
         setTripControlState(false);
         stagedStandardTime = undefined;
         updatePostStopSummary(event.detail?.summary);
-        void beginNewTripWorkflow({ initialValue: "" }).catch(() => {});
+        const stopMoment = event.detail?.stopTime
+            ? new Date(event.detail.stopTime)
+            : new Date();
+        void beginNewTripWorkflow({
+            initialValue: "",
+            tripMoment: Number.isNaN(stopMoment.getTime()) ? new Date() : stopMoment
+        }).catch(() => {});
     });
 
     const summaryRefreshEvents = [
