@@ -1,0 +1,61 @@
+name: Implement trip UI and event architecture
+on:
+  push:
+    paths:
+      - '.github/workflows/implement-trip-ui-events-numberpad.yml'
+      - '.github/scripts/implement_trip_ui_events_numberpad.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply trip UI and event patch
+        run: python .github/scripts/implement_trip_ui_events_numberpad.py
+      - name: JavaScript syntax checks
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+      - name: Verify event and UI architecture
+        run: |
+          grep -Fq '"standardTimeChanging"' ClockTimer.js
+          grep -Fq '"standardTimeChanged"' ClockTimer.js
+          grep -Fq 'cancelable: true' ClockTimer.js
+          grep -Fq '"started"' ClockTimer.js
+          grep -Fq '"stopped"' ClockTimer.js
+          grep -Fq '"clearing"' ClockTimer.js
+          grep -Fq 'replaceOnNextDigit: source !== "new-trip"' app.js
+          grep -Fq 'numberPadState.pending = numberPadState.initial;' app.js
+          grep -Fq 'async function beginNewTripWorkflow()' app.js
+          grep -Fq 'clockTimer.stop()' app.js
+          grep -Fq 'clockTimer.startInterval("down")' app.js
+          grep -Fq 'clockTimer.addEventListener("stopped"' app.js
+          grep -Fq 'clockTimer.addEventListener("started"' app.js
+          grep -Fq 'initialLoginSuppressed' app.js
+          grep -Fq 'popover-immediate-close' app.css
+          grep -Fq 'id="endTripButton"' index.html
+          grep -Fq 'id="breakButton"' index.html
+          grep -Fq 'id="downButton"' index.html
+          grep -Fq 'id="breakDialog"' index.html
+          ! grep -Fq 'clockTimer.addEventListener("start"' app.js
+          ! grep -Fq 'clockTimer.addEventListener("stop"' app.js
+          ! grep -Fq '"standardTimeChange"' ClockTimer.js
+      - name: Commit source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js app.js app.css index.html
+          git commit -m "Add event-driven active trip controls and editable standard time"
+          git push origin HEAD:rename-prestart-latency
+      - name: Remove patch files
+        run: |
+          git rm -f .github/scripts/implement_trip_ui_events_numberpad.py .github/workflows/implement-trip-ui-events-numberpad.yml
+          git commit -m "Remove trip UI patch workflow"
+          git push origin HEAD:rename-prestart-latency
