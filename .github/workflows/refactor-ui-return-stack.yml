@@ -1,0 +1,41 @@
+name: Refactor UI return stack
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/refactor-ui-return-stack.yml'
+      - '.github/scripts/refactor_ui_return_stack.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply UI return stack refactor
+        run: python .github/scripts/refactor_ui_return_stack.py
+      - name: Syntax check
+        run: node --check app.js
+      - name: Verify navigation stack behavior
+        run: |
+          grep -Fq 'const uiReturnStack = [];' app.js
+          grep -Fq 'async function restoreUIReturnFrame' app.js
+          grep -Fq 'async function closeDialogWithReturn' app.js
+          grep -Fq 'const caller = { type: "dialog", element: tripSettingsDialog };' app.js
+          grep -Fq 'const caller = captureNumberPadReturnFrame();' app.js
+          grep -Fq 'findUIReturnFrame("number-pad")?.state' app.js
+          ! grep -Fq 'tripSettingsPadStack' app.js
+          ! grep -Fq 'returnToTripSettings' app.js
+          ! grep -Fq 'numberPadClosedState' app.js
+      - name: Commit refactor and cleanup
+        run: |
+          rm -f .github/scripts/refactor_ui_return_stack.py
+          rm -f .github/workflows/refactor-ui-return-stack.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js .github/scripts/refactor_ui_return_stack.py .github/workflows/refactor-ui-return-stack.yml
+          git commit -m "Use UI return stack for modal navigation"
+          git push origin rename-prestart-latency
