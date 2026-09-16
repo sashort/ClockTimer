@@ -1,0 +1,37 @@
+name: Fix trip settings return order
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-trip-settings-return-order.yml'
+      - '.github/scripts/fix_trip_settings_return_order.py'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply return-order update
+        run: python .github/scripts/fix_trip_settings_return_order.py
+      - name: Syntax check
+        run: node --check app.js
+      - name: Verify handoff behavior
+        run: |
+          grep -Fq '"new-trip": "Standard Time"' app.js
+          grep -Fq 'await restoreNumberPadState(snapshot, { duration: 0 });' app.js
+          grep -Fq 'if (!numberPadDialog?.open) return false;' app.js
+          grep -Fq 'await openTripFieldNumberPad(field);' app.js
+          grep -Fq 'returnToNumberPadFromTripSettings("trip-settings-save")' app.js
+      - name: Commit update and cleanup
+        run: |
+          rm -f .github/scripts/fix_trip_settings_return_order.py
+          rm -f .github/workflows/fix-trip-settings-return-order.yml
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js .github/scripts/fix_trip_settings_return_order.py .github/workflows/fix-trip-settings-return-order.yml
+          git commit -m "Show number pad before closing trip settings"
+          git push origin rename-prestart-latency
