@@ -1,0 +1,36 @@
+name: Delay trip set label reset
+
+on:
+  push:
+    branches: [rename-prestart-latency]
+    paths:
+      - '.github/scripts/delay-trip-set-label-reset.py'
+      - '.github/workflows/delay-trip-set-label-reset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply delayed label reset
+        run: python .github/scripts/delay-trip-set-label-reset.py
+      - name: Validate
+        run: |
+          node --check app.js
+          grep -q 'tripStartsNowExiting' app.js
+          grep -q 'event.propertyName !== "flex-basis"' app.js
+      - name: Commit and cleanup
+        run: |
+          rm .github/scripts/delay-trip-set-label-reset.py
+          rm .github/workflows/delay-trip-set-label-reset.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js .github/scripts/delay-trip-set-label-reset.py .github/workflows/delay-trip-set-label-reset.yml
+          git commit -m 'Delay trip timestamp label reset until expansion ends'
+          git push
