@@ -1,0 +1,47 @@
+name: Refine connection animation
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply connection animation refinement
+        run: python .github/scripts/refine-connection-animation.py
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app.js
+          grep -Fq 'const CONNECTION_CLOUD_FADE_DURATION = 250;' app.js
+          grep -Fq 'connectionPresentation: source === "new-trip"' app.js
+          grep -Fq '{ presentation: "handoff" }' app.js
+          grep -Fq '{ presentation: "retry" }' app.js
+          grep -Fq 'data-connection-phase="handoff"' app.css
+          grep -Fq 'data-connection-phase="retry"' app.css
+          grep -Fq '@keyframes connection-cloud-pulse' app.css
+          grep -Fq "mask='url(%23q)'" app.css
+
+      - name: Commit and cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/scripts/refine-connection-animation.py
+          rm -f .github/workflows/refine-connection-animation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js app.css .github/scripts/refine-connection-animation.py .github/workflows/refine-connection-animation.yml
+          git commit -m 'Synchronize connection indicator animations'
+          git push origin HEAD:rename-prestart-latency
