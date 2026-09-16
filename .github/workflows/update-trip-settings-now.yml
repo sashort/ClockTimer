@@ -1,0 +1,59 @@
+name: Update trip settings now action
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/update-trip-settings-now.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+
+      - name: Apply trip settings update
+        run: python .github/scripts/update-trip-settings-now.py
+
+      - name: Syntax check
+        run: |
+          node --check app.js
+
+      - name: Verify trip settings update
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          index = Path('index.html').read_text()
+          app = Path('app.js').read_text()
+          css = Path('app.css').read_text()
+
+          assert 'Set Scheduled/Actual Start to Now' in index
+          assert 'trip-time-separator' in index
+          assert 'trip-time-description' in index
+          assert 'Match Trip Goal To Total' in index
+          assert '(No Data)' in index
+          assert 'tripDraftCanStart' in app
+          assert 'tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(draft))' in app
+          assert 'tripDraft.scheduledStart = value' in app
+          assert 'tripDraft.startTime = value' in app
+          assert 'tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable)' in app
+          assert 'tripGoalSyncNoData.hidden = aggregateGoalAvailable' in app
+          assert '.trip-goal-sync-option.is-unavailable .trip-goal-sync-text' in css
+          assert '.trip-goal-sync-status' in css
+          PY
+
+      - name: Commit update and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js app.css index.html
+          git rm .github/scripts/update-trip-settings-now.py .github/workflows/update-trip-settings-now.yml
+          git commit -m "Refine new trip settings controls"
+          git push origin HEAD:rename-prestart-latency
