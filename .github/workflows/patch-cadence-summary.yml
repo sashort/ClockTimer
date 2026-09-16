@@ -1,5 +1,5 @@
 name: Implement cadence summary data
-# retry after duplicate-anchor repair
+# retry after tick-anchor repair
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           ref: rename-prestart-latency
           fetch-depth: 0
 
-      - name: Repair counted patch helper
+      - name: Repair patch helpers
         run: python3 .github/scripts/repair_counted_patch.py
 
       - name: Apply counted aggregate changes
