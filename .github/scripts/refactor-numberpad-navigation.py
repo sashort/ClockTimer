@@ -22,20 +22,20 @@ def replace_block(start_marker, end_marker, replacement, label):
         raise SystemExit(f"{label}: end marker not found")
     app = app[:start] + replacement + app[end:]
 
+
 replace_once(
-'''    const uiReturnStack = [];
-''',
-'''    const uiReturnStack = [];
+    "    const uiReturnStack = [];\n",
+    """    const uiReturnStack = [];
     let tripSettingsNavigation = {
         returnTarget: "home",
         numberPadState: undefined
     };
-''',
-"navigation state"
+""",
+    "navigation state"
 )
 
 replace_once(
-'''        for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
+    """        for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
             const frame = uiReturnStack[index];
             if (
                 frame?.type === "number-pad" &&
@@ -46,8 +46,8 @@ replace_once(
                 break;
             }
         }
-''',
-'''        const returnState =
+""",
+    """        const returnState =
             tripSettingsNavigation.returnTarget === "number-pad"
                 ? tripSettingsNavigation.numberPadState
                 : undefined;
@@ -55,19 +55,19 @@ replace_once(
             returnState.persistence = normalized;
             if (presentation) returnState.connectionPresentation = presentation;
         }
-''',
-"connection snapshot sync"
+""",
+    "connection snapshot sync"
 )
 
 replace_once(
-'''    function captureNumberPadReturnFrame() {
+    """    function captureNumberPadReturnFrame() {
         return numberPadState
             ? { type: "number-pad", state: { ...numberPadState } }
             : undefined;
     }
 
-''',
-'''    function resetTripSettingsNavigation() {
+""",
+    """    function resetTripSettingsNavigation() {
         tripSettingsNavigation = {
             returnTarget: "home",
             numberPadState: undefined
@@ -87,25 +87,25 @@ replace_once(
             : undefined;
     }
 
-''',
-"navigation helpers"
+""",
+    "navigation helpers"
 )
 
 replace_once(
-'''        if (frame.type === "number-pad") {
+    """        if (frame.type === "number-pad") {
             await restoreNumberPadState(frame.state, { duration: 0 });
             return Boolean(numberPadDialog?.open);
         }
 
-''',
-'''',
-"remove number pad stack restore"
+""",
+    "",
+    "remove number pad stack restore"
 )
 
 replace_block(
-'''    function getNumberPadClearAction() {''',
-'''    function refreshNumberPad() {''',
-'''    function getNumberPadClearAction() {
+    "    function getNumberPadClearAction() {",
+    "    function refreshNumberPad() {",
+    """    function getNumberPadClearAction() {
         if (!numberPadState) return "close";
         if (numberPadHasChanges()) return "reset";
         if (numberPadState.backTarget === "trip-settings") return "back";
@@ -119,15 +119,15 @@ replace_block(
         return "close";
     }
 
-''',
-"clear action"
+""",
+    "clear action"
 )
 
 replace_once(
-'''        numberPadSettingsArea.hidden = percentMode;
+    """        numberPadSettingsArea.hidden = percentMode;
         if (!percentMode) {
-''',
-'''        const settingsVisible =
+""",
+    """        const settingsVisible =
             !percentMode &&
             numberPadState.role !== "trip-settings-field";
         numberPadSettingsArea.hidden = !settingsVisible;
@@ -136,14 +136,14 @@ replace_once(
             !settingsVisible
         );
         if (settingsVisible) {
-''',
-"settings visibility"
+""",
+    "settings visibility"
 )
 
 replace_block(
-'''    async function openNumberPad({''',
-'''    async function restoreNumberPadState(''',
-'''    async function openNumberPad({
+    "    async function openNumberPad({",
+    "    async function restoreNumberPadState(",
+    """    async function openNumberPad({
         mode,
         source,
         initialValue = "",
@@ -239,14 +239,14 @@ replace_block(
         }
     }
 
-''',
-"open number pad"
+""",
+    "open number pad"
 )
 
 replace_block(
-'''    async function closeNumberPad({''',
-'''    function getPercentGoalValue() {''',
-'''    async function closeNumberPad({
+    "    async function closeNumberPad({",
+    "    function getPercentGoalValue() {",
+    """    async function closeNumberPad({
         discardPrepared = true,
         allowChanged = false,
         immediate = false,
@@ -315,24 +315,24 @@ replace_block(
         });
     }
 
-''',
-"close number pad"
+""",
+    "close number pad"
 )
 
 replace_once(
-'''    function getTripSettingsPadSnapshot() {
+    """    function getTripSettingsPadSnapshot() {
         return findUIReturnFrame("number-pad")?.state;
     }
-''',
-'''    function getTripSettingsPadSnapshot() {
+""",
+    """    function getTripSettingsPadSnapshot() {
         return getTripSettingsReturnNumberPadState();
     }
-''',
-"trip settings pad snapshot"
+""",
+    "trip settings pad snapshot"
 )
 
 replace_once(
-'''    function syncDraftStandardTimeReturnFrame(formatted) {
+    """    function syncDraftStandardTimeReturnFrame(formatted) {
         const frame = findUIReturnFrame("number-pad");
         if (!frame?.state || frame.state.source !== "new-trip") return;
         const digits = normalizeTimeDigits(formatted);
@@ -341,8 +341,8 @@ replace_once(
         frame.state.replaceOnNextDigit = false;
         frame.state.startsTripOnConfirm = true;
     }
-''',
-'''    function syncDraftStandardTimeReturnFrame(formatted) {
+""",
+    """    function syncDraftStandardTimeReturnFrame(formatted) {
         const state = getTripSettingsReturnNumberPadState();
         if (!state || state.source !== "new-trip") return;
         const digits = normalizeTimeDigits(formatted);
@@ -351,14 +351,14 @@ replace_once(
         state.replaceOnNextDigit = false;
         state.startsTripOnConfirm = true;
     }
-''',
-"draft number pad sync"
+""",
+    "draft number pad sync"
 )
 
 replace_block(
-'''    function syncTripSettingsCallerAfterSave() {''',
-'''    function getTripSettingsDerivedTotalGoalPercent(values) {''',
-'''    function syncTripSettingsCallerAfterSave() {
+    "    function syncTripSettingsCallerAfterSave() {",
+    "    function getTripSettingsDerivedTotalGoalPercent(values) {",
+    """    function syncTripSettingsCallerAfterSave() {
         const state = getTripSettingsReturnNumberPadState();
         const standardTime = tripSettingsSession?.values?.standardTime;
         if (!state || state.source !== "standard-time" || !standardTime) return;
@@ -403,14 +403,14 @@ replace_block(
         return closeTripSettingsToNavigation(reason);
     }
 
-''',
-"trip settings navigation close"
+""",
+    "trip settings navigation close"
 )
 
 replace_block(
-'''    function openTripFieldNumberPad(field) {''',
-'''    function bindNumberPadEvents() {''',
-'''    function openTripFieldNumberPad(field) {
+    "    function openTripFieldNumberPad(field) {",
+    "    function bindNumberPadEvents() {",
+    """    function openTripFieldNumberPad(field) {
         if (!tripIsLive() && !tripDraft) return Promise.resolve();
         const live = tripIsLive();
         const absolute = field !== "standard-time";
@@ -433,16 +433,16 @@ replace_block(
         });
     }
 
-''',
-"trip field number pad"
+""",
+    "trip field number pad"
 )
 
 replace_once(
-'''                if (await commitNumberPad()) {
+    """                if (await commitNumberPad()) {
                     await closeNumberPad({ discardPrepared: false, allowChanged: true });
                 }
-''',
-'''                if (await commitNumberPad()) {
+""",
+    """                if (await commitNumberPad()) {
                     const destination = numberPadState?.confirmTarget || "home";
                     await closeNumberPad({
                         discardPrepared: false,
@@ -450,14 +450,14 @@ replace_once(
                         destination
                     });
                 }
-''',
-"confirm navigation"
+""",
+    "confirm navigation"
 )
 
 replace_block(
-'''        numberPadSettings.addEventListener("pointerup", () => {''',
-'''        numberPadDialog.addEventListener("cancel", event => {''',
-'''        numberPadSettings.addEventListener("pointerup", () => {
+    "        numberPadSettings.addEventListener(\"pointerup\", () => {",
+    "        numberPadDialog.addEventListener(\"cancel\", event => {",
+    """        numberPadSettings.addEventListener("pointerup", () => {
             if (
                 !numberPadState ||
                 numberPadState.mode === "percent" ||
@@ -493,28 +493,28 @@ replace_block(
             });
         });
 
-''',
-"number pad settings handoff"
+""",
+    "number pad settings handoff"
 )
 
 replace_once(
-'''        numberPadDialog.addEventListener("cancel", event => {
+    """        numberPadDialog.addEventListener("cancel", event => {
             event.preventDefault();
             void requestNumberPadClose().catch(() => {});
         });
-''',
-'''        numberPadDialog.addEventListener("cancel", event => {
+""",
+    """        numberPadDialog.addEventListener("cancel", event => {
             event.preventDefault();
             void cancelNumberPad().catch(() => {});
         });
-''',
-"number pad cancel"
+""",
+    "number pad cancel"
 )
 
 replace_block(
-'''    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {''',
-'''    tripSetStartsNow.addEventListener("pointerup", () => {''',
-'''    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
+    "    tripSettingsDialog.querySelectorAll(\"[data-trip-time-field]\").forEach(button => {",
+    "    tripSetStartsNow.addEventListener(\"pointerup\", () => {",
+    """    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
         button.addEventListener("pointerup", () => {
             if (button.disabled) return;
             const field = button.dataset.tripTimeField;
@@ -540,56 +540,56 @@ replace_block(
         });
     });
 
-''',
-"trip settings field handoff"
+""",
+    "trip settings field handoff"
 )
 
 replace_once(
-'''                tripStartsNowState = undefined;
+    """                tripStartsNowState = undefined;
                 tripSettingsSession = undefined;
                 closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
                 return;
-''',
-'''                tripStartsNowState = undefined;
+""",
+    """                tripStartsNowState = undefined;
                 tripSettingsSession = undefined;
                 resetTripSettingsNavigation();
                 closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
                 return;
-''',
-"new trip save navigation"
+""",
+    "new trip save navigation"
 )
 
 replace_once(
-'''            syncTripSettingsCallerAfterSave();
+    """            syncTripSettingsCallerAfterSave();
             tripStartsNowState = undefined;
             tripSettingsSession = undefined;
             await closeDialogWithReturn(tripSettingsDialog, {
                 reason: "trip-settings-save"
             });
-''',
-'''            syncTripSettingsCallerAfterSave();
+""",
+    """            syncTripSettingsCallerAfterSave();
             tripStartsNowState = undefined;
             tripSettingsSession = undefined;
             await closeTripSettingsToNavigation("trip-settings-save");
-''',
-"trip settings save navigation"
+""",
+    "trip settings save navigation"
 )
 
 replace_once(
-'''    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
+    """    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
         uiReturnStack.length = 0;
-''',
-'''    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
+""",
+    """    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
         uiReturnStack.length = 0;
         resetTripSettingsNavigation();
         tripSettingsSession = undefined;
         tripStartsNowState = undefined;
-''',
-"new trip navigation reset"
+""",
+    "new trip navigation reset"
 )
 
 replace_once(
-'''        return openNumberPad({
+    """        return openNumberPad({
             mode: "time",
             source: "new-trip",
             initialValue: newTripInitialValue,
@@ -597,8 +597,8 @@ replace_once(
             tripDefaults: tripDraft,
             startsTripOnConfirm: true
         });
-''',
-'''        return openNumberPad({
+""",
+    """        return openNumberPad({
             mode: "time",
             source: "new-trip",
             initialValue: newTripInitialValue,
@@ -610,18 +610,18 @@ replace_once(
             cancelTarget: "home",
             confirmTarget: "home"
         });
-''',
-"new trip root route"
+""",
+    "new trip root route"
 )
 
 replace_once(
-'''        void openNumberPad({
+    """        void openNumberPad({
             mode: "time",
             source: "standard-time",
             initialValue: clockTimer.standardTime || stagedStandardTime || ""
         }).catch(() => {});
-''',
-'''        void openNumberPad({
+""",
+    """        void openNumberPad({
             mode: "time",
             source: "standard-time",
             initialValue: clockTimer.standardTime || stagedStandardTime || "",
@@ -630,18 +630,18 @@ replace_once(
             cancelTarget: "home",
             confirmTarget: "home"
         }).catch(() => {});
-''',
-"standard time root route"
+""",
+    "standard time root route"
 )
 
 replace_once(
-'''        void openNumberPad({
+    """        void openNumberPad({
             mode: "percent",
             source: "percent-goal",
             initialValue: getPercentGoalValue()
         }).catch(() => {});
-''',
-'''        void openNumberPad({
+""",
+    """        void openNumberPad({
             mode: "percent",
             source: "percent-goal",
             initialValue: getPercentGoalValue(),
@@ -650,29 +650,21 @@ replace_once(
             cancelTarget: "home",
             confirmTarget: "home"
         }).catch(() => {});
-''',
-"percent root route"
+""",
+    "percent root route"
 )
 
-# The generic return stack remains for popover/dialog handoffs, but number-pad
-# navigation must not depend on it anymore.
-if 'captureNumberPadReturnFrame' in app:
-    raise SystemExit('captureNumberPadReturnFrame still present')
+if "captureNumberPadReturnFrame" in app:
+    raise SystemExit("captureNumberPadReturnFrame still present")
 if 'if (peekUIReturnFrame()) return "back";' in app:
-    raise SystemExit('number pad clear action still stack-dependent')
+    raise SystemExit("number pad clear action still stack-dependent")
 
 app_path.write_text(app)
 
 css_path = Path("app.css")
 css = css_path.read_text()
-css_marker = '''/* reversible-disabled-ui-v1 */
-'''
-css_insert = '''/* explicit-numberpad-navigation-v1 */
-.number-pad-header.settings-hidden {
-    grid-template-columns: 1fr;
-}
-
-'''
+css_marker = "/* reversible-disabled-ui-v1 */\n"
+css_insert = "/* explicit-numberpad-navigation-v1 */\n.number-pad-header.settings-hidden {\n    grid-template-columns: 1fr;\n}\n\n"
 if css_insert not in css:
     if css.count(css_marker) != 1:
         raise SystemExit(f"CSS marker expected once, found {css.count(css_marker)}")
