@@ -1967,3 +1967,37 @@ button:active:not(:disabled) {
 .number-pad-settings[data-connection-phase="awaiting-login"] .number-pad-settings-gear {
     animation: number-pad-gear-spin 800ms linear infinite;
 }
+
+/* numberpad-connection-timing-v4 */
+.number-pad-settings[data-connection-phase="initial"][data-persistence="pending"] .number-pad-settings-gear {
+    animation: number-pad-gear-spin 1000ms linear 1;
+}
+
+.number-pad-settings[data-connection-phase="initial"][data-persistence="pending"] .number-pad-persistence-badge {
+    display: none;
+    animation: none;
+}
+
+.number-pad-settings[data-connection-phase="initial-cloud"] .number-pad-persistence-badge,
+.number-pad-settings[data-connection-phase="cloud-fade"] .number-pad-persistence-badge {
+    animation: number-pad-cloud-fade-in 250ms linear both;
+}
+
+.number-pad-settings[data-connection-phase="retry"] .number-pad-settings-gear {
+    animation: none;
+}
+
+.number-pad-settings[data-connection-phase="retry"][data-persistence="pending"] .number-pad-persistence-badge::before {
+    animation: none;
+}
+
+/* trip-start-copy-return-anchor-v1 */
+.trip-now-actions.is-exiting .trip-now-start-copy {
+    transform-origin: right center;
+    animation: trip-now-start-copy-grow-from-right var(--trip-start-transition-duration) ease-in-out both;
+}
+
+@keyframes trip-now-start-copy-grow-from-right {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0); }
+}

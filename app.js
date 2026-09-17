@@ -398,26 +398,18 @@
             Number.isFinite(state?.connectionAnimationStartedAt)
                 ? state.connectionAnimationStartedAt
                 : performance.now();
-        try {
-            await Promise.resolve(preparationPromise);
-        }
-        catch {}
+
+        void Promise.resolve(preparationPromise).catch(() => {});
 
         const remaining =
             CONNECTION_INDICATOR_MINIMUM -
             (performance.now() - startedAt);
         if (remaining > 0) await wait(remaining);
 
-        const status = normalizedConnectionStatus();
         updateNumberPadConnectionStatus(
             state.connectionStatusToken,
-            status,
-            {
-                presentation:
-                    status === "offline" && !loginDialogFullyOpen
-                        ? "awaiting-login"
-                        : "settled"
-            }
+            clockTimer.networkStatus === "online" ? "online" : "offline",
+            { presentation: "initial-cloud" }
         );
     }
 
@@ -428,52 +420,58 @@
         if (numberPad && numberPadState) {
             token = numberPadState.connectionStatusToken || ++numberPadConnectionSequence;
             numberPadState.connectionStatusToken = token;
-            updateNumberPadConnectionStatus(
-                token,
-                "offline",
-                { presentation: "retry" }
-            );
+            updateNumberPadConnectionStatus(token, "pending", { presentation: "retry" });
         }
-        syncTripSettingsCloud("pending");
+        else {
+            syncTripSettingsCloud("pending");
+        }
 
         if (!connectionResumePromise) {
             connectionResumePromise = (async () => {
-                try {
-                    return await clockTimer.resumeConnection();
-                }
-                catch {
-                    return false;
-                }
+                try { return await clockTimer.resumeConnection(); }
+                catch { return false; }
             })().finally(() => {
                 connectionResumePromise = undefined;
             });
         }
 
-        try {
-            await connectionResumePromise;
-        }
+        try { await connectionResumePromise; }
         catch {}
+
+        const status = normalizedConnectionStatus();
+
+        if (numberPad && token) {
+            if (status === "online") {
+                updateNumberPadConnectionStatus(token, "online", { presentation: "cloud-fade" });
+                syncTripSettingsCloud(status);
+                syncNetworkStatusUI();
+                return true;
+            }
+
+            updateNumberPadConnectionStatus(token, "pending", { presentation: "awaiting-login" });
+            syncTripSettingsCloud(status);
+            syncNetworkStatusUI();
+
+            if (loginDialogFullyOpen) {
+                updateNumberPadConnectionStatus(token, "offline", { presentation: "cloud-fade" });
+            }
+            else if (!showConnectionRetryLoginDialog()) {
+                updateNumberPadConnectionStatus(token, "offline", { presentation: "cloud-fade" });
+            }
+            return false;
+        }
+
         const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
         if (remaining > 0) await wait(remaining);
 
-        const status = normalizedConnectionStatus();
         const presentation =
             status === "offline" && !loginDialogFullyOpen
                 ? "awaiting-login"
                 : "settled";
-        if (token) {
-            updateNumberPadConnectionStatus(
-                token,
-                status,
-                { presentation }
-            );
-        }
-        else {
-            const frame = findUIReturnFrame("number-pad");
-            if (frame?.state) {
-                frame.state.persistence = status;
-                frame.state.connectionPresentation = presentation;
-            }
+        const frame = findUIReturnFrame("number-pad");
+        if (frame?.state) {
+            frame.state.persistence = status;
+            frame.state.connectionPresentation = presentation;
         }
         syncTripSettingsCloud(status);
         syncNetworkStatusUI();
@@ -669,7 +667,7 @@
             updateNumberPadConnectionStatus(
                 connectionState.connectionStatusToken,
                 "offline",
-                { presentation: "settled" }
+                { presentation: "cloud-fade" }
             );
         }
     });
@@ -677,6 +675,25 @@
     loginDialog.addEventListener("closing", () => {
         loginDialogFullyOpen = false;
     });
+
+    function showConnectionRetryLoginDialog() {
+        clearTimeout(loginPromptTimeout);
+        loginPromptTimeout = undefined;
+        initialLoginAttemptPending = false;
+
+        if (loginDialog.open) return true;
+
+        const opened = openDialogElement(loginDialog, {
+            duration: INITIAL_LOGIN_FADE_DURATION,
+            reason: "connection-retry"
+        });
+        if (!opened) return false;
+
+        requestAnimationFrame(() => {
+            $("#loginUsername")?.focus({ preventScroll: true });
+        });
+        return true;
+    }
 
     function showInitialLoginDialog() {
         if (loginDialog.open) return;
@@ -1589,7 +1606,8 @@
                 phase === "retry" ||
                 phase === "awaiting-login";
             numberPadSettingsArea.dataset.persistence = status;
-            numberPadSettingsArea.dataset.connectionPhase = phase;
+            numberPadSettingsArea.dataset.connectionPhase =
+                phase === "awaiting-login" ? "retry" : phase;
             numberPadSettings.setAttribute("aria-label", "Trip settings");
             numberPadConnection.setAttribute(
                 "aria-label",
@@ -3151,6 +3169,20 @@
     });
 
     clockTimer.addEventListener("networkStatusChanged", () => {
+        const connectionState =
+            numberPadState ??
+            getTripSettingsReturnNumberPadState();
+        const phase = connectionState?.connectionPresentation;
+        if (
+            connectionState?.connectionStatusToken &&
+            !["initial", "retry", "awaiting-login"].includes(phase)
+        ) {
+            updateNumberPadConnectionStatus(
+                connectionState.connectionStatusToken,
+                normalizedConnectionStatus(),
+                { presentation: "cloud-fade" }
+            );
+        }
         syncNetworkStatusUI({ login: loginPending });
         queueSummaryRefresh();
     });
