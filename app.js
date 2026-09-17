@@ -146,6 +146,8 @@
     let loginDialogFullyOpen = false;
     let clockTimerTapTimer;
     let clockTimerLastTapAt = -Infinity;
+    let syncNetworkStatus;
+    let syncOfflineTransitionSequence = 0;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
     const NUMBER_PAD_LONG_PRESS = 750;
@@ -158,6 +160,7 @@
     const TRIP_START_TRANSITION_DURATION = 250;
     const cloudIconTransitions = new WeakMap();
     const syncIconAnimations = new WeakMap();
+    const offlineCloudAnimations = new WeakMap();
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
@@ -1332,6 +1335,120 @@
         return enabled;
     }
 
+    // sync-offline-icon-state-v1
+    function getSyncVisualElements() {
+        return [
+            syncGoalsMenuIcon,
+            goalSyncButton
+        ].filter(Boolean);
+    }
+
+    function ensureSyncOfflineOverlay(element) {
+        if (!element) return undefined;
+
+        let overlay =
+            element.querySelector(
+                ":scope > .sync-offline-overlay"
+            );
+
+        if (!overlay) {
+            overlay =
+                document.createElement("span");
+            overlay.className =
+                "sync-offline-overlay";
+            overlay.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+            element.append(overlay);
+        }
+
+        return overlay;
+    }
+
+    function setSyncOfflineVisualState(state) {
+        for (const element of getSyncVisualElements()) {
+            ensureSyncOfflineOverlay(element);
+            element.dataset.syncNetworkState = state;
+        }
+    }
+
+    function clearSyncOfflineVisualState() {
+        syncOfflineTransitionSequence += 1;
+
+        for (const element of getSyncVisualElements()) {
+            delete element.dataset.syncNetworkState;
+        }
+    }
+
+    async function transitionSyncIconsOffline() {
+        const sequence =
+            ++syncOfflineTransitionSequence;
+
+        setSyncOfflineVisualState(
+            "offline-prep"
+        );
+        animateSyncGoalsIcons();
+
+        await wait(
+            CONNECTION_UI_TRANSITION_DURATION
+        );
+
+        if (
+            sequence !== syncOfflineTransitionSequence ||
+            normalizedConnectionStatus() !== "offline"
+        ) {
+            return;
+        }
+
+        setSyncOfflineVisualState(
+            "offline-fading"
+        );
+
+        await wait(
+            CONNECTION_UI_TRANSITION_DURATION
+        );
+
+        if (
+            sequence !== syncOfflineTransitionSequence ||
+            normalizedConnectionStatus() !== "offline"
+        ) {
+            return;
+        }
+
+        setSyncOfflineVisualState(
+            "offline"
+        );
+    }
+
+    function syncSyncIconConnectionState(status) {
+        const normalized =
+            normalizedConnectionStatus(status);
+
+        const previous =
+            syncNetworkStatus;
+
+        syncNetworkStatus =
+            normalized;
+
+        if (normalized === "online") {
+            clearSyncOfflineVisualState();
+            return;
+        }
+
+        if (previous === "online") {
+            void transitionSyncIconsOffline();
+            return;
+        }
+
+        if (previous === undefined) {
+            syncOfflineTransitionSequence += 1;
+            setSyncOfflineVisualState(
+                "offline"
+            );
+        }
+    }
+
     function animateSyncGoalsIcons() {
         for (
             const element of
@@ -1395,6 +1512,10 @@
     }
 
     function toggleSyncGoals() {
+        if (normalizedConnectionStatus() === "offline") {
+            animateOfflineClouds();
+        }
+
         const enabled =
             setSyncGoals(
                 !getSyncGoalsState()
@@ -1623,6 +1744,70 @@
         );
     }
 
+    function animateOfflineClouds() {
+        const candidates = [
+            {
+                element: scopeConnectionButton,
+                offline:
+                    scopeConnectionButton?.dataset.cloudState ===
+                        "offline"
+            },
+            {
+                element: tripSettingsCloud,
+                offline:
+                    tripSettingsCloud?.dataset.networkStatus ===
+                        "offline"
+            },
+            {
+                element: numberPadConnection,
+                offline:
+                    numberPadSettingsArea?.dataset.persistence ===
+                        "offline"
+            }
+        ];
+
+        for (const { element, offline } of candidates) {
+            if (!element || !offline) continue;
+
+            offlineCloudAnimations.get(
+                element
+            )?.cancel();
+
+            const animation =
+                element.animate(
+                    [
+                        { opacity: 1 },
+                        { opacity: 0.38 },
+                        { opacity: 1 }
+                    ],
+                    {
+                        duration:
+                            CONNECTION_UI_TRANSITION_DURATION,
+                        easing: "ease-in-out"
+                    }
+                );
+
+            offlineCloudAnimations.set(
+                element,
+                animation
+            );
+
+            animation.finished
+                .catch(() => {})
+                .finally(() => {
+                    if (
+                        offlineCloudAnimations.get(
+                            element
+                        ) === animation
+                    ) {
+                        offlineCloudAnimations.delete(
+                            element
+                        );
+                    }
+                });
+        }
+    }
+
     function updateNumberPadConnectionStatus(token, status, { presentation } = {}) {
         const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
         if (numberPadState?.connectionStatusToken === token) {
@@ -1743,6 +1928,8 @@
         if (connectionCloudPhase !== "settled") {
             return false;
         }
+
+        animateOfflineClouds();
 
         const sequence =
             ++connectionCloudSequence;
@@ -2140,6 +2327,10 @@
 
         const networkStatus =
             clockTimer.networkStatus;
+
+        syncSyncIconConnectionState(
+            networkStatus
+        );
 
         const offline =
             networkStatus === "offline";
@@ -3464,6 +3655,11 @@
         const password = $("#loginPassword").value;
         const error = $("#loginError");
         error.textContent = "";
+
+        if (normalizedConnectionStatus() === "offline") {
+            animateOfflineClouds();
+        }
+
         loginPending = true;
         try {
             const result = await clockTimer.connect(username, password);
