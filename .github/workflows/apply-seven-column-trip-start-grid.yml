@@ -24,33 +24,31 @@ jobs:
           set -euo pipefail
           python <<'PY'
           from pathlib import Path
+          import re
 
           index = Path("index.html")
           html = index.read_text()
-          old = '''                <button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">
-                      <span class="trip-now-set-word">Set</span>
-                      <span class="trip-now-start-copy">Scheduled/Actual Start</span>
-                      <span class="trip-now-to-now">
-                          <span class="trip-now-to-word">to</span>
-                          <span class="trip-now-value-copy">
-                              <span class="trip-now-now-label">Now</span>
-                              <span class="trip-now-timestamp-label" aria-hidden="true"></span>
-                          </span>
-                      </span>
-                  </button>'''
-          new = '''                <button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">
-                      <div class="trip-now-set-word">Set</div>
-                      <div class="trip-now-space">&nbsp;</div>
-                      <div class="trip-now-start-copy">Scheduled/Actual Start</div>
-                      <div class="trip-now-to-word">&nbsp;to</div>
-                      <div class="trip-now-value-copy">
-                          <span class="trip-now-now-label">Now</span>
-                          <span class="trip-now-timestamp-label" aria-hidden="true"></span>
-                      </div>
-                  </button>'''
-          if old not in html:
+          pattern = re.compile(
+              r'(?P<indent>^[ \t]*)<button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">.*?^[ \t]*</button>',
+              re.MULTILINE | re.DOTALL,
+          )
+          match = pattern.search(html)
+          if not match:
               raise SystemExit("trip start markup anchor not found")
-          index.write_text(html.replace(old, new, 1))
+          i = match.group("indent")
+          new = "\n".join([
+              f'{i}<button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">',
+              f'{i}    <div class="trip-now-set-word">Set</div>',
+              f'{i}    <div class="trip-now-space">&nbsp;</div>',
+              f'{i}    <div class="trip-now-start-copy">Scheduled/Actual Start</div>',
+              f'{i}    <div class="trip-now-to-word">&nbsp;to</div>',
+              f'{i}    <div class="trip-now-value-copy">',
+              f'{i}        <span class="trip-now-now-label">Now</span>',
+              f'{i}        <span class="trip-now-timestamp-label" aria-hidden="true"></span>',
+              f'{i}    </div>',
+              f'{i}</button>',
+          ])
+          index.write_text(html[:match.start()] + new + html[match.end():])
 
           css_path = Path("app.css")
           css = css_path.read_text()
