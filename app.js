@@ -231,6 +231,7 @@
 
     function beginButtonPressFeedback(button) {
         if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+        if (button === goalSyncButton) return;
         if (buttonPressStates.has(button)) return;
 
         const style = getComputedStyle(button);

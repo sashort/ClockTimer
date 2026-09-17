@@ -92,8 +92,11 @@ html[data-trip-log-startup="unpinned"] .app {
 }
 
 .hamburger-button {
+    appearance: none;
     height: 100%;
     width: auto;
+    border: var(--control-border);
+    border-radius: 12px;
     aspect-ratio: 1 / 1;
     justify-self: start;
     display: grid;
@@ -2325,7 +2328,7 @@ button:active:not(:disabled) {
 
 /* reference-pattern-sitewide-v1 */
 :root {
-    --app-document-padding: 0.125in;
+    --app-document-padding: 0;
     --wm-blue: #0053e2;
     --wm-blue-dark: #001e60;
     --wm-blue-mid: #003b9b;
@@ -2339,7 +2342,8 @@ button:active:not(:disabled) {
 }
 
 .app {
-    padding: var(--app-document-padding);
+    margin: 0;
+    padding: 0;
     background: var(--wm-blue);
 }
 
