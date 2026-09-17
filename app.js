@@ -106,7 +106,6 @@
     let timerAccumulated = 0;
     let timerInterval;
     let loginPromptTimeout;
-    let grayscaleReleaseTimeout;
     let loginPending = false;
     let stagedStandardTime;
     let tripDraft;
@@ -150,12 +149,12 @@
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
-    const STARTUP_GRAYSCALE_RAMP = 2000;
     const CONNECTION_UI_TRANSITION_DURATION = 750;
     const BUTTON_PRESS_IN_DURATION = 120;
     const BUTTON_PRESS_OUT_DURATION = 140;
     const TRIP_START_TRANSITION_DURATION = 250;
     const cloudIconTransitions = new WeakMap();
+    const syncIconAnimations = new WeakMap();
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
@@ -167,6 +166,10 @@
     const TRIP_LIST_BODY_DELAY = 350;
     const TRIP_LIST_BODY_DURATION = 1000;
     const TRIP_LIST_MERGE_DURATION = 750;
+    const TRIP_LIST_CLOSE_BUTTON_DURATION = 350;
+    const TRIP_LIST_CLOSE_BODY_DELAY = 125;
+    const TRIP_LIST_CLOSE_BODY_DURATION = 425;
+    const TRIP_LIST_CLOSE_MERGE_DURATION = 300;
     const TRIP_LOG_RANGES = new Set([
         "day",
         "week",
@@ -517,7 +520,11 @@
         tripLogButton.style.removeProperty("transform");
     }
 
-    async function animateTripLogButton(fromTransform, toTransform) {
+    async function animateTripLogButton(
+        fromTransform,
+        toTransform,
+        duration = TRIP_LIST_BUTTON_TRANSITION_DURATION
+    ) {
         tripListButtonAnimation?.cancel();
 
         tripListButtonAnimation =
@@ -527,7 +534,7 @@
                     { transform: toTransform }
                 ],
                 {
-                    duration: TRIP_LIST_BUTTON_TRANSITION_DURATION,
+                    duration,
                     easing: "ease-in-out",
                     fill: "both"
                 }
@@ -643,7 +650,8 @@
 
     function animateTripLogBody(
         target,
-        opening
+        opening,
+        duration = TRIP_LIST_BODY_DURATION
     ) {
         if (!tripLogBody || !target) {
             return Promise.resolve(false);
@@ -693,7 +701,7 @@
         }
 
         const fullDuration =
-            TRIP_LIST_BODY_DURATION;
+            Math.max(1, duration);
 
         const edgeSpeed =
             Math.max(
@@ -791,6 +799,40 @@
         );
     }
 
+    function setTripLogMergeDuration(duration) {
+        const value =
+            `${Math.max(0, duration)}ms`;
+
+        for (
+            const element of
+                [
+                    tripLogButton,
+                    tripLogBody,
+                    tripLogCloseButton
+                ]
+        ) {
+            element?.style.setProperty(
+                "--trip-list-merge-duration",
+                value
+            );
+        }
+    }
+
+    function clearTripLogMergeDuration() {
+        for (
+            const element of
+                [
+                    tripLogButton,
+                    tripLogBody,
+                    tripLogCloseButton
+                ]
+        ) {
+            element?.style.removeProperty(
+                "--trip-list-merge-duration"
+            );
+        }
+    }
+
     function showTripLogMerge() {
         if (
             !tripLogButton ||
@@ -799,6 +841,8 @@
         ) {
             return;
         }
+
+        clearTripLogMergeDuration();
 
         tripLogButton.classList.add(
             "trip-log-merged"
@@ -826,7 +870,13 @@
         );
     }
 
-    async function hideTripLogMerge() {
+    async function hideTripLogMerge(
+        duration = TRIP_LIST_MERGE_DURATION
+    ) {
+        setTripLogMergeDuration(
+            duration
+        );
+
         tripLogCloseButton?.classList.remove(
             "is-visible"
         );
@@ -840,13 +890,15 @@
         );
 
         await wait(
-            TRIP_LIST_MERGE_DURATION
+            duration
         );
 
         if (tripLogCloseButton) {
             tripLogCloseButton.hidden =
                 true;
         }
+
+        clearTripLogMergeDuration();
     }
 
     async function openTripList(source = "button") {
@@ -1004,11 +1056,14 @@
             )
         );
 
-        await hideTripLogMerge();
+        await hideTripLogMerge(
+            TRIP_LIST_CLOSE_MERGE_DURATION
+        );
 
         await animateTripLogBody(
             bodyRect,
-            false
+            false,
+            TRIP_LIST_CLOSE_BODY_DURATION
         );
 
         tripLogBody.hidden =
@@ -1017,7 +1072,7 @@
         clearFloatingTripLogBodyRect();
 
         await wait(
-            TRIP_LIST_BODY_DELAY
+            TRIP_LIST_CLOSE_BODY_DELAY
         );
 
         if (pinned) {
@@ -1026,7 +1081,8 @@
 
             await animateTripLogButton(
                 "translateY(0px)",
-                `translateY(${destination.top - topRect.top}px)`
+                `translateY(${destination.top - topRect.top}px)`,
+                TRIP_LIST_CLOSE_BUTTON_DURATION
             );
 
             setFloatingTripLogRect(
@@ -1041,7 +1097,8 @@
 
             await animateTripLogButton(
                 "translateY(0px)",
-                `translateY(-${distance}px)`
+                `translateY(-${distance}px)`,
+                TRIP_LIST_CLOSE_BUTTON_DURATION
             );
         }
 
@@ -1215,25 +1272,10 @@
         }
 
         if (syncGoalsMenuIcon) {
-            const nextState =
+            syncGoalsMenuIcon.dataset.syncState =
                 enabled
                     ? "enabled"
                     : "disabled";
-
-            const animate =
-                syncGoalsMenuIcon.dataset.syncInitialized ===
-                    "true";
-
-            setCloudIconVisualState(
-                syncGoalsMenuIcon,
-                () => syncGoalsMenuIcon.dataset.syncState,
-                value => { syncGoalsMenuIcon.dataset.syncState = value; },
-                nextState,
-                { animate }
-            );
-
-            syncGoalsMenuIcon.dataset.syncInitialized =
-                "true";
         }
 
         if (goalSyncButton) {
@@ -1281,10 +1323,77 @@
         return enabled;
     }
 
+    function animateSyncGoalsIcons() {
+        for (
+            const element of
+                [
+                    syncGoalsMenuIcon,
+                    goalSyncButton
+                ]
+        ) {
+            if (!element || element.hidden) continue;
+
+            syncIconAnimations.get(
+                element
+            )?.cancel();
+
+            const anchored =
+                element === goalSyncButton;
+
+            const prefix =
+                anchored
+                    ? "translateY(-50%) "
+                    : "";
+
+            const animation =
+                element.animate(
+                    [
+                        {
+                            transform:
+                                `${prefix}rotate(0deg)`
+                        },
+                        {
+                            transform:
+                                `${prefix}rotate(360deg)`
+                        }
+                    ],
+                    {
+                        duration:
+                            CONNECTION_UI_TRANSITION_DURATION,
+                        easing: "ease-in-out"
+                    }
+                );
+
+            syncIconAnimations.set(
+                element,
+                animation
+            );
+
+            animation.finished
+                .catch(() => {})
+                .finally(() => {
+                    if (
+                        syncIconAnimations.get(
+                            element
+                        ) === animation
+                    ) {
+                        syncIconAnimations.delete(
+                            element
+                        );
+                    }
+                });
+        }
+    }
+
     function toggleSyncGoals() {
-        return setSyncGoals(
-            !getSyncGoalsState()
-        );
+        const enabled =
+            setSyncGoals(
+                !getSyncGoalsState()
+            );
+
+        animateSyncGoalsIcons();
+
+        return enabled;
     }
 
     function getGraphicalSettings() {
@@ -1453,15 +1562,6 @@
     function syncScopeConnectionCloud(status = clockTimer.networkStatus) {
         if (!scopeConnectionButton) return;
 
-        const mode =
-            normalizePercentMode(
-                clockTimer.percentMode
-            );
-
-        const modeSupportsCloud =
-            mode === "total" ||
-            mode === "auto";
-
         const normalized =
             getConnectionVisualStatus(status);
 
@@ -1469,11 +1569,8 @@
             connectionCloudPhase !== "settled";
 
         const visible =
-            modeSupportsCloud &&
-            (
-                normalized !== "online" ||
-                transitionActive
-            );
+            normalized !== "online" ||
+            transitionActive;
 
         scopeConnectionButton.hidden =
             !visible;
@@ -2012,11 +2109,9 @@
         });
     }
 
-    function syncNetworkStatusUI({ login = false, startup = false } = {}) {
+    function syncNetworkStatusUI() {
         clearTimeout(loginPromptTimeout);
-        clearTimeout(grayscaleReleaseTimeout);
         loginPromptTimeout = undefined;
-        grayscaleReleaseTimeout = undefined;
 
         const networkStatus =
             clockTimer.networkStatus;
@@ -2037,15 +2132,6 @@
         syncScopeConnectionCloud(networkStatus);
 
         if (offline) {
-            if (tripIsLive()) {
-                app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
-                app.classList.remove("is-offline");
-            }
-            else {
-                app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
-                app.classList.add("is-offline");
-            }
-
             if (connectionCloudPhase === "settled") {
                 loginPromptTimeout = setTimeout(() => {
                     loginPromptTimeout = undefined;
@@ -2061,22 +2147,11 @@
         }
 
         if (loginDialog.open) {
-            void closeDialogWithReturn(loginDialog, { reason: "login-connected" }).catch(() => {});
+            void closeDialogWithReturn(
+                loginDialog,
+                { reason: "login-connected" }
+            ).catch(() => {});
         }
-        if (!app.classList.contains("is-offline")) return;
-
-        const ramp =
-            login || connectionCloudPhase !== "settled"
-                ? CONNECTION_UI_TRANSITION_DURATION
-                : STARTUP_GRAYSCALE_RAMP;
-        const delay = startup ? STARTUP_CONNECTION_DELAY : 0;
-        app.style.setProperty("--app-grayscale-ramp", `${ramp}ms`);
-
-        grayscaleReleaseTimeout = setTimeout(() => {
-            grayscaleReleaseTimeout = undefined;
-            if (clockTimer.networkStatus !== "online") return;
-            requestAnimationFrame(() => app.classList.remove("is-offline"));
-        }, delay);
     }
 
     function normalizePercentMode(value) {
@@ -5434,34 +5509,9 @@
         return Boolean(result);
     }
 
-    function tripGrayscaleRamp() {
-        const value = Number(app.dataset.tripGrayscaleRamp);
-        return Number.isFinite(value) && value >= 0 ? value : 250;
-    }
-
-    function syncTripGrayscale(running = tripIsLive()) {
-        app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
-
-        if (running) {
-            if (!app.classList.contains("is-offline")) return;
-            requestAnimationFrame(() => {
-                if (tripIsLive()) app.classList.remove("is-offline");
-            });
-            return;
-        }
-
-        if (clockTimer.networkStatus === "online" || app.classList.contains("is-offline")) return;
-        requestAnimationFrame(() => {
-            if (!tripIsLive() && clockTimer.networkStatus !== "online") {
-                app.classList.add("is-offline");
-            }
-        });
-    }
-
     function setTripControlState(running) {
         app.dataset.tripState = running ? "running" : "ready";
         app.dataset.state = clockTimer.status;
-        syncTripGrayscale(running);
         activeTripControls.hidden = !running;
         renderTripActionState();
     }

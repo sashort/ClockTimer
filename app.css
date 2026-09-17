@@ -46,7 +46,6 @@ button {
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
     overflow: hidden;
     transition:
-        filter var(--app-grayscale-ramp, 2000ms) linear,
         grid-template-rows var(--trip-log-layout-duration) ease-in-out;
 }
 
@@ -72,7 +71,6 @@ html[data-trip-log-startup="unpinned"] .app {
     --trip-log-layout-duration: 750ms;
 }
 
-.app.is-offline { filter: grayscale(1); }
 
 .app-header {
     display: grid;
@@ -440,7 +438,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
 }
 
 .hand-caption {
-    width: min(120px, 100%);
+    width: min(128px, 100%);
     display: grid;
     grid-template-columns: minmax(0, 1fr) 18px;
     align-items: center;
@@ -449,6 +447,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
 
 .hand-caption > span {
     min-width: 0;
+    white-space: nowrap;
 }
 
 .hand-caption input {
@@ -3080,24 +3079,24 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .scope-toggle {
     width: 100%;
     height: 100%;
-    padding-inline: 44px;
+    padding-inline: 48px;
     text-align: center;
 }
 
 .scope-connection-button,
 .goal-sync-button {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     padding: 6px;
     border: 0;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 24px;
 }
 
 .scope-connection-button {
     position: absolute;
-    top: 10px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
     display: grid;
     place-items: center;
     background: transparent;
@@ -3105,8 +3104,13 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 .scope-connection-button::before,
 .goal-sync-button::before {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
+    filter:
+        drop-shadow(0.65px 0 0 currentColor)
+        drop-shadow(-0.65px 0 0 currentColor)
+        drop-shadow(0 0.65px 0 currentColor)
+        drop-shadow(0 -0.65px 0 currentColor);
 }
 
 .percent-summary {
@@ -3116,7 +3120,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .goal-sync-button {
     position: absolute;
     top: 50%;
-    right: 8px;
+    right: 6px;
     margin: 0;
     flex: none;
     transform: translateY(-50%);
