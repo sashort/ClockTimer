@@ -162,14 +162,10 @@
     const settingsHelpRevealTimers = new WeakMap();
     const SETTINGS_HELP_FADE_DURATION = 750;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
-    const TRIP_LIST_BUTTON_TRANSITION_DURATION = 750;
-    const TRIP_LIST_BODY_DELAY = 350;
-    const TRIP_LIST_BODY_DURATION = 1000;
-    const TRIP_LIST_MERGE_DURATION = 750;
-    const TRIP_LIST_CLOSE_BUTTON_DURATION = 350;
-    const TRIP_LIST_CLOSE_BODY_DELAY = 125;
-    const TRIP_LIST_CLOSE_BODY_DURATION = 425;
-    const TRIP_LIST_CLOSE_MERGE_DURATION = 300;
+    const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
+    const TRIP_LIST_BODY_DELAY = 125;
+    const TRIP_LIST_BODY_DURATION = 425;
+    const TRIP_LIST_MERGE_DURATION = 300;
     const TRIP_LOG_RANGES = new Set([
         "day",
         "week",
@@ -833,7 +829,9 @@
         }
     }
 
-    function showTripLogMerge() {
+    async function showTripLogMerge(
+        duration = TRIP_LIST_MERGE_DURATION
+    ) {
         if (
             !tripLogButton ||
             !tripLogBody ||
@@ -842,7 +840,9 @@
             return;
         }
 
-        clearTripLogMergeDuration();
+        setTripLogMergeDuration(
+            duration
+        );
 
         tripLogButton.classList.add(
             "trip-log-merged"
@@ -868,6 +868,12 @@
                 }
             }
         );
+
+        await wait(
+            duration
+        );
+
+        clearTripLogMergeDuration();
     }
 
     async function hideTripLogMerge(
@@ -996,7 +1002,7 @@
         app.dataset.tripListState =
             "open";
 
-        showTripLogMerge();
+        await showTripLogMerge();
 
         return true;
     }
@@ -1057,13 +1063,13 @@
         );
 
         await hideTripLogMerge(
-            TRIP_LIST_CLOSE_MERGE_DURATION
+            TRIP_LIST_MERGE_DURATION
         );
 
         await animateTripLogBody(
             bodyRect,
             false,
-            TRIP_LIST_CLOSE_BODY_DURATION
+            TRIP_LIST_BODY_DURATION
         );
 
         tripLogBody.hidden =
@@ -1072,7 +1078,7 @@
         clearFloatingTripLogBodyRect();
 
         await wait(
-            TRIP_LIST_CLOSE_BODY_DELAY
+            TRIP_LIST_BODY_DELAY
         );
 
         if (pinned) {
@@ -1082,7 +1088,7 @@
             await animateTripLogButton(
                 "translateY(0px)",
                 `translateY(${destination.top - topRect.top}px)`,
-                TRIP_LIST_CLOSE_BUTTON_DURATION
+                TRIP_LIST_BUTTON_TRANSITION_DURATION
             );
 
             setFloatingTripLogRect(
@@ -1098,7 +1104,7 @@
             await animateTripLogButton(
                 "translateY(0px)",
                 `translateY(-${distance}px)`,
-                TRIP_LIST_CLOSE_BUTTON_DURATION
+                TRIP_LIST_BUTTON_TRANSITION_DURATION
             );
         }
 
@@ -1350,17 +1356,27 @@
                     [
                         {
                             transform:
-                                `${prefix}rotate(0deg)`
+                                `${prefix}rotateY(0deg)`
                         },
                         {
                             transform:
-                                `${prefix}rotate(360deg)`
+                                `${prefix}rotateY(90deg)`,
+                            offset: 0.5
+                        },
+                        {
+                            transform:
+                                `${prefix}rotateY(-90deg)`,
+                            offset: 0.5001
+                        },
+                        {
+                            transform:
+                                `${prefix}rotateY(0deg)`
                         }
                     ],
                     {
                         duration:
                             CONNECTION_UI_TRANSITION_DURATION,
-                        easing: "ease-in-out"
+                        easing: "linear"
                     }
                 );
 

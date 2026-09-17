@@ -77,6 +77,9 @@ html[data-trip-log-startup="unpinned"] .app {
     grid-template-columns: auto 1fr;
     margin: 0;
     padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .header-button,
@@ -1169,11 +1172,6 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     --ui-shadow: 0 10px 24px rgb(0 0 0 / 28%);
 }
 
-.app-header {
-    background: var(--ui-navy-gradient);
-    border-bottom: 1px solid rgb(255 255 255 / 22%);
-    box-shadow: var(--ui-inner-highlight);
-}
 
 .header-button {
     background: transparent;
