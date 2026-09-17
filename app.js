@@ -141,6 +141,11 @@
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
+    const settingsHelpRevealTimers = new WeakMap();
+    const SETTINGS_HELP_FADE_DURATION = 750;
+    const SETTINGS_HELP_VISIBLE_DURATION = 4000;
+    let activeSettingsHelpButton;
+    let settingsHelpAnimation;
 
     function getPressedShadow(baseShadow, pressedShadow) {
         return !baseShadow || baseShadow === "none"
@@ -322,11 +327,33 @@
     }
 
     function getGraphicalSettings() {
-        return getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
+        const settings =
+            getStoredJSON(
+                STORAGE.graphicalSettings,
+                GRAPHICAL_DEFAULTS
+            );
+
+        if (settings.showTolerance === null) {
+            settings.showTolerance =
+                undefined;
+        }
+
+        return settings;
     }
 
     function saveGraphicalSettings(settings) {
-        safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
+        const stored = {
+            ...settings,
+            showTolerance:
+                settings.showTolerance === undefined
+                    ? null
+                    : settings.showTolerance
+        };
+
+        safeStorageSet(
+            STORAGE.graphicalSettings,
+            JSON.stringify(stored)
+        );
     }
 
     function formatDuration(milliseconds) {
@@ -982,7 +1009,7 @@
         target.setAttribute("timer-type", settings.timerType || GRAPHICAL_DEFAULTS.timerType);
         target.setAttribute("timer-mode", settings.timerMode || GRAPHICAL_DEFAULTS.timerMode);
         target.setAttribute("military-time", String(Boolean(settings.militaryTime)));
-        target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmm" : "h:mm AM/PM"));
+        target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmm" : "h:mm A"));
 
         setOptionalAttribute(target, "date-format", settings.dateFormat);
         setOptionalAttribute(target, "visible-hours", settings.visibleHours);
@@ -990,7 +1017,7 @@
         setOptionalAttribute(target, "indicator-symbol", settings.indicatorSymbol);
         target.removeAttribute("grayscale");
         target.removeAttribute("grayscale-ramp");
-        target.showTolerance = Boolean(settings.showTolerance);
+        target.showTolerance = settings.showTolerance;
         target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
 
         const variables = {
@@ -1028,6 +1055,7 @@
             const breakColor = settings.breakColor || GRAPHICAL_DEFAULTS.breakColor;
             const lunchColor = settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor;
             const downColor = settings.downColor || GRAPHICAL_DEFAULTS.downColor;
+            const latencyColor = settings.latencyColor || GRAPHICAL_DEFAULTS.latencyColor;
 
             paletteRoot.style.setProperty("--timer-break-color", breakColor);
             paletteRoot.style.setProperty("--timer-break-text-color", getContrastingTextColor(breakColor));
@@ -1035,7 +1063,50 @@
             paletteRoot.style.setProperty("--timer-lunch-text-color", getContrastingTextColor(lunchColor));
             paletteRoot.style.setProperty("--timer-down-color", downColor);
             paletteRoot.style.setProperty("--timer-down-text-color", getContrastingTextColor(downColor));
+            paletteRoot.style.setProperty("--timer-latency-color", latencyColor);
         }
+    }
+
+    function setToleranceCheckboxValue(control, value) {
+        if (!control) return;
+
+        const state =
+            value === undefined
+                ? "undefined"
+                : value
+                    ? "true"
+                    : "false";
+
+        control.dataset.toleranceState =
+            state;
+
+        control.indeterminate =
+            state === "undefined";
+
+        control.checked =
+            state === "true";
+
+        control.setAttribute(
+            "aria-checked",
+            state === "undefined"
+                ? "mixed"
+                : state
+        );
+    }
+
+    function getToleranceCheckboxValue(control) {
+        const state =
+            control?.dataset.toleranceState;
+
+        if (state === "undefined") {
+            return undefined;
+        }
+
+        if (state === "false") {
+            return false;
+        }
+
+        return true;
     }
 
     function settingsFromForm(form) {
@@ -1050,7 +1121,10 @@
             downColor: text("downColor"),
             toleranceColor: text("toleranceColor"),
             latencyColor: text("latencyColor"),
-            showTolerance: form.elements.showTolerance.checked,
+            showTolerance:
+                getToleranceCheckboxValue(
+                    form.elements.showTolerance
+                ),
             showLatency: form.elements.showLatency.checked,
             militaryTime: form.elements.militaryTime.checked,
             timeFormat: text("timeFormat"),
@@ -1084,6 +1158,13 @@
         for (const [key, value] of Object.entries(settings)) {
             const control = form.elements[key];
             if (!control) continue;
+            if (key === "showTolerance") {
+                setToleranceCheckboxValue(
+                    control,
+                    value
+                );
+                continue;
+            }
             if (control.type === "checkbox") control.checked = Boolean(value);
             else control.value = value;
         }
@@ -1123,7 +1204,7 @@
             const includesSeconds = /s/i.test(current);
             control.value = military
                 ? (includesSeconds ? "HHmmss" : "HHmm")
-                : (includesSeconds ? "h:mm:ss AM/PM" : "h:mm AM/PM");
+                : (includesSeconds ? "h:mm:ss A" : "h:mm A");
         }
     }
 
@@ -1139,6 +1220,425 @@
             form.elements.militaryTime.checked = false;
         }
     }
+
+    function getSettingsHelpElements() {
+        return {
+            popover: $("#graphicalHelpPopover"),
+            title: $("#graphicalHelpTitle"),
+            body: $("#graphicalHelpBody"),
+            close: $("#graphicalHelpClose")
+        };
+    }
+
+    function getSettingsHelpTemplate(key) {
+        const ids = {
+            tolerance: "settingsHelpTolerance",
+            latency: "settingsHelpLatency",
+            timeFormat: "settingsHelpTimeFormat",
+            dateFormat: "settingsHelpDateFormat",
+            visibleHours: "settingsHelpVisibleHours",
+            tickMarks: "settingsHelpTickMarks"
+        };
+
+        return document.getElementById(
+            ids[key]
+        );
+    }
+
+    function getSettingsHelpButton(key) {
+        return Array.from(
+            graphicalDialog.querySelectorAll(
+                ".settings-help-button"
+            )
+        ).find(
+            button =>
+                button.dataset.helpKey === key
+        );
+    }
+
+    function hideSettingsHelpButton(button) {
+        if (!button) return;
+
+        clearTimeout(
+            settingsHelpRevealTimers.get(
+                button
+            )
+        );
+
+        settingsHelpRevealTimers.delete(
+            button
+        );
+
+        button.classList.remove(
+            "is-visible"
+        );
+
+        button.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        button.tabIndex =
+            -1;
+    }
+
+    function revealSettingsHelpButton(button) {
+        if (!button) return;
+
+        for (
+            const candidate of
+                graphicalDialog.querySelectorAll(
+                    ".settings-help-button.is-visible"
+                )
+        ) {
+            if (
+                candidate !== button &&
+                candidate !== activeSettingsHelpButton
+            ) {
+                hideSettingsHelpButton(
+                    candidate
+                );
+            }
+        }
+
+        clearTimeout(
+            settingsHelpRevealTimers.get(
+                button
+            )
+        );
+
+        button.classList.add(
+            "is-visible"
+        );
+
+        button.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+
+        button.tabIndex =
+            0;
+
+        if (button === activeSettingsHelpButton) {
+            return;
+        }
+
+        settingsHelpRevealTimers.set(
+            button,
+            setTimeout(
+                () =>
+                    hideSettingsHelpButton(
+                        button
+                    ),
+                SETTINGS_HELP_FADE_DURATION +
+                    SETTINGS_HELP_VISIBLE_DURATION
+            )
+        );
+    }
+
+    async function closeSettingsHelpPopover({
+        immediate = false
+    } = {}) {
+        const {
+            popover,
+            title,
+            body
+        } = getSettingsHelpElements();
+
+        const button =
+            activeSettingsHelpButton;
+
+        activeSettingsHelpButton =
+            undefined;
+
+        settingsHelpAnimation?.cancel();
+        settingsHelpAnimation =
+            undefined;
+
+        hideSettingsHelpButton(
+            button
+        );
+
+        if (
+            !popover ||
+            !popover.matches(
+                ":popover-open"
+            )
+        ) {
+            return;
+        }
+
+        if (!immediate) {
+            const opacity =
+                Number.parseFloat(
+                    getComputedStyle(
+                        popover
+                    ).opacity
+                );
+
+            settingsHelpAnimation =
+                popover.animate(
+                    [
+                        {
+                            opacity:
+                                Number.isFinite(opacity)
+                                    ? opacity
+                                    : 1
+                        },
+                        { opacity: 0 }
+                    ],
+                    {
+                        duration:
+                            SETTINGS_HELP_FADE_DURATION,
+                        easing: "linear",
+                        fill: "both"
+                    }
+                );
+
+            try {
+                await settingsHelpAnimation.finished;
+            }
+            catch {}
+        }
+
+        settingsHelpAnimation?.cancel();
+        settingsHelpAnimation =
+            undefined;
+
+        if (
+            popover.matches(
+                ":popover-open"
+            )
+        ) {
+            popover.hidePopover();
+        }
+
+        if (title) title.textContent = "";
+        if (body) body.replaceChildren();
+    }
+
+    async function openSettingsHelpPopover(
+        key,
+        button
+    ) {
+        const template =
+            getSettingsHelpTemplate(
+                key
+            );
+
+        const {
+            popover,
+            title,
+            body,
+            close
+        } = getSettingsHelpElements();
+
+        if (
+            !template ||
+            !popover ||
+            !title ||
+            !body
+        ) {
+            return;
+        }
+
+        if (
+            popover.matches(
+                ":popover-open"
+            )
+        ) {
+            await closeSettingsHelpPopover();
+        }
+
+        clearTimeout(
+            settingsHelpRevealTimers.get(
+                button
+            )
+        );
+
+        settingsHelpRevealTimers.delete(
+            button
+        );
+
+        activeSettingsHelpButton =
+            button;
+
+        revealSettingsHelpButton(
+            button
+        );
+
+        title.textContent =
+            template.dataset.helpTitle ||
+            "Help";
+
+        body.replaceChildren(
+            template.content.cloneNode(
+                true
+            )
+        );
+
+        const latencyColor =
+            graphicalDialog.querySelector(
+                '[name="latencyColor"]'
+            )?.value ||
+            GRAPHICAL_DEFAULTS.latencyColor;
+
+        popover.style.setProperty(
+            "--settings-help-latency-color",
+            latencyColor
+        );
+
+        popover.showPopover();
+
+        settingsHelpAnimation?.cancel();
+
+        settingsHelpAnimation =
+            popover.animate(
+                [
+                    { opacity: 0 },
+                    { opacity: 1 }
+                ],
+                {
+                    duration:
+                        SETTINGS_HELP_FADE_DURATION,
+                    easing: "linear",
+                    fill: "both"
+                }
+            );
+
+        try {
+            await settingsHelpAnimation.finished;
+        }
+        catch {}
+
+        settingsHelpAnimation?.cancel();
+        settingsHelpAnimation =
+            undefined;
+
+        close?.focus({
+            preventScroll: true
+        });
+    }
+
+    graphicalDialog.querySelectorAll(
+        ".settings-help-label"
+    ).forEach(
+        label => {
+            label.addEventListener(
+                "click",
+                event => {
+                    event.preventDefault();
+
+                    revealSettingsHelpButton(
+                        getSettingsHelpButton(
+                            label.dataset.helpKey
+                        )
+                    );
+                }
+            );
+        }
+    );
+
+    graphicalDialog.querySelectorAll(
+        ".settings-help-button"
+    ).forEach(
+        button => {
+            button.addEventListener(
+                "click",
+                event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    revealSettingsHelpButton(
+                        button
+                    );
+
+                    void openSettingsHelpPopover(
+                        button.dataset.helpKey,
+                        button
+                    );
+                }
+            );
+        }
+    );
+
+    $("#graphicalHelpClose")?.addEventListener(
+        "click",
+        () => {
+            void closeSettingsHelpPopover();
+        }
+    );
+
+    document.addEventListener(
+        "pointerdown",
+        event => {
+            const {
+                popover
+            } = getSettingsHelpElements();
+
+            if (
+                !popover?.matches(
+                    ":popover-open"
+                )
+            ) {
+                return;
+            }
+
+            const path =
+                event.composedPath();
+
+            if (
+                path.includes(popover) ||
+                path.includes(
+                    activeSettingsHelpButton
+                )
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            void closeSettingsHelpPopover();
+        },
+        true
+    );
+
+    document.addEventListener(
+        "keydown",
+        event => {
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            const {
+                popover
+            } = getSettingsHelpElements();
+
+            if (
+                !popover?.matches(
+                    ":popover-open"
+                )
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            void closeSettingsHelpPopover();
+        },
+        true
+    );
+
+    graphicalDialog.addEventListener(
+        "close",
+        () => {
+            void closeSettingsHelpPopover({
+                immediate: true
+            });
+        }
+    );
 
     function openDialog(id, { fromPopover = false, reason = "user" } = {}) {
         const dialog = document.getElementById(id);
@@ -1235,7 +1735,25 @@
     $("#graphicalSettingsForm").addEventListener("input", event => {
         const form = event.currentTarget;
 
-        if (event.target.name === "militaryTime") {
+        if (event.target.name === "showTolerance") {
+            const previous =
+                getToleranceCheckboxValue(
+                    event.target
+                );
+
+            const next =
+                previous === true
+                    ? false
+                    : previous === false
+                        ? undefined
+                        : true;
+
+            setToleranceCheckboxValue(
+                event.target,
+                next
+            );
+        }
+        else if (event.target.name === "militaryTime") {
             syncTimeFormatForMilitaryToggle(form);
         }
         else if (event.target.name === "timeFormat") {

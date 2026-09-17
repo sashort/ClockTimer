@@ -164,15 +164,17 @@
                                 <label for="downColor">Down</label>
                                 <input id="downColor" name="downColor" type="color" value="#5f6772">
                             </div>
-                            <div class="timer-color-row with-toggle">
-                                <label for="toleranceColor">Tolerance</label>
-                                <input name="showTolerance" type="checkbox" checked aria-label="Show Tolerance">
-                                <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32">
+                            <div class="timer-color-row with-toggle has-setting-help">
+                                <label class="settings-help-label" for="toleranceColor" data-help-key="tolerance">Tolerance</label>
+                                <button class="settings-help-button" type="button" data-help-key="tolerance" aria-label="About Tolerance" aria-hidden="true" tabindex="-1">?</button>
+                                <input name="showTolerance" type="checkbox" checked data-tolerance-state="true" aria-label="Tolerance display">
+                                <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32" aria-label="Tolerance color">
                             </div>
-                            <div class="timer-color-row with-toggle">
-                                <label for="latencyColor">Latency</label>
+                            <div class="timer-color-row with-toggle has-setting-help">
+                                <label class="settings-help-label" for="latencyColor" data-help-key="latency">Latency</label>
+                                <button class="settings-help-button" type="button" data-help-key="latency" aria-label="About Latency" aria-hidden="true" tabindex="-1">?</button>
                                 <input name="showLatency" type="checkbox" checked aria-label="Show Latency">
-                                <input id="latencyColor" name="latencyColor" type="color" value="#e1251b">
+                                <input id="latencyColor" name="latencyColor" type="color" value="#e1251b" aria-label="Latency color">
                             </div>
                         </div>
                     </fieldset>
@@ -180,10 +182,26 @@
                     <fieldset>
                         <legend>Time Display</legend>
                         <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
-                        <label>Time Format<input name="timeFormat" value="HHmm"></label>
-                        <label>Date Format<input name="dateFormat" placeholder="hidden"></label>
-                        <label>Visible Hours<input name="visibleHours" value="12,3,6,9"></label>
-                        <label>Tick Marks<input name="tickMarks" value="[10]"></label>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="timeFormat" data-help-key="timeFormat">Time Format</label>
+                            <button class="settings-help-button" type="button" data-help-key="timeFormat" aria-label="About Time Format" aria-hidden="true" tabindex="-1">?</button>
+                            <input id="timeFormat" name="timeFormat" value="HHmm">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="dateFormat" data-help-key="dateFormat">Date Format</label>
+                            <button class="settings-help-button" type="button" data-help-key="dateFormat" aria-label="About Date Format" aria-hidden="true" tabindex="-1">?</button>
+                            <input id="dateFormat" name="dateFormat" placeholder="hidden">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="visibleHours" data-help-key="visibleHours">Visible Hours</label>
+                            <button class="settings-help-button" type="button" data-help-key="visibleHours" aria-label="About Visible Hours" aria-hidden="true" tabindex="-1">?</button>
+                            <input id="visibleHours" name="visibleHours" value="12,3,6,9">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="tickMarks" data-help-key="tickMarks">Tick Marks</label>
+                            <button class="settings-help-button" type="button" data-help-key="tickMarks" aria-label="About Tick Marks" aria-hidden="true" tabindex="-1">?</button>
+                            <input id="tickMarks" name="tickMarks" value="[10]">
+                        </div>
                         <label>Indicator Symbol<input name="indicatorSymbol" value="▲"></label>
                     </fieldset>
 
@@ -247,6 +265,98 @@
 
         </form>
     </dialog>
+
+    <div id="graphicalHelpPopover" class="settings-help-popover" popover="manual" role="dialog" aria-labelledby="graphicalHelpTitle">
+        <header class="settings-help-header">
+            <h3 id="graphicalHelpTitle"></h3>
+            <button id="graphicalHelpClose" class="settings-help-close" type="button" aria-label="Close help">×</button>
+        </header>
+        <div id="graphicalHelpBody" class="settings-help-body"></div>
+    </div>
+
+    <template id="settingsHelpTolerance" data-help-title="Tolerance">
+        <p><strong>Tolerance</strong> is the portion of <strong>your standard trip</strong> that remains after your goal-adjusted trip end.</p>
+        <p>For example, when your goal is above 100%, the timer calculates an earlier target end for your trip. The time between that calculated end and your original standard end is Tolerance.</p>
+        <div class="settings-help-state-grid">
+            <strong>Checked</strong><span>Always show your full tolerance period.</span>
+            <strong>Unchecked</strong><span>Never show tolerance. If tolerance would normally exist, your trip simply extends through that time to your standard end.</span>
+            <strong>Indeterminate</strong><span>Show tolerance only after you’ve entered it. As you move beyond your calculated trip end, the elapsed portion is revealed as tolerance.</span>
+        </div>
+        <p>Tolerance only applies when your goal produces a calculated end earlier than your standard end.</p>
+    </template>
+
+    <template id="settingsHelpLatency" data-help-title="Latency">
+        <p class="settings-help-latency-lead"><strong>Latency</strong> is counted time that begins the moment you are <strong class="settings-help-late">LATE!</strong></p>
+        <div class="settings-help-example-grid">
+            <span aria-hidden="true">•</span><div><strong>Trip Start</strong> — You start your trip after your scheduled start.</div>
+            <span aria-hidden="true">•</span><div><strong>Break</strong> — You return from Break after your break’s expected end.</div>
+            <span aria-hidden="true">•</span><div><strong>Lunch</strong> — You return from Lunch after your lunch’s expected end.</div>
+        </div>
+        <p>Latency continues until you resume your trip or start down time, and it counts as elapsed trip time.</p>
+    </template>
+
+    <template id="settingsHelpTimeFormat" data-help-title="Time Format">
+        <p><strong>Time Format</strong> controls how your current time is displayed in the center of your clock.</p>
+        <p>Your format must include an hour token and <code>mm</code> for minutes. Add <code>ss</code> if you want seconds. Other punctuation, spaces, and characters are displayed as you enter them.</p>
+        <div class="settings-help-token-grid">
+            <code>H</code><span>Military hour without a leading zero.</span>
+            <code>HH</code><span>Military hour with a leading zero.</span>
+            <code>h</code><span>12-hour time without a leading zero.</span>
+            <code>hh</code><span>12-hour time with a leading zero.</span>
+            <code>mm</code><span>Two-digit minutes.</span>
+            <code>ss</code><span>Two-digit seconds.</span>
+            <code>A</code><span>AM or PM.</span>
+        </div>
+        <p>Your hour format should match your <strong>Military Time</strong> setting.</p>
+        <div class="settings-help-token-grid settings-help-examples">
+            <code>HHmm</code><span>1437</span>
+            <code>HH:mm</code><span>14:37</span>
+            <code>HH:mm:ss</code><span>14:37:22</span>
+            <code>h:mm A</code><span>2:37 PM</span>
+        </div>
+    </template>
+
+    <template id="settingsHelpDateFormat" data-help-title="Date Format">
+        <p><strong>Date Format</strong> controls how the date is displayed above your current time.</p>
+        <p><strong>Leave this field blank if you don’t want the date shown.</strong> When you use a date format, it must include a year, month, and numeric day.</p>
+        <div class="settings-help-token-grid">
+            <code>yyyy</code><span>Four-digit year.</span>
+            <code>yy</code><span>Two-digit year.</span>
+            <code>M</code><span>Numeric month.</span>
+            <code>MM</code><span>Two-digit month.</span>
+            <code>MMM</code><span>Abbreviated month name, such as Sep.</span>
+            <code>MMMM</code><span>Full month name, such as September.</span>
+            <code>d</code><span>Numeric day.</span>
+            <code>dd</code><span>Two-digit day.</span>
+            <code>ddd</code><span>Abbreviated day name, such as Thu.</span>
+            <code>dddd</code><span>Full day name, such as Thursday.</span>
+        </div>
+        <p>Other punctuation, spaces, and characters are displayed as you enter them.</p>
+        <div class="settings-help-token-grid settings-help-examples">
+            <code>MMM d, yyyy</code><span>Sep 17, 2026</span>
+            <code>MMMM d, yyyy</code><span>September 17, 2026</span>
+            <code>ddd, MMM d, yyyy</code><span>Thu, Sep 17, 2026</span>
+            <code>dddd, MMMM d, yyyy</code><span>Thursday, September 17, 2026</span>
+        </div>
+    </template>
+
+    <template id="settingsHelpVisibleHours" data-help-title="Visible Hours">
+        <p><strong>Visible Hours</strong> lets you choose which hour positions are labeled around your clock.</p>
+        <p>Separate the hours you want to see with commas. For example, <code>12,3,6,9</code> shows the four quarter-hour positions.</p>
+        <p><strong>Leave this field blank to show all hour labels.</strong></p>
+        <p>When you use Military Time, the labels change with the time of day while your selected clock positions stay the same. For example, the <code>3</code> position can display <strong>15</strong> in the afternoon.</p>
+    </template>
+
+    <template id="settingsHelpTickMarks" data-help-title="Tick Marks">
+        <p><strong>Tick Marks</strong> controls which second marks appear around your clock.</p>
+        <div class="settings-help-token-grid">
+            <code>10</code><span>Show fixed tick marks every 10 seconds.</span>
+            <code>[10]</code><span>Show a rolling 10-second group and include its boundary marks.</span>
+            <code>(10)</code><span>Show a rolling 10-second group without its boundary marks.</span>
+            <code>+/-10</code><span>Show a rolling window 10 seconds before and after the current second.</span>
+        </div>
+        <p><strong>Leave this field blank to hide tick marks.</strong> Fixed values can be from <code>1</code> through <code>60</code>. Every 5-second tick is visually emphasized as a major tick.</p>
+    </template>
 
     <dialog id="stateSettingsDialog" class="app-dialog settings-dialog state-dialog">
         <form id="stateSettingsForm" method="dialog">

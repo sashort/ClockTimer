@@ -2035,7 +2035,10 @@
         set showTolerance(value) {
             let normalized;
 
-            if (typeof value === "boolean") {
+            if (value === undefined) {
+                normalized = undefined;
+            }
+            else if (typeof value === "boolean") {
                 normalized = value;
             }
             else if (typeof value === "string") {
@@ -20137,9 +20140,45 @@
                 );
         }
 
+        #getCurrentTripRenderEnd() {
+            let end;
+
+            for (
+                const range of
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            range =>
+                                range.clockTimerPlanned !==
+                                    undefined &&
+                                range.timeRangeExiting !==
+                                    true &&
+                                range.getAttribute(
+                                    "type"
+                                ) === "trip"
+                        )
+            ) {
+                const rangeEnd =
+                    Number(
+                        range.clockTimerEnd
+                    );
+
+                if (
+                    Number.isFinite(rangeEnd) &&
+                    (
+                        !Number.isFinite(end) ||
+                        rangeEnd > end
+                    )
+                ) {
+                    end =
+                        rangeEnd;
+                }
+            }
+
+            return end;
+        }
+
         #getCurrentToleranceRenderEnd() {
-            let end =
-                this.#calculatedEnd;
+            let end;
 
             for (
                 const range of
@@ -20166,55 +20205,79 @@
         }
 
         #getToleranceTransitionSegments(
-            end
+            tripEnd,
+            toleranceEnd
         ) {
             const segments = [];
 
             if (
                 !Number.isFinite(
-                    this.#calculatedEnd
+                    this.#scheduledStartMilliseconds
                 ) ||
-                !Number.isFinite(end) ||
-                end <= this.#calculatedEnd
+                !Number.isFinite(tripEnd) ||
+                tripEnd <= this.#scheduledStartMilliseconds
             ) {
                 return segments;
             }
 
-            let cursor =
-                this.#calculatedEnd;
-
-            while (cursor < end) {
-                const ringIndex =
-                    this.#getTimerRingIndex(
-                        cursor
-                    );
-
-                const ringEnd =
-                    this.#getTimerRingEnd(
-                        ringIndex
-                    );
-
-                const segmentEnd =
-                    Math.min(
-                        end,
-                        ringEnd
-                    );
-
-                if (
-                    !Number.isFinite(segmentEnd) ||
-                    segmentEnd <= cursor
-                ) {
-                    break;
+            const spans = [
+                {
+                    type: "trip",
+                    start:
+                        this.#scheduledStartMilliseconds,
+                    end: tripEnd
                 }
+            ];
 
-                segments.push({
-                    ringIndex,
-                    start: cursor,
-                    end: segmentEnd
+            if (
+                Number.isFinite(toleranceEnd) &&
+                toleranceEnd > tripEnd
+            ) {
+                spans.push({
+                    type: "tolerance",
+                    start: tripEnd,
+                    end: toleranceEnd
                 });
+            }
 
-                cursor =
-                    segmentEnd;
+            for (const span of spans) {
+                let cursor =
+                    span.start;
+
+                while (cursor < span.end) {
+                    const ringIndex =
+                        this.#getTimerRingIndex(
+                            cursor
+                        );
+
+                    const ringEnd =
+                        this.#getTimerRingEnd(
+                            ringIndex
+                        );
+
+                    const segmentEnd =
+                        Math.min(
+                            span.end,
+                            ringEnd
+                        );
+
+                    if (
+                        !Number.isFinite(segmentEnd) ||
+                        segmentEnd <= cursor
+                    ) {
+                        break;
+                    }
+
+                    segments.push({
+                        type: span.type,
+                        ringIndex,
+                        start: cursor,
+                        end: segmentEnd
+                    });
+
+                    cursor =
+                        segmentEnd;
+                }
             }
 
             return segments;
@@ -20593,7 +20656,8 @@
 
         #syncToleranceTransitionRanges(
             state,
-            end
+            tripEnd,
+            toleranceEnd
         ) {
             if (
                 !state ||
@@ -20603,12 +20667,16 @@
                 return;
             }
 
+            state.currentTripEnd =
+                tripEnd;
+
             state.currentEnd =
-                end;
+                toleranceEnd;
 
             const desired =
                 this.#getToleranceTransitionSegments(
-                    end
+                    tripEnd,
+                    toleranceEnd
                 );
 
             const existing =
@@ -20616,7 +20684,22 @@
 
             for (
                 const range of
-                    this.#getToleranceRanges()
+                    this.#getManagedTimeRanges()
+                        .filter(
+                            candidate =>
+                                candidate.clockTimerPlanned !==
+                                    undefined &&
+                                candidate.timeRangeExiting !==
+                                    true &&
+                                (
+                                    candidate.getAttribute(
+                                        "type"
+                                    ) === "trip" ||
+                                    candidate.getAttribute(
+                                        "type"
+                                    ) === "tolerance"
+                                )
+                        )
             ) {
                 const ringIndex =
                     Number(
@@ -20624,17 +20707,19 @@
                             ?.clockTimerRingIndex
                     );
 
-                if (
-                    !Number.isFinite(ringIndex) ||
-                    existing.has(ringIndex)
-                ) {
+                if (!Number.isFinite(ringIndex)) {
                     continue;
                 }
 
-                existing.set(
-                    ringIndex,
-                    range
-                );
+                const key =
+                    `${range.getAttribute("type")}:${ringIndex}`;
+
+                if (!existing.has(key)) {
+                    existing.set(
+                        key,
+                        range
+                    );
+                }
             }
 
             let layoutChanged =
@@ -20662,20 +20747,23 @@
                     );
                 }
 
+                const key =
+                    `${target.type}:${target.ringIndex}`;
+
                 let range =
                     existing.get(
-                        target.ringIndex
+                        key
                     );
 
                 if (range) {
                     existing.delete(
-                        target.ringIndex
+                        key
                     );
                 }
                 else {
                     range =
                         this.#createTimeRange(
-                            "tolerance",
+                            target.type,
                             target.start,
                             target.end
                         );
@@ -20740,12 +20828,18 @@
                 range.remove();
             }
 
+            const visualEnd =
+                Math.max(
+                    tripEnd,
+                    toleranceEnd
+                );
+
             if (
                 this.#getTimerType() ===
                     "radial-fitted"
             ) {
                 this.#refreshRadialFittedLayouts(
-                    end,
+                    visualEnd,
                     {
                         suspendLayout: false
                     }
@@ -20754,7 +20848,7 @@
 
             if (layoutChanged) {
                 this.#refreshRingLayout(
-                    end
+                    visualEnd
                 );
             }
         }
@@ -20807,6 +20901,7 @@
 
             this.#syncToleranceTransitionRanges(
                 state,
+                state.targetTripEnd,
                 state.targetEnd
             );
 
@@ -20860,6 +20955,8 @@
 
             this.#toleranceTransitionState =
                 undefined;
+
+            this.#reconcilePlannedRanges();
 
             this.#removeEmptyRings();
 
@@ -20966,6 +21063,14 @@
                         )
                     );
 
+            const currentTripEnd =
+                state.fromTripEnd +
+                (
+                    state.targetTripEnd -
+                    state.fromTripEnd
+                ) *
+                progress;
+
             const currentEnd =
                 state.fromEnd +
                 (
@@ -20976,6 +21081,7 @@
 
             this.#syncToleranceTransitionRanges(
                 state,
+                currentTripEnd,
                 currentEnd
             );
 
@@ -21022,28 +21128,61 @@
                 return;
             }
 
-            const fromEnd =
-                Math.max(
-                    this.#calculatedEnd,
-                    Math.min(
-                        this.#standardEnd,
-                        this.#getCurrentToleranceRenderEnd() ??
-                            this.#calculatedEnd
-                    )
-                );
-
-            const targetEnd =
-                this.#showTolerance
-                    ? this.#standardEnd
-                    : Math.max(
+            const clampToTolerance =
+                value =>
+                    Math.max(
                         this.#calculatedEnd,
                         Math.min(
-                            now,
-                            this.#standardEnd
+                            this.#standardEnd,
+                            value
                         )
                     );
 
-            if (fromEnd === targetEnd) {
+            const renderedTripEnd =
+                this.#getCurrentTripRenderEnd();
+
+            const fromTripEnd =
+                clampToTolerance(
+                    Number.isFinite(renderedTripEnd)
+                        ? renderedTripEnd
+                        : (
+                            this.#showTolerance === false
+                                ? this.#standardEnd
+                                : this.#calculatedEnd
+                        )
+                );
+
+            const renderedToleranceEnd =
+                this.#getCurrentToleranceRenderEnd();
+
+            const fromEnd =
+                Math.max(
+                    fromTripEnd,
+                    Number.isFinite(renderedToleranceEnd)
+                        ? clampToTolerance(
+                            renderedToleranceEnd
+                        )
+                        : fromTripEnd
+                );
+
+            const targetTripEnd =
+                this.#showTolerance === false
+                    ? this.#standardEnd
+                    : this.#calculatedEnd;
+
+            const targetEnd =
+                this.#showTolerance === true
+                    ? this.#standardEnd
+                    : this.#showTolerance === false
+                        ? this.#standardEnd
+                        : clampToTolerance(
+                            now
+                        );
+
+            if (
+                fromTripEnd === targetTripEnd &&
+                fromEnd === targetEnd
+            ) {
                 this.#reconcilePlannedRanges();
 
                 this.#refreshRingLayout(
@@ -21060,6 +21199,7 @@
             const finalRingIndexes =
                 new Set(
                     this.#getToleranceTransitionSegments(
+                        targetTripEnd,
                         targetEnd
                     ).map(
                         segment =>
@@ -21077,18 +21217,15 @@
                         )
                 );
 
-            const fadeOutRings =
-                this.#getToleranceFadeOutRings(
-                    targetEnd
-                );
-
             const state = {
+                fromTripEnd,
+                targetTripEnd,
                 fromEnd,
                 targetEnd,
+                currentTripEnd: fromTripEnd,
                 currentEnd: fromEnd,
                 duration:
-                    ringWillAppear ||
-                    fadeOutRings.length > 0
+                    ringWillAppear
                         ? 750
                         : this.#getRangeAnimationDuration(),
                 startedAt: undefined,
@@ -21106,16 +21243,9 @@
             this.#toleranceTransitionState =
                 state;
 
-            for (const ring of fadeOutRings) {
-                this.#startToleranceRingFade(
-                    state,
-                    ring,
-                    "out"
-                );
-            }
-
             this.#syncToleranceTransitionRanges(
                 state,
+                fromTripEnd,
                 fromEnd
             );
 
@@ -21134,6 +21264,7 @@
 
                 this.#syncToleranceTransitionRanges(
                     state,
+                    targetTripEnd,
                     targetEnd
                 );
 
@@ -21167,22 +21298,32 @@
                 this.#toleranceTransitionState
                     ?.currentEnd;
 
+            const transitionTripEnd =
+                this.#toleranceTransitionState
+                    ?.currentTripEnd;
+
             if (
-                Number.isFinite(
-                    transitionEnd
-                )
+                Number.isFinite(transitionEnd) &&
+                Number.isFinite(transitionTripEnd)
             ) {
                 return transitionEnd >
-                    this.#calculatedEnd
+                    transitionTripEnd
                     ? transitionEnd
                     : undefined;
             }
 
-            if (
-                !this.#started ||
-                this.#showTolerance
-            ) {
+            if (!this.#started) {
+                return this.#showTolerance === true
+                    ? this.#standardEnd
+                    : undefined;
+            }
+
+            if (this.#showTolerance === true) {
                 return this.#standardEnd;
+            }
+
+            if (this.#showTolerance === false) {
+                return undefined;
             }
 
             const current =
@@ -21250,8 +21391,27 @@
                 );
 
             if (this.#renderedPercentGoal > 1) {
+                const transitionTripEnd =
+                    this.#toleranceTransitionState
+                        ?.currentTripEnd;
+
+                const tripRenderEnd =
+                    Number.isFinite(
+                        transitionTripEnd
+                    )
+                        ? Math.max(
+                            this.#calculatedEnd,
+                            Math.min(
+                                this.#standardEnd,
+                                transitionTripEnd
+                            )
+                        )
+                        : this.#showTolerance === false
+                            ? this.#standardEnd
+                            : this.#calculatedEnd;
+
                 this.#tripEnd =
-                    this.#calculatedEnd;
+                    tripRenderEnd;
 
                 this.#toleranceEnd =
                     this.#standardEnd;
@@ -21259,7 +21419,7 @@
                 spans.push({
                     type: "trip",
                     start: tripStart,
-                    end: this.#calculatedEnd
+                    end: tripRenderEnd
                 });
 
                 const toleranceRenderEnd =
@@ -21270,11 +21430,11 @@
                         toleranceRenderEnd
                     ) &&
                     toleranceRenderEnd >
-                        this.#calculatedEnd
+                        tripRenderEnd
                 ) {
                     spans.push({
                         type: "tolerance",
-                        start: this.#calculatedEnd,
+                        start: tripRenderEnd,
                         end: toleranceRenderEnd
                     });
                 }
@@ -25675,8 +25835,13 @@
                 this.#renderedPercentGoal >
                     1
             ) {
+                const tripRenderEnd =
+                    this.#showTolerance === false
+                        ? this.#standardEnd
+                        : this.#calculatedEnd;
+
                 this.#tripEnd =
-                    this.#calculatedEnd;
+                    tripRenderEnd;
 
                 this.#toleranceEnd =
                     this.#standardEnd;
@@ -25684,7 +25849,7 @@
                 this.#createSpan(
                     "trip",
                     tripStart,
-                    this.#calculatedEnd
+                    tripRenderEnd
                 );
 
                 const toleranceRenderEnd =
@@ -25695,11 +25860,11 @@
                         toleranceRenderEnd
                     ) &&
                     toleranceRenderEnd >
-                        this.#calculatedEnd
+                        tripRenderEnd
                 ) {
                     this.#createSpan(
                         "tolerance",
-                        this.#calculatedEnd,
+                        tripRenderEnd,
                         toleranceRenderEnd
                     );
                 }
@@ -27190,7 +27355,7 @@
                 );
 
             if (
-                !this.#showTolerance &&
+                this.#showTolerance === undefined &&
                 this.#renderedPercentGoal > 1 &&
                 !this.#toleranceTransitionState
             ) {
@@ -28202,7 +28367,7 @@
             return this.getAttribute(
                 "military-time"
             ) === "false"
-                ? "h:mm AM/PM"
+                ? "h:mm A"
                 : "HHmm";
         }
 

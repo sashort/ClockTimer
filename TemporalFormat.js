@@ -8,8 +8,10 @@ class TemporalFormat {
     static #CSS_TIME_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i;
 
     static #DATE_TOKENS = [
+        "dddd",
         "yyyy",
         "MMMM",
+        "ddd",
         "MMM",
         "MM",
         "dd",
@@ -24,7 +26,8 @@ class TemporalFormat {
         "mm",
         "ss",
         "H",
-        "h"
+        "h",
+        "A"
     ];
 
     static #MONTHS_SHORT = [
@@ -55,6 +58,26 @@ class TemporalFormat {
         "October",
         "November",
         "December"
+    ];
+
+    static #WEEKDAYS_SHORT = [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+    ];
+
+    static #WEEKDAYS_LONG = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
     ];
 
     static parseDateTime(
@@ -285,6 +308,12 @@ class TemporalFormat {
             M: String(
                 date.getMonth() + 1
             ),
+            dddd: TemporalFormat.#WEEKDAYS_LONG[
+                date.getDay()
+            ],
+            ddd: TemporalFormat.#WEEKDAYS_SHORT[
+                date.getDay()
+            ],
             dd: TemporalFormat.#pad(
                 date.getDate(),
                 2
@@ -352,7 +381,11 @@ class TemporalFormat {
             ss: TemporalFormat.#pad(
                 date.getSeconds(),
                 2
-            )
+            ),
+            A:
+                militaryHour < 12
+                    ? "AM"
+                    : "PM"
         };
 
         return TemporalFormat.#replaceTokens(
