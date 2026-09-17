@@ -1,0 +1,57 @@
+name: Fix break buffer and counted time
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-break-buffer-and-counted-time.yml'
+      - '.github/scripts/fix_break_buffer_and_counted_time.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply fix
+        run: python .github/scripts/fix_break_buffer_and_counted_time.py
+      - name: Syntax check
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+      - name: Verify counted-time display fix
+        run: |
+          grep -Fq 'const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;' ClockTimer.js
+          grep -Fq 'renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);' ClockTimer.js
+      - name: Verify Break Buffer settings
+        run: |
+          grep -Fq 'breakBufferColor: "#6b7f99"' app.js
+          grep -Fq 'showBreakBuffer: true' app.js
+          grep -Fq 'target.toggleAttribute("hide-break-buffer", !Boolean(settings.showBreakBuffer));' app.js
+          grep -Fq '"--clock-timer-break-buffer-color": settings.breakBufferColor' app.js
+          grep -Fq 'showBreakBuffer: form.elements.showBreakBuffer.checked' app.js
+          grep -Fq 'clock-timer time-range[type="buffer"]' app.css
+          grep -Fq 'clock-timer[hide-break-buffer] time-range[type="buffer"]' app.css
+      - name: Verify settings order
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text()
+          lunch = text.index('for="lunchColor">Lunch')
+          brk = text.index('for="breakColor">Break')
+          buf = text.index('for="breakBufferColor">Break Buffer')
+          assert lunch < brk < buf
+          assert 'name="showBreakBuffer" type="checkbox" checked' in text
+          PY
+      - name: Commit source changes
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css index.html ClockTimer.js
+          git commit -m "Add Break Buffer setting and fix counted display time" || exit 0
+          git push origin HEAD:rename-prestart-latency
