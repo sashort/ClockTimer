@@ -7,97 +7,23 @@ on:
     paths:
       - .github/workflows/apply-trip-grayscale-change.yml
 
-permissions:
-  contents: write
-
 jobs:
   apply:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           ref: rename-prestart-latency
           fetch-depth: 0
-
-      - name: Apply trip grayscale behavior
+      - name: Apply requested changes
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          index_path = Path("index.html")
-          index = index_path.read_text()
-          old_main = '<main id="app" class="app is-offline" data-state="offline" data-trip-state="ready">'
-          new_main = '<main id="app" class="app is-offline" data-state="offline" data-trip-state="ready" data-trip-grayscale-ramp="250">'
-          if index.count(old_main) != 1:
-              raise SystemExit(f"Expected one index.html app marker, found {index.count(old_main)}")
-          index_path.write_text(index.replace(old_main, new_main, 1))
-
-          app_path = Path("app.js")
-          app = app_path.read_text()
-
-          old_offline = '''        if (offline) {
-            app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
-            app.classList.add("is-offline");
-            loginPromptTimeout = setTimeout(() => {'''
-          new_offline = '''        if (offline) {
-            if (tripIsLive()) {
-                app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
-                app.classList.remove("is-offline");
-            }
-            else {
-                app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
-                app.classList.add("is-offline");
-            }
-            loginPromptTimeout = setTimeout(() => {'''
-          if app.count(old_offline) != 1:
-              raise SystemExit(f"Expected one offline grayscale block, found {app.count(old_offline)}")
-          app = app.replace(old_offline, new_offline, 1)
-
-          old_controls = '''    function setTripControlState(running) {
-        app.dataset.tripState = running ? "running" : "ready";
-        app.dataset.state = clockTimer.status;
-        activeTripControls.hidden = !running;
-        renderTripActionState();
-    }'''
-          new_controls = '''    function tripGrayscaleRamp() {
-        const value = Number(app.dataset.tripGrayscaleRamp);
-        return Number.isFinite(value) && value >= 0 ? value : 250;
-    }
-
-    function syncTripGrayscale(running = tripIsLive()) {
-        app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
-
-        if (running) {
-            if (!app.classList.contains("is-offline")) return;
-            requestAnimationFrame(() => {
-                if (tripIsLive()) app.classList.remove("is-offline");
-            });
-            return;
-        }
-
-        if (clockTimer.networkStatus === "online" || app.classList.contains("is-offline")) return;
-        requestAnimationFrame(() => {
-            if (!tripIsLive() && clockTimer.networkStatus !== "online") {
-                app.classList.add("is-offline");
-            }
-        });
-    }
-
-    function setTripControlState(running) {
-        app.dataset.tripState = running ? "running" : "ready";
-        app.dataset.state = clockTimer.status;
-        syncTripGrayscale(running);
-        activeTripControls.hidden = !running;
-        renderTripActionState();
-    }'''
-          if app.count(old_controls) != 1:
-              raise SystemExit(f"Expected one setTripControlState block, found {app.count(old_controls)}")
-          app_path.write_text(app.replace(old_controls, new_controls, 1))
-          PY
-
-      - name: Commit change
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgppbmRleF9wYXRoID0gUGF0aCgiaW5kZXguaHRtbCIpCmluZGV4ID0gaW5kZXhfcGF0aC5yZWFkX3RleHQoKQpvbGRfbWFpbiA9ICc8bWFpbiBpZD0iYXBwIiBjbGFzcz0iYXBwIGlzLW9mZmxpbmUiIGRhdGEtc3RhdGU9Im9mZmxpbmUiIGRhdGEtdHJpcC1zdGF0ZT0icmVhZHkiPicKbmV3X21haW4gPSAnPG1haW4gaWQ9ImFwcCIgY2xhc3M9ImFwcCBpcy1vZmZsaW5lIiBkYXRhLXN0YXRlPSJvZmZsaW5lIiBkYXRhLXRyaXAtc3RhdGU9InJlYWR5IiBkYXRhLXRyaXAtZ3JheXNjYWxlLXJhbXA9IjI1MCI+JwppZiBpbmRleC5jb3VudChvbGRfbWFpbikgIT0gMToKICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBvbmUgaW5kZXguaHRtbCBhcHAgbWFya2VyLCBmb3VuZCB7aW5kZXguY291bnQob2xkX21haW4pfSIpCmluZGV4X3BhdGgud3JpdGVfdGV4dChpbmRleC5yZXBsYWNlKG9sZF9tYWluLCBuZXdfbWFpbiwgMSkpCgphcHBfcGF0aCA9IFBhdGgoImFwcC5qcyIpCmFwcCA9IGFwcF9wYXRoLnJlYWRfdGV4dCgpCgpvbGRfb2ZmbGluZSA9ICcnJyAgICAgICAgaWYgKG9mZmxpbmUpIHsKICAgICAgICAgICAgYXBwLnN0eWxlLnNldFByb3BlcnR5KCItLWFwcC1ncmF5c2NhbGUtcmFtcCIsIGAke1NUQVJUVVBfR1JBWVNDQUxFX1JBTVB9bXNgKTsKICAgICAgICAgICAgYXBwLmNsYXNzTGlzdC5hZGQoImlzLW9mZmxpbmUiKTsKICAgICAgICAgICAgbG9naW5Qcm9tcHRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7JycnCm5ld19vZmZsaW5lID0gJycnICAgICAgICBpZiAob2ZmbGluZSkgewogICAgICAgICAgICBpZiAodHJpcElzTGl2ZSgpKSB7CiAgICAgICAgICAgICAgICBhcHAuc3R5bGUuc2V0UHJvcGVydHkoIi0tYXBwLWdyYXlzY2FsZS1yYW1wIiwgYCR7dHJpcEdyYXlzY2FsZVJhbXAoKX1tc2ApOwogICAgICAgICAgICAgICAgYXBwLmNsYXNzTGlzdC5yZW1vdmUoImlzLW9mZmxpbmUiKTsKICAgICAgICAgICAgfQogICAgICAgICAgICBlbHNlIHsKICAgICAgICAgICAgICAgIGFwcC5zdHlsZS5zZXRQcm9wZXJ0eSgiLS1hcHAtZ3JheXNjYWxlLXJhbXAiLCBgJHtTVEFSVFVQX0dSQVlTQ0FMRV9SQU1QfW1zYCk7CiAgICAgICAgICAgICAgICBhcHAuY2xhc3NMaXN0LmFkZCgiaXMtb2ZmbGluZSIpOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGxvZ2luUHJvbXB0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4geycnJwppZiBhcHAuY291bnQob2xkX29mZmxpbmUpICE9IDE6CiAgICByYWlzZSBTeXN0ZW1FeGl0KGYiRXhwZWN0ZWQgb25lIG9mZmxpbmUgZ3JheXNjYWxlIGJsb2NrLCBmb3VuZCB7YXBwLmNvdW50KG9sZF9vZmZsaW5lKX0iKQphcHAgPSBhcHAucmVwbGFjZShvbGRfb2ZmbGluZSwgbmV3X29mZmxpbmUsIDEpCgpvbGRfY29udHJvbHMgPSAnJycgICAgZnVuY3Rpb24gc2V0VHJpcENvbnRyb2xTdGF0ZShydW5uaW5nKSB7CiAgICAgICAgYXBwLmRhdGFzZXQudHJpcFN0YXRlID0gcnVubmluZyA/ICJydW5uaW5nIiA6ICJyZWFkeSI7CiAgICAgICAgYXBwLmRhdGFzZXQuc3RhdGUgPSBjbG9ja1RpbWVyLnN0YXR1czsKICAgICAgICBhY3RpdmVUcmlwQ29udHJvbHMuaGlkZGVuID0gIXJ1bm5pbmc7CiAgICAgICAgcmVuZGVyVHJpcEFjdGlvblN0YXRlKCk7CiAgICB9JycnCm5ld19jb250cm9scyA9ICcnJyAgICBmdW5jdGlvbiB0cmlwR3JheXNjYWxlUmFtcCgpIHsKICAgICAgICBjb25zdCB2YWx1ZSA9IE51bWJlcihhcHAuZGF0YXNldC50cmlwR3JheXNjYWxlUmFtcCk7CiAgICAgICAgcmV0dXJuIE51bWJlci5pc0Zpbml0ZSh2YWx1ZSkgJiYgdmFsdWUgPj0gMCA/IHZhbHVlIDogMjUwOwogICAgfQoKICAgIGZ1bmN0aW9uIHN5bmNUcmlwR3JheXNjYWxlKHJ1bm5pbmcgPSB0cmlwSXNMaXZlKCkpIHsKICAgICAgICBhcHAuc3R5bGUuc2V0UHJvcGVydHkoIi0tYXBwLWdyYXlzY2FsZS1yYW1wIiwgYCR7dHJpcEdyYXlzY2FsZVJhbXAoKX1tc2ApOwoKICAgICAgICBpZiAocnVubmluZykgewogICAgICAgICAgICBpZiAoIWFwcC5jbGFzc0xpc3QuY29udGFpbnMoImlzLW9mZmxpbmUiKSkgcmV0dXJuOwogICAgICAgICAgICByZXF1ZXN0QW5pbWF0aW9uRnJhbWUoKCkgPT4gewogICAgICAgICAgICAgICAgaWYgKHRyaXBJc0xpdmUoKSkgYXBwLmNsYXNzTGlzdC5yZW1vdmUoImlzLW9mZmxpbmUiKTsKICAgICAgICAgICAgfSk7CiAgICAgICAgICAgIHJldHVybjsKICAgICAgICB9CgogICAgICAgIGlmIChjbG9ja1RpbWVyLm5ldHdvcmtTdGF0dXMgPT09ICJvbmxpbmUiIHx8IGFwcC5jbGFzc0xpc3QuY29udGFpbnMoImlzLW9mZmxpbmUiKSkgcmV0dXJuOwogICAgICAgIHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiB7CiAgICAgICAgICAgIGlmICghdHJpcElzTGl2ZSgpICYmIGNsb2NrVGltZXIubmV0d29ya1N0YXR1cyAhPT0gIm9ubGluZSIpIHsKICAgICAgICAgICAgICAgIGFwcC5jbGFzc0xpc3QuYWRkKCJpcy1vZmZsaW5lIik7CiAgICAgICAgICAgIH0KICAgICAgICB9KTsKICAgIH0KCiAgICBmdW5jdGlvbiBzZXRUcmlwQ29udHJvbFN0YXRlKHJ1bm5pbmcpIHsKICAgICAgICBhcHAuZGF0YXNldC50cmlwU3RhdGUgPSBydW5uaW5nID8gInJ1bm5pbmciIDogInJlYWR5IjsKICAgICAgICBhcHAuZGF0YXNldC5zdGF0ZSA9IGNsb2NrVGltZXIuc3RhdHVzOwogICAgICAgIHN5bmNUcmlwR3JheXNjYWxlKHJ1bm5pbmcpOwogICAgICAgIGFjdGl2ZVRyaXBDb250cm9scy5oaWRkZW4gPSAhcnVubmluZzsKICAgICAgICByZW5kZXJUcmlwQWN0aW9uU3RhdGUoKTsKICAgIH0nJycKaWYgYXBwLmNvdW50KG9sZF9jb250cm9scykgIT0gMToKICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBvbmUgc2V0VHJpcENvbnRyb2xTdGF0ZSBibG9jaywgZm91bmQge2FwcC5jb3VudChvbGRfY29udHJvbHMpfSIpCmFwcF9wYXRoLndyaXRlX3RleHQoYXBwLnJlcGxhY2Uob2xkX2NvbnRyb2xzLCBuZXdfY29udHJvbHMsIDEpKQo=' | base64 -d > /tmp/apply-trip-grayscale.py
+          python /tmp/apply-trip-grayscale.py
+      - name: Commit requested changes
         shell: bash
         run: |
           set -euo pipefail
