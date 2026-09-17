@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 4;
+    const GRAPHICAL_SETTINGS_VERSION = 5;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -19,7 +19,14 @@
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
         timerMode: "elapsed",
+        tripColor: "#0053e2",
+        breakColor: "#ffc420",
+        lunchColor: "#f59e0b",
+        downColor: "#2e7d32",
+        toleranceColor: "#5f6772",
+        latencyColor: "#e1251b",
         showTolerance: true,
+        showLatency: true,
         militaryTime: true,
         timeFormat: "HHmm",
         dateFormat: "",
@@ -979,8 +986,15 @@
         target.removeAttribute("grayscale");
         target.removeAttribute("grayscale-ramp");
         target.showTolerance = Boolean(settings.showTolerance);
+        target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
 
         const variables = {
+            "--clock-timer-trip-color": settings.tripColor,
+            "--clock-timer-break-color": settings.breakColor,
+            "--clock-timer-lunch-color": settings.lunchColor,
+            "--clock-timer-down-color": settings.downColor,
+            "--clock-timer-tolerance-color": settings.toleranceColor,
+            "--clock-timer-latency-color": settings.latencyColor,
             "--clock-timer-hour-hand-length": settings.hourHandLength,
             "--clock-timer-hour-hand-width": settings.hourHandWidth,
             "--clock-timer-hour-hand-color": settings.hourHandColor,
@@ -1011,7 +1025,14 @@
         return {
             timerType: text("timerType"),
             timerMode: text("timerMode"),
+            tripColor: text("tripColor"),
+            breakColor: text("breakColor"),
+            lunchColor: text("lunchColor"),
+            downColor: text("downColor"),
+            toleranceColor: text("toleranceColor"),
+            latencyColor: text("latencyColor"),
             showTolerance: form.elements.showTolerance.checked,
+            showLatency: form.elements.showLatency.checked,
             militaryTime: form.elements.militaryTime.checked,
             timeFormat: text("timeFormat"),
             dateFormat: text("dateFormat"),

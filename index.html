@@ -124,6 +124,53 @@
 
             <div class="settings-grid graphical-settings-grid">
                 <div class="settings-groups">
+                    <fieldset class="timer-settings-fieldset">
+                        <legend>Timer Settings</legend>
+                        <label>Timer Mode
+                            <select name="timerMode">
+                                <option value="elapsed">Elapsed</option>
+                                <option value="remaining">Remaining</option>
+                            </select>
+                        </label>
+                        <label>Timer Type
+                            <select name="timerType">
+                                <option value="radial-overflow">Radial Overflow</option>
+                                <option value="radial-fitted">Radial Fitted</option>
+                            </select>
+                        </label>
+
+                        <hr class="timer-settings-divider">
+
+                        <div class="timer-color-grid">
+                            <div class="timer-color-row">
+                                <label for="tripColor">Trip</label>
+                                <input id="tripColor" name="tripColor" type="color" value="#0053e2">
+                            </div>
+                            <div class="timer-color-row">
+                                <label for="breakColor">Break</label>
+                                <input id="breakColor" name="breakColor" type="color" value="#ffc420">
+                            </div>
+                            <div class="timer-color-row">
+                                <label for="lunchColor">Lunch</label>
+                                <input id="lunchColor" name="lunchColor" type="color" value="#f59e0b">
+                            </div>
+                            <div class="timer-color-row">
+                                <label for="downColor">Down</label>
+                                <input id="downColor" name="downColor" type="color" value="#2e7d32">
+                            </div>
+                            <div class="timer-color-row with-toggle">
+                                <label for="toleranceColor">Tolerance</label>
+                                <input id="toleranceColor" name="toleranceColor" type="color" value="#5f6772">
+                                <input name="showTolerance" type="checkbox" checked aria-label="Show Tolerance">
+                            </div>
+                            <div class="timer-color-row with-toggle">
+                                <label for="latencyColor">Latency</label>
+                                <input id="latencyColor" name="latencyColor" type="color" value="#e1251b">
+                                <input name="showLatency" type="checkbox" checked aria-label="Show Latency">
+                            </div>
+                        </div>
+                    </fieldset>
+
                     <fieldset>
                         <legend>Time Display</legend>
                         <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
@@ -175,24 +222,8 @@
                         <label>Active Ring Width<input name="activeRingWidth" value="12px"></label>
                         <label>Inactive Ring Width<input name="inactiveRingWidth" value="6px"></label>
                         <label>Border Width<input name="borderWidth" value="5px"></label>
-                        <label class="toggle-row">Show Tolerance<input name="showTolerance" type="checkbox" checked></label>
                     </fieldset>
 
-                    <fieldset class="advanced-graphical-settings">
-                        <legend>Additional Display</legend>
-                        <label>Timer Type
-                            <select name="timerType">
-                                <option value="radial-overflow">Radial Overflow</option>
-                                <option value="radial-fitted">Radial Fitted</option>
-                            </select>
-                        </label>
-                        <label>Timer Mode
-                            <select name="timerMode">
-                                <option value="elapsed">Elapsed</option>
-                                <option value="remaining">Remaining</option>
-                            </select>
-                        </label>
-                    </fieldset>
                 </div>
 
                 <aside class="clock-preview" aria-label="Clock preview">

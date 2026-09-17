@@ -2284,3 +2284,91 @@ button:active:not(:disabled) {
     grid-row: 1;
     justify-self: center;
 }
+
+
+/* timer-settings-v1 */
+.timer-settings-divider {
+    width: 100%;
+    height: 1px;
+    margin: 2px 0 4px;
+    border: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(255 255 255 / 55%) 14%,
+        rgb(255 255 255 / 55%) 86%,
+        transparent
+    );
+}
+
+.timer-color-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+}
+
+.timer-color-row {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 68px;
+    gap: 10px;
+    align-items: center;
+}
+
+.timer-color-row.with-toggle {
+    grid-template-columns: minmax(0, 1fr) 68px 28px;
+}
+
+.app-dialog .timer-color-row > label {
+    display: block;
+    min-width: 0;
+}
+
+.app-dialog .timer-color-row > input[type="color"] {
+    width: 68px;
+    min-width: 68px;
+    min-height: 38px;
+    padding: 3px;
+}
+
+.app-dialog .timer-color-row > input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    justify-self: center;
+}
+
+clock-timer time-range[type="trip"] {
+    background: var(--clock-timer-trip-color, #0053e2);
+}
+
+clock-timer time-range[type="break"] {
+    background: var(--clock-timer-break-color, #ffc420);
+}
+
+clock-timer time-range[type="lunch"] {
+    background: var(--clock-timer-lunch-color, #f59e0b);
+}
+
+clock-timer time-range[type="down"] {
+    background: var(--clock-timer-down-color, #2e7d32);
+}
+
+clock-timer time-range[type="tolerance"] {
+    background: var(--clock-timer-tolerance-color, #5f6772);
+}
+
+clock-timer time-range[type="latency"] {
+    background: var(--clock-timer-latency-color, #e1251b);
+}
+
+clock-timer[hide-latency] time-range[type="latency"] {
+    display: none !important;
+}
+
+@media (max-width: 560px) {
+    .timer-color-grid {
+        grid-template-columns: 1fr;
+    }
+}
