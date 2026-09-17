@@ -1,0 +1,57 @@
+name: Apply percent mode auto UI
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/apply_percent_mode_auto_ui.py
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply changes
+        run: python3 .github/scripts/apply_percent_mode_auto_ui.py
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+
+      - name: Validate percent mode hooks
+        run: |
+          grep -q 'const PERCENT_MODES = \["trip", "total", "auto"\]' app.js
+          grep -q 'id="autoGoalDialog"' index.html
+          grep -q 'data-auto-goal-scope="trip"' index.html
+          grep -q 'data-auto-goal-scope="total"' index.html
+          grep -q 'renderedPercentGoalScope' ClockTimer.js
+          grep -q 'scope: "standard"' ClockTimer.js
+          if grep -q 'this.#setPercentModeAutomatically(' ClockTimer.js; then
+            echo "Unexpected automatic percent-mode switch remains"
+            exit 1
+          fi
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js app.js app.css index.html
+          git commit -m "Add three-state percent mode UI"
+          git push origin HEAD:rename-prestart-latency
