@@ -96,7 +96,7 @@ css += '''\n\n/* graphical-settings-sticky-actions-v1 */
     margin-bottom: 16px;
 }
 '''
-APP_CSS.write_text(css + "\n")
+APP_CSS.write_text(css.rstrip() + "\n")
 
 # The canonical create_database.sql already contains the cumulative current schema.
 # Remove incremental schema scripts and the temporary settings cleanup helper.
