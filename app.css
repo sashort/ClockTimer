@@ -36,7 +36,7 @@ button {
     width: 100vw;
     height: 100dvh;
     margin: 0;
-    padding: 0;
+    padding: 0.125in;
     display: grid;
     grid-template-rows: 52px 142px 62px 29px 122px 1fr 74px;
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
