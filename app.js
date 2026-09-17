@@ -5705,18 +5705,26 @@
     });
 
     breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
-        button.addEventListener("click", () => {
-            const startPromise =
-                startBreakInterval(
-                    button.dataset.breakType
-                );
+        button.addEventListener("click", async event => {
+            event.preventDefault();
+
+            const breakType =
+                button.dataset.breakType;
 
             closeDialog(
                 breakDialog,
                 { reason: "break-type-selected" }
             );
 
-            void startPromise.catch(() => {});
+            try {
+                await startBreakInterval(
+                    breakType
+                );
+            }
+            catch {
+                updateSummaryValues();
+                renderTripActionState();
+            }
         });
     });
 
@@ -5937,7 +5945,15 @@
 
         const active = clockTimer.getActiveIntervalState?.(new Date());
         if (String(active?.intervalType || "").toLowerCase() === "down") {
-            await clockTimer.endInterval();
+            const ended =
+                await clockTimer.endInterval();
+
+            updateSummaryValues();
+            renderTripActionState();
+
+            if (!ended) {
+                return false;
+            }
         }
 
         const result = await clockTimer.startInterval(
@@ -5947,6 +5963,10 @@
             "2:30",
             "2:30"
         );
+
+        updateSummaryValues();
+        renderTripActionState();
+
         return Boolean(result);
     }
 
