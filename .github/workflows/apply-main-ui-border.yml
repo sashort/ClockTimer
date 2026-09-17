@@ -1,0 +1,57 @@
+name: Apply main UI document border
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-main-ui-border.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply document border
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.css')
+          css = path.read_text()
+          old = '''.app {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+'''
+          new = '''.app {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0.125in solid var(--wm-white);
+'''
+          if css.count(old) != 1:
+              raise SystemExit(f'Expected one .app sizing block, found {css.count(old)}')
+          path.write_text(css.replace(old, new, 1))
+          PY
+
+      - name: Commit document border
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-main-ui-border.yml
+          git add app.css
+          git commit -m "Add main UI document border"
+          git push origin HEAD:rename-prestart-latency
