@@ -716,8 +716,14 @@
         syncTripSettingsCloud(networkStatus);
 
         if (offline) {
-            app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
-            app.classList.add("is-offline");
+            if (tripIsLive()) {
+                app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
+                app.classList.remove("is-offline");
+            }
+            else {
+                app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
+                app.classList.add("is-offline");
+            }
             loginPromptTimeout = setTimeout(() => {
                 loginPromptTimeout = undefined;
                 if (
@@ -3045,9 +3051,34 @@
         return Boolean(result);
     }
 
+    function tripGrayscaleRamp() {
+        const value = Number(app.dataset.tripGrayscaleRamp);
+        return Number.isFinite(value) && value >= 0 ? value : 250;
+    }
+
+    function syncTripGrayscale(running = tripIsLive()) {
+        app.style.setProperty("--app-grayscale-ramp", `${tripGrayscaleRamp()}ms`);
+
+        if (running) {
+            if (!app.classList.contains("is-offline")) return;
+            requestAnimationFrame(() => {
+                if (tripIsLive()) app.classList.remove("is-offline");
+            });
+            return;
+        }
+
+        if (clockTimer.networkStatus === "online" || app.classList.contains("is-offline")) return;
+        requestAnimationFrame(() => {
+            if (!tripIsLive() && clockTimer.networkStatus !== "online") {
+                app.classList.add("is-offline");
+            }
+        });
+    }
+
     function setTripControlState(running) {
         app.dataset.tripState = running ? "running" : "ready";
         app.dataset.state = clockTimer.status;
+        syncTripGrayscale(running);
         activeTripControls.hidden = !running;
         renderTripActionState();
     }
