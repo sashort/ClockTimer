@@ -33,15 +33,25 @@ button {
 }
 
 .app {
+    --trip-log-row-height: 74px;
+    --home-clock-preferred-size: 56vw;
+
     width: 100vw;
     height: 100dvh;
     margin: 0;
     padding: 0.125in;
     display: grid;
-    grid-template-rows: 52px 142px 62px 29px 122px 1fr 74px;
+    grid-template-rows: 52px 142px 62px 29px 122px 1fr var(--trip-log-row-height);
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
     overflow: hidden;
-    transition: filter var(--app-grayscale-ramp, 2000ms) linear;
+    transition:
+        filter var(--app-grayscale-ramp, 2000ms) linear,
+        grid-template-rows 1000ms ease-in-out;
+}
+
+.app[data-trip-log-pinned="false"] {
+    --trip-log-row-height: 0px;
+    --home-clock-preferred-size: calc(56vw + 74px);
 }
 
 .app.is-offline { filter: grayscale(1); }
@@ -155,7 +165,7 @@ button {
 }
 
 .app[data-trip-state="running"] {
-    grid-template-rows: 52px 142px 122px 0 122px 1fr 74px;
+    grid-template-rows: 52px 142px 122px 0 122px 1fr var(--trip-log-row-height);
 }
 
 .app[data-trip-state="running"] .new-trip-button {
@@ -251,6 +261,7 @@ button {
     display: grid;
     place-items: center;
     overflow: hidden;
+    container-type: size;
 }
 
 clock-timer {
@@ -277,6 +288,14 @@ clock-timer {
     --clock-timer-time-color: var(--wm-white);
     --clock-timer-tick-color: var(--wm-white);
     --clock-timer-border-color: var(--wm-blue-dark);
+}
+
+.clock-region > #clockTimer {
+    width: min(var(--home-clock-preferred-size), 100cqw, 100cqh);
+    height: min(var(--home-clock-preferred-size), 100cqw, 100cqh);
+    transition:
+        width 1000ms ease-in-out,
+        height 1000ms ease-in-out;
 }
 
 clock-timer::part(hour-hand),
@@ -317,15 +336,24 @@ clock-timer::part(major-tick-mark) {
 
 .trip-log-button {
     width: 100%;
-    height: 100%;
+    height: 74px;
     margin: 0;
     padding: 0;
+    align-self: start;
     border: 3px solid #000;
     border-radius: 14px;
     color: var(--wm-white);
     background: var(--wm-gray);
     font-size: 48px;
     font-weight: 700;
+    transform: translateY(0);
+    transition: transform 1000ms ease-in-out;
+    will-change: transform;
+}
+
+.app[data-trip-log-pinned="false"] .trip-log-button {
+    transform: translateY(calc(100% + 0.125in));
+    pointer-events: none;
 }
 
 [popover] {
@@ -410,6 +438,28 @@ clock-timer::part(major-tick-mark) {
     display: none;
 }
 
+.main-menu-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 58px;
+    align-items: stretch;
+}
+
+.main-menu .main-menu-row > button {
+    min-width: 0;
+}
+
+.main-menu .menu-pin-button {
+    width: 58px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    color: rgb(255 255 255 / 70%);
+}
+
+.main-menu .menu-pin-button[aria-pressed="true"] {
+    color: #8bd5ff;
+}
+
 .main-menu button::before {
     content: "";
     width: 30px;
@@ -427,6 +477,27 @@ clock-timer::part(major-tick-mark) {
 #profileMenuButton::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7' r='4' fill='black'/%3E%3Cpath d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8H4Z' fill='black'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7' r='4' fill='black'/%3E%3Cpath d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8H4Z' fill='black'/%3E%3C/svg%3E");
+}
+
+#tripListMenuButton::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='3' width='16' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 8h8M8 12h8M8 16h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='3' width='16' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 8h8M8 12h8M8 16h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+#tripLogPinButton::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3h6l-1 5 3 3v2h-4v8l-1 1-1-1v-8H7v-2l3-3-1-5Z' fill='black'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3h6l-1 5 3 3v2h-4v8l-1 1-1-1v-8H7v-2l3-3-1-5Z' fill='black'/%3E%3C/svg%3E");
+    transform: rotate(45deg);
+    transform-origin: center;
+    opacity: 0.72;
+    transition:
+        transform 250ms ease-in-out,
+        opacity 250ms linear;
+}
+
+#tripLogPinButton[aria-pressed="true"]::before {
+    transform: rotate(0deg);
+    opacity: 1;
 }
 
 .main-menu [data-dialog="stateSettingsDialog"]::before {

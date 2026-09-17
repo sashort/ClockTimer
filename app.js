@@ -6,7 +6,8 @@
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
-        tripPreferences: "wmof.clock.tripPreferences"
+        tripPreferences: "wmof.clock.tripPreferences",
+        tripLogPinned: "wmof.clock.tripLogPinned"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
@@ -62,6 +63,9 @@
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
     const mainMenu = $("#mainMenu");
+    const tripListMenuButton = $("#tripListMenuButton");
+    const tripLogPinButton = $("#tripLogPinButton");
+    const tripLogButton = $("#tripLogButton");
     const activeTripControls = $("#activeTripControls");
     const endTripButton = $("#endTripButton");
     const tripActionRow = $(".trip-action-row");
@@ -280,6 +284,65 @@
     function safeStorageSet(key, value) {
         try { localStorage.setItem(key, value); }
         catch {}
+    }
+
+    function tripLogIsPinned() {
+        return app.dataset.tripLogPinned !== "false";
+    }
+
+    function getStoredTripLogPinned() {
+        return safeStorageGet(STORAGE.tripLogPinned) !== "false";
+    }
+
+    function setTripLogPinned(value, { persist = true } = {}) {
+        const pinned = value !== false;
+
+        app.dataset.tripLogPinned = String(pinned);
+
+        tripLogPinButton?.setAttribute(
+            "aria-pressed",
+            String(pinned)
+        );
+
+        if (tripLogPinButton) {
+            const label = pinned
+                ? "Unpin Trip Log"
+                : "Pin Trip Log";
+
+            tripLogPinButton.setAttribute(
+                "aria-label",
+                label
+            );
+
+            tripLogPinButton.title =
+                label;
+        }
+
+        if (tripLogButton) {
+            tripLogButton.inert =
+                !pinned;
+
+            if (pinned) {
+                tripLogButton.removeAttribute(
+                    "aria-hidden"
+                );
+            }
+            else {
+                tripLogButton.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+            }
+        }
+
+        if (persist) {
+            safeStorageSet(
+                STORAGE.tripLogPinned,
+                String(pinned)
+            );
+        }
+
+        return pinned;
     }
 
     function getStoredJSON(key, fallback) {
@@ -1695,6 +1758,31 @@
         settings.timerType = next;
         saveGraphicalSettings(settings);
     });
+
+    tripLogPinButton?.addEventListener(
+        "click",
+        event => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            setTripLogPinned(
+                !tripLogIsPinned()
+            );
+        }
+    );
+
+    tripListMenuButton?.addEventListener(
+        "click",
+        () => {
+            mainMenu?.hidePopover?.();
+
+            window.dispatchEvent(
+                new CustomEvent(
+                    "wmof:trip-list-request"
+                )
+            );
+        }
+    );
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
@@ -4003,6 +4091,10 @@
 
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();
+    setTripLogPinned(
+        getStoredTripLogPinned(),
+        { persist: false }
+    );
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     fillTripPreferencesForm(tripPreferences);

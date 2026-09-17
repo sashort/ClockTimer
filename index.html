@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="app.css">
 </head>
 <body>
-    <main id="app" class="app is-offline" data-state="offline" data-trip-state="ready" data-trip-grayscale-ramp="250">
+    <main id="app" class="app is-offline" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true" data-trip-grayscale-ramp="250">
         <header class="app-header">
             <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
                 <span></span><span></span><span></span>
@@ -19,6 +19,10 @@
             <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
             <button type="button" data-dialog="stateSettingsDialog">Trip Preferences</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
+            <div class="main-menu-row trip-list-menu-row">
+                <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip List</button>
+                <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="Unpin Trip Log" aria-pressed="true" title="Unpin Trip Log"></button>
+            </div>
             <hr>
             <button id="authButton" type="button">Login</button>
         </nav>
@@ -318,7 +322,7 @@
 
     <template id="settingsHelpDateFormat" data-help-title="Date Format">
         <p><strong>Date Format</strong> controls how the date is displayed above your current time.</p>
-        <p><strong>Leave this field blank if you don’t want the date shown.</strong> When you use a date format, it must include a year, month, and numeric day.</p>
+        <p><strong>Leave this field blank if you don’t want the date shown.</strong> Otherwise, combine any of the date tokens below in the order you want.</p>
         <div class="settings-help-token-grid">
             <code>yyyy</code><span>Four-digit year.</span>
             <code>yy</code><span>Two-digit year.</span>

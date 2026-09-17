@@ -22,9 +22,6 @@
         static #DAY =
             24 * ClockTimer.#HOUR;
 
-        static #DEFAULT_DATE_FORMAT =
-            "yyyy-mm-dd";
-
         #shadowRoot;
 
         #clockFace;
@@ -28430,31 +28427,22 @@
                 return undefined;
             }
 
-            const translated =
-                format.trim().replace(
-                    /m{1,4}/g,
-                    token =>
-                        "M".repeat(
-                            token.length
-                        )
-                );
+            const text =
+                format.trim();
 
-            return TemporalFormat.isDateFormat(
-                translated
-            )
-                ? translated
-                : undefined;
+            if (!text) {
+                return undefined;
+            }
+
+            return TemporalFormat.normalizeDateFormat(
+                text
+            );
         }
 
         #getDateFormat() {
-            return (
-                this.#normalizeDateFormat(
-                    this.getAttribute(
-                        "date-format"
-                    )
-                ) ??
-                this.#normalizeDateFormat(
-                    ClockTimer.#DEFAULT_DATE_FORMAT
+            return this.#normalizeDateFormat(
+                this.getAttribute(
+                    "date-format"
                 )
             );
         }
@@ -28853,10 +28841,11 @@
         #updateDisplay(
             now
         ) {
+            const dateFormat =
+                this.#getDateFormat();
+
             const dateVisible =
-                this.hasAttribute(
-                    "date-format"
-                );
+                dateFormat !== undefined;
 
             this.#dateElement.hidden =
                 !dateVisible;
@@ -28866,7 +28855,7 @@
                     ? (
                         TemporalFormat.formatDate(
                             now,
-                            this.#getDateFormat()
+                            dateFormat
                         ) ??
                         ""
                     )

@@ -710,24 +710,8 @@ class TemporalFormat {
             timeTokens.includes("mm") &&
             hasMilitaryHour !== hasStandardHour;
 
-        const hasYear =
-            dateTokens.includes("yy") ||
-            dateTokens.includes("yyyy");
-
-        const hasMonth =
-            dateTokens.includes("M") ||
-            dateTokens.includes("MM") ||
-            dateTokens.includes("MMM") ||
-            dateTokens.includes("MMMM");
-
-        const hasDay =
-            dateTokens.includes("d") ||
-            dateTokens.includes("dd");
-
         const hasDate =
-            hasYear &&
-            hasMonth &&
-            hasDay;
+            dateTokens.length > 0;
 
         if (!hasDate && !hasTime) {
             return;
@@ -943,25 +927,7 @@ class TemporalFormat {
                 TemporalFormat.#DATE_TOKENS
             );
 
-        const hasYear =
-            tokens.includes("yy") ||
-            tokens.includes("yyyy");
-
-        const hasMonth =
-            tokens.includes("M") ||
-            tokens.includes("MM") ||
-            tokens.includes("MMM") ||
-            tokens.includes("MMMM");
-
-        const hasDay =
-            tokens.includes("d") ||
-            tokens.includes("dd");
-
-        return (
-            hasYear &&
-            hasMonth &&
-            hasDay
-        )
+        return tokens.length > 0
             ? text
             : undefined;
     }
