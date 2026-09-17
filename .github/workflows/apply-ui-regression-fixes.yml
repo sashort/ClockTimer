@@ -25,6 +25,11 @@ jobs:
       - name: Apply and validate
         run: |
           python3 .github/scripts/apply_ui_regression_fixes.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app.css')
+          path.write_text(path.read_text().rstrip() + '\n')
+          PY
           node --check app.js
           node --check ClockTimer.js
           git diff --check
