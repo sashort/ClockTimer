@@ -26350,15 +26350,10 @@
                 false
             );
 
-            if (
-                this.#getTimerType() !==
-                    "radial-overflow"
-            ) {
-                this.#syncOpenEndedRangeElements(
-                    record,
-                    now
-                );
-            }
+            this.#syncOpenEndedRangeElements(
+                record,
+                now
+            );
 
             this.#refreshRingLayout(
                 this.#started
