@@ -148,8 +148,10 @@
     const settingsHelpRevealTimers = new WeakMap();
     const SETTINGS_HELP_FADE_DURATION = 750;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
+    const TRIP_LIST_BUTTON_TRANSITION_DURATION = 750;
     let activeSettingsHelpButton;
     let settingsHelpAnimation;
+    let tripListButtonAnimation;
 
     function getPressedShadow(baseShadow, pressedShadow) {
         return !baseShadow || baseShadow === "none"
@@ -319,10 +321,14 @@
         }
 
         if (tripLogButton) {
-            tripLogButton.inert =
-                !pinned;
+            const hidden =
+                !pinned &&
+                !tripListIsActive();
 
-            if (pinned) {
+            tripLogButton.inert =
+                hidden;
+
+            if (!hidden) {
                 tripLogButton.removeAttribute(
                     "aria-hidden"
                 );
@@ -343,6 +349,276 @@
         }
 
         return pinned;
+    }
+
+    function getTripListState() {
+        return app.dataset.tripListState || "closed";
+    }
+
+    function tripListIsActive() {
+        return getTripListState() !== "closed";
+    }
+
+    function getAppContentMetrics() {
+        const rect = app.getBoundingClientRect();
+        const style = getComputedStyle(app);
+        const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
+        const paddingRight = Number.parseFloat(style.paddingRight) || 0;
+        const paddingTop = Number.parseFloat(style.paddingTop) || 0;
+        const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
+        const height = tripLogButton?.offsetHeight || 74;
+
+        return {
+            rect,
+            paddingLeft,
+            paddingRight,
+            paddingTop,
+            paddingBottom,
+            height,
+            left: rect.left + paddingLeft,
+            width: Math.max(0, rect.width - paddingLeft - paddingRight)
+        };
+    }
+
+    function getTripLogTopRect() {
+        const metrics = getAppContentMetrics();
+        return {
+            left: metrics.left,
+            top: metrics.rect.top + metrics.paddingTop,
+            width: metrics.width,
+            height: metrics.height
+        };
+    }
+
+    function getTripLogBottomRect() {
+        const metrics = getAppContentMetrics();
+        return {
+            left: metrics.left,
+            top: metrics.rect.bottom - metrics.paddingBottom - metrics.height,
+            width: metrics.width,
+            height: metrics.height
+        };
+    }
+
+    function setFloatingTripLogRect(rect) {
+        if (!tripLogButton || !rect) return;
+
+        tripLogButton.classList.add(
+            "trip-log-floating"
+        );
+        tripLogButton.style.left = `${rect.left}px`;
+        tripLogButton.style.top = `${rect.top}px`;
+        tripLogButton.style.width = `${rect.width}px`;
+        tripLogButton.style.height = `${rect.height}px`;
+    }
+
+    function clearFloatingTripLogRect() {
+        if (!tripLogButton) return;
+
+        tripLogButton.classList.remove(
+            "trip-log-floating"
+        );
+        tripLogButton.style.removeProperty("left");
+        tripLogButton.style.removeProperty("top");
+        tripLogButton.style.removeProperty("width");
+        tripLogButton.style.removeProperty("height");
+        tripLogButton.style.removeProperty("transform");
+    }
+
+    async function animateTripLogButton(fromTransform, toTransform) {
+        tripListButtonAnimation?.cancel();
+
+        tripListButtonAnimation =
+            tripLogButton.animate(
+                [
+                    { transform: fromTransform },
+                    { transform: toTransform }
+                ],
+                {
+                    duration: TRIP_LIST_BUTTON_TRANSITION_DURATION,
+                    easing: "ease-in-out",
+                    fill: "both"
+                }
+            );
+
+        try {
+            await tripListButtonAnimation.finished;
+        }
+        catch {}
+
+        tripListButtonAnimation?.cancel();
+        tripListButtonAnimation = undefined;
+    }
+
+    async function openTripList(source = "button") {
+        if (!tripLogButton || getTripListState() !== "closed") {
+            return false;
+        }
+
+        const pinned = tripLogIsPinned();
+        const topRect = getTripLogTopRect();
+
+        if (pinned) {
+            const sourceRect =
+                tripLogButton.getBoundingClientRect();
+
+            setFloatingTripLogRect(
+                sourceRect
+            );
+
+            app.dataset.tripListState =
+                "opening";
+
+            tripLogButton.inert = true;
+            tripLogButton.removeAttribute("aria-hidden");
+            tripLogButton.setAttribute("aria-expanded", "true");
+
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(${topRect.top - sourceRect.top}px)`
+            );
+        }
+        else {
+            setFloatingTripLogRect(
+                topRect
+            );
+
+            app.dataset.tripListState =
+                "opening";
+
+            tripLogButton.inert = true;
+            tripLogButton.removeAttribute("aria-hidden");
+            tripLogButton.setAttribute("aria-expanded", "true");
+
+            const distance =
+                topRect.top +
+                topRect.height +
+                8;
+
+            await animateTripLogButton(
+                `translateY(-${distance}px)`,
+                "translateY(0px)"
+            );
+        }
+
+        setFloatingTripLogRect(
+            topRect
+        );
+
+        app.dataset.tripListState =
+            "open";
+
+        tripLogButton.inert = false;
+
+        window.dispatchEvent(
+            new CustomEvent(
+                "wmof:trip-list-request",
+                {
+                    detail: {
+                        open: true,
+                        source
+                    }
+                }
+            )
+        );
+
+        return true;
+    }
+
+    async function closeTripList(source = "button") {
+        if (!tripLogButton || getTripListState() !== "open") {
+            return false;
+        }
+
+        const pinned = tripLogIsPinned();
+        const topRect = getTripLogTopRect();
+
+        setFloatingTripLogRect(
+            topRect
+        );
+
+        app.dataset.tripListState =
+            "closing";
+
+        tripLogButton.inert = true;
+        tripLogButton.setAttribute("aria-expanded", "false");
+
+        window.dispatchEvent(
+            new CustomEvent(
+                "wmof:trip-list-closing",
+                {
+                    detail: {
+                        open: false,
+                        source,
+                        pinned
+                    }
+                }
+            )
+        );
+
+        if (pinned) {
+            const destination =
+                getTripLogBottomRect();
+
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(${destination.top - topRect.top}px)`
+            );
+
+            setFloatingTripLogRect(
+                destination
+            );
+        }
+        else {
+            const distance =
+                topRect.top +
+                topRect.height +
+                8;
+
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(-${distance}px)`
+            );
+        }
+
+        app.dataset.tripListState =
+            "closed";
+
+        clearFloatingTripLogRect();
+
+        setTripLogPinned(
+            pinned,
+            { persist: false }
+        );
+
+        window.dispatchEvent(
+            new CustomEvent(
+                "wmof:trip-list-closed",
+                {
+                    detail: {
+                        open: false,
+                        source,
+                        pinned
+                    }
+                }
+            )
+        );
+
+        return true;
+    }
+
+    function toggleTripList(source = "button") {
+        const state = getTripListState();
+
+        if (state === "closed") {
+            return openTripList(source);
+        }
+
+        if (state === "open") {
+            return closeTripList(source);
+        }
+
+        return Promise.resolve(false);
     }
 
     function getStoredJSON(key, fallback) {
@@ -1775,12 +2051,14 @@
         "click",
         () => {
             mainMenu?.hidePopover?.();
+            void openTripList("menu");
+        }
+    );
 
-            window.dispatchEvent(
-                new CustomEvent(
-                    "wmof:trip-list-request"
-                )
-            );
+    tripLogButton?.addEventListener(
+        "click",
+        () => {
+            void toggleTripList("button");
         }
     );
 
@@ -4091,6 +4369,8 @@
 
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();
+    app.dataset.tripListState = "closed";
+    tripLogButton?.setAttribute("aria-expanded", "false");
     setTripLogPinned(
         getStoredTripLogPinned(),
         { persist: false }
