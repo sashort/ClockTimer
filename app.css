@@ -2782,3 +2782,191 @@ clock-timer[hide-latency] time-range[type="latency"] {
         column-gap: 10px;
     }
 }
+
+/* menu-sync-triplog-v1 */
+.main-menu .trip-list-menu-row {
+    border-radius: 10px;
+    background: transparent;
+    transition: background 180ms linear;
+}
+
+.main-menu .trip-list-menu-row:hover,
+.main-menu .trip-list-menu-row:focus-within {
+    background: linear-gradient(
+        90deg,
+        rgb(255 255 255 / 6%),
+        rgb(139 213 255 / 18%),
+        rgb(255 255 255 / 6%)
+    );
+}
+
+.main-menu .trip-list-menu-row > button:hover,
+.main-menu .trip-list-menu-row > button:focus-visible {
+    background: transparent;
+}
+
+.trip-log-range-menu {
+    margin: 2px 16px 8px 64px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    color: rgb(255 255 255 / 78%);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.trip-log-range-menu select {
+    min-width: 0;
+    margin: 0;
+    padding: 5px 24px 5px 8px;
+    border: 1px solid rgb(255 255 255 / 34%);
+    border-radius: 7px;
+    color: var(--wm-white);
+    background: rgb(32 41 51 / 94%);
+    font: inherit;
+    font-size: 12px;
+}
+
+.main-menu [data-dialog="graphicalSettingsDialog"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.2 4.1C5.8 4.8 3 8.1 3 12c0 4.9 4 8.9 8.9 8.9h1.2c1.5 0 2.7-1.2 2.7-2.7 0-1.4-1.1-2.5-2.5-2.5h-1.1c-1.1 0-2-.9-2-2s.9-2 2-2h2.4c.4 0 .9 0 1.3-.1' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='6.9' cy='11.4' r='1.1' fill='black'/%3E%3Ccircle cx='9.3' cy='7.6' r='1.1' fill='black'/%3E%3Cpath d='M18.1 2.2l.5 1.5 1.5.5 1.3-.7 1.1 1.1-.7 1.3.5 1.5 1.5.5v1.6l-1.5.5-.5 1.5.7 1.3-1.1 1.1-1.3-.7-1.5.5-.5 1.5h-1.6l-.5-1.5-1.5-.5-1.3.7-1.1-1.1.7-1.3-.5-1.5-1.5-.5V7.9l1.5-.5.5-1.5-.7-1.3 1.1-1.1 1.3.7 1.5-.5.5-1.5h1.6Z' fill='black'/%3E%3Ccircle cx='17.3' cy='8.7' r='2.1' fill='white'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.2 4.1C5.8 4.8 3 8.1 3 12c0 4.9 4 8.9 8.9 8.9h1.2c1.5 0 2.7-1.2 2.7-2.7 0-1.4-1.1-2.5-2.5-2.5h-1.1c-1.1 0-2-.9-2-2s.9-2 2-2h2.4c.4 0 .9 0 1.3-.1' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='6.9' cy='11.4' r='1.1' fill='black'/%3E%3Ccircle cx='9.3' cy='7.6' r='1.1' fill='black'/%3E%3Cpath d='M18.1 2.2l.5 1.5 1.5.5 1.3-.7 1.1 1.1-.7 1.3.5 1.5 1.5.5v1.6l-1.5.5-.5 1.5.7 1.3-1.1 1.1-1.3-.7-1.5.5-.5 1.5h-1.6l-.5-1.5-1.5-.5-1.3.7-1.1-1.1.7-1.3-.5-1.5-1.5-.5V7.9l1.5-.5.5-1.5-.7-1.3 1.1-1.1 1.3.7 1.5-.5.5-1.5h1.6Z' fill='black'/%3E%3Ccircle cx='17.3' cy='8.7' r='2.1' fill='white'/%3E%3C/svg%3E");
+}
+
+#syncGoalsMenuButton::before,
+.goal-sync-button::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2M5 5l14 14' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2M5 5l14 14' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+#syncGoalsMenuButton[aria-pressed="true"]::before,
+.goal-sync-button[aria-pressed="true"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+#syncGoalsMenuButton[aria-pressed="true"],
+.goal-sync-button[aria-pressed="true"] {
+    color: #8bd5ff;
+}
+
+.goal-sync-button {
+    appearance: none;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    margin: 0 0 0 -4px;
+    padding: 5px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: rgb(255 255 255 / 72%);
+    background: transparent;
+}
+
+.goal-sync-button[hidden] {
+    display: none;
+}
+
+.goal-sync-button::before {
+    content: "";
+    width: 28px;
+    height: 28px;
+    background: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.trip-log-button,
+.trip-log-body {
+    box-sizing: border-box;
+    border: 3px solid rgb(255 255 255 / 38%);
+    color: var(--wm-white);
+    background: var(--ui-gray-gradient, var(--wm-gray));
+    box-shadow: var(--ui-inner-highlight), 0 7px 16px rgb(0 0 0 / 24%);
+}
+
+.trip-log-button.trip-log-floating {
+    transition:
+        border-color var(--trip-list-merge-duration, 250ms) linear,
+        border-radius var(--trip-list-merge-duration, 250ms) ease-in-out,
+        color var(--trip-list-merge-duration, 250ms) linear,
+        background var(--trip-list-merge-duration, 250ms) linear,
+        box-shadow var(--trip-list-merge-duration, 250ms) linear;
+}
+
+.trip-log-body {
+    position: fixed;
+    z-index: 2999;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    transform: none;
+    transition:
+        border-color var(--trip-list-merge-duration, 250ms) linear,
+        border-radius var(--trip-list-merge-duration, 250ms) ease-in-out,
+        background var(--trip-list-merge-duration, 250ms) linear;
+    will-change: left, top, width, height;
+}
+
+.trip-log-body[hidden] {
+    display: none;
+}
+
+.trip-log-button.trip-log-merged,
+.trip-log-body.trip-log-merged {
+    background: var(--ui-charcoal-gradient, #2f3943);
+}
+
+.trip-log-button.trip-log-merged {
+    border-bottom-color: transparent;
+    border-radius: 14px 14px 0 0;
+}
+
+.trip-log-body.trip-log-merged {
+    border-top-color: transparent;
+    border-radius: 0 0 14px 14px;
+}
+
+.trip-log-close-button {
+    appearance: none;
+    position: fixed;
+    z-index: 3002;
+    width: 52px;
+    height: 52px;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: var(--wm-white);
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--trip-list-merge-duration, 250ms) linear;
+}
+
+.trip-log-close-button[hidden] {
+    display: none;
+}
+
+.trip-log-close-button.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.trip-log-close-button::before {
+    content: "";
+    width: 30px;
+    height: 30px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}

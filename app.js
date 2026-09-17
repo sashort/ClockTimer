@@ -7,14 +7,15 @@
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
         tripPreferences: "wmof.clock.tripPreferences",
-        tripLogPinned: "wmof.clock.tripLogPinned"
+        tripLogPinned: "wmof.clock.tripLogPinned",
+        tripLogRange: "wmof.clock.tripLogRange"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
     const PERCENT_MODES = ["trip", "total", "auto"];
     const TRIP_PREFERENCE_DEFAULTS = {
         lateBreakBehavior: "showLateWindow",
-        matchTripGoalToTotal: false
+        syncGoals: false
     };
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
@@ -66,7 +67,12 @@
     const mainMenu = $("#mainMenu");
     const tripListMenuButton = $("#tripListMenuButton");
     const tripLogPinButton = $("#tripLogPinButton");
+    const tripLogRangeSelect = $("#tripLogRangeSelect");
+    const syncGoalsMenuButton = $("#syncGoalsMenuButton");
     const tripLogButton = $("#tripLogButton");
+    const tripLogCloseButton = $("#tripLogCloseButton");
+    const tripLogBody = $("#tripLogBody");
+    const goalSyncButton = $("#goalSyncButton");
     const autoGoalDialog = $("#autoGoalDialog");
     const autoTripGoalValue = $("#autoTripGoalValue");
     const autoTotalGoalValue = $("#autoTotalGoalValue");
@@ -89,9 +95,6 @@
     const tripSetStartsNowTimestampLabel = tripSetStartsNow.querySelector(".trip-now-timestamp-label");
     const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
-    const tripGoalSyncOption = $("#tripGoalSyncOption");
-    const tripGoalSyncNoData = $("#tripGoalSyncNoData");
-    const tripSettingsPreferences = $("#tripSettingsPreferences");
 
     let timerStartedAt = 0;
     let timerAccumulated = 0;
@@ -154,9 +157,19 @@
     const SETTINGS_HELP_FADE_DURATION = 750;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 750;
+    const TRIP_LIST_BODY_DELAY = 350;
+    const TRIP_LIST_MERGE_DURATION = 250;
+    const TRIP_LOG_RANGES = new Set([
+        "day",
+        "week",
+        "pay-period",
+        "month",
+        "year"
+    ]);
     let activeSettingsHelpButton;
     let settingsHelpAnimation;
     let tripListButtonAnimation;
+    let tripListBodyAnimationFrame;
 
     function getPressedShadow(baseShadow, pressedShadow) {
         return !baseShadow || baseShadow === "none"
@@ -291,6 +304,72 @@
     function safeStorageSet(key, value) {
         try { localStorage.setItem(key, value); }
         catch {}
+    }
+
+    function normalizeTripLogRange(value) {
+        const normalized =
+            String(value || "day")
+                .trim()
+                .toLowerCase();
+
+        return TRIP_LOG_RANGES.has(normalized)
+            ? normalized
+            : "day";
+    }
+
+    function getTripLogRange() {
+        return normalizeTripLogRange(
+            safeStorageGet(
+                STORAGE.tripLogRange
+            )
+        );
+    }
+
+    function setTripLogRange(
+        value,
+        {
+            persist = true,
+            notify = true
+        } = {}
+    ) {
+        const range =
+            normalizeTripLogRange(value);
+
+        if (tripLogRangeSelect) {
+            tripLogRangeSelect.value =
+                range;
+        }
+
+        if (persist) {
+            safeStorageSet(
+                STORAGE.tripLogRange,
+                range
+            );
+        }
+
+        if (notify) {
+            window.dispatchEvent(
+                new CustomEvent(
+                    "wmof:trip-log-range-changed",
+                    {
+                        detail: {
+                            range
+                        }
+                    }
+                )
+            );
+
+            if (
+                getTripListState() ===
+                    "open"
+            ) {
+                dispatchTripListRequest(
+                    "range"
+                );
+            }
+        }
+
+        return range;
     }
 
     function tripLogIsPinned() {
@@ -455,13 +534,347 @@
         tripListButtonAnimation = undefined;
     }
 
+    function getTripLogBodyRect() {
+        const metrics =
+            getAppContentMetrics();
+
+        const topRect =
+            getTripLogTopRect();
+
+        const top =
+            topRect.top +
+            topRect.height;
+
+        const bottom =
+            metrics.rect.bottom -
+            metrics.paddingBottom;
+
+        return {
+            left: metrics.left,
+            top,
+            width: metrics.width,
+            height:
+                Math.max(
+                    0,
+                    bottom - top
+                )
+        };
+    }
+
+    function setFloatingTripLogBodyRect(rect) {
+        if (!tripLogBody || !rect) return;
+
+        tripLogBody.style.left =
+            `${rect.left}px`;
+
+        tripLogBody.style.top =
+            `${rect.top}px`;
+
+        tripLogBody.style.width =
+            `${rect.width}px`;
+
+        tripLogBody.style.height =
+            `${rect.height}px`;
+    }
+
+    function clearFloatingTripLogBodyRect() {
+        if (!tripLogBody) return;
+
+        tripLogBody.style.removeProperty(
+            "left"
+        );
+
+        tripLogBody.style.removeProperty(
+            "top"
+        );
+
+        tripLogBody.style.removeProperty(
+            "width"
+        );
+
+        tripLogBody.style.removeProperty(
+            "height"
+        );
+    }
+
+    function positionTripLogCloseButton(
+        rect = getTripLogTopRect()
+    ) {
+        if (!tripLogCloseButton || !rect) return;
+
+        const width =
+            52;
+
+        const height =
+            52;
+
+        tripLogCloseButton.style.left =
+            `${rect.left + rect.width - width - 8}px`;
+
+        tripLogCloseButton.style.top =
+            `${rect.top + (rect.height - height) / 2}px`;
+    }
+
+    function dispatchTripListRequest(
+        source = "button"
+    ) {
+        window.dispatchEvent(
+            new CustomEvent(
+                "wmof:trip-list-request",
+                {
+                    detail: {
+                        open: true,
+                        source,
+                        range:
+                            getTripLogRange()
+                    }
+                }
+            )
+        );
+    }
+
+    function animateTripLogBody(
+        target,
+        opening
+    ) {
+        if (!tripLogBody || !target) {
+            return Promise.resolve(false);
+        }
+
+        if (
+            tripListBodyAnimationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                tripListBodyAnimationFrame
+            );
+
+            tripListBodyAnimationFrame =
+                undefined;
+        }
+
+        const fullWidth =
+            Math.max(
+                0,
+                target.width
+            );
+
+        const fullHeight =
+            Math.max(
+                0,
+                target.height
+            );
+
+        const centerX =
+            target.left +
+            fullWidth / 2;
+
+        const centerY =
+            target.top +
+            fullHeight / 2;
+
+        if (
+            fullWidth <= 0 ||
+            fullHeight <= 0
+        ) {
+            setFloatingTripLogBodyRect(
+                target
+            );
+
+            return Promise.resolve(true);
+        }
+
+        const edgeSpeed =
+            (
+                fullWidth / 2
+            ) /
+            TRIP_LIST_BUTTON_TRANSITION_DURATION;
+
+        const fullDuration =
+            Math.max(
+                TRIP_LIST_BUTTON_TRANSITION_DURATION,
+                (
+                    fullHeight / 2
+                ) /
+                    edgeSpeed
+            );
+
+        return new Promise(
+            resolve => {
+                let startedAt;
+
+                const frame =
+                    timestamp => {
+                        if (
+                            startedAt ===
+                                undefined
+                        ) {
+                            startedAt =
+                                timestamp;
+                        }
+
+                        const elapsed =
+                            Math.min(
+                                fullDuration,
+                                timestamp -
+                                    startedAt
+                            );
+
+                        const travelled =
+                            edgeSpeed *
+                            (
+                                opening
+                                    ? elapsed
+                                    : fullDuration -
+                                        elapsed
+                            );
+
+                        const halfWidth =
+                            Math.min(
+                                fullWidth / 2,
+                                Math.max(
+                                    0,
+                                    travelled
+                                )
+                            );
+
+                        const halfHeight =
+                            Math.min(
+                                fullHeight / 2,
+                                Math.max(
+                                    0,
+                                    travelled
+                                )
+                            );
+
+                        setFloatingTripLogBodyRect({
+                            left:
+                                centerX -
+                                halfWidth,
+                            top:
+                                centerY -
+                                halfHeight,
+                            width:
+                                halfWidth * 2,
+                            height:
+                                halfHeight * 2
+                        });
+
+                        if (elapsed >= fullDuration) {
+                            tripListBodyAnimationFrame =
+                                undefined;
+
+                            if (opening) {
+                                setFloatingTripLogBodyRect(
+                                    target
+                                );
+                            }
+
+                            resolve(true);
+                            return;
+                        }
+
+                        tripListBodyAnimationFrame =
+                            requestAnimationFrame(
+                                frame
+                            );
+                    };
+
+                tripListBodyAnimationFrame =
+                    requestAnimationFrame(
+                        frame
+                    );
+            }
+        );
+    }
+
+    function showTripLogMerge() {
+        if (
+            !tripLogButton ||
+            !tripLogBody ||
+            !tripLogCloseButton
+        ) {
+            return;
+        }
+
+        tripLogButton.classList.add(
+            "trip-log-merged"
+        );
+
+        tripLogBody.classList.add(
+            "trip-log-merged"
+        );
+
+        positionTripLogCloseButton();
+
+        tripLogCloseButton.hidden =
+            false;
+
+        requestAnimationFrame(
+            () => {
+                if (
+                    tripListIsActive()
+                ) {
+                    tripLogCloseButton.classList.add(
+                        "is-visible"
+                    );
+                }
+            }
+        );
+    }
+
+    async function hideTripLogMerge() {
+        tripLogCloseButton?.classList.remove(
+            "is-visible"
+        );
+
+        tripLogButton?.classList.remove(
+            "trip-log-merged"
+        );
+
+        tripLogBody?.classList.remove(
+            "trip-log-merged"
+        );
+
+        await wait(
+            TRIP_LIST_MERGE_DURATION
+        );
+
+        if (tripLogCloseButton) {
+            tripLogCloseButton.hidden =
+                true;
+        }
+    }
+
     async function openTripList(source = "button") {
-        if (!tripLogButton || getTripListState() !== "closed") {
+        if (
+            !tripLogButton ||
+            !tripLogBody ||
+            getTripListState() !== "closed"
+        ) {
             return false;
         }
 
-        const pinned = tripLogIsPinned();
-        const topRect = getTripLogTopRect();
+        const pinned =
+            tripLogIsPinned();
+
+        const topRect =
+            getTripLogTopRect();
+
+        app.dataset.tripListState =
+            "opening";
+
+        tripLogButton.inert =
+            true;
+
+        tripLogButton.removeAttribute(
+            "aria-hidden"
+        );
+
+        tripLogButton.setAttribute(
+            "aria-expanded",
+            "true"
+        );
 
         if (pinned) {
             const sourceRect =
@@ -470,13 +883,6 @@
             setFloatingTripLogRect(
                 sourceRect
             );
-
-            app.dataset.tripListState =
-                "opening";
-
-            tripLogButton.inert = true;
-            tripLogButton.removeAttribute("aria-hidden");
-            tripLogButton.setAttribute("aria-expanded", "true");
 
             await animateTripLogButton(
                 "translateY(0px)",
@@ -487,13 +893,6 @@
             setFloatingTripLogRect(
                 topRect
             );
-
-            app.dataset.tripListState =
-                "opening";
-
-            tripLogButton.inert = true;
-            tripLogButton.removeAttribute("aria-hidden");
-            tripLogButton.setAttribute("aria-expanded", "true");
 
             const distance =
                 topRect.top +
@@ -510,43 +909,75 @@
             topRect
         );
 
+        await wait(
+            TRIP_LIST_BODY_DELAY
+        );
+
+        const bodyRect =
+            getTripLogBodyRect();
+
+        tripLogBody.hidden =
+            false;
+
+        tripLogBody.inert =
+            false;
+
+        dispatchTripListRequest(
+            source
+        );
+
+        await animateTripLogBody(
+            bodyRect,
+            true
+        );
+
         app.dataset.tripListState =
             "open";
 
-        tripLogButton.inert = false;
-
-        window.dispatchEvent(
-            new CustomEvent(
-                "wmof:trip-list-request",
-                {
-                    detail: {
-                        open: true,
-                        source
-                    }
-                }
-            )
-        );
+        showTripLogMerge();
 
         return true;
     }
 
-    async function closeTripList(source = "button") {
-        if (!tripLogButton || getTripListState() !== "open") {
+    async function closeTripList(source = "close") {
+        if (
+            !tripLogButton ||
+            !tripLogBody ||
+            getTripListState() !== "open"
+        ) {
             return false;
         }
 
-        const pinned = tripLogIsPinned();
-        const topRect = getTripLogTopRect();
+        const pinned =
+            tripLogIsPinned();
+
+        const topRect =
+            getTripLogTopRect();
+
+        const bodyRect =
+            getTripLogBodyRect();
 
         setFloatingTripLogRect(
             topRect
         );
 
+        setFloatingTripLogBodyRect(
+            bodyRect
+        );
+
         app.dataset.tripListState =
             "closing";
 
-        tripLogButton.inert = true;
-        tripLogButton.setAttribute("aria-expanded", "false");
+        tripLogButton.inert =
+            true;
+
+        tripLogButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        tripLogBody.inert =
+            true;
 
         window.dispatchEvent(
             new CustomEvent(
@@ -555,11 +986,25 @@
                     detail: {
                         open: false,
                         source,
-                        pinned
+                        pinned,
+                        range:
+                            getTripLogRange()
                     }
                 }
             )
         );
+
+        await hideTripLogMerge();
+
+        await animateTripLogBody(
+            bodyRect,
+            false
+        );
+
+        tripLogBody.hidden =
+            true;
+
+        clearFloatingTripLogBodyRect();
 
         if (pinned) {
             const destination =
@@ -593,7 +1038,9 @@
 
         setTripLogPinned(
             pinned,
-            { persist: false }
+            {
+                persist: false
+            }
         );
 
         window.dispatchEvent(
@@ -603,27 +1050,15 @@
                     detail: {
                         open: false,
                         source,
-                        pinned
+                        pinned,
+                        range:
+                            getTripLogRange()
                     }
                 }
             )
         );
 
         return true;
-    }
-
-    function toggleTripList(source = "button") {
-        const state = getTripListState();
-
-        if (state === "closed") {
-            return openTripList(source);
-        }
-
-        if (state === "open") {
-            return closeTripList(source);
-        }
-
-        return Promise.resolve(false);
     }
 
     function getStoredJSON(key, fallback) {
@@ -638,36 +1073,182 @@
 
     function getTripPreferences() {
         let stored = {};
+
         try {
-            stored = JSON.parse(safeStorageGet(STORAGE.tripPreferences) || "{}");
+            stored =
+                JSON.parse(
+                    safeStorageGet(
+                        STORAGE.tripPreferences
+                    ) ||
+                        "{}"
+                );
         }
         catch {}
 
-        const lateBreakBehavior = stored.lateBreakBehavior === "autoRestartTrip"
-            ? "autoRestartTrip"
-            : stored.lateBreakBehavior === "showLateWindow"
-                ? "showLateWindow"
-                : stored.intervalElapsedBehavior === "rollover"
-                    ? "autoRestartTrip"
-                    : TRIP_PREFERENCE_DEFAULTS.lateBreakBehavior;
+        const lateBreakBehavior =
+            stored.lateBreakBehavior ===
+                "autoRestartTrip"
+                ? "autoRestartTrip"
+                : TRIP_PREFERENCE_DEFAULTS.lateBreakBehavior;
 
         return {
             lateBreakBehavior,
-            matchTripGoalToTotal: Boolean(
-                stored.matchTripGoalToTotal ??
-                TRIP_PREFERENCE_DEFAULTS.matchTripGoalToTotal
-            )
+            syncGoals:
+                Boolean(
+                    stored.syncGoals ??
+                    TRIP_PREFERENCE_DEFAULTS.syncGoals
+                )
         };
     }
 
     function saveTripPreferences(preferences) {
-        safeStorageSet(STORAGE.tripPreferences, JSON.stringify(preferences));
+        safeStorageSet(
+            STORAGE.tripPreferences,
+            JSON.stringify(
+                preferences
+            )
+        );
     }
 
-    function fillTripPreferencesForm(preferences = getTripPreferences()) {
-        const form = $("#stateSettingsForm");
-        form.elements.lateBreakBehavior.value = preferences.lateBreakBehavior;
-        form.elements.matchTripGoalToTotal.checked = Boolean(preferences.matchTripGoalToTotal);
+    function fillTripPreferencesForm(
+        preferences = getTripPreferences()
+    ) {
+        const form =
+            $("#stateSettingsForm");
+
+        form.elements.lateBreakBehavior.value =
+            preferences.lateBreakBehavior;
+    }
+
+    function getSyncGoalsState() {
+        if (tripIsLive()) {
+            return Boolean(
+                clockTimer.autoSyncTripGoal
+            );
+        }
+
+        if (
+            tripSettingsSession?.values &&
+            !tripSettingsSession.live
+        ) {
+            return Boolean(
+                tripSettingsSession.values.syncGoals
+            );
+        }
+
+        if (tripDraft) {
+            return Boolean(
+                tripDraft.syncGoals
+            );
+        }
+
+        return Boolean(
+            clockTimer.autoSyncTripGoal
+        );
+    }
+
+    function getRenderedGoalScope() {
+        try {
+            const snapshot =
+                clockTimer.getSummarySnapshot?.(
+                    new Date()
+                );
+
+            if (snapshot?.scope) {
+                return snapshot.scope;
+            }
+        }
+        catch {}
+
+        return clockTimer.percentMode === "total"
+            ? "total"
+            : clockTimer.percentMode === "auto"
+                ? "standard"
+                : "trip";
+    }
+
+    function renderSyncGoalsState(
+        renderedScope = getRenderedGoalScope()
+    ) {
+        const enabled =
+            getSyncGoalsState();
+
+        for (
+            const button of
+                [
+                    syncGoalsMenuButton,
+                    goalSyncButton
+                ]
+        ) {
+            if (!button) continue;
+
+            button.setAttribute(
+                "aria-pressed",
+                String(enabled)
+            );
+
+            button.setAttribute(
+                "aria-label",
+                enabled
+                    ? "Disable Sync Goals"
+                    : "Enable Sync Goals"
+            );
+
+            button.title =
+                enabled
+                    ? "Sync Goals enabled"
+                    : "Sync Goals disabled";
+        }
+
+        if (goalSyncButton) {
+            goalSyncButton.hidden =
+                renderedScope !==
+                    "trip";
+        }
+    }
+
+    function setSyncGoals(
+        value,
+        {
+            persist = true
+        } = {}
+    ) {
+        const enabled =
+            Boolean(value);
+
+        clockTimer.autoSyncTripGoal =
+            enabled;
+
+        if (tripDraft) {
+            tripDraft.syncGoals =
+                enabled;
+        }
+
+        if (
+            tripSettingsSession?.values
+        ) {
+            tripSettingsSession.values.syncGoals =
+                enabled;
+        }
+
+        if (persist) {
+            saveTripPreferences({
+                ...getTripPreferences(),
+                syncGoals:
+                    enabled
+            });
+        }
+
+        renderSyncGoalsState();
+        queueSummaryRefresh();
+
+        return enabled;
+    }
+
+    function toggleSyncGoals() {
+        return setSyncGoals(
+            !getSyncGoalsState()
+        );
     }
 
     function getGraphicalSettings() {
@@ -1510,6 +2091,10 @@
                     ? "Edit Total goal"
                     : "Edit Trip goal"
         );
+
+        renderSyncGoalsState(
+            scope
+        );
     }
 
     function queueSummaryRefresh() {
@@ -2266,6 +2851,31 @@
         }
     );
 
+    tripLogRangeSelect?.addEventListener(
+        "change",
+        event => {
+            setTripLogRange(
+                event.currentTarget.value
+            );
+        }
+    );
+
+    syncGoalsMenuButton?.addEventListener(
+        "click",
+        event => {
+            event.preventDefault();
+            toggleSyncGoals();
+        }
+    );
+
+    goalSyncButton?.addEventListener(
+        "click",
+        event => {
+            event.preventDefault();
+            toggleSyncGoals();
+        }
+    );
+
     tripListMenuButton?.addEventListener(
         "click",
         () => {
@@ -2277,7 +2887,23 @@
     tripLogButton?.addEventListener(
         "click",
         () => {
-            void toggleTripList("button");
+            if (
+                getTripListState() ===
+                    "closed"
+            ) {
+                void openTripList(
+                    "button"
+                );
+            }
+        }
+    );
+
+    tripLogCloseButton?.addEventListener(
+        "click",
+        () => {
+            void closeTripList(
+                "close"
+            );
         }
     );
 
@@ -2370,11 +2996,11 @@
         event.preventDefault();
         const form = event.currentTarget;
         const preferences = {
+            ...getTripPreferences(),
             lateBreakBehavior:
                 form.elements.lateBreakBehavior.value === "autoRestartTrip"
                     ? "autoRestartTrip"
-                    : "showLateWindow",
-            matchTripGoalToTotal: form.elements.matchTripGoalToTotal.checked
+                    : "showLateWindow"
         };
         saveTripPreferences(preferences);
         if (!tripIsLive() && !tripDraft) {
@@ -3451,7 +4077,7 @@
         const standardTime = String(draft?.standardTime || "").trim();
         if (!tripDraftCanStart(draft)) return false;
 
-        clockTimer.autoSyncTripGoal = Boolean(draft.matchTripGoalToTotal);
+        clockTimer.autoSyncTripGoal = Boolean(draft.syncGoals);
         clockTimer.intervalElapsedBehavior = "startLatency";
         clockTimer.autoRestartTripAfterLateBreak =
             draft.lateBreakBehavior === "autoRestartTrip";
@@ -3487,9 +4113,9 @@
             creationDate: live ? (clockTimer.creationDate || "") : (draft.creationDate || ""),
             scheduledStart: live ? (clockTimer.scheduledStart || "") : (draft.scheduledStart || ""),
             startTime: live ? (clockTimer.startTime || "") : (draft.startTime || ""),
-            matchTripGoalToTotal: live
+            syncGoals: live
                 ? Boolean(clockTimer.autoSyncTripGoal)
-                : Boolean(draft.matchTripGoalToTotal)
+                : Boolean(draft.syncGoals)
         };
     }
 
@@ -3516,7 +4142,7 @@
             creationDate: values.creationDate,
             scheduledStart: values.scheduledStart,
             startTime: values.startTime,
-            matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+            syncGoals: Boolean(values.syncGoals)
         };
     }
 
@@ -3673,7 +4299,7 @@
             creationDate: values.creationDate,
             scheduledStart: values.scheduledStart,
             startTime: values.startTime,
-            matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+            syncGoals: Boolean(values.syncGoals)
         });
     }
 
@@ -3690,7 +4316,7 @@
                 creationDate: values.creationDate,
                 scheduledStart: values.scheduledStart,
                 startTime: values.startTime,
-                matchTripGoalToTotal: Boolean(values.matchTripGoalToTotal)
+                syncGoals: Boolean(values.syncGoals)
             });
             return true;
         }
@@ -3701,7 +4327,7 @@
             if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
             if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
-            clockTimer.autoSyncTripGoal = Boolean(values.matchTripGoalToTotal);
+            clockTimer.autoSyncTripGoal = Boolean(values.syncGoals);
             stagedStandardTime = values.standardTime || stagedStandardTime;
             return true;
         }
@@ -3755,19 +4381,6 @@
         return closeTripSettingsToNavigation(reason);
     }
 
-    function getTripSettingsDerivedTotalGoalPercent(values) {
-        if (clockTimer.hasAggregateData !== true) return undefined;
-        const standardTime = String(values?.standardTime || "").trim();
-        if (!standardTime) return undefined;
-        const goal = Number(
-            clockTimer.calculateTripGoalFromTotal?.(
-                standardTime
-            )
-        );
-        if (!Number.isFinite(goal) || goal <= 0) return undefined;
-        return Math.round(goal * 100);
-    }
-
     function refreshTripSettingsValues() {
         syncTripSettingsCloud();
         const live = tripIsLive();
@@ -3795,32 +4408,6 @@
             button.disabled = !live && !draft;
         });
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
-        const preferencesVisible = Boolean(draft || live);
-        tripSettingsPreferences.hidden = !preferencesVisible;
-        const autoSyncTripGoal = tripSettingsForm.elements.autoSyncTripGoal;
-        const aggregateGoalAvailable = clockTimer.hasAggregateData === true;
-        const derivedTotalGoalPercent =
-            getTripSettingsDerivedTotalGoalPercent(
-                settingsValues
-            );
-        const selectedGoalSync = settingsValues
-            ? Boolean(settingsValues.matchTripGoalToTotal)
-            : Boolean(getTripPreferences().matchTripGoalToTotal);
-        autoSyncTripGoal.disabled = !aggregateGoalAvailable || !preferencesVisible;
-        autoSyncTripGoal.checked = selectedGoalSync;
-        tripGoalSyncOption.classList.toggle("is-unavailable", !aggregateGoalAvailable);
-        if (!aggregateGoalAvailable) {
-            tripGoalSyncNoData.textContent = "(No Data)";
-            tripGoalSyncNoData.hidden = false;
-        }
-        else if (Number.isFinite(derivedTotalGoalPercent)) {
-            tripGoalSyncNoData.textContent = `(${derivedTotalGoalPercent}%)`;
-            tripGoalSyncNoData.hidden = false;
-        }
-        else {
-            tripGoalSyncNoData.textContent = "";
-            tripGoalSyncNoData.hidden = true;
-        }
         tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
         tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));
@@ -4088,13 +4675,6 @@
         void resumeConnectionFromCloud().catch(() => {});
     });
 
-    tripSettingsForm.elements.autoSyncTripGoal.addEventListener("change", event => {
-        if (!tripSettingsSession) beginTripSettingsSession();
-        if (tripSettingsSession) {
-            tripSettingsSession.values.matchTripGoalToTotal = event.currentTarget.checked;
-        }
-    });
-
     tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
         button.addEventListener("pointerup", () => {
             if (button.disabled) return;
@@ -4196,10 +4776,6 @@
     tripSettingsForm.addEventListener("submit", event => {
         event.preventDefault();
         if (!tripSettingsSession) beginTripSettingsSession();
-        if (tripSettingsSession) {
-            tripSettingsSession.values.matchTripGoalToTotal =
-                event.currentTarget.elements.autoSyncTripGoal.checked;
-        }
 
         void (async () => {
             const startingDraft = Boolean(tripDraft && !tripIsLive());
@@ -4254,7 +4830,7 @@
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
-            matchTripGoalToTotal: tripPreferences.matchTripGoalToTotal
+            syncGoals: tripPreferences.syncGoals
         };
 
         let preparationPromise;
@@ -4790,9 +5366,19 @@
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     fillTripPreferencesForm(tripPreferences);
+    setTripLogRange(
+        getTripLogRange(),
+        {
+            persist: false,
+            notify: false
+        }
+    );
     clockTimer.intervalElapsedBehavior = "startLatency";
     clockTimer.autoRestartTripAfterLateBreak =
         tripPreferences.lateBreakBehavior === "autoRestartTrip";
+    clockTimer.autoSyncTripGoal =
+        tripPreferences.syncGoals;
+    renderSyncGoalsState();
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();

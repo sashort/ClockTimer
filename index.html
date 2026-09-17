@@ -32,12 +32,22 @@
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
             <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
-            <button type="button" data-dialog="stateSettingsDialog">Trip Preferences</button>
-            <button type="button" data-dialog="graphicalSettingsDialog">Clock Graphical Settings</button>
+            <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
+            <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false">Sync Goals</button>
             <div class="main-menu-row trip-list-menu-row">
                 <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
                 <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="Unpin Trip Log" aria-pressed="true" title="Unpin Trip Log"></button>
             </div>
+            <label class="trip-log-range-menu" for="tripLogRangeSelect">
+                <span>Trip Log Range</span>
+                <select id="tripLogRangeSelect" aria-label="Trip Log Range">
+                    <option value="day">Day</option>
+                    <option value="week">Week</option>
+                    <option value="pay-period">Pay Period</option>
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                </select>
+            </label>
             <hr>
             <button id="authButton" type="button">Login</button>
         </nav>
@@ -55,6 +65,7 @@
                 <strong id="currentPercentValue">---</strong>
                 <span>/</span>
                 <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="Edit percent goal">100%</button>
+                <button id="goalSyncButton" class="goal-sync-button" type="button" aria-label="Enable Sync Goals" aria-pressed="false" hidden></button>
             </div>
         </section>
 
@@ -90,7 +101,9 @@
             ></clock-timer>
         </section>
 
-        <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false">Trip Log</button>
+        <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody">Trip Log</button>
+        <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="Close Trip Log" hidden></button>
+        <section id="tripLogBody" class="trip-log-body" aria-label="Trip Log" hidden></section>
     </main>
 
     <dialog id="loginDialog" class="app-dialog login-dialog">
@@ -157,7 +170,7 @@
     <dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">
         <form id="graphicalSettingsForm" method="dialog">
             <header class="dialog-header">
-                <h2>Clock Graphical Settings</h2>
+                <h2>Clock/Timer Settings</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
 
@@ -411,7 +424,6 @@
                         <option value="autoRestartTrip">Auto-Restart Trip</option>
                     </select>
                 </label>
-                <label class="toggle-row">Match Trip Goal To Total<input name="matchTripGoalToTotal" type="checkbox"></label>
             </fieldset>
             <div class="dialog-actions two-actions">
                 <button type="button" data-close-dialog>Cancel</button>
@@ -485,17 +497,6 @@
                 </button>
                 <button id="tripSetStartsNowCancel" class="trip-now-cancel" type="button" hidden>Cancel</button>
             </div>
-
-            <fieldset id="tripSettingsPreferences" class="trip-settings-behavior">
-                <legend>Trip Preferences</legend>
-                <label id="tripGoalSyncOption" class="toggle-row trip-goal-sync-option">
-                    <span class="trip-goal-sync-label">
-                        <span class="trip-goal-sync-text">Match Trip Goal To Total</span>
-                        <span id="tripGoalSyncNoData" class="trip-goal-sync-status" hidden>(No Data)</span>
-                    </span>
-                    <input name="autoSyncTripGoal" type="checkbox">
-                </label>
-            </fieldset>
 
             <div class="dialog-actions two-actions">
                 <button type="button" data-close-dialog>Cancel</button>
