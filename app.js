@@ -149,6 +149,7 @@
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
+    const dialogCloseTimers = new WeakMap();
     const settingsHelpRevealTimers = new WeakMap();
     const SETTINGS_HELP_FADE_DURATION = 750;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
@@ -925,13 +926,17 @@
     }
 
     function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
-        if (!dialog || dialog.open) return false;
+        if (
+            !dialog ||
+            dialog.open ||
+            dialog.classList.contains("dialog-closing")
+        ) return false;
         const proceed = emitUIEvent(dialog, "opening", { reason, duration }, true);
         if (!proceed) return false;
         dialog.style.setProperty("--app-dialog-transition-duration", `${duration}ms`);
         dialog.showModal();
         setTimeout(() => {
-            if (!dialog.open) return;
+            if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
             dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
             emitUIEvent(dialog, "opened", { reason, duration });
         }, duration);
@@ -939,16 +944,37 @@
     }
 
     function closeDialog(dialog, { reason = "user", immediate = false } = {}) {
-        if (!dialog?.open) return false;
+        if (
+            !dialog?.open ||
+            dialog.classList.contains("dialog-closing")
+        ) return false;
         const proceed = emitUIEvent(dialog, "closing", { reason, immediate }, true);
         if (!proceed) return false;
-        if (immediate) dialog.style.setProperty("--app-dialog-transition-duration", "0ms");
-        dialog.close();
+
         const duration = immediate ? 0 : 250;
-        setTimeout(() => {
-            dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
+
+        const finishClose = () => {
+            dialogCloseTimers.delete(dialog);
+            dialog.style.setProperty("--app-dialog-transition-duration", "0ms");
+            if (dialog.open) dialog.close();
+            dialog.classList.remove("dialog-closing");
+            requestAnimationFrame(() => {
+                dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
+            });
             emitUIEvent(dialog, "closed", { reason, immediate });
-        }, duration);
+        };
+
+        if (duration === 0) {
+            finishClose();
+            return true;
+        }
+
+        dialog.style.setProperty("--app-dialog-transition-duration", `${duration}ms`);
+        dialog.classList.add("dialog-closing");
+        dialogCloseTimers.set(
+            dialog,
+            setTimeout(finishClose, duration)
+        );
         return true;
     }
 

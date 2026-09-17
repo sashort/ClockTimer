@@ -425,6 +425,8 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 }
 
 .main-menu {
+    position: fixed;
+    inset: 60px auto auto 0;
     width: min(430px, 74vw);
     margin: 0;
     padding: 8px 0;
@@ -460,11 +462,6 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     border-left: 11px solid transparent;
     border-right: 11px solid transparent;
     border-bottom: 12px solid rgb(4 30 66 / 96%);
-}
-
-.main-menu:popover-open {
-    position: fixed;
-    inset: 60px auto auto 0;
 }
 
 .main-menu button {
@@ -592,6 +589,11 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 
 .app-dialog[open]::backdrop {
     opacity: 1;
+}
+
+.app-dialog.dialog-closing,
+.app-dialog.dialog-closing::backdrop {
+    opacity: 0;
 }
 
 @starting-style {
