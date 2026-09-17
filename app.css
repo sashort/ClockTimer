@@ -55,6 +55,12 @@ button {
     --home-clock-preferred-size: calc(56vw + 74px);
 }
 
+html[data-trip-log-startup="unpinned"] .app {
+    --trip-log-row-height: 0px;
+    --home-clock-preferred-size: calc(56vw + 74px);
+    --trip-log-layout-duration: 0ms;
+}
+
 .app[data-trip-list-state="opening"],
 .app[data-trip-list-state="open"] {
     --trip-log-row-height: 0px;
@@ -366,6 +372,15 @@ clock-timer::part(major-tick-mark) {
 .app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
     transform: translateY(calc(100% + 0.125in));
     pointer-events: none;
+}
+
+html[data-trip-log-startup="unpinned"] .trip-log-button:not(.trip-log-floating) {
+    display: none;
+    transition: none;
+}
+
+html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
+    transition: none;
 }
 
 .trip-log-button.trip-log-floating {

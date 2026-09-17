@@ -4375,6 +4375,20 @@
         getStoredTripLogPinned(),
         { persist: false }
     );
+
+    if (
+        document.documentElement.dataset.tripLogStartup ===
+            "unpinned"
+    ) {
+        requestAnimationFrame(
+            () => requestAnimationFrame(
+                () => {
+                    delete document.documentElement.dataset.tripLogStartup;
+                }
+            )
+        );
+    }
+
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     fillTripPreferencesForm(tripPreferences);
