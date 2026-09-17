@@ -23026,7 +23026,13 @@
                 };
             }
 
-            if (totalTime < tripTime) {
+            if (
+                totalTime < tripTime ||
+                (
+                    totalTime === tripTime &&
+                    tripScope === "standard"
+                )
+            ) {
                 return {
                     scope: "total",
                     requirements: totalRequirements
