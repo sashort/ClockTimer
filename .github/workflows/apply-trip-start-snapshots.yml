@@ -18,120 +18,20 @@ jobs:
           ref: rename-prestart-latency
           fetch-depth: 0
 
-      - name: Apply changes
-        shell: bash
+      - name: Apply patch
         run: |
           set -euo pipefail
-          python <<'PY'
-          from pathlib import Path
-
-          path = Path('app.js')
-          text = path.read_text()
-
-          old = '''            tripStartsNowState = {
-                value,
-                label,
-                scheduled: false,
-                actual: false
-            };'''
-          new = '''            tripStartsNowState = {
-                value,
-                label,
-                snapshot: {
-                    scheduledStart: values.scheduledStart,
-                    startTime: values.startTime
-                },
-                scheduled: false,
-                actual: false
-            };'''
-          if old not in text:
-              raise SystemExit('snapshot state anchor not found')
-          text = text.replace(old, new, 1)
-
-          old = '''        if (tripStartsNowState.scheduled) values.scheduledStart = tripStartsNowState.value;
-        if (tripStartsNowState.actual) values.startTime = tripStartsNowState.value;
-        beginTripStartsNowExit();'''
-          new = '''        beginTripStartsNowExit();'''
-          if old not in text:
-              raise SystemExit('confirm handler anchor not found')
-          text = text.replace(old, new, 1)
-
-          old = '''    tripSetStartsNowCancel.addEventListener("pointerup", () => {
-        if (!tripStartsNowState) return;
-        beginTripStartsNowExit();
-    });'''
-          new = '''    tripSetStartsNowCancel.addEventListener("pointerup", () => {
-        if (!tripStartsNowState) return;
-        const values = tripSettingsSession?.values;
-        const snapshot = tripStartsNowState.snapshot;
-        if (values && snapshot) {
-            if (tripStartsNowState.scheduled) {
-                values.scheduledStart = snapshot.scheduledStart;
-            }
-            if (tripStartsNowState.actual) {
-                values.startTime = snapshot.startTime;
-            }
-        }
-        beginTripStartsNowExit();
-    });'''
-          if old not in text:
-              raise SystemExit('cancel handler anchor not found')
-          text = text.replace(old, new, 1)
-
-          old = '''    tripStartNowToggles.forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (!tripStartsNowState) return;
-            const key = button.dataset.tripStartNowTarget === "scheduled-start"
-                ? "scheduled"
-                : "actual";
-            tripStartsNowState[key] = !tripStartsNowState[key];
-            syncTripStartsNowUI();
-        });
-    });'''
-          new = '''    tripStartNowToggles.forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (!tripStartsNowState) return;
-            const values = tripSettingsSession?.values;
-            const snapshot = tripStartsNowState.snapshot;
-            if (!values || !snapshot) return;
-
-            const scheduled =
-                button.dataset.tripStartNowTarget === "scheduled-start";
-            const key = scheduled ? "scheduled" : "actual";
-            const selected = !tripStartsNowState[key];
-            tripStartsNowState[key] = selected;
-
-            if (scheduled) {
-                values.scheduledStart = selected
-                    ? tripStartsNowState.value
-                    : snapshot.scheduledStart;
-            }
-            else {
-                values.startTime = selected
-                    ? tripStartsNowState.value
-                    : snapshot.startTime;
-            }
-
-            refreshTripSettingsValues();
-        });
-    });'''
-          if old not in text:
-              raise SystemExit('toggle handler anchor not found')
-          text = text.replace(old, new, 1)
-
-          path.write_text(text)
-          PY
-
+          python .github/apply-trip-start-snapshots.py
           node --check app.js
           git diff --check
 
       - name: Commit changes
-        shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/apply-trip-start-snapshots.yml
+          git rm .github/apply-trip-start-snapshots.py
           git add app.js
           git diff --cached --check
           git commit -m "Snapshot trip starts during now selection"
