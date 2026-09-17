@@ -2278,3 +2278,55 @@ button:active:not(:disabled) {
 .trip-now-to-now .trip-now-value-copy {
     flex: 0 0 auto;
 }
+
+/* trip-start-centered-measured-grid-v3 */
+.trip-now-action {
+    display: grid;
+    grid-template-columns:
+        min-content
+        minmax(0, var(--trip-now-start-copy-width, 0px))
+        min-content;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+    column-gap: 0.28rem;
+    text-align: center;
+}
+
+.trip-now-actions.is-selecting .trip-now-action {
+    grid-template-columns:
+        min-content
+        minmax(0, 0px)
+        min-content;
+    column-gap: 0.28rem;
+}
+
+.trip-now-start-copy,
+.trip-now-actions.is-selecting .trip-now-start-copy,
+.trip-now-actions.is-exiting .trip-now-start-copy {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 1;
+    justify-self: center;
+    text-align: center;
+    transform: none;
+    animation: none;
+    transition: none;
+}
+
+.trip-now-set-word,
+.trip-now-to-now {
+    justify-self: center;
+}
+
+.trip-now-to-now {
+    min-width: max-content;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.28rem;
+    white-space: nowrap;
+}
