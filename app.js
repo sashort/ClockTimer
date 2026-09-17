@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 5;
+    const GRAPHICAL_SETTINGS_VERSION = 6;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -20,10 +20,10 @@
         timerType: "radial-overflow",
         timerMode: "elapsed",
         tripColor: "#0053e2",
-        breakColor: "#ffc420",
-        lunchColor: "#f59e0b",
-        downColor: "#2e7d32",
-        toleranceColor: "#5f6772",
+        breakColor: "#001e60",
+        lunchColor: "#ffc420",
+        downColor: "#5f6772",
+        toleranceColor: "#2e7d32",
         latencyColor: "#e1251b",
         showTolerance: true,
         showLatency: true,
@@ -335,6 +335,12 @@
             if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
             if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;
             if (!settings.borderWidth || settings.borderWidth === "7px") settings.borderWidth = GRAPHICAL_DEFAULTS.borderWidth;
+            if (version === 5) {
+                if (settings.breakColor === "#ffc420") settings.breakColor = "#001e60";
+                if (settings.lunchColor === "#f59e0b") settings.lunchColor = "#ffc420";
+                if (settings.downColor === "#2e7d32") settings.downColor = "#5f6772";
+                if (settings.toleranceColor === "#5f6772") settings.toleranceColor = "#2e7d32";
+            }
             safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
             safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
         }
@@ -1017,6 +1023,21 @@
 
         for (const [name, value] of Object.entries(variables)) setClockVariable(target, name, value);
         target.style.color = settings.hourColor || GRAPHICAL_DEFAULTS.hourColor;
+
+        if (target === clockTimer) {
+            app.style.setProperty(
+                "--timer-break-color",
+                settings.breakColor || GRAPHICAL_DEFAULTS.breakColor
+            );
+            app.style.setProperty(
+                "--timer-lunch-color",
+                settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor
+            );
+            app.style.setProperty(
+                "--timer-down-color",
+                settings.downColor || GRAPHICAL_DEFAULTS.downColor
+            );
+        }
     }
 
     function settingsFromForm(form) {

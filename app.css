@@ -181,12 +181,13 @@ button {
 
 .end-trip-button,
 .break-button {
-    background: var(--wm-yellow);
+    color: var(--wm-white);
+    background: var(--timer-break-color, #001e60);
 }
 
 .down-button {
     color: var(--wm-white);
-    background: #2e7d32;
+    background: var(--timer-down-color, #5f6772);
 }
 
 .new-trip-button {
@@ -1561,7 +1562,7 @@ button:active:not(:disabled) {
     border: 3px solid #000;
     border-radius: 15px;
     color: var(--wm-white);
-    background: var(--wm-blue-dark);
+    background: var(--timer-break-color, #001e60);
     font-size: clamp(18px, 4vw, 28px);
     font-weight: 700;
     line-height: 1.05;
@@ -1569,7 +1570,7 @@ button:active:not(:disabled) {
 
 .break-type-button.lunch {
     color: var(--wm-blue-dark);
-    background: var(--wm-yellow);
+    background: var(--timer-lunch-color, #ffc420);
 }
 
 @media (max-width: 480px) {
@@ -2316,7 +2317,7 @@ button:active:not(:disabled) {
 }
 
 .timer-color-row.with-toggle {
-    grid-template-columns: minmax(0, 1fr) 68px 28px;
+    grid-template-columns: minmax(0, 1fr) 28px 68px;
 }
 
 .app-dialog .timer-color-row > label {
@@ -2344,19 +2345,19 @@ clock-timer time-range[type="trip"] {
 }
 
 clock-timer time-range[type="break"] {
-    background: var(--clock-timer-break-color, #ffc420);
+    background: var(--clock-timer-break-color, #001e60);
 }
 
 clock-timer time-range[type="lunch"] {
-    background: var(--clock-timer-lunch-color, #f59e0b);
+    background: var(--clock-timer-lunch-color, #ffc420);
 }
 
 clock-timer time-range[type="down"] {
-    background: var(--clock-timer-down-color, #2e7d32);
+    background: var(--clock-timer-down-color, #5f6772);
 }
 
 clock-timer time-range[type="tolerance"] {
-    background: var(--clock-timer-tolerance-color, #5f6772);
+    background: var(--clock-timer-tolerance-color, #2e7d32);
 }
 
 clock-timer time-range[type="latency"] {
