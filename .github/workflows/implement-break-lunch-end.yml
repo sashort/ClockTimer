@@ -1,0 +1,49 @@
+name: Implement Break Lunch end
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/implement-break-lunch-end.yml'
+      - '.github/scripts/implement_break_lunch_end.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply fix
+        run: python .github/scripts/implement_break_lunch_end.py
+      - name: Syntax check
+        run: |
+          node --check ClockTimer.js
+          node --check app.js
+      - name: Verify full buffered interval end behavior
+        run: |
+          grep -Fq '#endBufferedPendingInterval(' ClockTimer.js
+          grep -Fq 'candidate.clockTimerPendingDelete =' ClockTimer.js
+          grep -Fq 'this.#rebuildAfterRangeDeletion();' ClockTimer.js
+          grep -Fq 'record.clockTimerBufferedStartTimeline' ClockTimer.js
+          grep -Fq 'this.#getPendingIntervalElapsedBoundary(' ClockTimer.js
+      - name: Verify end boundary uses trailing buffer
+        run: |
+          grep -Fq 'const bufferedScheduledEnd =' ClockTimer.js
+          grep -Fq 'bufferedScheduledEnd' ClockTimer.js
+      - name: Verify UI end path
+        run: |
+          grep -Fq 'if (intervalType === "break" || intervalType === "lunch") {' app.js
+          grep -Fq 'await clockTimer.endInterval();' app.js
+          grep -Fq 'updateSummaryValues();' app.js
+      - name: Commit source changes
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js app.js
+          git commit -m "Implement buffered Break Lunch end action" || exit 0
+          git push origin HEAD:rename-prestart-latency
