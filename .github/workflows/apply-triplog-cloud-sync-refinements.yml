@@ -1,0 +1,47 @@
+name: Apply Trip Log and connection refinements
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-triplog-cloud-sync-refinements.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Apply and validate
+        run: |
+          python3 .github/scripts/apply_triplog_cloud_sync_refinements.py
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          if grep -q 'is-offline' index.html app.js app.css; then
+            echo 'Offline grayscale state remains' >&2
+            exit 1
+          fi
+          if grep -q 'tripGrayscaleRamp\|syncTripGrayscale\|grayscaleReleaseTimeout\|STARTUP_GRAYSCALE_RAMP' app.js; then
+            echo 'Offline grayscale implementation remains' >&2
+            exit 1
+          fi
+          grep -q 'TRIP_LIST_CLOSE_BODY_DURATION = 425' app.js
+          grep -q 'TRIP_LIST_CLOSE_BUTTON_DURATION = 350' app.js
+          grep -q 'white-space: nowrap' app.css
+          grep -q 'syncIconAnimations' app.js
+          grep -q 'width: 40px' app.css
+          git add app.js app.css index.html
+          git commit -m "Refine Trip Log exit and connection controls"
+      - name: Push changes
+        run: git push origin HEAD:rename-prestart-latency
