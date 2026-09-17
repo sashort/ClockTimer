@@ -22,86 +22,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          p = Path('app.js')
-          s = p.read_text()
-          old = '''            setCloudIconVisualState(
-                          numberPadConnection,
-                          () => numberPadSettingsArea.dataset.persistence,
-                          value => { numberPadSettingsArea.dataset.persistence = value; },
-                          status,
-                          {
-                              animate:
-                                  phase !== "initial" &&
-                                  phase !== "initial-cloud"
-                          }
-                      );'''
-          new = '''            numberPadSettingsArea.dataset.persistence = status;
-                      setCloudIconVisualState(
-                          numberPadConnection,
-                          () => numberPadConnection.dataset.cloudState,
-                          value => { numberPadConnection.dataset.cloudState = value; },
-                          status,
-                          {
-                              animate:
-                                  Boolean(numberPadConnection.dataset.cloudState) &&
-                                  phase !== "initial" &&
-                                  phase !== "initial-cloud"
-                          }
-                      );'''
-          if old not in s:
-              raise SystemExit('numberpad cloud state anchor not found')
-          s = s.replace(old, new, 1)
-          p.write_text(s)
-
-          p = Path('app.css')
-          s = p.read_text().rstrip()
-          marker = '/* numberpad-cloud-visual-state-v1 */'
-          if marker in s:
-              raise SystemExit('css already patched')
-          addition = r'''
-
-/* numberpad-cloud-visual-state-v1 */
-.number-pad-settings .number-pad-persistence-badge[data-cloud-state="online"] {
-    background: var(--wm-blue);
-}
-
-.number-pad-settings .number-pad-persistence-badge[data-cloud-state="offline"] {
-    background: var(--wm-gray);
-}
-
-.number-pad-settings .number-pad-persistence-badge[data-cloud-state="online"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black'/%3E%3C/svg%3E");
-}
-
-.number-pad-settings .number-pad-persistence-badge[data-cloud-state="offline"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
-}
-
-.number-pad-settings .number-pad-persistence-badge[data-cloud-state="pending"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
-    animation: none;
-}
-
-/* legacy-palette-alignment-v1 */
-:root {
-    --wm-blue: #0053e2;
-    --wm-blue-dark: #001e60;
-    --wm-blue-mid: #003896;
-    --wm-yellow: #ffc220;
-    --wm-gray: #9b9b9b;
-    --ui-navy-gradient: linear-gradient(145deg, #003078 0%, #002767 48%, #001e60 100%);
-    --ui-blue-gradient: linear-gradient(145deg, #0a5bd8 0%, #0053c9 52%, #0046b5 100%);
-    --ui-yellow-gradient: linear-gradient(145deg, #ffc72c 0%, #f8b918 52%, #e5a10f 100%);
-}
-'''
-          p.write_text(s + addition + '\n')
-          PY
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwID0gUGF0aCgiYXBwLmpzIikKcyA9IHAucmVhZF90ZXh0KCkKb2xkID0gJycnICAgICAgICAgICAgc2V0Q2xvdWRJY29uVmlzdWFsU3RhdGUoCiAgICAgICAgICAgICAgICAgICAgICAgIG51bWJlclBhZENvbm5lY3Rpb24sCiAgICAgICAgICAgICAgICAgICAgICAgICgpID0+IG51bWJlclBhZFNldHRpbmdzQXJlYS5kYXRhc2V0LnBlcnNpc3RlbmNlLAogICAgICAgICAgICAgICAgICAgICAgICB2YWx1ZSA9PiB7IG51bWJlclBhZFNldHRpbmdzQXJlYS5kYXRhc2V0LnBlcnNpc3RlbmNlID0gdmFsdWU7IH0sCiAgICAgICAgICAgICAgICAgICAgICAgIHN0YXR1cywKICAgICAgICAgICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgYW5pbWF0ZToKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwaGFzZSAhPT0gImluaXRpYWwiICYmCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGhhc2UgIT09ICJpbml0aWFsLWNsb3VkIgogICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgKTsnJycKbmV3ID0gJycnICAgICAgICAgICAgbnVtYmVyUGFkU2V0dGluZ3NBcmVhLmRhdGFzZXQucGVyc2lzdGVuY2UgPSBzdGF0dXM7CiAgICAgICAgICAgICAgICAgICAgICBzZXRDbG91ZEljb25WaXN1YWxTdGF0ZSgKICAgICAgICAgICAgICAgICAgICAgICAgICBudW1iZXJQYWRDb25uZWN0aW9uLAogICAgICAgICAgICAgICAgICAgICAgICAgICgpID0+IG51bWJlclBhZENvbm5lY3Rpb24uZGF0YXNldC5jbG91ZFN0YXRlLAogICAgICAgICAgICAgICAgICAgICAgICAgIHZhbHVlID0+IHsgbnVtYmVyUGFkQ29ubmVjdGlvbi5kYXRhc2V0LmNsb3VkU3RhdGUgPSB2YWx1ZTsgfSwKICAgICAgICAgICAgICAgICAgICAgICAgICBzdGF0dXMsCiAgICAgICAgICAgICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICBhbmltYXRlOgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIEJvb2xlYW4obnVtYmVyUGFkQ29ubmVjdGlvbi5kYXRhc2V0LmNsb3VkU3RhdGUpICYmCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGhhc2UgIT09ICJpbml0aWFsIiAmJgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBoYXNlICE9PSAiaW5pdGlhbC1jbG91ZCIKICAgICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgICApOyc nJycKbmV3ID0gbmV3LnJlcGxhY2UoIicgbiIsICInbiIpCmlmIG9sZCBub3QgaW4gczoKICAgIHJhaXNlIFN5c3RlbUV4aXQoIm51bWJlcnBhZCBjbG91ZCBzdGF0ZSBhbmNob3Igbm90IGZvdW5kIikKcyA9IHMucmVwbGFjZShvbGQsIG5ldywgMSkKcC53cml0ZV90ZXh0KHMpCgpwID0gUGF0aCgiYXBwLmNzcyIpCnMgPSBwLnJlYWRfdGV4dCgpLnJzdHJpcCgpCm1hcmtlciA9ICIvKiBudW1iZXJwYWQtY2xvdWQtdmlzdWFsLXN0YXRlLXYxICovIgppZiBtYXJrZXIgaW4gczoKICAgIHJhaXNlIFN5c3RlbUV4aXQoImNzcyBhbHJlYWR5IHBhdGNoZWQiKQphZGRpdGlvbiA9IHInJycKCi8qIG51bWJlcnBhZC1jbG91ZC12aXN1YWwtc3RhdGUtdjEgKi8KLm51bWJlci1wYWQtc2V0dGluZ3MgLm51bWJlci1wYWQtcGVyc2lzdGVuY2UtYmFkZ2VbZGF0YS1jbG91ZC1zdGF0ZT0ib25saW5lIl0gewogICAgYmFja2dyb3VuZDogdmFyKC0td20tYmx1ZSk7Cn0KCi5udW1iZXItcGFkLXNldHRpbmdzIC5udW1iZXItcGFkLXBlcnNpc3RlbmNlLWJhZGdlW2RhdGEtY2xvdWQtc3RhdGU9Im9mZmxpbmUiXSB7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS13bS1ncmF5KTsKfQoKLm51bWJlci1wYWQtc2V0dGluZ3MgLm51bWJlci1wYWQtcGVyc2lzdGVuY2UtYmFkZ2VbZGF0YS1jbG91ZC1zdGF0ZT0ib25saW5lIl06OmJlZm9yZSB7CiAgICAtd2Via2l0LW1hc2staW1hZ2U6IHVybCgiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCclM0UlM0NwYXRoIGQ9J003IDE4aDEwYTQgNCAwIDAgMCAuOC03LjlBNiA2IDAgMCAwIDYuNCA4LjQgNC44IDQuOCAwIDAgMCA3IDE4WicgZmlsbD0nYmxhY2snLyUzRSUzQy9zdmclM0UiKTsKICAgIG1hc2staW1hZ2U6IHVybCgiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCclM0UlM0NwYXRoIGQ9J003IDE4aDEwYTQgNCAwIDAgMCAuOC03LjlBNiA2IDAgMCAwIDYuNCA4LjQgNC44IDQuOCAwIDAgMCA3IDE4WicgZmlsbD0nYmxhY2snLyUzRSUzQy9zdmclM0UiKTsKfQoKLm51bWJlci1wYWQtc2V0dGluZ3MgLm51bWJlci1wYWQtcGVyc2lzdGVuY2UtYmFkZ2VbZGF0YS1jbG91ZC1zdGF0ZT0ib2ZmbGluZSJdOjpiZWZvcmUgewogICAgLXdlYmtpdC1tYXNrLWltYWdlOiB1cmwoImRhdGE6aW1hZ2Uvc3ZnK3htbCwlM0NzdmcnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDI0IDI0JyUzRSUzQ3BhdGggZD0nTTcgMThoMTBhNCA0IDAgMCAwIC44LTcuOUE2IDYgMCAwIDAgNi40IDguNCA0LjggNC44IDAgMCAwIDcgMThaJyBmaWxsPSdub25lJyBzdHJva2U9J2JsYWNrJyBzdHJva2Utd2lkdGg9JzInLyUzRSUzQ3BhdGggZD0nTTUgNWwxNCAxNCcgc3Ryb2tlPSdibGFjaycgc3Ryb2tlLXdpZHRoPScyLjUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvJTNFJTNDL3N2ZyUzRSIpOwogICAgbWFzay1pbWFnZTogdXJsKCJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDI0IDI0JyUzRSUzQ3BhdGggZD0nTTcgMThoMTBhNCA0IDAgMCAwIC44LTcuOUE2IDYgMCAwIDAgNi40IDguNCA0LjggNC44IDAgMCAwIDcgMThaJyBmaWxsPSdub25lJyBzdHJva2U9J2JsYWNrJyBzdHJva2Utd2lkdGg9JzInLyUzRSUzQ3BhdGggZD0nTTUgNWwxNCAxNCcgc3Ryb2tlPSdibGFjaycgc3Ryb2tlLXdpZHRoPScyLjUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvJTNFJTNDL3N2ZyUzRSIpOwp9CgoubnVtYmVyLXBhZC1zZXR0aW5ncyAubnVtYmVyLXBhZC1wZXJzaXN0ZW5jZS1iYWRnZVtkYXRhLWNsb3VkLXN0YXRlPSJwZW5kaW5nIl06OmJlZm9yZSB7CiAgICAtd2Via2l0LW1hc2staW1hZ2U6IHVybCgiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCclM0UlM0NkZWZzJTNFJTNDbWFzayBpZD0ncSclM0UlM0NyZWN0IHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgZmlsbD0nd2hpdGUnLyUzRSUzQ3BhdGggZD0nTTEwLjIgOS40YTIuMyAyLjMgMCAxIDEgNC4yIDEuM2MtLjMuNS0uOC44LTEuMyAxLjE1LS43LjUtMS4xLjk1LTEuMSAxLjg1JyBmaWxsPSdub25lJyBzdHJva2U9J2JsYWNrJyBzdHJva2Utd2lkdGg9JzEuNycgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8lM0UlM0NjaXJjbGUgY3g9JzEyJyBjeT0nMTYuMScgcj0nLjknIGZpbGw9J2JsYWNrJy8lM0UlM0MvbWFzayUzRSUzQy9kZWZzJTNFJTNDcGF0aCBkPSdNNyAxOGgxMGE0IDQgMCAwIDAgLjgtNy45QTYgNiAwIDAgMCA2LjQgOC40IDQuOCA0LjggMCAwIDAgNyAxOFonIGZpbGw9J2JsYWNrJyBtYXNrPSd1cmwoJTIzcSknLyUzRSUzQy9zdmclM0UiKTsKICAgIG1hc2staW1hZ2U6IHVybCgiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCclM0UlM0NkZWZzJTNFJTNDbWFzayBpZD0ncSclM0UlM0NyZWN0IHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgZmlsbD0nd2hpdGUnLyUzRSUzQ3BhdGggZD0nTTEwLjIgOS40YTIuMyAyLjMgMCAxIDEgNC4yIDEuM2MtLjMuNS0uOC44LTEuMyAxLjE1LS43LjUtMS4xLjk1LTEuMSAxLjg1JyBmaWxsPSdub25lJyBzdHJva2U9J2JsYWNrJyBzdHJva2Utd2lkdGg9JzEuNycgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8lM0UlM0NjaXJjbGUgY3g9JzEyJyBjeT0nMTYuMScgcj0nLjknIGZpbGw9J2JsYWNrJy8lM0UlM0MvbWFzayUzRSUzQy9kZWZzJTNFJTNDcGF0aCBkPSdNNyAxOGgxMGE0IDQgMCAwIDAgLjgtNy45QTYgNiAwIDAgMCA2LjQgOC40IDQuOCA0LjggMCAwIDAgNyAxOFonIGZpbGw9J2JsYWNrJyBtYXNrPSd1cmwoJTIzcSknLyUzRSUzQy9zdmclM0UiKTsKICAgIGFuaW1hdGlvbjogbm9uZTsKfQoKLyogbGVnYWN5LXBhbGV0dGUtYWxpZ25tZW50LXYxICovCjpyb290IHsKICAgIC0td20tYmx1ZTogIzAwNTNlMjsKICAgIC0td20tYmx1ZS1kYXJrOiAjMDAxZTYwOwogICAgLS13bS1ibHVlLW1pZDogIzAwMzg5NjsKICAgIC0td20teWVsbG93OiAjZmZjMjIwOwogICAgLS13bS1ncmF5OiAjOWI5YjliOwogICAgLS11aS1uYXZ5LWdyYWRpZW50OiBsaW5lYXItZ3JhZGllbnQoMTQ1ZGVnLCAjMDAzMDc4IDAlLCAjMDAyNzY3IDQ4JSwgIzAwMWU2MCAxMDAlKTsKICAgIC0tdWktYmx1ZS1ncmFkaWVudDogbGluZWFyLWdyYWRpZW50KDE0NWRlZywgIzBhNWJkOCAwJSwgIzAwNTNjOSA1MiUsICMwMDQ2YjUgMTAwJSk7CiAgICAtLXVpLXllbGxvdy1ncmFkaWVudDogbGluZWFyLWdyYWRpZW50KDE0NWRlZywgI2ZmYzcyYyAwJSwgI2Y4YjkxOCA1MiUsICNlNWExMGYgMTAwJSk7Cn0KJycnCnAud3JpdGVfdGV4dChzICsgYWRkaXRpb24gKyAiXG4iKQo=' | base64 -d > /tmp/apply-cloud-palette.py
+          python /tmp/apply-cloud-palette.py
           node --check app.js
           git diff --check
 
