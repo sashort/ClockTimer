@@ -1,0 +1,52 @@
+name: Apply pending fixes
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-pending-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Fix UI close animations
+        run: |
+          python3 .github/scripts/apply_pending_fixes.py ui
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          grep -q 'classList.add("dialog-closing")' app.js
+          grep -q '^    position: fixed;$' app.css
+          git add app.js app.css
+          git commit -m "Fix dialog and menu close animations"
+      - name: Separate user and matched goals
+        run: |
+          python3 .github/scripts/apply_pending_fixes.py goals
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          grep -q '#matchedTripGoal;' ClockTimer.js
+          grep -q '#getUserTripGoal()' ClockTimer.js
+          grep -q 'Trip Standard Time' app.js
+          grep -q 'autoTripGoalValue">100%' index.html
+          if grep -A8 '#ensureAttributes()' ClockTimer.js | grep -q '"trip-goal"'; then
+            echo 'trip-goal default is still being materialized in ensureAttributes' >&2
+            exit 1
+          fi
+          git add ClockTimer.js app.js index.html
+          git commit -m "Separate matched and user percent goals"
+      - name: Push fixes
+        run: git push origin HEAD:rename-prestart-latency
