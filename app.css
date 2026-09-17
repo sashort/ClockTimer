@@ -3373,3 +3373,36 @@ clock-timer[hide-latency] time-range[type="latency"] {
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 3l10 10M13 3 3 13' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
     filter: drop-shadow(0 0 1px rgb(0 0 0 / 55%));
 }
+
+
+/* offline-sync-layer-regression-v2 */
+/* Keep the original glyph only until the offline/X replacement takes over. */
+.sync-goals-menu-icon[data-sync-network-state="offline-fading"]::before,
+.sync-goals-menu-icon[data-sync-network-state="offline"]::before,
+.goal-sync-button[data-sync-network-state="offline-fading"]::before,
+.goal-sync-button[data-sync-network-state="offline"]::before {
+    opacity: 0;
+}
+
+/* The red not-synced slash is persistent in every offline transition/state. */
+.sync-goals-menu-icon[data-sync-network-state="offline-prep"]::after,
+.sync-goals-menu-icon[data-sync-network-state="offline-fading"]::after,
+.sync-goals-menu-icon[data-sync-network-state="offline"]::after,
+.goal-sync-button[data-sync-network-state="offline-prep"]::after,
+.goal-sync-button[data-sync-network-state="offline-fading"]::after,
+.goal-sync-button[data-sync-network-state="offline"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 32px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--wm-red);
+    box-shadow: 0 0 1px rgb(0 0 0 / 55%);
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(45deg);
+    transform-origin: center;
+    pointer-events: none;
+    transition: none;
+}
