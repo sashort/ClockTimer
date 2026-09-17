@@ -17,15 +17,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: rename-prestart-latency
-      - name: Inspect current UI implementation
+      - name: Locate trip log body and listeners
         run: |
-          echo '=== INDEX MENU / GOALS / TRIP LOG ==='
-          grep -n -B 8 -A 45 'mainMenu\|tripLogButton\|stateSettingsDialog\|Match Trip Goal\|graphicalSettingsDialog\|goalPercentValue' index.html || true
-          echo '=== APP JS TRIP LOG ==='
-          grep -n -B 20 -A 100 'tripLogButton\|tripListMenuButton\|tripLogPinButton\|renderTripLog\|trip log' app.js | head -n 900 || true
-          echo '=== APP JS GOAL / PREFS ==='
-          grep -n -B 20 -A 120 'autoSyncTripGoal\|Match Trip Goal\|matchTrip\|stateSettings\|tripPreferences\|goalPercentValue' app.js | head -n 1200 || true
-          echo '=== CSS MENU / TRIP LOG ==='
-          grep -n -B 15 -A 120 'main-menu\|trip-log-button\|trip-log\|menu-pin\|trip-list-menu-row\|percent-summary' app.css | head -n 1400 || true
-          echo '=== ICONS ==='
-          grep -n -B 10 -A 80 'icon\|svg' index.html | head -n 500 || true
+          echo '=== FILES ==='
+          find . -maxdepth 3 -type f -not -path './.git/*' | sort
+          echo '=== TRIP LOG EVENT REFERENCES OUTSIDE APP.JS ==='
+          git grep -n -E 'wmof:trip-list-request|wmof:trip-list-closing|wmof:trip-list-closed|tripLogBody|trip-list-body|trip-log-body|Trip Log' -- ':!app.js' ':!.github/*' || true
+          echo '=== APP EVENT REFERENCES ==='
+          git grep -n -E 'wmof:trip-list-request|wmof:trip-list-closing|wmof:trip-list-closed' -- app.js || true
+          echo '=== TRIP DRAFT CREATION / SYNC FIELDS ==='
+          grep -n -B 20 -A 80 'matchTripGoalToTotal\|tripDraft =\|TRIP_PREFERENCE_DEFAULTS' app.js | head -n 1400 || true
