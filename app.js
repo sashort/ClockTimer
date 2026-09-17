@@ -1363,6 +1363,32 @@
             element.append(overlay);
         }
 
+        let arrow =
+            overlay.querySelector(
+                ":scope > .sync-offline-arrow"
+            );
+
+        if (!arrow) {
+            arrow =
+                document.createElement("span");
+            arrow.className =
+                "sync-offline-arrow";
+            overlay.append(arrow);
+        }
+
+        let offlineX =
+            overlay.querySelector(
+                ":scope > .sync-offline-x"
+            );
+
+        if (!offlineX) {
+            offlineX =
+                document.createElement("span");
+            offlineX.className =
+                "sync-offline-x";
+            overlay.append(offlineX);
+        }
+
         return overlay;
     }
 
@@ -1463,7 +1489,21 @@
                 element
             )?.cancel();
 
+            // sync-offline-arrow-spin-v1
+            // Once the offline X is visible, spin only the arrow layer
+            // underneath it so the X remains stationary.
+            const offlineArrow =
+                element.dataset.syncNetworkState === "offline"
+                    ? ensureSyncOfflineOverlay(element)?.querySelector(
+                        ":scope > .sync-offline-arrow"
+                    )
+                    : undefined;
+
+            const animationTarget =
+                offlineArrow || element;
+
             const anchored =
+                !offlineArrow &&
                 element === goalSyncButton;
 
             const prefix =
@@ -1472,7 +1512,7 @@
                     : "";
 
             const animation =
-                element.animate(
+                animationTarget.animate(
                     [
                         {
                             transform:
