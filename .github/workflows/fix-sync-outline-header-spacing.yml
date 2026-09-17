@@ -1,0 +1,77 @@
+name: Fix sync outline header spacing
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-sync-outline-header-spacing.yml'
+      - '.github/scripts/fix_sync_outline_header_spacing.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python .github/scripts/fix_sync_outline_header_spacing.py
+      - name: Syntax checks
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+      - name: Verify Sync behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('app.js').read_text()
+          assert 'if (button === goalSyncButton) return;' in text
+          assert 'animateSyncGoalsIcons();' in text[text.index('function toggleSyncGoals()'):text.index('function normalizeGraphicalSettings')]
+          assert 'goalSyncButton?.addEventListener' in text
+          PY
+      - name: Verify contrast semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('ClockTimer.js').read_text()
+          start = text.index('#updateTimeOutlineContrast()')
+          end = text.index('#captureFaceBackground()', start)
+          block = text[start:end]
+          assert 'const surfaces = [' in block
+          assert 'background,' in block
+          assert '...handColors' in block
+          assert 'this.#contrastRatio(\n                            timeColor,\n                            surface' in block
+          assert 'handBackgroundContrasts' not in block
+          assert 'minimumTimeContrast' not in block
+          assert 'problematic' in block
+          assert '--clock-timer-time-outline-color' in block
+          assert '--clock-timer-time-outline-width' in block
+          assert '#updateTimeOutlineContrast();' in text
+          assert '--clock-timer-time-color' in text
+          PY
+      - name: Verify spacing and border
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css = Path('app.css').read_text()
+          assert '--app-document-padding: 0;' in css
+          site = css[css.index('/* reference-pattern-sitewide-v1 */'):]
+          app = site[site.index('.app {'):site.index('.app .trip-action-controls')]
+          assert 'margin: 0;' in app
+          assert 'padding: 0;' in app
+          hamburger = css[css.index('.hamburger-button {'):css.index('.hamburger-button span')]
+          assert 'appearance: none;' in hamburger
+          assert 'border: var(--control-border);' in hamburger
+          assert 'border-radius: 12px;' in hamburger
+          PY
+      - name: Commit source changes
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css ClockTimer.js
+          git commit -m "Refine sync control and clock contrast" || exit 0
+          git push origin HEAD:rename-prestart-latency
