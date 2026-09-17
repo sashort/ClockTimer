@@ -17,23 +17,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: rename-prestart-latency
-      - name: Inspect exact menu trip log and sync blocks
+      - name: Inspect sync and event handlers
         run: |
-          echo '=== INDEX 20-125 ==='
-          sed -n '20,125p' index.html
-          echo '=== INDEX SETTINGS ==='
-          sed -n '125,360p' index.html
-          echo '=== APP TRIP LOG ==='
-          sed -n '1,640p' app.js
-          echo '=== APP PREFS ==='
-          sed -n '620,710p' app.js
-          echo '=== APP SUMMARY ==='
-          grep -n -B 30 -A 100 'function updateSummaryValues' app.js
-          echo '=== APP STARTUP ==='
-          tail -n 260 app.js
-          echo '=== CSS MENU ==='
-          grep -n -B 30 -A 220 '^\.main-menu' app.css | head -n 700
-          echo '=== CSS TRIP LOG ==='
-          grep -n -B 50 -A 260 '^\.trip-log-button' app.css | head -n 900
-          echo '=== CSS SUMMARY ==='
-          grep -n -B 30 -A 130 '^\.percent-summary' app.css | head -n 500
+          echo '=== MATCH/SYNC OCCURRENCES ==='
+          grep -n -B 12 -A 28 'matchTripGoalToTotal\|autoSyncTripGoal\|tripGoalSyncOption\|tripSettingsPreferences' app.js index.html || true
+          echo '=== TRIP LOG HANDLERS ==='
+          grep -n -B 12 -A 45 'tripListMenuButton.addEventListener\|tripLogButton.addEventListener\|tripLogPinButton.addEventListener' app.js || true
+          echo '=== STATE SETTINGS FORM ==='
+          grep -n -B 12 -A 70 'stateSettingsForm' app.js index.html || true
+          echo '=== TRIP DRAFT ==='
+          grep -n -B 20 -A 80 'function createTripDraft\|tripDraft = {' app.js || true
+          echo '=== TRIP SETTINGS SYNC ==='
+          grep -n -B 20 -A 100 'syncTripGoalOption\|syncTripSettings\|autoSyncTripGoal' app.js | tail -n 900 || true
