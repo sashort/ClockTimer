@@ -3406,3 +3406,87 @@ clock-timer[hide-latency] time-range[type="latency"] {
     pointer-events: none;
     transition: none;
 }
+
+
+/* sync-three-state-and-trip-settings-v1 */
+/* The replacement arrow layer is the single arrow glyph for all three states. */
+.sync-goals-menu-icon[data-sync-layered="true"]::before,
+.goal-sync-button[data-sync-layered="true"]::before {
+    opacity: 0;
+}
+
+.sync-goals-menu-icon > .sync-offline-overlay,
+.goal-sync-button > .sync-offline-overlay,
+.sync-goals-menu-icon[data-sync-network-state] > .sync-offline-overlay,
+.goal-sync-button[data-sync-network-state] > .sync-offline-overlay {
+    opacity: 1;
+    transition: none;
+}
+
+/* X is only the offline red overlay. */
+.sync-offline-x {
+    opacity: 0;
+    transition: opacity 750ms linear;
+}
+
+.sync-goals-menu-icon[data-sync-network-state="offline-fading"] .sync-offline-x,
+.sync-goals-menu-icon[data-sync-network-state="offline"] .sync-offline-x,
+.goal-sync-button[data-sync-network-state="offline-fading"] .sync-offline-x,
+.goal-sync-button[data-sync-network-state="offline"] .sync-offline-x {
+    opacity: 1;
+}
+
+/* Slash is only the not-synced red overlay. It remains visible while that
+   state is spinning, then can crossfade to X after spinning stops. */
+.sync-goals-menu-icon[data-sync-state="enabled"][data-sync-network-state="offline-prep"]::after,
+.goal-sync-button[aria-pressed="true"][data-sync-network-state="offline-prep"]::after {
+    opacity: 0;
+}
+
+.sync-goals-menu-icon[data-sync-network-state="offline-fading"]::after,
+.goal-sync-button[data-sync-network-state="offline-fading"]::after {
+    opacity: 0;
+    transition: opacity 750ms linear;
+}
+
+.sync-goals-menu-icon[data-sync-network-state="offline"]::after,
+.goal-sync-button[data-sync-network-state="offline"]::after {
+    opacity: 0;
+    transition: none;
+}
+
+/* Do not crossfade red overlays while arrows are actively spinning. */
+.sync-icon-spinning .sync-offline-x,
+.sync-icon-spinning::after {
+    transition: none !important;
+}
+
+/* Trip Settings footer controls should size like the pencil controls rather
+   than stretching with the fullscreen form grid. */
+.trip-settings-dialog form {
+    align-content: start;
+    grid-auto-rows: max-content;
+}
+
+.trip-settings-dialog .dialog-actions {
+    align-self: start;
+}
+
+.trip-settings-dialog .dialog-actions button {
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+}
+
+@media (max-width: 620px) {
+    .trip-settings-dialog .dialog-actions button {
+        height: 50px;
+        min-height: 50px;
+        max-height: 50px;
+    }
+}
+
+/* Ready <-> running state swaps are not layout animations. */
+.app.trip-state-snap {
+    transition: none !important;
+}

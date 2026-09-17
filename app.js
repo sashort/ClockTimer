@@ -1363,6 +1363,8 @@
             element.append(overlay);
         }
 
+        element.dataset.syncLayered = "true";
+
         let arrow =
             overlay.querySelector(
                 ":scope > .sync-offline-arrow"
@@ -1489,39 +1491,24 @@
                 element
             )?.cancel();
 
-            // sync-offline-arrow-spin-v1
-            // Once the offline X is visible, spin only the arrow layer
-            // underneath it so the X remains stationary.
-            const offlineArrow =
-                element.dataset.syncNetworkState === "offline"
-                    ? ensureSyncOfflineOverlay(element)?.querySelector(
-                        ":scope > .sync-offline-arrow"
-                    )
-                    : undefined;
-
+            // sync-three-state-and-trip-settings-v1
+            // The arrow is the only rotating layer. Red slash/X overlays stay fixed.
             const animationTarget =
-                offlineArrow || element;
+                ensureSyncOfflineOverlay(element)?.querySelector(
+                    ":scope > .sync-offline-arrow"
+                );
 
-            const anchored =
-                !offlineArrow &&
-                element === goalSyncButton;
+            if (!animationTarget) continue;
 
-            const prefix =
-                anchored
-                    ? "translateY(-50%) "
-                    : "";
+            element.classList.add(
+                "sync-icon-spinning"
+            );
 
             const animation =
                 animationTarget.animate(
                     [
-                        {
-                            transform:
-                                `${prefix}rotate(0deg)`
-                        },
-                        {
-                            transform:
-                                `${prefix}rotate(360deg)`
-                        }
+                        { transform: "rotate(0deg)" },
+                        { transform: "rotate(360deg)" }
                     ],
                     {
                         duration:
@@ -1545,6 +1532,9 @@
                     ) {
                         syncIconAnimations.delete(
                             element
+                        );
+                        element.classList.remove(
+                            "sync-icon-spinning"
                         );
                     }
                 });
@@ -5830,10 +5820,31 @@
     }
 
     function setTripControlState(running) {
-        app.dataset.tripState = running ? "running" : "ready";
+        const nextTripState =
+            running ? "running" : "ready";
+        const stateChanged =
+            app.dataset.tripState !== nextTripState;
+
+        if (stateChanged) {
+            app.classList.add(
+                "trip-state-snap"
+            );
+            void app.offsetHeight;
+        }
+
+        app.dataset.tripState = nextTripState;
         app.dataset.state = clockTimer.status;
         activeTripControls.hidden = !running;
         renderTripActionState();
+
+        if (stateChanged) {
+            void app.offsetHeight;
+            requestAnimationFrame(() => {
+                app.classList.remove(
+                    "trip-state-snap"
+                );
+            });
+        }
     }
 
     clockTimer.addEventListener("cadenceTick", event => {
