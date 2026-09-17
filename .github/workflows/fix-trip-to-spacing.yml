@@ -1,0 +1,47 @@
+name: Fix trip to spacing
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/fix-trip-to-spacing.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply spacing fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old = '<div class="trip-now-to-word">&nbsp;to</div>'
+          new = '<div class="trip-now-to-word">&nbsp;to&nbsp;</div>'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected exactly one spacing anchor, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-trip-to-spacing.yml
+          git add index.html
+          git diff --cached --check
+          git commit -m "Add trailing space around trip start to"
+          git push origin HEAD:rename-prestart-latency
