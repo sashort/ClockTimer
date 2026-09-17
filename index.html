@@ -27,7 +27,10 @@
             <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
                 <span></span><span></span><span></span>
             </button>
-            <button id="scopeToggle" class="header-button scope-toggle" type="button">Trip</button>
+            <div class="scope-control">
+                <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="Offline. Retry connection" hidden></button>
+                <button id="scopeToggle" class="scope-toggle" type="button">Trip</button>
+            </div>
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
@@ -259,20 +262,23 @@
 
                     <fieldset>
                         <legend>Hand Styling</legend>
-                        <div class="style-row three-control-row">
+                        <div class="style-row three-control-row hand-style-row">
                             <span>Hour Hand</span>
+                            <label class="hand-enabled-control">Show<input name="showHourHand" type="checkbox" checked aria-label="Show Hour Hand"></label>
                             <label>Length<input name="hourHandLength" value="28%"></label>
                             <label>Width<input name="hourHandWidth" value="5px"></label>
                             <label>Color<input name="hourHandColor" type="color" value="#ffffff"></label>
                         </div>
-                        <div class="style-row three-control-row">
+                        <div class="style-row three-control-row hand-style-row">
                             <span>Minute Hand</span>
+                            <label class="hand-enabled-control">Show<input name="showMinuteHand" type="checkbox" checked aria-label="Show Minute Hand"></label>
                             <label>Length<input name="minuteHandLength" value="38%"></label>
                             <label>Width<input name="minuteHandWidth" value="4px"></label>
                             <label>Color<input name="minuteHandColor" type="color" value="#ffffff"></label>
                         </div>
-                        <div class="style-row three-control-row">
+                        <div class="style-row three-control-row hand-style-row">
                             <span>Second Hand</span>
+                            <label class="hand-enabled-control">Show<input name="showSecondHand" type="checkbox" checked aria-label="Show Second Hand"></label>
                             <label>Length<input name="secondHandLength" value="42%"></label>
                             <label>Width<input name="secondHandWidth" value="2px"></label>
                             <label>Color<input name="secondHandColor" type="color" value="#ffc220"></label>

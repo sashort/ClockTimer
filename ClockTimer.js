@@ -2414,6 +2414,35 @@
                 : path;
         }
 
+        async #fetchRequest(url, options = {}) {
+            return fetch(url, options)
+                .then(
+                    async response => ({
+                        response,
+                        body:
+                            await response
+                                .json()
+                                .catch(() => ({}))
+                    })
+                )
+                .catch(
+                    cause => ({
+                        response: undefined,
+                        body: {
+                            error:
+                                cause?.name === "AbortError"
+                                    ? "aborted"
+                                    : "fetch_failed",
+                            message:
+                                cause?.name === "AbortError"
+                                    ? "The request was aborted."
+                                    : "The API is unavailable."
+                        },
+                        cause
+                    })
+                );
+        }
+
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
             const headers = { "Accept": "application/json" };
             if (body !== undefined) {
@@ -2428,34 +2457,55 @@
                 headers["X-CSRF-Token"] = this.#csrfToken;
             }
 
-            let response;
-            try {
-                response = await fetch(this.#apiURL(endpoint, query), {
-                    method,
-                    credentials: "same-origin",
-                    headers,
-                    body: body === undefined ? undefined : JSON.stringify(body),
-                    signal
-                });
-            }
-            catch (cause) {
-                if (cause?.name === "AbortError") {
-                    throw cause;
+            const result =
+                await this.#fetchRequest(
+                    this.#apiURL(endpoint, query),
+                    {
+                        method,
+                        credentials: "same-origin",
+                        headers,
+                        body:
+                            body === undefined
+                                ? undefined
+                                : JSON.stringify(body),
+                        signal
+                    }
+                );
+
+            const response =
+                result.response;
+
+            const data =
+                result.body || {};
+
+            if (!response) {
+                if (data.error === "aborted") {
+                    throw result.cause ??
+                        new DOMException(
+                            data.message || "The request was aborted.",
+                            "AbortError"
+                        );
                 }
+
                 this.#setOffline({
                     source: "api",
                     reason: "unavailable"
                 });
-                const error = new Error("The API is unavailable.", { cause });
-                error.clockTimerOffline = true;
+
+                const error =
+                    new Error(
+                        data.message ||
+                            "The API is unavailable.",
+                        {
+                            cause: result.cause
+                        }
+                    );
+
+                error.clockTimerOffline =
+                    true;
+
                 throw error;
             }
-
-            let data = {};
-            try {
-                data = await response.json();
-            }
-            catch {}
 
             if (!response.ok) {
                 const error = new Error(

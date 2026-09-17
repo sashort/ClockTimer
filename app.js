@@ -34,6 +34,9 @@
         visibleHours: "12,3,6,9",
         tickMarks: "[10]",
         indicatorSymbol: "▲",
+        showHourHand: true,
+        showMinuteHand: true,
+        showSecondHand: true,
         hourHandLength: "28%",
         hourHandWidth: "5px",
         hourHandColor: "#ffffff",
@@ -65,6 +68,8 @@
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
     const mainMenu = $("#mainMenu");
+    const scopeToggle = $("#scopeToggle");
+    const scopeConnectionButton = $("#scopeConnectionButton");
     const tripListMenuButton = $("#tripListMenuButton");
     const tripLogPinButton = $("#tripLogPinButton");
     const tripLogRangeSelect = $("#tripLogRangeSelect");
@@ -135,6 +140,9 @@
     let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
     let connectionResumePromise;
+    let connectionCloudPhase = "settled";
+    let connectionCloudSequence = 0;
+    let connectionCloudSettleTimer;
     let loginDialogFullyOpen = false;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
@@ -142,12 +150,10 @@
     const NUMBER_PAD_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
     const STARTUP_GRAYSCALE_RAMP = 2000;
-    const LOGIN_GRAYSCALE_RAMP = 750;
-    const INITIAL_LOGIN_FADE_DURATION = 750;
+    const CONNECTION_UI_TRANSITION_DURATION = 750;
     const BUTTON_PRESS_IN_DURATION = 120;
     const BUTTON_PRESS_OUT_DURATION = 140;
     const TRIP_START_TRANSITION_DURATION = 250;
-    const CLOUD_ICON_TRANSITION_DURATION = 750;
     const cloudIconTransitions = new WeakMap();
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
@@ -158,7 +164,8 @@
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 750;
     const TRIP_LIST_BODY_DELAY = 350;
-    const TRIP_LIST_MERGE_DURATION = 250;
+    const TRIP_LIST_BODY_DURATION = 1000;
+    const TRIP_LIST_MERGE_DURATION = 750;
     const TRIP_LOG_RANGES = new Set([
         "day",
         "week",
@@ -684,20 +691,15 @@
             return Promise.resolve(true);
         }
 
-        const edgeSpeed =
-            (
-                fullWidth / 2
-            ) /
-            TRIP_LIST_BUTTON_TRANSITION_DURATION;
-
         const fullDuration =
+            TRIP_LIST_BODY_DURATION;
+
+        const edgeSpeed =
             Math.max(
-                TRIP_LIST_BUTTON_TRANSITION_DURATION,
-                (
-                    fullHeight / 2
-                ) /
-                    edgeSpeed
-            );
+                fullWidth / 2,
+                fullHeight / 2
+            ) /
+            fullDuration;
 
         return new Promise(
             resolve => {
@@ -1303,6 +1305,19 @@
         return value === "online" ? "online" : "offline";
     }
 
+    function getConnectionVisualStatus(status = clockTimer.networkStatus) {
+        if (
+            connectionCloudPhase === "retry" ||
+            connectionCloudPhase === "awaiting-login"
+        ) {
+            return "pending";
+        }
+
+        return status === "pending"
+            ? "pending"
+            : normalizedConnectionStatus(status);
+    }
+
     function setCloudIconVisualState(element, getState, applyState, nextState, { animate = true } = {}) {
         if (!element || typeof getState !== "function" || typeof applyState !== "function") {
             applyState?.(nextState);
@@ -1339,7 +1354,7 @@
             if (generation !== controller.generation) return;
             if (getState() === nextState) return;
 
-            const halfDuration = CLOUD_ICON_TRANSITION_DURATION / 2;
+            const halfDuration = CONNECTION_UI_TRANSITION_DURATION / 2;
             controller.animation = element.animate(
                 [
                     { transform: "rotateY(0deg)" },
@@ -1375,7 +1390,10 @@
 
     function syncTripSettingsCloud(status = clockTimer.networkStatus) {
         if (!tripSettingsCloud) return;
-        const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
+        const normalized = getConnectionVisualStatus(status);
+        const busy =
+            normalized === "pending" ||
+            connectionCloudPhase !== "settled";
         setCloudIconVisualState(
             tripSettingsCloud,
             () => tripSettingsCloud.dataset.networkStatus,
@@ -1383,16 +1401,86 @@
             normalized,
             { animate: Boolean(tripSettingsCloud.dataset.networkStatus) }
         );
-        tripSettingsCloud.setAttribute("aria-busy", String(normalized === "pending"));
+        tripSettingsCloud.setAttribute("aria-busy", String(busy));
         tripSettingsCloud.setAttribute(
             "aria-label",
-            normalized === "pending"
+            busy
                 ? "Checking connection"
                 : normalized === "online"
                     ? "Connected"
                     : "Offline. Retry connection"
         );
-        tripSettingsCloud.setAttribute("aria-disabled", String(normalized !== "offline"));
+        tripSettingsCloud.setAttribute(
+            "aria-disabled",
+            String(busy || normalized !== "offline")
+        );
+    }
+
+    function syncScopeConnectionCloud(status = clockTimer.networkStatus) {
+        if (!scopeConnectionButton) return;
+
+        const mode =
+            normalizePercentMode(
+                clockTimer.percentMode
+            );
+
+        const modeSupportsCloud =
+            mode === "total" ||
+            mode === "auto";
+
+        const normalized =
+            getConnectionVisualStatus(status);
+
+        const transitionActive =
+            connectionCloudPhase !== "settled";
+
+        const visible =
+            modeSupportsCloud &&
+            (
+                normalized !== "online" ||
+                transitionActive
+            );
+
+        scopeConnectionButton.hidden =
+            !visible;
+
+        if (!visible) {
+            scopeConnectionButton.setAttribute(
+                "aria-busy",
+                "false"
+            );
+            return;
+        }
+
+        setCloudIconVisualState(
+            scopeConnectionButton,
+            () => scopeConnectionButton.dataset.cloudState,
+            value => { scopeConnectionButton.dataset.cloudState = value; },
+            normalized,
+            { animate: Boolean(scopeConnectionButton.dataset.cloudState) }
+        );
+
+        const busy =
+            normalized === "pending" ||
+            transitionActive;
+
+        scopeConnectionButton.disabled =
+            busy ||
+            normalized !== "offline";
+
+        scopeConnectionButton.setAttribute(
+            "aria-busy",
+            String(busy)
+        );
+
+        scopeConnectionButton.setAttribute(
+            "aria-label",
+            busy
+                ? "Checking connection"
+                : normalized === "online"
+                    ? "Connected"
+                    : "Offline. Retry connection"
+        );
     }
 
     function updateNumberPadConnectionStatus(token, status, { presentation } = {}) {
@@ -1410,6 +1498,18 @@
             returnState.persistence = normalized;
             if (presentation) returnState.connectionPresentation = presentation;
         }
+    }
+
+    function getConnectionNumberPadState() {
+        return numberPadState ??
+            findUIReturnFrame("number-pad")?.state;
+    }
+
+    function getConnectionNumberPadToken() {
+        const state =
+            getConnectionNumberPadState();
+
+        return state?.connectionStatusToken;
     }
 
     async function settleInitialNumberPadConnection(state, preparationPromise) {
@@ -1432,69 +1532,166 @@
         );
     }
 
-    async function resumeConnectionFromCloud({ numberPad = false } = {}) {
-        const startedAt = performance.now();
-        let token;
+    function settleConnectionCloudPresentation(
+        status,
+        token,
+        sequence = connectionCloudSequence
+    ) {
+        clearTimeout(connectionCloudSettleTimer);
+        connectionCloudSettleTimer = undefined;
 
-        if (numberPad && numberPadState) {
-            token = numberPadState.connectionStatusToken || ++numberPadConnectionSequence;
-            numberPadState.connectionStatusToken = token;
-            updateNumberPadConnectionStatus(token, "pending", { presentation: "retry" });
-        }
-        else {
-            syncTripSettingsCloud("pending");
-        }
-
-        if (!connectionResumePromise) {
-            connectionResumePromise = (async () => {
-                try { return await clockTimer.resumeConnection(); }
-                catch { return false; }
-            })().finally(() => {
-                connectionResumePromise = undefined;
-            });
+        if (sequence !== connectionCloudSequence) {
+            return;
         }
 
-        try { await connectionResumePromise; }
-        catch {}
+        const normalized =
+            normalizedConnectionStatus(status);
 
-        const status = normalizedConnectionStatus();
+        connectionCloudPhase =
+            "settling";
 
-        if (numberPad && token) {
-            if (status === "online") {
-                updateNumberPadConnectionStatus(token, "online", { presentation: "cloud-fade" });
-                syncTripSettingsCloud(status);
-                syncNetworkStatusUI();
-                return true;
-            }
+        if (token) {
+            updateNumberPadConnectionStatus(
+                token,
+                normalized,
+                { presentation: "cloud-fade" }
+            );
+        }
 
-            updateNumberPadConnectionStatus(token, "pending", { presentation: "awaiting-login" });
-            syncTripSettingsCloud(status);
-            syncNetworkStatusUI();
+        syncTripSettingsCloud(normalized);
+        syncScopeConnectionCloud(normalized);
+        syncNetworkStatusUI();
 
-            if (loginDialogFullyOpen) {
-                updateNumberPadConnectionStatus(token, "offline", { presentation: "cloud-fade" });
-            }
-            else if (!showConnectionRetryLoginDialog()) {
-                updateNumberPadConnectionStatus(token, "offline", { presentation: "cloud-fade" });
-            }
+        connectionCloudSettleTimer =
+            setTimeout(
+                () => {
+                    if (
+                        sequence !== connectionCloudSequence
+                    ) {
+                        return;
+                    }
+
+                    connectionCloudSettleTimer =
+                        undefined;
+
+                    connectionCloudPhase =
+                        "settled";
+
+                    const state =
+                        getConnectionNumberPadState();
+
+                    if (
+                        state?.connectionStatusToken === token &&
+                        state.connectionPresentation === "cloud-fade"
+                    ) {
+                        updateNumberPadConnectionStatus(
+                            token,
+                            normalized,
+                            { presentation: "settled" }
+                        );
+                    }
+
+                    syncTripSettingsCloud(normalized);
+                    syncScopeConnectionCloud(normalized);
+                },
+                CONNECTION_UI_TRANSITION_DURATION
+            );
+    }
+
+    async function resumeConnectionFromCloud({ source = "trip-settings" } = {}) {
+        if (connectionCloudPhase !== "settled") {
             return false;
         }
 
-        const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
-        if (remaining > 0) await wait(remaining);
+        const sequence =
+            ++connectionCloudSequence;
 
-        const presentation =
-            status === "offline" && !loginDialogFullyOpen
-                ? "awaiting-login"
-                : "settled";
-        const frame = findUIReturnFrame("number-pad");
-        if (frame?.state) {
-            frame.state.persistence = status;
-            frame.state.connectionPresentation = presentation;
+        clearTimeout(connectionCloudSettleTimer);
+        connectionCloudSettleTimer = undefined;
+
+        connectionCloudPhase =
+            "retry";
+
+        let token;
+
+        if (
+            source === "number-pad" &&
+            numberPadState
+        ) {
+            token =
+                numberPadState.connectionStatusToken ||
+                ++numberPadConnectionSequence;
+
+            numberPadState.connectionStatusToken =
+                token;
+
+            updateNumberPadConnectionStatus(
+                token,
+                "pending",
+                { presentation: "retry" }
+            );
         }
-        syncTripSettingsCloud(status);
+
+        syncTripSettingsCloud("pending");
+        syncScopeConnectionCloud("pending");
+
+        if (!connectionResumePromise) {
+            connectionResumePromise =
+                Promise.resolve(
+                    clockTimer.resumeConnection()
+                )
+                    .catch(() => false)
+                    .finally(() => {
+                        connectionResumePromise =
+                            undefined;
+                    });
+        }
+
+        await connectionResumePromise;
+
+        if (sequence !== connectionCloudSequence) {
+            return false;
+        }
+
+        const status =
+            normalizedConnectionStatus();
+
+        if (status === "online") {
+            settleConnectionCloudPresentation(
+                "online",
+                token,
+                sequence
+            );
+            return true;
+        }
+
+        connectionCloudPhase =
+            "awaiting-login";
+
+        if (token) {
+            updateNumberPadConnectionStatus(
+                token,
+                "pending",
+                { presentation: "awaiting-login" }
+            );
+        }
+
+        syncTripSettingsCloud("pending");
+        syncScopeConnectionCloud("pending");
         syncNetworkStatusUI();
-        return status === "online";
+
+        if (
+            loginDialogFullyOpen ||
+            !showConnectionRetryLoginDialog()
+        ) {
+            settleConnectionCloudPresentation(
+                "offline",
+                token,
+                sequence
+            );
+        }
+
+        return false;
     }
 
     function emitUIEvent(target, name, detail = {}, cancelable = false) {
@@ -1512,15 +1709,39 @@
             dialog.open ||
             dialog.classList.contains("dialog-closing")
         ) return false;
-        const proceed = emitUIEvent(dialog, "opening", { reason, duration }, true);
+
+        const transitionDuration =
+            dialog === loginDialog && duration !== 0
+                ? CONNECTION_UI_TRANSITION_DURATION
+                : duration;
+
+        const proceed = emitUIEvent(
+            dialog,
+            "opening",
+            {
+                reason,
+                duration: transitionDuration
+            },
+            true
+        );
         if (!proceed) return false;
-        dialog.style.setProperty("--app-dialog-transition-duration", `${duration}ms`);
+        dialog.style.setProperty(
+            "--app-dialog-transition-duration",
+            `${transitionDuration}ms`
+        );
         dialog.showModal();
         setTimeout(() => {
             if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
             dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
-            emitUIEvent(dialog, "opened", { reason, duration });
-        }, duration);
+            emitUIEvent(
+                dialog,
+                "opened",
+                {
+                    reason,
+                    duration: transitionDuration
+                }
+            );
+        }, transitionDuration);
         return true;
     }
 
@@ -1532,7 +1753,12 @@
         const proceed = emitUIEvent(dialog, "closing", { reason, immediate }, true);
         if (!proceed) return false;
 
-        const duration = immediate ? 0 : 250;
+        const duration =
+            immediate
+                ? 0
+                : dialog === loginDialog
+                    ? CONNECTION_UI_TRANSITION_DURATION
+                    : 250;
 
         const finishClose = () => {
             dialogCloseTimers.delete(dialog);
@@ -1701,17 +1927,15 @@
 
     loginDialog.addEventListener("opened", () => {
         loginDialogFullyOpen = true;
-        const connectionState =
-            numberPadState ??
-            findUIReturnFrame("number-pad")?.state;
+
         if (
-            connectionState?.connectionPresentation === "awaiting-login" &&
-            connectionState.connectionStatusToken
+            connectionCloudPhase ===
+                "awaiting-login"
         ) {
-            updateNumberPadConnectionStatus(
-                connectionState.connectionStatusToken,
+            settleConnectionCloudPresentation(
                 "offline",
-                { presentation: "cloud-fade" }
+                getConnectionNumberPadToken(),
+                connectionCloudSequence
             );
         }
     });
@@ -1728,7 +1952,7 @@
         if (loginDialog.open) return true;
 
         const opened = openDialogElement(loginDialog, {
-            duration: INITIAL_LOGIN_FADE_DURATION,
+            duration: CONNECTION_UI_TRANSITION_DURATION,
             reason: "connection-retry"
         });
         if (!opened) return false;
@@ -1742,7 +1966,7 @@
     function showInitialLoginDialog() {
         if (loginDialog.open) return;
         const opened = openDialogElement(loginDialog, {
-            duration: INITIAL_LOGIN_FADE_DURATION,
+            duration: CONNECTION_UI_TRANSITION_DURATION,
             reason: "initial-login"
         });
         initialLoginAttemptPending = false;
@@ -1775,6 +1999,7 @@
             networkStatus === "online"
         );
         syncTripSettingsCloud(networkStatus);
+        syncScopeConnectionCloud(networkStatus);
 
         if (offline) {
             if (tripIsLive()) {
@@ -1785,15 +2010,18 @@
                 app.style.setProperty("--app-grayscale-ramp", `${STARTUP_GRAYSCALE_RAMP}ms`);
                 app.classList.add("is-offline");
             }
-            loginPromptTimeout = setTimeout(() => {
-                loginPromptTimeout = undefined;
-                if (
-                    clockTimer.networkStatus === "offline" &&
-                    !loginDialog.open
-                ) {
-                    showInitialLoginDialog();
-                }
-            }, STARTUP_CONNECTION_DELAY);
+
+            if (connectionCloudPhase === "settled") {
+                loginPromptTimeout = setTimeout(() => {
+                    loginPromptTimeout = undefined;
+                    if (
+                        clockTimer.networkStatus === "offline" &&
+                        !loginDialog.open
+                    ) {
+                        showInitialLoginDialog();
+                    }
+                }, STARTUP_CONNECTION_DELAY);
+            }
             return;
         }
 
@@ -1802,7 +2030,10 @@
         }
         if (!app.classList.contains("is-offline")) return;
 
-        const ramp = login ? LOGIN_GRAYSCALE_RAMP : STARTUP_GRAYSCALE_RAMP;
+        const ramp =
+            login || connectionCloudPhase !== "settled"
+                ? CONNECTION_UI_TRANSITION_DURATION
+                : STARTUP_GRAYSCALE_RAMP;
         const delay = startup ? STARTUP_CONNECTION_DELAY : 0;
         app.style.setProperty("--app-grayscale-ramp", `${ramp}ms`);
 
@@ -1837,14 +2068,14 @@
                     ? "Auto"
                     : "Trip";
 
-        const button = $("#scopeToggle");
-        button.textContent = label;
-        button.dataset.percentMode = actual;
-        button.setAttribute(
+        scopeToggle.textContent = label;
+        scopeToggle.dataset.percentMode = actual;
+        scopeToggle.setAttribute(
             "aria-label",
             `Percent mode: ${label}`
         );
 
+        syncScopeConnectionCloud();
         updateSummaryValues();
 
         if (persist) {
@@ -2151,6 +2382,9 @@
         target.removeAttribute("grayscale-ramp");
         target.showTolerance = settings.showTolerance;
         target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
+        target.toggleAttribute("hide-hour-hand", !Boolean(settings.showHourHand));
+        target.toggleAttribute("hide-minute-hand", !Boolean(settings.showMinuteHand));
+        target.toggleAttribute("hide-second-hand", !Boolean(settings.showSecondHand));
 
         const variables = {
             "--clock-timer-trip-color": settings.tripColor,
@@ -2264,6 +2498,9 @@
             visibleHours: text("visibleHours"),
             tickMarks: text("tickMarks"),
             indicatorSymbol: text("indicatorSymbol"),
+            showHourHand: form.elements.showHourHand.checked,
+            showMinuteHand: form.elements.showMinuteHand.checked,
+            showSecondHand: form.elements.showSecondHand.checked,
             hourHandLength: text("hourHandLength"),
             hourHandWidth: text("hourHandWidth"),
             hourHandColor: text("hourHandColor"),
@@ -2798,7 +3035,7 @@
         return true;
     }
 
-    $("#scopeToggle").addEventListener("pointerup", () => {
+    scopeToggle.addEventListener("pointerup", () => {
         const current =
             PERCENT_MODES.indexOf(
                 normalizePercentMode(
@@ -2812,6 +3049,22 @@
                 PERCENT_MODES.length
             ];
     });
+
+    scopeConnectionButton?.addEventListener(
+        "click",
+        () => {
+            if (
+                normalizedConnectionStatus() !== "offline" ||
+                connectionCloudPhase !== "settled"
+            ) {
+                return;
+            }
+
+            void resumeConnectionFromCloud({
+                source: "scope"
+            }).catch(() => {});
+        }
+    );
 
     $("#renderedTimeButton").addEventListener("pointerup", () => {
         const index = RENDERED_TIME_MODES.indexOf(clockTimer.renderedTimeMode);
@@ -3062,14 +3315,69 @@
         window.dispatchEvent(new CustomEvent("wmof:reset-password-request", { detail: { apiBase: API_BASE } }));
     });
 
+    async function fetchResource(url, options = {}) {
+        return fetch(url, options)
+            .then(async response => {
+                const text =
+                    await response
+                        .text()
+                        .catch(() => "");
+
+                return {
+                    response,
+                    body: response.ok
+                        ? {
+                            ok: true,
+                            status: response.status,
+                            text
+                        }
+                        : {
+                            ok: false,
+                            error: "http_error",
+                            message:
+                                `Request failed (${response.status}).`,
+                            status: response.status,
+                            text
+                        }
+                };
+            })
+            .catch(cause => ({
+                response: undefined,
+                body: {
+                    ok: false,
+                    error: "fetch_failed",
+                    message:
+                        cause?.message ||
+                        "Network request failed.",
+                    status: 0,
+                    text: ""
+                },
+                cause
+            }));
+    }
+
     async function ensureNumberPadLoaded() {
         if (numberPadDialog?.isConnected) return;
         if (!numberPadLoadPromise) {
             numberPadLoadPromise = (async () => {
-                const response = await fetch("numberpad.html", { cache: "no-store" });
-                if (!response.ok) throw new Error(`Unable to load number pad (${response.status}).`);
+                const result =
+                    await fetchResource(
+                        "numberpad.html",
+                        { cache: "no-store" }
+                    );
+
+                const body =
+                    result.body || {};
+
+                if (!body.ok) {
+                    throw new Error(
+                        body.message ||
+                        "Unable to load number pad."
+                    );
+                }
+
                 const template = document.createElement("template");
-                template.innerHTML = (await response.text()).trim();
+                template.innerHTML = String(body.text || "").trim();
                 document.body.append(template.content.cloneNode(true));
                 numberPadDialog = $("#numberPadDialog");
                 numberPadDisplay = $("#numberPadDisplay");
@@ -4615,7 +4923,7 @@
                 numberPadState.mode === "percent" ||
                 numberPadSettingsArea.dataset.persistence !== "offline"
             ) return;
-            void resumeConnectionFromCloud({ numberPad: true }).catch(() => {});
+            void resumeConnectionFromCloud({ source: "number-pad" }).catch(() => {});
         });
 
         numberPadSettings.addEventListener("pointerup", () => {
@@ -4671,8 +4979,13 @@
     });
 
     tripSettingsCloud.addEventListener("click", () => {
-        if (tripSettingsCloud.dataset.networkStatus !== "offline") return;
-        void resumeConnectionFromCloud().catch(() => {});
+        if (
+            tripSettingsCloud.dataset.networkStatus !== "offline" ||
+            connectionCloudPhase !== "settled"
+        ) return;
+        void resumeConnectionFromCloud({
+            source: "trip-settings"
+        }).catch(() => {});
     });
 
     tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
