@@ -1978,9 +1978,13 @@ button:active:not(:disabled) {
     animation: none;
 }
 
-.number-pad-settings[data-connection-phase="initial-cloud"] .number-pad-persistence-badge,
-.number-pad-settings[data-connection-phase="cloud-fade"] .number-pad-persistence-badge {
+.number-pad-settings[data-connection-phase="initial-cloud"] .number-pad-persistence-badge {
     animation: number-pad-cloud-fade-in 250ms linear both;
+}
+
+.number-pad-settings[data-connection-phase="cloud-fade"] .number-pad-persistence-badge,
+.number-pad-settings[data-connection-phase="handoff"] .number-pad-persistence-badge {
+    animation: none;
 }
 
 .number-pad-settings[data-connection-phase="retry"] .number-pad-settings-gear {
@@ -1993,6 +1997,9 @@ button:active:not(:disabled) {
 
 /* trip-start-copy-return-anchor-v1 */
 .trip-now-actions.is-exiting .trip-now-start-copy {
+    width: var(--trip-now-start-copy-width, auto);
+    opacity: 1;
+    transition: none;
     transform-origin: right center;
     animation: trip-now-start-copy-grow-from-right var(--trip-start-transition-duration) ease-in-out both;
 }
@@ -2000,4 +2007,12 @@ button:active:not(:disabled) {
 @keyframes trip-now-start-copy-grow-from-right {
     from { clip-path: inset(0 0 0 100%); }
     to { clip-path: inset(0); }
+}
+
+/* cloud-icon-y-flip-v1 */
+.number-pad-persistence-badge,
+.trip-settings-cloud {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform;
 }

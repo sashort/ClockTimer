@@ -131,6 +131,8 @@
     const BUTTON_PRESS_IN_DURATION = 120;
     const BUTTON_PRESS_OUT_DURATION = 140;
     const TRIP_START_TRANSITION_DURATION = 250;
+    const CLOUD_ICON_TRANSITION_DURATION = 750;
+    const cloudIconTransitions = new WeakMap();
     const buttonPressStates = new WeakMap();
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
@@ -360,10 +362,86 @@
         return value === "online" ? "online" : "offline";
     }
 
+    function setCloudIconVisualState(element, getState, applyState, nextState, { animate = true } = {}) {
+        if (!element || typeof getState !== "function" || typeof applyState !== "function") {
+            applyState?.(nextState);
+            return;
+        }
+
+        let controller = cloudIconTransitions.get(element);
+        if (!controller) {
+            controller = {
+                chain: Promise.resolve(),
+                animation: undefined,
+                generation: 0,
+                targetState: getState()
+            };
+            cloudIconTransitions.set(element, controller);
+        }
+
+        if (!animate) {
+            controller.generation += 1;
+            controller.animation?.cancel();
+            controller.animation = undefined;
+            controller.chain = Promise.resolve();
+            controller.targetState = nextState;
+            element.style.transform = "";
+            applyState(nextState);
+            return;
+        }
+
+        if (controller.targetState === nextState) return;
+        controller.targetState = nextState;
+        const generation = controller.generation;
+
+        controller.chain = controller.chain.then(async () => {
+            if (generation !== controller.generation) return;
+            if (getState() === nextState) return;
+
+            const halfDuration = CLOUD_ICON_TRANSITION_DURATION / 2;
+            controller.animation = element.animate(
+                [
+                    { transform: "rotateY(0deg)" },
+                    { transform: "rotateY(90deg)" }
+                ],
+                { duration: halfDuration, easing: "linear", fill: "forwards" }
+            );
+
+            try { await controller.animation.finished; }
+            catch { return; }
+            if (generation !== controller.generation) return;
+
+            applyState(nextState);
+            element.style.transform = "rotateY(-90deg)";
+            controller.animation.cancel();
+            controller.animation = element.animate(
+                [
+                    { transform: "rotateY(-90deg)" },
+                    { transform: "rotateY(0deg)" }
+                ],
+                { duration: halfDuration, easing: "linear", fill: "forwards" }
+            );
+
+            try { await controller.animation.finished; }
+            catch { return; }
+            if (generation !== controller.generation) return;
+
+            element.style.transform = "";
+            controller.animation.cancel();
+            controller.animation = undefined;
+        }).catch(() => {});
+    }
+
     function syncTripSettingsCloud(status = clockTimer.networkStatus) {
         if (!tripSettingsCloud) return;
         const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
-        tripSettingsCloud.dataset.networkStatus = normalized;
+        setCloudIconVisualState(
+            tripSettingsCloud,
+            () => tripSettingsCloud.dataset.networkStatus,
+            value => { tripSettingsCloud.dataset.networkStatus = value; },
+            normalized,
+            { animate: Boolean(tripSettingsCloud.dataset.networkStatus) }
+        );
         tripSettingsCloud.setAttribute("aria-busy", String(normalized === "pending"));
         tripSettingsCloud.setAttribute(
             "aria-label",
@@ -1605,7 +1683,17 @@
                 status === "pending" ||
                 phase === "retry" ||
                 phase === "awaiting-login";
-            numberPadSettingsArea.dataset.persistence = status;
+            setCloudIconVisualState(
+                numberPadConnection,
+                () => numberPadSettingsArea.dataset.persistence,
+                value => { numberPadSettingsArea.dataset.persistence = value; },
+                status,
+                {
+                    animate:
+                        phase !== "initial" &&
+                        phase !== "initial-cloud"
+                }
+            );
             numberPadSettingsArea.dataset.connectionPhase =
                 phase === "awaiting-login" ? "retry" : phase;
             numberPadSettings.setAttribute("aria-label", "Trip settings");
