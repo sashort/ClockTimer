@@ -5822,7 +5822,14 @@
         const interval = clockTimer.getActiveIntervalState?.(new Date());
         const intervalType = String(interval?.intervalType || "").toLowerCase();
 
-        if (["break", "lunch", "down"].includes(intervalType)) {
+        if (intervalType === "break" || intervalType === "lunch") {
+            await clockTimer.endInterval();
+            updateSummaryValues();
+            renderTripActionState();
+            return;
+        }
+
+        if (intervalType === "down") {
             await clockTimer.endInterval();
             renderTripActionState();
             return;

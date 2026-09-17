@@ -4327,6 +4327,22 @@
                     record?.clockTimerElapsedBoundaryTimeline
                 );
 
+            const recordType =
+                String(
+                    record?.type ?? ""
+                ).trim().toLowerCase();
+
+            const bufferedScheduledEnd =
+                record &&
+                (
+                    recordType === "break" ||
+                    recordType === "lunch"
+                )
+                    ? this.#getPendingIntervalElapsedBoundary(
+                        record
+                    )
+                    : undefined;
+
             const scheduledEnd =
                 record
                     ? (
@@ -4334,25 +4350,33 @@
                             elapsedBoundary
                         )
                             ? elapsedBoundary
-                            : this.#getIntervalRecordEnd(
-                                record
+                            : Number.isFinite(
+                                bufferedScheduledEnd
                             )
+                                ? bufferedScheduledEnd
+                                : this.#getIntervalRecordEnd(
+                                    record
+                                )
                     )
                     : undefined;
             const lifecycleScheduledEnd =
                 record
                     ? (
                         Number.isFinite(
-                            Number(
-                                record.clockTimerExtensionOriginalEndTimeline
-                            )
+                            bufferedScheduledEnd
                         )
-                            ? Number(
-                                record.clockTimerExtensionOriginalEndTimeline
+                            ? bufferedScheduledEnd
+                            : Number.isFinite(
+                                Number(
+                                    record.clockTimerExtensionOriginalEndTimeline
+                                )
                             )
-                            : this.#getIntervalRecordEnd(
-                                record
-                            )
+                                ? Number(
+                                    record.clockTimerExtensionOriginalEndTimeline
+                                )
+                                : this.#getIntervalRecordEnd(
+                                    record
+                                )
                     )
                     : undefined;
 
@@ -10633,12 +10657,163 @@
             return true;
         }
 
+        #endBufferedPendingInterval(
+            record,
+            now
+        ) {
+            if (
+                !record ||
+                !Number.isFinite(now)
+            ) {
+                return false;
+            }
+
+            const type =
+                String(
+                    record.type ?? ""
+                ).trim().toLowerCase();
+
+            if (
+                type !== "break" &&
+                type !== "lunch"
+            ) {
+                return false;
+            }
+
+            const bufferedStart =
+                Number(
+                    record.clockTimerBufferedStartTimeline
+                );
+
+            const bufferedEnd =
+                this.#getPendingIntervalElapsedBoundary(
+                    record
+                );
+
+            if (
+                !Number.isFinite(bufferedStart) ||
+                !Number.isFinite(bufferedEnd) ||
+                now < bufferedStart ||
+                now >= bufferedEnd
+            ) {
+                return false;
+            }
+
+            const startBuffer =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "start"
+                );
+
+            const endBuffer =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "end"
+                );
+
+            const linked =
+                [
+                    startBuffer,
+                    record,
+                    endBuffer
+                ].filter(Boolean);
+
+            for (const candidate of linked) {
+                const start =
+                    this.#dateToTimelineTime(
+                        candidate.startDate
+                    );
+
+                const end =
+                    this.#getIntervalRecordEnd(
+                        candidate
+                    );
+
+                if (
+                    !Number.isFinite(start) ||
+                    !Number.isFinite(end)
+                ) {
+                    continue;
+                }
+
+                if (end <= now) {
+                    continue;
+                }
+
+                if (start >= now) {
+                    candidate.clockTimerPendingDelete =
+                        true;
+
+                    continue;
+                }
+
+                const duration =
+                    Math.max(
+                        0,
+                        now - start
+                    );
+
+                candidate.rangeLength =
+                    duration;
+
+                candidate.endDate =
+                    new Date(
+                        candidate.startDate.getTime() +
+                        duration
+                    );
+
+                candidate.clockTimerExplicitlyEnded =
+                    true;
+
+                candidate.clockTimerExplicitEndTimeline =
+                    now;
+
+                if (candidate === record) {
+                    candidate.clockTimerPersistenceEnd =
+                        this.#timelineToISO(
+                            now
+                        );
+                }
+            }
+
+            record.clockTimerExplicitlyEnded =
+                true;
+
+            record.clockTimerExplicitEndTimeline =
+                now;
+
+            this.#pendingIntervalRecord =
+                undefined;
+
+            this.#renderAllInsertedRanges();
+
+            this.#rebuildAfterRangeDeletion();
+
+            if (this.#needsTick()) {
+                this.#startTickTimer();
+            }
+            else {
+                this.#stopTickTimer();
+            }
+
+            return true;
+        }
+
         #endPendingInterval(now) {
             const record =
                 this.#pendingIntervalRecord;
 
             if (!record || !Number.isFinite(now)) {
                 return false;
+            }
+
+            if (
+                this.#endBufferedPendingInterval(
+                    record,
+                    now
+                )
+            ) {
+                return true;
             }
 
             if (
