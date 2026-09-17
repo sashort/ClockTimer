@@ -21,6 +21,8 @@
         timerType: "radial-overflow",
         timerMode: "elapsed",
         tripColor: "#0053e2",
+        earlyStartColor: "#00a6d2",
+        showEarlyStart: true,
         breakColor: "#001e60",
         lunchColor: "#ffc420",
         breakBufferColor: "#6b7f99",
@@ -2739,6 +2741,7 @@
         target.removeAttribute("grayscale");
         target.removeAttribute("grayscale-ramp");
         target.showTolerance = settings.showTolerance;
+        target.toggleAttribute("render-early-start-as-trip", !Boolean(settings.showEarlyStart));
         target.toggleAttribute("hide-break-buffer", !Boolean(settings.showBreakBuffer));
         target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
         target.toggleAttribute("hide-hour-hand", !Boolean(settings.showHourHand));
@@ -2747,6 +2750,7 @@
 
         const variables = {
             "--clock-timer-trip-color": settings.tripColor,
+            "--clock-timer-early-start-color": settings.earlyStartColor,
             "--clock-timer-break-color": settings.breakColor,
             "--clock-timer-lunch-color": settings.lunchColor,
             "--clock-timer-break-buffer-color": settings.breakBufferColor,
@@ -2842,6 +2846,8 @@
             timerType: text("timerType"),
             timerMode: text("timerMode"),
             tripColor: text("tripColor"),
+            earlyStartColor: text("earlyStartColor"),
+            showEarlyStart: form.elements.showEarlyStart.checked,
             breakColor: text("breakColor"),
             lunchColor: text("lunchColor"),
             breakBufferColor: text("breakBufferColor"),

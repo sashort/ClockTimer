@@ -2604,6 +2604,14 @@ clock-timer time-range[type="trip"] {
     background: var(--clock-timer-trip-color, #0053e2);
 }
 
+clock-timer time-range[type="earlystart"] {
+    background: var(--clock-timer-early-start-color, #00a6d2);
+}
+
+clock-timer[render-early-start-as-trip] time-range[type="earlystart"] {
+    background: var(--clock-timer-trip-color, #0053e2);
+}
+
 clock-timer time-range[type="break"] {
     background: var(--clock-timer-break-color, #001e60);
 }
