@@ -5797,9 +5797,9 @@
 
     async function startBreakInterval(kind) {
         const configs = {
-            break: { type: "break", length: "0:15:00", attributes: { breakType: "break" } },
-            lunch: { type: "lunch", length: "0:30:00", attributes: { breakType: "lunch" } },
-            "short-break": { type: "break", length: "0:10:00", attributes: { breakType: "short" } }
+            break: { type: "break", length: "15:00", attributes: { breakType: "break" } },
+            lunch: { type: "lunch", length: "30:00", attributes: { breakType: "lunch" } },
+            "short-break": { type: "break", length: "10:00", attributes: { breakType: "short" } }
         };
         const config = configs[kind];
         if (!config) return false;
@@ -5813,8 +5813,8 @@
             config.type,
             config.length,
             config.attributes,
-            "0:02:30",
-            "0:02:30"
+            "2:30",
+            "2:30"
         );
         return Boolean(result);
     }
