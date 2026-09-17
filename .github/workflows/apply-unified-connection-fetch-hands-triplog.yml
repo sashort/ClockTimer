@@ -25,6 +25,7 @@ jobs:
       - name: Apply changes
         run: |
           python3 .github/scripts/apply_unified_connection_fetch_hands_triplog.py
+          python3 .github/scripts/patch_app_fetch_wrapper.py
           node --check app.js
           node --check ClockTimer.js
           git diff --check
@@ -36,9 +37,10 @@ jobs:
           grep -q 'TRIP_LIST_BODY_DURATION = 1000' app.js
           grep -q 'TRIP_LIST_MERGE_DURATION = 750' app.js
           grep -q 'async #fetchRequest' ClockTimer.js
+          grep -q 'async function fetchResource' app.js
           grep -q 'hide-hour-hand' app.js app.css
-          if grep -q 'response = await fetch' ClockTimer.js; then
-            echo 'raw fetch try/catch remains' >&2
+          if grep -q 'response = await fetch' ClockTimer.js app.js; then
+            echo 'raw fetch assignment/try-catch remains' >&2
             exit 1
           fi
           python3 - <<'PY'
@@ -48,8 +50,9 @@ jobs:
           for path in Path('.').glob('*.js'):
               for match in re.finditer(r'\bfetch\s*\(', path.read_text()):
                   matches.append((str(path), match.start()))
-          if len(matches) != 1 or matches[0][0] != 'ClockTimer.js':
-              raise SystemExit(f'expected one wrapped fetch call in ClockTimer.js, got {matches}')
+          files = [path for path, _ in matches]
+          if len(matches) != 2 or sorted(files) != ['ClockTimer.js', 'app.js']:
+              raise SystemExit(f'expected one wrapped fetch call in ClockTimer.js and app.js, got {matches}')
           PY
           git add app.js app.css index.html ClockTimer.js
           git commit -m "Unify connection UI and refine timer settings"
