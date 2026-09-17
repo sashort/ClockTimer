@@ -1,0 +1,41 @@
+name: Apply reference pattern sitewide
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-reference-pattern-sitewide.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply CSS changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwID0gUGF0aCgiYXBwLmNzcyIpCnMgPSBwLnJlYWRfdGV4dCgpLnJzdHJpcCgpCm1hcmtlciA9ICIvKiByZWZlcmVuY2UtcGF0dGVybi1zaXRld2lkZS12MSAqLyIKaWYgbWFya2VyIGluIHM6CiAgICByYWlzZSBTeXN0ZW1FeGl0KCJzaXRld2lkZSByZWZlcmVuY2UgcGF0dGVybiBhbHJlYWR5IGFwcGxpZWQiKQoKYWRkaXRpb24gPSAnLyp...PLACEHOLDER...'
+' | base64 -d > /tmp/apply-reference-pattern.py
+          python /tmp/apply-reference-pattern.py
+          python -c "from pathlib import Path; p=Path('app.css'); p.write_text(p.read_text().rstrip() + '\n')"
+          git diff --check
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-reference-pattern-sitewide.yml
+          git add app.css
+          git diff --cached --check
+          git commit -m "Apply reference pattern sitewide"
+          git push origin HEAD:rename-prestart-latency
