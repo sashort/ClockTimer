@@ -1,4 +1,4 @@
-name: Inspect pending fixes
+name: Finalize Auto goal source
 
 on:
   push:
@@ -8,24 +8,32 @@ on:
       - .github/workflows/inspect-pending-fixes.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: rename-prestart-latency
-      - name: Inspect exact goal locations
+          fetch-depth: 0
+      - name: Prefer explicit Total goal on a Standard tie
         run: |
-          echo '=== definitions ==='
-          grep -n '^        #handleTripGoalChange' ClockTimer.js || true
-          grep -n '^        #clearLocal' ClockTimer.js || true
-          grep -n '^        #buildSummarySnapshot' ClockTimer.js || true
-          grep -n '^        #getTripSummary' ClockTimer.js || true
-          grep -n '^        #getTotalSummary' ClockTimer.js || true
-          echo '=== auto sync references ==='
-          grep -n '#autoSyncTripGoal' ClockTimer.js || true
-          echo '=== goal attribute presence checks ==='
-          grep -n -B 3 -A 5 'hasAttribute("total-goal")' ClockTimer.js || true
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("ClockTimer.js")
+          text = path.read_text()
+          old = '''            if (totalTime < tripTime) {'''
+          new = '''            if (\n                totalTime < tripTime ||\n                (\n                    totalTime === tripTime &&\n                    tripScope === "standard"\n                )\n            ) {'''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Auto total-time comparison, found {text.count(old)}")
+          path.write_text(text.replace(old, new, 1))
+          PY
+          node --check ClockTimer.js
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Preserve explicit goal source on Auto ties"
+          git push origin HEAD:rename-prestart-latency
