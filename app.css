@@ -2214,3 +2214,67 @@ button:active:not(:disabled) {
     animation: none;
     transition: none;
 }
+
+/* trip-start-three-column-grid-v2 */
+.trip-now-action {
+    display: grid;
+    grid-template-columns:
+        min-content
+        minmax(0, 1fr)
+        min-content;
+    align-items: center;
+    justify-content: stretch;
+    column-gap: 0.28rem;
+    transition:
+        grid-template-columns var(--trip-start-transition-duration) ease-in-out,
+        column-gap var(--trip-start-transition-duration) ease-in-out,
+        flex-basis var(--trip-start-transition-duration) ease-in-out,
+        padding-inline var(--trip-start-transition-duration) ease-in-out,
+        font-size var(--trip-start-transition-duration) ease-in-out,
+        opacity 250ms ease-in-out,
+        filter 250ms ease-in-out,
+        color 250ms ease-in-out,
+        border-color 250ms ease-in-out,
+        box-shadow 250ms ease-in-out;
+}
+
+.trip-now-actions.is-selecting .trip-now-action {
+    grid-template-columns:
+        min-content
+        minmax(0, 0fr)
+        min-content;
+    column-gap: 0.14rem;
+}
+
+.trip-now-start-copy,
+.trip-now-actions.is-selecting .trip-now-start-copy,
+.trip-now-actions.is-exiting .trip-now-start-copy {
+    width: auto;
+    min-width: 0;
+    max-width: var(--trip-now-start-copy-width, 100%);
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 1;
+    justify-self: stretch;
+    text-align: right;
+    transform: none;
+    animation: none;
+    transition:
+        max-width var(--trip-start-transition-duration) ease-in-out;
+}
+
+.trip-now-actions.is-selecting .trip-now-start-copy {
+    max-width: 0;
+}
+
+.trip-now-to-now {
+    min-width: max-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    white-space: nowrap;
+}
+
+.trip-now-to-now .trip-now-value-copy {
+    flex: 0 0 auto;
+}
