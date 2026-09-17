@@ -1897,8 +1897,7 @@ button:active:not(:disabled) {
         opacity var(--trip-start-transition-duration) linear;
 }
 
-.trip-now-actions.is-selecting .trip-now-start-copy,
-.trip-now-actions.is-exiting .trip-now-start-copy {
+.trip-now-actions.is-selecting .trip-now-start-copy {
     width: 0;
     opacity: 0;
 }

@@ -437,15 +437,22 @@
         syncTripSettingsCloud("pending");
 
         if (!connectionResumePromise) {
-            connectionResumePromise = Promise.resolve()
-                .then(() => clockTimer.resumeConnection())
-                .catch(() => false)
-                .finally(() => {
-                    connectionResumePromise = undefined;
-                });
+            connectionResumePromise = (async () => {
+                try {
+                    return await clockTimer.resumeConnection();
+                }
+                catch {
+                    return false;
+                }
+            })().finally(() => {
+                connectionResumePromise = undefined;
+            });
         }
 
-        await connectionResumePromise;
+        try {
+            await connectionResumePromise;
+        }
+        catch {}
         const remaining = CONNECTION_INDICATOR_MINIMUM - (performance.now() - startedAt);
         if (remaining > 0) await wait(remaining);
 
@@ -2240,17 +2247,11 @@
 
     function finishTripStartsNowExit() {
         clearTimeout(tripStartsNowExitTimer);
-        if (!tripStartsNowExiting) {
-            tripStartsNowExitTimer = undefined;
-            return;
-        }
+        tripStartsNowExitTimer = undefined;
+        if (!tripStartsNowExiting) return;
 
-        tripStartsNowExitTimer = setTimeout(() => {
-            tripStartsNowExitTimer = undefined;
-            if (!tripStartsNowExiting) return;
-            tripStartsNowExiting = false;
-            if (!tripStartsNowState) syncTripStartsNowUI();
-        }, TRIP_START_TRANSITION_DURATION);
+        tripStartsNowExiting = false;
+        if (!tripStartsNowState) syncTripStartsNowUI();
     }
 
     function beginTripStartsNowExit() {
