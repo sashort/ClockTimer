@@ -1,0 +1,51 @@
+name: Apply Trip List button transition
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/scripts/apply_trip_list_button_transition.py
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply changes
+        run: python3 .github/scripts/apply_trip_list_button_transition.py
+
+      - name: Validate JavaScript
+        run: node --check app.js
+
+      - name: Validate markup hooks
+        run: |
+          grep -q 'id="tripLogButton"' index.html
+          grep -q 'aria-expanded="false"' index.html
+          grep -q 'data-trip-list-state="opening"' app.css
+          grep -q 'trip-log-floating' app.css
+          grep -q 'function openTripList' app.js
+          grep -q 'function closeTripList' app.js
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.css app.js index.html
+          git commit -m "Add Trip List button open-close motion"
+          git push origin HEAD:rename-prestart-latency
