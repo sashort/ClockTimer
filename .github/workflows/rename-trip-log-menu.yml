@@ -1,0 +1,42 @@
+name: Rename Trip Log menu item
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/rename-trip-log-menu.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Rename menu item
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("index.html")
+          text = path.read_text()
+          old = '<button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip List</button>'
+          new = '<button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f"Expected exactly one Trip List menu button, found {count}")
+          path.write_text(text.replace(old, new))
+          PY
+      - name: Validate and commit
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Rename Trip List menu item to Trip Log"
+          git push origin HEAD:rename-prestart-latency
