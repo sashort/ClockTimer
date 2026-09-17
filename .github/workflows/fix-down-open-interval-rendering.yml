@@ -27,15 +27,17 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           text = Path('ClockTimer.js').read_text()
-          start = text.index('#updateOpenEndedRangeTo(')
-          end = text.index('#updateOpenEndedRange(', start)
+          marker = '        #updateOpenEndedRangeTo(\n            now\n        ) {'
+          start = text.index(marker)
+          end = text.index('        #updateOpenEndedRange(\n            nowDate', start)
           block = text[start:end]
           assert 'this.#syncOpenEndedRangeElements(' in block
           assert 'this.#getTimerType()' not in block
           assert 'record,' in block and 'now' in block
 
-          sync_start = text.index('#syncOpenEndedRangeElements(')
-          sync_end = text.index('#shiftRangesAfter(', sync_start)
+          sync_marker = '        #syncOpenEndedRangeElements(\n            record,\n            effectiveEnd\n        ) {'
+          sync_start = text.index(sync_marker)
+          sync_end = text.index('        #shiftRangesAfter(', sync_start)
           sync = text[sync_start:sync_end]
           assert '#getTimerRingIndex' in sync
           assert '#getTimerRingEnd' in sync
