@@ -179,7 +179,10 @@ button {
     line-height: 1;
 }
 
-.end-trip-button,
+.end-trip-button {
+    background: var(--wm-yellow);
+}
+
 .break-button {
     color: var(--wm-white);
     background: var(--timer-break-color, #001e60);
