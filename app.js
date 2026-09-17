@@ -1683,13 +1683,15 @@
                 status === "pending" ||
                 phase === "retry" ||
                 phase === "awaiting-login";
+            numberPadSettingsArea.dataset.persistence = status;
             setCloudIconVisualState(
                 numberPadConnection,
-                () => numberPadSettingsArea.dataset.persistence,
-                value => { numberPadSettingsArea.dataset.persistence = value; },
+                () => numberPadConnection.dataset.cloudState,
+                value => { numberPadConnection.dataset.cloudState = value; },
                 status,
                 {
                     animate:
+                        Boolean(numberPadConnection.dataset.cloudState) &&
                         phase !== "initial" &&
                         phase !== "initial-cloud"
                 }
