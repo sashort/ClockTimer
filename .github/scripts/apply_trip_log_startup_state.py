@@ -45,3 +45,5 @@ js = replace_once(
     'clear startup marker after first paint'
 )
 js_path.write_text(js.rstrip() + '\n')
+
+# Trigger the one-shot workflow after the workflow file exists.
