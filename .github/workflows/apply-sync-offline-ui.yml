@@ -1,0 +1,40 @@
+name: Apply sync offline UI state
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/apply-sync-offline-ui.yml'
+      - '.github/scripts/apply_sync_offline_ui.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply UI patch
+        run: python .github/scripts/apply_sync_offline_ui.py
+      - name: Syntax check
+        run: node --check app.js
+      - name: Verify requested states
+        run: |
+          grep -Fq 'sync-offline-icon-state-v1' app.js
+          grep -Fq 'sync-offline-icon-state-v1' app.css
+          grep -Fq 'offline-fading' app.js
+          grep -Fq 'transition: opacity 750ms linear;' app.css
+          grep -Fq 'background: var(--wm-blue-dark);' app.css
+          grep -Fq 'font-family: Helvetica, Arial, sans-serif;' app.css
+          grep -Fq 'animateOfflineClouds();' app.js
+      - name: Commit source changes
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js app.css
+          git commit -m "Add offline sync icon state and restore UI styling" || exit 0
+          git push origin HEAD:rename-prestart-latency
