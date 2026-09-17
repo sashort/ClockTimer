@@ -1,0 +1,33 @@
+name: Inspect pending fixes
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/inspect-pending-fixes.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Inspect goal and UI code
+        run: |
+          echo '=== handleTripGoalChange ==='
+          grep -n -B 20 -A 140 '#handleTripGoalChange(' ClockTimer.js | head -n 220
+          echo '=== setPercentModeAutomatically calls ==='
+          grep -n '#setPercentModeAutomatically' ClockTimer.js || true
+          echo '=== ensureAttributes ==='
+          grep -n -B 5 -A 120 '#ensureAttributes()' ClockTimer.js | tail -n 150
+          echo '=== clearLocal ==='
+          grep -n -B 15 -A 120 '#clearLocal()' ClockTimer.js | head -n 180
+          echo '=== buildSummarySnapshot ==='
+          grep -n -B 10 -A 220 '#buildSummarySnapshot' ClockTimer.js | tail -n 260
+          echo '=== summary refresh listeners ==='
+          grep -n -B 20 -A 100 'summaryRefreshEvents' app.js || true
