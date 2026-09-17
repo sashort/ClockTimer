@@ -1,0 +1,51 @@
+name: Fix break countdown end time and button
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-break-countdown-endtime-button.yml'
+      - '.github/scripts/fix_break_countdown_endtime_button.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply fix
+        run: python .github/scripts/fix_break_countdown_endtime_button.py
+      - name: Syntax check
+        run: |
+          node --check app.js
+          node --check ClockTimer.js
+      - name: Verify buffered countdown boundary
+        run: |
+          grep -Fq 'record = buffered;' ClockTimer.js
+          grep -Fq 'this.#getPendingIntervalElapsedBoundary(' ClockTimer.js
+          grep -Fq 'end = bufferedEnd;' ClockTimer.js
+      - name: Verify Total End Time anchor
+        run: |
+          grep -Fq 'let intervalAdjustmentMilliseconds = 0;' ClockTimer.js
+          grep -Fq 'activeInterval.remainingMilliseconds;' ClockTimer.js
+          grep -Fq 'remainingMilliseconds +' ClockTimer.js
+          grep -Fq 'intervalAdjustmentMilliseconds' ClockTimer.js
+      - name: Verify End button interval palette
+        run: |
+          grep -Fq 'function setEndTripButtonIntervalPalette(intervalType)' app.js
+          grep -Fq 'var(--timer-break-color, #001e60)' app.js
+          grep -Fq 'var(--timer-break-text-color, #ffffff)' app.js
+          grep -Fq 'var(--timer-lunch-color, #ffc420)' app.js
+          grep -Fq 'var(--timer-lunch-text-color, #000000)' app.js
+      - name: Commit source changes
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.js ClockTimer.js
+          git commit -m "Fix buffered break countdown and End button styling" || exit 0
+          git push origin HEAD:rename-prestart-latency
