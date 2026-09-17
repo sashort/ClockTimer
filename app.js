@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 6;
+    const GRAPHICAL_SETTINGS_VERSION = 7;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -335,7 +335,7 @@
             if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
             if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;
             if (!settings.borderWidth || settings.borderWidth === "7px") settings.borderWidth = GRAPHICAL_DEFAULTS.borderWidth;
-            if (version === 5) {
+            if (version <= 6) {
                 if (settings.breakColor === "#ffc420") settings.breakColor = "#001e60";
                 if (settings.lunchColor === "#f59e0b") settings.lunchColor = "#ffc420";
                 if (settings.downColor === "#2e7d32") settings.downColor = "#5f6772";
@@ -979,6 +979,29 @@
         else target.style.setProperty(name, value);
     }
 
+    function getContrastingTextColor(value) {
+        const match = /^#([0-9a-f]{6})$/i.exec(String(value || "").trim());
+        if (!match) return "#ffffff";
+
+        const hex = match[1];
+        const channels = [0, 2, 4].map(index => {
+            const channel = parseInt(hex.slice(index, index + 2), 16) / 255;
+            return channel <= 0.04045
+                ? channel / 12.92
+                : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+        const luminance =
+            0.2126 * channels[0] +
+            0.7152 * channels[1] +
+            0.0722 * channels[2];
+        const blackContrast = (luminance + 0.05) / 0.05;
+        const whiteContrast = 1.05 / (luminance + 0.05);
+
+        return blackContrast >= whiteContrast
+            ? "#000000"
+            : "#ffffff";
+    }
+
     function applyGraphicalSettings(settings, target = clockTimer) {
         target.setAttribute("timer-type", settings.timerType || GRAPHICAL_DEFAULTS.timerType);
         target.setAttribute("timer-mode", settings.timerMode || GRAPHICAL_DEFAULTS.timerMode);
@@ -1025,18 +1048,17 @@
         target.style.color = settings.hourColor || GRAPHICAL_DEFAULTS.hourColor;
 
         if (target === clockTimer) {
-            app.style.setProperty(
-                "--timer-break-color",
-                settings.breakColor || GRAPHICAL_DEFAULTS.breakColor
-            );
-            app.style.setProperty(
-                "--timer-lunch-color",
-                settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor
-            );
-            app.style.setProperty(
-                "--timer-down-color",
-                settings.downColor || GRAPHICAL_DEFAULTS.downColor
-            );
+            const paletteRoot = document.documentElement;
+            const breakColor = settings.breakColor || GRAPHICAL_DEFAULTS.breakColor;
+            const lunchColor = settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor;
+            const downColor = settings.downColor || GRAPHICAL_DEFAULTS.downColor;
+
+            paletteRoot.style.setProperty("--timer-break-color", breakColor);
+            paletteRoot.style.setProperty("--timer-break-text-color", getContrastingTextColor(breakColor));
+            paletteRoot.style.setProperty("--timer-lunch-color", lunchColor);
+            paletteRoot.style.setProperty("--timer-lunch-text-color", getContrastingTextColor(lunchColor));
+            paletteRoot.style.setProperty("--timer-down-color", downColor);
+            paletteRoot.style.setProperty("--timer-down-text-color", getContrastingTextColor(downColor));
         }
     }
 

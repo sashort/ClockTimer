@@ -2376,3 +2376,25 @@ clock-timer[hide-latency] time-range[type="latency"] {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* authoritative-timer-button-palette-v3 */
+.break-button {
+    color: var(--timer-break-text-color, #ffffff);
+    background: var(--timer-break-color, #001e60);
+}
+
+.down-button {
+    color: var(--timer-down-text-color, #ffffff);
+    background: var(--timer-down-color, #5f6772);
+}
+
+.break-type-button {
+    color: var(--timer-break-text-color, #ffffff);
+    background: var(--timer-break-color, #001e60);
+}
+
+.break-type-button.lunch {
+    color: var(--timer-lunch-text-color, #000000);
+    background: var(--timer-lunch-color, #ffc420);
+}
