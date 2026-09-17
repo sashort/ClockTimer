@@ -1,0 +1,146 @@
+name: Apply seven-column trip start grid
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-seven-column-trip-start-grid.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          from pathlib import Path
+
+          index = Path("index.html")
+          html = index.read_text()
+          old = '''                <button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">
+                      <span class="trip-now-set-word">Set</span>
+                      <span class="trip-now-start-copy">Scheduled/Actual Start</span>
+                      <span class="trip-now-to-now">
+                          <span class="trip-now-to-word">to</span>
+                          <span class="trip-now-value-copy">
+                              <span class="trip-now-now-label">Now</span>
+                              <span class="trip-now-timestamp-label" aria-hidden="true"></span>
+                          </span>
+                      </span>
+                  </button>'''
+          new = '''                <button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="Set Scheduled/Actual Start to Now">
+                      <div class="trip-now-set-word">Set</div>
+                      <div class="trip-now-space">&nbsp;</div>
+                      <div class="trip-now-start-copy">Scheduled/Actual Start</div>
+                      <div class="trip-now-to-word">&nbsp;to</div>
+                      <div class="trip-now-value-copy">
+                          <span class="trip-now-now-label">Now</span>
+                          <span class="trip-now-timestamp-label" aria-hidden="true"></span>
+                      </div>
+                  </button>'''
+          if old not in html:
+              raise SystemExit("trip start markup anchor not found")
+          index.write_text(html.replace(old, new, 1))
+
+          css_path = Path("app.css")
+          css = css_path.read_text()
+          marker = "/* trip-start-three-column-grid-v2 */"
+          start = css.find(marker)
+          if start < 0:
+              raise SystemExit("trip start grid CSS anchor not found")
+
+          final_css = r'''/* trip-start-seven-column-grid-v4 */
+          .trip-now-action {
+              display: grid;
+              width: 100%;
+              grid-template-columns: 1fr repeat(5, min-content) 1fr;
+              grid-template-rows: 1fr;
+              gap: 0;
+              align-items: center;
+              justify-content: stretch;
+              text-align: center;
+              transition:
+                  grid-template-columns var(--trip-start-transition-duration) ease-in-out,
+                  flex-basis var(--trip-start-transition-duration) ease-in-out,
+                  padding-inline var(--trip-start-transition-duration) ease-in-out,
+                  font-size var(--trip-start-transition-duration) ease-in-out,
+                  opacity 250ms ease-in-out,
+                  filter 250ms ease-in-out,
+                  color 250ms ease-in-out,
+                  border-color 250ms ease-in-out,
+                  box-shadow 250ms ease-in-out;
+          }
+
+          .trip-now-actions.is-selecting .trip-now-action {
+              grid-template-columns:
+                  1fr
+                  repeat(2, min-content)
+                  0fr
+                  repeat(2, min-content)
+                  1fr;
+          }
+
+          .trip-now-set-word {
+              grid-column: 2;
+              grid-row: 1;
+          }
+
+          .trip-now-space {
+              grid-column: 3;
+              grid-row: 1;
+          }
+
+          .trip-now-start-copy,
+          .trip-now-actions.is-selecting .trip-now-start-copy,
+          .trip-now-actions.is-exiting .trip-now-start-copy {
+              grid-column: 4;
+              grid-row: 1;
+              width: auto;
+              min-width: 0;
+              max-width: none;
+              overflow: hidden;
+              white-space: nowrap;
+              opacity: 1;
+              text-align: center;
+              transform: none;
+              animation: none;
+              transition: none;
+          }
+
+          .trip-now-to-word {
+              grid-column: 5;
+              grid-row: 1;
+              white-space: nowrap;
+          }
+
+          .trip-now-value-copy {
+              grid-column: 6;
+              grid-row: 1;
+              justify-self: center;
+          }'''
+
+          css_path.write_text(css[:start].rstrip() + "\n\n" + final_css + "\n")
+          PY
+          git diff --check
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-seven-column-trip-start-grid.yml
+          git add app.css index.html
+          git diff --cached --check
+          git commit -m "Use centered seven-column trip start grid"
+          git push origin HEAD:rename-prestart-latency
