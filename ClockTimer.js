@@ -21826,7 +21826,7 @@
 
             this.#calculatedEnd =
                 tripStart +
-                (
+                Math.round(
                     this.#standardDuration /
                     this.#renderedPercentGoal
                 );
@@ -26332,7 +26332,7 @@
 
             this.#calculatedEnd =
                 tripStart +
-                (
+                Math.round(
                     this.#standardDuration /
                     this.#renderedPercentGoal
                 );
@@ -28289,7 +28289,10 @@
             const percentGoal = this.#getScopePercentGoal("total");
             const allowedTimeMilliseconds =
                 Number.isFinite(percentGoal) && percentGoal > 0
-                    ? standardTimeMilliseconds / percentGoal
+                    ? Math.round(
+                        standardTimeMilliseconds /
+                        percentGoal
+                    )
                     : standardTimeMilliseconds;
             const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
 
@@ -29231,15 +29234,20 @@
         #formatElapsedRenderedDuration(
             milliseconds
         ) {
-            if (!Number.isSafeInteger(milliseconds)) {
+            if (!Number.isFinite(milliseconds)) {
                 return undefined;
             }
 
+            const normalizedMilliseconds =
+                Math.round(
+                    milliseconds
+                );
+
             const displayMilliseconds =
-                milliseconds % 1000 === 0
-                    ? milliseconds
+                normalizedMilliseconds % 1000 === 0
+                    ? normalizedMilliseconds
                     : Math.ceil(
-                        milliseconds /
+                        normalizedMilliseconds /
                         1000
                     ) * 1000;
 
@@ -29253,7 +29261,7 @@
         #formatRemainingRenderedDuration(
             milliseconds
         ) {
-            if (!Number.isSafeInteger(milliseconds)) {
+            if (!Number.isFinite(milliseconds)) {
                 return undefined;
             }
 
