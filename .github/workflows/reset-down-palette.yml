@@ -1,0 +1,38 @@
+name: Reset down palette
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/reset-down-palette.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply migration
+        run: |
+          set -euo pipefail
+          python .github/scripts/reset_down_palette.py
+          node --check app.js
+          git diff --check
+
+      - name: Commit migration
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/reset-down-palette.yml
+          git rm .github/scripts/reset_down_palette.py
+          git add app.js
+          git diff --cached --check
+          git commit -m "Reset legacy down color to gray"
+          git push origin HEAD:rename-prestart-latency
