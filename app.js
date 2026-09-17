@@ -119,9 +119,9 @@
     let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
     let connectionResumePromise;
+    let loginDialogFullyOpen = false;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
-    const CONNECTION_CLOUD_FADE_DURATION = 250;
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
@@ -403,19 +403,10 @@
         }
         catch {}
 
-        const fadeStartAt = Math.max(
-            startedAt + CONNECTION_INDICATOR_MINIMUM - CONNECTION_CLOUD_FADE_DURATION,
-            performance.now()
-        );
-        const beforeFade = fadeStartAt - performance.now();
-        if (beforeFade > 0) await wait(beforeFade);
-
-        updateNumberPadConnectionStatus(
-            state.connectionStatusToken,
-            clockTimer.networkStatus,
-            { presentation: "handoff" }
-        );
-        await wait(CONNECTION_CLOUD_FADE_DURATION);
+        const remaining =
+            CONNECTION_INDICATOR_MINIMUM -
+            (performance.now() - startedAt);
+        if (remaining > 0) await wait(remaining);
 
         const status = normalizedConnectionStatus();
         updateNumberPadConnectionStatus(
@@ -423,7 +414,7 @@
             status,
             {
                 presentation:
-                    status === "offline" && !loginDialog.open
+                    status === "offline" && !loginDialogFullyOpen
                         ? "awaiting-login"
                         : "settled"
             }
@@ -439,7 +430,7 @@
             numberPadState.connectionStatusToken = token;
             updateNumberPadConnectionStatus(
                 token,
-                "pending",
+                "offline",
                 { presentation: "retry" }
             );
         }
@@ -459,18 +450,22 @@
         if (remaining > 0) await wait(remaining);
 
         const status = normalizedConnectionStatus();
+        const presentation =
+            status === "offline" && !loginDialogFullyOpen
+                ? "awaiting-login"
+                : "settled";
         if (token) {
             updateNumberPadConnectionStatus(
                 token,
                 status,
-                { presentation: "settled" }
+                { presentation }
             );
         }
         else {
             const frame = findUIReturnFrame("number-pad");
             if (frame?.state) {
                 frame.state.persistence = status;
-                frame.state.connectionPresentation = "settled";
+                frame.state.connectionPresentation = presentation;
             }
         }
         syncTripSettingsCloud(status);
@@ -649,9 +644,31 @@
     }, true);
 
     loginDialog.addEventListener("opening", event => {
+        loginDialogFullyOpen = false;
         if (event.detail?.reason === "initial-login" && initialLoginSuppressed) {
             event.preventDefault();
         }
+    });
+
+    loginDialog.addEventListener("opened", () => {
+        loginDialogFullyOpen = true;
+        const connectionState =
+            numberPadState ??
+            findUIReturnFrame("number-pad")?.state;
+        if (
+            connectionState?.connectionPresentation === "awaiting-login" &&
+            connectionState.connectionStatusToken
+        ) {
+            updateNumberPadConnectionStatus(
+                connectionState.connectionStatusToken,
+                "offline",
+                { presentation: "settled" }
+            );
+        }
+    });
+
+    loginDialog.addEventListener("closing", () => {
+        loginDialogFullyOpen = false;
     });
 
     function showInitialLoginDialog() {
@@ -662,21 +679,6 @@
         });
         initialLoginAttemptPending = false;
         if (!opened) return;
-
-        const connectionState =
-            numberPadState ??
-            findUIReturnFrame("number-pad")?.state;
-        if (
-            connectionState?.connectionPresentation ===
-                "awaiting-login" &&
-            connectionState.connectionStatusToken
-        ) {
-            updateNumberPadConnectionStatus(
-                connectionState.connectionStatusToken,
-                "offline",
-                { presentation: "settled" }
-            );
-        }
 
         requestAnimationFrame(() => {
             $("#loginUsername")?.focus({ preventScroll: true });
@@ -1567,20 +1569,31 @@
         );
         if (settingsVisible) {
             const status = numberPadState.persistence || normalizedConnectionStatus();
-            numberPadSettingsArea.dataset.persistence = status;
-            numberPadSettingsArea.dataset.connectionPhase =
+            const phase =
                 numberPadState.connectionPresentation || "settled";
+            const connectionBusy =
+                status === "pending" ||
+                phase === "retry" ||
+                phase === "awaiting-login";
+            numberPadSettingsArea.dataset.persistence = status;
+            numberPadSettingsArea.dataset.connectionPhase = phase;
             numberPadSettings.setAttribute("aria-label", "Trip settings");
             numberPadConnection.setAttribute(
                 "aria-label",
-                status === "pending"
+                connectionBusy
                     ? "Checking connection"
                     : status === "online"
                         ? "Connected"
                         : "Offline. Retry connection"
             );
-            numberPadConnection.setAttribute("aria-busy", String(status === "pending"));
-            numberPadConnection.setAttribute("aria-disabled", String(status !== "offline"));
+            numberPadConnection.setAttribute(
+                "aria-busy",
+                String(connectionBusy)
+            );
+            numberPadConnection.setAttribute(
+                "aria-disabled",
+                String(connectionBusy || status !== "offline")
+            );
         }
     }
 
@@ -1662,8 +1675,6 @@
             ),
             everEdited: false
         };
-        numberPadState = state;
-        refreshNumberPad();
         if (
             source === "new-trip" &&
             state.persistence === "pending"
@@ -1671,6 +1682,8 @@
             state.connectionAnimationStartedAt =
                 performance.now();
         }
+        numberPadState = state;
+        refreshNumberPad();
         mainMenu?.hidePopover?.();
         if (!numberPadDialog.open) {
             openDialogElement(numberPadDialog, {
