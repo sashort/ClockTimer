@@ -1341,7 +1341,7 @@
 
         if (selectedScope === "standard") {
             standardLabel.textContent =
-                "Standard Time";
+                "Trip Standard Time";
 
             const full =
                 document.createElement(
@@ -1457,15 +1457,21 @@
             );
 
         const standard =
-            selected?.standardTime ||
-            (
-                scope !== "total"
-                    ? (
-                        clockTimer.standardTime ||
-                        stagedStandardTime
-                    )
-                    : undefined
-            );
+            scope === "standard"
+                ? (
+                    snapshot?.trip?.standardTime ||
+                    clockTimer.standardTime ||
+                    stagedStandardTime
+                )
+                : selected?.standardTime ||
+                    (
+                        scope !== "total"
+                            ? (
+                                clockTimer.standardTime ||
+                                stagedStandardTime
+                            )
+                            : undefined
+                    );
 
         $("#standardTimeValue").textContent =
             typeof standard === "string" && standard
@@ -3112,14 +3118,14 @@
             getPercentGoalAttribute(scope);
 
         if (!clockTimer.hasAttribute(attribute)) {
-            return "Not set";
+            return "100%";
         }
 
         return formatSummaryPercent(
             parsePercentGoalAttribute(
                 clockTimer.getAttribute(attribute)
             ),
-            "Not set"
+            "100%"
         );
     }
 

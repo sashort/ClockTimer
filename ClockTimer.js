@@ -172,6 +172,8 @@
         #autoSyncTripGoal =
             false;
 
+        #matchedTripGoal;
+
         #tripGoalMissedState =
             false;
 
@@ -3182,12 +3184,7 @@
         }
 
         #canSelectTotalMode() {
-            return (
-                this.hasAttribute(
-                    "total-goal"
-                ) &&
-                this.#hasUsableAggregateSnapshot()
-            );
+            return this.#hasUsableAggregateSnapshot();
         }
 
         #recomposeCachedTripTotals(
@@ -3573,7 +3570,9 @@
             }
 
             const requirements =
-                this.#calculateTotalGoalRequirements();
+                this.#calculateTotalGoalRequirements({
+                    allowMissed: true
+                });
 
             if (
                 !Number.isFinite(requirements.tripGoal) ||
@@ -3582,23 +3581,45 @@
                 return this.#goalChangeFailure("insufficient-time");
             }
 
-            const previousSemanticGoalSetSource =
-                this.#semanticGoalSetSource;
+            const previousMatchedTripGoal =
+                this.#matchedTripGoal;
 
-            this.#semanticGoalSetSource =
+            this.#matchedTripGoal =
+                requirements.tripGoal;
+
+            this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride === "start"
                     ? "start"
-                    : "automatic-total";
+                    : "automatic"
+            );
 
-            try {
-                this.setAttribute(
-                    "trip-goal",
-                    `${requirements.tripGoal * 100}%`
+            if (
+                previousMatchedTripGoal !==
+                    this.#matchedTripGoal
+            ) {
+                this.#emitClockTimerEvent(
+                    "tripGoalAutomaticallySet",
+                    {
+                        previousValue:
+                            Number.isFinite(previousMatchedTripGoal)
+                                ? `${previousMatchedTripGoal * 100}%`
+                                : null,
+                        value:
+                            `${this.#matchedTripGoal * 100}%`,
+                        tripGoal:
+                            this.#getTripGoal(),
+                        userTripGoal:
+                            this.#getUserTripGoal(),
+                        matchedTripGoal:
+                            this.#matchedTripGoal,
+                        totalGoal:
+                            this.#getTotalGoal(),
+                        source:
+                            "automatic-total",
+                        userInitiated:
+                            false
+                    }
                 );
-            }
-            finally {
-                this.#semanticGoalSetSource =
-                    previousSemanticGoalSetSource;
             }
 
             return {
@@ -4005,6 +4026,8 @@
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
             }
+            this.#matchedTripGoal = undefined;
+            this.#handleTripGoalChange("automatic");
             this.#pendingIntervalRecord = undefined;
 
             if (
@@ -4731,8 +4754,23 @@
                 );
             }
 
+            if (value === this.#autoSyncTripGoal) {
+                return;
+            }
+
             this.#autoSyncTripGoal =
                 value;
+
+            if (!value) {
+                this.#matchedTripGoal =
+                    undefined;
+            }
+
+            if (this.#hasStartProperties()) {
+                this.#handleTripGoalChange(
+                    "user"
+                );
+            }
         }
 
         get status() {
@@ -11638,6 +11676,9 @@
             this.#started =
                 false;
 
+            this.#matchedTripGoal =
+                undefined;
+
             if (!this.#preserveInsertedOnClear) {
                 this.#setRenderedPercentGoal(
                     1,
@@ -11783,17 +11824,6 @@
             }
             else {
                 this.#normalizeTimerMode();
-            }
-
-            if (
-                !this.hasAttribute(
-                    "trip-goal"
-                )
-            ) {
-                this.setAttribute(
-                    "trip-goal",
-                    "100%"
-                );
             }
 
             if (
@@ -18958,11 +18988,44 @@
             }
         }
 
+        #refreshMatchedTripGoal() {
+            const previous =
+                this.#matchedTripGoal;
+
+            let next;
+
+            if (
+                this.#autoSyncTripGoal &&
+                this.#started &&
+                this.#hasStartProperties()
+            ) {
+                const requirements =
+                    this.#calculateTotalGoalRequirements({
+                        allowMissed: true
+                    });
+
+                if (
+                    Number.isFinite(requirements.tripGoal) &&
+                    requirements.tripGoal > 0
+                ) {
+                    next =
+                        requirements.tripGoal;
+                }
+            }
+
+            this.#matchedTripGoal =
+                next;
+
+            return previous !== next;
+        }
+
         #handleTripGoalChange(
             source =
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic"
         ) {
+
+            this.#refreshMatchedTripGoal();
 
             const goal =
                 this.#calculateRenderedPercentGoal();
@@ -22046,7 +22109,7 @@
                 : fallback;
         }
 
-        #getTripGoal() {
+        #getUserTripGoal() {
             return this.#parseGoalValue(
                 this.getAttribute(
                     "trip-goal"
@@ -22055,15 +22118,19 @@
             );
         }
 
-        #getTotalGoal() {
+        #getTripGoal() {
             if (
-                !this.hasAttribute(
-                    "total-goal"
-                )
+                this.#autoSyncTripGoal &&
+                Number.isFinite(this.#matchedTripGoal) &&
+                this.#matchedTripGoal > 0
             ) {
-                return undefined;
+                return this.#matchedTripGoal;
             }
 
+            return this.#getUserTripGoal();
+        }
+
+        #getTotalGoal() {
             return this.#parseGoalValue(
                 this.getAttribute(
                     "total-goal"
@@ -22402,9 +22469,6 @@
 
             if (
                 !this.#started ||
-                !this.hasAttribute(
-                    "total-goal"
-                ) ||
                 !Number.isFinite(totalGoal) ||
                 totalGoal <= 0 ||
                 !this.#hasUsableAggregateSnapshot() ||
@@ -22601,7 +22665,12 @@
             const totalDeadline = Number.isFinite(totalAdjusted)
                 ? this.#calculateAdjustedEndTimeline(totalAdjusted)
                 : undefined;
-            const totalMissed = this.hasAttribute("total-goal") &&
+            const totalGoalActive =
+                this.#percentMode === "total" ||
+                this.#autoSyncTripGoal ||
+                this.hasAttribute("total-goal");
+
+            const totalMissed = totalGoalActive &&
                 Number.isFinite(totalDeadline) && now > totalDeadline;
 
             if (totalMissed && !this.#totalGoalMissedState) {
@@ -22624,7 +22693,7 @@
             this.#totalGoalMissedState = totalMissed;
         }
 
-        #calculateTripGoalRequirements() {
+        #calculateTripGoalRequirements({ allowMissed = false } = {}) {
             const tripGoal =
                 this.#getTripGoal();
 
@@ -22652,7 +22721,7 @@
                 return this.#emptyGoalRequirements();
             }
 
-            if (this.#started) {
+            if (this.#started && !allowMissed) {
                 const deadline =
                     this.#calculateAdjustedEndTimeline(
                         requirements.adjustedTimeElapsed
@@ -22680,7 +22749,6 @@
                 this.#getTotalGoal();
 
             if (
-                !this.hasAttribute("total-goal") ||
                 !Number.isFinite(totalGoal) ||
                 totalGoal <= 0
             ) {
@@ -22772,7 +22840,6 @@
                 this.#tripTotals;
 
             if (
-                !this.hasAttribute("total-goal") ||
                 !Number.isFinite(totalGoal) ||
                 totalGoal <= 0 ||
                 !totals ||
@@ -22840,7 +22907,7 @@
             };
         }
 
-        #calculateTotalGoalRequirements() {
+        #calculateTotalGoalRequirements({ allowMissed = false } = {}) {
             const empty =
                 this.#emptyGoalRequirements();
 
@@ -22891,6 +22958,7 @@
                     : undefined;
 
             if (
+                !allowMissed &&
                 Number.isFinite(now) &&
                 Number.isFinite(adjustedEndTimeline) &&
                 adjustedEndTimeline < now
@@ -22906,7 +22974,9 @@
                 this.#calculateTripGoalRequirements();
 
             const totalRequirements =
-                this.#calculateTotalGoalRequirements();
+                this.hasAttribute("total-goal")
+                    ? this.#calculateTotalGoalRequirements()
+                    : this.#emptyGoalRequirements();
 
             const tripTime =
                 Number(
@@ -22927,6 +22997,11 @@
                 totalTime > 0;
 
             const tripScope =
+                (
+                    this.#autoSyncTripGoal &&
+                    Number.isFinite(this.#matchedTripGoal) &&
+                    this.#matchedTripGoal > 0
+                ) ||
                 this.hasAttribute("trip-goal")
                     ? "trip"
                     : "standard";
@@ -23122,11 +23197,15 @@
 
             if (this.#percentMode === "trip") {
                 requirements =
-                    this.#calculateTripGoalRequirements();
+                    this.#calculateTripGoalRequirements({
+                        allowMissed: true
+                    });
             }
             else if (this.#percentMode === "total") {
                 requirements =
-                    this.#calculateTotalGoalRequirements();
+                    this.#calculateTotalGoalRequirements({
+                        allowMissed: true
+                    });
             }
             else {
                 requirements =
