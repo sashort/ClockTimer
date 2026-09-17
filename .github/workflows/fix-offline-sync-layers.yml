@@ -1,0 +1,33 @@
+name: Fix offline sync layers
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-offline-sync-layers.yml'
+      - '.github/scripts/fix_offline_sync_layers.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply offline sync layer fix
+        run: python .github/scripts/fix_offline_sync_layers.py
+      - name: Verify regression fix
+        run: |
+          grep -Fq 'offline-sync-layer-regression-v2' app.css
+          grep -Fq 'data-sync-network-state="offline"]::before' app.css
+          grep -Fq 'opacity: 0;' app.css
+          grep -Fq 'rotate(45deg)' app.css
+          grep -Fq 'transition: none;' app.css
+      - name: Commit source change
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.css
+          git commit -m "Restore offline sync slash and hide base glyph" || exit 0
+          git push origin HEAD:rename-prestart-latency
