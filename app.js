@@ -2,12 +2,10 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 8;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
-        graphicalSettingsVersion: "wmof.clock.graphicalSettingsVersion",
         tripPreferences: "wmof.clock.tripPreferences"
     };
 
@@ -324,36 +322,11 @@
     }
 
     function getGraphicalSettings() {
-        const settings = getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
-        const version = Number(safeStorageGet(STORAGE.graphicalSettingsVersion) || 0);
-
-        if (version < GRAPHICAL_SETTINGS_VERSION) {
-            delete settings.grayscale;
-            delete settings.grayscaleRamp;
-            if (!settings.timeFormat || settings.timeFormat === "HHmmss") settings.timeFormat = "HHmm";
-            if (!settings.visibleHours) settings.visibleHours = GRAPHICAL_DEFAULTS.visibleHours;
-            if (!settings.tickMarks) settings.tickMarks = GRAPHICAL_DEFAULTS.tickMarks;
-            if (!settings.indicatorSymbol || settings.indicatorSymbol === "↑") settings.indicatorSymbol = GRAPHICAL_DEFAULTS.indicatorSymbol;
-            if (!settings.borderWidth || settings.borderWidth === "7px") settings.borderWidth = GRAPHICAL_DEFAULTS.borderWidth;
-            if (version <= 6) {
-                if (settings.breakColor === "#ffc420") settings.breakColor = "#001e60";
-                if (settings.lunchColor === "#f59e0b") settings.lunchColor = "#ffc420";
-                if (settings.downColor === "#2e7d32") settings.downColor = "#5f6772";
-                if (settings.toleranceColor === "#5f6772") settings.toleranceColor = "#2e7d32";
-            }
-            if (version <= 7) {
-                settings.downColor = GRAPHICAL_DEFAULTS.downColor;
-            }
-            safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
-            safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
-        }
-
-        return settings;
+        return getStoredJSON(STORAGE.graphicalSettings, GRAPHICAL_DEFAULTS);
     }
 
     function saveGraphicalSettings(settings) {
         safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
-        safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
     }
 
     function formatDuration(milliseconds) {

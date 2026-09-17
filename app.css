@@ -2398,3 +2398,30 @@ clock-timer[hide-latency] time-range[type="latency"] {
     color: var(--timer-lunch-text-color, #000000);
     background: var(--timer-lunch-color, #ffc420);
 }
+
+/* graphical-settings-sticky-actions-v1 */
+#graphicalSettingsForm {
+    gap: 0;
+}
+
+.graphical-dialog .dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.graphical-dialog .graphical-settings-actions {
+    position: sticky;
+    top: 64px;
+    z-index: 4;
+    margin: 0 !important;
+    padding: 12px 16px;
+    background: var(--ui-navy-gradient);
+    border-bottom: 1px solid rgb(172 220 255 / 42%);
+    box-shadow: 0 7px 16px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.graphical-dialog .graphical-settings-grid {
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
