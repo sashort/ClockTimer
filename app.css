@@ -1176,7 +1176,7 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 }
 
 
-.header-button {
+.header-button:not(.hamburger-button) {
     background: transparent;
     border-color: rgb(255 255 255 / 52%);
     box-shadow: var(--ui-inner-highlight);
@@ -1304,7 +1304,7 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     border-color: rgb(255 255 255 / 84%);
 }
 
-button:active:not(:disabled) {
+button:active:not(:disabled):not(#goalSyncButton) {
     filter: brightness(0.92);
     transform: translateY(1px);
 }
