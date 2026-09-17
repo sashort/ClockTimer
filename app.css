@@ -2061,3 +2061,156 @@ button:active:not(:disabled) {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cmask id='q'%3E%3Crect width='24' height='24' fill='white'/%3E%3Cpath d='M10.2 9.4a2.3 2.3 0 1 1 4.2 1.3c-.3.5-.8.8-1.3 1.15-.7.5-1.1.95-1.1 1.85' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='16.1' r='.9' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='black' mask='url(%23q)'/%3E%3C/svg%3E");
     animation: none;
 }
+
+/* reference-pattern-sitewide-v1 */
+:root {
+    --app-document-padding: 0.125in;
+    --wm-blue: #0053e2;
+    --wm-blue-dark: #001e60;
+    --wm-blue-mid: #003b9b;
+    --wm-yellow: #ffc420;
+    --ui-navy-gradient: #001e60;
+    --ui-blue-gradient: #0053e2;
+    --ui-yellow-gradient: #ffc420;
+    --ui-gray-gradient: #5f6772;
+    --ui-charcoal-gradient: linear-gradient(180deg, #46515c 0%, #2f3943 45%, #202933 100%);
+    --ui-green-gradient: #2e7d32;
+}
+
+.app {
+    padding: var(--app-document-padding);
+    background: var(--wm-blue);
+}
+
+.app .trip-action-controls,
+.app .active-trip-controls,
+.app .trip-action-row,
+.app .percent-summary,
+.app .independent-timer-controls {
+    background: transparent;
+}
+
+.main-menu:popover-open {
+    inset:
+        calc(var(--app-document-padding) + 52px + 14px)
+        auto
+        auto
+        var(--app-document-padding);
+}
+
+.main-menu::before,
+.main-menu::after {
+    left: 26px;
+}
+
+.main-menu {
+    background: var(--wm-blue-dark);
+}
+
+.main-menu::after {
+    border-bottom-color: var(--wm-blue-dark);
+}
+
+.dialog-header,
+.number-pad-context {
+    background: var(--ui-charcoal-gradient);
+    border-bottom: 1px solid rgb(255 255 255 / 28%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 14%);
+}
+
+.dialog-close {
+    background: transparent;
+}
+
+.app-dialog {
+    background: var(--wm-blue-dark);
+}
+
+.app-dialog fieldset,
+.clock-preview {
+    background: color-mix(in srgb, var(--wm-blue-dark) 88%, var(--wm-blue) 12%);
+    border-color: rgb(255 255 255 / 54%);
+}
+
+.app-dialog input,
+.app-dialog select {
+    background: var(--wm-blue-dark);
+    border-color: rgb(255 255 255 / 62%);
+}
+
+.trip-time-edit,
+.trip-now-action,
+.trip-time-now-toggle,
+.number-pad-settings {
+    background: var(--wm-blue);
+}
+
+.trip-time-value,
+.dialog-actions .primary-action,
+.number-pad-readout,
+.new-trip-button,
+.end-trip-button,
+.break-button,
+.break-type-button.lunch {
+    background: var(--wm-yellow);
+}
+
+.number-pad-grid,
+.number-pad-key,
+.break-type-button {
+    background: var(--wm-blue-dark);
+}
+
+.number-pad-confirm {
+    background: var(--wm-blue);
+}
+
+.number-pad-meridiem.is-selected {
+    color: var(--wm-yellow);
+    box-shadow: 0 7px 13px rgb(0 0 0 / 42%), 0 0 0 2px rgb(255 196 32 / 24%);
+}
+
+.trip-now-action {
+    display: grid;
+    grid-template-columns:
+        min-content
+        minmax(0, 1fr)
+        min-content
+        min-content;
+    align-items: center;
+    justify-content: stretch;
+    column-gap: 0.3em;
+    transition:
+        grid-template-columns var(--trip-start-transition-duration) ease-in-out,
+        flex-basis var(--trip-start-transition-duration) ease-in-out,
+        padding-inline var(--trip-start-transition-duration) ease-in-out,
+        font-size var(--trip-start-transition-duration) ease-in-out,
+        opacity 250ms ease-in-out,
+        filter 250ms ease-in-out,
+        color 250ms ease-in-out,
+        border-color 250ms ease-in-out,
+        box-shadow 250ms ease-in-out;
+}
+
+.trip-now-actions.is-selecting .trip-now-action {
+    grid-template-columns:
+        min-content
+        minmax(0, 0fr)
+        min-content
+        min-content;
+}
+
+.trip-now-start-copy,
+.trip-now-actions.is-selecting .trip-now-start-copy,
+.trip-now-actions.is-exiting .trip-now-start-copy {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 1;
+    text-align: right;
+    transform: none;
+    animation: none;
+    transition: none;
+}
