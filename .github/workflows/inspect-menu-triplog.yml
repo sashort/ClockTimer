@@ -1,0 +1,31 @@
+name: Inspect menu and trip log
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/inspect-menu-triplog.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Inspect current UI implementation
+        run: |
+          echo '=== INDEX MENU / GOALS / TRIP LOG ==='
+          grep -n -B 8 -A 45 'mainMenu\|tripLogButton\|stateSettingsDialog\|Match Trip Goal\|graphicalSettingsDialog\|goalPercentValue' index.html || true
+          echo '=== APP JS TRIP LOG ==='
+          grep -n -B 20 -A 100 'tripLogButton\|tripListMenuButton\|tripLogPinButton\|renderTripLog\|trip log' app.js | head -n 900 || true
+          echo '=== APP JS GOAL / PREFS ==='
+          grep -n -B 20 -A 120 'autoSyncTripGoal\|Match Trip Goal\|matchTrip\|stateSettings\|tripPreferences\|goalPercentValue' app.js | head -n 1200 || true
+          echo '=== CSS MENU / TRIP LOG ==='
+          grep -n -B 15 -A 120 'main-menu\|trip-log-button\|trip-log\|menu-pin\|trip-list-menu-row\|percent-summary' app.css | head -n 1400 || true
+          echo '=== ICONS ==='
+          grep -n -B 10 -A 80 'icon\|svg' index.html | head -n 500 || true
