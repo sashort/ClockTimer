@@ -2612,6 +2612,14 @@ clock-timer time-range[type="lunch"] {
     background: var(--clock-timer-lunch-color, #ffc420);
 }
 
+clock-timer time-range[type="buffer"] {
+    background: var(--clock-timer-break-buffer-color, #6b7f99);
+}
+
+clock-timer[hide-break-buffer] time-range[type="buffer"] {
+    background: transparent !important;
+}
+
 clock-timer time-range[type="down"] {
     background: var(--clock-timer-down-color, #5f6772);
 }

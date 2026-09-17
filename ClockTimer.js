@@ -27920,11 +27920,11 @@
                 Number.isFinite(percentGoal) && percentGoal > 0
                     ? standardTimeMilliseconds / percentGoal
                     : standardTimeMilliseconds;
-            const remainingMilliseconds = allowedTimeMilliseconds - actualTimeMilliseconds;
+            const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
 
             let renderedTime;
             if (this.#renderedTimeMode === "elapsed") {
-                renderedTime = this.#formatElapsedRenderedDuration(actualTimeMilliseconds);
+                renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
                 renderedTime = this.#formatSummaryEndTime(

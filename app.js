@@ -23,6 +23,8 @@
         tripColor: "#0053e2",
         breakColor: "#001e60",
         lunchColor: "#ffc420",
+        breakBufferColor: "#6b7f99",
+        showBreakBuffer: true,
         downColor: "#5f6772",
         toleranceColor: "#2e7d32",
         latencyColor: "#e1251b",
@@ -2737,6 +2739,7 @@
         target.removeAttribute("grayscale");
         target.removeAttribute("grayscale-ramp");
         target.showTolerance = settings.showTolerance;
+        target.toggleAttribute("hide-break-buffer", !Boolean(settings.showBreakBuffer));
         target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
         target.toggleAttribute("hide-hour-hand", !Boolean(settings.showHourHand));
         target.toggleAttribute("hide-minute-hand", !Boolean(settings.showMinuteHand));
@@ -2746,6 +2749,7 @@
             "--clock-timer-trip-color": settings.tripColor,
             "--clock-timer-break-color": settings.breakColor,
             "--clock-timer-lunch-color": settings.lunchColor,
+            "--clock-timer-break-buffer-color": settings.breakBufferColor,
             "--clock-timer-down-color": settings.downColor,
             "--clock-timer-tolerance-color": settings.toleranceColor,
             "--clock-timer-latency-color": settings.latencyColor,
@@ -2840,6 +2844,8 @@
             tripColor: text("tripColor"),
             breakColor: text("breakColor"),
             lunchColor: text("lunchColor"),
+            breakBufferColor: text("breakBufferColor"),
+            showBreakBuffer: form.elements.showBreakBuffer.checked,
             downColor: text("downColor"),
             toleranceColor: text("toleranceColor"),
             latencyColor: text("latencyColor"),
