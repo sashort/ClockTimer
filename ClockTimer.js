@@ -2380,16 +2380,6 @@
                     detail
                 );
             }
-
-            if (
-                this.#percentMode === "total" &&
-                !this.#canSelectTotalMode()
-            ) {
-                this.#setPercentModeAutomatically(
-                    "trip",
-                    "total-aggregate-unavailable"
-                );
-            }
         }
 
         #apiURL(endpoint, query) {
@@ -3344,17 +3334,6 @@
 
             this.#tripTotals =
                 undefined;
-
-            if (
-                this.#percentMode ===
-                    "total"
-            ) {
-                this.#setPercentModeAutomatically(
-                    "trip",
-                    "total-aggregate-unavailable"
-                );
-                return;
-            }
 
             this.#handleTripGoalChange(
                 source
@@ -4594,6 +4573,10 @@
 
         get renderedPercentGoal() {
             return this.#renderedPercentGoal;
+        }
+
+        get renderedPercentGoalScope() {
+            return this.#getRenderedPercentScope();
         }
 
         get renderedTimeMode() {
@@ -6690,19 +6673,6 @@
             this.#calculatedEndTime =
                 this.#scheduledStartMilliseconds +
                 this.#standardDuration;
-
-            if (
-                this.#percentMode === "total" &&
-                !this.#canSelectTotalMode()
-            ) {
-                this.#setPercentModeAutomatically(
-                    "trip",
-                    "total-aggregate-unavailable",
-                    {
-                        recalculate: false
-                    }
-                );
-            }
 
             const previousRenderedPercentGoal =
                 this.#renderedPercentGoal;
@@ -18993,16 +18963,6 @@
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic"
         ) {
-            if (
-                this.#percentMode === "total" &&
-                !this.#canSelectTotalMode()
-            ) {
-                this.#setPercentModeAutomatically(
-                    "trip",
-                    "total-aggregate-unavailable"
-                );
-                return;
-            }
 
             const goal =
                 this.#calculateRenderedPercentGoal();
@@ -22941,7 +22901,7 @@
             return requirements;
         }
 
-        #calculateGoalRequirements() {
+        #getAutoGoalSelection() {
             const tripRequirements =
                 this.#calculateTripGoalRequirements();
 
@@ -22966,19 +22926,60 @@
                 Number.isFinite(totalTime) &&
                 totalTime > 0;
 
+            const tripScope =
+                this.hasAttribute("trip-goal")
+                    ? "trip"
+                    : "standard";
+
             if (!tripValid) {
                 return totalValid
-                    ? totalRequirements
-                    : this.#emptyGoalRequirements();
+                    ? {
+                        scope: "total",
+                        requirements: totalRequirements
+                    }
+                    : {
+                        scope: "standard",
+                        requirements:
+                            this.#emptyGoalRequirements()
+                    };
             }
 
             if (!totalValid) {
-                return tripRequirements;
+                return {
+                    scope: tripScope,
+                    requirements: tripRequirements
+                };
             }
 
-            return totalTime < tripTime
-                ? totalRequirements
-                : tripRequirements;
+            if (totalTime < tripTime) {
+                return {
+                    scope: "total",
+                    requirements: totalRequirements
+                };
+            }
+
+            return {
+                scope: tripScope,
+                requirements: tripRequirements
+            };
+        }
+
+        #calculateGoalRequirements() {
+            return this.#getAutoGoalSelection()
+                .requirements;
+        }
+
+        #getRenderedPercentScope() {
+            if (this.#percentMode === "trip") {
+                return "trip";
+            }
+
+            if (this.#percentMode === "total") {
+                return "total";
+            }
+
+            return this.#getAutoGoalSelection()
+                .scope;
         }
 
         #normalizePercentMode(value) {
@@ -23053,7 +23054,9 @@
                 userInitiated:
                     source === "user",
                 percentMode:
-                    this.#percentMode
+                    this.#percentMode,
+                renderedPercentGoalScope:
+                    this.#getRenderedPercentScope()
             };
 
             this.#emitClockTimerEvent(
@@ -27854,7 +27857,24 @@
 
             const total = this.#getTotalSummary(timelineNow, validNow);
             if (total) total.available = true;
-            const scope = this.#percentMode === "total" && total ? "total" : "trip";
+
+            const scope =
+                this.#getRenderedPercentScope();
+
+            let selected;
+
+            if (scope === "total") {
+                selected = total;
+            }
+            else if (scope === "standard") {
+                selected = {
+                    ...trip,
+                    percentGoal: 1
+                };
+            }
+            else {
+                selected = trip;
+            }
 
             return {
                 now: new Date(validNow.getTime()),
@@ -27864,7 +27884,7 @@
                 renderedTimeMode: this.#renderedTimeMode,
                 trip,
                 total,
-                selected: scope === "total" ? total : trip
+                selected
             };
         }
 

@@ -109,6 +109,26 @@
         </form>
     </dialog>
 
+    <dialog id="autoGoalDialog" class="app-dialog auto-goal-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2>Choose Your Goal</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <p class="auto-goal-copy">Choose which goal you want to edit.</p>
+            <div class="auto-goal-options">
+                <button class="auto-goal-option" type="button" data-auto-goal-scope="trip">
+                    <span>Your Trip Goal</span>
+                    <strong id="autoTripGoalValue">Not set</strong>
+                </button>
+                <button class="auto-goal-option" type="button" data-auto-goal-scope="total">
+                    <span>Your Total Goal</span>
+                    <strong id="autoTotalGoalValue">Not set</strong>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id="profileDialog" class="app-dialog settings-dialog">
         <form id="profileForm" method="dialog">
             <header class="dialog-header">

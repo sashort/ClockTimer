@@ -11,6 +11,7 @@
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
+    const PERCENT_MODES = ["trip", "total", "auto"];
     const TRIP_PREFERENCE_DEFAULTS = {
         lateBreakBehavior: "showLateWindow",
         matchTripGoalToTotal: false
@@ -66,6 +67,9 @@
     const tripListMenuButton = $("#tripListMenuButton");
     const tripLogPinButton = $("#tripLogPinButton");
     const tripLogButton = $("#tripLogButton");
+    const autoGoalDialog = $("#autoGoalDialog");
+    const autoTripGoalValue = $("#autoTripGoalValue");
+    const autoTotalGoalValue = $("#autoTotalGoalValue");
     const activeTripControls = $("#activeTripControls");
     const endTripButton = $("#endTripButton");
     const tripActionRow = $(".trip-action-row");
@@ -1202,18 +1206,57 @@
         }, delay);
     }
 
+    function normalizePercentMode(value) {
+        const normalized =
+            String(value || "trip")
+                .trim()
+                .toLowerCase();
+
+        return PERCENT_MODES.includes(normalized)
+            ? normalized
+            : "trip";
+    }
+
     function syncScopeUI(persist = false) {
-        const actual = clockTimer.percentMode === "total" ? "total" : "trip";
-        $("#scopeToggle").textContent = actual === "total" ? "Total" : "Trip";
-        updateSummaryLabels();
+        const actual =
+            normalizePercentMode(
+                clockTimer.percentMode
+            );
+
+        const label =
+            actual === "total"
+                ? "Total"
+                : actual === "auto"
+                    ? "Auto"
+                    : "Trip";
+
+        const button = $("#scopeToggle");
+        button.textContent = label;
+        button.dataset.percentMode = actual;
+        button.setAttribute(
+            "aria-label",
+            `Percent mode: ${label}`
+        );
+
         updateSummaryValues();
-        if (persist) safeStorageSet(STORAGE.percentMode, actual);
+
+        if (persist) {
+            safeStorageSet(
+                STORAGE.percentMode,
+                actual
+            );
+        }
+
         return actual;
     }
 
     function applyScope(mode, persist = true) {
-        const requested = mode === "total" ? "total" : "trip";
-        clockTimer.percentMode = requested;
+        const requested =
+            normalizePercentMode(mode);
+
+        clockTimer.percentMode =
+            requested;
+
         return syncScopeUI(persist);
     }
 
@@ -1225,12 +1268,99 @@
         if (persist) safeStorageSet(STORAGE.renderedTimeMode, next);
     }
 
-    function updateSummaryLabels() {
-        const scope = clockTimer.percentMode === "total" ? "Total" : "Trip";
-        const mode = clockTimer.renderedTimeMode;
-        const suffix = mode === "elapsed" ? "Time Elapsed" : mode === "calculated-end" ? "End Time" : "Time Remaining";
-        $("#standardTimeLabel").textContent = `${scope} Standard Time`;
-        $("#renderedTimeLabel").textContent = `${scope} ${suffix}`;
+    function updateSummaryLabels(summary) {
+        let snapshot = summary;
+
+        if (!snapshot?.scope) {
+            try {
+                snapshot =
+                    clockTimer.getSummarySnapshot?.(
+                        new Date()
+                    );
+            }
+            catch {
+                snapshot = undefined;
+            }
+        }
+
+        const mode =
+            clockTimer.renderedTimeMode;
+
+        const suffix =
+            mode === "elapsed"
+                ? "Time Elapsed"
+                : mode === "calculated-end"
+                    ? "End Time"
+                    : "Time Remaining";
+
+        const selectedScope =
+            clockTimer.percentMode === "auto"
+                ? snapshot?.scope ?? "standard"
+                : clockTimer.percentMode === "total"
+                    ? "total"
+                    : "trip";
+
+        const standardLabel =
+            $("#standardTimeLabel");
+
+        const renderedLabel =
+            $("#renderedTimeLabel");
+
+        standardLabel.classList.remove(
+            "summary-label-responsive"
+        );
+        renderedLabel.classList.remove(
+            "summary-label-responsive"
+        );
+
+        if (selectedScope === "standard") {
+            standardLabel.textContent =
+                "Standard Time";
+
+            const full =
+                document.createElement(
+                    "span"
+                );
+
+            full.className =
+                "summary-label-full";
+
+            full.textContent =
+                `Standard ${suffix}`;
+
+            const short =
+                document.createElement(
+                    "span"
+                );
+
+            short.className =
+                "summary-label-short";
+
+            short.textContent =
+                `Std. ${suffix}`;
+
+            renderedLabel.classList.add(
+                "summary-label-responsive"
+            );
+
+            renderedLabel.replaceChildren(
+                full,
+                short
+            );
+
+            return;
+        }
+
+        const scopeLabel =
+            selectedScope === "total"
+                ? "Total"
+                : "Trip";
+
+        standardLabel.textContent =
+            `${scopeLabel} Standard Time`;
+
+        renderedLabel.textContent =
+            `${scopeLabel} ${suffix}`;
     }
 
     function formatSummaryPercent(value, fallback = "---") {
@@ -1274,40 +1404,86 @@
 
     function updateSummaryValues(summary) {
         let snapshot = summary;
+
         if (!snapshot?.selected) {
             try {
-                snapshot = clockTimer.getSummarySnapshot?.(new Date());
+                snapshot =
+                    clockTimer.getSummarySnapshot?.(
+                        new Date()
+                    );
             }
             catch {
                 snapshot = undefined;
             }
         }
 
-        const scope = clockTimer.percentMode === "total" ? "total" : "trip";
-        const selected = snapshot?.[scope] ?? snapshot?.selected;
-        const standard = selected?.standardTime ||
-            (scope === "trip" ? (clockTimer.standardTime || stagedStandardTime) : undefined);
+        updateSummaryLabels(snapshot);
+
+        const selected =
+            snapshot?.selected;
+
+        const scope =
+            snapshot?.scope ??
+            (
+                clockTimer.percentMode === "total"
+                    ? "total"
+                    : "trip"
+            );
+
+        const standard =
+            selected?.standardTime ||
+            (
+                scope !== "total"
+                    ? (
+                        clockTimer.standardTime ||
+                        stagedStandardTime
+                    )
+                    : undefined
+            );
 
         $("#standardTimeValue").textContent =
-            typeof standard === "string" && standard ? standard : "---";
+            typeof standard === "string" && standard
+                ? standard
+                : "---";
+
         const mainRenderedTime =
             getMainRenderedTimeValue(
                 selected
             );
+
         $("#renderedTimeValue").textContent =
             mainRenderedTime || "---";
+
         $("#currentPercentValue").textContent =
             selected?.available === false
                 ? "---"
-                : formatSummaryPercent(selected?.countedPercent);
-        $("#goalPercentValue").textContent =
-            formatSummaryPercent(selected?.percentGoal, "100%");
+                : formatSummaryPercent(
+                    selected?.countedPercent
+                );
+
+        const goalButton =
+            $("#goalPercentValue");
+
+        goalButton.textContent =
+            formatSummaryPercent(
+                selected?.percentGoal,
+                "100%"
+            );
+
+        goalButton.setAttribute(
+            "aria-label",
+            clockTimer.percentMode === "auto"
+                ? "Choose Trip or Total goal"
+                : clockTimer.percentMode === "total"
+                    ? "Edit Total goal"
+                    : "Edit Trip goal"
+        );
     }
 
     function queueSummaryRefresh() {
         queueMicrotask(() => {
-            updateSummaryLabels();
             updateSummaryValues();
+            refreshAutoGoalDialog();
         });
     }
 
@@ -2006,7 +2182,18 @@
     }
 
     $("#scopeToggle").addEventListener("pointerup", () => {
-        clockTimer.percentMode = clockTimer.percentMode === "total" ? "trip" : "total";
+        const current =
+            PERCENT_MODES.indexOf(
+                normalizePercentMode(
+                    clockTimer.percentMode
+                )
+            );
+
+        clockTimer.percentMode =
+            PERCENT_MODES[
+                (current + 1) %
+                PERCENT_MODES.length
+            ];
     });
 
     $("#renderedTimeButton").addEventListener("pointerup", () => {
@@ -2501,8 +2688,11 @@
             "scheduled-start": "Scheduled Start",
             "actual-start": "Actual Start"
         };
-        if (source === "percent-goal") {
-            return clockTimer.percentMode === "total" ? "Total Percent" : "Trip Percent";
+        if (source === "trip-goal") {
+            return "Trip Percent";
+        }
+        if (source === "total-goal") {
+            return "Total Percent";
         }
         return titles[source] || "Number Pad";
     }
@@ -2847,12 +3037,132 @@
         });
     }
 
-    function getPercentGoalValue() {
-        const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
-        const raw = clockTimer.getAttribute(attribute);
-        if (raw) return raw;
-        const goal = Number(clockTimer.renderedPercentGoal);
-        return Number.isFinite(goal) && goal > 0 ? `${Math.round(goal * 100)}%` : "100%";
+    function getPercentGoalAttribute(scope) {
+        return scope === "total"
+            ? "total-goal"
+            : "trip-goal";
+    }
+
+    function parsePercentGoalAttribute(raw) {
+        if (typeof raw !== "string") {
+            return undefined;
+        }
+
+        let text =
+            raw.trim();
+
+        if (!text) {
+            return undefined;
+        }
+
+        const percent =
+            text.endsWith("%");
+
+        if (percent) {
+            text = text.slice(0, -1).trim();
+        }
+
+        let value =
+            Number(text);
+
+        if (!Number.isFinite(value) || value <= 0) {
+            return undefined;
+        }
+
+        if (percent) {
+            value /= 100;
+        }
+        else if (value > 1.5) {
+            value /= 100;
+        }
+
+        return Number.isFinite(value) && value > 0
+            ? value
+            : undefined;
+    }
+
+    function getConfiguredGoalDisplay(scope) {
+        const attribute =
+            getPercentGoalAttribute(scope);
+
+        if (!clockTimer.hasAttribute(attribute)) {
+            return "Not set";
+        }
+
+        return formatSummaryPercent(
+            parsePercentGoalAttribute(
+                clockTimer.getAttribute(attribute)
+            ),
+            "Not set"
+        );
+    }
+
+    function getPercentGoalValue(scope) {
+        const attribute =
+            getPercentGoalAttribute(scope);
+
+        const raw =
+            clockTimer.getAttribute(attribute);
+
+        return raw && raw.trim()
+            ? raw
+            : "100%";
+    }
+
+    function refreshAutoGoalDialog() {
+        if (!autoGoalDialog) {
+            return;
+        }
+
+        if (autoTripGoalValue) {
+            autoTripGoalValue.textContent =
+                getConfiguredGoalDisplay("trip");
+        }
+
+        if (autoTotalGoalValue) {
+            autoTotalGoalValue.textContent =
+                getConfiguredGoalDisplay("total");
+        }
+    }
+
+    function openAutoGoalDialog() {
+        if (!autoGoalDialog) {
+            return false;
+        }
+
+        refreshAutoGoalDialog();
+
+        return openDialogElement(
+            autoGoalDialog,
+            {
+                duration: 250,
+                reason: "auto-goal"
+            }
+        );
+    }
+
+    function openPercentGoalNumberPad(scope) {
+        const normalizedScope =
+            scope === "total"
+                ? "total"
+                : "trip";
+
+        return openNumberPad({
+            mode: "percent",
+            source:
+                `${normalizedScope}-goal`,
+            initialValue:
+                getPercentGoalValue(
+                    normalizedScope
+                ),
+            role: "root",
+            workflow:
+                tripIsLive()
+                    ? "edit-trip"
+                    : null,
+            cancelTarget: "home",
+            confirmTarget: "home"
+        });
     }
 
     async function commitNumberPad() {
@@ -2860,9 +3170,19 @@
         const state = { ...numberPadState };
         if (!numberPadHasChanges() && !state.startsTripOnConfirm) return false;
         if (state.mode === "percent") {
-            const percent = Number(state.pending);
-            const attribute = clockTimer.percentMode === "total" ? "total-goal" : "trip-goal";
-            clockTimer.setAttribute(attribute, `${percent}%`);
+            const percent =
+                Number(state.pending);
+
+            const attribute =
+                state.source === "total-goal"
+                    ? "total-goal"
+                    : "trip-goal";
+
+            clockTimer.setAttribute(
+                attribute,
+                `${percent}%`
+            );
+
             return true;
         }
 
@@ -3972,7 +4292,22 @@
     });
 
     $("#standardTimeButton").addEventListener("pointerup", () => {
-        if (!tripIsLive() || clockTimer.percentMode === "total") return;
+        let summary;
+        try {
+            summary =
+                clockTimer.getSummarySnapshot?.(
+                    new Date()
+                );
+        }
+        catch {}
+
+        if (
+            !tripIsLive() ||
+            summary?.scope === "total"
+        ) {
+            return;
+        }
+
         resetTripSettingsNavigation();
         openTripSettingsDialog("summary-standard-time", {
             focusField: "standard-time"
@@ -3980,16 +4315,47 @@
     });
 
     $("#goalPercentValue").addEventListener("pointerup", () => {
-        void openNumberPad({
-            mode: "percent",
-            source: "percent-goal",
-            initialValue: getPercentGoalValue(),
-            role: "root",
-            workflow: tripIsLive() ? "edit-trip" : null,
-            cancelTarget: "home",
-            confirmTarget: "home"
-        }).catch(() => {});
+        if (clockTimer.percentMode === "auto") {
+            openAutoGoalDialog();
+            return;
+        }
+
+        void openPercentGoalNumberPad(
+            clockTimer.percentMode === "total"
+                ? "total"
+                : "trip"
+        ).catch(() => {});
     });
+
+    autoGoalDialog
+        ?.querySelectorAll(
+            "[data-auto-goal-scope]"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "pointerup",
+                () => {
+                    const scope =
+                        button.dataset.autoGoalScope ===
+                            "total"
+                            ? "total"
+                            : "trip";
+
+                    closeDialog(
+                        autoGoalDialog,
+                        {
+                            reason:
+                                "auto-goal-selected",
+                            immediate: true
+                        }
+                    );
+
+                    void openPercentGoalNumberPad(
+                        scope
+                    ).catch(() => {});
+                }
+            );
+        });
 
     function renderIndependentTimer() {
         const active = timerStartedAt ? Date.now() - timerStartedAt : 0;
