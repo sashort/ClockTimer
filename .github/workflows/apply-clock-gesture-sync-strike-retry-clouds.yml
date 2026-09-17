@@ -1,0 +1,42 @@
+name: Apply ClockTimer gesture, Sync strike, and retry cloud fixes
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-clock-gesture-sync-strike-retry-clouds.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Apply and validate
+        run: |
+          python3 .github/scripts/apply_clock_gesture_sync_strike_retry_clouds.py
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          grep -q 'CLOCK_TIMER_DOUBLE_PRESS = 350' app.js
+          grep -q 'clockTimer.addEventListener("pointerup"' app.js
+          grep -q 'toggleClockTimerElapsedRemaining' app.js
+          grep -q 'visibleNumberPadOfflineCloud' app.js
+          grep -q 'rotate(360deg)' app.js
+          grep -q 'sync-disabled-strike-v2' app.css
+          grep -q 'text-decoration-line: line-through' app.css
+          grep -q 'background: var(--wm-red)' app.css
+          git add app.js app.css
+          git commit -m "Refine ClockTimer gestures and Sync disabled state"
+      - name: Push changes
+        run: git push origin HEAD:rename-prestart-latency
