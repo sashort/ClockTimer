@@ -1,0 +1,37 @@
+name: Fix sync press and hamburger border
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-sync-press-hamburger-border.yml'
+      - '.github/scripts/fix_sync_press_hamburger_border.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - name: Apply UI fix
+        run: python .github/scripts/fix_sync_press_hamburger_border.py
+      - name: Verify CSS behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css = Path('app.css').read_text()
+          assert '.header-button:not(.hamburger-button)' in css
+          assert 'button:active:not(:disabled):not(#goalSyncButton)' in css
+          assert '.hamburger-button {' in css
+          assert 'border: var(--control-border);' in css
+          assert '.scope-control {' in css
+          PY
+      - name: Commit source fix
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add app.css
+          git commit -m "Fix sync press and hamburger border" || exit 0
+          git push origin HEAD:rename-prestart-latency
