@@ -1,0 +1,40 @@
+name: Apply timer button palette fix
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-timer-button-palette-fix.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/apply_timer_button_palette_fix.py
+          node --check app.js
+          git diff --check
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-timer-button-palette-fix.yml
+          git rm .github/scripts/apply_timer_button_palette_fix.py
+          git add app.js app.css
+          git diff --cached --check
+          git commit -m "Fix timer button palette cascade"
+          git push origin HEAD:rename-prestart-latency
