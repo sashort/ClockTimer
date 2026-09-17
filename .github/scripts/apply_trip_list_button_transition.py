@@ -1,5 +1,7 @@
 from pathlib import Path
 
+# Temporary one-shot patch for Trip List button motion.
+
 
 def replace_once(text, old, new, label):
     count = text.count(old)
