@@ -144,10 +144,13 @@
     let connectionCloudSequence = 0;
     let connectionCloudSettleTimer;
     let loginDialogFullyOpen = false;
+    let clockTimerTapTimer;
+    let clockTimerLastTapAt = -Infinity;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
     const NUMBER_PAD_LONG_PRESS = 750;
     const NUMBER_PAD_DOUBLE_PRESS = 350;
+    const CLOCK_TIMER_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
     const CONNECTION_UI_TRANSITION_DURATION = 750;
     const BUTTON_PRESS_IN_DURATION = 120;
@@ -1356,27 +1359,17 @@
                     [
                         {
                             transform:
-                                `${prefix}rotateY(0deg)`
+                                `${prefix}rotate(0deg)`
                         },
                         {
                             transform:
-                                `${prefix}rotateY(90deg)`,
-                            offset: 0.5
-                        },
-                        {
-                            transform:
-                                `${prefix}rotateY(-90deg)`,
-                            offset: 0.5001
-                        },
-                        {
-                            transform:
-                                `${prefix}rotateY(0deg)`
+                                `${prefix}rotate(360deg)`
                         }
                     ],
                     {
                         duration:
                             CONNECTION_UI_TRANSITION_DURATION,
-                        easing: "linear"
+                        easing: "ease-in-out"
                     }
                 );
 
@@ -1762,9 +1755,23 @@
 
         let token;
 
+        const visibleNumberPadOfflineCloud =
+            Boolean(
+                numberPadDialog?.open &&
+                numberPadState &&
+                numberPadConnection &&
+                !numberPadConnection.hidden &&
+                numberPadState.mode !== "percent" &&
+                numberPadSettingsArea?.dataset.persistence ===
+                    "offline"
+            );
+
         if (
-            source === "number-pad" &&
-            numberPadState
+            numberPadState &&
+            (
+                source === "number-pad" ||
+                visibleNumberPadOfflineCloud
+            )
         ) {
             token =
                 numberPadState.connectionStatusToken ||
@@ -1780,6 +1787,8 @@
             );
         }
 
+        // Every visible offline cloud participates in the same retry
+        // presentation, regardless of which cloud started the retry.
         syncTripSettingsCloud("pending");
         syncScopeConnectionCloud("pending");
 
@@ -3197,7 +3206,9 @@
         clockTimer.renderedTimeMode = RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length];
     });
 
-    clockTimer.addEventListener("pointerdown", () => {
+    function toggleClockTimerTypeFromTap() {
+        if (!tripIsLive()) return false;
+
         const current =
             clockTimer.getAttribute("timer-type") === "radial-fitted"
                 ? "radial-fitted"
@@ -3216,6 +3227,63 @@
         const settings = getGraphicalSettings();
         settings.timerType = next;
         saveGraphicalSettings(settings);
+        return true;
+    }
+
+    function toggleClockTimerElapsedRemaining() {
+        if (!tripIsLive()) return false;
+
+        applyRenderedTimeMode(
+            clockTimer.renderedTimeMode === "elapsed"
+                ? "remaining"
+                : "elapsed"
+        );
+
+        return true;
+    }
+
+    clockTimer.addEventListener("pointerup", event => {
+        if (
+            event.pointerType === "mouse" &&
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        if (!tripIsLive()) {
+            clearTimeout(clockTimerTapTimer);
+            clockTimerTapTimer = undefined;
+            clockTimerLastTapAt = -Infinity;
+            return;
+        }
+
+        const now = performance.now();
+
+        if (
+            clockTimerTapTimer !== undefined &&
+            now - clockTimerLastTapAt <=
+                CLOCK_TIMER_DOUBLE_PRESS
+        ) {
+            clearTimeout(clockTimerTapTimer);
+            clockTimerTapTimer = undefined;
+            clockTimerLastTapAt = -Infinity;
+            toggleClockTimerElapsedRemaining();
+            return;
+        }
+
+        if (clockTimerTapTimer !== undefined) {
+            clearTimeout(clockTimerTapTimer);
+        }
+
+        clockTimerLastTapAt = now;
+        clockTimerTapTimer = setTimeout(
+            () => {
+                clockTimerTapTimer = undefined;
+                clockTimerLastTapAt = -Infinity;
+                toggleClockTimerTypeFromTap();
+            },
+            CLOCK_TIMER_DOUBLE_PRESS
+        );
     });
 
     tripLogPinButton?.addEventListener(
