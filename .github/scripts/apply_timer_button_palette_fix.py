@@ -127,4 +127,4 @@ css += '''\n\n\n/* authoritative-timer-button-palette-v3 */
     background: var(--timer-lunch-color, #ffc420);
 }
 '''
-APP_CSS.write_text(css + '\n')
+APP_CSS.write_text(css.rstrip() + '\n')
