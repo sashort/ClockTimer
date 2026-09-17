@@ -241,6 +241,14 @@
 
         #waveRange;
 
+        #waveResumeTimeout;
+
+        #waveResumeToken =
+            0;
+
+        #waveSuppressed =
+            false;
+
         #stateChangeVisualState;
 
         #stateChangeWaveRing;
@@ -501,6 +509,12 @@
 
                     transition-timing-function:
                         linear;
+                }
+
+                :host([hide-hour-hand]) .hour-hand,
+                :host([hide-minute-hand]) .minute-hand,
+                :host([hide-second-hand]) .second-hand {
+                    display: none !important;
                 }
 
                 #hand-layer {
@@ -1275,6 +1289,8 @@
             this.#cancelTimerTypeTransition(
                 false
             );
+
+            this.#cancelWaveResumeDelay();
 
             this.#cancelTimerModeTransition();
             this.#cancelTimeRangeTimingAnimations();
@@ -3913,9 +3929,9 @@
             }
 
             try {
-                const body = Number.isInteger(Number(prepared.tripId)) && Number(prepared.tripId) > 0
-                    ? { tripId: Number(prepared.tripId) }
-                    : { clientToken: prepared.clientToken };
+                const body = prepared.clientToken
+                    ? { clientToken: prepared.clientToken }
+                    : { tripId: Number(prepared.tripId) };
                 await this.#apiRequest("trips", {
                     method: "DELETE",
                     csrf: true,
@@ -4389,9 +4405,9 @@
                 throw new Error("The interval could not be ended.");
             }
 
-            if (record && endedEarly) {
-                record.clockTimerPersistenceEnd = this.#timelineToISO(now);
-            }
+            // Early closed-interval persistence is handled by
+            // #endBufferedPendingInterval so an end-buffer can remain
+            // scheduled while the factual actual-end is stored separately.
 
             if (
                 this.hasAttribute(
@@ -10663,52 +10679,103 @@
         ) {
             if (
                 !record ||
+                record.openEnded === true ||
                 !Number.isFinite(now)
             ) {
                 return false;
             }
 
-            const type =
-                String(
-                    record.type ?? ""
-                ).trim().toLowerCase();
-
-            if (
-                type !== "break" &&
-                type !== "lunch"
-            ) {
-                return false;
-            }
-
-            const bufferedStart =
-                Number(
-                    record.clockTimerBufferedStartTimeline
+            const mainStart =
+                this.#dateToTimelineTime(
+                    record.startDate
                 );
 
-            const bufferedEnd =
-                this.#getPendingIntervalElapsedBoundary(
+            const mainEnd =
+                this.#getIntervalRecordEnd(
                     record
-                );
-
-            if (
-                !Number.isFinite(bufferedStart) ||
-                !Number.isFinite(bufferedEnd) ||
-                now < bufferedStart ||
-                now >= bufferedEnd
-            ) {
-                return false;
-            }
-
-            const startBuffer =
-                this.#getIntervalBufferRecord(
-                    record,
-                    "start"
                 );
 
             const endBuffer =
                 this.#getIntervalBufferRecord(
                     record,
                     "end"
+                );
+
+            const endBufferEnd =
+                this.#getIntervalRecordEnd(
+                    endBuffer
+                );
+
+            const storedBufferedEnd =
+                Number(
+                    record.clockTimerBufferedEndTimeline
+                );
+
+            const earlyStartEnd =
+                Number.isFinite(endBufferEnd)
+                    ? endBufferEnd
+                    : Number.isFinite(storedBufferedEnd) &&
+                        storedBufferedEnd > mainEnd
+                        ? storedBufferedEnd
+                        : mainEnd;
+
+            if (
+                !Number.isFinite(mainStart) ||
+                !Number.isFinite(mainEnd) ||
+                !Number.isFinite(earlyStartEnd) ||
+                now >= earlyStartEnd
+            ) {
+                return false;
+            }
+
+            const previousCalculatedEndTime =
+                this.#calculatedEndTime;
+
+            const actualEnd =
+                this.#timelineToISO(
+                    now
+                );
+
+            const scheduledEnd =
+                this.#timelineToISO(
+                    mainEnd
+                );
+
+            const bufferedEnd =
+                this.#timelineToISO(
+                    earlyStartEnd
+                );
+
+            record.otherAttributes = {
+                ...(record.otherAttributes ?? {}),
+                "clock-timer-scheduled-end":
+                    scheduledEnd,
+                "clock-timer-buffered-end":
+                    bufferedEnd,
+                "clock-timer-actual-end":
+                    actualEnd,
+                "clock-timer-early-start-end":
+                    bufferedEnd
+            };
+
+            record.clockTimerActualEndTimeline =
+                now;
+
+            record.clockTimerEarlyStartEndTimeline =
+                earlyStartEnd;
+
+            if (
+                now > mainStart &&
+                now < mainEnd
+            ) {
+                record.clockTimerPersistenceEnd =
+                    actualEnd;
+            }
+
+            const startBuffer =
+                this.#getIntervalBufferRecord(
+                    record,
+                    "start"
                 );
 
             const linked =
@@ -10736,58 +10803,57 @@
                     continue;
                 }
 
-                if (end <= now) {
-                    continue;
-                }
-
-                if (start >= now) {
-                    candidate.clockTimerPendingDelete =
-                        true;
-
-                    continue;
-                }
-
-                const duration =
-                    Math.max(
-                        0,
-                        now - start
-                    );
-
-                candidate.rangeLength =
-                    duration;
-
-                candidate.endDate =
-                    new Date(
-                        candidate.startDate.getTime() +
-                        duration
-                    );
-
                 candidate.clockTimerExplicitlyEnded =
                     true;
 
                 candidate.clockTimerExplicitEndTimeline =
-                    now;
-
-                if (candidate === record) {
-                    candidate.clockTimerPersistenceEnd =
-                        this.#timelineToISO(
+                    Math.min(
+                        end,
+                        Math.max(
+                            start,
                             now
-                        );
-                }
+                        )
+                    );
             }
 
-            record.clockTimerExplicitlyEnded =
-                true;
-
             record.clockTimerExplicitEndTimeline =
-                now;
+                Math.min(
+                    mainEnd,
+                    Math.max(
+                        mainStart,
+                        now
+                    )
+                );
 
             this.#pendingIntervalRecord =
                 undefined;
 
             this.#renderAllInsertedRanges();
 
-            this.#rebuildAfterRangeDeletion();
+            let replacement;
+
+            try {
+                replacement =
+                    this.#overwrite({
+                        type: "earlystart",
+                        startTime:
+                            this.#formatTimelineTime(
+                                now
+                            ),
+                        endTime:
+                            this.#formatTimelineTime(
+                                earlyStartEnd
+                            )
+                    });
+            }
+            finally {
+                this.#calculatedEndTime =
+                    previousCalculatedEndTime;
+            }
+
+            if (!replacement) {
+                return false;
+            }
 
             if (this.#needsTick()) {
                 this.#startTickTimer();
@@ -11157,9 +11223,12 @@
                 record.clockTimerBufferedStartTimeline =
                     now;
 
-                record.clockTimerBufferedEndTimeline =
+                const scheduledEndTimeline =
                     cursor +
-                    duration +
+                    duration;
+
+                record.clockTimerBufferedEndTimeline =
+                    scheduledEndTimeline +
                     (
                         Number.isFinite(
                             endBufferDuration
@@ -11167,6 +11236,18 @@
                             ? endBufferDuration
                             : 0
                     );
+
+                record.otherAttributes = {
+                    ...(record.otherAttributes ?? {}),
+                    "clock-timer-scheduled-end":
+                        this.#timelineToISO(
+                            scheduledEndTimeline
+                        ),
+                    "clock-timer-buffered-end":
+                        this.#timelineToISO(
+                            record.clockTimerBufferedEndTimeline
+                        )
+                };
 
                 this.#pendingIntervalRecord =
                     record;
@@ -14071,6 +14152,10 @@
             this.#timerTypeTransitionState =
                 undefined;
 
+            this.#scheduleWaveResumeAfterTimerTypeTransition(
+                state
+            );
+
             this.#updateIndicatorSymbol();
         }
 
@@ -14775,6 +14860,21 @@
 
             this.#cancelTimerModeTransition();
             this.#cancelTimeRangeTimingAnimations();
+
+            const delayOverflowWaves =
+                previousType ===
+                    "radial-fitted" &&
+                timerType ===
+                    "radial-overflow";
+
+            this.#cancelWaveResumeDelay();
+
+            this.#waveSuppressed =
+                delayOverflowWaves;
+
+            if (delayOverflowWaves) {
+                this.#removeWaveRange();
+            }
 
             const stateChangeVisual =
                 this.#beginStateChangeVisuals();
@@ -17370,7 +17470,88 @@
             }
         }
 
+        #cancelWaveResumeDelay({ restore = true } = {}) {
+            if (
+                this.#waveResumeTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#waveResumeTimeout
+                );
+
+                this.#waveResumeTimeout =
+                    undefined;
+            }
+
+            this.#waveResumeToken++;
+
+            if (restore) {
+                this.#waveSuppressed =
+                    false;
+            }
+        }
+
+        #scheduleWaveResumeAfterTimerTypeTransition(
+            state
+        ) {
+            if (
+                state?.previousType !==
+                    "radial-fitted" ||
+                state?.timerType !==
+                    "radial-overflow"
+            ) {
+                return;
+            }
+
+            if (
+                this.#waveResumeTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    this.#waveResumeTimeout
+                );
+            }
+
+            const token =
+                ++this.#waveResumeToken;
+
+            this.#waveSuppressed =
+                true;
+
+            this.#removeWaveRange();
+
+            this.#waveResumeTimeout =
+                setTimeout(
+                    () => {
+                        this.#waveResumeTimeout =
+                            undefined;
+
+                        if (
+                            token !==
+                                this.#waveResumeToken
+                        ) {
+                            return;
+                        }
+
+                        this.#waveSuppressed =
+                            false;
+
+                        if (
+                            this.#started &&
+                            this.isConnected
+                        ) {
+                            this.#syncWaveRange();
+                        }
+                    },
+                    2000
+                );
+        }
+
         #syncWaveRange() {
+            if (this.#waveSuppressed) {
+                this.#removeWaveRange();
+                return;
+            }
             if (this.#stateChangeVisualState) {
                 this.#removeWaveRange();
                 return;

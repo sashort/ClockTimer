@@ -1560,34 +1560,109 @@
         return enabled;
     }
 
-    function getGraphicalSettings() {
-        const settings =
-            getStoredJSON(
-                STORAGE.graphicalSettings,
-                GRAPHICAL_DEFAULTS
-            );
+    function normalizeGraphicalSettings(value) {
+        const source =
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value)
+                ? value
+                : {};
 
-        if (settings.showTolerance === null) {
-            settings.showTolerance =
-                undefined;
+        const settings = {};
+
+        for (
+            const [key, fallback] of
+                Object.entries(GRAPHICAL_DEFAULTS)
+        ) {
+            const candidate =
+                Object.prototype.hasOwnProperty.call(
+                    source,
+                    key
+                )
+                    ? source[key]
+                    : fallback;
+
+            if (key === "showTolerance") {
+                settings[key] =
+                    candidate === null ||
+                    candidate === undefined
+                        ? undefined
+                        : typeof candidate === "boolean"
+                            ? candidate
+                            : fallback;
+                continue;
+            }
+
+            if (typeof fallback === "boolean") {
+                settings[key] =
+                    typeof candidate === "boolean"
+                        ? candidate
+                        : fallback;
+                continue;
+            }
+
+            settings[key] =
+                typeof candidate === "string"
+                    ? candidate
+                    : fallback;
         }
+
+        settings.timerType =
+            settings.timerType === "radial-fitted"
+                ? "radial-fitted"
+                : "radial-overflow";
+
+        settings.timerMode =
+            settings.timerMode === "remaining"
+                ? "remaining"
+                : "elapsed";
 
         return settings;
     }
 
+    function getGraphicalSettings() {
+        let stored;
+
+        try {
+            const raw =
+                safeStorageGet(
+                    STORAGE.graphicalSettings
+                );
+
+            stored =
+                raw
+                    ? JSON.parse(raw)
+                    : undefined;
+        }
+        catch {
+            stored = undefined;
+        }
+
+        return normalizeGraphicalSettings(
+            stored
+        );
+    }
+
     function saveGraphicalSettings(settings) {
+        const normalized =
+            normalizeGraphicalSettings(
+                settings
+            );
+
         const stored = {
-            ...settings,
+            ...normalized,
             showTolerance:
-                settings.showTolerance === undefined
+                normalized.showTolerance === undefined
                     ? null
-                    : settings.showTolerance
+                    : normalized.showTolerance
         };
 
         safeStorageSet(
             STORAGE.graphicalSettings,
             JSON.stringify(stored)
         );
+
+        return normalized;
     }
 
     function formatDuration(milliseconds) {

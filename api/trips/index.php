@@ -307,6 +307,38 @@ if ($method === 'GET') {
                     $trips[$tripIndex]['intervals']
                 );
             }
+
+            foreach ($trips as &$trip) {
+                foreach ($trip['intervals'] as &$interval) {
+                    $attributes = $interval['attributes'] ?? [];
+                    $actualEnd = $attributes['clock-timer-actual-end'] ?? null;
+                    $earlyStartEnd = $attributes['clock-timer-early-start-end'] ?? null;
+
+                    if (!is_string($actualEnd) || !is_string($earlyStartEnd)) {
+                        continue;
+                    }
+
+                    try {
+                        $actual = new DateTimeImmutable($actualEnd);
+                        $derivedEnd = new DateTimeImmutable($earlyStartEnd);
+                    }
+                    catch (Throwable) {
+                        continue;
+                    }
+
+                    if ($derivedEnd <= $actual) {
+                        continue;
+                    }
+
+                    $interval['derivedRanges'] = [[
+                        'type' => 'earlystart',
+                        'startTime' => $actualEnd,
+                        'endTime' => $earlyStartEnd,
+                    ]];
+                }
+                unset($interval);
+            }
+            unset($trip);
         }
 
         json_response([
@@ -496,6 +528,16 @@ $normalizeClientToken = static function (mixed $value): ?string {
     return $token;
 };
 
+$ensureTripIdReclaimTable = static function (): void {
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS reclaimed_trip_ids ('
+        . 'id BIGINT UNSIGNED NOT NULL, '
+        . 'reclaimed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), '
+        . 'PRIMARY KEY (id)'
+        . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+};
+
 if ($method === 'POST') {
     $clientToken = $normalizeClientToken($input['clientToken'] ?? null);
     $action = isset($input['action']) && is_string($input['action'])
@@ -503,6 +545,8 @@ if ($method === 'POST') {
         : null;
 
     if ($action === 'prepare') {
+        $ensureTripIdReclaimTable();
+
         if ($clientToken === null) {
             api_error('clientToken is required when preparing a trip.', 422, 'invalid_argument');
         }
@@ -525,6 +569,35 @@ if ($method === 'POST') {
                 $existingId = (int) ($existing->fetchColumn() ?: 0);
                 if ($existingId > 0) {
                     return $existingId;
+                }
+
+                $reclaimed = $pdo->query(
+                    'SELECT id FROM reclaimed_trip_ids ORDER BY id ASC LIMIT 1 FOR UPDATE'
+                );
+                $reclaimedId = (int) ($reclaimed->fetchColumn() ?: 0);
+
+                if ($reclaimedId > 0) {
+                    $deleteReclaimed = $pdo->prepare(
+                        'DELETE FROM reclaimed_trip_ids WHERE id = :id'
+                    );
+                    $deleteReclaimed->execute([
+                        ':id' => $reclaimedId,
+                    ]);
+
+                    $statement = $pdo->prepare(
+                        'INSERT INTO trips '
+                        . '(id, user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
+                        . 'VALUES (:id, :user_id, :start_time, :end_time, 1, 0, 0, 1, :client_token)'
+                    );
+                    $statement->execute([
+                        ':id' => $reclaimedId,
+                        ':user_id' => authenticated_user_id(),
+                        ':start_time' => $startTime,
+                        ':end_time' => $endTime,
+                        ':client_token' => $clientToken,
+                    ]);
+
+                    return $reclaimedId;
                 }
 
                 $statement = $pdo->prepare(
@@ -616,23 +689,61 @@ if ($method === 'DELETE' && !array_key_exists('tripId', $input)) {
     if ($clientToken === null) {
         api_error('tripId or clientToken is required.', 422, 'invalid_argument');
     }
-    audited_write(static function (PDO $pdo) use ($clientToken): void {
-        $statement = $pdo->prepare(
-            'DELETE FROM trips WHERE user_id = :user_id AND client_token = :client_token AND pending = 1'
+
+    $ensureTripIdReclaimTable();
+
+    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($clientToken): ?int {
+        $find = $pdo->prepare(
+            'SELECT id FROM trips '
+            . 'WHERE user_id = :user_id AND client_token = :client_token AND pending = 1 '
+            . 'LIMIT 1 FOR UPDATE'
         );
-        $statement->execute([
+        $find->execute([
             ':user_id' => authenticated_user_id(),
             ':client_token' => $clientToken,
         ]);
+
+        $tripId = (int) ($find->fetchColumn() ?: 0);
+        if ($tripId < 1) {
+            return null;
+        }
+
+        $statement = $pdo->prepare(
+            'DELETE FROM trips WHERE id = :trip_id AND user_id = :user_id AND pending = 1'
+        );
+        $statement->execute([
+            ':trip_id' => $tripId,
+            ':user_id' => authenticated_user_id(),
+        ]);
+
+        if ($statement->rowCount() !== 1) {
+            return null;
+        }
+
+        $reclaim = $pdo->prepare(
+            'INSERT IGNORE INTO reclaimed_trip_ids (id) VALUES (:id)'
+        );
+        $reclaim->execute([
+            ':id' => $tripId,
+        ]);
+
+        return $tripId;
     });
-    json_response(['clientToken' => $clientToken]);
+
+    json_response([
+        'clientToken' => $clientToken,
+        'reclaimedTripId' => $reclaimedTripId,
+    ]);
 }
 
 $tripId = require_positive_int($input, 'tripId');
 
 if ($method === 'DELETE') {
-    audited_write(static function (PDO $pdo) use ($tripId): void {
-        require_trip_owner($pdo, $tripId);
+    $ensureTripIdReclaimTable();
+
+    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($tripId): ?int {
+        $trip = require_trip_owner($pdo, $tripId);
+        $pending = ((int) ($trip['pending'] ?? 0)) === 1;
 
         $deleteAttributes = $pdo->prepare(
             'DELETE a FROM attributes a INNER JOIN intervals i ON i.id = a.interval_id WHERE i.trip_id = :trip_id'
@@ -647,9 +758,25 @@ if ($method === 'DELETE') {
             ':trip_id' => $tripId,
             ':user_id' => authenticated_user_id(),
         ]);
+
+        if (!$pending || $deleteTrip->rowCount() !== 1) {
+            return null;
+        }
+
+        $reclaim = $pdo->prepare(
+            'INSERT IGNORE INTO reclaimed_trip_ids (id) VALUES (:id)'
+        );
+        $reclaim->execute([
+            ':id' => $tripId,
+        ]);
+
+        return $tripId;
     });
 
-    json_response(['tripId' => $tripId]);
+    json_response([
+        'tripId' => $tripId,
+        'reclaimedTripId' => $reclaimedTripId,
+    ]);
 }
 
 $action = require_string($input, 'action');

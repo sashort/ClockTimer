@@ -40,7 +40,7 @@ button {
     width: 100vw;
     height: 100dvh;
     margin: 0;
-    padding: 0.125in;
+    padding: 0;
     display: grid;
     grid-template-rows: 52px 142px 62px 29px 122px 1fr var(--trip-log-row-height);
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
@@ -3505,4 +3505,19 @@ clock-timer[hide-latency] time-range[type="latency"] {
 /* Ready <-> running state swaps are not layout animations. */
 .app.trip-state-snap {
     transition: none !important;
+}
+
+
+/* bundled-settings-interval-wave-id-fixes-v1 */
+.trip-settings-dialog {
+    width: min(760px, 94vw);
+    max-width: 760px;
+    height: max-content;
+    max-height: 92dvh;
+    margin: auto;
+}
+
+.trip-settings-dialog form {
+    min-height: 0;
+    height: auto;
 }
