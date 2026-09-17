@@ -1,0 +1,57 @@
+name: Apply unified connection, fetch, hand, and Trip Log changes
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-unified-connection-fetch-hands-triplog.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Apply changes
+        run: |
+          python3 .github/scripts/apply_unified_connection_fetch_hands_triplog.py
+          node --check app.js
+          node --check ClockTimer.js
+          git diff --check
+          grep -q 'id="scopeConnectionButton"' index.html
+          grep -q 'name="showHourHand"' index.html
+          grep -q 'name="showMinuteHand"' index.html
+          grep -q 'name="showSecondHand"' index.html
+          grep -q 'CONNECTION_UI_TRANSITION_DURATION = 750' app.js
+          grep -q 'TRIP_LIST_BODY_DURATION = 1000' app.js
+          grep -q 'TRIP_LIST_MERGE_DURATION = 750' app.js
+          grep -q 'async #fetchRequest' ClockTimer.js
+          grep -q 'hide-hour-hand' app.js app.css
+          if grep -q 'response = await fetch' ClockTimer.js; then
+            echo 'raw fetch try/catch remains' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          matches = []
+          for path in Path('.').glob('*.js'):
+              for match in re.finditer(r'\bfetch\s*\(', path.read_text()):
+                  matches.append((str(path), match.start()))
+          if len(matches) != 1 or matches[0][0] != 'ClockTimer.js':
+              raise SystemExit(f'expected one wrapped fetch call in ClockTimer.js, got {matches}')
+          PY
+          git add app.js app.css index.html ClockTimer.js
+          git commit -m "Unify connection UI and refine timer settings"
+      - name: Push changes
+        run: git push origin HEAD:rename-prestart-latency
