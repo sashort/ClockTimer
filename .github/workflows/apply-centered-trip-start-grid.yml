@@ -1,0 +1,40 @@
+name: Apply centered measured trip start grid
+
+on:
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - .github/workflows/apply-centered-trip-start-grid.yml
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+          fetch-depth: 0
+
+      - name: Apply CSS changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKcCA9IFBhdGgoImFwcC5jc3MiKQpzID0gcC5yZWFkX3RleHQoKS5yc3RyaXAoKQoKbWFya2VyID0gIi8qIHRyaXAtc3RhcnQtY2VudGVyZWQtbWVhc3VyZWQtZ3JpZC12MyAqLyIKaWYgbWFya2VyIGluIHM6CiAgICByYWlzZSBTeXN0ZW1FeGl0KCJjZW50ZXJlZCBtZWFzdXJlZCBncmlkIGFscmVhZHkgYXBwbGllZCIpCgphZGRpdGlvbiA9IHInJycKCi8qIHRyaXAtc3RhcnQtY2VudGVyZWQtbWVhc3VyZWQtZ3JpZC12MyAqLwoudHJpcC1ub3ctYWN0aW9uIHsKICAgIGRpc3BsYXk6IGdyaWQ7CiAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6CiAgICAgICAgbWluLWNvbnRlbnQKICAgICAgICBtaW5tYXgoMCwgdmFyKC0tdHJpcC1ub3ctc3RhcnQtY29weS13aWR0aCwgMHB4KSkKICAgICAgICBtaW4tY29udGVudDsKICAgIGp1c3RpZnktY29udGVudDogY2VudGVyOwogICAganVzdGlmeS1pdGVtczogY2VudGVyOwogICAgYWxpZ24taXRlbXM6IGNlbnRlcjsKICAgIGNvbHVtbi1nYXA6IDAuMjhyZW07CiAgICB0ZXh0LWFsaWduOiBjZW50ZXI7Cn0KCi50cmlwLW5vdy1hY3Rpb25zLmlzLXNlbGVjdGluZyAudHJpcC1ub3ctYWN0aW9uIHsKICAgIGdyaWQtdGVtcGxhdGUtY29sdW1uczoKICAgICAgICBtaW4tY29udGVudAogICAgICAgIG1pbm1heCgwLCAwcHgpCiAgICAgICAgbWluLWNvbnRlbnQ7CiAgICBjb2x1bW4tZ2FwOiAwLjI4cmVtOwp9CgoudHJpcC1ub3ctc3RhcnQtY29weSwKLnRyaXAtbm93LWFjdGlvbnMuaXMtc2VsZWN0aW5nIC50cmlwLW5vdy1zdGFydC1jb3B5LAoudHJpcC1ub3ctYWN0aW9ucy5pcy1leGl0aW5nIC50cmlwLW5vdy1zdGFydC1jb3B5IHsKICAgIHdpZHRoOiBhdXRvOwogICAgbWluLXdpZHRoOiAwOwogICAgbWF4LXdpZHRoOiBub25lOwogICAgb3ZlcmZsb3c6IGhpZGRlbjsKICAgIHdoaXRlLXNwYWNlOiBub3dyYXA7CiAgICBvcGFjaXR5OiAxOwogICAganVzdGlmeS1zZWxmOiBjZW50ZXI7CiAgICB0ZXh0LWFsaWduOiBjZW50ZXI7CiAgICB0cmFuc2Zvcm06IG5vbmU7CiAgICBhbmltYXRpb246IG5vbmU7CiAgICB0cmFuc2l0aW9uOiBub25lOwp9CgoudHJpcC1ub3ctc2V0LXdvcmQsCi50cmlwLW5vdy10by1ub3cgewogICAganVzdGlmeS1zZWxmOiBjZW50ZXI7Cn0KCi50cmlwLW5vdy10by1ub3cgewogICAgbWluLXdpZHRoOiBtYXgtY29udGVudDsKICAgIGRpc3BsYXk6IGlubGluZS1mbGV4OwogICAgYWxpZ24taXRlbXM6IGNlbnRlcjsKICAgIGp1c3RpZnktY29udGVudDogY2VudGVyOwogICAgZ2FwOiAwLjI4cmVtOwogICAgd2hpdGUtc3BhY2U6IG5vd3JhcDsKfQonJycKcC53cml0ZV90ZXh0KHMgKyBhZGRpdGlvbiArICJcbiIpCg==' | base64 -d > /tmp/apply-centered-grid.py
+          python /tmp/apply-centered-grid.py
+          python -c "from pathlib import Path; p=Path('app.css'); p.write_text(p.read_text().rstrip() + '\n')"
+          git diff --check
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-centered-trip-start-grid.yml
+          git add app.css
+          git diff --cached --check
+          git commit -m "Center measured trip start grid"
+          git push origin HEAD:rename-prestart-latency
