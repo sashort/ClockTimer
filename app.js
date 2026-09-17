@@ -74,6 +74,7 @@
     const tripLogPinButton = $("#tripLogPinButton");
     const tripLogRangeSelect = $("#tripLogRangeSelect");
     const syncGoalsMenuButton = $("#syncGoalsMenuButton");
+    const syncGoalsMenuIcon = syncGoalsMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
     const tripLogCloseButton = $("#tripLogCloseButton");
     const tripLogBody = $("#tripLogBody");
@@ -918,6 +919,13 @@
         const bodyRect =
             getTripLogBodyRect();
 
+        setFloatingTripLogBodyRect({
+            left: bodyRect.left + bodyRect.width / 2,
+            top: bodyRect.top + bodyRect.height / 2,
+            width: 0,
+            height: 0
+        });
+
         tripLogBody.hidden =
             false;
 
@@ -1007,6 +1015,10 @@
             true;
 
         clearFloatingTripLogBodyRect();
+
+        await wait(
+            TRIP_LIST_BODY_DELAY
+        );
 
         if (pinned) {
             const destination =
@@ -1200,6 +1212,28 @@
                 enabled
                     ? "Sync Goals enabled"
                     : "Sync Goals disabled";
+        }
+
+        if (syncGoalsMenuIcon) {
+            const nextState =
+                enabled
+                    ? "enabled"
+                    : "disabled";
+
+            const animate =
+                syncGoalsMenuIcon.dataset.syncInitialized ===
+                    "true";
+
+            setCloudIconVisualState(
+                syncGoalsMenuIcon,
+                () => syncGoalsMenuIcon.dataset.syncState,
+                value => { syncGoalsMenuIcon.dataset.syncState = value; },
+                nextState,
+                { animate }
+            );
+
+            syncGoalsMenuIcon.dataset.syncInitialized =
+                "true";
         }
 
         if (goalSyncButton) {
@@ -1581,7 +1615,8 @@
                         getConnectionNumberPadState();
 
                     if (
-                        state?.connectionStatusToken === token &&
+                        state &&
+                        state.connectionStatusToken === token &&
                         state.connectionPresentation === "cloud-fade"
                     ) {
                         updateNumberPadConnectionStatus(
