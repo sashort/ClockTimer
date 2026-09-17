@@ -41,4 +41,17 @@ jobs:
           ssh \
             -i ~/.ssh/id_ed25519 \
             "$LAMP_USER@$LAMP_HOST" \
-            '$HOME/deploy-clocktimer.sh'
+            'set -euo pipefail
+             $HOME/deploy-clocktimer.sh
+             cd /opt/bitnami/apache2/htdocs
+             VERSION=$(git rev-parse --short=12 HEAD)
+             sed -i \
+               -e "s#href=\"app.css\"#href=\"app.css?v=$VERSION\"#" \
+               -e "s#src=\"TemporalFormat.js\"#src=\"TemporalFormat.js?v=$VERSION\"#" \
+               -e "s#src=\"RingContainer.js\"#src=\"RingContainer.js?v=$VERSION\"#" \
+               -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
+               -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
+               -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
+               index.html
+             echo "Asset version: $VERSION"
+             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html'
