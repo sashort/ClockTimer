@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const GRAPHICAL_SETTINGS_VERSION = 7;
+    const GRAPHICAL_SETTINGS_VERSION = 8;
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -340,6 +340,9 @@
                 if (settings.lunchColor === "#f59e0b") settings.lunchColor = "#ffc420";
                 if (settings.downColor === "#2e7d32") settings.downColor = "#5f6772";
                 if (settings.toleranceColor === "#5f6772") settings.toleranceColor = "#2e7d32";
+            }
+            if (version <= 7) {
+                settings.downColor = GRAPHICAL_DEFAULTS.downColor;
             }
             safeStorageSet(STORAGE.graphicalSettings, JSON.stringify(settings));
             safeStorageSet(STORAGE.graphicalSettingsVersion, String(GRAPHICAL_SETTINGS_VERSION));
