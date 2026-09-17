@@ -4558,6 +4558,7 @@
                 if (buffered) {
                     intervalType = buffered.type;
                     phase = `${record.clockTimerBufferPosition || "buffer"}-buffer`;
+                    record = buffered;
                 }
             }
 
@@ -4576,6 +4577,20 @@
 
             if (!record || !Number.isFinite(start)) {
                 return undefined;
+            }
+
+            if (
+                intervalType === "break" ||
+                intervalType === "lunch"
+            ) {
+                const bufferedEnd =
+                    this.#getPendingIntervalElapsedBoundary(
+                        record
+                    );
+
+                if (Number.isFinite(bufferedEnd)) {
+                    end = bufferedEnd;
+                }
             }
 
             const elapsedMilliseconds = Math.max(0, timelineNow - start);
@@ -27927,8 +27942,37 @@
                 renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
+                let intervalAdjustmentMilliseconds = 0;
+
+                const activeInterval =
+                    this.getActiveIntervalState(
+                        nowDate
+                    );
+
+                const activeIntervalType =
+                    String(
+                        activeInterval?.intervalType ?? ""
+                    ).trim().toLowerCase();
+
+                if (
+                    (
+                        activeIntervalType === "break" ||
+                        activeIntervalType === "lunch"
+                    ) &&
+                    Number.isFinite(
+                        activeInterval?.remainingMilliseconds
+                    )
+                ) {
+                    intervalAdjustmentMilliseconds =
+                        activeInterval.remainingMilliseconds;
+                }
+
                 renderedTime = this.#formatSummaryEndTime(
-                    new Date(nowDate.getTime() + remainingMilliseconds)
+                    new Date(
+                        nowDate.getTime() +
+                        remainingMilliseconds +
+                        intervalAdjustmentMilliseconds
+                    )
                 );
             }
             else {

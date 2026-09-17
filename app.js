@@ -5738,9 +5738,40 @@
         return `${minutes}:${String(seconds).padStart(2, "0")}`;
     }
 
+    function setEndTripButtonIntervalPalette(intervalType) {
+        const normalized =
+            String(intervalType || "")
+                .trim()
+                .toLowerCase();
+
+        if (normalized === "break") {
+            endTripButton.style.background =
+                "var(--timer-break-color, #001e60)";
+            endTripButton.style.color =
+                "var(--timer-break-text-color, #ffffff)";
+            return;
+        }
+
+        if (normalized === "lunch") {
+            endTripButton.style.background =
+                "var(--timer-lunch-color, #ffc420)";
+            endTripButton.style.color =
+                "var(--timer-lunch-text-color, #000000)";
+            return;
+        }
+
+        endTripButton.style.removeProperty(
+            "background"
+        );
+        endTripButton.style.removeProperty(
+            "color"
+        );
+    }
+
     function renderTripActionState(now = new Date()) {
         if (!tripIsLive()) {
             app.dataset.intervalState = "none";
+            setEndTripButtonIntervalPalette();
             endTripButton.textContent = "End Trip";
             tripActionRow.hidden = false;
             breakButton.hidden = false;
@@ -5756,6 +5787,7 @@
 
         if (intervalType === "down") {
             app.dataset.intervalState = "down";
+            setEndTripButtonIntervalPalette();
             endTripButton.textContent =
                 `Resume Trip : ${formatIntervalClock(interval.elapsedMilliseconds)}`;
             tripActionRow.hidden = false;
@@ -5766,6 +5798,9 @@
 
         if (intervalType === "break" || intervalType === "lunch") {
             app.dataset.intervalState = "break";
+            setEndTripButtonIntervalPalette(
+                intervalType
+            );
             const label = intervalType === "lunch" ? "Lunch" : "Break";
             endTripButton.textContent =
                 `End ${label} : ${formatIntervalClock(interval.remainingMilliseconds)}`;
@@ -5776,6 +5811,7 @@
         }
 
         app.dataset.intervalState = "normal";
+        setEndTripButtonIntervalPalette();
         endTripButton.textContent = "End Trip";
         tripActionRow.hidden = false;
         breakButton.hidden = false;
