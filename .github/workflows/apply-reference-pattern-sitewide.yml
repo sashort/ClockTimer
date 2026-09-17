@@ -22,8 +22,165 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwID0gUGF0aCgiYXBwLmNzcyIpCnMgPSBwLnJlYWRfdGV4dCgpLnJzdHJpcCgpCm1hcmtlciA9ICIvKiByZWZlcmVuY2UtcGF0dGVybi1zaXRld2lkZS12MSAqLyIKaWYgbWFya2VyIGluIHM6CiAgICByYWlzZSBTeXN0ZW1FeGl0KCJzaXRld2lkZSByZWZlcmVuY2UgcGF0dGVybiBhbHJlYWR5IGFwcGxpZWQiKQoKYWRkaXRpb24gPSByJycnCgovKiByZWZlcmVuY2UtcGF0dGVybi1zaXRld2lkZS12MSAqLwo6cm9vdCB7CiAgICAtLWFwcC1kb2N1bWVudC1wYWRkaW5nOiAwLjEyNWluOwogICAgLS13bS1ibHVlOiAjMDA1M2UyOwogICAgLS13bS1ibHVlLWRhcms6ICMwMDFlNjA7CiAgICAtLXdtLWJsdWUtbWlkOiAjMDAzYjliOwogICAgLS13bS15ZWxsb3c6ICNmZmM0MjA7CiAgICAtLXVpLW5hdnktZ3JhZGllbnQ6ICMwMDFlNjA7CiAgICAtLXVpLWJsdWUtZ3JhZGllbnQ6ICMwMDUzZTI7CiAgICAtLXVpLXllbGxvdy1ncmFkaWVudDogI2ZmYzQyMDsKICAgIC0tdWktZ3JheS1ncmFkaWVudDogIzVmNjc3MjsKICAgIC0tdWktY2hhcmNvYWwtZ3JhZGllbnQ6IGxpbmVhci1ncmFkaWVudCgxODBkZWcsICM0NjUxNWMgMCUsICMyZjM5NDMgNDUlLCAjMjAyOTMzIDEwMCUpOwogICAgLS11aS1ncmVlbi1ncmFkaWVudDogIzJlN2QzMjsKfQoKLmFwcCB7CiAgICBwYWRkaW5nOiB2YXIoLS1hcHAtZG9jdW1lbnQtcGFkZGluZyk7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS13bS1ibHVlKTsKfQoKLyogS2VlcCBtYWluLVVJIGJ1dHRvbiBjb250YWluZXJzIHRyYW5zcGFyZW50IHNvIHRoZSBkb2N1bWVudCBjb2xvciBzaG93cyB0aHJvdWdoLiAqLwouYXBwIC50cmlwLWFjdGlvbi1jb250cm9scywKLmFwcCAuYWN0aXZlLXRyaXAtY29udHJvbHMsCi5hcHAgLnRyaXAtYWN0aW9uLXJvdywKLmFwcCAucGVyY2VudC1zdW1tYXJ5LAouYXBwIC5pbmRlcGVuZGVudC10aW1lci1jb250cm9scyB7CiAgICBiYWNrZ3JvdW5kOiB0cmFuc3BhcmVudDsKfQoKLyogQWNjb3VudCBmb3IgdGhlIGRvY3VtZW50IHBhZGRpbmcgYW5kIGtlZXAgdGhlIG5vdGNoIGNlbnRlcmVkIHVuZGVyIHRoZSA1MnB4IGhhbWJ1cmdlci4gKi8KLm1haW4tbWVudTpwb3BvdmVyLW9wZW4gewogICAgaW5zZXQ6CiAgICAgICAgY2FsYyh2YXIoLS1hcHAtZG9jdW1lbnQtcGFkZGluZykgKyA1MnB4ICsgMTRweCkKICAgICAgICBhdXRvCiAgICAgICAgYXV0bwogICAgICAgIHZhcigtLWFwcC1kb2N1bWVudC1wYWRkaW5nKTsKfQoKLm1haW4tbWVudTo6YmVmb3JlLAoubWFpbi1tZW51OjphZnRlciB7CiAgICBsZWZ0OiAyNnB4Owp9CgoubWFpbi1tZW51IHsKICAgIGJhY2tncm91bmQ6IHZhcigtLXdtLWJsdWUtZGFyayk7Cn0KCi5tYWluLW1lbnU6OmFmdGVyIHsKICAgIGJvcmRlci1ib3R0b20tY29sb3I6IHZhcigtLXdtLWJsdWUtZGFyayk7Cn0KCi8qIE1vZGFsIGhlYWRlcnMgdXNlIHRoZSBzYW1lIGNvbG9yIHRyZWF0bWVudCBhcyB0aGUgbnVtYmVyLXBhZCBoZWFkZXIuICovCi5kaWFsb2ctaGVhZGVyLAoubnVtYmVyLXBhZC1jb250ZXh0IHsKICAgIGJhY2tncm91bmQ6IHZhcigtLXVpLWNoYXJjb2FsLWdyYWRpZW50KTsKICAgIGJvcmRlci1ib3R0b206IDFweCBzb2xpZCByZ2JhKDI1NSAyNTUgMjU1IC8gMjglKTsKICAgIGJveC1zaGFkb3c6IGluc2V0IDAgMXB4IDAgcmdiKDI1NSAyNTUgMjU1IC8gMTQlKTsKfQoKLmRpYWxvZy1jbG9zZSB7CiAgICBiYWNrZ3JvdW5kOiB0cmFuc3BhcmVudDsKfQoKLmFwcC1kaWFsb2cgewogICAgYmFja2dyb3VuZDogdmFyKC0td20tYmx1ZS1kYXJrKTsKfQoKLmFwcC1kaWFsb2cgZmllbGRzZXQsCi5jbG9jay1wcmV2aWV3IHsKICAgIGJhY2tncm91bmQ6IGNvbG9yLW1peChpbiBzcmdiLCB2YXIoLS13bS1ibHVlLWRhcmspIDg4JSwgdmFyKC0td20tYmx1ZSkgMTIlKTsKICAgIGJvcmRlci1jb2xvcjogcmdiKDI1NSAyNTUgMjU1IC8gNTQlKTsKfQoKLmFwcC1kaWFsb2cgaW5wdXQsCi5hcHAtZGlhbG9nIHNlbGVjdCB7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS13bS1ibHVlLWRhcmspOwogICAgYm9yZGVyLWNvbG9yOiByZ2IoMjU1IDI1NSAyNTUgLyA2MiUpOwp9CgoudHJpcC10aW1lLWVkaXQsCi50cmlwLW5vdy1hY3Rpb24sCi50cmlwLXRpbWUtbm93LXRvZ2dsZSwKLm51bWJlci1wYWQtc2V0dGluZ3MgewogICAgYmFja2dyb3VuZDogdmFyKC0td20tYmx1ZSk7Cn0KCi50cmlwLXRpbWUtdmFsdWUsCi5kaWFsb2ctYWN0aW9ucyAucHJpbWFyeS1hY3Rpb24sCi5udW1iZXItcGFkLXJlYWRvdXQsCi5uZXctdHJpcC1idXR0b24sCi5lbmQtdHJpcC1idXR0b24sCi5icmVhay1idXR0b24sCi5icmVhay10eXBlLWJ1dHRvbi5sdW5jaCB7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS13bS15ZWxsb3cpOwp9CgoubnVtYmVyLXBhZC1ncmlkLAoubnVtYmVyLXBhZC1rZXksCi5icmVhay10eXBlLWJ1dHRvbiB7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS13bS1ibHVlLWRhcmspOwp9CgoubnVtYmVyLXBhZC1jb25maXJtIHsKICAgIGJhY2tncm91bmQ6IHZhcigtLXdtLWJsdWUpOwp9CgoubnVtYmVyLXBhZC1tZXJpZGllbS5pcy1zZWxlY3RlZCB7CiAgICBjb2xvcjogdmFyKC0td20teWVsbG93KTsKICAgIGJveC1zaGFkb3c6IDAgN3B4IDEzcHggcmdiKDAgMCAwIC8gNDIlKSwgMCAwIDAgMnB4IHJnYigyNTUgMTk2IDMyIC8gMjQlKTsKfQoKLyogVGhlIHN0YXJ0IGxhYmVsIG93bnMgdGhlIG9ubHkgZmxleGlibGUgdHJhY2suIER1cmluZyBzZWxlY3Rpb24gdGhhdCB0cmFjawogKiByZWFjaGVzIGEgdHJ1ZSB6ZXJvIHdpZHRoLCBzbyBubyBmcmFnbWVudCBvZiB0aGUgbGFiZWwgY2FuIHJlbWFpbiB2aXNpYmxlLgogKiBCZWNhdXNlIHRoZSB0cmFjaydzIHJpZ2h0IGVkZ2Ugc3RheXMgbmV4dCB0byAidG8iLCByZXN0b3JpbmcgMGZyIC0+IDFmcgoqIHJldmVhbHMgdGhlIHJpZ2h0LWFsaWduZWQgdGV4dCBmcm9tIHRoZSByaWdodC4KICovCi50cmlwLW5vdy1hY3Rpb24gewogICAgZGlzcGxheTogZ3JpZDsKICAgIGdyaWQtdGVtcGxhdGUtY29sdW1uczoKICAgICAgICBtaW4tY29udGVudAogICAgICAgIG1pbm1heCgwLCAxZnIpCiAgICAgICAgbWluLWNvbnRlbnQKICAgICAgICBtaW4tY29udGVudDsKICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICBqdXN0aWZ5LWNvbnRlbnQ6IHN0cmV0Y2g7CiAgICBjb2x1bW4tZ2FwOiAwLjNlbTsKICAgIHRyYW5zaXRpb246CiAgICAgICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zIHZhcigtLXRyaXAtc3RhcnQtdHJhbnNpdGlvbi1kdXJhdGlvbikgZWFzZS1pbi1vdXQsCiAgICAgICAgZmxleC1iYXNpcyB2YXIoLS10cmlwLXN0YXJ0LXRyYW5zaXRpb24tZHVyYXRpb24pIGVhc2UtaW4tb3V0LAogICAgICAgIHBhZGRpbmctaW5saW5lIHZhcigtLXRyaXAtc3RhcnQtdHJhbnNpdGlvbi1kdXJhdGlvbikgZWFzZS1pbi1vdXQsCiAgICAgICAgZm9udC1zaXplIHZhcigtLXRyaXAtc3RhcnQtdHJhbnNpdGlvbi1kdXJhdGlvbikgZWFzZS1pbi1vdXQsCiAgICAgICAgb3BhY2l0eSAyNTBtcyBlYXNlLWluLW91dCwKICAgICAgICBmaWx0ZXIgMjUwbXMgZWFzZS1pbi1vdXQsCiAgICAgICAgY29sb3IgMjUwbXMgZWFzZS1pbi1vdXQsCiAgICAgICAgYm9yZGVyLWNvbG9yIDI1MG1zIGVhc2UtaW4tb3V0LAogICAgICAgIGJveC1zaGFkb3cgMjUwbXMgZWFzZS1pbi1vdXQ7Cn0KCi50cmlwLW5vdy1hY3Rpb25zLmlzLXNlbGVjdGluZyAudHJpcC1ub3ctYWN0aW9uIHsKICAgIGdyaWQtdGVtcGxhdGUtY29sdW1uczoKICAgICAgICBtaW4tY29udGVudAogICAgICAgIG1pbm1heCgwLCAwZnIpCiAgICAgICAgbWluLWNvbnRlbnQKICAgICAgICBtaW4tY29udGVudDsKfQoKLm...TRUNCATED_FOR_BREVITY...cC5pc19zZWxlY3RpbmcgLnRyaXAtbm93LXN0YXJ0LWNvcHksCi50cmlwLW5vdy1hY3Rpb25zLmlzLWV4aXRpbmcgLnRyaXAtbm93LXN0YXJ0LWNvcHkgewogICAgd2lkdGg6IGF1dG87CiAgICBtaW4td2lkdGg6IDA7CiAgICBtYXgtd2lkdGg6IG5vbmU7CiAgICBvdmVyZmxvdzogaGlkZGVuOwogICAgd2hpdGUtc3BhY2U6IG5vd3JhcDsKICAgIG9wYWNpdHk6IDE7CiAgICB0ZXh0LWFsaWduOiByaWdodDsKICAgIHRyYW5zZm9ybTogbm9uZTsKICAgIGFuaW1hdGlvbjogbm9uZTsKICAgIHRyYW5zaXRpb246IG5vbmU7Cn0KJycnCnAud3JpdGVfdGV4dChzICsgYWRkaXRpb24gKyAiXG4iKQo=' | base64 -d > /tmp/apply-reference-pattern.py
-          python /tmp/apply-reference-pattern.py
+          if grep -q 'reference-pattern-sitewide-v1' app.css; then
+            echo 'sitewide reference pattern already applied'
+            exit 1
+          fi
+          cat >> app.css <<'CSS'
+
+          /* reference-pattern-sitewide-v1 */
+          :root {
+              --app-document-padding: 0.125in;
+              --wm-blue: #0053e2;
+              --wm-blue-dark: #001e60;
+              --wm-blue-mid: #003b9b;
+              --wm-yellow: #ffc420;
+              --ui-navy-gradient: #001e60;
+              --ui-blue-gradient: #0053e2;
+              --ui-yellow-gradient: #ffc420;
+              --ui-gray-gradient: #5f6772;
+              --ui-charcoal-gradient: linear-gradient(180deg, #46515c 0%, #2f3943 45%, #202933 100%);
+              --ui-green-gradient: #2e7d32;
+          }
+
+          .app {
+              padding: var(--app-document-padding);
+              background: var(--wm-blue);
+          }
+
+          .app .trip-action-controls,
+          .app .active-trip-controls,
+          .app .trip-action-row,
+          .app .percent-summary,
+          .app .independent-timer-controls {
+              background: transparent;
+          }
+
+          .main-menu:popover-open {
+              inset:
+                  calc(var(--app-document-padding) + 52px + 14px)
+                  auto
+                  auto
+                  var(--app-document-padding);
+          }
+
+          .main-menu::before,
+          .main-menu::after {
+              left: 26px;
+          }
+
+          .main-menu {
+              background: var(--wm-blue-dark);
+          }
+
+          .main-menu::after {
+              border-bottom-color: var(--wm-blue-dark);
+          }
+
+          .dialog-header,
+          .number-pad-context {
+              background: var(--ui-charcoal-gradient);
+              border-bottom: 1px solid rgb(255 255 255 / 28%);
+              box-shadow: inset 0 1px 0 rgb(255 255 255 / 14%);
+          }
+
+          .dialog-close {
+              background: transparent;
+          }
+
+          .app-dialog {
+              background: var(--wm-blue-dark);
+          }
+
+          .app-dialog fieldset,
+          .clock-preview {
+              background: color-mix(in srgb, var(--wm-blue-dark) 88%, var(--wm-blue) 12%);
+              border-color: rgb(255 255 255 / 54%);
+          }
+
+          .app-dialog input,
+          .app-dialog select {
+              background: var(--wm-blue-dark);
+              border-color: rgb(255 255 255 / 62%);
+          }
+
+          .trip-time-edit,
+          .trip-now-action,
+          .trip-time-now-toggle,
+          .number-pad-settings {
+              background: var(--wm-blue);
+          }
+
+          .trip-time-value,
+          .dialog-actions .primary-action,
+          .number-pad-readout,
+          .new-trip-button,
+          .end-trip-button,
+          .break-button,
+          .break-type-button.lunch {
+              background: var(--wm-yellow);
+          }
+
+          .number-pad-grid,
+          .number-pad-key,
+          .break-type-button {
+              background: var(--wm-blue-dark);
+          }
+
+          .number-pad-confirm {
+              background: var(--wm-blue);
+          }
+
+          .number-pad-meridiem.is-selected {
+              color: var(--wm-yellow);
+              box-shadow: 0 7px 13px rgb(0 0 0 / 42%), 0 0 0 2px rgb(255 196 32 / 24%);
+          }
+
+          .trip-now-action {
+              display: grid;
+              grid-template-columns:
+                  min-content
+                  minmax(0, 1fr)
+                  min-content
+                  min-content;
+              align-items: center;
+              justify-content: stretch;
+              column-gap: 0.3em;
+              transition:
+                  grid-template-columns var(--trip-start-transition-duration) ease-in-out,
+                  flex-basis var(--trip-start-transition-duration) ease-in-out,
+                  padding-inline var(--trip-start-transition-duration) ease-in-out,
+                  font-size var(--trip-start-transition-duration) ease-in-out,
+                  opacity 250ms ease-in-out,
+                  filter 250ms ease-in-out,
+                  color 250ms ease-in-out,
+                  border-color 250ms ease-in-out,
+                  box-shadow 250ms ease-in-out;
+          }
+
+          .trip-now-actions.is-selecting .trip-now-action {
+              grid-template-columns:
+                  min-content
+                  minmax(0, 0fr)
+                  min-content
+                  min-content;
+          }
+
+          .trip-now-start-copy,
+          .trip-now-actions.is-selecting .trip-now-start-copy,
+          .trip-now-actions.is-exiting .trip-now-start-copy {
+              width: auto;
+              min-width: 0;
+              max-width: none;
+              overflow: hidden;
+              white-space: nowrap;
+              opacity: 1;
+              text-align: right;
+              transform: none;
+              animation: none;
+              transition: none;
+          }
+          CSS
           python -c "from pathlib import Path; p=Path('app.css'); p.write_text(p.read_text().rstrip() + '\n')"
           git diff --check
 
