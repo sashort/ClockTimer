@@ -4159,10 +4159,42 @@
             this.#tripId = preparedTripId;
             this.#pendingIntervalRecord = undefined;
 
+            const startEventTimeline =
+                this.#getStartTimeMilliseconds();
+
+            const startEventTime =
+                this.#timelineToISO(
+                    startEventTimeline
+                ) ??
+                new Date().toISOString();
+
+            this.#queueTripEvent(
+                "trip.started",
+                startEventTime,
+                {
+                    standardTime:
+                        this.#standardTime,
+                    creationTime:
+                        this.#creationTime,
+                    scheduledStart:
+                        this.#scheduledStart,
+                    startTime:
+                        this.#formatTimelineTime(
+                            startEventTimeline
+                        ),
+                    creationAnchor:
+                        this.#getJSONCreationDate()
+                            ?.toISOString?.(),
+                    nonProduction:
+                        this.#nonProduction
+                }
+            );
+
             let synced = false;
             if (this.#connectionState === "connected") {
                 try {
                     await this.#ensureTripPersisted();
+                    await this.#syncTripEvents();
                     synced = true;
                 }
                 catch (error) {
@@ -4303,9 +4335,24 @@
                     true;
             }
 
+            this.#queueTripEvent(
+                "trip.stopped",
+                persistedEnd,
+                {
+                    standardTimeMilliseconds:
+                        Math.round(
+                            this.#standardDuration
+                        ),
+                    countedTimeMilliseconds:
+                        Math.round(
+                            aggregateCountedTime
+                        )
+                }
+            );
+
             const synced = await this.#protectedSync(async () => {
                 const tripId = await this.#ensureTripPersisted();
-                await this.#syncIntervals();
+                await this.#syncTripEvents();
                 await this.#apiRequest("trips", {
                     method: "PATCH",
                     csrf: true,
@@ -4444,9 +4491,51 @@
                 this.#handleTripGoalChange();
             }
 
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
+
+            const intervalEventTime =
+                this.#timelineToISO(
+                    Number(
+                        record.clockTimerBufferedStartTimeline
+                    )
+                ) ??
+                record.startDate?.toISOString?.() ??
+                new Date().toISOString();
+
+            this.#queueTripEvent(
+                "interval.started",
+                intervalEventTime,
+                {
+                    intervalKey:
+                        record.clockTimerEventKey,
+                    type:
+                        record.type,
+                    length:
+                        length ?? null,
+                    startBuffer:
+                        startBuffer ?? null,
+                    endBuffer:
+                        endBuffer ?? null,
+                    attributes:
+                        attributes &&
+                        typeof attributes === "object" &&
+                        !Array.isArray(attributes)
+                            ? {
+                                ...attributes
+                            }
+                            : {}
+                },
+                {
+                    record,
+                    assignIntervalId:
+                        true
+                }
+            );
+
             const synced = await this.#protectedSync(async () => {
                 await this.#ensureTripPersisted();
-                await this.#syncIntervals();
+                await this.#syncTripEvents();
             });
 
             const result =
@@ -4601,9 +4690,23 @@
                 this.#handleTripGoalChange();
             }
 
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
+
+            this.#queueTripEvent(
+                "interval.ended",
+                nowDate,
+                {
+                    intervalKey:
+                        record.clockTimerEventKey,
+                    reason:
+                        "manual"
+                }
+            );
+
             const synced = await this.#protectedSync(async () => {
                 await this.#ensureTripPersisted();
-                await this.#syncIntervals();
+                await this.#syncTripEvents();
             });
             const result = this.#mutationResult(synced, record);
             this.#checkGoalMisses(this.#getCurrentTimelineTime());
@@ -9636,13 +9739,27 @@
                 );
             }
 
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
+
+            this.#queueTripEvent(
+                "interval.approval-changed",
+                new Date(),
+                {
+                    intervalKey:
+                        record.clockTimerEventKey,
+                    state:
+                        next.state,
+                    value:
+                        next.value
+                }
+            );
+
             const synced =
                 await this.#protectedSync(
                     async () => {
                         await this.#ensureTripPersisted();
-                        await this.#syncIntervalRecord(
-                            record
-                        );
+                        await this.#syncTripEvents();
                     }
                 );
 
@@ -9788,30 +9905,38 @@
                 );
             }
 
-            let synced =
-                !persisted;
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
 
-            if (persisted) {
-                synced =
-                    await this.#protectedSync(
-                        async () => {
-                            await this.#syncIntervalRecord(
-                                record
-                            );
-                        }
-                    );
-
-                if (
-                    synced &&
-                    record.clockTimerDeleteSynced ===
-                        true
-                ) {
-                    this.#insertedRanges =
-                        this.#insertedRanges.filter(
-                            candidate =>
-                                candidate !== record
-                        );
+            this.#queueTripEvent(
+                "interval.deleted",
+                new Date(),
+                {
+                    intervalKey:
+                        record.clockTimerEventKey
                 }
+            );
+
+            let synced =
+                false;
+
+            synced =
+                await this.#protectedSync(
+                    async () => {
+                        await this.#ensureTripPersisted();
+                        await this.#syncTripEvents();
+                    }
+                );
+
+            if (synced) {
+                record.clockTimerDeleteSynced =
+                    true;
+
+                this.#insertedRanges =
+                    this.#insertedRanges.filter(
+                        candidate =>
+                            candidate !== record
+                    );
             }
 
             return {
