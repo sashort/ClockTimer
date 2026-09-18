@@ -14943,6 +14943,11 @@
             const stateChangeVisual =
                 this.#beginStateChangeVisuals();
 
+            if (stateChangeVisual) {
+                stateChangeVisual.timerTypeTransition =
+                    true;
+            }
+
             const oldRings =
                 this.#getTimerRings()
                     .filter(
@@ -16428,13 +16433,22 @@
                     range.style.zIndex =
                         "100";
 
-                    record.ring.appendChild(
-                        range
-                    );
-
                     TimeRangeClass?.suspendLayout?.(
                         range
                     );
+
+                    try {
+                        record.ring.appendChild(
+                            range
+                        );
+                    }
+                    catch (error) {
+                        TimeRangeClass?.resumeLayout?.(
+                            range
+                        );
+
+                        throw error;
+                    }
 
                     record.ranges.push(
                         range
@@ -16549,17 +16563,34 @@
                 return;
             }
 
+            const semanticCoverageOnly =
+                state.timerTypeTransition ===
+                    true;
+
             const visible =
-                this.#getStateChangeVisibleSegments(
-                    timestamp
-                );
+                semanticCoverageOnly
+                    ? this.#getStateChangeFinalCoverage()
+                    : this.#getStateChangeVisibleSegments(
+                        timestamp
+                    );
 
             const pieces =
-                this.#splitStateChangeOverlaySegments(
-                    visible,
-                    state.fadeStartedAt !==
-                        undefined
-                );
+                semanticCoverageOnly
+                    ? visible.map(
+                        segment => ({
+                            ...segment,
+                            role:
+                                state.fadeStartedAt ===
+                                    undefined
+                                    ? "hold"
+                                    : "keep"
+                        })
+                    )
+                    : this.#splitStateChangeOverlaySegments(
+                        visible,
+                        state.fadeStartedAt !==
+                            undefined
+                    );
 
             const byRing =
                 new Map();
