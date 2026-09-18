@@ -402,14 +402,17 @@ class TimeRange extends HTMLElement {
             :host([type="wave"][timer-type-transition-wave]) #elapsed-wave {
                 animation:
                     timer-type-transition-wave-sweep
-                    750ms
+                    var(
+                        --timer-type-transition-wave-duration,
+                        2583ms
+                    )
                     linear
                     1
                     both;
                 animation-play-state:
                     var(
                         --timer-type-transition-wave-play-state,
-                        paused
+                        running
                     );
             }
 
