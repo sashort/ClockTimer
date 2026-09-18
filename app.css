@@ -2062,7 +2062,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
     transition:
         flex-basis var(--trip-start-transition-duration) ease-in-out,
         padding-inline var(--trip-start-transition-duration) ease-in-out,
-        opacity var(--trip-start-transition-duration) linear;
+        opacity var(--trip-start-transition-duration) ease-in-out;
 }
 
 .trip-now-actions.is-selecting .trip-now-cancel {
@@ -2203,7 +2203,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
     position: relative;
     display: inline-block;
     flex: 0 0 auto;
-    width: var(--trip-now-now-width, auto);
+    width: var(--trip-now-now-width, 3ch);
     min-width: 0;
     height: 1em;
     line-height: 1;
@@ -2212,7 +2212,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 .trip-now-actions.is-selecting .trip-now-value-copy {
-    width: var(--trip-now-timestamp-width, var(--trip-now-now-width, auto));
+    width: var(--trip-now-timestamp-width, 9ch);
 }
 
 .trip-now-now-label,
@@ -2224,7 +2224,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
     width: max-content;
     white-space: nowrap;
     transition:
-        opacity var(--trip-start-transition-duration) linear,
+        opacity var(--trip-start-transition-duration) ease-in-out,
         transform var(--trip-start-transition-duration) ease-in-out;
 }
 
@@ -2520,7 +2520,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
     grid-template-columns:
         1fr
         repeat(2, min-content)
-        minmax(0, var(--trip-now-start-copy-width, 0px))
+        minmax(0, var(--trip-now-start-copy-width, 21ch))
         repeat(2, min-content)
         1fr;
     grid-template-rows: 1fr;
@@ -3736,7 +3736,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .number-pad-date-row input::-webkit-datetime-edit-fields-wrapper {display:flex;justify-content:center;}
 .number-pad-calendar-icon {position:absolute;left:calc(50% - 92px);width:18px;height:18px;}
 @container numberpad-date (max-width: 190px) {
-    .number-pad-date-row input {font-size:12px;}
+    .number-pad-date-text {font-size:12px;}
     .number-pad-calendar-icon {display:none;}
 }
 
@@ -3771,8 +3771,33 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .number-pad-readout .number-pad-date-row {
     grid-column: 2;
     padding-inline: 0;
+    display: grid;
+    place-items: center;
     container-type: inline-size;
     container-name: numberpad-date;
+}
+
+.number-pad-date-text {
+    font-size: clamp(12px, 3.5vw, 16px);
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.number-pad-date-row #numberPadDate {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.number-pad-date-row:focus-within {
+    outline: 2px solid var(--wm-blue-dark);
+    outline-offset: 3px;
 }
 
 .number-pad-meridiem {grid-column: 3;}

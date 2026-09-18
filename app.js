@@ -150,6 +150,7 @@
     let numberPadContext;
     let numberPadReadout;
     let numberPadDate;
+    let numberPadDateDisplay;
     let numberPadDateRow;
     let numberPadAM;
     let numberPadPM;
@@ -4177,6 +4178,7 @@
                 numberPadContext = $("#numberPadContext");
                 numberPadReadout = $("#numberPadReadout");
                 numberPadDate = $("#numberPadDate");
+                numberPadDateDisplay = $("#numberPadDateDisplay");
                 numberPadDateRow = $("#numberPadDateRow");
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
@@ -4520,6 +4522,10 @@
         numberPadPM.hidden = !absoluteMode;
         if (absoluteMode) {
             numberPadDate.value = numberPadState.pendingDate || "";
+            numberPadDateDisplay.textContent = numberPadDate.value
+                ? new Intl.DateTimeFormat(undefined, {year: "numeric", month: "2-digit", day: "2-digit"})
+                    .format(new Date(`${numberPadDate.value}T12:00:00`))
+                : "—";
             numberPadAM.classList.toggle("is-selected", numberPadState.meridiem === "AM");
             numberPadPM.classList.toggle("is-selected", numberPadState.meridiem === "PM");
             numberPadAM.setAttribute("aria-pressed", String(numberPadState.meridiem === "AM"));
@@ -5359,6 +5365,8 @@
         const active = Boolean(draft && tripStartsNowState);
         const values = tripSettingsSession?.values;
         tripSetStartsNowActions.hidden = !draft;
+        // Measure the labels before changing layout so every transition starts together.
+        syncTripStartsNowButtonContent(active);
         tripSetStartsNowActions.classList.toggle("is-selecting", active);
         tripSetStartsNowActions.classList.toggle("is-exiting", tripStartsNowExiting);
         tripSetStartsNowCancel.hidden = false;
@@ -5384,8 +5392,6 @@
             button.textContent = selected ? "✓" : "-";
             button.setAttribute("aria-pressed", String(selected));
         });
-
-        syncTripStartsNowButtonContent(active);
 
         if (!active) {
             tripSetStartsNow.disabled =
@@ -5616,6 +5622,7 @@
         }
 
         const opened = openDialogElement(tripSettingsDialog, { duration, reason });
+        if (opened) syncTripStartsNowUI();
         if (!opened && !existingSession) {
             tripSettingsSession = undefined;
             tripStartsNowState = undefined;
@@ -5705,6 +5712,10 @@
             }
             numberPadState.pendingDate = numberPadDate.value;
             refreshNumberPad();
+        });
+
+        numberPadDateRow.addEventListener("click", () => {
+            try { numberPadDate.showPicker?.(); } catch {}
         });
 
         numberPadConfirm.addEventListener("pointerup", async () => {
