@@ -4535,6 +4535,10 @@
 
                         case "trip.matched-goal-changed":
                             this.#matchedTripGoal =
+                                value.value !==
+                                    null &&
+                                value.value !==
+                                    undefined &&
                                 Number.isFinite(
                                     Number(
                                         value.value
