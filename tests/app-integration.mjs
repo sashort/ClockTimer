@@ -126,7 +126,11 @@ const syncPressed=window.document.querySelector('#syncGoalsMenuButton').getAttri
 syncHelp.click();await settle();
 assert.equal(helpPopover.parentElement,window.document.body,'menu help must not remain inside a closed dialog');
 assert.equal(window.document.querySelector('#graphicalHelpTitle').textContent,'Sync Goals');
-assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/150%/);
+const helpTable=window.document.querySelector('#graphicalHelpBody .settings-help-table');
+assert.deepEqual([...helpTable.querySelectorAll('tbody th')].map(cell=>cell.textContent),['Previous','Active','Total']);
+assert.equal(helpTable.querySelectorAll('tbody tr')[1].lastElementChild.textContent,'?');
+assert.equal(helpTable.querySelectorAll('svg[role="img"]').length,2);
+assert.equal(helpTable.querySelector('.settings-help-total-percent').textContent,'100%');
 assert.equal(window.document.querySelector('#syncGoalsMenuButton').getAttribute('aria-pressed'),syncPressed);
 window.document.querySelector('#graphicalHelpClose').click();await settle();
 assert(syncHelp.classList.contains('is-visible'));

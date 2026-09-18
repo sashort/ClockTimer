@@ -3611,9 +3611,33 @@ clock-timer[hide-latency] time-range[type="latency"] {
     text-align: left;
 }
 
-.settings-help-table tbody tr:last-child {
+.settings-help-table .settings-help-total-row {
+    background: rgb(139 213 255 / 12%);
     color: #8bd5ff;
     font-weight: 700;
+}
+
+.settings-help-table .settings-help-total-row > * {
+    border-top: 2px solid rgb(139 213 255 / 65%);
+    border-bottom: 0;
+    padding-block: 12px;
+}
+
+.settings-help-table .settings-help-total-percent {
+    font-size: 1.5em;
+    font-weight: 900;
+}
+
+.settings-help-table-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* Trip controls share one status-icon column without shifting button labels. */
