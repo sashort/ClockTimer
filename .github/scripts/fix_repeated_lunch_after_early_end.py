@@ -27,24 +27,28 @@ new = '''            if (
                 return false;
             }
 
-            const activeEarlyStartOverwrite =
-                this.#overwriteRanges.find(
-                    record =>
-                        record.type ===
-                            "earlystart" &&
-                        record.openEnded !==
-                            true &&
-                        Number.isFinite(
-                            record.start
-                        ) &&
-                        Number.isFinite(
-                            record.end
-                        ) &&
-                        record.start <=
-                            now &&
-                        now <
-                            record.end
-                );
+            let activeEarlyStartOverwrite;
+
+            if (Number.isFinite(duration)) {
+                activeEarlyStartOverwrite =
+                    this.#overwriteRanges.find(
+                        record =>
+                            record.type ===
+                                "earlystart" &&
+                            record.openEnded !==
+                                true &&
+                            Number.isFinite(
+                                record.start
+                            ) &&
+                            Number.isFinite(
+                                record.end
+                            ) &&
+                            record.start <=
+                                now &&
+                            now <
+                                record.end
+                    );
+            }
 
             if (activeEarlyStartOverwrite) {
                 this.#trimOverwriteRecords(
