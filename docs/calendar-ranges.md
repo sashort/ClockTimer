@@ -12,7 +12,9 @@ The server uses OpenAI Responses web search restricted to a profile's official d
 then a separate strict JSON extraction request. Search uses the year of the requested
 local date, not a hardcoded year or filename. Verification refreshes after 30 days
 or a year change when `calendar_auto_refresh` is enabled. A per-profile lock and
-one-hour attempt interval bound duplicate requests and failures. The session lock is
+one-hour automatic attempt interval bound duplicate requests and failures. Explicit
+superuser refreshes can retry after one minute. Provider failures report only HTTP
+status and safe error codes/parameter names, never secret-bearing messages. The session lock is
 released before provider calls. The first lookup during refresh can take up to 90 seconds.
 
 Source URLs must appear in the search response and match official domains. Every
@@ -72,7 +74,7 @@ verification time, requested search year, refresh/extrapolation status, and warn
 
 Superuser POST `/api/calendar/` with CSRF header and JSON
 `{"profile":"walmart-us","range":"week","at":"2028-02-29T17:00:00Z","timezone":"America/New_York"}`
-requests an explicit refresh, subject to the same hourly attempt limit.
+requests an explicit refresh, subject to a one-minute attempt limit.
 
 ## Verification
 

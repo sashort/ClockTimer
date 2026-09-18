@@ -179,7 +179,11 @@ function calendar_refresh(string $directory, string $profile, array $definition,
         $attemptPath = $directory . '/' . $profile . '.attempt';
         $lastAttempt = is_file($attemptPath) ? (int) file_get_contents($attemptPath) : 0;
         // Bound upstream costs even when search repeatedly fails or clients select arbitrary years.
-        if (time() - $lastAttempt < 3600) throw new RuntimeException('Calendar refresh is limited to once per hour per profile.');
+        $retryInterval = $force ? 60 : 3600;
+        if (time() - $lastAttempt < $retryInterval) {
+            throw new RuntimeException($force ? 'Explicit calendar refresh is limited to once per minute per profile.'
+                : 'Calendar refresh is limited to once per hour per profile.');
+        }
         file_put_contents($attemptPath, (string) time(), LOCK_EX);
         $candidate = $discover($definition, $year);
         $candidate['rules'] = calendar_validate_rules($candidate['rules']);

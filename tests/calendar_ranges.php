@@ -78,6 +78,11 @@ check('official domain accepted and lookalikes rejected', function () {
     }
 });
 $definition = calendar_profiles([])['walmart-us'];
+check('provider diagnostics expose error codes without secret-bearing messages', function () {
+    $message = calendar_provider_error(401, ['error' => ['code' => 'invalid_api_key', 'type' => 'invalid_request_error', 'message' => 'Incorrect API key sk-secret', 'param' => 'sk-secret with spaces']]);
+    same(str_contains($message, 'invalid_api_key'), true);
+    same(str_contains($message, 'sk-secret'), false);
+});
 check('Walmart profile contains no baked-in week or cutoff', fn() => same(isset($definition['rules']), false));
 $url = 'https://one.walmart.com/calendar-2028.pdf';
 $candidate = [...$payRules, 'effectiveThrough' => '2028-12-31',
