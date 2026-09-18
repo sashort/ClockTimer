@@ -3210,7 +3210,9 @@ class TimeRange extends HTMLElement {
             root?.host?.localName ===
                 "clock-timer"
                 ? root.host
-                : undefined;
+                : this.closest?.(
+                    "clock-timer"
+                );
 
         if (clockTimer) {
             this.#appearanceObserver.observe(
@@ -3320,6 +3322,119 @@ class TimeRange extends HTMLElement {
         const sourceRingIndex =
             this.parentElement
                 ?.clockTimerRingIndex;
+
+        if (
+            this.hasAttribute(
+                "timer-type-transition-wave"
+            )
+        ) {
+            let borderColor = {
+                red: 0,
+                green: 0,
+                blue: 0,
+                alpha: 1
+            };
+
+            if (clockTimer) {
+                const borderRing =
+                    Array.from(
+                        clockTimer.children
+                    ).find(
+                        element =>
+                            element.localName ===
+                                "ring-container" &&
+                            element.clockTimerBorder !==
+                                undefined
+                    );
+
+                const borderFill =
+                    borderRing
+                        ? Array.from(
+                            borderRing.children
+                        ).find(
+                            element =>
+                                element.clockTimerBorderFill !==
+                                    undefined
+                        )
+                        : undefined;
+
+                const resolved =
+                    borderFill
+                        ? this.#parseComputedColor(
+                            getComputedStyle(
+                                borderFill
+                            ).backgroundColor
+                        )
+                        : undefined;
+
+                if (resolved) {
+                    borderColor =
+                        resolved;
+                }
+            }
+
+            const perceivedLightness =
+                (
+                    borderColor.red *
+                        0.299 +
+                    borderColor.green *
+                        0.587 +
+                    borderColor.blue *
+                        0.114
+                ) /
+                255;
+
+            const contrastChannel =
+                perceivedLightness < 0.6
+                    ? 255
+                    : 0;
+
+            const mix =
+                0.28;
+
+            const highlight = {
+                red:
+                    borderColor.red +
+                    (
+                        contrastChannel -
+                        borderColor.red
+                    ) *
+                    mix,
+                green:
+                    borderColor.green +
+                    (
+                        contrastChannel -
+                        borderColor.green
+                    ) *
+                    mix,
+                blue:
+                    borderColor.blue +
+                    (
+                        contrastChannel -
+                        borderColor.blue
+                    ) *
+                    mix
+            };
+
+            const rgba =
+                alpha =>
+                    `rgba(${Math.round(highlight.red)}, ${Math.round(highlight.green)}, ${Math.round(highlight.blue)}, ${alpha.toFixed(3)})`;
+
+            this.#elapsedWaveLayer.style.mixBlendMode =
+                "normal";
+
+            this.#elapsedWaveLayer.style.backgroundImage =
+                `conic-gradient(from 0deg at 50% 50%, ` +
+                `transparent 0deg, ` +
+                `transparent calc(180deg - var(--elapsed-wave-width, 12deg)), ` +
+                `${rgba(0.30)} calc(180deg - var(--elapsed-wave-shoulder, 4deg)), ` +
+                `${rgba(0.86)} 180deg, ` +
+                `${rgba(0.30)} calc(180deg + var(--elapsed-wave-shoulder, 4deg)), ` +
+                `transparent calc(180deg + var(--elapsed-wave-width, 12deg)), ` +
+                `transparent 360deg)`;
+
+            return;
+        }
 
         let sourceRing;
 
