@@ -2,6 +2,10 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
+    const calendarRanges = new CalendarRange({baseUrl: API_BASE,
+        profile: document.documentElement.dataset.calendarProfile || "walmart-us"});
+    let tripLogRequestSequence = 0;
+    let tripTotalsRefreshQueue = Promise.resolve();
     const STORAGE = {
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
@@ -385,6 +389,13 @@
                     "range"
                 );
             }
+            else if (clockTimer.connected || clockTimer.autoSyncTripGoal) {
+                void refreshGoalTotalsForRange(range).catch(error => {
+                    if (!error.clockTimerOffline) window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {
+                        detail: {range, message: error.message}
+                    }));
+                });
+            }
         }
 
         return range;
@@ -637,9 +648,35 @@
             `${rect.top + (rect.height - height) / 2}px`;
     }
 
-    function dispatchTripListRequest(
+    async function dispatchTripListRequest(
         source = "button"
     ) {
+        const sequence = ++tripLogRequestSequence;
+        const range = getTripLogRange();
+        if (tripLogBody) tripLogBody.textContent = "Loading trips…";
+        try {
+            const calendar = await calendarRanges.resolve({range});
+            if (sequence !== tripLogRequestSequence) return;
+            const tripWindow = CalendarRange.tripWindow(calendar);
+            const url = new URL("api/trips/", API_BASE);
+            url.search = new URLSearchParams({
+                result: "list", minDateTime: tripWindow.startTime, maxDateTime: tripWindow.endTime,
+                nonProductionFilter: clockTimer.nonProductionFilter, limit: "1000"
+            });
+            const data = {trips: []};
+            let page;
+            do {
+                url.searchParams.set("offset", String(data.trips.length));
+                const response = await fetch(url, {credentials: "same-origin", headers: {Accept: "application/json"}});
+                page = await response.json();
+                if (!response.ok) throw new Error(page.message || "Trip lookup failed.");
+                if (sequence !== tripLogRequestSequence) return;
+                data.trips.push(...page.trips);
+            } while (page.trips.length === 1000);
+            if (sequence !== tripLogRequestSequence) return;
+            renderTripLog(data, calendar);
+            await updateTripTotals(tripWindow, () => sequence === tripLogRequestSequence);
+            if (sequence !== tripLogRequestSequence) return;
         window.dispatchEvent(
             new CustomEvent(
                 "wmof:trip-list-request",
@@ -647,12 +684,74 @@
                     detail: {
                         open: true,
                         source,
-                        range:
-                            getTripLogRange()
+                        range, ...tripWindow, calendar, trips: data.trips
                     }
                 }
             )
         );
+        } catch (error) {
+            if (sequence !== tripLogRequestSequence) return;
+            if (tripLogBody) tripLogBody.textContent = error.message || "Trip Log is unavailable.";
+            window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
+        }
+    }
+
+    function renderTripLog(data, calendar) {
+        if (!tripLogBody) return;
+        const fragment = document.createDocumentFragment();
+        const caption = document.createElement("p");
+        const format = value => new Intl.DateTimeFormat(undefined, {
+            timeZone: calendar.timezone, dateStyle: "medium", timeStyle: "short"
+        }).format(new Date(value));
+        caption.textContent = `${format(calendar.startTime)} – ${format(calendar.endTime)} (end excluded; ${calendar.timezone})`;
+        fragment.append(caption);
+        if (calendar.warning || calendar.extrapolated) {
+            const notice = document.createElement("p");
+            notice.textContent = calendar.warning || "Calculated from a recurring rule beyond the latest verified calendar.";
+            fragment.append(notice);
+        }
+        const sourceUrls = [...new Set((calendar.sources || []).map(source => source.url))];
+        for (const url of sourceUrls) {
+            const link = document.createElement("a");
+            link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
+            link.textContent = "Calendar source"; fragment.append(link, document.createTextNode(" "));
+        }
+        if (!data.trips?.length) {
+            const empty = document.createElement("p"); empty.textContent = "No trips in this range."; fragment.append(empty);
+        } else {
+            const table = document.createElement("table");
+            const header = document.createElement("tr");
+            for (const label of ["Trip", "Start", "Standard", "Actual"]) {
+                const cell = document.createElement("th"); cell.textContent = label; header.append(cell);
+            }
+            const head = document.createElement("thead"); head.append(header); table.append(head);
+            const body = document.createElement("tbody");
+            for (const trip of data.trips) {
+                const row = document.createElement("tr");
+                const start = String(trip.startTime).replace(" ", "T") + "Z";
+                for (const value of [trip.id, format(start),
+                    `${(trip.standardTimeMilliseconds / 60000).toFixed(1)} min`,
+                    `${(trip.actualTimeMilliseconds / 60000).toFixed(1)} min`]) {
+                    const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell);
+                }
+                body.append(row);
+            }
+            table.append(body); fragment.append(table);
+        }
+        tripLogBody.replaceChildren(fragment);
+    }
+
+    function updateTripTotals(tripWindow, isCurrent = () => true) {
+        const task = tripTotalsRefreshQueue.catch(() => {}).then(() =>
+            isCurrent() ? clockTimer.calculateTripTotals(tripWindow.startTime, tripWindow.endTime) : null
+        );
+        tripTotalsRefreshQueue = task;
+        return task;
+    }
+
+    async function refreshGoalTotalsForRange(range) {
+        const calendar = await calendarRanges.resolve({range});
+        return updateTripTotals(CalendarRange.tripWindow(calendar), () => range === getTripLogRange());
     }
 
     function animateTripLogBody(
@@ -4897,6 +4996,13 @@
         clockTimer.intervalElapsedBehavior = "startLatency";
         clockTimer.autoRestartTripAfterLateBreak =
             draft.lateBreakBehavior === "autoRestartTrip";
+
+        if (draft.syncGoals) {
+            const calendar = await calendarRanges.resolve({range: getTripLogRange()});
+            const window = CalendarRange.tripWindow(calendar);
+            try { await updateTripTotals(window); }
+            catch (error) { if (!error.clockTimerOffline) throw error; }
+        }
 
         await clockTimer.start({
             standardTime,
