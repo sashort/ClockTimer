@@ -39,6 +39,9 @@ function db(): PDO {
 require __PERMISSIONS__;
 require __CSRF__;
 $_SERVER['HTTPS']=$case['https'] ?? 'on';
+$_SERVER['REQUEST_METHOD']=$case['method'] ?? 'POST';
+if (($case['console'] ?? false) === true) $_GET['console']='1';
+function render_sql_console(string $csrf): never { echo json_encode(['status'=>200,'error'=>'console']); exit; }
 $_SESSION=['csrf_token'=>'valid-token'];
 if (($case['csrf'] ?? true) === true) $_SERVER['HTTP_X_CSRF_TOKEN']='valid-token';
 PHP;
@@ -49,6 +52,10 @@ $endpoint=str_replace("require_once dirname(__DIR__, 2) . '/_core/bootstrap.php'
 file_put_contents($fixture.'/endpoint.php',$endpoint);
 $valid=['mask'=>4,'enabled'=>true,'input'=>['password'=>'confirm','sql'=>'SELECT 1']];
 $cases=[
+    ['console allows superuser',array_merge($valid,['method'=>'GET','console'=>true]),200,'console'],
+    ['console blocks ordinary user',array_merge($valid,['method'=>'GET','console'=>true,'mask'=>0]),403,'permission_required'],
+    ['console blocks anonymous',['method'=>'GET','console'=>true],401,'unauthorized'],
+    ['console requires HTTPS',array_merge($valid,['method'=>'GET','console'=>true,'https'=>'off']),403,'https_required'],
     ['unknown action rejected',array_merge($valid,['input'=>['action'=>'bad']]),422,'invalid_action'],
     ['migration mode defaults to disabled',array_merge($valid,['input'=>['action'=>'migrate']]),403,'migrations_disabled'],
     ['migration mode remains independent of raw SQL',['mask'=>4,'enabled'=>false,'migrationsEnabled'=>true,'input'=>['action'=>'migrations']],422,'invalid_argument'],

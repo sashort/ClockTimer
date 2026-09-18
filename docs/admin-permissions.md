@@ -30,7 +30,7 @@ DELETE remains limited to the signed-in account.
 
 Every account mutation requires a session cookie and X-CSRF-Token.
 Names and usernames are trimmed; passwords preserve spaces. Passwords are
-stored as bcrypt hashes and must contain 1Ã¢â‚¬â€œ72 bytes. Account writes use the
+stored as bcrypt hashes and must contain 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“72 bytes. Account writes use the
 existing audit transaction and never return password hashes.
 Permission checks read the current database value rather than a login snapshot.
 
@@ -62,3 +62,10 @@ Run tests with PHP CLI and PDO SQLite:
     php tests/admin_sql_guards.php
 
 Migration actions on this endpoint are documented in migrations/README.md.
+
+## SQL console
+
+After logging in to the app as a superuser, open /api/admin/sql/?console=1.
+The guarded form provides a SQL textbox, password confirmation, OK/Clear
+buttons, success/failure messages and JSON results. SQL executes by POST
+with the session CSRF token; input and results render as text.

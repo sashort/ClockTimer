@@ -3,6 +3,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/_core/bootstrap.php';
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && ($_GET['console'] ?? null) === '1') {
+    if (empty($_SERVER['HTTPS']) || strtolower((string) $_SERVER['HTTPS']) === 'off') {
+        api_error('HTTPS is required.', 403, 'https_required');
+    }
+    require_permission(PERMISSION_SUPERUSER);
+    render_sql_console(csrf_token());
+}
 require_method('POST');
 if (empty($_SERVER['HTTPS']) || strtolower((string) $_SERVER['HTTPS']) === 'off') {
     api_error('HTTPS is required.', 403, 'https_required');
