@@ -150,6 +150,7 @@
     let numberPadLongPressed = false;
     let numberPadLastClearPointerDown = 0;
     let initialLoginSuppressed = false;
+    let deliberatelyLoggedOut = safeStorageGet("wmof.deliberatelyLoggedOut") === "true";
     let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
     let connectionResumePromise;
@@ -613,8 +614,7 @@
             topRect.height;
 
         const bottom =
-            metrics.rect.bottom -
-            metrics.paddingBottom;
+            metrics.rect.bottom;
 
         return {
             left: metrics.left,
@@ -691,6 +691,10 @@
         try {
             const calendar = await resolveTripLogCalendar(range);
             if (sequence !== tripLogRequestSequence) return;
+            if (clockTimer.networkStatus === "offline") {
+                renderTripLog({trips: [], loginRequired: true}, calendar);
+                return;
+            }
             const tripWindow = CalendarRange.tripWindow(calendar);
             await updateTripTotals(tripWindow, () => sequence === tripLogRequestSequence);
             if (sequence !== tripLogRequestSequence) return;
@@ -2561,6 +2565,7 @@
     }
 
     function showInitialLoginDialog() {
+        if (deliberatelyLoggedOut) return;
         if (loginDialog.open) return;
         const opened = openDialogElement(loginDialog, {
             duration: CONNECTION_UI_TRANSITION_DURATION,
@@ -2601,6 +2606,7 @@
         syncScopeConnectionCloud(networkStatus);
 
         if (offline) {
+            if (deliberatelyLoggedOut) return;
             if (connectionCloudPhase === "settled") {
                 loginPromptTimeout = setTimeout(() => {
                     loginPromptTimeout = undefined;
@@ -3934,6 +3940,8 @@
         try {
             const result = await clockTimer.connect(username, password);
             if (!result?.connected) throw new Error("Login failed.");
+            deliberatelyLoggedOut = false;
+            safeStorageSet("wmof.deliberatelyLoggedOut", "false");
             $("#profileUsername").value = result.user?.username || username;
             syncNetworkStatusUI({ login: true });
         }
@@ -3954,6 +3962,9 @@
             return;
         }
         mainMenu?.hidePopover?.();
+        deliberatelyLoggedOut = true;
+        safeStorageSet("wmof.deliberatelyLoggedOut", "true");
+        clearTimeout(loginPromptTimeout);
         try { await clockTimer.disconnect(); }
         catch {}
         finally { syncNetworkStatusUI(); }
@@ -6488,7 +6499,7 @@
     }
 
     function onCalendarRulesLoaded(event) {
-        calendarRanges.setDatabaseRecords(event.detail.calendars);
+        if (event.detail.calendars?.length) calendarRanges.setDatabaseRecords(event.detail.calendars);
         refreshTripLogSelection();
     }
 
@@ -6579,4 +6590,13 @@
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
     syncNetworkStatusUI({ startup: true });
+    void (async () => {
+        try {
+            const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
+            calendarRanges.setDatabaseRecords(data.calendars);
+            refreshTripLogSelection();
+        } catch (error) { showTripRangeError(error.message || "Calendar lookup failed."); }
+    })();
 })();

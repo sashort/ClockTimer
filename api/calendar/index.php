@@ -7,14 +7,17 @@ require_once dirname(__DIR__) . '/_core/calendar_search.php';
 require_once dirname(__DIR__) . '/_core/calendar_store.php';
 
 $method = require_method('GET', 'POST');
-authenticated_user_id();
 $config = api_config();
 $input = $method === 'POST' ? json_input() : $_GET;
 if ($method === 'POST') {
+    authenticated_user_id();
     require_csrf();
     require_permission(PERMISSION_SUPERUSER);
 }
 try {
+    if ($method === 'GET' && ($input['result'] ?? '') === 'records') {
+        json_response(['calendars' => calendar_login_records(db(), $config)]);
+    }
     $profile = $input['profile'] ?? 'walmart-us';
     $profiles = calendar_profiles($config);
     if (!is_string($profile) || !isset($profiles[$profile])) throw new InvalidArgumentException('Unknown calendar profile.');

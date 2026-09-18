@@ -3576,9 +3576,8 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .sync-pause-badge::after {content:"";position:absolute;inset:4px;background:linear-gradient(to right,white 0 30%,transparent 30% 70%,white 70%);}
 .sync-paused .sync-pause-badge {opacity:1;transform:scale(1);}
 .trip-menu-group {position:relative;}
-.trip-menu-group::before {content:"";position:absolute;left:43px;top:10px;bottom:10px;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
-.trip-menu-group .trip-log-range-menu {padding-left:48px;}
-.trip-menu-group .trip-log-date-menu {margin-left:48px;}
+.trip-menu-group::before {content:"";position:absolute;left:43px;top:10px;bottom:0;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
+.trip-menu-group .trip-log-range-menu,.trip-menu-group .trip-log-date-menu {margin-left:64px;padding-left:0;grid-template-columns:100px minmax(0,1fr);gap:10px;}
 .trip-settings-dialog .trip-defer-option,.trip-settings-dialog .trip-productive-option {display:flex;gap:10px;align-items:center;margin:0;padding:4px 0;}
 .trip-settings-dialog .trip-defer-option input,.trip-settings-dialog .trip-productive-option input {width:20px;height:20px;}
 
@@ -3601,7 +3600,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-controls {display:grid;gap:10px;padding:14px;}
 .trip-log-controls label {display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.4fr);gap:12px;align-items:center;}
 .trip-log-controls select,.trip-log-controls input,.trip-log-editor select {min-width:0;border:1px solid #c0c9d2;border-radius:7px;padding:8px;color:white;background:#39434e;}
-.trip-log-date-controls {display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;}
+.trip-log-date-controls {display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.4fr);align-items:center;gap:10px 12px;}
 .trip-log-date-controls input:disabled {opacity:.55;}
 .trip-log-overview {margin:0 12px 14px;padding:18px;border:1px solid #a0acb8;border-radius:12px;background:rgb(0 0 0 / 12%);text-align:center;}
 .trip-log-emphasis {display:flex;justify-content:space-around;align-items:center;gap:12px;margin-bottom:14px;font-size:clamp(28px,7vw,48px);}
@@ -3641,4 +3640,11 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#8
 .trip-log-editor input[type="checkbox"] {width:20px;height:20px;}
 .trip-log-error,.danger {color:#ff8d8d!important;}
 .trip-log-editor .danger {background:transparent;border:1px solid #ff8d8d;border-radius:7px;padding:10px;}
-@media (max-width:380px) {.trip-log-trip>summary {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:4px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}
+@media (max-width:380px) {.trip-log-trip>summary {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:10px 12px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}
+
+.trip-settings-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:center;}
+.trip-settings-options label {min-width:0;justify-content:center;}
+.trip-now-actions {width:100%;max-width:100%;min-width:0;}
+.trip-now-action {box-sizing:border-box;max-width:100%;min-width:0;overflow:hidden;}
+.trip-now-actions:not(.is-selecting) .trip-now-cancel {border-inline-width:0;}
+.trip-log-body {padding-bottom:0;}

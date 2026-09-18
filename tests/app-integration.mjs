@@ -14,7 +14,8 @@ window.fetch=async(url,options={})=>{
     if(input.operation==='entry') stored.find(e=>e.event==='interval.started'&&e.value.intervalKey===input.entry.intervalKey).timestamp=input.entry.start;
     if(input.operation==='settings') Object.assign(stored.find(e=>e.event==='trip.started').value,input.settings);
  }
- const data=path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ const data=path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
  {tripId, trips:[],aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
@@ -23,6 +24,11 @@ window.fetch=async(url,options={})=>{
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
 for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','CalendarRange','TripLog','app'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
+assert.match(window.document.querySelector('#tripLogStartDate').value,/^\d{4}-\d{2}-\d{2}$/);
+assert.match(window.document.querySelector('#tripLogEndDate').value,/^\d{4}-\d{2}-\d{2}$/);
+assert(window.document.querySelector('.trip-settings-options + #tripSetStartsNowActions'));
+assert.equal(window.document.querySelectorAll('#tripLogBody footer').length,0);
+console.log('PASS database date ranges populate before login and settings checks precede the action buttons');
 const c=window.document.querySelector('clock-timer');await c.connect('test','test');await settle();
 assert.equal(c.productionFilter,'all');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
@@ -68,4 +74,10 @@ assert(requests.some(r=>r.path.endsWith('/trips/')&&r.options.method==='PATCH'&&
 assert.equal(requests.filter(r=>r.path.endsWith('/trips/')&&r.options.method==='DELETE').length,0);
 assert.equal(completedId,tripId);
 console.log('PASS completing and resetting a trip preserves the saved trip and retains local state until reconnect');
+window.document.querySelector('#loginDialog').close();
+window.document.querySelector('#authButton').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));
+await settle();
+assert.equal(window.localStorage.getItem('wmof.deliberatelyLoggedOut'),'true');
+assert.equal(window.document.querySelector('#loginDialog').open,false);
+console.log('PASS deliberate logout suppresses the automatic login dialog');
 window.happyDOM.abort();

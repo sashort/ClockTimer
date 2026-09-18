@@ -6,8 +6,9 @@ $bootstrap=<<<'PHP'
 $case=json_decode(file_get_contents($argv[1]),true);
 $_SERVER['REQUEST_METHOD']=$case['method']??'GET';
 $_GET=['range'=>'week','at'=>'2026-09-18T16:00:00Z','timezone'=>'America/New_York'];
+if(isset($case['result']))$_GET['result']=$case['result'];
 function require_method(string ...$allowed):string{return $_SERVER['REQUEST_METHOD'];}
-function authenticated_user_id():int{return 2;}
+function authenticated_user_id():int{if($GLOBALS['case']['anonymous']??false)throw new RuntimeException('Anonymous request required authentication');return 2;}
 function require_permission(int $mask):array{return ['id'=>2,'permissions'=>4];}
 function require_csrf():void{}
 const PERMISSION_SUPERUSER=4;
@@ -38,6 +39,8 @@ file_put_contents($fixture.'/endpoint.php',$endpoint);
 try {
     foreach([
         ['current-year lookup is database-only',['saved'=>true],200],
+        ['anonymous calendar lookup is database-only',['saved'=>true,'anonymous'=>true],200],
+        ['anonymous bootstrap supplies stored rules',['saved'=>true,'anonymous'=>true,'result'=>'records'],200],
         ['missing rules never trigger user discovery',['saved'=>false],503],
         ['older stored rules never trigger user discovery',['saved'=>true,'year'=>2025],200],
         ['explicit update reuses already saved year',['saved'=>true,'method'=>'POST'],200],
@@ -45,8 +48,9 @@ try {
         file_put_contents($fixture.'/case.json',json_encode($case));
         $result=json_decode((string)shell_exec(escapeshellarg(PHP_BINARY).' -d extension_dir='.escapeshellarg(dirname(PHP_BINARY).'/ext').' -d extension=pdo_sqlite '.escapeshellarg($fixture.'/endpoint.php').' '.escapeshellarg($fixture.'/case.json')),true);
         if(($result['status']??null)!==$expected||is_file($fixture.'/provider-called'))throw new RuntimeException($name.': '.json_encode($result));
-        if($expected===200&&$result['data']['startTime']!=='2026-09-12T04:00:00.000Z')throw new RuntimeException('Wrong database boundaries');
+        if($expected===200&&($case['result']??'')!=='records'&&$result['data']['startTime']!=='2026-09-12T04:00:00.000Z')throw new RuntimeException('Wrong database boundaries');
+        if(($case['result']??'')==='records'&&count($result['data']['calendars']??[])!==1)throw new RuntimeException('Missing anonymous database rules');
         echo "PASS $name\n";
     }
-    echo "4 database-only endpoint checks passed.\n";
+    echo "6 database-only endpoint checks passed.\n";
 }finally{foreach(['bootstrap.php','search.php','endpoint.php','case.json','provider-called']as$file)if(is_file($fixture.'/'.$file))unlink($fixture.'/'.$file);rmdir($fixture);}
