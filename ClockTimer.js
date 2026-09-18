@@ -4075,6 +4075,69 @@
 
                 this.#clearLocal();
 
+                if (
+                    startedValue.tripGoal ===
+                        null ||
+                    startedValue.tripGoal ===
+                        undefined
+                ) {
+                    this.removeAttribute(
+                        "trip-goal"
+                    );
+                }
+                else {
+                    this.setAttribute(
+                        "trip-goal",
+                        String(
+                            startedValue.tripGoal
+                        )
+                    );
+                }
+
+                if (
+                    startedValue.totalGoal ===
+                        null ||
+                    startedValue.totalGoal ===
+                        undefined
+                ) {
+                    this.removeAttribute(
+                        "total-goal"
+                    );
+                }
+                else {
+                    this.setAttribute(
+                        "total-goal",
+                        String(
+                            startedValue.totalGoal
+                        )
+                    );
+                }
+
+                if (
+                    typeof startedValue.percentMode ===
+                        "string"
+                ) {
+                    this.setAttribute(
+                        "percent-mode",
+                        startedValue.percentMode
+                    );
+                }
+
+                if (
+                    typeof startedValue.intervalElapsedBehavior ===
+                        "string"
+                ) {
+                    this.#intervalElapsedBehavior =
+                        this.#normalizeIntervalElapsedBehavior(
+                            startedValue.intervalElapsedBehavior,
+                            this.#intervalElapsedBehavior
+                        );
+                }
+
+                this.#autoRestartTripAfterLateBreak =
+                    startedValue.autoRestartTripAfterLateBreak ===
+                        true;
+
                 const startResult =
                     this.#startLocal({
                         tripId:
@@ -4331,6 +4394,82 @@
                             break;
                         }
 
+                        case "trip.standard-time-changed":
+                            this.standardTime =
+                                value.value;
+                            break;
+
+                        case "trip.creation-date-changed":
+                            if (
+                                typeof value.creationAnchor ===
+                                    "string"
+                            ) {
+                                this.#creationDateOverride =
+                                    this.#parseTripEventTimestamp(
+                                        value.creationAnchor
+                                    );
+                            }
+                            else {
+                                this.creationDate =
+                                    value.value;
+                            }
+                            break;
+
+                        case "trip.creation-time-changed":
+                            this.creationTime =
+                                value.value;
+                            break;
+
+                        case "trip.scheduled-start-changed":
+                            this.scheduledStart =
+                                value.value;
+                            break;
+
+                        case "trip.start-time-changed":
+                            this.startTime =
+                                value.value;
+                            break;
+
+                        case "trip.goal-changed": {
+                            const attribute =
+                                value.goal === "total"
+                                    ? "total-goal"
+                                    : "trip-goal";
+
+                            if (
+                                value.value ===
+                                    null ||
+                                value.value ===
+                                    undefined
+                            ) {
+                                this.removeAttribute(
+                                    attribute
+                                );
+                            }
+                            else {
+                                this.setAttribute(
+                                    attribute,
+                                    String(
+                                        value.value
+                                    )
+                                );
+                            }
+
+                            break;
+                        }
+
+                        case "trip.percent-mode-changed":
+                            if (
+                                typeof value.value ===
+                                    "string"
+                            ) {
+                                this.setAttribute(
+                                    "percent-mode",
+                                    value.value
+                                );
+                            }
+                            break;
+
                         case "trip.stopped": {
                             const stopTimeline =
                                 this.#dateToTimelineTime(
@@ -4471,7 +4610,21 @@
                         this.#getJSONCreationDate()
                             ?.toISOString?.(),
                     nonProduction:
-                        this.#nonProduction
+                        this.#nonProduction,
+                    tripGoal:
+                        this.getAttribute(
+                            "trip-goal"
+                        ),
+                    totalGoal:
+                        this.getAttribute(
+                            "total-goal"
+                        ),
+                    percentMode:
+                        this.#percentMode,
+                    intervalElapsedBehavior:
+                        this.#intervalElapsedBehavior,
+                    autoRestartTripAfterLateBreak:
+                        this.#autoRestartTripAfterLateBreak
                 }
             );
 
@@ -5574,6 +5727,19 @@
                         )
                 }
             );
+
+            this.#queueTripEvent(
+                "trip.creation-date-changed",
+                new Date(),
+                {
+                    value:
+                        nextValue,
+                    creationAnchor:
+                        next.toISOString()
+                }
+            );
+
+            this.#scheduleTripEventSync();
         }
 
         get standardTime() {
@@ -5674,6 +5840,17 @@
                     summary: this.#buildSummarySnapshot(new Date())
                 }
             );
+
+            this.#queueTripEvent(
+                "trip.standard-time-changed",
+                new Date(),
+                {
+                    value:
+                        this.#standardTime
+                }
+            );
+
+            this.#scheduleTripEventSync();
         }
 
         get creationTime() {
@@ -5739,6 +5916,17 @@
                             )
                     }
                 );
+
+                this.#queueTripEvent(
+                    "trip.creation-time-changed",
+                    new Date(),
+                    {
+                        value:
+                            currentValue
+                    }
+                );
+
+                this.#scheduleTripEventSync();
             }
         }
 
@@ -5844,6 +6032,17 @@
                             )
                     }
                 );
+
+                this.#queueTripEvent(
+                    "trip.scheduled-start-changed",
+                    new Date(),
+                    {
+                        value:
+                            currentValue
+                    }
+                );
+
+                this.#scheduleTripEventSync();
             }
         }
 
@@ -5934,6 +6133,17 @@
                             )
                     }
                 );
+
+                this.#queueTripEvent(
+                    "trip.start-time-changed",
+                    new Date(),
+                    {
+                        value:
+                            currentValue
+                    }
+                );
+
+                this.#scheduleTripEventSync();
             }
         }
 
