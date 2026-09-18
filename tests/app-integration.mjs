@@ -1,0 +1,53 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
+const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
+const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
+Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
+window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
+const errors=[];window.addEventListener('error',e=>errors.push(e.message));
+const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
+let eventId=1,tripId=41;const requests=[],stored=[];
+window.fetch=async(url,options={})=>{
+ const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
+ const input=options.body?JSON.parse(options.body):null;
+ if(path.endsWith('/trip-events/')&&options.method==='POST') stored.push({...input,id:eventId++});
+ if(path.endsWith('/trip-editor/')&&input) {
+    if(input.operation==='entry') stored.find(e=>e.event==='interval.started'&&e.value.intervalKey===input.entry.intervalKey).timestamp=input.entry.start;
+    if(input.operation==='settings') Object.assign(stored.find(e=>e.event==='trip.started').value,input.settings);
+ }
+ const data=path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
+ path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
+ {tripId, trips:[],aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
+ return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
+};
+window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','CalendarRange','TripLog','app'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
+const c=window.document.querySelector('clock-timer');await c.connect('test','test');await settle();
+assert.equal(c.productionFilter,'all');
+const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+const defer=window.document.querySelector('#tripDefer');defer.checked=true;defer.dispatchEvent(new window.Event('change',{bubbles:true}));
+assert.equal(window.document.querySelector('#tripSettingsPrimary').textContent,'OK');
+assert.equal(window.document.querySelector('#tripActualStart').textContent,'---');
+assert.equal(window.document.querySelector('#tripScheduledStart').textContent,window.document.querySelector('#tripCreationTime').textContent);
+window.document.querySelector('#tripSettingsForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await settle();
+assert(newTrip.classList.contains('has-deferred-trip'));assert.equal(c.status,'ready');
+newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+assert.equal(requests.filter(r=>r.path.endsWith('/trips/')&&r.options.body&&JSON.parse(r.options.body).action==='prepare').length,1);
+const backspace=window.document.querySelector('#numberPadBackspace');assert(backspace);assert.equal(window.document.querySelector('#numberPadClear').getAttribute('data-action'),'close');
+assert.equal(errors.length,0,errors.join('\n'));
+console.log('PASS full app loads, defers without starting, resumes same reservation, and exposes separate backspace');
+const earlier=new Date(Date.now()-120000);const earlierClock=[earlier.getHours(),earlier.getMinutes(),earlier.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+await c.start({standardTime:'0:30:00',creationTime:earlierClock,creationDate:earlier,startTime:earlierClock,scheduledStart:earlierClock,nonProduction:true});
+await c.startInterval('down');
+const before=c.toJSON();const entry=stored.find(e=>e.event==='interval.started');
+const changedStart=new Date(Date.parse(entry.timestamp)-30000).toISOString();
+await c.tripEditorRequest(tripId,{operation:'entry',revision:'test-revision',entry:{intervalKey:entry.value.intervalKey,start:changedStart}});
+assert.equal(c.currentTripId,tripId);assert.equal(c.nonProduction,true);assert(!['ready','stopped'].includes(c.status));
+assert.notDeepEqual(c.toJSON().records,before.records);
+const state=await c.tripEditorRequest(tripId);
+await c.tripEditorRequest(tripId,{operation:'settings',revision:state.revision,settings:{...state.settings,standardTime:'0:45:00',nonProduction:false}});
+assert.equal(c.standardTime,'45:00');assert.equal(c.nonProduction,false);assert.equal(window.document.querySelector('#app').dataset.tripState,'running');
+console.log('PASS editing running entry/settings reloads the same active ClockTimer and preserves running state');
+window.happyDOM.abort();

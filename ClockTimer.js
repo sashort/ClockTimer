@@ -177,6 +177,8 @@
         #nonProductionFilter =
             "none";
 
+        #productionFilter;
+
         #autoSyncTripGoal =
             false;
 
@@ -3275,6 +3277,9 @@
             breakdown,
             filter = this.#nonProductionFilter
         ) {
+            if (this.#productionFilter === "productive") return { ...breakdown.production };
+            if (this.#productionFilter === "non-productive") return { ...breakdown.nonProduction.all };
+            if (this.#productionFilter === "all") filter = "all";
             const result = {
                 ...breakdown.production
             };
@@ -4127,6 +4132,8 @@
                 this.#pendingTripEvents =
                     [];
 
+                // Replay replaces the current local model without stopping the persisted trip.
+                this.#started = false;
                 this.#clearLocal();
 
                 if (
@@ -4478,6 +4485,7 @@
                             break;
 
                         case "trip.standard-time-changed":
+                            if (typeof value.nonProduction === "boolean") this.#nonProduction = value.nonProduction;
                             this.standardTime =
                                 value.value;
                             break;
@@ -4633,6 +4641,7 @@
                 throw new Error("The trip could not be started.");
             }
             this.#tripId = preparedTripId;
+            if (options.creationDate !== undefined) this.creationDate = options.creationDate;
             this.#pendingIntervalRecord = undefined;
 
             const startEventTimeline =
@@ -4653,9 +4662,9 @@
                     creationTime:
                         this.#creationTime,
                     scheduledStart:
-                        this.#scheduledStart,
+                        this.#formatStandardTime(this.#scheduledStartMilliseconds),
                     startTime:
-                        this.#formatTimelineTime(
+                        this.#formatStandardTime(
                             startEventTimeline
                         ),
                     creationAnchor:
@@ -5557,6 +5566,62 @@
 
         get nonProductionFilter() {
             return this.#nonProductionFilter;
+        }
+
+        set nonProduction(value) {
+            if (typeof value !== "boolean") throw new TypeError("nonProduction must be a boolean.");
+            if (value === this.#nonProduction) return;
+            this.#nonProduction = value;
+            if (this.#hasStartProperties() && !this.#replayingTripEvents) {
+                this.#queueTripEvent("trip.standard-time-changed", new Date(), {value:this.standardTime,nonProduction:value});
+                this.#scheduleTripEventSync();
+            }
+        }
+
+        get productionFilter() { return this.#productionFilter; }
+        set productionFilter(value) {
+            if (!["all","productive","non-productive"].includes(value)) throw new RangeError("Unknown Trip Filter.");
+            this.#productionFilter = value;
+            if (this.#hasUsableAggregateSnapshot()) this.#recomposeCachedTripTotals();
+            this.#handleTripGoalChange("user");
+        }
+
+        get currentTripId() { return this.#tripId; }
+
+        async persistCurrentTrip() {
+            if (!(await this.#ensureConnected())) throw new Error("Connect before saving trip settings.");
+            await this.#ensureTripPersisted();
+            await this.#syncTripEvents();
+            await this.#apiRequest("trips", {method:"PATCH",csrf:true,body:{
+                tripId:this.#tripId,action:"start",...this.#tripPersistencePayload()
+            }});
+        }
+
+        async tripEditorRequest(tripId, change) {
+            if (!(await this.#ensureConnected())) throw new Error("Connect before editing trips.");
+            const active = Number(tripId) === this.#tripId && this.#hasStartProperties();
+            if (active && change) this.#stopTickTimer();
+            try {
+            if (active) { await this.#ensureTripPersisted(); await this.#syncTripEvents(); }
+            const result = await this.#apiRequest("trip-editor", change ? {
+                method:"POST",csrf:true,body:{tripId,...change}
+            } : {query:{tripId}});
+            if (change && active) {
+                if (change.operation === "delete-trip") {
+                    this.#started=false;this.#clearLocal();this.#tripId=undefined;this.#pendingTripEvents=[];this.#preparedTrip=undefined;
+                    this.#emitClockTimerEvent("cleared",{tripId,connected:true,synced:true});
+                }
+                else {
+                    const auto = this.autoSyncTripGoal;
+                    const goal = this.getAttribute("trip-goal");
+                    await this.loadTrip(tripId);
+                    this.autoSyncTripGoal = auto;
+                    if (goal) this.setAttribute("trip-goal",goal);
+                    if (auto) this.setTripGoalToTotalGoal();
+                }
+            }
+            return result;
+            } finally {if(active && change && this.#needsTick()) this.#startTickTimer();}
         }
 
         set nonProductionFilter(value) {
@@ -31010,6 +31075,8 @@
             rawMilliseconds,
             reference
         ) {
+            // Explicit multi-day timeline values already include their day offset.
+            if (rawMilliseconds >= ClockTimer.#DAY) return rawMilliseconds;
             const dayOffset =
                 Math.round(
                     (
@@ -31161,6 +31228,7 @@
 
             if (
                 !duration &&
+                name !== "startTime" && name !== "scheduledStart" &&
                 hours >
                     23
             ) {

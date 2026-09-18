@@ -35,4 +35,16 @@ c.autoSyncTripGoal=false;const manualGoal=c.getSummarySnapshot().trip.percentGoa
 await c.calculateTripTotals('2026-09-03T04:00:00Z','2026-09-19T03:59:59.999Z');
 assert.equal(c.getSummarySnapshot().trip.percentGoal,manualGoal);
 console.log('PASS manual goal is preserved when automatic goal sync is disabled');
-c.remove();window.happyDOM.abort();
+c.remove();
+const resumed=window.document.createElement('clock-timer');window.document.body.append(resumed);
+await resumed.connect('test','test');
+const reservation=await resumed.prepareTrip({at:'2026-09-16T12:00:00Z'});
+let startedDetail;resumed.addEventListener('started',event=>{startedDetail=event.detail;});
+const resumedResult=await resumed.start({standardTime:'0:30:00',creationDate:'2026-09-16',creationTime:'12:00:00',scheduledStart:'57:05:00',startTime:'57:05:00'});
+assert.equal(resumedResult.tripId,reservation.tripId);
+assert.equal(resumed.creationDate,'2026-09-16');
+assert.equal(resumed.startTime,'9:05:00');
+assert.equal(resumed.scheduledStart,'9:05:00');
+assert.equal(new Date(startedDetail.actualStartTime).getDate(),18);
+console.log('PASS resumed trip keeps its reserved ID, creation date, and explicit multi-day start');
+resumed.remove();window.happyDOM.abort();

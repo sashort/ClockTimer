@@ -1,0 +1,17 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
+const w=new Window({url:'https://clock.example/'});w.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));w.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
+const root=w.document.createElement('div');w.document.body.append(root);let criteria='pay-period',filter='all',pad;
+const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:'2:00',intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
+const settings={creationAnchor:'2026-09-18T00:00:00Z',standardTime:'20:00',creationTime:'11:00:00',scheduledStart:'12:00:00',startTime:'12:00:00',nonProduction:false};
+const view=new w.TripLog(root,{range:()=>criteria,filter:()=>filter,onFilter:v=>filter=v,onRange:v=>criteria=v,onDate(){},numberPad:async options=>pad=options,request:async()=>({events,settings,revision:'test'}),refresh:async()=>{}});
+const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00Z',endTime:'2026-09-19T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
+const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00',standardTimeMilliseconds:1800000,actualTimeMilliseconds:1800000,events:[]},{id:1,startTime:'2026-09-18 12:00:00',endTime:'2026-09-18 12:20:00',standardTimeMilliseconds:1200000,actualTimeMilliseconds:1200000,events}];
+view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
+assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
+console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
+const dates=root.querySelectorAll('input[type=date]');assert.equal(dates[0].value,'2026-09-05');assert.equal(dates[1].value,'2026-09-18');assert(dates[0].disabled);
+criteria='custom';view.render({trips},calendar);assert(!root.querySelector('input[type=date]').disabled);
+await view.openEntry(trips[1],events[1],events[2]);const first=view.editor.querySelector('.trip-log-edit-field');first.click();await new Promise(r=>setTimeout(r,10));assert.equal(pad.mode,'absolute');await pad.onConfirm('2026-09-18T12:04:00Z');assert(first.textContent.includes(new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'medium'}).format(new Date('2026-09-18T12:04:00Z'))));assert(view.editor.textContent.includes('Remove entry'));
+view.editor.close();await view.openSettings(trips[1]);assert(view.editor.textContent.includes('Scheduled start'));assert(view.editor.textContent.includes('Productive'));view.editor.close();
+console.log('PASS shared date controls and entry/settings editors launch the number pad');
+w.happyDOM.abort();

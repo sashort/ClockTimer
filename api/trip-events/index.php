@@ -73,6 +73,9 @@ $eventId = audited_write(
         $valueJson,
         $clientToken
     ): int {
+        // Serialize event appends with Trip Log edits and their revision check.
+        $lock = $pdo->prepare('SELECT id FROM trips WHERE id = :id FOR UPDATE');
+        $lock->execute([':id' => $tripId]);
         require_trip_owner($pdo, $tripId);
 
         $eventTypeId =

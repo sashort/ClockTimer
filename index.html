@@ -37,10 +37,12 @@
             <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
             <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
+            <div class="trip-menu-group">
             <div class="main-menu-row trip-list-menu-row">
                 <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
                 <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="Unpin Trip Log" aria-pressed="true" title="Unpin Trip Log"></button>
             </div>
+            <label class="trip-log-range-menu" for="tripProductionFilter"><span>Trip Filter</span><select id="tripProductionFilter"><option value="all">All Trips</option><option value="productive">Productive</option><option value="non-productive">Non-productive</option></select></label>
             <label class="trip-log-range-menu" for="tripLogRangeSelect">
                 <span>Trip Log Range</span>
                 <select id="tripLogRangeSelect" aria-label="Trip Log Range">
@@ -57,6 +59,7 @@
                 <label for="tripLogEndDate">End:</label><input id="tripLogEndDate" type="date" aria-label="Trip Log end date" disabled>
             </div>
             <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
+            </div>
             <hr>
             <button id="authButton" type="button">Login</button>
         </nav>
@@ -79,7 +82,7 @@
         </section>
 
         <section id="tripActionControls" class="trip-action-controls" aria-label="Trip controls">
-            <button id="newTripButton" class="new-trip-button" type="button">New Trip</button>
+            <button id="newTripButton" class="new-trip-button" type="button">New Trip<svg class="deferred-trip-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="9"/><path d="M11 5v6l-4-3"/><circle cx="21" cy="21" r="5"/><path d="M19.5 18.5v5M22.5 18.5v5"/></svg></button>
             <div id="activeTripControls" class="active-trip-controls" hidden>
                 <button id="endTripButton" class="trip-action-button end-trip-button" type="button">End Trip</button>
                 <div class="trip-action-row">
@@ -521,6 +524,8 @@
                 <button type="button" data-close-dialog>Cancel</button>
                 <button id="tripSettingsPrimary" class="primary-action" type="submit" value="save">Save</button>
             </div>
+            <label class="trip-productive-option"><input id="tripProductive" type="checkbox" checked> Productive</label>
+            <label class="trip-defer-option"><input id="tripDefer" type="checkbox"> Defer Trip</label>
         </form>
     </dialog>
 
@@ -543,6 +548,7 @@
     <script src="TimeRange.js"></script>
     <script src="ClockTimer.js"></script>
     <script src="CalendarRange.js"></script>
+    <script src="TripLog.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

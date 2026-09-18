@@ -105,6 +105,15 @@ if ($method === 'GET') {
     $aggregateBaseWhere = $where;
     $aggregateBaseParameters = $parameters;
 
+    $productionFilter = $_GET['productionFilter'] ?? null;
+    if ($productionFilter !== null && !in_array($productionFilter, ['all','productive','non-productive'], true)) {
+        api_error('Unknown Trip Filter.', 422, 'invalid_argument');
+    }
+    if ($productionFilter !== null) {
+        $nonProductionFilter = 'all';
+        if ($productionFilter !== 'all') $where .= ' AND t.non_production = ' . ($productionFilter === 'productive' ? '0' : '1');
+    }
+
     if ($nonProductionFilter === 'none') {
         $where .= ' AND t.non_production = 0';
     }
@@ -219,7 +228,7 @@ if ($method === 'GET') {
             . 't.standard_time_ms, t.counted_time_ms, t.non_production, t.created_at, '
             . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
             . 'FROM trips t WHERE ' . $where . ' '
-            . 'ORDER BY t.start_time ASC, t.id ASC '
+            . 'ORDER BY t.start_time DESC, t.id DESC '
             . 'LIMIT ' . $limit . ' OFFSET ' . $offset
         );
         $statement->execute($parameters);

@@ -2004,6 +2004,8 @@ button:active:not(:disabled):not(#goalSyncButton) {
 
 .trip-now-actions {
     display: flex;
+    width: 100%;
+    min-width: 0;
     gap: 0;
     align-items: stretch;
     transition: gap var(--trip-start-transition-duration) ease-in-out;
@@ -2014,7 +2016,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 .trip-now-action {
-    flex: 0 0 100%;
+    flex: 1 1 100%;
     min-width: 0;
     transition:
         flex-basis var(--trip-start-transition-duration) ease-in-out,
@@ -2511,7 +2513,12 @@ button:active:not(:disabled):not(#goalSyncButton) {
 .trip-now-action {
     display: grid;
     width: 100%;
-    grid-template-columns: 1fr repeat(5, min-content) 1fr;
+    grid-template-columns:
+        1fr
+        repeat(2, min-content)
+        minmax(0, var(--trip-now-start-copy-width, 0px))
+        repeat(2, min-content)
+        1fr;
     grid-template-rows: 1fr;
     gap: 0;
     align-items: center;
@@ -2533,7 +2540,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
     grid-template-columns:
         1fr
         repeat(2, min-content)
-        0fr
+        minmax(0, 0px)
         repeat(2, min-content)
         1fr;
 }
@@ -3552,3 +3559,86 @@ clock-timer[hide-latency] time-range[type="latency"] {
     min-height: 0;
     height: auto;
 }
+.trip-defer-option {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: 1rem;
+    padding: .5rem 0;
+    font-weight: 700;
+}
+
+/* Trip controls share one status-icon column without shifting button labels. */
+.new-trip-button { position: relative; }
+.deferred-trip-icon { display:none;position:absolute;top:50%;right:12px;width:28px;height:28px;transform:translateY(-50%);pointer-events:none; }
+.new-trip-button.has-deferred-trip .deferred-trip-icon { display:block; }
+.sync-pause-badge { position:absolute;right:1px;bottom:1px;width:14px;height:14px;border-radius:50%;background:#858b93;opacity:0;transform:scale(.85);transition:opacity 250ms,transform 250ms;pointer-events:none;z-index:5; }
+.sync-pause-badge::after {content:"";position:absolute;inset:4px;background:linear-gradient(to right,white 0 30%,transparent 30% 70%,white 70%);}
+.sync-paused .sync-pause-badge {opacity:1;transform:scale(1);}
+.trip-menu-group {position:relative;}
+.trip-menu-group::before {content:"";position:absolute;left:43px;top:10px;bottom:10px;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
+.trip-menu-group .trip-log-range-menu {padding-left:48px;}
+.trip-menu-group .trip-log-date-menu {margin-left:48px;}
+.trip-settings-dialog .trip-defer-option,.trip-settings-dialog .trip-productive-option {display:flex;gap:10px;align-items:center;margin:0;padding:4px 0;}
+.trip-settings-dialog .trip-defer-option input,.trip-settings-dialog .trip-productive-option input {width:20px;height:20px;}
+
+/* The title uses the same center as the readout's text, not its auxiliary controls. */
+.number-pad-context {position:relative;display:block;padding-block:12px;text-align:center;}
+.number-pad-context::before {content:"";}
+.number-pad-context {padding-left:0;padding-right:calc(100% - 2 * var(--number-pad-title-center, 33.333%));}
+.number-pad-readout {position:relative;grid-template-rows:minmax(0,1fr) 44px;}
+.number-pad-readout:not(.absolute-mode) .number-pad-display {grid-row:1;}
+.number-pad-readout.absolute-mode {grid-template-rows:minmax(0,1fr) 52px;}
+.number-pad-header.settings-hidden .number-pad-readout {grid-template-columns:minmax(0,1fr) clamp(54px,16vw,72px);}
+.number-pad-backspace {position:absolute;left:10px;bottom:7px;width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:var(--wm-blue-dark);font-size:26px;line-height:1;z-index:2;}
+.number-pad-backspace:disabled {opacity:.3;cursor:default;}
+.number-pad-date-row {position:relative;width:100%;padding:4px 48px;display:flex;justify-content:center;gap:0;background:transparent;}
+.number-pad-date-row input {width:145px;flex:0 0 145px;text-align:center;}
+.number-pad-date-row input::-webkit-datetime-edit {text-align:center;display:block;}
+.number-pad-calendar-icon {position:absolute;left:calc(50% - 92px);width:18px;height:18px;}
+
+.trip-log-body.trip-log-merged {overflow:auto;}
+.trip-log-controls {display:grid;gap:10px;padding:14px;}
+.trip-log-controls label {display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.4fr);gap:12px;align-items:center;}
+.trip-log-controls select,.trip-log-controls input,.trip-log-editor select {min-width:0;border:1px solid #c0c9d2;border-radius:7px;padding:8px;color:white;background:#39434e;}
+.trip-log-date-controls {display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;}
+.trip-log-date-controls input:disabled {opacity:.55;}
+.trip-log-overview {margin:0 12px 14px;padding:18px;border:1px solid #a0acb8;border-radius:12px;background:rgb(0 0 0 / 12%);text-align:center;}
+.trip-log-emphasis {display:flex;justify-content:space-around;align-items:center;gap:12px;margin-bottom:14px;font-size:clamp(28px,7vw,48px);}
+.trip-log-emphasis>strong+strong {border-left:1px solid #83909d;padding-left:18px;}
+.trip-log-emphasis .trip-log-actual::after {content:"Actual";display:block;font-size:16px;color:#d0d6dd;margin-top:4px;}
+.trip-log-times {font-size:14px;font-weight:400;opacity:.85;margin-top:6px;}
+.trip-log-actual {color:#87bfff;white-space:nowrap;}
+.trip-log-group {border-top:1px solid rgb(255 255 255 / 20%);}
+.trip-log-group>summary {padding:12px;cursor:pointer;background:rgb(0 0 0 / 12%);}
+.trip-log-group-heading {display:flex;justify-content:space-between;gap:8px;}
+.trip-log-group>.trip-log-group {margin-left:14px;}
+.trip-log-trip {margin:8px 12px;border:1px solid rgb(255 255 255 / 20%);border-radius:5px;background:rgb(0 0 0 / 18%);}
+.trip-log-trip>summary {position:relative;display:grid;grid-template-columns:minmax(50px,1fr) repeat(2,minmax(50px,1fr)) minmax(65px,1fr) 24px;gap:6px;padding:12px 8px;align-items:center;font-size:15px;cursor:pointer;}
+.trip-log-trip>summary::before {content:"›";position:absolute;left:2px;top:50%;transform:translateY(-50%);}
+.trip-log-trip[open]>summary::before {content:"⌄";}
+.trip-log-trip>summary>strong:first-child {padding-left:8px;}
+.trip-log-menu {position:relative;visibility:hidden;}
+.trip-log-trip[open]>summary .trip-log-menu {visibility:visible;}
+.trip-log-menu button {border:0;border-radius:5px;background:transparent;color:white;padding:4px 8px;font-size:20px;}
+.trip-log-menu-actions {position:absolute;right:0;top:100%;z-index:10;min-width:190px;padding:6px;background:#242f3b;border:1px solid #899aaa;border-radius:7px;box-shadow:0 6px 18px #0008;}
+.trip-log-menu-actions button {display:block;width:100%;font-size:15px;text-align:left;padding:12px;}
+.trip-log-menu-actions[hidden] {display:none;}
+.trip-log-entries {border-top:1px solid #ffffff30;padding:12px;background:rgb(255 255 255 / 4%);}
+.trip-log-entry-heading {display:flex;justify-content:space-between;align-items:center;}
+.trip-log-entries p {font-size:13px;font-weight:400;}
+.trip-log-entry {display:grid;grid-template-columns:65px minmax(0,1fr);gap:8px;width:100%;padding:8px 0;text-align:left;font-size:15px;font-weight:400;color:white;}
+button.trip-log-entry {padding:10px;margin-top:5px;border:1px solid #92a0ae;border-radius:5px;background:transparent;}
+button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#87bfff;background:#87bfff20;}
+.trip-log-add,.trip-log-entry-heading button {border:1px solid #87bfff;border-radius:6px;color:#87bfff;padding:8px 14px;background:transparent;}
+.trip-log-add {width:100%;margin-top:12px;}
+.trip-log-editor {position:fixed;width:min(94vw,560px);max-height:94dvh;overflow:auto;padding:18px;border-radius:12px;z-index:4000;}
+.trip-log-editor form {min-width:0;}
+.trip-log-edit-field {display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid #b5cfed;border-radius:8px;color:var(--wm-blue-dark);background:var(--wm-yellow);}
+.trip-log-edit-field strong {font-size:18px;}
+.trip-log-editor .dialog-actions button {padding:12px;}
+.trip-log-editor label {display:flex;align-items:center;gap:10px;}
+.trip-log-editor input[type="checkbox"] {width:20px;height:20px;}
+.trip-log-error,.danger {color:#ff8d8d!important;}
+.trip-log-editor .danger {background:transparent;border:1px solid #ff8d8d;border-radius:7px;padding:10px;}
+@media (max-width:380px) {.trip-log-trip>summary {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:4px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}

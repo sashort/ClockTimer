@@ -55,6 +55,7 @@ jobs:
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
                -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
+               -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
                index.html
              echo "Asset version: $VERSION"
              grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html'

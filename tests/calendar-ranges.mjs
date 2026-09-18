@@ -53,18 +53,19 @@ try {
     client.fetcher = async () => ({ok: false, status: 422, json: async () => ({message: 'No verified calendar'})});
     await check('authoritative coverage errors cannot be bypassed with cache', async () => assert.rejects(client.resolve({at: '2028-02-29T17:00:00Z', timezone: 'America/New_York'}), /No verified/));
     const appSource = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+    window.CalendarRange=CalendarRange; window.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
     const handlers = appSource.slice(appSource.indexOf('    async function dispatchTripListRequest('), appSource.indexOf('    function animateTripLogBody('));
     const body = window.document.createElement('section'); window.document.body.append(body);
     const calls = [], totals = [], events = [];
     window.addEventListener('wmof:trip-list-request', event => events.push(event.detail));
     const apiTrip = index => ({id: index, startTime: '2026-09-17 16:00:00.000', standardTimeMilliseconds: 1200000, actualTimeMilliseconds: 600000});
     const createHandlers = new Function('calendarRanges', 'CalendarRange', 'clockTimer', 'tripLogBody', 'getTripLogRange', 'window', 'document', 'fetch',
-        'const API_BASE = window.location.origin + "/"; const CustomEvent = window.CustomEvent; let tripLogRequestSequence = 0; let tripTotalsRefreshQueue = Promise.resolve(); let tripRangeRevision = 0; const resolveTripLogCalendar = range => calendarRanges.resolve({range}); const updateSummaryValues = () => {};\n' + handlers + '\nreturn {dispatchTripListRequest, renderTripLog, updateTripTotals, refreshGoalTotalsForRange};');
+        'const TripLog=window.TripLog; const API_BASE = window.location.origin + "/"; const CustomEvent = window.CustomEvent; const openNumberPad=()=>{}; const tripIsLive=()=>false; let tripLogRequestSequence = 0; let tripTotalsRefreshQueue = Promise.resolve(); let tripRangeRevision = 0; const resolveTripLogCalendar = range => calendarRanges.resolve({range}); const updateSummaryValues = () => {};\n' + handlers + '\nreturn {dispatchTripListRequest, renderTripLog, updateTripTotals, refreshGoalTotalsForRange};');
     const app = createHandlers({resolve: async () => cached}, CalendarRange,
         {nonProductionFilter: 'none', calculateTripTotals: async (...args) => totals.push(args)}, body, () => 'week', window, window.document,
         async url => {calls.push(url.toString()); const offset = Number(url.searchParams.get('offset')); return {ok: true, json: async () => ({trips: offset ? [apiTrip(1001)] : Array.from({length: 1000}, (_, i) => apiTrip(i + 1))})};});
     await check('Trip Log fetch uses resolved dates and paginates all rows', async () => {
-        await app.dispatchTripListRequest(); assert.equal(calls.length, 2); assert.equal(body.querySelectorAll('tbody tr').length, 1001);
+        await app.dispatchTripListRequest(); assert.equal(calls.length, 2); assert.equal(body.querySelectorAll('.trip-log-trip').length, 1001,body.textContent);
         assert.equal(new URL(calls[0]).searchParams.get('maxDateTime'), '2026-09-19T03:59:59.999Z');
         assert.equal(new URL(calls[1]).searchParams.get('offset'), '1000');
     });
@@ -74,7 +75,7 @@ try {
     });
     await check('Trip Log renders untrusted fields as text', () => {
         app.renderTripLog({trips: [{...apiTrip(1), id: '<img src=x onerror=alert(1)>'}]}, cached);
-        assert.equal(body.querySelector('img'), null); assert.ok(body.textContent.includes('<img'));
+        assert.equal(body.querySelector('img'), null); assert.equal(body.querySelector('.trip-log-menu button').getAttribute('aria-label'),'Trip <img src=x onerror=alert(1)> actions');
     });
     await check('old async range request cannot overwrite a newer selection', async () => {
         let release, count = 0;

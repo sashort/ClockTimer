@@ -6,7 +6,10 @@
     "test:calendar": "node calendar-ranges.mjs",
     "test:calendar-editor": "node calendar-editor.mjs",
     "test:calendar-login": "node calendar-login.mjs",
-    "test:custom-range": "node custom-trip-range.mjs && node custom-range-goals.mjs"
+    "test:custom-range": "node custom-trip-range.mjs && node custom-range-goals.mjs",
+    "test:trip-editor": "node trip-log.mjs && node app-integration.mjs",
+    "test:numberpad": "node numberpad-meridiem.mjs",
+    "test:deferred-trip": "node deferred-trip.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

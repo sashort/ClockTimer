@@ -697,7 +697,7 @@
             const url = new URL("api/trips/", API_BASE);
             url.search = new URLSearchParams({
                 result: "list", minDateTime: tripWindow.startTime, maxDateTime: tripWindow.endTime,
-                nonProductionFilter: clockTimer.nonProductionFilter, limit: "1000"
+                nonProductionFilter: "all", productionFilter: clockTimer.productionFilter || "all", verbose:"true", limit: "1000"
             });
             const data = {trips: []};
             let page;
@@ -731,49 +731,43 @@
         }
     }
 
+    let tripLogView;
     function renderTripLog(data, calendar) {
         if (!tripLogBody) return;
-        const fragment = document.createDocumentFragment();
-        const caption = document.createElement("p");
-        const format = value => new Intl.DateTimeFormat(undefined, {
-            timeZone: calendar.timezone, dateStyle: "medium", timeStyle: "short"
-        }).format(new Date(value));
-        caption.textContent = `${format(calendar.startTime)} – ${format(calendar.endTime)} (end excluded; ${calendar.timezone})`;
-        fragment.append(caption);
-        if (calendar.warning || calendar.extrapolated) {
-            const notice = document.createElement("p");
-            notice.textContent = calendar.warning || "Calculated from a recurring rule beyond the latest verified calendar.";
-            fragment.append(notice);
-        }
-        const sourceUrls = [...new Set((calendar.sources || []).map(source => source.url))];
-        for (const url of sourceUrls) {
-            const link = document.createElement("a");
-            link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
-            link.textContent = "Calendar source"; fragment.append(link, document.createTextNode(" "));
-        }
-        if (!data.trips?.length) {
-            const empty = document.createElement("p"); empty.textContent = "No trips in this range."; fragment.append(empty);
-        } else {
-            const table = document.createElement("table");
-            const header = document.createElement("tr");
-            for (const label of ["Trip", "Start", "Standard", "Actual"]) {
-                const cell = document.createElement("th"); cell.textContent = label; header.append(cell);
+        tripLogView ||= new TripLog(tripLogBody, {
+            range:getTripLogRange, filter:()=>clockTimer.productionFilter || "all",
+            onRange:value=>setTripLogRange(value),
+            onFilter:setTripProductionFilter,
+            onDate:(key,value)=>{(key === "start" ? tripLogStartDate : tripLogEndDate).value=value;refreshTripLogSelection();},
+            numberPad:openNumberPad,
+            request:async (id,change)=>{
+                const result=await clockTimer.tripEditorRequest(id,change);
+                if(change){renderTripActionState();renderSyncGoalsState();updateSummaryValues();}
+                return result;
+            },
+            refresh:()=>dispatchTripListRequest("edit"),
+            liveTrip:()=>{
+                if (!tripIsLive() || !clockTimer.currentTripId) return null;
+                const summary=clockTimer.getSummarySnapshot().trip;
+                const snapshot=clockTimer.toJSON();
+                const first=snapshot.records.find(record=>Object.values(record)[0]?.type==="start");
+                const start=first?Object.keys(first)[0]:undefined;
+                if(!start) return null;
+                return {id:clockTimer.currentTripId,running:true,startTime:start,endTime:new Date().toISOString(),
+                    standardTimeMilliseconds:summary.standardTimeMilliseconds,
+                    actualTimeMilliseconds:summary.actualTimeElapsedMilliseconds,
+                    countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};
             }
-            const head = document.createElement("thead"); head.append(header); table.append(head);
-            const body = document.createElement("tbody");
-            for (const trip of data.trips) {
-                const row = document.createElement("tr");
-                const start = String(trip.startTime).replace(" ", "T") + "Z";
-                for (const value of [trip.id, format(start),
-                    `${(trip.standardTimeMilliseconds / 60000).toFixed(1)} min`,
-                    `${(trip.actualTimeMilliseconds / 60000).toFixed(1)} min`]) {
-                    const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell);
-                }
-                body.append(row);
-            }
-            table.append(body); fragment.append(table);
-        }
-        tripLogBody.replaceChildren(fragment);
+        });
+        tripLogView.render(data,calendar);
+    }
+
+    function setTripProductionFilter(value, {notify=true}={}) {
+        if (!["all","productive","non-productive"].includes(value)) value="all";
+        clockTimer.productionFilter=value;
+        $("#tripProductionFilter").value=value;
+        safeStorageSet("wmof.tripProductionFilter",value);
+        if (notify) {tripRangeRevision++;refreshTripLogSelection();}
     }
 
     function updateTripTotals(tripWindow, isCurrent = () => true) {
@@ -1399,6 +1393,16 @@
         const enabled =
             getSyncGoalsState();
 
+        const idle = enabled && normalizedConnectionStatus() === "online" && !tripIsLive();
+        for (const element of [goalSyncButton, syncGoalsMenuIcon]) {
+            if (!element) continue;
+            element.classList.toggle("sync-paused", idle);
+            if (!element.querySelector(".sync-pause-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "sync-pause-badge";badge.setAttribute("aria-hidden", "true");
+                element.append(badge);
+            }
+        }
         for (
             const button of
                 [
@@ -2057,6 +2061,7 @@
     }
 
     function updateNumberPadConnectionStatus(token, status, { presentation } = {}) {
+        renderSyncGoalsState();
         const normalized = status === "pending" ? "pending" : normalizedConnectionStatus(status);
         if (numberPadState?.connectionStatusToken === token) {
             numberPadState.persistence = normalized;
@@ -3753,6 +3758,7 @@
         if (getTripLogRange() === "custom") refreshTripLogSelection();
     });
 
+    $("#tripProductionFilter").addEventListener("change",event=>setTripProductionFilter(event.target.value));
     tripLogRangeSelect?.addEventListener(
         "change",
         event => {
@@ -4225,6 +4231,7 @@
     }
 
     function absoluteHour24(state) {
+        if (!absoluteDigitsValid(state.pending, state.meridiem)) return undefined;
         const parts = splitAbsoluteDigits(state.pending);
         if (!parts) return undefined;
         if (state.meridiem === "AM") return parts.hour === 12 ? 0 : parts.hour;
@@ -4328,8 +4335,27 @@
         return timeDigitsValid(numberPadState.pending);
     }
 
+    function absoluteValuesEqual(first, second) {
+        const firstHour = absoluteHour24(first);
+        const secondHour = absoluteHour24(second);
+        if (firstHour === undefined || secondHour === undefined) {
+            return first.pending === second.pending && first.meridiem === second.meridiem;
+        }
+        const firstParts = splitAbsoluteDigits(first.pending);
+        const secondParts = splitAbsoluteDigits(second.pending);
+        return firstHour === secondHour && firstParts.minute === secondParts.minute &&
+            firstParts.second === secondParts.second;
+    }
+
     function numberPadHasChanges() {
         if (!numberPadState) return false;
+        if (numberPadState.mode === "absolute") {
+            return numberPadState.pendingDate !== numberPadState.initialDate ||
+                !absoluteValuesEqual(numberPadState, {
+                    pending: numberPadState.initial,
+                    meridiem: numberPadState.initialMeridiem
+                });
+        }
         return numberPadState.pending !== numberPadState.initial ||
             numberPadState.pendingDate !== numberPadState.initialDate ||
             numberPadState.meridiem !== numberPadState.initialMeridiem;
@@ -4372,6 +4398,8 @@
             numberPadPM.setAttribute("aria-pressed", String(numberPadState.meridiem === "PM"));
         }
 
+        $("#numberPadBackspace").disabled = !numberPadState.pending;
+        numberPadContext.style.setProperty("--number-pad-title-center", percentMode ? "50%" : absoluteMode ? "calc((100% - clamp(54px, 16vw, 72px)) / 2)" : "33.333%" );
         const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
         numberPadClear.dataset.action = clearAction;
@@ -4403,7 +4431,9 @@
 
         const settingsVisible =
             !percentMode &&
+            !numberPadState.onConfirm &&
             numberPadState.role !== "trip-settings-field";
+        if (numberPadState.onConfirm && !percentMode) numberPadContext.style.setProperty("--number-pad-title-center", "calc((100% - clamp(54px, 16vw, 72px)) / 2)");
         numberPadSettingsArea.hidden = !settingsVisible;
         numberPadSettingsArea.parentElement?.classList.toggle(
             "settings-hidden",
@@ -4464,7 +4494,8 @@
         cancelTarget = "home",
         confirmTarget,
         backTarget,
-        duration = 250
+        duration = 250,
+        onConfirm, onCancel, title
     } = {}) {
         await ensureNumberPadLoaded();
         const normalizedMode = mode === "percent"
@@ -4491,8 +4522,9 @@
         }
         const state = {
             mode: normalizedMode,
+            onConfirm, onCancel,
             source,
-            title: getNumberPadTitle(source),
+            title: title || getNumberPadTitle(source),
             initial,
             pending: initial,
             initialDate,
@@ -4599,6 +4631,7 @@
         if (!allowChanged && numberPadHasChanges()) return false;
 
         const target = destination ?? state.cancelTarget ?? "home";
+        if (state.onCancel && discardPrepared) state.onCancel();
         if (target === "trip-settings") {
             if (!tripSettingsSession) beginTripSettingsSession();
             if (!openTripSettingsDialog("number-pad-return", { duration: 0 })) {
@@ -4627,6 +4660,7 @@
             }
             if (discardPrepared && state.workflow === "new-trip") {
                 tripDraft = undefined;
+                renderDeferredTrip();
                 tripStartsNowState = undefined;
                 tripSettingsSession = undefined;
                 resetTripSettingsNavigation();
@@ -4788,6 +4822,11 @@
     async function commitNumberPad() {
         if (!numberPadState || !numberPadValueValid()) return false;
         const state = { ...numberPadState };
+        if (state.onConfirm) {
+            const value = state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
+            await state.onConfirm(value);
+            return true;
+        }
         if (!numberPadHasChanges() && !state.startsTripOnConfirm) return false;
         if (state.mode === "percent") {
             const percent =
@@ -4932,22 +4971,22 @@
 
     function changeNumberPadMeridiem(next) {
         if (!numberPadState || numberPadState.mode !== "absolute") return;
+        if (next !== "AM" && next !== "PM") return;
         const parts = splitAbsoluteDigits(numberPadState.pending);
         if (!parts) return;
         const previous = numberPadState.meridiem;
+        const previousValue = { pending: numberPadState.pending, meridiem: previous };
         const target = previous === next ? null : next;
-        if (target !== previous) numberPadState.everEdited = true;
         let hour = parts.hour;
         if (previous && !target) {
-            hour = previous === "AM"
-                ? (hour === 12 ? 0 : hour)
-                : (hour === 12 ? 12 : hour + 12);
+            hour = hour % 12 + (previous === "PM" ? 12 : 0);
         }
-        else if (!previous && target && hour > 12) {
+        else if (target) {
             hour = hour % 12 || 12;
         }
         numberPadState.meridiem = target;
         numberPadState.pending = absoluteDigits(hour, parts.minute, parts.second);
+        if (!absoluteValuesEqual(previousValue, numberPadState)) numberPadState.everEdited = true;
         numberPadState.replaceOnNextDigit = false;
         refreshNumberPad();
     }
@@ -5027,15 +5066,16 @@
         const scheduledStart = parseTimelineTime(draft.scheduledStart);
         const actualStart = parseTimelineTime(draft.startTime);
         return (
-            Number.isFinite(standardTime) && standardTime > 0 &&
+            (draft.deferred || (Number.isFinite(standardTime) && standardTime > 0)) &&
             Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 24 * 60 * 60 * 1000 &&
-            Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
-            Number.isFinite(actualStart) && actualStart >= 0
+            (draft.deferred || (Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
+            Number.isFinite(actualStart) && actualStart >= 0))
         );
     }
 
     async function startTripDraft() {
         const draft = tripDraft;
+        if (draft?.deferred) return false;
         const standardTime = String(draft?.standardTime || "").trim();
         if (!tripDraftCanStart(draft)) return false;
 
@@ -5053,6 +5093,8 @@
 
         await clockTimer.start({
             standardTime,
+            creationDate: draft.creationDate,
+            nonProduction: draft.nonProduction === true,
             creationTime: draft.creationTime,
             scheduledStart: draft.scheduledStart,
             startTime: draft.startTime
@@ -5063,6 +5105,7 @@
 
         stagedStandardTime = standardTime;
         tripDraft = undefined;
+        renderDeferredTrip();
         uiReturnStack.length = 0;
         return true;
     }
@@ -5082,6 +5125,8 @@
             creationDate: live ? (clockTimer.creationDate || "") : (draft.creationDate || ""),
             scheduledStart: live ? (clockTimer.scheduledStart || "") : (draft.scheduledStart || ""),
             startTime: live ? (clockTimer.startTime || "") : (draft.startTime || ""),
+            deferred: !live && Boolean(draft.deferred),
+            nonProduction: live ? clockTimer.nonProduction : draft.nonProduction === true,
             syncGoals: live
                 ? Boolean(clockTimer.autoSyncTripGoal)
                 : Boolean(draft.syncGoals)
@@ -5106,6 +5151,8 @@
         if (!values) return tripDraft;
         return {
             ...tripDraft,
+            deferred: Boolean(values.deferred),
+            nonProduction: values.nonProduction === true,
             standardTime: values.standardTime,
             creationTime: values.creationTime,
             creationDate: values.creationDate,
@@ -5263,6 +5310,8 @@
         if (!tripDraft || tripSettingsSession?.live || !tripSettingsSession?.original) return;
         const values = tripSettingsSession.original;
         Object.assign(tripDraft, {
+            deferred: Boolean(values.deferred),
+            nonProduction: values.nonProduction === true,
             standardTime: values.standardTime,
             creationTime: values.creationTime,
             creationDate: values.creationDate,
@@ -5280,6 +5329,8 @@
         if (!session.live) {
             if (!tripDraft) return false;
             Object.assign(tripDraft, {
+                deferred: Boolean(values.deferred),
+            nonProduction: values.nonProduction === true,
                 standardTime: values.standardTime,
                 creationTime: values.creationTime,
                 creationDate: values.creationDate,
@@ -5296,6 +5347,7 @@
             if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
             if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
+            clockTimer.nonProduction = values.nonProduction === true;
             clockTimer.autoSyncTripGoal = Boolean(values.syncGoals);
             stagedStandardTime = values.standardTime || stagedStandardTime;
             return true;
@@ -5355,6 +5407,7 @@
         const live = tripIsLive();
         const draft = !live ? tripDraft : undefined;
         const settingsValues = tripSettingsSession?.values || getCurrentTripSettingsValues();
+        if (settingsValues?.deferred) settingsValues.scheduledStart = settingsValues.creationTime;
         const creationDate = settingsValues?.creationDate || draft?.creationDate || clockTimer.creationDate;
         const values = {
             "creation-time": settingsValues
@@ -5374,13 +5427,17 @@
         $("#tripActualStart").textContent = values["actual-start"];
         $("#tripStandardTime").textContent = values["standard-time"];
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
-            button.disabled = !live && !draft;
+            button.disabled = (!live && !draft) || (settingsValues?.deferred && ["scheduled-start", "actual-start"].includes(button.dataset.tripTimeField));
         });
+        $("#tripProductive").checked = !settingsValues?.nonProduction;
+        $("#tripDefer").checked = Boolean(settingsValues?.deferred);
+        $("#tripDefer").disabled = live || !draft;
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
-        tripSettingsPrimary.textContent = draft ? "Start Trip" : "Save";
+        tripSettingsPrimary.textContent = settingsValues?.deferred ? "OK" : draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
         tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));
         syncTripStartsNowUI();
+        if (settingsValues?.deferred) tripSetStartsNow.disabled = true;
     }
 
     function drawAttentionToTripField(field) {
@@ -5455,6 +5512,7 @@
     }
 
     function openTripFieldNumberPad(field) {
+        if (tripSettingsSession?.values.deferred && ["scheduled-start", "actual-start"].includes(field)) return Promise.resolve();
         if (!tripIsLive() && !tripDraft) return Promise.resolve();
         const live = tripIsLive();
         const absolute = field !== "standard-time";
@@ -5478,6 +5536,21 @@
     }
 
     function bindNumberPadEvents() {
+        const backspace = $("#numberPadBackspace");
+        let deleteTimer, held = false;
+        const erase = all => {
+            if (!numberPadState) return;
+            numberPadState.pending = all ? "" : numberPadState.pending.slice(0,-1);
+            numberPadState.replaceOnNextDigit = false;numberPadState.everEdited = true;refreshNumberPad();
+        };
+        backspace.addEventListener("pointerdown", event => {
+            held = false;backspace.setPointerCapture?.(event.pointerId);
+            deleteTimer = setTimeout(() => {held=true;erase(true);}, NUMBER_PAD_LONG_PRESS);
+        });
+        backspace.addEventListener("pointerup", () => {clearTimeout(deleteTimer);if (!held) erase(false);});
+        backspace.addEventListener("pointercancel", () => clearTimeout(deleteTimer));
+        backspace.addEventListener("click", event => {if (event.detail===0) erase(false);});
+
         numberPadDialog.querySelectorAll("[data-number]").forEach(button => {
             button.addEventListener("pointerup", () => {
                 if (!numberPadState) return;
@@ -5747,6 +5820,35 @@
         });
     });
 
+    $("#tripProductive").addEventListener("change", event => {
+        const session = tripSettingsSession || beginTripSettingsSession();
+        if (session) session.values.nonProduction = !event.target.checked;
+    });
+
+    function renderDeferredTrip() {
+        const button = $("#newTripButton");
+        button.classList.toggle("has-deferred-trip", Boolean(tripDraft?.deferred));
+        button.title = tripDraft?.deferred ? "Resume deferred trip" : "New Trip";
+    }
+
+    $("#tripDefer").addEventListener("change", event => {
+        const session = tripSettingsSession || beginTripSettingsSession();
+        if (!session || session.live) return;
+        const values = session.values;
+        if (event.target.checked) {
+            session.loadedStarts = { scheduledStart: values.scheduledStart, startTime: values.startTime };
+            values.scheduledStart = values.creationTime;
+            values.startTime = undefined;
+        } else {
+            const loaded = session.loadedStarts || getTripMomentDefaults();
+            values.scheduledStart = loaded.scheduledStart;
+            values.startTime = loaded.startTime;
+        }
+        values.deferred = event.target.checked;
+        tripStartsNowState = undefined;
+        refreshTripSettingsValues();
+    });
+
     tripSettingsForm.addEventListener("submit", event => {
         event.preventDefault();
         if (!tripSettingsSession) beginTripSettingsSession();
@@ -5759,6 +5861,16 @@
             }
 
             if (startingDraft) {
+                if (tripDraft.deferred) {
+                    tripStartsNowState = undefined;
+                    tripSettingsSession = undefined;
+                    if (numberPadDialog?.open) await closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
+                    uiReturnStack.length = 0;
+                    resetTripSettingsNavigation();
+                    closeDialog(tripSettingsDialog, { reason: "trip-settings-defer" });
+                    renderDeferredTrip();
+                    return;
+                }
                 try {
                     if (!await startTripDraft()) {
                         restoreDraftFromTripSettingsOriginal();
@@ -5779,13 +5891,24 @@
             }
 
             syncTripSettingsCallerAfterSave();
+            await clockTimer.persistCurrentTrip();
             tripStartsNowState = undefined;
             tripSettingsSession = undefined;
             await closeTripSettingsToNavigation("trip-settings-save");
         })().catch(() => {});
     });
 
+    function resumedTripStarts(draft, moment) {
+        const base = parseDateInput(draft.creationDate);
+        const days = (Date.UTC(moment.getFullYear(), moment.getMonth(), moment.getDate()) -
+            Date.UTC(base.getFullYear(), base.getMonth(), base.getDate())) / 86400000;
+        const elapsed = days * 86400000 + ((moment.getHours() * 60 + moment.getMinutes()) * 60 + moment.getSeconds()) * 1000 + moment.getMilliseconds();
+        const time = formatTimelineMilliseconds(elapsed);
+        return { scheduledStart: draft.scheduledStart ?? draft.creationTime, startTime: time };
+    }
+
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
+        const deferredDraft = tripDraft?.deferred ? tripDraft : undefined;
         uiReturnStack.length = 0;
         resetTripSettingsNavigation();
         tripSettingsSession = undefined;
@@ -5800,17 +5923,22 @@
                 ? ""
                 : (stagedStandardTime || "")
         );
-        tripDraft = {
+        tripDraft = deferredDraft ? {
+            ...deferredDraft,
+            deferred: false,
+            ...resumedTripStarts(deferredDraft, moment)
+        } : {
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
             syncGoals: tripPreferences.syncGoals
         };
 
+        renderDeferredTrip();
         let preparationPromise;
         try {
             preparationPromise = Promise.resolve(
-                clockTimer.prepareTrip({ timeout: 5000, at: moment })
+                deferredDraft ? { pending: true } : clockTimer.prepareTrip({ timeout: 5000, at: moment })
             ).catch(() => ({
                 persisted: false,
                 pending: true,
@@ -5828,7 +5956,7 @@
         return openNumberPad({
             mode: "time",
             source: "new-trip",
-            initialValue: newTripInitialValue,
+            initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
             preparationPromise,
             tripDefaults: tripDraft,
             startsTripOnConfirm: true,
@@ -6012,6 +6140,7 @@
     }
 
     function renderTripActionState(now = new Date()) {
+        renderSyncGoalsState();
         if (!tripIsLive()) {
             app.dataset.intervalState = "none";
             setEndTripButtonIntervalPalette();
@@ -6180,6 +6309,7 @@
     });
 
     const summaryRefreshEvents = [
+        "tripLoaded",
         "cleared",
         "goalChanged",
         "renderedPercentGoalChanged",
@@ -6219,6 +6349,7 @@
     });
 
     clockTimer.addEventListener("networkStatusChanged", () => {
+        renderSyncGoalsState();
         const connectionState =
             numberPadState ??
             getTripSettingsReturnNumberPadState();
@@ -6236,6 +6367,30 @@
         syncNetworkStatusUI({ login: loginPending });
         queueSummaryRefresh();
     });
+
+    clockTimer.addEventListener("tripLoaded", () => setTripControlState(!["ready","stopped"].includes(clockTimer.status)));
+    for (const event of ["intervalStarted","intervalEnded","intervalDeleted","stopped"]) {
+        clockTimer.addEventListener(event,()=>{if(getTripListState()==="open") void dispatchTripListRequest("trip-change");});
+    }
+    setInterval(()=>{
+        if(tripIsLive() && getTripListState()==="open" && tripLogView && !tripLogView.editor && !numberPadDialog?.open &&
+            !tripLogBody.contains(document.activeElement) && !tripLogBody.querySelector(".trip-log-menu-actions:not([hidden])")) {
+            tripLogView.render({trips:tripLogView.trips},tripLogView.calendar);
+        }
+    },1000);
+
+    function alignStatusIcons() {
+        if (!scopeConnectionButton || scopeConnectionButton.hidden) return;
+        const reference=scopeConnectionButton.getBoundingClientRect();const center=reference.left+reference.width/2;
+        for(const icon of [goalSyncButton,$(".deferred-trip-icon")]) {
+            if(!icon || icon.hidden) continue;
+            const parent=icon.offsetParent;if(!parent) continue;
+            icon.style.left=`${center-parent.getBoundingClientRect().left-parent.clientLeft-icon.offsetWidth/2}px`;
+            icon.style.right="auto";
+        }
+    }
+    const statusIconObserver=new ResizeObserver(()=>requestAnimationFrame(alignStatusIcons));
+    for(const element of [scopeConnectionButton,goalSyncButton,$("#newTripButton"),$(".deferred-trip-icon")]) if(element) statusIconObserver.observe(element);
 
     // Semantic ClockTimer event integration points.
     // These bodies intentionally do not change UI yet; future speech synthesis and
@@ -6405,6 +6560,7 @@
     applyGraphicalSettings(graphicalSettings);
     fillGraphicalForm(graphicalSettings);
     fillTripPreferencesForm(tripPreferences);
+    setTripProductionFilter(safeStorageGet("wmof.tripProductionFilter") || "all", {notify:false});
     setTripLogRange(
         getTripLogRange(),
         {
