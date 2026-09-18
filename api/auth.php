@@ -53,21 +53,3 @@ function require_trip_owner(PDO $pdo, int $tripId): array
 
     return $trip;
 }
-
-function require_interval_owner(PDO $pdo, int $intervalId): array
-{
-    $statement = $pdo->prepare(
-        'SELECT i.id, i.trip_id, i.type, i.start_time, i.end_time FROM intervals i INNER JOIN trips t ON t.id = i.trip_id WHERE i.id = :id AND t.user_id = :user_id LIMIT 1'
-    );
-    $statement->execute([
-        ':id' => $intervalId,
-        ':user_id' => authenticated_user_id(),
-    ]);
-    $interval = $statement->fetch();
-
-    if (!$interval) {
-        api_error('Interval was not found.', 404, 'interval_not_found');
-    }
-
-    return $interval;
-}
