@@ -3659,3 +3659,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#8
 .trip-log-settings-content {min-height:0;overflow:hidden;}
 .trip-log-settings-divider {margin:0 14px 14px;border:0;border-top:1px solid rgb(255 255 255 / 35%);}
 @media (prefers-reduced-motion:reduce) {.trip-log-settings,.trip-log-settings.is-open {transition-duration:0ms;}}
+
+.trip-log-body.trip-log-empty:not([hidden]) {display:flex;flex-direction:column;}
+.trip-log-empty .trip-log-settings {flex:0 0 auto;width:100%;}
+.trip-log-empty-message {flex:1;display:grid;place-items:center;min-height:80px;margin:0;padding:24px;text-align:center;font-size:clamp(22px,4vw,28px);font-weight:500;}

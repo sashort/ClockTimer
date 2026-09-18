@@ -10,7 +10,7 @@
         setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));}}
         render(data,calendar) {
             this.calendar=calendar;
-            const trips=[...data.trips];const live=this.options.liveTrip?.();
+            const trips=[...data.trips];const live=data.loginRequired?null:this.options.liveTrip?.();
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
                 const index=trips.findIndex(t=>Number(t.id)===Number(live.id));
                 const filter=this.options.filter();
@@ -30,12 +30,18 @@
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=this.options.range()!=='custom';});
             }
             if(!reuseSettings)fragment.append(settings);
+            this.root.classList.toggle('trip-log-empty',trips.length===0);
+            if(trips.length) {
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips),'trip-log-actual'));
             overview.append(emphasis,node('div',`Standard ${duration(total(trips,'standardTimeMilliseconds'))} · Actual ${duration(total(trips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
             fragment.append(this.groups(trips,levels,calendar));
+            } else {
+                const message=node('p',data.loginRequired?'Log in to view saved trips.':'No trips in this range.','trip-log-empty-message');
+                message.setAttribute('role','status');fragment.append(message);
+            }
             if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
             else this.root.replaceChildren(fragment);
             this.setSettingsVisible(this.settingsVisible);
