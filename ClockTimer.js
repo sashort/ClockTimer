@@ -7163,7 +7163,8 @@
                 type:
                     type.trim(),
                 clockTimerGrowthMode:
-                    openEnded
+                    !endDate &&
+                    duration === undefined
                         ? "displace"
                         : "fixed",
                 startDate:
