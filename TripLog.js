@@ -5,14 +5,23 @@
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
     const percent = trips => {const standard=trips.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=trips.reduce((a,t)=>a+t.actualTimeMilliseconds,0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
+    const uncertainIcon = () => {
+        const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+        icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('class','calculation-uncertain-icon');
+        icon.setAttribute('role','img');icon.setAttribute('aria-label','May be incomplete until synced');
+        icon.setAttribute('title','May be incomplete until synced');
+        icon.innerHTML='<path d="M6 17H5a4 4 0 0 1-.5-8 6 6 0 0 1 11-3 5 5 0 0 1 3.5 9"/><path d="M10 13a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2"/><circle cx="12.5" cy="20" r=".6" fill="currentColor" stroke="none"/>';
+        return icon;
+    };
     class TripLog {
         constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.editor=null;this.settingsVisible=false;}
         setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));}}
         render(data,calendar) {
             this.calendar=calendar;
-            const trips=[...data.trips];const live=data.loginRequired?null:this.options.liveTrip?.();
+            this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
+            const trips=data.loginRequired?[]:[...data.trips];const live=data.loginRequired?null:this.options.liveTrip?.();
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
-                const index=trips.findIndex(t=>Number(t.id)===Number(live.id));
+                const index=trips.findIndex(t=>String(t.id)===String(live.id));
                 const filter=this.options.filter();
                 if(filter==='all'||(filter==='productive'&&!live.nonProduction)||(filter==='non-productive'&&live.nonProduction)) {
                     if(index>=0) trips[index]={...trips[index],...live};else trips.push(live);
@@ -20,6 +29,7 @@
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
             this.trips=trips;const fragment=document.createDocumentFragment();
+            if(!trips.length)this.settingsVisible=true;
             let settings=this.root.querySelector('.trip-log-settings');
             const reuseSettings=Boolean(settings);
             if(!settings){settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
@@ -34,12 +44,13 @@
             if(trips.length) {
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips),'trip-log-actual'));
+            if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
             overview.append(emphasis,node('div',`Standard ${duration(total(trips,'standardTimeMilliseconds'))} · Actual ${duration(total(trips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
             fragment.append(this.groups(trips,levels,calendar));
             } else {
-                const message=node('p',data.loginRequired?'Log in to view saved trips.':'No trips in this range.','trip-log-empty-message');
+                const message=node('p',data.loginRequired?'Log in to view saved trips.':data.offline?'No local trips in this range. Connect to load saved trips.':'No trips in this range.','trip-log-empty-message');
                 message.setAttribute('role','status');fragment.append(message);
             }
             if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
@@ -80,6 +91,7 @@
             const [level,...rest]=levels;const groups=new Map();for(const trip of trips){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group');details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
                 const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group)}`,'trip-log-actual'));
+                if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
                 summary.append(heading,node('div',`Standard ${duration(total(group,'standardTimeMilliseconds'))} · Actual ${duration(total(group,'actualTimeMilliseconds'))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
             return fragment;
         }
@@ -87,12 +99,13 @@
             const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
             summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(trip.actualTimeMilliseconds)),node('strong',percent([trip]),'trip-log-actual'));
+            if(trip.buffered)summary.lastElementChild.append(uncertainIcon());
             const menu=node('div',undefined,'trip-log-menu');const toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label',`Trip ${trip.id} actions`);toggle.setAttribute('aria-expanded','false');
             const actions=node('div',undefined,'trip-log-menu-actions');actions.hidden=true;
             for(const [label,action] of [['Edit trip settings',()=>this.openSettings(trip)],['Edit entries',()=>{this.editing.add(trip.id);this.render({trips:this.trips},this.calendar);}],['Delete trip',()=>this.deleteTrip(trip)]]) {
                 const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
             }
-            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);summary.append(menu);details.append(summary);
+            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline&&!trip.buffered)summary.append(menu);details.append(summary);
             const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?'Editing entries':'Trip entries'));
             if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>{this.editing.delete(trip.id);this.render({trips:this.trips},this.calendar);});header.append(done);entries.append(header,node('p','Select an entry to edit or remove it.'));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
@@ -152,5 +165,5 @@
         }
         async deleteTrip(trip) {if(!confirm(`Delete ${trip.running?'the running trip':'this trip'} and all its entries?`))return;const data=await this.options.request(trip.id);await this.options.request(trip.id,{operation:'delete-trip',revision:data.revision});await this.options.refresh();}
     }
-    TripLog.duration=duration;TripLog.percent=percent;window.TripLog=TripLog;
+    TripLog.duration=duration;TripLog.percent=percent;TripLog.uncertainIcon=uncertainIcon;window.TripLog=TripLog;
 })();

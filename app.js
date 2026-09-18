@@ -711,8 +711,14 @@
         try {
             const calendar = await resolveTripLogCalendar(range);
             if (sequence !== tripLogRequestSequence) return;
-            if (clockTimer.networkStatus === "offline") {
-                renderTripLog({trips: [], loginRequired: true}, calendar);
+            if (deliberatelyLoggedOut || clockTimer.networkStatus === "offline") {
+                const data = offlineTripLogData(calendar);
+                if (!data.loginRequired) {
+                    const tripWindow = CalendarRange.tripWindow(calendar);
+                    clockTimer.calculateOfflineTripTotals(data.allTrips, tripWindow.startTime, tripWindow.endTime);
+                    updateSummaryValues();
+                }
+                renderTripLog(data, calendar);
                 return;
             }
             const tripWindow = CalendarRange.tripWindow(calendar);
@@ -734,6 +740,7 @@
                 data.trips.push(...page.trips);
             } while (page.trips.length === 1000);
             if (sequence !== tripLogRequestSequence) return;
+            safeStorageSet("wmof.tripLogCache", JSON.stringify({userId: signedInProfile?.id, trips: data.trips}));
             renderTripLog(data, calendar);
             if (sequence !== tripLogRequestSequence) return;
         window.dispatchEvent(
@@ -750,6 +757,14 @@
         );
         } catch (error) {
             if (sequence !== tripLogRequestSequence) return;
+            if (clockTimer.networkStatus === "offline") {
+                try {
+                    const calendar = await resolveTripLogCalendar(range);
+                    if (sequence !== tripLogRequestSequence) return;
+                    renderTripLog(offlineTripLogData(calendar), calendar);
+                    return;
+                } catch {}
+            }
             if (tripLogView && tripLogBody?.querySelector('.trip-log-settings')) tripLogView.error(error);
             else if (tripLogBody) tripLogBody.textContent = error.message || "Trip Log is unavailable.";
             window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
@@ -759,6 +774,28 @@
     }
 
     let tripLogView;
+    function offlineTripLogData(calendar) {
+        let cached;
+        try {cached = JSON.parse(safeStorageGet("wmof.tripLogCache") || "null");} catch {}
+        const local = clockTimer.getLocalTripLog();
+        const loginRequired = deliberatelyLoggedOut || (!signedInProfile && !cached && !local.length);
+        const allTrips = new Map();
+        if (!loginRequired) {
+            if (cached && (!signedInProfile || cached.userId === signedInProfile.id)) {
+                for (const trip of cached.trips || []) allTrips.set(String(trip.id), trip);
+            }
+            for (const trip of local) allTrips.set(String(trip.id), trip);
+        }
+        const tripWindow = CalendarRange.tripWindow(calendar);
+        const trips = [...allTrips.values()].filter(trip => {
+            const time = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
+            const filter = clockTimer.productionFilter || "all";
+            return time >= Date.parse(tripWindow.startTime) && time < Date.parse(tripWindow.endTime) &&
+                (filter === "all" || (filter === "productive" && !trip.nonProduction) || (filter === "non-productive" && trip.nonProduction));
+        });
+        return {trips, allTrips: [...allTrips.values()], loginRequired, offline: true, incomplete: true};
+    }
+
     function renderTripLog(data, calendar) {
         if (!tripLogBody) return;
         tripLogView ||= new TripLog(tripLogBody, {
@@ -774,7 +811,8 @@
             },
             refresh:()=>dispatchTripListRequest("edit"),
             liveTrip:()=>{
-                if (!tripIsLive() || !clockTimer.currentTripId) return null;
+                if (!tripIsLive()) return null;
+                if (clockTimer.networkStatus === "offline" || !clockTimer.currentTripId) return clockTimer.getLocalTripLog().find(trip => trip.running) || null;
                 const summary=clockTimer.getSummarySnapshot().trip;
                 const snapshot=clockTimer.toJSON();
                 const first=snapshot.records.find(record=>Object.values(record)[0]?.type==="start");
@@ -787,6 +825,11 @@
             }
         });
         tripLogView.render(data,calendar);
+        if (!tripLogView.trips.length) {
+            tripLogSettingsVisible = true;
+            tripLogSettingsButton?.setAttribute("aria-expanded", "true");
+            tripLogSettingsButton?.setAttribute("aria-label", "Hide Trip Log settings");
+        }
         tripLogView.setSettingsVisible(tripLogSettingsVisible);
     }
 
@@ -800,7 +843,13 @@
 
     function updateTripTotals(tripWindow, isCurrent = () => true) {
         const task = tripTotalsRefreshQueue.catch(() => {}).then(() =>
-            isCurrent() ? clockTimer.calculateTripTotals(tripWindow.startTime, tripWindow.endTime).then(result => {
+            isCurrent() ? Promise.resolve().then(() => {
+                if (clockTimer.networkStatus === "offline") {
+                    const data = offlineTripLogData(tripWindow);
+                    return clockTimer.calculateOfflineTripTotals(data.allTrips, tripWindow.startTime, tripWindow.endTime);
+                }
+                return clockTimer.calculateTripTotals(tripWindow.startTime, tripWindow.endTime);
+            }).then(result => {
                 if (isCurrent()) updateSummaryValues();
                 return result;
             }) : null
@@ -2951,6 +3000,15 @@
                     ? "Edit Total goal"
                     : "Edit Trip goal"
         );
+
+        if (clockTimer.networkStatus === "offline" && selected?.available !== false && !deliberatelyLoggedOut) {
+            const total = scope === "total";
+            const targets = total ? [$("#standardTimeValue"), $("#renderedTimeValue"), $("#currentPercentValue")] :
+                getSyncGoalsState() ? [$("#renderedTimeValue"), goalButton] : [];
+            for (const target of targets) {
+                if (target.textContent !== "---") target.append(TripLog.uncertainIcon());
+            }
+        }
 
         renderSyncGoalsState(
             scope
@@ -6440,13 +6498,13 @@
     });
 
     clockTimer.addEventListener("tripLoaded", () => setTripControlState(!["ready","stopped"].includes(clockTimer.status)));
-    for (const event of ["intervalStarted","intervalEnded","intervalDeleted","stopped"]) {
+    for (const event of ["intervalStarted","intervalEnded","intervalDeleted","stopped","cleared","completedTripsSynced"]) {
         clockTimer.addEventListener(event,()=>{if(getTripListState()==="open") void dispatchTripListRequest("trip-change");});
     }
     setInterval(()=>{
         if(tripIsLive() && getTripListState()==="open" && tripLogView && !tripLogView.editor && !numberPadDialog?.open &&
             !tripLogBody.contains(document.activeElement) && !tripLogBody.querySelector(".trip-log-menu-actions:not([hidden])")) {
-            tripLogView.render({trips:tripLogView.trips},tripLogView.calendar);
+            tripLogView.render({trips:tripLogView.trips, offline:tripLogView.offline, incomplete:tripLogView.incomplete, loginRequired:tripLogView.loginRequired},tripLogView.calendar);
         }
     },1000);
 

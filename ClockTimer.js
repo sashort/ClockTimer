@@ -120,6 +120,11 @@
         #pendingTripEvents =
             [];
 
+        #completedTripQueue = [];
+        #syncUserId;
+        #completedTripsRestored = false;
+        #completedTripSyncPromise;
+
         #replayingTripEvents =
             false;
 
@@ -1244,6 +1249,19 @@
         }
 
         connectedCallback() {
+            if (!this.#completedTripsRestored) {
+                this.#completedTripsRestored = true;
+                const key = this.getAttribute("offline-trip-storage-key");
+                if (key) {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem(key) || "[]");
+                        if (Array.isArray(saved)) {
+                            this.#completedTripQueue = saved.filter(trip =>
+                                trip?.payload?.clientToken && Array.isArray(trip.events));
+                        }
+                    } catch {}
+                }
+            }
             this.#captureFaceBackground();
 
             this.#ensureAttributes();
@@ -2351,6 +2369,7 @@
         }
 
         #setConnected(csrfToken, detail = {}) {
+            if (detail.user?.id !== undefined) this.#syncUserId = detail.user.id;
             const previousNetworkStatus =
                 this.networkStatus;
 
@@ -2762,6 +2781,7 @@
         }
 
         async #syncTripEvents() {
+            await this.#syncCompletedTrips();
             const pending =
                 this.#pendingTripEvents.filter(
                     event =>
@@ -2866,6 +2886,125 @@
                     event =>
                         event.synced !== true
                 );
+        }
+
+        #saveCompletedTrips() {
+            const key = this.getAttribute("offline-trip-storage-key");
+            if (!key) return true;
+            try {
+                localStorage.setItem(key, JSON.stringify(this.#completedTripQueue));
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        #localLogEvents(snapshot) {
+            let intervalKey;
+            return snapshot.records.map((record, index) => {
+                const [time, value] = Object.entries(record)[0];
+                const timestamp = new Date(time.replace(" ", "T")).toISOString();
+                let event;
+                if (value.type === "start") event = "trip.started";
+                else if (value.type === "end") event = "trip.stopped";
+                else if (value.type === "resume") event = "interval.ended";
+                else { event = "interval.started"; intervalKey = `local-${index}`; }
+                return {id: `local-${index}`, event, timestamp, value: {...value, intervalKey}};
+            });
+        }
+
+        getLocalTripLog() {
+            const trips = this.#completedTripQueue
+                .filter(trip => this.#syncUserId === undefined || trip.userId === undefined || trip.userId === this.#syncUserId)
+                .map(trip => ({...trip.log, id: trip.tripId || `offline-${trip.payload.clientToken}`,
+                    buffered: true, events: trip.log?.events || trip.events}));
+            if (this.#hasStartProperties()) {
+                const payload = this.#tripPersistencePayload();
+                const summary = this.#buildSummarySnapshot(new Date()).trip;
+                trips.push({id: this.#tripId || `offline-${this.#preparedTrip?.clientToken || "active"}`,
+                    ...payload, running: this.#started, buffered: this.networkStatus === "offline",
+                    actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
+                    countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
+                    events: this.#localLogEvents(this.toJSON())});
+            }
+            return trips;
+        }
+
+        calculateOfflineTripTotals(trips, startTime, endTime) {
+            const production = this.#emptyTripAggregateSummary();
+            const nonProduction = [];
+            for (const trip of trips) {
+                const start = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
+                if (trip.running || Number(trip.id) === this.#tripId ||
+                    start < Date.parse(startTime) || start >= Date.parse(endTime)) continue;
+                if (trip.nonProduction) nonProduction.push(trip);
+                else this.#addTripAggregateSummary(production, {...trip, tripCount: 1});
+            }
+            const breakdown = this.#buildAggregateBreakdown(production, nonProduction);
+            this.#tripTotals = {startTime, endTime,
+                ...this.#composeAggregateSummary(breakdown, this.#nonProductionFilter),
+                nonProductionFilter: this.#nonProductionFilter, aggregateBreakdown: breakdown};
+            this.#handleTripGoalChange(this.#renderedPercentGoalSourceOverride ?? "user");
+            return this.#tripTotals;
+        }
+
+        async #syncCompletedTrips() {
+            if (this.#completedTripSyncPromise) return this.#completedTripSyncPromise;
+            this.#completedTripSyncPromise = this.#flushCompletedTrips();
+            try { await this.#completedTripSyncPromise; }
+            finally { this.#completedTripSyncPromise = undefined; }
+        }
+
+        async #flushCompletedTrips() {
+            let uploaded = false;
+            for (const trip of [...this.#completedTripQueue]) {
+                if (trip.userId !== undefined && trip.userId !== this.#syncUserId) continue;
+                trip.userId = this.#syncUserId;
+                this.#saveCompletedTrips();
+                if (!Number.isInteger(trip.tripId)) {
+                    const data = await this.#apiRequest("trips", {
+                        method: "POST", csrf: true, body: trip.payload
+                    });
+                    trip.tripId = Number(data.tripId);
+                    if (!Number.isInteger(trip.tripId) || trip.tripId < 1) {
+                        throw new Error("The API returned an invalid trip id.");
+                    }
+                } else if (trip.pending) {
+                    await this.#apiRequest("trips", {
+                        method: "PATCH", csrf: true,
+                        body: {tripId: trip.tripId, action: "start", ...trip.payload}
+                    });
+                }
+                trip.pending = false;
+                this.#saveCompletedTrips();
+                for (const event of trip.events) {
+                    if (event.synced) continue;
+                    const data = await this.#apiRequest("trip-events", {
+                        method: "POST", csrf: true,
+                        body: {tripId: trip.tripId, event: event.event,
+                            timestamp: event.timestamp, value: event.value,
+                            clientToken: event.clientToken}
+                    });
+                    if (!Number.isInteger(Number(data.eventId)) || Number(data.eventId) < 1) {
+                        throw new Error("The API returned an invalid trip event id.");
+                    }
+                    if (event.event === "trip.stopped") {
+                        await this.#apiRequest("trips", {
+                            method: "PATCH", csrf: true,
+                            body: {tripId: trip.tripId, action: "stop",
+                                endTime: event.timestamp,
+                                standardTimeMilliseconds: event.value.standardTimeMilliseconds,
+                                countedTimeMilliseconds: event.value.countedTimeMilliseconds}
+                        });
+                    }
+                    event.synced = true;
+                    this.#saveCompletedTrips();
+                }
+                this.#completedTripQueue = this.#completedTripQueue.filter(item => item !== trip);
+                this.#saveCompletedTrips();
+                uploaded = true;
+            }
+            if (uploaded) this.#emitClockTimerEvent("completedTripsSynced", {synced: true});
         }
 
         #scheduleTripEventSync() {
@@ -3543,6 +3682,8 @@
                 throw error;
             }
 
+            await this.#syncCompletedTrips();
+
             const query = {
                 startTime:
                     normalizedStart,
@@ -3787,6 +3928,7 @@
             }
 
             try {
+                await this.#syncCompletedTrips();
                 if (this.#hasStartProperties()) {
                     await this.#ensureTripPersisted();
                     await this.#syncTripEvents();
@@ -3850,6 +3992,7 @@
                 }
             );
 
+            await this.#syncCompletedTrips();
             if (this.#hasStartProperties()) {
                 await this.#ensureTripPersisted();
                 await this.#syncTripEvents();
@@ -4867,13 +5010,32 @@
             if (this.#started || !this.#hasStartProperties()) {
                 throw new Error("Only a completed trip can be reset.");
             }
-            // Finish uploading before releasing the local model and its retry queue.
+            // Upload when possible, but keep completed work separate from the
+            // next trip so ending offline can still reset the main clock.
             const synced = await this.#protectedSync(async () => {
                 await this.#ensureTripPersisted();
                 await this.#syncTripEvents();
             });
             if (!synced) {
-                throw new Error("The completed trip has not been saved. Reconnect and try again.");
+                const payload = this.#tripPersistencePayload();
+                payload.clientToken ??= this.#createTripEventClientToken();
+                const summary = this.#buildSummarySnapshot(new Date()).trip;
+                this.#completedTripQueue.push({
+                    userId: this.#syncUserId,
+                    tripId: this.#tripId,
+                    pending: this.#preparedTrip?.pending === true,
+                    payload,
+                    log: {...payload,
+                        actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
+                        countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
+                        events: this.#localLogEvents(this.toJSON())},
+                    events: this.#pendingTripEvents.map(({event, timestamp, value, clientToken, synced}) =>
+                        ({event, timestamp, value, clientToken, synced}))
+                });
+                if (!this.#saveCompletedTrips()) {
+                    this.#completedTripQueue.pop();
+                    throw new Error("The completed trip could not be buffered locally. Free browser storage and try again.");
+                }
             }
             const tripId = this.#tripId;
             if (!this.#clearLocal()) throw new Error("The completed trip could not be reset.");
@@ -4881,7 +5043,7 @@
             this.#preparedTrip = undefined;
             this.#pendingIntervalRecord = undefined;
             this.#pendingTripEvents = [];
-            const result = {synced: true, connected: true, tripId, intervalId: undefined};
+            const result = {synced, connected: this.#connectionState === "connected", tripId, intervalId: undefined};
             this.#emitClockTimerEvent("cleared", result);
             return result;
         }

@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "test:trip-sync": "node autosync-rebuild.mjs",
+    "test:offline-buffer": "node offline-trip-buffer.mjs",
     "test:calendar": "node calendar-ranges.mjs",
     "test:calendar-editor": "node calendar-editor.mjs",
     "test:calendar-login": "node calendar-login.mjs",

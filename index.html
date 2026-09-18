@@ -34,7 +34,11 @@
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
-            <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
+            <div class="main-menu-row menu-account-row">
+                <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
+                <button id="authButton" type="button">Login</button>
+            </div>
+            <hr>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
             <div class="main-menu-row sync-goals-menu-row">
                 <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
@@ -63,8 +67,6 @@
             </div>
             <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
             </div>
-            <hr>
-            <button id="authButton" type="button">Login</button>
         </nav>
 
         <section class="trip-summary" aria-label="Trip summary">
@@ -109,6 +111,7 @@
         <section class="clock-region" aria-label="Clock">
             <clock-timer
                 id="clockTimer"
+                offline-trip-storage-key="wmof.clock.completedTrips"
                 percent-mode="trip"
                 military-time="true"
                 timer-type="radial-overflow"

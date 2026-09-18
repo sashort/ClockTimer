@@ -706,10 +706,10 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     border-radius: 16px;
     box-shadow: 0 18px 50px rgb(0 0 0 / 42%);
     opacity: 0;
-    transition-property: opacity, display, overlay;
+    transition-property: opacity;
     transition-duration: var(--app-dialog-transition-duration, 250ms);
     transition-timing-function: linear;
-    transition-behavior: normal, allow-discrete, allow-discrete;
+    transition-behavior: normal;
 }
 
 .app-dialog[open] {
@@ -2804,6 +2804,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .settings-help-popover {
+    transition: none;
     position: fixed;
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
@@ -3615,6 +3616,10 @@ clock-timer[hide-latency] time-range[type="latency"] {
     text-align: left;
 }
 
+.main-menu .menu-account-row {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .settings-help-time-difference {
     color: var(--wm-yellow);
 }
@@ -3773,6 +3778,18 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-editor label {display:flex;align-items:center;gap:10px;}
 .trip-log-editor input[type="checkbox"] {width:20px;height:20px;}
 .trip-log-error,.danger {color:#ff8d8d!important;}
+.calculation-uncertain-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    vertical-align: middle;
+    fill: none;
+    stroke: var(--wm-blue-light);
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
 .trip-log-editor .danger {background:transparent;border:1px solid #ff8d8d;border-radius:7px;padding:10px;}
 @media (max-width:380px) {.trip-log-trip>summary {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:10px 12px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}
 
