@@ -33,10 +33,13 @@ jobs:
           reconcile_start = text.index("        #reconcilePlannedRanges(")
           reconcile_end = text.index("        #snapTimerRangeAngles()", reconcile_start)
           reconcile = text[reconcile_start:reconcile_end]
+
           create = reconcile.index("this.#createTimeRange(")
-          ignore = reconcile.index('range.setAttribute(\n                        "ignore-overlaps"', create)
-          append = reconcile.index("ring.appendChild(range);", ignore)
-          assert create < ignore < append
+          suspend = reconcile.index("TimeRangeClass?.suspendLayout?.(", create)
+          append = reconcile.index("ring.appendChild(", suspend)
+          resume = reconcile.index("TimeRangeClass?.resumeLayout?.(", append)
+          assert create < suspend < append < resume
+          assert '"ignore-overlaps"' not in reconcile
 
           assert "#syncOpenOverwriteRangeElements(" not in text
           assert text.count("#syncOverwriteRangeElements(") >= 3
