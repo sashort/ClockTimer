@@ -9,10 +9,17 @@ if (empty($_SERVER['HTTPS']) || strtolower((string) $_SERVER['HTTPS']) === 'off'
 }
 $actor = require_permission(PERMISSION_SUPERUSER);
 require_csrf();
-if ((api_config()['admin_sql_enabled'] ?? false) !== true) {
+$input = json_input();
+$action = $input['action'] ?? 'execute';
+if (!in_array($action, ['execute', 'migrations', 'migrate'], true)) {
+    api_error('Unknown SQL administration action.', 422, 'invalid_action');
+}
+if ($action === 'execute' && (api_config()['admin_sql_enabled'] ?? false) !== true) {
     api_error('SQL access is disabled in server configuration.', 403, 'sql_disabled');
 }
-$input = json_input();
+if ($action !== 'execute' && (api_config()['admin_migrations_enabled'] ?? false) !== true) {
+    api_error('Migration access is disabled in server configuration.', 403, 'migrations_disabled');
+}
 $password = $input['password'] ?? null;
 if (!is_string($password)) api_error('Password confirmation is required.', 422, 'invalid_argument');
 $pdo = db();
@@ -20,6 +27,16 @@ $credential = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id');
 $credential->execute([':id' => $actor['id']]);
 if (!password_verify($password, (string) $credential->fetchColumn())) {
     api_error('Password confirmation failed.', 401, 'invalid_credentials');
+}
+if ($action !== 'execute') {
+    try {
+        $result = $action === 'migrations'
+            ? migration_status($pdo)
+            : apply_migration($pdo, require_string($input, 'migration'), $actor['id']);
+    } catch (MigrationFailure $error) {
+        api_error($error->getMessage(), $error->status, $error->apiCode);
+    }
+    json_response($result);
 }
 $sql = require_string($input, 'sql');
 if (strlen($sql) > 65536) api_error('SQL exceeds the 64 KiB limit.', 422, 'invalid_argument');

@@ -2,12 +2,15 @@
 
 The users.permissions column stores three flags: create_users = 1,
 modify_users = 2, superuser = 4. Combine them with bitwise OR.
-Superuser implies all permissions. No accounts are automatically promoted.
+Superuser implies all permissions. The explicitly authorized initial account
+bobthebuilder (ID 2) receives a one-time superuser grant in migration 002.
 
 The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
 CLI entry point and verifies the three permission definitions. For manual
 application, run database/admin_permissions.sql with a database administrator connection.
-For a fresh install, run it after database/create_database.sql.
+For a fresh install, initialize database/create_database.sql before deployment.
+Migration scripts now live in migrations/ and server application state in
+migrations/applied.json, mirrored from schema_migrations. See migrations/README.md.
 Grant the first superuser through your server-side database console, with the
 audit context described in create_database.sql, using the verified user ID.
 
@@ -27,7 +30,7 @@ DELETE remains limited to the signed-in account.
 
 Every account mutation requires a session cookie and X-CSRF-Token.
 Names and usernames are trimmed; passwords preserve spaces. Passwords are
-stored as bcrypt hashes and must contain 1â€“72 bytes. Account writes use the
+stored as bcrypt hashes and must contain 1Ã¢â‚¬â€œ72 bytes. Account writes use the
 existing audit transaction and never return password hashes.
 Permission checks read the current database value rather than a login snapshot.
 
@@ -35,8 +38,9 @@ Permission checks read the current database value rather than a login snapshot.
 
 POST /api/admin/sql/ accepts {"sql":"SELECT 1 AS ok","password":"your password"}.
 Requires HTTPS, a signed-in superuser, CSRF and password confirmation for each
-request. Enable it deliberately by adding 'admin_sql_enabled' => true to
-/etc/clocktimer/config.php; the default is false. Keep it disabled when unused.
+request. The authorized Lightsail setup enables admin_sql_enabled and
+admin_migrations_enabled in /etc/clocktimer/config.php. The example configuration
+defaults both to false. Raw SQL and migration actions have independent gates.
 Use the existing app login to obtain the session cookie and CSRF token.
 Do not send the password or SQL in a URL.
 
@@ -56,3 +60,5 @@ Run tests with PHP CLI and PDO SQLite:
 
     php tests/admin_permissions.php
     php tests/admin_sql_guards.php
+
+Migration actions on this endpoint are documented in migrations/README.md.
