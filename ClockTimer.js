@@ -13992,7 +13992,7 @@
 
             const duration = 750;
 
-            this.#finishStateChangeVisuals(
+            this.#startStateChangeVisualFade(
                 state.stateChangeVisual
             );
 
@@ -14515,24 +14515,6 @@
             }
 
             if (
-                state.waveSweepTimeout !==
-                    undefined
-            ) {
-                clearTimeout(
-                    state.waveSweepTimeout
-                );
-
-                state.waveSweepTimeout =
-                    undefined;
-            }
-
-            state.waveFadeAnimation
-                ?.cancel();
-
-            state.waveFadeAnimation =
-                undefined;
-
-            if (
                 state.startFrame !==
                     undefined
             ) {
@@ -14741,24 +14723,6 @@
             state.startFrame =
                 undefined;
 
-            for (
-                const ring of
-                    state.oldRings
-            ) {
-                for (
-                    const range of
-                        ring.children
-                ) {
-                    if (
-                        range.localName ===
-                            "time-range"
-                    ) {
-                        range.style.visibility =
-                            "hidden";
-                    }
-                }
-            }
-
             const RingContainerClass =
                 customElements.get(
                     "ring-container"
@@ -14961,12 +14925,20 @@
             this.#cancelTimerModeTransition();
             this.#cancelTimeRangeTimingAnimations();
 
+            const delayOverflowWaves =
+                previousType ===
+                    "radial-fitted" &&
+                timerType ===
+                    "radial-overflow";
+
             this.#cancelWaveResumeDelay();
 
             this.#waveSuppressed =
-                true;
+                delayOverflowWaves;
 
-            this.#removeWaveRange();
+            if (delayOverflowWaves) {
+                this.#removeWaveRange();
+            }
 
             const stateChangeVisual =
                 this.#beginStateChangeVisuals();
@@ -14974,27 +14946,6 @@
             if (stateChangeVisual) {
                 stateChangeVisual.timerTypeTransition =
                     true;
-
-                if (
-                    this.#stateChangeWaveRange?.isConnected
-                ) {
-                    this.#stateChangeWaveRange.style.setProperty(
-                        "--state-change-wave-end-opacity",
-                        "1"
-                    );
-
-                    if (
-                        this.#stateChangeWaveTimeout !==
-                            undefined
-                    ) {
-                        clearTimeout(
-                            this.#stateChangeWaveTimeout
-                        );
-
-                        this.#stateChangeWaveTimeout =
-                            undefined;
-                    }
-                }
             }
 
             const oldRings =
@@ -15165,9 +15116,13 @@
                             range.timeRangeExiting =
                                 true;
 
-                            // Keep the source range visible through the
-                            // transition-wave prelude. It is hidden when the
-                            // ring/range morph actually begins.
+                            // The target layout is rendered from snapshots
+                            // during the same transition. Keep the old ring
+                            // shell for its radial collapse, but do not paint
+                            // a second angular representation of the same
+                            // logical range.
+                            range.style.visibility =
+                                "hidden";
                         }
                     }
                 }
@@ -15349,95 +15304,20 @@
                 );
             }
 
+            this.#activateStateChangeVisuals(
+                stateChangeVisual
+            );
+
             this.#syncWaveRange();
             this.#updateIndicatorSymbol();
 
-            const startRingTransition =
-                () => {
-                    if (
-                        state !==
-                            this.#timerTypeTransitionState
-                    ) {
-                        return;
-                    }
-
-                    this.#removeStateChangeWave();
-
-                    state.startFrame =
-                        requestAnimationFrame(
-                            () =>
-                                this.#startTimerTypeRingAnimations(
-                                    state
-                                )
-                        );
-                };
-
-            const transitionWave =
-                this.#stateChangeWaveRange;
-
-            if (
-                transitionWave?.isConnected
-            ) {
-                state.waveSweepTimeout =
-                    setTimeout(
-                        () => {
-                            state.waveSweepTimeout =
-                                undefined;
-
-                            if (
-                                state !==
-                                    this.#timerTypeTransitionState
-                            ) {
-                                return;
-                            }
-
-                            if (
-                                typeof transitionWave.animate !==
-                                    "function"
-                            ) {
-                                startRingTransition();
-                                return;
-                            }
-
-                            const animation =
-                                transitionWave.animate(
-                                    [
-                                        { opacity: "1" },
-                                        { opacity: "0" }
-                                    ],
-                                    {
-                                        duration: 333,
-                                        easing: "ease-in-out",
-                                        fill: "both"
-                                    }
-                                );
-
-                            state.waveFadeAnimation =
-                                animation;
-
-                            animation.finished.then(
-                                () => {
-                                    if (
-                                        state ===
-                                            this.#timerTypeTransitionState
-                                    ) {
-                                        state.waveFadeAnimation =
-                                            undefined;
-
-                                        startRingTransition();
-                                    }
-
-                                    animation.cancel();
-                                },
-                                () => {}
-                            );
-                        },
-                        750
-                    );
-            }
-            else {
-                startRingTransition();
-            }
+            state.startFrame =
+                requestAnimationFrame(
+                    () =>
+                        this.#startTimerTypeRingAnimations(
+                            state
+                        )
+                );
         }
 
 
@@ -17717,7 +17597,12 @@
         #scheduleWaveResumeAfterTimerTypeTransition(
             state
         ) {
-            if (!state) {
+            if (
+                state?.previousType !==
+                    "radial-fitted" ||
+                state?.timerType !==
+                    "radial-overflow"
+            ) {
                 return;
             }
 
