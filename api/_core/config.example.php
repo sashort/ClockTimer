@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 return [
+    'admin_sql_enabled' => false,
     'database' => [
         'host' => '127.0.0.1',
         'port' => 3306,

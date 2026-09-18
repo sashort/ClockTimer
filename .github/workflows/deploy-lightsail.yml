@@ -44,6 +44,7 @@ jobs:
             'set -euo pipefail
              $HOME/deploy-clocktimer.sh
              cd /opt/bitnami/apache2/htdocs
+             sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              VERSION=$(git rev-parse --short=12 HEAD)
              sed -i \
                -e "s#href=\"app.css\"#href=\"app.css?v=$VERSION\"#" \
