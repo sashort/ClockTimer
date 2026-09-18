@@ -27,17 +27,27 @@ replace_once(
                             target.end
                         );
 
-                    // Planned-range reconciliation is coordinated by ClockTimer.
-                    // Do not let TimeRange's generic sibling-overlap resolver
-                    // displace an authoritative overwrite while this range connects.
-                    range.setAttribute(
-                        "ignore-overlaps",
-                        ""
+                    const TimeRangeClass =
+                        customElements.get(
+                            "time-range"
+                        );
+
+                    TimeRangeClass?.suspendLayout?.(
+                        range
                     );
 
-                    ring.appendChild(range);
+                    try {
+                        ring.appendChild(
+                            range
+                        );
+                    }
+                    finally {
+                        TimeRangeClass?.resumeLayout?.(
+                            range
+                        );
+                    }
 ''',
-"planned reconcile ignore-overlaps"
+"planned reconcile suspendLayout"
 )
 
 replace_once(
@@ -88,9 +98,6 @@ replace_once(
                         end
                     );
 
-                    // Reconciliation may replace planned TimeRanges. Keep the
-                    // overwrite record authoritative by restoring/synchronizing
-                    // its visual segments after the mask is applied.
                     this.#syncOverwriteRangeElements(
                         record,
                         end
