@@ -2808,6 +2808,25 @@
                 event.id =
                     eventId;
 
+                // A queued stop is not fully synced until both its event and
+                // the trip's aggregate timing row have reached the server.
+                // Keep it pending if this PATCH fails so reconnect can retry.
+                if (event.event === "trip.stopped") {
+                    await this.#apiRequest("trips", {
+                        method: "PATCH",
+                        csrf: true,
+                        body: {
+                            tripId,
+                            action: "stop",
+                            endTime: event.timestamp,
+                            standardTimeMilliseconds:
+                                event.value.standardTimeMilliseconds,
+                            countedTimeMilliseconds:
+                                event.value.countedTimeMilliseconds
+                        }
+                    });
+                }
+
                 event.synced =
                     true;
 
@@ -4808,25 +4827,7 @@
             );
 
             const synced = await this.#protectedSync(async () => {
-                const tripId = await this.#ensureTripPersisted();
                 await this.#syncTripEvents();
-                await this.#apiRequest("trips", {
-                    method: "PATCH",
-                    csrf: true,
-                    body: {
-                        tripId,
-                        action: "stop",
-                        endTime: persistedEnd,
-                        standardTimeMilliseconds:
-                            Math.round(
-                                this.#standardDuration
-                            ),
-                        countedTimeMilliseconds:
-                            Math.round(
-                                aggregateCountedTime
-                            )
-                    }
-                });
             });
             const result = this.#mutationResult(synced);
             const summary = this.#buildSummarySnapshot(new Date());

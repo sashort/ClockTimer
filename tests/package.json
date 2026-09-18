@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:trip-sync": "node autosync-rebuild.mjs",
+    "test:calendar": "node calendar-ranges.mjs"
+  },
+  "dependencies": {
+    "happy-dom": "20.14.5"
+  }
+}

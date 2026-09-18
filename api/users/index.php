@@ -26,9 +26,15 @@ function destroy_current_session(): void
     session_destroy();
 }
 
-$method = require_method('GET', 'POST', 'DELETE');
+$method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
 if ($method === 'GET') {
+    if (isset($_GET['userId'])) {
+        $actor = current_user();
+        $target = find_user_account(db(), require_positive_int($_GET, 'userId'));
+        require_user_edit_access($actor, $target);
+        json_response(['user' => $target]);
+    }
     json_response([
         'user' => current_user(),
         'csrfToken' => csrf_token(),
@@ -36,6 +42,17 @@ if ($method === 'GET') {
 }
 
 $input = json_input();
+
+if ($method === 'PATCH' || ($method === 'POST' && ($input['action'] ?? null) === 'create')) {
+    current_user();
+    require_csrf();
+    $creating = $method === 'POST';
+    if (!$creating && isset($input['action']) && $input['action'] !== 'update') {
+        api_error('Unknown user action.', 422, 'invalid_action');
+    }
+    $user = audited_write(static fn (PDO $pdo): array => save_user_account($pdo, $input, $creating));
+    json_response(['user' => $user], $creating ? 201 : 200);
+}
 
 if ($method === 'DELETE') {
     $currentUserId = authenticated_user_id();
@@ -100,7 +117,10 @@ if ($action !== 'connect') {
 }
 
 $username = require_string($input, 'username');
-$password = require_string($input, 'password', true);
+$password = $input['password'] ?? null;
+if (!is_string($password)) {
+    api_error('password must be a string.', 422, 'invalid_argument');
+}
 
 $statement = db()->prepare(
     'SELECT id, first_name, last_name, preferred_name, username, password_hash, permissions FROM users WHERE username = :username LIMIT 1'
