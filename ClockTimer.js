@@ -25748,10 +25748,18 @@
             }
 
             if (
+                Number.isFinite(
+                    effectiveEnd
+                ) &&
+                effectiveEnd <= start
+            ) {
+                return;
+            }
+
+            if (
                 !Number.isFinite(
                     effectiveEnd
-                ) ||
-                effectiveEnd <= start
+                )
             ) {
                 const ring =
                     this.#ensureRing(
