@@ -15115,6 +15115,14 @@
                         ) {
                             range.timeRangeExiting =
                                 true;
+
+                            // The target layout is rendered from snapshots
+                            // during the same transition. Keep the old ring
+                            // shell for its radial collapse, but do not paint
+                            // a second angular representation of the same
+                            // logical range.
+                            range.style.visibility =
+                                "hidden";
                         }
                     }
                 }
