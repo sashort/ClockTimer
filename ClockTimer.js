@@ -4161,6 +4161,452 @@
             }
         }
 
+        async loadTrip(tripId) {
+            const numericTripId =
+                Number(tripId);
+
+            if (
+                !Number.isInteger(
+                    numericTripId
+                ) ||
+                numericTripId < 1
+            ) {
+                throw new TypeError(
+                    "tripId must be a positive integer."
+                );
+            }
+
+            if (!(await this.#ensureConnected())) {
+                const error =
+                    new Error(
+                        "ClockTimer is offline."
+                    );
+
+                error.clockTimerOffline =
+                    true;
+
+                throw error;
+            }
+
+            const data =
+                await this.#apiRequest(
+                    "trip-events",
+                    {
+                        query: {
+                            tripId:
+                                numericTripId
+                        }
+                    }
+                );
+
+            const events =
+                Array.isArray(data.events)
+                    ? [...data.events]
+                    : [];
+
+            events.sort(
+                (left, right) => {
+                    const leftTime =
+                        this.#parseTripEventTimestamp(
+                            left?.timestamp
+                        ).getTime();
+
+                    const rightTime =
+                        this.#parseTripEventTimestamp(
+                            right?.timestamp
+                        ).getTime();
+
+                    return (
+                        leftTime -
+                            rightTime ||
+                        Number(left?.id ?? 0) -
+                            Number(right?.id ?? 0)
+                    );
+                }
+            );
+
+            const startedEvent =
+                events.find(
+                    event =>
+                        event?.event ===
+                            "trip.started"
+                );
+
+            if (!startedEvent) {
+                throw new Error(
+                    "The trip does not contain a trip.started event."
+                );
+            }
+
+            const startedValue =
+                startedEvent.value;
+
+            if (
+                !startedValue ||
+                typeof startedValue !==
+                    "object" ||
+                typeof startedValue.standardTime !==
+                    "string"
+            ) {
+                throw new Error(
+                    "The trip.started event is invalid."
+                );
+            }
+
+            const previousEventsReady =
+                this.#eventsReady;
+
+            this.#eventsReady =
+                false;
+
+            this.#replayingTripEvents =
+                true;
+
+            this.#stopTickTimer();
+
+            try {
+                this.#pendingTripEvents =
+                    [];
+
+                this.#clearLocal();
+
+                const startResult =
+                    this.#startLocal({
+                        tripId:
+                            numericTripId,
+                        standardTime:
+                            startedValue.standardTime,
+                        creationTime:
+                            startedValue.creationTime,
+                        startTime:
+                            startedValue.startTime,
+                        scheduledStart:
+                            startedValue.scheduledStart,
+                        nonProduction:
+                            startedValue.nonProduction ===
+                                true
+                    });
+
+                if (!startResult) {
+                    throw new Error(
+                        "The trip.started event could not be replayed."
+                    );
+                }
+
+                this.#tripId =
+                    numericTripId;
+
+                if (
+                    typeof startedValue.creationAnchor ===
+                        "string"
+                ) {
+                    const creationAnchor =
+                        this.#parseTripEventTimestamp(
+                            startedValue.creationAnchor
+                        );
+
+                    this.#creationDateOverride =
+                        creationAnchor;
+                }
+
+                for (const event of events) {
+                    if (
+                        event === startedEvent ||
+                        event?.event ===
+                            "trip.started"
+                    ) {
+                        continue;
+                    }
+
+                    const value =
+                        event?.value &&
+                        typeof event.value ===
+                            "object"
+                            ? event.value
+                            : {};
+
+                    const eventDate =
+                        this.#parseTripEventTimestamp(
+                            event?.timestamp
+                        );
+
+                    switch (event?.event) {
+                        case "interval.started": {
+                            const inserted =
+                                this.#startIntervalLocal(
+                                    value.type,
+                                    value.length ??
+                                        undefined,
+                                    value.attributes ??
+                                        {},
+                                    value.startBuffer ??
+                                        undefined,
+                                    value.endBuffer ??
+                                        undefined,
+                                    eventDate
+                                );
+
+                            if (!inserted) {
+                                throw new Error(
+                                    "An interval.started event could not be replayed."
+                                );
+                            }
+
+                            const record =
+                                this.#insertedRanges.find(
+                                    candidate =>
+                                        candidate.id ===
+                                            inserted.clockTimerInserted
+                                );
+
+                            if (!record) {
+                                throw new Error(
+                                    "A replayed interval record could not be resolved."
+                                );
+                            }
+
+                            record.clockTimerEventKey =
+                                String(
+                                    value.intervalKey ??
+                                    ("event-" + event.id)
+                                );
+
+                            const eventId =
+                                Number(
+                                    event.id
+                                );
+
+                            if (
+                                Number.isInteger(
+                                    eventId
+                                ) &&
+                                eventId > 0
+                            ) {
+                                this.#assignIntervalDatabaseId(
+                                    record,
+                                    eventId
+                                );
+                            }
+
+                            break;
+                        }
+
+                        case "interval.ended": {
+                            const intervalKey =
+                                String(
+                                    value.intervalKey ??
+                                        ""
+                                );
+
+                            const record =
+                                this.#insertedRanges.find(
+                                    candidate =>
+                                        candidate.clockTimerEventKey ===
+                                            intervalKey
+                                );
+
+                            if (!record) {
+                                throw new Error(
+                                    "An interval.ended event references an unknown interval."
+                                );
+                            }
+
+                            if (
+                                this.#pendingIntervalRecord !==
+                                    record &&
+                                this.#openEndedRange !==
+                                    record
+                            ) {
+                                this.#pendingIntervalRecord =
+                                    record;
+                            }
+
+                            if (
+                                !this.#endIntervalLocal(
+                                    eventDate
+                                )
+                            ) {
+                                throw new Error(
+                                    "An interval.ended event could not be replayed."
+                                );
+                            }
+
+                            break;
+                        }
+
+                        case "interval.approval-changed": {
+                            const intervalKey =
+                                String(
+                                    value.intervalKey ??
+                                        ""
+                                );
+
+                            const record =
+                                this.#insertedRanges.find(
+                                    candidate =>
+                                        candidate.clockTimerEventKey ===
+                                            intervalKey
+                                );
+
+                            if (!record) {
+                                throw new Error(
+                                    "An interval approval event references an unknown interval."
+                                );
+                            }
+
+                            const previousDuration =
+                                this.#getIntervalEffectiveDuration(
+                                    record
+                                );
+
+                            this.#setIntervalApprovalAttributes(
+                                record,
+                                value.state,
+                                value.value
+                            );
+
+                            const nextDuration =
+                                this.#getIntervalEffectiveDuration(
+                                    record
+                                );
+
+                            if (
+                                Number.isFinite(
+                                    previousDuration
+                                ) &&
+                                Number.isFinite(
+                                    nextDuration
+                                )
+                            ) {
+                                this.#adjustCalculatedEndTime(
+                                    nextDuration -
+                                        previousDuration
+                                );
+                            }
+
+                            break;
+                        }
+
+                        case "interval.deleted": {
+                            const intervalKey =
+                                String(
+                                    value.intervalKey ??
+                                        ""
+                                );
+
+                            const record =
+                                this.#insertedRanges.find(
+                                    candidate =>
+                                        candidate.clockTimerEventKey ===
+                                            intervalKey
+                                );
+
+                            if (!record) {
+                                break;
+                            }
+
+                            record.clockTimerPendingDelete =
+                                true;
+
+                            if (
+                                this.#pendingIntervalRecord ===
+                                    record
+                            ) {
+                                this.#pendingIntervalRecord =
+                                    undefined;
+                            }
+
+                            this.#insertedRanges =
+                                this.#insertedRanges.filter(
+                                    candidate =>
+                                        candidate !==
+                                            record
+                                );
+
+                            break;
+                        }
+
+                        case "trip.stopped": {
+                            const stopTimeline =
+                                this.#dateToTimelineTime(
+                                    eventDate
+                                );
+
+                            if (
+                                !Number.isFinite(
+                                    stopTimeline
+                                ) ||
+                                !this.#stopLocal(
+                                    this.#formatTimelineTime(
+                                        stopTimeline
+                                    ),
+                                    stopTimeline
+                                )
+                            ) {
+                                throw new Error(
+                                    "The trip.stopped event could not be replayed."
+                                );
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                this.#renderAllInsertedRanges();
+
+                if (this.#started) {
+                    this.#tick();
+                }
+                else {
+                    this.#refreshRingLayout(
+                        this.#getSummaryTimelineNow(
+                            new Date()
+                        ),
+                        {
+                            refreshTickMarks:
+                                true
+                        }
+                    );
+                }
+            }
+            finally {
+                this.#replayingTripEvents =
+                    false;
+
+                this.#eventsReady =
+                    previousEventsReady;
+            }
+
+            if (this.#needsTick()) {
+                this.#startTickTimer();
+            }
+
+            const summary =
+                this.#buildSummarySnapshot(
+                    new Date()
+                );
+
+            this.#emitClockTimerEvent(
+                "tripLoaded",
+                {
+                    tripId:
+                        numericTripId,
+                    eventCount:
+                        events.length,
+                    summary
+                }
+            );
+
+            return {
+                tripId:
+                    numericTripId,
+                eventCount:
+                    events.length,
+                summary
+            };
+        }
+
         async start(options = {}) {
             if (options === null || typeof options !== "object" || Array.isArray(options)) {
                 throw new TypeError("start options must be an object.");
