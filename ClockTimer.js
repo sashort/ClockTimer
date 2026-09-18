@@ -10852,7 +10852,9 @@
             this.#pendingIntervalRecord =
                 undefined;
 
-            this.#renderAllInsertedRanges();
+            this.#renderAllInsertedRanges({
+                animateRemoval: false
+            });
 
             let replacement;
 
@@ -25132,7 +25134,9 @@
             }
         }
 
-        #removeInsertedSegments() {
+        #removeInsertedSegments({
+            animate = true
+        } = {}) {
             for (
                 const range of
                     this.#getManagedTimeRanges()
@@ -25143,6 +25147,7 @@
                         )
             ) {
                 if (
+                    animate &&
                     typeof range.removeAnimated ===
                         "function"
                 ) {
@@ -25858,10 +25863,14 @@
             }
         }
 
-        #renderAllInsertedRanges() {
+        #renderAllInsertedRanges({
+            animateRemoval = true
+        } = {}) {
             this.#captureInsertedAttributes();
 
-            this.#removeInsertedSegments();
+            this.#removeInsertedSegments({
+                animate: animateRemoval
+            });
 
             for (
                 const record of
