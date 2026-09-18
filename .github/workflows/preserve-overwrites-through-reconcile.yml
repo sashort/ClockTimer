@@ -1,0 +1,62 @@
+name: Preserve overwrites through planned reconciliation
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/preserve-overwrites-through-reconcile.yml'
+      - '.github/scripts/preserve_overwrites_through_reconcile.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply fix
+        run: python .github/scripts/preserve_overwrites_through_reconcile.py
+      - name: Syntax checks
+        run: |
+          node --check ClockTimer.js
+          node --check TimeRange.js
+      - name: Verify authoritative overwrite lifecycle
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("ClockTimer.js").read_text()
+
+          reconcile_start = text.index("        #reconcilePlannedRanges(")
+          reconcile_end = text.index("        #snapTimerRangeAngles()", reconcile_start)
+          reconcile = text[reconcile_start:reconcile_end]
+          create = reconcile.index("this.#createTimeRange(")
+          ignore = reconcile.index('range.setAttribute(\n                        "ignore-overlaps"', create)
+          append = reconcile.index("ring.appendChild(range);", ignore)
+          assert create < ignore < append
+
+          assert "#syncOpenOverwriteRangeElements(" not in text
+          assert text.count("#syncOverwriteRangeElements(") >= 3
+
+          reapply_start = text.index("        #reapplyOverwriteRanges()")
+          reapply_end = text.index("        #updateOpenOverwriteRange(", reapply_start)
+          reapply = text[reapply_start:reapply_end]
+          mask = reapply.index("this.#applyOverwriteMask(")
+          sync = reapply.index("this.#syncOverwriteRangeElements(", mask)
+          assert mask < sync
+
+          open_start = text.index("        #updateOpenOverwriteRange(")
+          open_end = text.index("        #getReservedRangeTypes()", open_start)
+          open_block = text[open_start:open_end]
+          assert "this.#syncOverwriteRangeElements(" in open_block
+          PY
+      - name: Commit source fix
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Preserve overwrites through planned reconciliation" || exit 0
+          git push origin HEAD:rename-prestart-latency
