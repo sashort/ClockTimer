@@ -5313,12 +5313,20 @@
             tripSetStartsNowTimestampLabel.textContent = "";
         }
 
-        // Measure the text itself, not the grid cell's reserved animation width.
-        const startText = document.createRange();
-        startText.selectNodeContents(tripSetStartsNowStartCopy);
-        const startWidth = startText.getBoundingClientRect?.().width || 0;
-        const nowWidth =
-            tripSetStartsNowNowLabel.scrollWidth;
+        // Layout widths stay unscaled while the dialog animates into view.
+        const measureLabel = label => {
+            const probe = document.createElement("span");
+            probe.textContent = label.textContent;
+            probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:max-content;white-space:nowrap;font:inherit;";
+            tripSetStartsNow.append(probe);
+            const width = probe.scrollWidth;
+            probe.remove();
+            return width;
+        };
+        const fullWidth = !tripSetStartsNowActions.classList.contains("is-selecting") &&
+            !tripStartsNowExiting;
+        const startWidth = fullWidth ? measureLabel(tripSetStartsNowStartCopy) : 0;
+        const nowWidth = fullWidth ? measureLabel(tripSetStartsNowNowLabel) : 0;
         const timestampWidth =
             tripSetStartsNowTimestampLabel.scrollWidth;
 
