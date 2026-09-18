@@ -22,8 +22,7 @@ try {
     $timezone = $definition['timezone'] ?? $input['timezone'] ?? null;
     if (!is_string($timezone) || !is_string($at)) throw new InvalidArgumentException('timezone and at must be strings.');
     // Validate timezone and timestamp before making a billable search request.
-    $probe = calendar_range($definition['rules'], 'day', $at, $timezone);
-    $year = (int) substr($probe['startLocal'], 0, 4);
+    $year = (int) calendar_moment($at, $timezone)->format('Y');
     $directory = calendar_cache_directory($config);
     $record = calendar_cached_record($directory, $profile);
     if ($record && (($record['definitionHash'] ?? null) !== hash('sha256', json_encode($definition, JSON_THROW_ON_ERROR)))) {
@@ -47,23 +46,16 @@ try {
             $warning = 'Calendar search is unavailable; the previous validated rules are being used.';
         }
     }
-    $rules = calendar_validate_rules($record['rules'] ?? $definition['rules']);
+    if (!$record) api_error('Calendar rules have not been discovered. Configure search and refresh the calendar.', 503, 'calendar_not_discovered');
+    $rules = calendar_validate_rules($record['rules']);
     $range = $input['range'] ?? 'week';
     if (!is_string($range)) throw new InvalidArgumentException('range must be a string.');
-    try { $window = calendar_range($rules, $range, $at, $timezone); }
-    catch (InvalidArgumentException $error) {
-        if ($range === 'pay-period' || !$record) throw $error;
-        // Independently configured recurring week rules survive a missing future payroll calendar.
-        $rules = calendar_validate_rules($definition['rules']);
-        $window = calendar_range($rules, $range, $at, $timezone);
-        $record = null;
-        $warning = 'Using the configured calendar rule; the searched calendar does not cover this range.';
-    }
+    $window = calendar_range($rules, $range, $at, $timezone);
     json_response([
-        ...$window, 'profile' => $profile, 'rules' => $rules, 'fallbackRules' => $definition['rules'],
+        ...$window, 'profile' => $profile, 'rules' => $rules,
         'sources' => $record['sources'] ?? [], 'verifiedAt' => $record['verifiedAt'] ?? null,
         'searchedYear' => $record['searchedYear'] ?? null, 'refreshNeeded' => $refreshNeeded,
-        'provenance' => $record['provenance'] ?? 'configured', 'warning' => $warning,
+        'provenance' => $record['provenance'], 'warning' => $warning,
     ]);
 } catch (InvalidArgumentException $error) {
     api_error($error->getMessage(), 422, 'calendar_unavailable');

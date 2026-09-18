@@ -10,7 +10,7 @@ overrides the browser timezone; without one, the browser timezone is used and sh
 
 The server uses OpenAI Responses web search restricted to a profile's official domains,
 then a separate strict JSON extraction request. Search uses the year of the requested
-local workday, not a hardcoded year or filename. Verification refreshes after 30 days
+local date, not a hardcoded year or filename. Verification refreshes after 30 days
 or a year change when `calendar_auto_refresh` is enabled. A per-profile lock and
 one-hour attempt interval bound duplicate requests and failures. The session lock is
 released before provider calls. The first lookup during refresh can take up to 90 seconds.
@@ -25,9 +25,11 @@ misread a source. Returned source links/evidence allow review.
 An explicitly recurring rule calculates 2028 and later without a stored list of dates.
 Beyond the latest verified coverage, the response labels that calculation
 `extrapolated`. A year-only calendar is never silently carried into another year.
-Failed search preserves the previous cache. A known independently configured weekly
-rule remains usable if a future payroll calendar is unavailable; an unverified pay
-period returns a clear error. Cache/profile scope changes force rediscovery.
+Failed search preserves the previous discovered cache. Weekday and cutoff time must
+both be found in source-backed data; there is no baked-in Saturday or midnight fallback.
+If discovery is incomplete and no usable discovered cache exists, the service returns
+a clear error. Cache/profile scope changes force rediscovery. A discovered statement
+of Saturday 12:00 a.m. means the START of Saturday in the store timezone, taken literally.
 
 ## Server setup
 
@@ -45,22 +47,14 @@ Add to `/etc/clocktimer/config.php` (the real key must never be committed):
         'locale' => 'United States; specify the applicable region/state here',
         'timezone' => 'America/New_York', // replace with the actual store timezone
         'allowedDomains' => ['one.walmart.com', 'corporate.walmart.com'],
-        'rules' => [
-            'weekStartDay' => 6,
-            'cutoffTime' => '00:00:00',
-            'payPeriodDays' => null,
-            'payPeriodAnchorDate' => null,
-            'recurring' => true,
-            'effectiveFrom' => '1970-01-01',
-            'effectiveThrough' => null,
-        ],
     ],
 ],
 ```
 
-The default Walmart weekly rule is user-confirmed Saturday midnight, with no guessed
-pay-period anchor. Other employers/regions use separate profile IDs and configured
-official domains/rules. The front-end resolver accepts a `profile` argument; the
+The default Walmart profile specifies organization, region, and official domains only.
+Week-start weekday, cutoff time, and pay-period anchor are discovered, not preset.
+Other employers/regions use separate profile IDs and configured official domains.
+The front-end resolver accepts a `profile` argument; the
 current UI defaults to `walmart-us`. Set `data-calendar-profile="your-profile-id"`
 on the HTML root element to select another configured employer/region without
 changing the resolver. No database migration is required.

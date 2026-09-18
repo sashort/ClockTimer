@@ -57,9 +57,8 @@ function calendar_boundary(string $date, string $time, DateTimeZone $zone): Date
     return $boundary;
 }
 
-function calendar_range(array $input, string $range, string $at, string $timezone): array
+function calendar_moment(string $at, string $timezone): DateTimeImmutable
 {
-    $rules = calendar_validate_rules($input);
     if (!in_array($timezone, DateTimeZone::listIdentifiers(DateTimeZone::ALL_WITH_BC), true) && $timezone !== 'UTC') {
         throw new InvalidArgumentException('An IANA store timezone is required.');
     }
@@ -67,9 +66,18 @@ function calendar_range(array $input, string $range, string $at, string $timezon
         throw new InvalidArgumentException('at must be an ISO timestamp with an explicit timezone offset.');
     }
     $zone = new DateTimeZone($timezone);
-    $moment = (new DateTimeImmutable($at))->setTimezone($zone);
+    try { $moment = (new DateTimeImmutable($at))->setTimezone($zone); }
+    catch (Throwable) { throw new InvalidArgumentException('Invalid calendar timestamp.'); }
     $errors = DateTimeImmutable::getLastErrors();
     if ($errors && ($errors['warning_count'] || $errors['error_count'])) throw new InvalidArgumentException('Invalid calendar timestamp.');
+    return $moment;
+}
+
+function calendar_range(array $input, string $range, string $at, string $timezone): array
+{
+    $rules = calendar_validate_rules($input);
+    $moment = calendar_moment($at, $timezone);
+    $zone = $moment->getTimezone();
     $date = calendar_date($moment->format('Y-m-d'));
     if ($moment < calendar_boundary($date->format('Y-m-d'), $rules['cutoffTime'], $zone)) {
         $date = $date->modify('-1 day');
@@ -127,12 +135,6 @@ function calendar_profiles(array $config): array
         'walmart-us' => [
             'organization' => 'Walmart', 'locale' => 'United States',
             'allowedDomains' => ['one.walmart.com', 'corporate.walmart.com'],
-            // User-confirmed rule. A pay-period phase is deliberately not guessed.
-            'rules' => [
-                'weekStartDay' => 6, 'cutoffTime' => '00:00:00',
-                'payPeriodDays' => null, 'payPeriodAnchorDate' => null,
-                'recurring' => true, 'effectiveFrom' => '1970-01-01', 'effectiveThrough' => null,
-            ],
         ],
     ];
 }

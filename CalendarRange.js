@@ -100,6 +100,7 @@
                     error.authoritative = response.status < 500;
                     throw error;
                 }
+                if (record.provenance !== "web-search") throw new Error("Calendar rules have not been discovered from a source.");
                 calculate(record.rules, range, at, record.timezone);
                 try { this.storage.setItem(key, JSON.stringify(record)); } catch {}
                 return {...record, offline: false};
@@ -107,15 +108,9 @@
                 if (error.authoritative) throw error;
                 let cached;
                 try { cached = JSON.parse(this.storage.getItem(key)); } catch {}
-                if (!cached?.rules) throw error;
-                let result, rules = cached.rules;
-                try { result = calculate(rules, range, at, cached.timezone); }
-                catch (error) {
-                    if (range === "pay-period" || !cached.fallbackRules) throw error;
-                    rules = cached.fallbackRules;
-                    result = calculate(rules, range, at, cached.timezone);
-                }
-                return {...cached, ...result, rules, offline: true, refreshNeeded: true,
+                if (!cached?.rules || cached.provenance !== "web-search") throw error;
+                const result = calculate(cached.rules, range, at, cached.timezone);
+                return {...cached, ...result, offline: true, refreshNeeded: true,
                     warning: "Using cached calendar rules while the calendar service is unavailable."};
             }
         }

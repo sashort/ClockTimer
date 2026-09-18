@@ -41,7 +41,7 @@ try {
     await check('missing pay-period anchor is not invented', () => assert.throws(() => calc('pay-period', '2028-02-29T12:00:00Z', 'UTC', {...rules, payPeriodDays: null, payPeriodAnchorDate: null}), /anchor/));
     await check('Gregorian month includes leap day', () => assert.equal(calc('month', '2028-02-29T12:00:00Z', 'UTC').endTime, '2028-03-01T00:00:00.000Z'));
     await check('Gregorian year ends in the following year', () => assert.equal(calc('year', '2028-02-29T12:00:00Z', 'UTC').endTime, '2029-01-01T00:00:00.000Z'));
-    const cached = {...calc('week', '2026-09-18T12:00:00-04:00'), rules, sources: [], profile: 'walmart-us'};
+    const cached = {...calc('week', '2026-09-18T12:00:00-04:00'), rules, sources: [], profile: 'walmart-us', provenance: 'web-search'};
     const client = new CalendarRange({baseUrl: 'https://clock.example/', storage: window.localStorage,
         fetcher: async url => {assert.equal(url.searchParams.get('at'), '2026-09-18T16:00:00.000Z'); return {ok: true, json: async () => cached};}});
     await check('server rule is persisted for offline use', async () => assert.equal((await client.resolve({range: 'week', at: '2026-09-18T16:00:00Z', timezone: 'America/New_York'})).offline, false));

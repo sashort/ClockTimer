@@ -15,7 +15,9 @@ function rejects(callable $test): void {
     try { $test(); } catch (InvalidArgumentException) { return; }
     throw new RuntimeException('Expected an invalid calendar to be rejected.');
 }
-$rules = calendar_profiles([])['walmart-us']['rules'];
+// Synthetic discovered rules for deterministic date arithmetic; production has no preset.
+$rules = ['weekStartDay' => 6, 'cutoffTime' => '00:00:00', 'payPeriodDays' => null,
+    'payPeriodAnchorDate' => null, 'recurring' => true, 'effectiveFrom' => '1970-01-01', 'effectiveThrough' => null];
 check('Friday belongs to the preceding Saturday week', function () use ($rules) {
     $result = calendar_range($rules, 'week', '2026-09-18T23:59:59-04:00', 'America/New_York');
     same($result['startTime'], '2026-09-12T04:00:00.000Z');
@@ -76,6 +78,7 @@ check('official domain accepted and lookalikes rejected', function () {
     }
 });
 $definition = calendar_profiles([])['walmart-us'];
+check('Walmart profile contains no baked-in week or cutoff', fn() => same(isset($definition['rules']), false));
 $url = 'https://one.walmart.com/calendar-2028.pdf';
 $candidate = [...$payRules, 'effectiveThrough' => '2028-12-31',
     'observedPeriodStarts' => ['2028-01-01', '2028-01-15', '2028-01-29'], 'evidence' => []];
@@ -83,6 +86,13 @@ foreach (['weekStartDay', 'cutoffTime', 'payPeriodDays', 'payPeriodAnchorDate', 
     $candidate['evidence'][] = ['field' => $field, 'url' => $url, 'quote' => 'Synthetic test evidence for ' . $field];
 }
 check('source-supported consistent recurring cycle accepted', fn() => same(calendar_validate_discovery($candidate, $definition, 2028, [$url])['rules']['payPeriodDays'], 14));
+check('discovery requires week-start weekday', fn() => rejects(fn() => calendar_validate_discovery([...$candidate, 'weekStartDay' => null], $definition, 2028, [$url])));
+check('discovery requires cutoff time', fn() => rejects(fn() => calendar_validate_discovery([...$candidate, 'cutoffTime' => null], $definition, 2028, [$url])));
+check('discovered Saturday midnight means the start of Saturday', function () use ($candidate, $definition, $url) {
+    $discovered = calendar_validate_discovery($candidate, $definition, 2028, [$url]);
+    $range = calendar_range($discovered['rules'], 'week', '2028-02-26T00:00:00-05:00', 'America/New_York');
+    same($range['startLocal'], '2028-02-26T00:00:00-05:00');
+});
 check('wrong pay-period phase rejected', fn() => rejects(fn() => calendar_validate_discovery([...$candidate, 'payPeriodAnchorDate' => '2026-01-10'], $definition, 2028, [$url])));
 check('inconsistent observed periods rejected', fn() => rejects(fn() => calendar_validate_discovery([...$candidate, 'observedPeriodStarts' => ['2028-01-01', '2028-01-15', '2028-01-30']], $definition, 2028, [$url])));
 check('invented source URL rejected', fn() => rejects(fn() => calendar_validate_discovery($candidate, $definition, 2028, [])));
