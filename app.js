@@ -3449,6 +3449,13 @@
             await closeSettingsHelpPopover();
         }
 
+        // A closed dialog hides its descendants; an open modal makes outside
+        // content inert. Keep shared help in the requesting button's context.
+        const helpHost = button.closest("dialog") || document.body;
+        if (popover.parentElement !== helpHost) {
+            helpHost.append(popover);
+        }
+
         clearTimeout(
             settingsHelpRevealTimers.get(
                 button
