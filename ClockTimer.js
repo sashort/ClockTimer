@@ -15678,9 +15678,6 @@
                     ring.clockTimerLayoutDetached =
                         true;
 
-                    ring.style.zIndex =
-                        "-1";
-
                     ring.inset =
                         `${inset}px`;
 
