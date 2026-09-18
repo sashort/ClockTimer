@@ -117,6 +117,12 @@
 
         #preparedTrip;
 
+        #pendingTripEvents =
+            [];
+
+        #replayingTripEvents =
+            false;
+
         #connectionState =
             "offline";
 
@@ -2622,6 +2628,173 @@
             return new Date(creationDate.getTime() + milliseconds).toISOString();
         }
 
+        #createTripEventClientToken() {
+            return (
+                globalThis.crypto?.randomUUID?.() ??
+                "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+                    /[xy]/g,
+                    character => {
+                        const random =
+                            Math.floor(
+                                Math.random() * 16
+                            );
+
+                        const value =
+                            character === "x"
+                                ? random
+                                : (random & 0x3) | 0x8;
+
+                        return value.toString(16);
+                    }
+                )
+            );
+        }
+
+        #queueTripEvent(
+            event,
+            timestamp,
+            value = null,
+            {
+                record,
+                assignIntervalId = false
+            } = {}
+        ) {
+            if (this.#replayingTripEvents) {
+                return undefined;
+            }
+
+            const name =
+                String(event ?? "").trim();
+
+            if (!name) {
+                throw new TypeError(
+                    "Trip event name is required."
+                );
+            }
+
+            const date =
+                timestamp instanceof Date
+                    ? new Date(timestamp.getTime())
+                    : new Date(timestamp);
+
+            if (Number.isNaN(date.getTime())) {
+                throw new TypeError(
+                    "Trip event timestamp must be a valid date/time."
+                );
+            }
+
+            const queued = {
+                event:
+                    name,
+                timestamp:
+                    date.toISOString(),
+                value:
+                    value ?? null,
+                clientToken:
+                    this.#createTripEventClientToken(),
+                record,
+                assignIntervalId:
+                    Boolean(assignIntervalId),
+                synced:
+                    false
+            };
+
+            this.#pendingTripEvents.push(
+                queued
+            );
+
+            return queued;
+        }
+
+        async #syncTripEvents() {
+            const pending =
+                this.#pendingTripEvents.filter(
+                    event =>
+                        event.synced !== true
+                );
+
+            if (pending.length === 0) {
+                return;
+            }
+
+            const tripId =
+                await this.#ensureTripPersisted();
+
+            for (const event of pending) {
+                const data =
+                    await this.#apiRequest(
+                        "trip-events",
+                        {
+                            method: "POST",
+                            csrf: true,
+                            body: {
+                                tripId,
+                                event:
+                                    event.event,
+                                timestamp:
+                                    event.timestamp,
+                                value:
+                                    event.value,
+                                clientToken:
+                                    event.clientToken
+                            }
+                        }
+                    );
+
+                const eventId =
+                    Number(
+                        data.eventId
+                    );
+
+                if (
+                    !Number.isInteger(eventId) ||
+                    eventId < 1
+                ) {
+                    throw new Error(
+                        "The API returned an invalid trip event id."
+                    );
+                }
+
+                event.id =
+                    eventId;
+
+                event.synced =
+                    true;
+
+                if (
+                    event.assignIntervalId &&
+                    event.record
+                ) {
+                    this.#assignIntervalDatabaseId(
+                        event.record,
+                        eventId
+                    );
+                }
+            }
+
+            this.#pendingTripEvents =
+                this.#pendingTripEvents.filter(
+                    event =>
+                        event.synced !== true
+                );
+        }
+
+        #scheduleTripEventSync() {
+            if (
+                this.#replayingTripEvents ||
+                this.#connectionState !==
+                    "connected"
+            ) {
+                return;
+            }
+
+            void this.#protectedSync(
+                async () => {
+                    await this.#syncTripEvents();
+                }
+            ).catch(() => {});
+        }
+
         #tripPersistencePayload() {
             const timelineNow = this.#getSummaryTimelineNow(new Date());
             const startTime = this.#timelineToISO(this.#getElapsedStartTimeMilliseconds());
@@ -2911,21 +3084,7 @@
         }
 
         async #syncIntervals() {
-            for (
-                const record of
-                    [...this.#intervalRecords()]
-            ) {
-                await this.#syncIntervalRecord(
-                    record
-                );
-            }
-
-            this.#insertedRanges =
-                this.#insertedRanges.filter(
-                    record =>
-                        record.clockTimerDeleteSynced !==
-                            true
-                );
+            await this.#syncTripEvents();
         }
 
         async #protectedSync(action) {
