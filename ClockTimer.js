@@ -2868,30 +2868,6 @@
             return payload;
         }
 
-        #intervalRecords() {
-            return this.#insertedRanges.filter(
-                record => this.#isIntervalType(record.type)
-            );
-        }
-
-        #stripIntervalDatabaseId(record) {
-            delete record.intervalId;
-            delete record.clockTimerSyncedEnd;
-            delete record.clockTimerSyncedAttributes;
-            if (record.otherAttributes) {
-                for (const name of Object.keys(record.otherAttributes)) {
-                    if (name.toLowerCase() === "interval-id") {
-                        delete record.otherAttributes[name];
-                    }
-                }
-            }
-            for (const range of this.#getManagedTimeRanges()) {
-                if (range.clockTimerInserted === record.id) {
-                    this.#ensureIntervalIdAttribute(range, undefined);
-                }
-            }
-        }
-
         #assignIntervalDatabaseId(record, intervalId) {
             const numeric = Number(intervalId);
             if (!Number.isInteger(numeric) || numeric < 1) {
@@ -2907,22 +2883,6 @@
                     this.#ensureIntervalIdAttribute(range, numeric);
                 }
             }
-        }
-
-        #intervalPayload(record) {
-            const attributes = { ...(record.otherAttributes ?? {}) };
-            for (const name of Object.keys(attributes)) {
-                if (name.toLowerCase() === "interval-id") {
-                    delete attributes[name];
-                }
-            }
-            const startTime = record.startDate?.toISOString?.();
-            const endTime = record.clockTimerPersistenceEnd ??
-                record.endDate?.toISOString?.() ?? null;
-            if (!startTime) {
-                throw new Error("The interval does not have a persistable start time.");
-            }
-            return { type: String(record.type), startTime, endTime, attributes };
         }
 
         async #ensureTripPersisted() {
@@ -2964,161 +2924,6 @@
                 this.#originalStartArguments.tripId = tripId;
             }
             return tripId;
-        }
-
-        #intervalAttributesSignature(attributes) {
-            return JSON.stringify(
-                Object.entries(
-                    attributes ?? {}
-                )
-                    .map(
-                        ([name, value]) => [
-                            String(name),
-                            String(value)
-                        ]
-                    )
-                    .sort(
-                        (left, right) =>
-                            left[0].localeCompare(
-                                right[0]
-                            ) ||
-                            left[1].localeCompare(
-                                right[1]
-                            )
-                    )
-            );
-        }
-
-        async #syncIntervalRecord(record) {
-            const intervalId =
-                Number(record.intervalId);
-
-            if (
-                record.clockTimerPendingDelete ===
-                    true
-            ) {
-                if (
-                    !Number.isInteger(intervalId) ||
-                    intervalId < 1
-                ) {
-                    record.clockTimerDeleteSynced =
-                        true;
-                    return;
-                }
-
-                await this.#apiRequest(
-                    "intervals",
-                    {
-                        method: "DELETE",
-                        csrf: true,
-                        body: { intervalId }
-                    }
-                );
-
-                record.clockTimerDeleteSynced =
-                    true;
-                return;
-            }
-
-            const tripId =
-                await this.#ensureTripPersisted();
-
-            const payload =
-                this.#intervalPayload(record);
-
-            const attributeSignature =
-                this.#intervalAttributesSignature(
-                    payload.attributes
-                );
-
-            if (
-                !Number.isInteger(intervalId) ||
-                intervalId < 1
-            ) {
-                const data =
-                    await this.#apiRequest(
-                        "intervals",
-                        {
-                            method: "POST",
-                            csrf: true,
-                            body: {
-                                tripId,
-                                ...payload
-                            }
-                        }
-                    );
-
-                this.#assignIntervalDatabaseId(
-                    record,
-                    data.intervalId
-                );
-
-                record.clockTimerSyncedEnd =
-                    payload.endTime;
-
-                record.clockTimerSyncedAttributes =
-                    attributeSignature;
-
-                return;
-            }
-
-            const patch = {
-                intervalId
-            };
-
-            if (
-                payload.endTime !== null &&
-                record.clockTimerSyncedEnd !==
-                    payload.endTime
-            ) {
-                patch.endTime =
-                    payload.endTime;
-            }
-
-            if (
-                record.clockTimerSyncedAttributes !==
-                    attributeSignature
-            ) {
-                patch.attributes =
-                    payload.attributes;
-            }
-
-            if (
-                Object.keys(patch).length > 1
-            ) {
-                await this.#apiRequest(
-                    "intervals",
-                    {
-                        method: "PATCH",
-                        csrf: true,
-                        body: patch
-                    }
-                );
-            }
-
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    patch,
-                    "endTime"
-                )
-            ) {
-                record.clockTimerSyncedEnd =
-                    payload.endTime;
-            }
-
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    patch,
-                    "attributes"
-                )
-            ) {
-                record.clockTimerSyncedAttributes =
-                    attributeSignature;
-            }
-        }
-
-        async #syncIntervals() {
-            await this.#syncTripEvents();
         }
 
         async #protectedSync(action) {
@@ -3926,7 +3731,7 @@
             try {
                 if (this.#hasStartProperties()) {
                     await this.#ensureTripPersisted();
-                    await this.#syncIntervals();
+                    await this.#syncTripEvents();
                 }
 
                 await this.#refreshAggregateSnapshotAfterReconnect();
@@ -3988,7 +3793,7 @@
 
             if (this.#hasStartProperties()) {
                 await this.#ensureTripPersisted();
-                await this.#syncIntervals();
+                await this.#syncTripEvents();
             }
 
             await this.#refreshAggregateSnapshotAfterReconnect();
@@ -4898,7 +4703,7 @@
             if (this.#hasStartProperties()) {
                 synced = await this.#protectedSync(async () => {
                     const tripId = await this.#ensureTripPersisted();
-                    await this.#syncIntervals();
+                    await this.#syncTripEvents();
                     await this.#apiRequest("trips", {
                         method: "DELETE",
                         csrf: true,
