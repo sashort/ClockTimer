@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:trip-sync": "node autosync-rebuild.mjs"
+  },
+  "dependencies": {
+    "happy-dom": "20.14.5"
+  }
+}
