@@ -26859,6 +26859,94 @@
             }
         }
 
+        #shiftDisplacedOverwriteRecords(
+            cutoff,
+            delta
+        ) {
+            if (
+                !Number.isFinite(cutoff) ||
+                !Number.isFinite(delta) ||
+                delta <= 0
+            ) {
+                return;
+            }
+
+            const next = [];
+
+            for (
+                const record of
+                    this.#overwriteRanges
+            ) {
+                if (
+                    record.openEnded === true ||
+                    !Number.isFinite(record.start) ||
+                    !Number.isFinite(record.end) ||
+                    record.end <= cutoff
+                ) {
+                    next.push(record);
+                    continue;
+                }
+
+                if (record.start >= cutoff) {
+                    record.start += delta;
+                    record.end += delta;
+
+                    next.push(record);
+                    continue;
+                }
+
+                const right = {
+                    ...record,
+                    id:
+                        `overwrite-${Date.now()}-${Math.random()}`,
+                    start:
+                        cutoff + delta,
+                    end:
+                        record.end + delta,
+                    clockTimerGrowthMode:
+                        "fixed"
+                };
+
+                record.end =
+                    cutoff;
+
+                next.push(
+                    record,
+                    right
+                );
+
+                for (
+                    const range of
+                        this.#getManagedTimeRanges()
+                ) {
+                    if (
+                        range.clockTimerOverwrite !==
+                            record.id ||
+                        range.timeRangeExiting ===
+                            true
+                    ) {
+                        continue;
+                    }
+
+                    const rangeStart =
+                        Number(
+                            range.clockTimerStart
+                        );
+
+                    if (
+                        Number.isFinite(rangeStart) &&
+                        rangeStart >= right.start
+                    ) {
+                        range.clockTimerOverwrite =
+                            right.id;
+                    }
+                }
+            }
+
+            this.#overwriteRanges =
+                next;
+        }
+
         #syncOpenEndedRangeElements(
             record,
             effectiveEnd
@@ -27011,6 +27099,18 @@
                 cutoff,
                 delta
             );
+
+            if (
+                (
+                    excludedRecord?.clockTimerGrowthMode ??
+                        "fixed"
+                ) === "displace"
+            ) {
+                this.#shiftDisplacedOverwriteRecords(
+                    cutoff,
+                    delta
+                );
+            }
 
             if (!renderInserted) {
                 this.#shiftInsertedRangeElements(
