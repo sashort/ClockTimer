@@ -14660,15 +14660,6 @@
             state.phase =
                 "sweep";
 
-            if (
-                state.transitionWaveRange
-            ) {
-                state.transitionWaveRange.style.setProperty(
-                    "--timer-type-transition-wave-play-state",
-                    "running"
-                );
-            }
-
             this.#startTimerTypeIndicatorCatchup(
                 state
             );
@@ -15445,6 +15436,30 @@
             if (
                 state.transitionWaveRange
             ) {
+                const sweepDuration =
+                    (
+                        state.timing?.collapse ??
+                        333
+                    ) +
+                    (
+                        state.timing?.inward ??
+                        750
+                    ) +
+                    (
+                        state.timing?.sweep ??
+                        750
+                    );
+
+                state.transitionWaveRange.style.setProperty(
+                    "--timer-type-transition-wave-duration",
+                    `${sweepDuration}ms`
+                );
+
+                state.transitionWaveRange.style.setProperty(
+                    "--timer-type-transition-wave-play-state",
+                    "running"
+                );
+
                 state.transitionWaveOpacityAnimation
                     ?.cancel();
 
