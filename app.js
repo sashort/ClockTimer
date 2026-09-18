@@ -150,7 +150,6 @@
     let numberPadContext;
     let numberPadReadout;
     let numberPadDate;
-    let numberPadDateDisplay;
     let numberPadDateRow;
     let numberPadAM;
     let numberPadPM;
@@ -4178,7 +4177,6 @@
                 numberPadContext = $("#numberPadContext");
                 numberPadReadout = $("#numberPadReadout");
                 numberPadDate = $("#numberPadDate");
-                numberPadDateDisplay = $("#numberPadDateDisplay");
                 numberPadDateRow = $("#numberPadDateRow");
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
@@ -4522,10 +4520,6 @@
         numberPadPM.hidden = !absoluteMode;
         if (absoluteMode) {
             numberPadDate.value = numberPadState.pendingDate || "";
-            numberPadDateDisplay.textContent = numberPadDate.value
-                ? new Intl.DateTimeFormat(undefined, {year: "numeric", month: "2-digit", day: "2-digit"})
-                    .format(new Date(`${numberPadDate.value}T12:00:00`))
-                : "—";
             numberPadAM.classList.toggle("is-selected", numberPadState.meridiem === "AM");
             numberPadPM.classList.toggle("is-selected", numberPadState.meridiem === "PM");
             numberPadAM.setAttribute("aria-pressed", String(numberPadState.meridiem === "AM"));
@@ -4533,6 +4527,7 @@
         }
 
         $("#numberPadBackspace").disabled = !numberPadState.pending;
+        numberPadContext.style.setProperty("--number-pad-title-center", percentMode ? "50%" : absoluteMode ? "calc((100% - clamp(54px, 16vw, 72px)) / 2)" : "33.333%" );
         const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
         numberPadClear.dataset.action = clearAction;
@@ -4566,7 +4561,7 @@
             !percentMode &&
             !numberPadState.onConfirm &&
             numberPadState.role !== "trip-settings-field";
-        numberPadContext.style.setProperty("--number-pad-title-center", "50%");
+        if (numberPadState.onConfirm && !percentMode) numberPadContext.style.setProperty("--number-pad-title-center", "calc((100% - clamp(54px, 16vw, 72px)) / 2)");
         numberPadSettingsArea.hidden = !settingsVisible;
         numberPadSettingsArea.parentElement?.classList.toggle(
             "settings-hidden",
@@ -5712,10 +5707,6 @@
             }
             numberPadState.pendingDate = numberPadDate.value;
             refreshNumberPad();
-        });
-
-        numberPadDateRow.addEventListener("click", () => {
-            try { numberPadDate.showPicker?.(); } catch {}
         });
 
         numberPadConfirm.addEventListener("pointerup", async () => {
