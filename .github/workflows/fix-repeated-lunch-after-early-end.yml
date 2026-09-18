@@ -1,0 +1,48 @@
+name: Fix repeated Lunch after early end
+'on':
+  push:
+    branches:
+      - rename-prestart-latency
+    paths:
+      - '.github/workflows/fix-repeated-lunch-after-early-end.yml'
+      - '.github/scripts/fix_repeated_lunch_after_early_end.py'
+permissions:
+  contents: write
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-prestart-latency
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply fix
+        run: python .github/scripts/fix_repeated_lunch_after_early_end.py
+      - name: Syntax check
+        run: node --check ClockTimer.js
+      - name: Verify earlystart is truncated before new interval insertion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("ClockTimer.js").read_text()
+          start = text.index("        #startIntervalLocal(")
+          end = text.index("        #getIntervalBufferRecord(", start)
+          block = text[start:end]
+          marker = "const activeEarlyStartOverwrite ="
+          assert marker in block
+          assert 'record.type ===\n                            "earlystart"' in block
+          assert "this.#trimOverwriteRecords(" in block
+          trim = block.index("this.#trimOverwriteRecords(")
+          first_insert = block.index("this.#insert({")
+          assert trim < first_insert
+          assert "activeEarlyStartOverwrite.end" in block
+          PY
+      - name: Commit source fix
+        run: |
+          git config user.name "sashort"
+          git config user.email "95879519+sashort@users.noreply.github.com"
+          git add ClockTimer.js
+          git commit -m "Fix repeated Lunch after early interval end" || exit 0
+          git push origin HEAD:rename-prestart-latency
