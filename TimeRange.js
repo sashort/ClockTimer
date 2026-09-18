@@ -3974,6 +3974,18 @@ class TimeRange extends HTMLElement {
                 instances[i];
 
             if (
+                !(existing instanceof TimeRange) ||
+                !existing.isConnected
+            ) {
+                instances.splice(
+                    i,
+                    1
+                );
+
+                continue;
+            }
+
+            if (
                 existing === this ||
                 existing.parentElement !==
                     this.parentElement ||
