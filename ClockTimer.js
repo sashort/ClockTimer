@@ -7162,6 +7162,10 @@
                     `${Date.now()}-${Math.random()}`,
                 type:
                     type.trim(),
+                clockTimerGrowthMode:
+                    openEnded
+                        ? "displace"
+                        : "fixed",
                 startDate:
                     new Date(
                         startDate.getTime()
@@ -7431,6 +7435,10 @@
                     `overwrite-${Date.now()}-${Math.random()}`,
                 type:
                     type.trim(),
+                clockTimerGrowthMode:
+                    openEnded
+                        ? "overwrite"
+                        : "fixed",
                 start,
                 end:
                     Number.isFinite(end)
@@ -9854,6 +9862,9 @@
                 record.openEnded =
                     false;
 
+                record.clockTimerGrowthMode =
+                    "fixed";
+
                 record.endDate =
                     new Date(
                         nowDate.getTime()
@@ -9908,6 +9919,9 @@
 
                 record.openEnded =
                     false;
+
+                record.clockTimerGrowthMode =
+                    "fixed";
 
                 record.end =
                     Math.max(
@@ -10265,6 +10279,9 @@
                 record.openEnded =
                     true;
 
+                record.clockTimerGrowthMode =
+                    "displace";
+
                 record.endDate =
                     undefined;
 
@@ -10390,6 +10407,9 @@
 
             extensionRecord.openEnded =
                 false;
+
+            extensionRecord.clockTimerGrowthMode =
+                "fixed";
 
             extensionRecord.rangeLength =
                 Math.max(
@@ -27615,6 +27635,23 @@
             );
         }
 
+        #hasDisplacingOpenRange() {
+            const record =
+                this.#openEndedRange;
+
+            if (
+                !record ||
+                record.openEnded !== true
+            ) {
+                return false;
+            }
+
+            return (
+                record.clockTimerGrowthMode ??
+                    "displace"
+            ) === "displace";
+        }
+
         #normalizeTickDate(
             date
         ) {
@@ -29219,7 +29256,8 @@
             if (
                 this.#showTolerance === undefined &&
                 this.#renderedPercentGoal > 1 &&
-                !this.#toleranceTransitionState
+                !this.#toleranceTransitionState &&
+                !this.#hasDisplacingOpenRange()
             ) {
                 this.#reconcilePlannedRanges();
             }
