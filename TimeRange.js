@@ -408,7 +408,11 @@ class TimeRange extends HTMLElement {
                 }
 
                 100% {
-                    opacity: 0;
+                    opacity:
+                        var(
+                            --state-change-wave-end-opacity,
+                            0
+                        );
                     transform: rotate(180deg);
                 }
             }
