@@ -29623,6 +29623,80 @@
                 .join(":");
         }
 
+        #getEarlyStartAllowanceCredit() {
+            let total = 0;
+
+            for (const record of this.#insertedRanges) {
+                const type =
+                    String(
+                        record?.type ?? ""
+                    ).trim().toLowerCase();
+
+                if (
+                    type !== "break" &&
+                    type !== "lunch"
+                ) {
+                    continue;
+                }
+
+                let actualEnd =
+                    Number(
+                        record.clockTimerActualEndTimeline
+                    );
+
+                let earlyStartEnd =
+                    Number(
+                        record.clockTimerEarlyStartEndTimeline
+                    );
+
+                if (
+                    !Number.isFinite(actualEnd) ||
+                    !Number.isFinite(earlyStartEnd)
+                ) {
+                    const actualEndDate =
+                        new Date(
+                            record.otherAttributes?.[
+                                "clock-timer-actual-end"
+                            ] ?? NaN
+                        );
+
+                    const earlyStartEndDate =
+                        new Date(
+                            record.otherAttributes?.[
+                                "clock-timer-early-start-end"
+                            ] ?? NaN
+                        );
+
+                    if (
+                        !Number.isNaN(
+                            actualEndDate.getTime()
+                        ) &&
+                        !Number.isNaN(
+                            earlyStartEndDate.getTime()
+                        )
+                    ) {
+                        actualEnd =
+                            actualEndDate.getTime();
+
+                        earlyStartEnd =
+                            earlyStartEndDate.getTime();
+                    }
+                }
+
+                if (
+                    Number.isFinite(actualEnd) &&
+                    Number.isFinite(earlyStartEnd) &&
+                    earlyStartEnd > actualEnd
+                ) {
+                    total +=
+                        earlyStartEnd -
+                        actualEnd;
+                }
+            }
+
+            return total;
+        }
+
         #getTotalSummary(timelineNow, nowDate) {
             const base = this.#hasUsableAggregateSnapshot()
                 ? this.#tripTotals
@@ -29633,11 +29707,14 @@
             let standardTimeMilliseconds = Number(base?.standardTimeMilliseconds ?? 0);
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
             let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0);
+            let allowanceCreditMilliseconds = 0;
 
             if (this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
                 countedTimeMilliseconds += this.#getCountedTimeElapsed(timelineNow);
+                allowanceCreditMilliseconds +=
+                    this.#getEarlyStartAllowanceCredit();
             }
 
             const countedPercent = countedTimeMilliseconds > 0
@@ -29645,12 +29722,16 @@
                 : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
             const allowedTimeMilliseconds =
-                Number.isFinite(percentGoal) && percentGoal > 0
-                    ? Math.round(
-                        standardTimeMilliseconds /
-                        percentGoal
-                    )
-                    : standardTimeMilliseconds;
+                (
+                    Number.isFinite(percentGoal) &&
+                    percentGoal > 0
+                        ? Math.round(
+                            standardTimeMilliseconds /
+                            percentGoal
+                        )
+                        : standardTimeMilliseconds
+                ) +
+                allowanceCreditMilliseconds;
             const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
 
             let renderedTime;
