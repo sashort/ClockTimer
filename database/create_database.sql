@@ -135,12 +135,9 @@ DROP TRIGGER IF EXISTS `audit_permissions_delete`;
 DROP TRIGGER IF EXISTS `audit_trips_add`;
 DROP TRIGGER IF EXISTS `audit_trips_edit`;
 DROP TRIGGER IF EXISTS `audit_trips_delete`;
-DROP TRIGGER IF EXISTS `audit_intervals_add`;
-DROP TRIGGER IF EXISTS `audit_intervals_edit`;
-DROP TRIGGER IF EXISTS `audit_intervals_delete`;
-DROP TRIGGER IF EXISTS `audit_attributes_add`;
-DROP TRIGGER IF EXISTS `audit_attributes_edit`;
-DROP TRIGGER IF EXISTS `audit_attributes_delete`;
+DROP TRIGGER IF EXISTS `audit_trip_events_add`;
+DROP TRIGGER IF EXISTS `audit_trip_events_delete`;
+DROP TRIGGER IF EXISTS `protect_trip_events_update`;
 DROP TRIGGER IF EXISTS `protect_log_update`;
 DROP TRIGGER IF EXISTS `protect_log_delete`;
 
