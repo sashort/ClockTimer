@@ -2727,7 +2727,8 @@
             value = null,
             {
                 record,
-                assignIntervalId = false
+                assignIntervalId = false,
+                removeRecordOnSync = false
             } = {}
         ) {
             if (this.#replayingTripEvents) {
@@ -2766,6 +2767,8 @@
                 record,
                 assignIntervalId:
                     Boolean(assignIntervalId),
+                removeRecordOnSync:
+                    Boolean(removeRecordOnSync),
                 synced:
                     false
             };
@@ -2840,6 +2843,21 @@
                         event.record,
                         eventId
                     );
+                }
+
+                if (
+                    event.removeRecordOnSync &&
+                    event.record
+                ) {
+                    event.record.clockTimerDeleteSynced =
+                        true;
+
+                    this.#insertedRanges =
+                        this.#insertedRanges.filter(
+                            candidate =>
+                                candidate !==
+                                    event.record
+                        );
                 }
             }
 
@@ -4598,10 +4616,7 @@
 
                 this.#renderAllInsertedRanges();
 
-                if (this.#started) {
-                    this.#tick();
-                }
-                else {
+                if (!this.#started) {
                     this.#refreshRingLayout(
                         this.#getSummaryTimelineNow(
                             new Date()
@@ -4619,6 +4634,10 @@
 
                 this.#eventsReady =
                     previousEventsReady;
+            }
+
+            if (this.#started) {
+                this.#tick();
             }
 
             if (this.#needsTick()) {
@@ -10510,6 +10529,11 @@
                 {
                     intervalKey:
                         record.clockTimerEventKey
+                },
+                {
+                    record,
+                    removeRecordOnSync:
+                        true
                 }
             );
 
