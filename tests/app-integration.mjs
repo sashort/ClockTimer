@@ -35,6 +35,7 @@ await c.calculateTripTotals('2026-09-18T04:00:00Z','2026-09-19T03:59:59.999Z');
 c.percentMode='total';c.renderedTimeMode='calculated-end';await settle();
 assert.equal(c.getSummarySnapshot().selected.renderedTime,undefined);
 assert.equal(window.document.querySelector('#renderedTimeValue').textContent,'---');
+assert.equal(window.document.querySelector('#standardTimeValue').textContent,'---');
 c.percentMode='trip';c.renderedTimeMode='remaining';
 console.log('PASS empty logged-in Total scope shows a blank End Time instead of the current time');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();

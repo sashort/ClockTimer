@@ -30930,7 +30930,7 @@
             }
 
             return {
-                standardTime: Number.isFinite(standardTimeMilliseconds)
+                standardTime: Number.isFinite(standardTimeMilliseconds) && standardTimeMilliseconds > 0
                     ? this.#formatStandardTime(Math.max(0, standardTimeMilliseconds))
                     : undefined,
                 standardTimeMilliseconds,
