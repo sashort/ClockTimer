@@ -4206,6 +4206,10 @@
                     startedValue.autoRestartTripAfterLateBreak ===
                         true;
 
+                this.#autoSyncTripGoal =
+                    startedValue.autoSyncTripGoal ===
+                        true;
+
                 const startResult =
                     this.#startLocal({
                         tripId:
@@ -4524,6 +4528,32 @@
                             break;
                         }
 
+                        case "trip.auto-sync-trip-goal-changed":
+                            this.autoSyncTripGoal =
+                                value.value === true;
+                            break;
+
+                        case "trip.matched-goal-changed":
+                            this.#matchedTripGoal =
+                                Number.isFinite(
+                                    Number(
+                                        value.value
+                                    )
+                                )
+                                    ? Number(
+                                        value.value
+                                    )
+                                    : undefined;
+
+                            this.#handleTripGoalChange(
+                                "automatic",
+                                {
+                                    refreshMatchedGoal:
+                                        false
+                                }
+                            );
+                            break;
+
                         case "trip.interval-elapsed-behavior-changed":
                             if (
                                 typeof value.value ===
@@ -4770,7 +4800,9 @@
                     intervalElapsedBehavior:
                         this.#intervalElapsedBehavior,
                     autoRestartTripAfterLateBreak:
-                        this.#autoRestartTripAfterLateBreak
+                        this.#autoRestartTripAfterLateBreak,
+                    autoSyncTripGoal:
+                        this.#autoSyncTripGoal
                 }
             );
 
@@ -5766,6 +5798,16 @@
             }
 
             if (this.#hasStartProperties()) {
+                this.#queueTripEvent(
+                    "trip.auto-sync-trip-goal-changed",
+                    new Date(),
+                    {
+                        value
+                    }
+                );
+
+                this.#scheduleTripEventSync();
+
                 this.#handleTripGoalChange(
                     "user"
                 );
@@ -21818,16 +21860,42 @@
             this.#matchedTripGoal =
                 next;
 
-            return previous !== next;
+            const changed =
+                previous !== next;
+
+            if (
+                changed &&
+                this.#hasStartProperties()
+            ) {
+                this.#queueTripEvent(
+                    "trip.matched-goal-changed",
+                    new Date(),
+                    {
+                        value:
+                            Number.isFinite(next)
+                                ? next
+                                : null
+                    }
+                );
+
+                this.#scheduleTripEventSync();
+            }
+
+            return changed;
         }
 
         #handleTripGoalChange(
             source =
                 this.#renderedPercentGoalSourceOverride ??
-                "automatic"
+                "automatic",
+            {
+                refreshMatchedGoal = true
+            } = {}
         ) {
 
-            this.#refreshMatchedTripGoal();
+            if (refreshMatchedGoal) {
+                this.#refreshMatchedTripGoal();
+            }
 
             const goal =
                 this.#calculateRenderedPercentGoal();
