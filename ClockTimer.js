@@ -14842,6 +14842,24 @@
                         return;
                     }
 
+                    const now =
+                        this.#started
+                            ? this.#getCurrentTimelineTime()
+                            : state.referenceTime;
+
+                    if (
+                        this.#getTimerType() ===
+                            "radial-fitted"
+                    ) {
+                        this.#refreshRadialFittedLayouts(
+                            now,
+                            {
+                                suspendLayout:
+                                    false
+                            }
+                        );
+                    }
+
                     this.#syncWaveRange();
 
                     state.geometryFrame =
