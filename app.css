@@ -3727,13 +3727,79 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .number-pad-readout {position:relative;grid-template-rows:minmax(0,1fr) 44px;}
 .number-pad-readout:not(.absolute-mode) .number-pad-display {grid-row:1;}
 .number-pad-readout.absolute-mode {grid-template-rows:minmax(0,1fr) 52px;}
-.number-pad-header.settings-hidden .number-pad-readout {grid-template-columns:minmax(0,1fr) clamp(54px,16vw,72px);}
 .number-pad-backspace {position:absolute;left:10px;bottom:7px;width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:var(--wm-blue-dark);font-size:26px;line-height:1;z-index:2;}
 .number-pad-backspace:disabled {opacity:.3;cursor:default;}
-.number-pad-date-row {position:relative;width:100%;padding:4px 48px;display:flex;justify-content:center;gap:0;background:transparent;}
-.number-pad-date-row input {width:145px;flex:0 0 145px;text-align:center;}
+.number-pad-readout {container-type:inline-size;container-name:numberpad-readout;}
+.number-pad-date-row {position:relative;width:100%;padding:4px 44px;display:flex;justify-content:center;gap:0;background:transparent;}
+.number-pad-date-row input {width:145px;max-width:100%;min-width:0;flex:0 1 145px;text-align:center;}
 .number-pad-date-row input::-webkit-datetime-edit {text-align:center;display:block;}
+.number-pad-date-row input::-webkit-datetime-edit-fields-wrapper {display:flex;justify-content:center;}
 .number-pad-calendar-icon {position:absolute;left:calc(50% - 92px);width:18px;height:18px;}
+@container numberpad-date (max-width: 190px) {
+    .number-pad-date-row input {font-size:12px;}
+    .number-pad-calendar-icon {display:none;}
+}
+
+/* Equal control rails keep title, time, and date on the full-width center. */
+.number-pad-header,
+.number-pad-header.settings-hidden,
+.number-pad-header.percent-mode {
+    --number-pad-control-size: clamp(48px, 14vw, 64px);
+    --number-pad-side-width: calc(var(--number-pad-control-size) + 12px);
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.number-pad-header:has(.absolute-mode):not(.settings-hidden) {
+    --number-pad-side-width: calc(var(--number-pad-control-size) * 2);
+}
+
+.number-pad-readout,
+.number-pad-readout.absolute-mode {
+    grid-column: 1;
+    grid-template-columns: var(--number-pad-side-width) minmax(0, 1fr) var(--number-pad-side-width);
+}
+
+.number-pad-readout .number-pad-display,
+.number-pad-readout:not(.absolute-mode) .number-pad-display {
+    grid-column: 2;
+    grid-row: 1;
+    padding-inline: 0;
+    font-size: clamp(24px, calc((100cqw - 2 * var(--number-pad-side-width)) / 5.2), 54px);
+}
+
+.number-pad-readout .number-pad-date-row {
+    grid-column: 2;
+    padding-inline: 0;
+    container-type: inline-size;
+    container-name: numberpad-date;
+}
+
+.number-pad-meridiem {grid-column: 3;}
+.number-pad-header:has(.absolute-mode):not(.settings-hidden) .number-pad-meridiem {
+    justify-self: start;
+    margin-left: 6px;
+}
+
+.number-pad-header .number-pad-settings {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: var(--number-pad-side-width);
+}
+
+.number-pad-header:has(.absolute-mode) .number-pad-settings {
+    width: var(--number-pad-control-size);
+}
+
+.number-pad-settings .number-pad-settings-gear {
+    width: 40px;
+    height: 40px;
+}
+
+.number-pad-settings .number-pad-persistence-badge {
+    width: 30px;
+    height: 30px;
+}
 
 .trip-log-body.trip-log-merged {overflow:auto;}
 .trip-log-controls {display:grid;gap:10px;padding:14px;}
