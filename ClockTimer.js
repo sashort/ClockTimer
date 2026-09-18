@@ -13466,6 +13466,7 @@
         ) {
             if (
                 !state ||
+                state.borderHandoff === true ||
                 state.visualFadeStarted ||
                 !range?.isConnected ||
                 !this.#isTimerTypeTransitionVisualRange(
@@ -13885,13 +13886,17 @@
             state
         ) {
             if (
+                state !==
+                    this.#timerTypeTransitionState ||
                 !state.indicatorUsed ||
                 !this.#indicatorSymbol
             ) {
                 return;
             }
 
-            const duration = 750;
+            const duration =
+                state.timing?.inward ??
+                750;
 
             const distance =
                 Number.isFinite(
@@ -13980,7 +13985,7 @@
             );
         }
 
-        #startTimerTypeIndicatorOutward(
+        #startTimerTypeIndicatorCatchup(
             state
         ) {
             if (
@@ -13990,15 +13995,124 @@
                 return;
             }
 
-            const duration = 750;
+            const indicatorAvailable =
+                state.indicatorUsed &&
+                this.hasAttribute(
+                    "indicator-symbol"
+                ) &&
+                this.#started &&
+                Boolean(
+                    this.#indicatorTrack
+                );
 
-            this.#startStateChangeVisualFade(
-                state.stateChangeVisual
-            );
+            if (!indicatorAvailable) {
+                return;
+            }
 
-            this.#startTimerTypeTransitionVisualFade(
-                state
+            const duration =
+                state.timing?.sweep ??
+                750;
+
+            const startAngle =
+                this.#getIndicatorTrackAngle();
+
+            const targetTime =
+                this.#getCurrentTimelineTime(
+                    new Date(
+                        Date.now() +
+                        duration
+                    )
+                );
+
+            const targetAngle =
+                this.#getIndicatorAngleForTime(
+                    targetTime
+                );
+
+            if (
+                !Number.isFinite(
+                    targetAngle
+                )
+            ) {
+                return;
+            }
+
+            const delta =
+                (
+                    targetAngle -
+                    startAngle +
+                    360
+                ) %
+                360;
+
+            const endAngle =
+                startAngle +
+                delta;
+
+            if (
+                typeof this.#indicatorTrack.animate !==
+                    "function" ||
+                delta === 0
+            ) {
+                this.#indicatorTrack.style.transform =
+                    `rotate(${targetAngle}deg)`;
+
+                return;
+            }
+
+            const animation =
+                this.#indicatorTrack.animate(
+                    [
+                        {
+                            transform:
+                                `rotate(${startAngle}deg)`
+                        },
+                        {
+                            transform:
+                                `rotate(${endAngle}deg)`
+                        }
+                    ],
+                    {
+                        duration,
+                        easing:
+                            "ease-in-out",
+                        fill: "both"
+                    }
+                );
+
+            state.indicatorTrackAnimation =
+                animation;
+
+            animation.finished.then(
+                () => {
+                    if (
+                        state !==
+                            this.#timerTypeTransitionState
+                    ) {
+                        return;
+                    }
+
+                    this.#indicatorTrack.style.transform =
+                        `rotate(${targetAngle}deg)`;
+
+                    animation.cancel();
+
+                    state.indicatorTrackAnimation =
+                        undefined;
+                },
+                () => {}
             );
+        }
+
+        #startTimerTypeIndicatorOutwardMotion(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
 
             const indicatorAvailable =
                 state.indicatorUsed &&
@@ -14011,13 +14125,25 @@
                 );
 
             if (!indicatorAvailable) {
-                this.#scheduleTimerTypeTransitionRelease(
-                    state,
-                    duration
-                );
-
                 return;
             }
+
+            const duration =
+                state.timing?.reveal ??
+                750;
+
+            const distance =
+                Number.isFinite(
+                    state.indicatorInwardDistance
+                )
+                    ? state.indicatorInwardDistance
+                    : 0;
+
+            const startTransform =
+                `translateX(-50%) translateY(${distance}px)`;
+
+            const endTransform =
+                "translateX(-50%) translateY(0px)";
 
             const heavyShadow =
                 this.#getTimerTypeIndicatorShadow(
@@ -14031,51 +14157,6 @@
 
             this.#timerTypeIndicatorFrozen =
                 false;
-
-            this.#updateIndicatorSymbol();
-
-            const newBaseInset =
-                this.#getTimerTypeIndicatorTopInset();
-
-            let distance;
-
-            if (
-                Number.isFinite(
-                    state.indicatorInwardCenter
-                )
-            ) {
-                const symbolHeight =
-                    this.#getTimerTypeIndicatorSymbolHeight();
-
-                distance =
-                    Math.max(
-                        0,
-                        state.indicatorInwardCenter -
-                        newBaseInset -
-                        symbolHeight / 2
-                    );
-            }
-            else {
-                const inwardTip =
-                    Number.isFinite(
-                        state.indicatorInwardTip
-                    )
-                        ? state.indicatorInwardTip
-                        : newBaseInset;
-
-                distance =
-                    Math.max(
-                        0,
-                        inwardTip -
-                        newBaseInset
-                    );
-            }
-
-            const startTransform =
-                `translateX(-50%) translateY(${distance}px)`;
-
-            const endTransform =
-                "translateX(-50%) translateY(0px)";
 
             this.#indicatorSymbol.style.transform =
                 startTransform;
@@ -14093,11 +14174,6 @@
 
                 this.#indicatorSymbol.style.removeProperty(
                     "filter"
-                );
-
-                this.#scheduleTimerTypeTransitionRelease(
-                    state,
-                    duration
                 );
 
                 return;
@@ -14151,16 +14227,302 @@
 
                     state.indicatorOutwardAnimation =
                         undefined;
-
-                    this.#releaseTimerTypeIndicator(
-                        state
-                    );
                 },
                 () => {}
             );
         }
 
-        #releaseTimerTypeIndicator(
+        #clearTimerTypePhaseTimeout(
+            state
+        ) {
+            if (
+                state?.phaseTimeout !==
+                    undefined
+            ) {
+                clearTimeout(
+                    state.phaseTimeout
+                );
+
+                state.phaseTimeout =
+                    undefined;
+            }
+        }
+
+        #removeTimerTypeTransitionWave(
+            state
+        ) {
+            if (!state) {
+                return;
+            }
+
+            state.transitionWaveOpacityAnimation
+                ?.cancel();
+
+            state.transitionWaveOpacityAnimation =
+                undefined;
+
+            state.transitionWaveRange?.remove();
+            state.transitionWaveRing?.remove();
+
+            state.transitionWaveRange =
+                undefined;
+
+            state.transitionWaveRing =
+                undefined;
+        }
+
+        #prepareTimerTypeBorderHandoff(
+            state
+        ) {
+            const border =
+                this.#ensureBorderRing();
+
+            if (!border) {
+                return;
+            }
+
+            const renderedInset =
+                this.#resolveTimerTypeTransitionLength(
+                    border.renderedInset ??
+                    border.inset ??
+                    "0px",
+                    border
+                );
+
+            const renderedWidth =
+                Math.max(
+                    0,
+                    this.#resolveTimerTypeTransitionLength(
+                        border.renderedWidth ??
+                        border.width ??
+                        "0px",
+                        border
+                    )
+                );
+
+            state.borderRing =
+                border;
+
+            state.borderOriginalInset =
+                border.inset;
+
+            state.borderOriginalWidth =
+                border.width;
+
+            state.borderOriginalResizeDuration =
+                border.resizeDuration;
+
+            state.borderNormalGeometry = {
+                inset:
+                    renderedInset,
+                width:
+                    renderedWidth
+            };
+
+            state.borderTargetGeometry =
+                state.targetGeometry.get(
+                    border
+                ) ?? {
+                    inset:
+                        renderedInset,
+                    width:
+                        renderedWidth,
+                    widthValue:
+                        border.width ??
+                        `${renderedWidth}px`
+                };
+
+            let outerRing;
+            let outerGeometry;
+            let outerEdge =
+                Infinity;
+
+            for (
+                const [ring, geometry] of
+                    state.oldGeometry
+            ) {
+                const edge =
+                    geometry.inset -
+                    geometry.width / 2;
+
+                if (edge < outerEdge) {
+                    outerEdge =
+                        edge;
+
+                    outerRing =
+                        ring;
+
+                    outerGeometry =
+                        geometry;
+                }
+            }
+
+            state.borderExpandedGeometry = {
+                inset:
+                    renderedInset,
+                width:
+                    Math.max(
+                        renderedWidth,
+                        outerGeometry?.width ??
+                            renderedWidth
+                    )
+            };
+
+            border.resizeDuration =
+                "0ms";
+
+            border.inset =
+                `${renderedInset}px`;
+
+            border.width =
+                `${renderedWidth}px`;
+
+            border.snapGeometry?.();
+
+            if (
+                !this.#started ||
+                !this.#ringLayer
+            ) {
+                return;
+            }
+
+            const sourceRing =
+                state.oldRings.find(
+                    ring =>
+                        ring.hasAttribute(
+                            "active"
+                        )
+                ) ??
+                outerRing ??
+                state.oldRings[0] ??
+                border;
+
+            const waveRing =
+                document.createElement(
+                    "ring-container"
+                );
+
+            waveRing.id =
+                "timer-type-transition-wave-ring";
+
+            waveRing.clockTimerInternalTimerTypeWave =
+                "";
+
+            this.#configureInternalVisualRing(
+                waveRing,
+                sourceRing,
+                120
+            );
+
+            waveRing.resizeDuration =
+                "0ms";
+
+            waveRing.inset =
+                `${renderedInset}px`;
+
+            waveRing.width =
+                `${renderedWidth}px`;
+
+            waveRing.snapGeometry?.();
+
+            this.#ringLayer.appendChild(
+                waveRing
+            );
+
+            let start =
+                Number.isFinite(
+                    state.referenceTime
+                )
+                    ? state.referenceTime
+                    : (
+                        Number.isFinite(
+                            this.#scheduledStartMilliseconds
+                        )
+                            ? this.#scheduledStartMilliseconds
+                            : Date.now()
+                    );
+
+            start -=
+                (
+                    start %
+                        ClockTimer.#HOUR +
+                    ClockTimer.#HOUR
+                ) %
+                ClockTimer.#HOUR;
+
+            const end =
+                start +
+                ClockTimer.#HOUR;
+
+            const range =
+                document.createElement(
+                    "time-range"
+                );
+
+            range.setAttribute(
+                "type",
+                "wave"
+            );
+
+            range.setAttribute(
+                "timer-type-transition-wave",
+                ""
+            );
+
+            range.setAttribute(
+                "overlapping",
+                ""
+            );
+
+            range.setAttribute(
+                "start-time",
+                this.#formatTimelineTime(
+                    start
+                )
+            );
+
+            range.setAttribute(
+                "end-time",
+                this.#formatTimelineTime(
+                    end
+                )
+            );
+
+            range.clockTimerStart =
+                String(start);
+
+            range.clockTimerEnd =
+                String(end);
+
+            range.clockTimerInternalTimerTypeWave =
+                "";
+
+            range.timeRangeFullEntry =
+                true;
+
+            range.style.clipPath =
+                "none";
+
+            range.style.opacity =
+                "0";
+
+            range.style.setProperty(
+                "--timer-type-transition-wave-play-state",
+                "paused"
+            );
+
+            waveRing.appendChild(
+                range
+            );
+
+            state.transitionWaveRing =
+                waveRing;
+
+            state.transitionWaveRange =
+                range;
+        }
+
+        #prepareTimerTypeNormalWave(
             state
         ) {
             if (
@@ -14170,6 +14532,476 @@
                 return;
             }
 
+            state.holdNormalWave =
+                true;
+
+            this.#waveSuppressed =
+                false;
+
+            this.#syncWaveRange();
+
+            if (this.#waveRange) {
+                this.#waveRange.style.opacity =
+                    "0";
+
+                this.#waveRange.style.setProperty(
+                    "--elapsed-wave-play-state",
+                    "paused"
+                );
+            }
+        }
+
+        #startTimerTypeTransitionHold(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            this.#clearTimerTypePhaseTimeout(
+                state
+            );
+
+            state.phase =
+                "inward";
+
+            for (
+                const ring of
+                    state.oldRings
+            ) {
+                const geometry =
+                    state.oldGeometry.get(
+                        ring
+                    );
+
+                if (
+                    ring.isConnected &&
+                    geometry
+                ) {
+                    ring.inset =
+                        `${geometry.collapseInset}px`;
+
+                    ring.width =
+                        "0px";
+
+                    ring.snapGeometry?.();
+                }
+
+                ring.remove();
+            }
+
+            state.oldRings =
+                [];
+
+            if (state.borderRing) {
+                const expanded =
+                    state.borderExpandedGeometry;
+
+                state.borderRing.inset =
+                    `${expanded.inset}px`;
+
+                state.borderRing.width =
+                    `${expanded.width}px`;
+
+                state.borderRing.snapGeometry?.();
+            }
+
+            if (
+                state.transitionWaveRing
+            ) {
+                const expanded =
+                    state.borderExpandedGeometry;
+
+                state.transitionWaveRing.inset =
+                    `${expanded.inset}px`;
+
+                state.transitionWaveRing.width =
+                    `${expanded.width}px`;
+
+                state.transitionWaveRing.snapGeometry?.();
+            }
+
+            this.#startTimerTypeIndicatorInward(
+                state
+            );
+
+            state.phaseTimeout =
+                setTimeout(
+                    () => {
+                        state.phaseTimeout =
+                            undefined;
+
+                        this.#startTimerTypeTransitionSweep(
+                            state
+                        );
+                    },
+                    state.timing?.inward ??
+                        750
+                );
+        }
+
+        #startTimerTypeTransitionSweep(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            this.#clearTimerTypePhaseTimeout(
+                state
+            );
+
+            state.phase =
+                "sweep";
+
+            if (
+                state.transitionWaveRange
+            ) {
+                state.transitionWaveRange.style.setProperty(
+                    "--timer-type-transition-wave-play-state",
+                    "running"
+                );
+            }
+
+            this.#startTimerTypeIndicatorCatchup(
+                state
+            );
+
+            state.phaseTimeout =
+                setTimeout(
+                    () => {
+                        state.phaseTimeout =
+                            undefined;
+
+                        this.#startTimerTypeIndicatorOutward(
+                            state
+                        );
+                    },
+                    state.timing?.sweep ??
+                        750
+                );
+        }
+
+        #startTimerTypeIndicatorOutward(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            this.#clearTimerTypePhaseTimeout(
+                state
+            );
+
+            state.phase =
+                "reveal";
+
+            const duration =
+                state.timing?.reveal ??
+                750;
+
+            this.#prepareTimerTypeNormalWave(
+                state
+            );
+
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
+
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
+            }
+
+            try {
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    const target =
+                        state.targetGeometry.get(
+                            ring
+                        );
+
+                    if (
+                        !ring.isConnected ||
+                        !target
+                    ) {
+                        continue;
+                    }
+
+                    if (
+                        !state.newRingResizeDurations.has(
+                            ring
+                        )
+                    ) {
+                        state.newRingResizeDurations.set(
+                            ring,
+                            ring.resizeDuration
+                        );
+                    }
+
+                    ring.resizeDuration =
+                        `${duration}ms`;
+
+                    ring.inset =
+                        `${target.inset}px`;
+
+                    ring.width =
+                        target.widthValue;
+                }
+
+                if (state.borderRing) {
+                    const target =
+                        state.borderTargetGeometry;
+
+                    state.borderRing.resizeDuration =
+                        `${duration}ms`;
+
+                    state.borderRing.inset =
+                        `${target.inset}px`;
+
+                    state.borderRing.width =
+                        target.widthValue ??
+                        `${target.width}px`;
+                }
+
+                if (
+                    state.transitionWaveRing
+                ) {
+                    const target =
+                        state.borderTargetGeometry;
+
+                    state.transitionWaveRing.resizeDuration =
+                        `${duration}ms`;
+
+                    state.transitionWaveRing.inset =
+                        `${target.inset}px`;
+
+                    state.transitionWaveRing.width =
+                        target.widthValue ??
+                        `${target.width}px`;
+                }
+            }
+            finally {
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
+                }
+            }
+
+            if (
+                state.transitionWaveRange
+            ) {
+                state.transitionWaveOpacityAnimation
+                    ?.cancel();
+
+                if (
+                    typeof state.transitionWaveRange.animate ===
+                        "function"
+                ) {
+                    const animation =
+                        state.transitionWaveRange.animate(
+                            [
+                                { opacity: "1" },
+                                { opacity: "0" }
+                            ],
+                            {
+                                duration,
+                                easing:
+                                    "ease-in-out",
+                                fill: "both"
+                            }
+                        );
+
+                    state.transitionWaveOpacityAnimation =
+                        animation;
+                }
+                else {
+                    state.transitionWaveRange.style.opacity =
+                        "0";
+                }
+            }
+
+            this.#startTimerTypeIndicatorOutwardMotion(
+                state
+            );
+
+            const refresh =
+                () => {
+                    if (
+                        state !==
+                            this.#timerTypeTransitionState ||
+                        state.phase !==
+                            "reveal"
+                    ) {
+                        state.geometryFrame =
+                            undefined;
+
+                        return;
+                    }
+
+                    this.#syncWaveRange();
+
+                    state.geometryFrame =
+                        requestAnimationFrame(
+                            refresh
+                        );
+                };
+
+            state.geometryFrame =
+                requestAnimationFrame(
+                    refresh
+                );
+
+            state.phaseTimeout =
+                setTimeout(
+                    () => {
+                        state.phaseTimeout =
+                            undefined;
+
+                        this.#finishTimerTypeTransition(
+                            state
+                        );
+                    },
+                    duration
+                );
+        }
+
+        #finishTimerTypeTransition(
+            state
+        ) {
+            if (
+                state !==
+                    this.#timerTypeTransitionState
+            ) {
+                return;
+            }
+
+            this.#clearTimerTypePhaseTimeout(
+                state
+            );
+
+            if (
+                state.geometryFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    state.geometryFrame
+                );
+
+                state.geometryFrame =
+                    undefined;
+            }
+
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
+
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
+            }
+
+            try {
+                for (
+                    const ring of
+                        state.newRings
+                ) {
+                    const target =
+                        state.targetGeometry.get(
+                            ring
+                        );
+
+                    if (
+                        !ring.isConnected ||
+                        !target
+                    ) {
+                        continue;
+                    }
+
+                    ring.inset =
+                        `${target.inset}px`;
+
+                    ring.width =
+                        target.widthValue;
+
+                    ring.snapGeometry?.();
+
+                    ring.inset =
+                        undefined;
+
+                    ring.snapGeometry?.();
+
+                    if (
+                        state.newRingResizeDurations.has(
+                            ring
+                        )
+                    ) {
+                        ring.resizeDuration =
+                            state.newRingResizeDurations.get(
+                                ring
+                            );
+                    }
+
+                    delete ring.clockTimerTargetWidth;
+                    delete ring.clockTimerTransitionNew;
+
+                    ring.style.removeProperty(
+                        "z-index"
+                    );
+                }
+
+                if (state.borderRing) {
+                    const target =
+                        state.borderTargetGeometry;
+
+                    state.borderRing.resizeDuration =
+                        "0ms";
+
+                    state.borderRing.inset =
+                        `${target.inset}px`;
+
+                    state.borderRing.width =
+                        target.widthValue ??
+                        `${target.width}px`;
+
+                    state.borderRing.snapGeometry?.();
+
+                    state.borderRing.inset =
+                        state.borderOriginalInset;
+
+                    state.borderRing.width =
+                        state.borderOriginalWidth;
+
+                    state.borderRing.snapGeometry?.();
+
+                    state.borderRing.resizeDuration =
+                        state.borderOriginalResizeDuration;
+                }
+            }
+            finally {
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
+                }
+            }
+
+            this.#removeTimerTypeTransitionWave(
+                state
+            );
+
             state.indicatorInwardAnimation
                 ?.cancel();
 
@@ -14177,20 +15009,19 @@
                 ?.cancel();
 
             if (
-                state.indicatorOutwardTimeout !==
-                    undefined
+                state.indicatorTrackAnimation
             ) {
-                clearTimeout(
-                    state.indicatorOutwardTimeout
-                );
+                const angle =
+                    this.#getIndicatorTrackAngle();
 
-                state.indicatorOutwardTimeout =
+                state.indicatorTrackAnimation.cancel();
+
+                this.#indicatorTrack.style.transform =
+                    `rotate(${angle}deg)`;
+
+                state.indicatorTrackAnimation =
                     undefined;
             }
-
-            this.#finishTimerTypeTransitionVisualFade(
-                state
-            );
 
             if (this.#indicatorSymbol) {
                 this.#indicatorSymbol.style.removeProperty(
@@ -14209,273 +15040,19 @@
                 false
             );
 
-            this.#finishStateChangeVisuals(
-                state.stateChangeVisual
-            );
+            state.ringsFinished =
+                true;
 
-            this.#timerTypeTransitionState =
-                undefined;
+            state.phase =
+                "quiet";
 
-            this.#scheduleWaveResumeAfterTimerTypeTransition(
-                state
-            );
-
-            this.#updateIndicatorSymbol();
-        }
-
-        #startTimerTypeIndicatorCatchup(
-            state
-        ) {
-            if (
-                state !==
-                    this.#timerTypeTransitionState
-            ) {
-                return;
-            }
-
-            const indicatorAvailable =
-                state.indicatorUsed &&
-                this.hasAttribute(
-                    "indicator-symbol"
-                ) &&
-                this.#started &&
-                Boolean(
-                    this.#indicatorTrack
-                );
-
-            if (!indicatorAvailable) {
-                state.indicatorDelayTimeout =
-                    setTimeout(
-                        () => {
-                            state.indicatorDelayTimeout =
-                                undefined;
-
-                            if (
-                                state !==
-                                    this.#timerTypeTransitionState
-                            ) {
-                                return;
-                            }
-
-                            this.#startTimerTypeIndicatorOutward(
-                                state
-                            );
-                        },
-                        1500
-                    );
-
-                return;
-            }
-
-            state.indicatorDelayTimeout =
-                setTimeout(
-                    () => {
-                        state.indicatorDelayTimeout =
-                            undefined;
-
-                        if (
-                            state !==
-                                this.#timerTypeTransitionState ||
-                            !this.#started
-                        ) {
-                            return;
-                        }
-
-                        const duration =
-                            750;
-
-                        const startAngle =
-                            this.#getIndicatorTrackAngle();
-
-                        const targetTime =
-                            this.#getCurrentTimelineTime(
-                                new Date(
-                                    Date.now() +
-                                    duration
-                                )
-                            );
-
-                        const targetAngle =
-                            this.#getIndicatorAngleForTime(
-                                targetTime
-                            );
-
-                        if (
-                            !Number.isFinite(
-                                targetAngle
-                            )
-                        ) {
-                            this.#startTimerTypeIndicatorOutward(
-                                state
-                            );
-
-                            return;
-                        }
-
-                        const delta =
-                            (
-                                targetAngle -
-                                startAngle +
-                                360
-                            ) %
-                            360;
-
-                        const endAngle =
-                            startAngle +
-                            delta;
-
-                        if (
-                            typeof this.#indicatorTrack.animate !==
-                                "function" ||
-                            delta === 0
-                        ) {
-                            this.#indicatorTrack.style.transform =
-                                `rotate(${targetAngle}deg)`;
-
-                            this.#startTimerTypeIndicatorOutward(
-                                state
-                            );
-
-                            return;
-                        }
-
-                        const animation =
-                            this.#indicatorTrack.animate(
-                                [
-                                    {
-                                        transform:
-                                            `rotate(${startAngle}deg)`
-                                    },
-                                    {
-                                        transform:
-                                            `rotate(${endAngle}deg)`
-                                    }
-                                ],
-                                {
-                                    duration,
-                                    easing:
-                                        "ease-in-out",
-                                    fill: "both"
-                                }
-                            );
-
-                        state.indicatorTrackAnimation =
-                            animation;
-
-                        animation.finished.then(
-                            () => {
-                                if (
-                                    state !==
-                                        this.#timerTypeTransitionState
-                                ) {
-                                    return;
-                                }
-
-                                this.#indicatorTrack.style.transform =
-                                    `rotate(${targetAngle}deg)`;
-
-                                animation.cancel();
-
-                                state.indicatorTrackAnimation =
-                                    undefined;
-
-                                this.#startTimerTypeIndicatorOutward(
-                                    state
-                                );
-                            },
-                            () => {}
-                        );
-                    },
-                    750
-                );
-        }
-
-        #finishTimerTypeTransition(
-            state
-        ) {
-            if (
-                state !==
-                    this.#timerTypeTransitionState
-            ) {
-                return;
-            }
-
-            if (
-                state.geometryFrame !==
-                    undefined
-            ) {
-                cancelAnimationFrame(
-                    state.geometryFrame
-                );
-
-                state.geometryFrame =
-                    undefined;
-            }
-
-            if (
-                state.collapseFrame !==
-                    undefined
-            ) {
-                cancelAnimationFrame(
-                    state.collapseFrame
-                );
-
-                state.collapseFrame =
-                    undefined;
-            }
+            this.#timerTypeTransitioning =
+                false;
 
             const now =
                 this.#started
                     ? this.#getCurrentTimelineTime()
                     : state.referenceTime;
-
-            if (
-                this.#getTimerType() ===
-                    "radial-fitted"
-            ) {
-                this.#refreshRadialFittedLayouts(
-                    now,
-                    {
-                        suspendLayout:
-                            false
-                    }
-                );
-            }
-
-            for (
-                const ring of
-                    state.newRings
-            ) {
-                if (!ring.isConnected) {
-                    continue;
-                }
-
-                ring.inset =
-                    undefined;
-
-                ring.snapGeometry?.();
-
-                delete ring.clockTimerTargetWidth;
-                delete ring.clockTimerTransitionNew;
-
-                ring.style.removeProperty(
-                    "z-index"
-                );
-            }
-
-            for (
-                const ring of
-                    state.oldRings
-            ) {
-                ring.remove();
-            }
-
-            state.oldRings = [];
-            state.ringsFinished =
-                true;
-
-            this.#timerTypeTransitioning =
-                false;
 
             this.#refreshRingLayout(
                 now,
@@ -14485,9 +15062,18 @@
                 }
             );
 
+            this.#syncWaveRange();
             this.#updateIndicatorSymbol();
 
-            this.#startTimerTypeIndicatorCatchup(
+            this.#scheduleWaveResumeAfterTimerTypeTransition(
+                state
+            );
+        }
+
+        #releaseTimerTypeIndicator(
+            state
+        ) {
+            this.#finishTimerTypeTransition(
                 state
             );
         }
@@ -14514,6 +15100,10 @@
                 return;
             }
 
+            this.#clearTimerTypePhaseTimeout(
+                state
+            );
+
             if (
                 state.startFrame !==
                     undefined
@@ -14521,6 +15111,9 @@
                 cancelAnimationFrame(
                     state.startFrame
                 );
+
+                state.startFrame =
+                    undefined;
             }
 
             if (
@@ -14530,6 +15123,9 @@
                 cancelAnimationFrame(
                     state.geometryFrame
                 );
+
+                state.geometryFrame =
+                    undefined;
             }
 
             if (
@@ -14539,6 +15135,9 @@
                 cancelAnimationFrame(
                     state.collapseFrame
                 );
+
+                state.collapseFrame =
+                    undefined;
             }
 
             if (
@@ -14548,15 +15147,9 @@
                 clearTimeout(
                     state.cleanupTimeout
                 );
-            }
 
-            if (
-                state.indicatorDelayTimeout !==
-                    undefined
-            ) {
-                clearTimeout(
-                    state.indicatorDelayTimeout
-                );
+                state.cleanupTimeout =
+                    undefined;
             }
 
             state.indicatorInwardAnimation
@@ -14566,18 +15159,23 @@
                 ?.cancel();
 
             if (
-                state.indicatorOutwardTimeout !==
-                    undefined
+                state.indicatorTrackAnimation
             ) {
-                clearTimeout(
-                    state.indicatorOutwardTimeout
-                );
+                const angle =
+                    this.#getIndicatorTrackAngle();
 
-                state.indicatorOutwardTimeout =
+                state.indicatorTrackAnimation.cancel();
+
+                if (this.#indicatorTrack) {
+                    this.#indicatorTrack.style.transform =
+                        `rotate(${angle}deg)`;
+                }
+
+                state.indicatorTrackAnimation =
                     undefined;
             }
 
-            this.#finishTimerTypeTransitionVisualFade(
+            this.#removeTimerTypeTransitionWave(
                 state
             );
 
@@ -14591,91 +15189,132 @@
                 );
             }
 
-            if (
-                state.indicatorTrackAnimation
-            ) {
-                const angle =
-                    this.#getIndicatorTrackAngle();
+            const RingContainerClass =
+                customElements.get(
+                    "ring-container"
+                );
 
-                state.indicatorTrackAnimation.cancel();
-
-                this.#indicatorTrack.style.transform =
-                    `rotate(${angle}deg)`;
+            if (RingContainerClass) {
+                RingContainerClass.batchResizing =
+                    true;
             }
 
-            if (commit) {
-                for (
-                    const ring of
-                        state.oldRings
-                ) {
-                    const geometry =
-                        state.oldGeometry.get(
-                            ring
-                        );
-
-                    if (
-                        ring.isConnected &&
-                        geometry
+            try {
+                if (commit) {
+                    for (
+                        const ring of
+                            state.oldRings
                     ) {
-                        ring.inset =
-                            `${geometry.collapseInset}px`;
+                        const geometry =
+                            state.oldGeometry.get(
+                                ring
+                            );
 
-                        ring.width =
-                            "0px";
+                        if (
+                            ring.isConnected &&
+                            geometry
+                        ) {
+                            ring.resizeDuration =
+                                "0ms";
 
-                        ring.snapGeometry?.();
+                            ring.inset =
+                                `${geometry.collapseInset}px`;
+
+                            ring.width =
+                                "0px";
+
+                            ring.snapGeometry?.();
+                        }
+
+                        ring.remove();
+                    }
+
+                    for (
+                        const ring of
+                            state.newRings
+                    ) {
+                        const target =
+                            state.targetGeometry.get(
+                                ring
+                            );
+
+                        if (
+                            ring.isConnected &&
+                            target
+                        ) {
+                            ring.resizeDuration =
+                                "0ms";
+
+                            ring.inset =
+                                `${target.inset}px`;
+
+                            ring.width =
+                                target.widthValue;
+
+                            ring.snapGeometry?.();
+
+                            ring.inset =
+                                undefined;
+
+                            ring.snapGeometry?.();
+                        }
+
+                        if (
+                            state.newRingResizeDurations.has(
+                                ring
+                            )
+                        ) {
+                            ring.resizeDuration =
+                                state.newRingResizeDurations.get(
+                                    ring
+                                );
+                        }
+
+                        delete ring.clockTimerTargetWidth;
+                        delete ring.clockTimerTransitionNew;
+
+                        ring.style.removeProperty(
+                            "z-index"
+                        );
                     }
                 }
 
-                for (
-                    const ring of
-                        state.newRings
-                ) {
-                    const target =
-                        state.targetGeometry.get(
-                            ring
-                        );
+                if (state.borderRing) {
+                    state.borderRing.resizeDuration =
+                        "0ms";
 
-                    if (
-                        ring.isConnected &&
-                        target
-                    ) {
-                        ring.inset =
-                            `${target.inset}px`;
+                    state.borderRing.inset =
+                        state.borderOriginalInset;
 
-                        ring.width =
-                            target.widthValue;
+                    state.borderRing.width =
+                        state.borderOriginalWidth;
 
-                        ring.snapGeometry?.();
+                    state.borderRing.snapGeometry?.();
 
-                        ring.inset =
-                            undefined;
-
-                        ring.snapGeometry?.();
-                    }
-
-                    delete ring.clockTimerTargetWidth;
-                    delete ring.clockTimerTransitionNew;
-
-                    ring.style.removeProperty(
-                        "z-index"
-                    );
+                    state.borderRing.resizeDuration =
+                        state.borderOriginalResizeDuration;
                 }
-
-                for (
-                    const ring of
-                        state.oldRings
-                ) {
-                    ring.remove();
+            }
+            finally {
+                if (RingContainerClass) {
+                    RingContainerClass.batchResizing =
+                        false;
                 }
             }
 
-            if (
-                state.stateChangeVisual ===
-                    this.#stateChangeVisualState
-            ) {
-                this.#cancelStateChangeVisuals(
-                    false
+            state.holdNormalWave =
+                false;
+
+            this.#waveSuppressed =
+                false;
+
+            if (this.#waveRange) {
+                this.#waveRange.style.removeProperty(
+                    "opacity"
+                );
+
+                this.#waveRange.style.removeProperty(
+                    "--elapsed-wave-play-state"
                 );
             }
 
@@ -14707,6 +15346,8 @@
                             true
                     }
                 );
+
+                this.#syncWaveRange();
             }
         }
 
@@ -14722,6 +15363,13 @@
 
             state.startFrame =
                 undefined;
+
+            state.phase =
+                "collapse";
+
+            const duration =
+                state.timing?.collapse ??
+                333;
 
             const RingContainerClass =
                 customElements.get(
@@ -14747,6 +15395,9 @@
                         continue;
                     }
 
+                    ring.resizeDuration =
+                        `${duration}ms`;
+
                     ring.inset =
                         `${geometry.collapseInset}px`;
 
@@ -14754,24 +15405,34 @@
                         "0px";
                 }
 
-                for (
-                    const ring of
-                        state.newRings
+                if (state.borderRing) {
+                    const expanded =
+                        state.borderExpandedGeometry;
+
+                    state.borderRing.resizeDuration =
+                        `${duration}ms`;
+
+                    state.borderRing.inset =
+                        `${expanded.inset}px`;
+
+                    state.borderRing.width =
+                        `${expanded.width}px`;
+                }
+
+                if (
+                    state.transitionWaveRing
                 ) {
-                    const target =
-                        state.targetGeometry.get(
-                            ring
-                        );
+                    const expanded =
+                        state.borderExpandedGeometry;
 
-                    if (!target) {
-                        continue;
-                    }
+                    state.transitionWaveRing.resizeDuration =
+                        `${duration}ms`;
 
-                    ring.inset =
-                        `${target.inset}px`;
+                    state.transitionWaveRing.inset =
+                        `${expanded.inset}px`;
 
-                    ring.width =
-                        target.widthValue;
+                    state.transitionWaveRing.width =
+                        `${expanded.width}px`;
                 }
             }
             finally {
@@ -14781,136 +15442,60 @@
                 }
             }
 
-            const animatedRings =
-                new Set([
-                    ...state.oldRings,
-                    ...state.newRings,
-                    ...Array.from(
-                        this.children
-                    ).filter(
-                        element =>
-                            element.localName ===
-                                "ring-container" &&
-                            element.clockTimerLayoutDetached !==
-                                true
-                    )
-                ]);
+            if (
+                state.transitionWaveRange
+            ) {
+                state.transitionWaveOpacityAnimation
+                    ?.cancel();
 
-            const maximumDuration =
-                Math.max(
-                    0,
-                    ...Array.from(
-                        animatedRings
-                    ).map(
-                        ring =>
-                            this.#getTimerTypeRingAnimationDuration(
-                                ring
-                            )
-                    )
-                );
-
-            state.maximumDuration =
-                maximumDuration;
-
-            this.#startTimerTypeIndicatorInward(
-                state
-            );
-
-            const refresh =
-                () => {
-                    if (
-                        state !==
-                            this.#timerTypeTransitionState ||
-                        state.ringsFinished
-                    ) {
-                        state.geometryFrame =
-                            undefined;
-
-                        return;
-                    }
-
-                    const now =
-                        this.#started
-                            ? this.#getCurrentTimelineTime()
-                            : state.referenceTime;
-
-                    if (
-                        this.#getTimerType() ===
-                            "radial-fitted"
-                    ) {
-                        this.#refreshRadialFittedLayouts(
-                            now,
+                if (
+                    typeof state.transitionWaveRange.animate ===
+                        "function"
+                ) {
+                    state.transitionWaveOpacityAnimation =
+                        state.transitionWaveRange.animate(
+                            [
+                                { opacity: "0" },
+                                { opacity: "1" }
+                            ],
                             {
-                                suspendLayout:
-                                    false
+                                duration,
+                                easing:
+                                    "ease-in-out",
+                                fill: "both"
                             }
                         );
-                    }
+                }
+                else {
+                    state.transitionWaveRange.style.opacity =
+                        "1";
+                }
+            }
 
-                    this.#syncWaveRange();
-                    this.#updateIndicatorSymbol();
-
-                    state.geometryFrame =
-                        requestAnimationFrame(
-                            refresh
-                        );
-                };
-
-            state.geometryFrame =
-                requestAnimationFrame(
-                    refresh
-                );
-
-            state.cleanupTimeout =
+            state.phaseTimeout =
                 setTimeout(
                     () => {
-                        state.cleanupTimeout =
+                        state.phaseTimeout =
                             undefined;
 
-                        const waitForCollapse =
-                            () => {
-                                if (
-                                    state !==
-                                        this.#timerTypeTransitionState
-                                ) {
-                                    return;
-                                }
+                        if (
+                            state.transitionWaveRange
+                        ) {
+                            state.transitionWaveRange.style.opacity =
+                                "1";
 
-                                const collapsed =
-                                    state.oldRings.every(
-                                        ring =>
-                                            !ring.isConnected ||
-                                            this.#resolveTimerTypeTransitionLength(
-                                                ring.renderedWidth ??
-                                                "0px",
-                                                ring
-                                            ) <=
-                                                0.05
-                                    );
+                            state.transitionWaveOpacityAnimation
+                                ?.cancel();
 
-                                if (!collapsed) {
-                                    state.collapseFrame =
-                                        requestAnimationFrame(
-                                            waitForCollapse
-                                        );
+                            state.transitionWaveOpacityAnimation =
+                                undefined;
+                        }
 
-                                    return;
-                                }
-
-                                state.collapseFrame =
-                                    undefined;
-
-                                this.#finishTimerTypeTransition(
-                                    state
-                                );
-                            };
-
-                        state.collapseFrame =
-                            requestAnimationFrame(
-                                waitForCollapse
-                            );
+                        this.#startTimerTypeTransitionHold(
+                            state
+                        );
                     },
-                    maximumDuration
+                    duration
                 );
         }
 
@@ -14925,28 +15510,12 @@
             this.#cancelTimerModeTransition();
             this.#cancelTimeRangeTimingAnimations();
 
-            const delayOverflowWaves =
-                previousType ===
-                    "radial-fitted" &&
-                timerType ===
-                    "radial-overflow";
-
             this.#cancelWaveResumeDelay();
 
             this.#waveSuppressed =
-                delayOverflowWaves;
+                true;
 
-            if (delayOverflowWaves) {
-                this.#removeWaveRange();
-            }
-
-            const stateChangeVisual =
-                this.#beginStateChangeVisuals();
-
-            if (stateChangeVisual) {
-                stateChangeVisual.timerTypeTransition =
-                    true;
-            }
+            this.#removeWaveRange();
 
             const oldRings =
                 this.#getTimerRings()
@@ -14956,6 +15525,9 @@
                     );
 
             if (oldRings.length === 0) {
+                this.#waveSuppressed =
+                    false;
+
                 const now =
                     this.#started
                         ? this.#getCurrentTimelineTime()
@@ -14968,6 +15540,8 @@
                             true
                     }
                 );
+
+                this.#syncWaveRange();
 
                 return;
             }
@@ -14982,7 +15556,8 @@
 
             const state = {
                 token,
-                stateChangeVisual,
+                borderHandoff:
+                    true,
                 previousType,
                 timerType,
                 oldRings:
@@ -14991,6 +15566,8 @@
                 oldGeometry:
                     new Map(),
                 targetGeometry:
+                    new Map(),
+                newRingResizeDurations:
                     new Map(),
                 referenceTime:
                     this.#getTimerTypeTransitionReferenceTime(
@@ -15005,15 +15582,20 @@
                         this.#indicatorSymbol
                     ),
                 ringsFinished:
-                    false
+                    false,
+                holdNormalWave:
+                    false,
+                timing: {
+                    collapse: 333,
+                    inward: 750,
+                    sweep: 750,
+                    reveal: 750,
+                    quiet: 2000
+                }
             };
 
             this.#timerTypeTransitionState =
                 state;
-
-            this.#stripTimerTypeTransitionOldVisualRanges(
-                oldRings
-            );
 
             this.#timerTypeTransitioning =
                 true;
@@ -15115,14 +15697,6 @@
                         ) {
                             range.timeRangeExiting =
                                 true;
-
-                            // The target layout is rendered from snapshots
-                            // during the same transition. Keep the old ring
-                            // shell for its radial collapse, but do not paint
-                            // a second angular representation of the same
-                            // logical range.
-                            range.style.visibility =
-                                "hidden";
                         }
                     }
                 }
@@ -15263,12 +15837,24 @@
                                 : -target.width / 2
                         );
 
+                    state.newRingResizeDurations.set(
+                        ring,
+                        ring.resizeDuration
+                    );
+
+                    ring.resizeDuration =
+                        "0ms";
+
                     ring.inset =
                         `${initialInset}px`;
 
                     ring.width =
                         "0px";
                 }
+
+                this.#prepareTimerTypeBorderHandoff(
+                    state
+                );
             }
             finally {
                 this.#timerTypeTransitionBuilding =
@@ -15304,11 +15890,6 @@
                 );
             }
 
-            this.#activateStateChangeVisuals(
-                stateChangeVisual
-            );
-
-            this.#syncWaveRange();
             this.#updateIndicatorSymbol();
 
             state.startFrame =
@@ -17598,10 +18179,8 @@
             state
         ) {
             if (
-                state?.previousType !==
-                    "radial-fitted" ||
-                state?.timerType !==
-                    "radial-overflow"
+                state !==
+                    this.#timerTypeTransitionState
             ) {
                 return;
             }
@@ -17618,10 +18197,11 @@
             const token =
                 ++this.#waveResumeToken;
 
-            this.#waveSuppressed =
+            state.holdNormalWave =
                 true;
 
-            this.#removeWaveRange();
+            this.#waveSuppressed =
+                false;
 
             this.#waveResumeTimeout =
                 setTimeout(
@@ -17631,10 +18211,15 @@
 
                         if (
                             token !==
-                                this.#waveResumeToken
+                                this.#waveResumeToken ||
+                            state !==
+                                this.#timerTypeTransitionState
                         ) {
                             return;
                         }
+
+                        state.holdNormalWave =
+                            false;
 
                         this.#waveSuppressed =
                             false;
@@ -17645,8 +18230,24 @@
                         ) {
                             this.#syncWaveRange();
                         }
+
+                        if (this.#waveRange) {
+                            this.#waveRange.style.removeProperty(
+                                "opacity"
+                            );
+
+                            this.#waveRange.style.removeProperty(
+                                "--elapsed-wave-play-state"
+                            );
+                        }
+
+                        this.#timerTypeTransitionState =
+                            undefined;
+
+                        this.#updateIndicatorSymbol();
                     },
-                    2000
+                    state.timing?.quiet ??
+                        2000
                 );
         }
 
@@ -17745,6 +18346,24 @@
                 range.timeRangeFullEntry =
                     true;
 
+                const transitionState =
+                    this.#timerTypeTransitionState;
+
+                if (
+                    transitionState?.borderHandoff ===
+                        true &&
+                    transitionState.holdNormalWave ===
+                        true
+                ) {
+                    range.style.opacity =
+                        "0";
+
+                    range.style.setProperty(
+                        "--elapsed-wave-play-state",
+                        "paused"
+                    );
+                }
+
                 ring.appendChild(
                     range
                 );
@@ -17760,6 +18379,24 @@
                     range.hasAttribute(
                         "range-length"
                     )
+                );
+            }
+
+            const transitionState =
+                this.#timerTypeTransitionState;
+
+            if (
+                transitionState?.borderHandoff ===
+                    true &&
+                transitionState.holdNormalWave ===
+                    true
+            ) {
+                range.style.opacity =
+                    "0";
+
+                range.style.setProperty(
+                    "--elapsed-wave-play-state",
+                    "paused"
                 );
             }
 
