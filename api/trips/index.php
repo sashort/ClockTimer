@@ -244,8 +244,8 @@ if ($method === 'GET') {
             if ($verbose) {
                 $trip['userId'] = (int) $row['user_id'];
                 $trip['createdAt'] = (string) $row['created_at'];
-                $trip['intervalCount'] = 0;
-                $trip['intervals'] = [];
+                $trip['eventCount'] = 0;
+                $trip['events'] = [];
                 $tripIndexes[$tripId] = count($trips);
             }
 
@@ -253,92 +253,60 @@ if ($method === 'GET') {
         }
 
         if ($verbose && $tripIndexes !== []) {
-            $intervalParameters = [];
+            $eventParameters = [];
             $placeholders = [];
 
             foreach (array_keys($tripIndexes) as $index => $tripId) {
                 $placeholder = ':trip_id_' . $index;
                 $placeholders[] = $placeholder;
-                $intervalParameters[$placeholder] = $tripId;
+                $eventParameters[$placeholder] = $tripId;
             }
 
-            $intervalStatement = db()->prepare(
-                'SELECT i.trip_id, i.id, i.type, i.start_time, i.end_time, '
-                . 'a.id AS attribute_id, a.name AS attribute_name, a.value AS attribute_value '
-                . 'FROM intervals i '
-                . 'LEFT JOIN attributes a ON a.interval_id = i.id '
-                . 'WHERE i.trip_id IN (' . implode(', ', $placeholders) . ') '
-                . 'ORDER BY i.trip_id ASC, i.start_time ASC, i.id ASC, a.id ASC'
+            $eventStatement = db()->prepare(
+                'SELECT trip_id, id, event, `timestamp`, value, client_token, created_at '
+                . 'FROM trip_events '
+                . 'WHERE trip_id IN (' . implode(', ', $placeholders) . ') '
+                . 'ORDER BY trip_id ASC, `timestamp` ASC, id ASC'
             );
-            $intervalStatement->execute($intervalParameters);
+            $eventStatement->execute($eventParameters);
 
-            $intervalIndexes = [];
-
-            while ($row = $intervalStatement->fetch()) {
+            while ($row = $eventStatement->fetch()) {
                 $tripId = (int) $row['trip_id'];
-                $intervalId = (int) $row['id'];
                 $tripIndex = $tripIndexes[$tripId];
 
-                if (!isset($intervalIndexes[$tripId][$intervalId])) {
-                    $intervalIndex = count($trips[$tripIndex]['intervals']);
-                    $intervalIndexes[$tripId][$intervalId] = $intervalIndex;
-
-                    $trips[$tripIndex]['intervals'][] = [
-                        'id' => $intervalId,
-                        'type' => (string) $row['type'],
-                        'startTime' => (string) $row['start_time'],
-                        'endTime' => $row['end_time'] === null
-                            ? null
-                            : (string) $row['end_time'],
-                        'attributes' => [],
-                    ];
+                try {
+                    $value = json_decode(
+                        (string) $row['value'],
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    );
+                }
+                catch (Throwable) {
+                    api_error(
+                        'Stored trip event value is invalid JSON.',
+                        500,
+                        'invalid_event_value'
+                    );
                 }
 
-                if ($row['attribute_id'] !== null) {
-                    $intervalIndex = $intervalIndexes[$tripId][$intervalId];
-                    $trips[$tripIndex]['intervals'][$intervalIndex]['attributes'][
-                        (string) $row['attribute_name']
-                    ] = (string) $row['attribute_value'];
-                }
+                $trips[$tripIndex]['events'][] = [
+                    'id' => (int) $row['id'],
+                    'event' => (string) $row['event'],
+                    'timestamp' => (string) $row['timestamp'],
+                    'value' => $value,
+                    'clientToken' => $row['client_token'] === null
+                        ? null
+                        : (string) $row['client_token'],
+                    'createdAt' => (string) $row['created_at'],
+                ];
             }
 
             foreach ($tripIndexes as $tripId => $tripIndex) {
-                $trips[$tripIndex]['intervalCount'] = count(
-                    $trips[$tripIndex]['intervals']
+                $trips[$tripIndex]['eventCount'] = count(
+                    $trips[$tripIndex]['events']
                 );
             }
-
-            foreach ($trips as &$trip) {
-                foreach ($trip['intervals'] as &$interval) {
-                    $attributes = $interval['attributes'] ?? [];
-                    $actualEnd = $attributes['clock-timer-actual-end'] ?? null;
-                    $earlyStartEnd = $attributes['clock-timer-early-start-end'] ?? null;
-
-                    if (!is_string($actualEnd) || !is_string($earlyStartEnd)) {
-                        continue;
-                    }
-
-                    try {
-                        $actual = new DateTimeImmutable($actualEnd);
-                        $derivedEnd = new DateTimeImmutable($earlyStartEnd);
-                    }
-                    catch (Throwable) {
-                        continue;
-                    }
-
-                    if ($derivedEnd <= $actual) {
-                        continue;
-                    }
-
-                    $interval['derivedRanges'] = [[
-                        'type' => 'earlystart',
-                        'startTime' => $actualEnd,
-                        'endTime' => $earlyStartEnd,
-                    ]];
-                }
-                unset($interval);
-            }
-            unset($trip);
         }
 
         json_response([
@@ -745,13 +713,12 @@ if ($method === 'DELETE') {
         $trip = require_trip_owner($pdo, $tripId);
         $pending = ((int) ($trip['pending'] ?? 0)) === 1;
 
-        $deleteAttributes = $pdo->prepare(
-            'DELETE a FROM attributes a INNER JOIN intervals i ON i.id = a.interval_id WHERE i.trip_id = :trip_id'
+        $deleteEvents = $pdo->prepare(
+            'DELETE FROM trip_events WHERE trip_id = :trip_id'
         );
-        $deleteAttributes->execute([':trip_id' => $tripId]);
-
-        $deleteIntervals = $pdo->prepare('DELETE FROM intervals WHERE trip_id = :trip_id');
-        $deleteIntervals->execute([':trip_id' => $tripId]);
+        $deleteEvents->execute([
+            ':trip_id' => $tripId,
+        ]);
 
         $deleteTrip = $pdo->prepare('DELETE FROM trips WHERE id = :trip_id AND user_id = :user_id');
         $deleteTrip->execute([
