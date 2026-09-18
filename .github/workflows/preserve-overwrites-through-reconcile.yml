@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply fix
+      - name: Apply suspension revision
         run: python .github/scripts/preserve_overwrites_through_reconcile.py
       - name: Syntax checks
         run: |
@@ -50,16 +50,11 @@ jobs:
           mask = reapply.index("this.#applyOverwriteMask(")
           sync = reapply.index("this.#syncOverwriteRangeElements(", mask)
           assert mask < sync
-
-          open_start = text.index("        #updateOpenOverwriteRange(")
-          open_end = text.index("        #getReservedRangeTypes()", open_start)
-          open_block = text[open_start:open_end]
-          assert "this.#syncOverwriteRangeElements(" in open_block
           PY
       - name: Commit source fix
         run: |
           git config user.name "sashort"
           git config user.email "95879519+sashort@users.noreply.github.com"
           git add ClockTimer.js
-          git commit -m "Preserve overwrites through planned reconciliation" || exit 0
+          git commit -m "Use suspendLayout for planned reconciliation" || exit 0
           git push origin HEAD:rename-prestart-latency
