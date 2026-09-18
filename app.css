@@ -3749,7 +3749,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
     padding-inline: 16px 48px;
 }
 .number-pad-readout.absolute-mode .number-pad-date-row input {
-    order: 0;
+    order: 1;
     flex: 0 1 145px;
     text-align: left;
 }
@@ -3758,9 +3758,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 .number-pad-readout.absolute-mode .number-pad-calendar-icon {
     position: static;
-    order: 1;
+    order: 0;
     flex: 0 0 18px;
-    margin-left: 6px;
+    margin-right: 6px;
 }
 .number-pad-readout.absolute-mode .number-pad-backspace {
     position: relative;
