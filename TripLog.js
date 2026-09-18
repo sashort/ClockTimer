@@ -6,7 +6,8 @@
     const percent = trips => {const standard=trips.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=trips.reduce((a,t)=>a+t.actualTimeMilliseconds,0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     class TripLog {
-        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.editor=null;}
+        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.editor=null;this.settingsVisible=false;}
+        setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));}}
         render(data,calendar) {
             this.calendar=calendar;
             const trips=[...data.trips];const live=this.options.liveTrip?.();
@@ -18,14 +19,16 @@
                 } else if(index>=0) trips.splice(index,1);
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
-            this.trips=trips;const fragment=document.createDocumentFragment();fragment.append(this.controls(calendar));
+            this.trips=trips;const fragment=document.createDocumentFragment();
+            const settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
+            const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);fragment.append(settings);
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips),'trip-log-actual'));
             overview.append(emphasis,node('div',`Standard ${duration(total(trips,'standardTimeMilliseconds'))} · Actual ${duration(total(trips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
             if(!trips.length) fragment.append(node('p',data.loginRequired?'Log in to view saved trips.':'No trips in this range.'));
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
-            fragment.append(this.groups(trips,levels,calendar));this.root.replaceChildren(fragment);
+            fragment.append(this.groups(trips,levels,calendar));this.root.replaceChildren(fragment);this.setSettingsVisible(this.settingsVisible);
         }
         controls(calendar) {
             const box=node('section',undefined,'trip-log-controls');

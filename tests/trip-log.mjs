@@ -9,6 +9,17 @@ const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00'
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
+assert.equal(root.querySelector('.trip-log-settings').getAttribute('aria-hidden'),'true');
+assert(root.querySelector('.trip-log-settings-content').inert);
+view.setSettingsVisible(true);
+assert(root.querySelector('.trip-log-settings').classList.contains('is-open'));
+assert(!root.querySelector('.trip-log-settings-content').inert);
+assert(root.querySelector('.trip-log-settings hr'));
+view.render({trips},calendar);
+assert(root.querySelector('.trip-log-settings').classList.contains('is-open'));
+view.setSettingsVisible(false);
+assert(root.querySelector('.trip-log-settings-content').inert);
+console.log('PASS settings default hidden, toggle with divider, and remain open across data refreshes');
 const dates=root.querySelectorAll('input[type=date]');assert.equal(dates[0].value,'2026-09-05');assert.equal(dates[1].value,'2026-09-18');assert(dates[0].disabled);
 criteria='custom';view.render({trips},calendar);assert(!root.querySelector('input[type=date]').disabled);
 await view.openEntry(trips[1],events[1],events[2]);const first=view.editor.querySelector('.trip-log-edit-field');first.click();await new Promise(r=>setTimeout(r,10));assert.equal(pad.mode,'absolute');await pad.onConfirm('2026-09-18T12:04:00Z');assert(first.textContent.includes(new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'medium'}).format(new Date('2026-09-18T12:04:00Z'))));assert(view.editor.textContent.includes('Remove entry'));

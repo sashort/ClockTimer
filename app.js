@@ -90,6 +90,8 @@
     const syncGoalsMenuIcon = syncGoalsMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
     const tripLogCloseButton = $("#tripLogCloseButton");
+    const tripLogSettingsButton = $("#tripLogSettingsButton");
+    let tripLogSettingsVisible = false;
     const tripLogBody = $("#tripLogBody");
     const goalSyncButton = $("#goalSyncButton");
     const autoGoalDialog = $("#autoGoalDialog");
@@ -680,6 +682,11 @@
 
         tripLogCloseButton.style.top =
             `${rect.top + (rect.height - height) / 2}px`;
+        if (tripLogSettingsButton) {
+            tripLogSettingsButton.style.left = `${rect.left + 8}px`;
+            tripLogSettingsButton.style.top = tripLogCloseButton.style.top;
+            tripLogSettingsButton.style.color = getComputedStyle(tripLogButton).color;
+        }
     }
 
     async function dispatchTripListRequest(
@@ -764,6 +771,7 @@
             }
         });
         tripLogView.render(data,calendar);
+        tripLogView.setSettingsVisible(tripLogSettingsVisible);
     }
 
     function setTripProductionFilter(value, {notify=true}={}) {
@@ -951,7 +959,8 @@
                 [
                     tripLogButton,
                     tripLogBody,
-                    tripLogCloseButton
+                    tripLogCloseButton,
+                    tripLogSettingsButton
                 ]
         ) {
             element?.style.setProperty(
@@ -967,7 +976,8 @@
                 [
                     tripLogButton,
                     tripLogBody,
-                    tripLogCloseButton
+                    tripLogCloseButton,
+                    tripLogSettingsButton
                 ]
         ) {
             element?.style.removeProperty(
@@ -1003,6 +1013,7 @@
 
         tripLogCloseButton.hidden =
             false;
+        tripLogSettingsButton.hidden = false;
 
         requestAnimationFrame(
             () => {
@@ -1012,6 +1023,7 @@
                     tripLogCloseButton.classList.add(
                         "is-visible"
                     );
+                    tripLogSettingsButton.classList.add("is-visible");
                 }
             }
         );
@@ -1033,6 +1045,7 @@
         tripLogCloseButton?.classList.remove(
             "is-visible"
         );
+        tripLogSettingsButton?.classList.remove("is-visible");
 
         tripLogButton?.classList.remove(
             "trip-log-merged"
@@ -1049,6 +1062,7 @@
         if (tripLogCloseButton) {
             tripLogCloseButton.hidden =
                 true;
+            tripLogSettingsButton.hidden = true;
         }
 
         clearTripLogMergeDuration();
@@ -1062,6 +1076,11 @@
         ) {
             return false;
         }
+
+        tripLogSettingsVisible = false;
+        tripLogView?.setSettingsVisible(false);
+        tripLogSettingsButton?.setAttribute("aria-expanded", "false");
+        tripLogSettingsButton?.setAttribute("aria-label", "Show Trip Log settings");
 
         const pinned =
             tripLogIsPinned();
@@ -3812,6 +3831,12 @@
         }
     );
 
+    tripLogSettingsButton?.addEventListener("click", () => {
+        tripLogSettingsVisible = !tripLogSettingsVisible;
+        tripLogSettingsButton.setAttribute("aria-expanded", String(tripLogSettingsVisible));
+        tripLogSettingsButton.setAttribute("aria-label", tripLogSettingsVisible ? "Hide Trip Log settings" : "Show Trip Log settings");
+        tripLogView?.setSettingsVisible(tripLogSettingsVisible);
+    });
     tripLogCloseButton?.addEventListener(
         "click",
         () => {
