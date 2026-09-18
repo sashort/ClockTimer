@@ -4491,7 +4491,7 @@
 
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
-        if (numberPadHasChanges()) return "reset";
+        if (numberPadHasChanges() || (numberPadState.meridiem ?? null) !== (numberPadState.initialMeridiem ?? null)) return "reset";
         if (numberPadState.backTarget === "trip-settings") return "back";
         if (
             numberPadState.role === "root" &&
@@ -5077,6 +5077,15 @@
             if (clockTimer.standardTime !== formatted) return false;
         }
         return true;
+    }
+
+    function eraseNumberPadPendingValue() {
+        if (!numberPadState) return;
+        numberPadState.pending = "";
+        numberPadState.meridiem = undefined;
+        numberPadState.replaceOnNextDigit = false;
+        numberPadState.everEdited = true;
+        refreshNumberPad();
     }
 
     function resetNumberPadPendingValue() {
@@ -5678,11 +5687,7 @@
     function bindNumberPadEvents() {
         const backspace = $("#numberPadBackspace");
         let deleteTimer, held = false;
-        const erase = all => {
-            if (!numberPadState) return;
-            numberPadState.pending = all ? "" : numberPadState.pending.slice(0,-1);
-            numberPadState.replaceOnNextDigit = false;numberPadState.everEdited = true;refreshNumberPad();
-        };
+        const erase = eraseNumberPadPendingValue;
         backspace.addEventListener("pointerdown", event => {
             held = false;backspace.setPointerCapture?.(event.pointerId);
             deleteTimer = setTimeout(() => {held=true;erase(true);}, NUMBER_PAD_LONG_PRESS);

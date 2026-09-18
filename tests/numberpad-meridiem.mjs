@@ -9,8 +9,10 @@ const controller = new Function(`
     ${section('    function absoluteHour24(', '    function absoluteTimelineMilliseconds(')}
     ${section('    function absoluteValuesEqual(', '    function getNumberPadClearAction(')}
     ${section('    function changeNumberPadMeridiem(', '    function formatTripTimeDisplay(')}
+    ${section('    function eraseNumberPadPendingValue(', '    function runNumberPadClearShortAction(')}
     return {set: state => numberPadState = state, changeNumberPadMeridiem,
-        get: () => numberPadState, absoluteHour24, numberPadHasChanges};
+        get: () => numberPadState, absoluteHour24, numberPadHasChanges,
+        eraseNumberPadPendingValue, resetNumberPadPendingValue};
 `)();
 function state(hour, meridiem) {
     return {mode:'absolute', pending:`${hour}4629`, meridiem, pendingDate:'2026-09-18'};
@@ -58,3 +60,26 @@ assert(controller.numberPadHasChanges());assert(controller.get().everEdited);
 controller.changeNumberPadMeridiem('AM');assert.equal(controller.numberPadHasChanges(),false);
 controller.get().pendingDate='2026-09-19';assert(controller.numberPadHasChanges());
 console.log('PASS real AM/PM changes and date changes are detected, and returning to original time clears changes');
+
+for (const initialMeridiem of ['AM', 'PM', undefined]) {
+    const original = {mode:'absolute', initial:'074629', pending:'074629',
+        initialDate:'2026-09-18', pendingDate:'2026-09-18',
+        initialMeridiem, meridiem:initialMeridiem, source:'trip-settings'};
+    controller.set({...original});
+    controller.eraseNumberPadPendingValue();
+    assert.equal(controller.get().pending, '');
+    assert.equal(controller.get().meridiem, undefined);
+    controller.resetNumberPadPendingValue();
+    assert.equal(controller.get().pending, original.initial);
+    assert.equal(controller.get().meridiem, initialMeridiem);
+    controller.get().pending = '084629';
+    controller.get().pendingDate = '2026-09-19';
+    controller.eraseNumberPadPendingValue();
+    assert.equal(controller.get().pending, '');
+    assert.equal(controller.get().meridiem, undefined);
+    controller.resetNumberPadPendingValue();
+    assert.equal(controller.get().pending, original.initial);
+    assert.equal(controller.get().pendingDate, original.initialDate);
+    assert.equal(controller.get().meridiem, initialMeridiem);
+}
+console.log('PASS backspace clears original values and AM/PM; Reset restores AM, PM, or neither');
