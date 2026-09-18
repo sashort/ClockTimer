@@ -2357,7 +2357,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 
 /* reference-pattern-sitewide-v1 */
 :root {
-    --app-document-padding: 0;
+    --app-document-padding: 8px;
     --wm-blue: #0053e2;
     --wm-blue-dark: #001e60;
     --wm-blue-mid: #003b9b;
@@ -2372,7 +2372,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 
 .app {
     margin: 0;
-    padding: 0;
+    padding: var(--app-document-padding);
     background: var(--wm-blue);
 }
 

@@ -694,7 +694,10 @@
     ) {
         const sequence = ++tripLogRequestSequence;
         const range = getTripLogRange();
-        if (tripLogBody) tripLogBody.textContent = "Loading trips…";
+        if (tripLogBody) {
+            tripLogBody.setAttribute("aria-busy", "true");
+            if (!tripLogBody.querySelector('.trip-log-settings')) tripLogBody.textContent = "Loading trips…";
+        }
         try {
             const calendar = await resolveTripLogCalendar(range);
             if (sequence !== tripLogRequestSequence) return;
@@ -737,8 +740,11 @@
         );
         } catch (error) {
             if (sequence !== tripLogRequestSequence) return;
-            if (tripLogBody) tripLogBody.textContent = error.message || "Trip Log is unavailable.";
+            if (tripLogView && tripLogBody?.querySelector('.trip-log-settings')) tripLogView.error(error);
+            else if (tripLogBody) tripLogBody.textContent = error.message || "Trip Log is unavailable.";
             window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
+        } finally {
+            if (sequence === tripLogRequestSequence) tripLogBody?.setAttribute("aria-busy", "false");
         }
     }
 

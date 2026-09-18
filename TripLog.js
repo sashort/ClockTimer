@@ -20,15 +20,26 @@
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
             this.trips=trips;const fragment=document.createDocumentFragment();
-            const settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
-            const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);fragment.append(settings);
+            let settings=this.root.querySelector('.trip-log-settings');
+            const reuseSettings=Boolean(settings);
+            if(!settings){settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
+                const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);
+            } else {
+                const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
+                const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
+                inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=this.options.range()!=='custom';});
+            }
+            if(!reuseSettings)fragment.append(settings);
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips),'trip-log-actual'));
             overview.append(emphasis,node('div',`Standard ${duration(total(trips,'standardTimeMilliseconds'))} · Actual ${duration(total(trips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
             if(!trips.length) fragment.append(node('p',data.loginRequired?'Log in to view saved trips.':'No trips in this range.'));
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
-            fragment.append(this.groups(trips,levels,calendar));this.root.replaceChildren(fragment);this.setSettingsVisible(this.settingsVisible);
+            fragment.append(this.groups(trips,levels,calendar));
+            if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
+            else this.root.replaceChildren(fragment);
+            this.setSettingsVisible(this.settingsVisible);
         }
         controls(calendar) {
             const box=node('section',undefined,'trip-log-controls');
