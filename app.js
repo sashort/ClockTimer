@@ -5908,6 +5908,7 @@
     }
 
     async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
+        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
         const deferredDraft = tripDraft?.deferred ? tripDraft : undefined;
         uiReturnStack.length = 0;
         resetTripSettingsNavigation();
@@ -6209,7 +6210,7 @@
 
         const tripMoment = new Date();
         await clockTimer.stop();
-        await clockTimer.clear();
+        await clockTimer.resetCompletedTrip();
         await beginNewTripWorkflow({
             initialValue: "",
             tripMoment

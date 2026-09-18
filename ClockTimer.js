@@ -4863,6 +4863,29 @@
             return result;
         }
 
+        async resetCompletedTrip() {
+            if (this.#started || !this.#hasStartProperties()) {
+                throw new Error("Only a completed trip can be reset.");
+            }
+            // Finish uploading before releasing the local model and its retry queue.
+            const synced = await this.#protectedSync(async () => {
+                await this.#ensureTripPersisted();
+                await this.#syncTripEvents();
+            });
+            if (!synced) {
+                throw new Error("The completed trip has not been saved. Reconnect and try again.");
+            }
+            const tripId = this.#tripId;
+            if (!this.#clearLocal()) throw new Error("The completed trip could not be reset.");
+            this.#tripId = undefined;
+            this.#preparedTrip = undefined;
+            this.#pendingIntervalRecord = undefined;
+            this.#pendingTripEvents = [];
+            const result = {synced: true, connected: true, tripId, intervalId: undefined};
+            this.#emitClockTimerEvent("cleared", result);
+            return result;
+        }
+
         async clear() {
             const oldTripId = this.#tripId;
             const connected = this.#connectionState === "connected";
