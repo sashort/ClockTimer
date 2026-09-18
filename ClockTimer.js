@@ -4690,6 +4690,14 @@
                     );
                 }
             }
+            catch (error) {
+                this.#clearLocal();
+
+                this.#tripId =
+                    undefined;
+
+                throw error;
+            }
             finally {
                 this.#replayingTripEvents =
                     false;
@@ -5054,6 +5062,8 @@
             const resultTripId = this.#tripId ?? oldTripId;
             this.#tripId = undefined;
             this.#pendingIntervalRecord = undefined;
+            this.#pendingTripEvents =
+                [];
             const result = {
                 synced,
                 connected:
