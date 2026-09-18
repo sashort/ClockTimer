@@ -3,7 +3,7 @@
 --
 -- PHP application responsibilities:
 --   * Authenticate users and retain users.id in the PHP session.
---   * Create trips and intervals with normal INSERT statements.
+--   * Create trips and append trip events with normal INSERT statements.
 --   * Read generated IDs with mysqli_insert_id() / PDO::lastInsertId().
 --   * Before audited writes on a connection, set:
 --       SET @audit_user_id = <users.id>;
@@ -83,39 +83,24 @@ CREATE TABLE IF NOT EXISTS `reclaimed_trip_ids` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `intervals` (
+CREATE TABLE IF NOT EXISTS `trip_events` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `trip_id` BIGINT UNSIGNED NOT NULL,
-    `type` VARCHAR(191) NOT NULL,
-    `start_time` DATETIME(3) NOT NULL,
-    `end_time` DATETIME(3) NULL,
+    `event` VARCHAR(191) NOT NULL,
+    `timestamp` DATETIME(3) NOT NULL,
+    `value` JSON NOT NULL,
+    `client_token` CHAR(36) NULL,
+    `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
-    KEY `idx_intervals_trip_id` (`trip_id`),
-    KEY `idx_intervals_trip_time` (`trip_id`, `start_time`, `end_time`),
-    CONSTRAINT `fk_intervals_trip`
+    KEY `idx_trip_events_trip_id` (`trip_id`),
+    KEY `idx_trip_events_trip_time` (`trip_id`, `timestamp`, `id`),
+    UNIQUE KEY `uq_trip_events_client_token` (`client_token`),
+    CONSTRAINT `fk_trip_events_trip`
         FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
-    CONSTRAINT `chk_intervals_type_not_empty`
-        CHECK (CHAR_LENGTH(TRIM(`type`)) > 0),
-    CONSTRAINT `chk_intervals_time_order`
-        CHECK (`end_time` IS NULL OR `end_time` > `start_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `attributes` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `interval_id` BIGINT UNSIGNED NOT NULL,
-    `name` VARCHAR(191) NOT NULL,
-    `value` TEXT NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_attributes_interval_name` (`interval_id`, `name`),
-    KEY `idx_attributes_interval_id` (`interval_id`),
-    CONSTRAINT `fk_attributes_interval`
-        FOREIGN KEY (`interval_id`) REFERENCES `intervals` (`id`)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT,
-    CONSTRAINT `chk_attributes_name_not_empty`
-        CHECK (CHAR_LENGTH(TRIM(`name`)) > 0)
+    CONSTRAINT `chk_trip_events_event_not_empty`
+        CHECK (CHAR_LENGTH(TRIM(`event`)) > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- The audit log deliberately has no foreign key on user_id. Historical records
@@ -430,8 +415,8 @@ BEGIN
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
 END$$
 
-CREATE TRIGGER `audit_intervals_add`
-AFTER INSERT ON `intervals`
+CREATE TRIGGER `audit_trip_events_add`
+AFTER INSERT ON `trip_events`
 FOR EACH ROW
 BEGIN
     IF @audit_user_id IS NULL THEN
@@ -444,19 +429,21 @@ BEGIN
     INSERT INTO `log`
         (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
     VALUES
-        (@audit_user_id, 'add', 'intervals', NEW.`id`, NULL,
+        (@audit_user_id, 'add', 'trip_events', NEW.`id`, NULL,
          JSON_OBJECT(
              'id', NEW.`id`,
              'trip_id', NEW.`trip_id`,
-             'type', NEW.`type`,
-             'start_time', NEW.`start_time`,
-             'end_time', NEW.`end_time`
+             'event', NEW.`event`,
+             'timestamp', NEW.`timestamp`,
+             'value', NEW.`value`,
+             'client_token', NEW.`client_token`,
+             'created_at', NEW.`created_at`
          ),
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
 END$$
 
-CREATE TRIGGER `audit_intervals_edit`
-AFTER UPDATE ON `intervals`
+CREATE TRIGGER `audit_trip_events_delete`
+AFTER DELETE ON `trip_events`
 FOR EACH ROW
 BEGIN
     IF @audit_user_id IS NULL THEN
@@ -469,127 +456,25 @@ BEGIN
     INSERT INTO `log`
         (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
     VALUES
-        (@audit_user_id, 'edit', 'intervals', NEW.`id`,
+        (@audit_user_id, 'delete', 'trip_events', OLD.`id`,
          JSON_OBJECT(
              'id', OLD.`id`,
              'trip_id', OLD.`trip_id`,
-             'type', OLD.`type`,
-             'start_time', OLD.`start_time`,
-             'end_time', OLD.`end_time`
-         ),
-         JSON_OBJECT(
-             'id', NEW.`id`,
-             'trip_id', NEW.`trip_id`,
-             'type', NEW.`type`,
-             'start_time', NEW.`start_time`,
-             'end_time', NEW.`end_time`
-         ),
-         @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
-END$$
-
-CREATE TRIGGER `audit_intervals_delete`
-AFTER DELETE ON `intervals`
-FOR EACH ROW
-BEGIN
-    IF @audit_user_id IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit user context is required';
-    END IF;
-    IF @audit_change_id IS NULL OR CHAR_LENGTH(TRIM(@audit_change_id)) = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit change id is required';
-    END IF;
-    SET @audit_sequence = COALESCE(@audit_sequence, 0) + 1;
-    INSERT INTO `log`
-        (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
-    VALUES
-        (@audit_user_id, 'delete', 'intervals', OLD.`id`,
-         JSON_OBJECT(
-             'id', OLD.`id`,
-             'trip_id', OLD.`trip_id`,
-             'type', OLD.`type`,
-             'start_time', OLD.`start_time`,
-             'end_time', OLD.`end_time`
+             'event', OLD.`event`,
+             'timestamp', OLD.`timestamp`,
+             'value', OLD.`value`,
+             'client_token', OLD.`client_token`,
+             'created_at', OLD.`created_at`
          ),
          NULL,
          @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
 END$$
 
-CREATE TRIGGER `audit_attributes_add`
-AFTER INSERT ON `attributes`
+CREATE TRIGGER `protect_trip_events_update`
+BEFORE UPDATE ON `trip_events`
 FOR EACH ROW
 BEGIN
-    IF @audit_user_id IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit user context is required';
-    END IF;
-    IF @audit_change_id IS NULL OR CHAR_LENGTH(TRIM(@audit_change_id)) = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit change id is required';
-    END IF;
-    SET @audit_sequence = COALESCE(@audit_sequence, 0) + 1;
-    INSERT INTO `log`
-        (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
-    VALUES
-        (@audit_user_id, 'add', 'attributes', NEW.`id`, NULL,
-         JSON_OBJECT(
-             'id', NEW.`id`,
-             'interval_id', NEW.`interval_id`,
-             'name', NEW.`name`,
-             'value', NEW.`value`
-         ),
-         @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
-END$$
-
-CREATE TRIGGER `audit_attributes_edit`
-AFTER UPDATE ON `attributes`
-FOR EACH ROW
-BEGIN
-    IF @audit_user_id IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit user context is required';
-    END IF;
-    IF @audit_change_id IS NULL OR CHAR_LENGTH(TRIM(@audit_change_id)) = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit change id is required';
-    END IF;
-    SET @audit_sequence = COALESCE(@audit_sequence, 0) + 1;
-    INSERT INTO `log`
-        (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
-    VALUES
-        (@audit_user_id, 'edit', 'attributes', NEW.`id`,
-         JSON_OBJECT(
-             'id', OLD.`id`,
-             'interval_id', OLD.`interval_id`,
-             'name', OLD.`name`,
-             'value', OLD.`value`
-         ),
-         JSON_OBJECT(
-             'id', NEW.`id`,
-             'interval_id', NEW.`interval_id`,
-             'name', NEW.`name`,
-             'value', NEW.`value`
-         ),
-         @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
-END$$
-
-CREATE TRIGGER `audit_attributes_delete`
-AFTER DELETE ON `attributes`
-FOR EACH ROW
-BEGIN
-    IF @audit_user_id IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit user context is required';
-    END IF;
-    IF @audit_change_id IS NULL OR CHAR_LENGTH(TRIM(@audit_change_id)) = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit change id is required';
-    END IF;
-    SET @audit_sequence = COALESCE(@audit_sequence, 0) + 1;
-    INSERT INTO `log`
-        (`user_id`, `action`, `table_name`, `record_id`, `before_data`, `after_data`, `change_id`, `sequence`, `reversal_of`)
-    VALUES
-        (@audit_user_id, 'delete', 'attributes', OLD.`id`,
-         JSON_OBJECT(
-             'id', OLD.`id`,
-             'interval_id', OLD.`interval_id`,
-             'name', OLD.`name`,
-             'value', OLD.`value`
-         ),
-         NULL,
-         @audit_change_id, @audit_sequence, NULLIF(@audit_reversal_of, ''));
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Trip events are immutable';
 END$$
 
 -- Audit history is append-only. Reversals create new normal data changes and
