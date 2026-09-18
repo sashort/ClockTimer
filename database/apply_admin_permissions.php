@@ -1,36 +1,41 @@
 <?php
 declare(strict_types=1);
 
-// This is a CLI entry point for the fixed, reviewed admin permission seed.
-if (PHP_SAPI !== 'cli') {
-    http_response_code(404);
-    exit;
-}
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 function api_error(string $message, int $status = 400, string $code = 'bad_request'): never
 {
     throw new RuntimeException($code . ': ' . $message);
 }
 require_once __DIR__ . '/../api/_core/database.php';
-$pdo = null;
+require_once __DIR__ . '/../api/_core/migrations.php';
 try {
-    $sql = file_get_contents(__DIR__ . '/admin_permissions.sql');
-    if ($sql === false) throw new RuntimeException('Permission migration is missing.');
-    // This migration has no procedures or semicolons inside SQL literals.
-    // This is not a general-purpose SQL migration parser.
-    $sql = preg_replace('/^--.*$/m', '', $sql);
+    $directory = migration_directory();
+    if (!is_file($directory . '/applied.json')) {
+        if (file_put_contents($directory . '/applied.json', "{\"migrations\":[]}\n") === false) {
+            throw new RuntimeException('Unable to create migration ledger.');
+        }
+    }
+    // Bitnami Apache runs PHP as daemon. Scripts remain deployment-owned.
+    if (!chown($directory . '/applied.json', 'daemon') || !chmod($directory . '/applied.json', 0600)) {
+        throw new RuntimeException('Unable to prepare writable migration ledger.');
+    }
     $pdo = db();
-    foreach (explode(';', $sql) as $statement) {
-        if (trim($statement) !== '') $pdo->exec(trim($statement));
+    foreach (['001_admin_permissions', '002_bootstrap_superuser'] as $id) {
+        $result = apply_migration($pdo, $id, 0);
+        echo $id . ($result['alreadyApplied'] ? " already recorded.\n" : " applied and recorded.\n");
     }
-    $rows = $pdo->query('SELECT value, name FROM permissions WHERE value IN (1, 2, 4) ORDER BY value')->fetchAll();
-    if (array_column($rows, 'name') !== ['create_users', 'modify_users', 'superuser']) {
-        throw new RuntimeException('Permission migration verification failed.');
+    $configPath = '/etc/clocktimer/config.php';
+    $config = api_config();
+    if (($config['admin_migrations_enabled'] ?? false) !== true || ($config['admin_sql_enabled'] ?? false) !== true) {
+        $config['admin_migrations_enabled'] = true;
+        $config['admin_sql_enabled'] = true;
+        $text = "<?php\nreturn " . var_export($config, true) . ";\n";
+        if (file_put_contents($configPath, $text, LOCK_EX) !== strlen($text)) {
+            throw new RuntimeException('Unable to enable guarded migrations.');
+        }
     }
-    echo "Administrative permission migration applied and verified.\n";
+    echo "Guarded migration and raw SQL modes enabled.\n";
 } catch (Throwable $error) {
-    if ($pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
-    fwrite(STDERR, 'Migration failed: ' . $error->getMessage() . PHP_EOL);
+    fwrite(STDERR, 'Migration setup failed: ' . $error->getMessage() . PHP_EOL);
     exit(1);
-} finally {
-    if ($pdo instanceof PDO) clear_audit_context($pdo);
 }

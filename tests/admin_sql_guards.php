@@ -21,7 +21,7 @@ function current_user(): array {
     if (!isset($GLOBALS['case']['mask'])) api_error('Authentication',401,'unauthorized');
     return ['id'=>1,'permissions'=>$GLOBALS['case']['mask']];
 }
-function api_config(): array { return ['admin_sql_enabled'=>$GLOBALS['case']['enabled'] ?? false]; }
+function api_config(): array { return ['admin_sql_enabled'=>$GLOBALS['case']['enabled'] ?? false, 'admin_migrations_enabled'=>$GLOBALS['case']['migrationsEnabled'] ?? false]; }
 function json_input(): array { return $GLOBALS['case']['input'] ?? []; }
 function require_string(array $input,string $key): string {
     if (!isset($input[$key]) || !is_string($input[$key]) || trim($input[$key])==='') api_error('Input',422,'invalid_argument');
@@ -49,6 +49,10 @@ $endpoint=str_replace("require_once dirname(__DIR__, 2) . '/_core/bootstrap.php'
 file_put_contents($fixture.'/endpoint.php',$endpoint);
 $valid=['mask'=>4,'enabled'=>true,'input'=>['password'=>'confirm','sql'=>'SELECT 1']];
 $cases=[
+    ['unknown action rejected',array_merge($valid,['input'=>['action'=>'bad']]),422,'invalid_action'],
+    ['migration mode defaults to disabled',array_merge($valid,['input'=>['action'=>'migrate']]),403,'migrations_disabled'],
+    ['migration mode remains independent of raw SQL',['mask'=>4,'enabled'=>false,'migrationsEnabled'=>true,'input'=>['action'=>'migrations']],422,'invalid_argument'],
+    ['raw SQL remains independent of migration mode',array_merge($valid,['migrationsEnabled'=>true,'enabled'=>false]),403,'sql_disabled'],
     ['GET is rejected',array_merge($valid,['method'=>'GET']),405,'method_not_allowed'],
     ['HTTP is rejected',array_merge($valid,['https'=>'off']),403,'https_required'],
     ['missing HTTPS is rejected',array_merge($valid,['https'=>'']),403,'https_required'],
