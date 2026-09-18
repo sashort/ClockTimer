@@ -22669,15 +22669,25 @@
                             target.end
                         );
 
-                    // Planned-range reconciliation is coordinated by ClockTimer.
-                    // Do not let TimeRange's generic sibling-overlap resolver
-                    // displace an authoritative overwrite while this range connects.
-                    range.setAttribute(
-                        "ignore-overlaps",
-                        ""
+                    const TimeRangeClass =
+                        customElements.get(
+                            "time-range"
+                        );
+
+                    TimeRangeClass?.suspendLayout?.(
+                        range
                     );
 
-                    ring.appendChild(range);
+                    try {
+                        ring.appendChild(
+                            range
+                        );
+                    }
+                    finally {
+                        TimeRangeClass?.resumeLayout?.(
+                            range
+                        );
+                    }
                 }
             }
 
