@@ -404,11 +404,10 @@ class TimeRange extends HTMLElement {
                     timer-type-transition-wave-sweep
                     var(
                         --timer-type-transition-wave-duration,
-                        2583ms
+                        750ms
                     )
                     linear
-                    1
-                    both;
+                    infinite;
                 animation-play-state:
                     var(
                         --timer-type-transition-wave-play-state,
