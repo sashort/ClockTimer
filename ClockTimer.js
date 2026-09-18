@@ -1479,22 +1479,6 @@
                         );
 
                         if (
-                            this.#hasStartProperties()
-                        ) {
-                            this.#queueTripEvent(
-                                "trip.percent-mode-changed",
-                                new Date(),
-                                {
-                                    value:
-                                        normalized,
-                                    source
-                                }
-                            );
-
-                            this.#scheduleTripEventSync();
-                        }
-
-                        if (
                             context?.recalculate ===
                                 false
                         ) {
@@ -1544,27 +1528,6 @@
                         totalGoal: this.#getTotalGoal(),
                         source: semanticSource
                     });
-
-                    if (
-                        this.#hasStartProperties()
-                    ) {
-                        this.#queueTripEvent(
-                            "trip.goal-changed",
-                            new Date(),
-                            {
-                                goal:
-                                    name === "trip-goal"
-                                        ? "trip"
-                                        : "total",
-                                value:
-                                    newValue,
-                                source:
-                                    semanticSource
-                            }
-                        );
-
-                        this.#scheduleTripEventSync();
-                    }
 
                     if (newValue !== null) {
                         const semanticName =
@@ -4144,54 +4107,6 @@
                 this.#clearLocal();
 
                 if (
-                    startedValue.tripGoal ===
-                        null ||
-                    startedValue.tripGoal ===
-                        undefined
-                ) {
-                    this.removeAttribute(
-                        "trip-goal"
-                    );
-                }
-                else {
-                    this.setAttribute(
-                        "trip-goal",
-                        String(
-                            startedValue.tripGoal
-                        )
-                    );
-                }
-
-                if (
-                    startedValue.totalGoal ===
-                        null ||
-                    startedValue.totalGoal ===
-                        undefined
-                ) {
-                    this.removeAttribute(
-                        "total-goal"
-                    );
-                }
-                else {
-                    this.setAttribute(
-                        "total-goal",
-                        String(
-                            startedValue.totalGoal
-                        )
-                    );
-                }
-
-                if (
-                    typeof startedValue.percentMode ===
-                        "string"
-                ) {
-                    this.setAttribute(
-                        "percent-mode",
-                        startedValue.percentMode
-                    );
-                }
-
-                if (
                     typeof startedValue.intervalElapsedBehavior ===
                         "string"
                 ) {
@@ -4204,10 +4119,6 @@
 
                 this.#autoRestartTripAfterLateBreak =
                     startedValue.autoRestartTripAfterLateBreak ===
-                        true;
-
-                this.#autoSyncTripGoal =
-                    startedValue.autoSyncTripGoal ===
                         true;
 
                 const startResult =
@@ -4528,36 +4439,6 @@
                             break;
                         }
 
-                        case "trip.auto-sync-trip-goal-changed":
-                            this.autoSyncTripGoal =
-                                value.value === true;
-                            break;
-
-                        case "trip.matched-goal-changed":
-                            this.#matchedTripGoal =
-                                value.value !==
-                                    null &&
-                                value.value !==
-                                    undefined &&
-                                Number.isFinite(
-                                    Number(
-                                        value.value
-                                    )
-                                )
-                                    ? Number(
-                                        value.value
-                                    )
-                                    : undefined;
-
-                            this.#handleTripGoalChange(
-                                "automatic",
-                                {
-                                    refreshMatchedGoal:
-                                        false
-                                }
-                            );
-                            break;
-
                         case "trip.interval-elapsed-behavior-changed":
                             if (
                                 typeof value.value ===
@@ -4607,46 +4488,6 @@
                         case "trip.start-time-changed":
                             this.startTime =
                                 value.value;
-                            break;
-
-                        case "trip.goal-changed": {
-                            const attribute =
-                                value.goal === "total"
-                                    ? "total-goal"
-                                    : "trip-goal";
-
-                            if (
-                                value.value ===
-                                    null ||
-                                value.value ===
-                                    undefined
-                            ) {
-                                this.removeAttribute(
-                                    attribute
-                                );
-                            }
-                            else {
-                                this.setAttribute(
-                                    attribute,
-                                    String(
-                                        value.value
-                                    )
-                                );
-                            }
-
-                            break;
-                        }
-
-                        case "trip.percent-mode-changed":
-                            if (
-                                typeof value.value ===
-                                    "string"
-                            ) {
-                                this.setAttribute(
-                                    "percent-mode",
-                                    value.value
-                                );
-                            }
                             break;
 
                         case "trip.stopped": {
@@ -4799,22 +4640,10 @@
                             ?.toISOString?.(),
                     nonProduction:
                         this.#nonProduction,
-                    tripGoal:
-                        this.getAttribute(
-                            "trip-goal"
-                        ),
-                    totalGoal:
-                        this.getAttribute(
-                            "total-goal"
-                        ),
-                    percentMode:
-                        this.#percentMode,
                     intervalElapsedBehavior:
                         this.#intervalElapsedBehavior,
                     autoRestartTripAfterLateBreak:
-                        this.#autoRestartTripAfterLateBreak,
-                    autoSyncTripGoal:
-                        this.#autoSyncTripGoal
+                        this.#autoRestartTripAfterLateBreak
                 }
             );
 
@@ -5812,16 +5641,6 @@
             }
 
             if (this.#hasStartProperties()) {
-                this.#queueTripEvent(
-                    "trip.auto-sync-trip-goal-changed",
-                    new Date(),
-                    {
-                        value
-                    }
-                );
-
-                this.#scheduleTripEventSync();
-
                 this.#handleTripGoalChange(
                     "user"
                 );
@@ -21876,24 +21695,6 @@
 
             const changed =
                 previous !== next;
-
-            if (
-                changed &&
-                this.#hasStartProperties()
-            ) {
-                this.#queueTripEvent(
-                    "trip.matched-goal-changed",
-                    new Date(),
-                    {
-                        value:
-                            Number.isFinite(next)
-                                ? next
-                                : null
-                    }
-                );
-
-                this.#scheduleTripEventSync();
-            }
 
             return changed;
         }

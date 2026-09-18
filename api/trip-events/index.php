@@ -1,60 +1,21 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/bootstrap.php';
 
 $method = require_method('GET', 'POST');
 
 if ($method === 'GET') {
     $tripId = require_positive_int($_GET, 'tripId');
+    $view = normalize_trip_event_view($_GET['view'] ?? null);
 
     $pdo = db();
     require_trip_owner($pdo, $tripId);
 
-    $statement = $pdo->prepare(
-        'SELECT id, trip_id, event, `timestamp`, value, client_token, created_at '
-        . 'FROM trip_events WHERE trip_id = :trip_id '
-        . 'ORDER BY `timestamp` ASC, id ASC'
-    );
-    $statement->execute([
-        ':trip_id' => $tripId,
-    ]);
-
-    $events = [];
-
-    while ($row = $statement->fetch()) {
-        try {
-            $value = json_decode(
-                (string) $row['value'],
-                true,
-                512,
-                JSON_THROW_ON_ERROR
-            );
-        }
-        catch (Throwable) {
-            api_error(
-                'Stored trip event value is invalid JSON.',
-                500,
-                'invalid_event_value'
-            );
-        }
-
-        $events[] = [
-            'id' => (int) $row['id'],
-            'tripId' => (int) $row['trip_id'],
-            'event' => (string) $row['event'],
-            'timestamp' => (string) $row['timestamp'],
-            'value' => $value,
-            'clientToken' => $row['client_token'] === null
-                ? null
-                : (string) $row['client_token'],
-            'createdAt' => (string) $row['created_at'],
-        ];
-    }
-
     json_response([
         'tripId' => $tripId,
-        'events' => $events,
+        'view' => $view,
+        'events' => fetch_trip_events($pdo, $tripId, $view),
     ]);
 }
 
@@ -64,25 +25,13 @@ $input = json_input();
 $tripId = require_positive_int($input, 'tripId');
 $event = trim(require_string($input, 'event'));
 
-if ($event === '') {
-    api_error(
-        'event must not be empty.',
-        422,
-        'invalid_argument'
-    );
-}
-
 $timestamp = normalize_datetime(
     require_string($input, 'timestamp'),
     'timestamp'
 );
 
 if (!array_key_exists('value', $input)) {
-    api_error(
-        'value is required.',
-        422,
-        'invalid_argument'
-    );
+    api_error('value is required.', 422, 'invalid_argument');
 }
 
 try {
@@ -94,22 +43,14 @@ try {
     );
 }
 catch (Throwable) {
-    api_error(
-        'value must be JSON serializable.',
-        422,
-        'invalid_argument'
-    );
+    api_error('value must be JSON serializable.', 422, 'invalid_argument');
 }
 
 $clientToken = $input['clientToken'] ?? null;
 
 if ($clientToken !== null) {
     if (!is_string($clientToken)) {
-        api_error(
-            'clientToken must be a UUID string.',
-            422,
-            'invalid_argument'
-        );
+        api_error('clientToken must be a UUID string.', 422, 'invalid_argument');
     }
 
     $clientToken = strtolower(trim($clientToken));
@@ -120,11 +61,7 @@ if ($clientToken !== null) {
             $clientToken
         )
     ) {
-        api_error(
-            'clientToken must be a UUID string.',
-            422,
-            'invalid_argument'
-        );
+        api_error('clientToken must be a UUID string.', 422, 'invalid_argument');
     }
 }
 
@@ -137,6 +74,9 @@ $eventId = audited_write(
         $clientToken
     ): int {
         require_trip_owner($pdo, $tripId);
+
+        $eventTypeId =
+            require_trip_event_type_id($pdo, $event);
 
         if ($clientToken !== null) {
             $existing = $pdo->prepare(
@@ -169,12 +109,12 @@ $eventId = audited_write(
 
         $statement = $pdo->prepare(
             'INSERT INTO trip_events '
-            . '(trip_id, event, `timestamp`, value, client_token) '
-            . 'VALUES (:trip_id, :event, :timestamp, :value, :client_token)'
+            . '(trip_id, event_type_id, timestamp, value, client_token) '
+            . 'VALUES (:trip_id, :event_type_id, :timestamp, :value, :client_token)'
         );
         $statement->execute([
             ':trip_id' => $tripId,
-            ':event' => $event,
+            ':event_type_id' => $eventTypeId,
             ':timestamp' => $timestamp,
             ':value' => $valueJson,
             ':client_token' => $clientToken,

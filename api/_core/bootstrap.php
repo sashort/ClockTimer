@@ -21,6 +21,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/csrf.php';
+require_once __DIR__ . '/trip_events.php';
 
 set_exception_handler(static function (Throwable $error): never {
     error_log($error->__toString());

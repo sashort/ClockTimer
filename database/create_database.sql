@@ -83,24 +83,59 @@ CREATE TABLE IF NOT EXISTS `reclaimed_trip_ids` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `event_types` (
+    `id` SMALLINT UNSIGNED NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `description` VARCHAR(255) NOT NULL,
+    `reconstruction` TINYINT(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_event_types_name` (`name`),
+    CONSTRAINT `chk_event_types_reconstruction`
+        CHECK (`reconstruction` IN (0, 1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `event_types`
+    (`id`, `name`, `description`, `reconstruction`)
+VALUES
+    (1, 'trip.started', 'Trip start was committed.', 1),
+    (2, 'trip.stopped', 'Trip stop was committed.', 1),
+    (3, 'trip.standard-time-changed', 'Trip standard time changed.', 0),
+    (4, 'trip.creation-date-changed', 'Trip creation date anchor changed.', 0),
+    (5, 'trip.creation-time-changed', 'Trip creation time changed.', 0),
+    (6, 'trip.scheduled-start-changed', 'Trip scheduled start changed.', 0),
+    (7, 'trip.start-time-changed', 'Trip start time changed.', 0),
+    (8, 'trip.interval-elapsed-behavior-changed', 'Interval elapsed behavior changed.', 0),
+    (9, 'trip.auto-restart-after-late-break-changed', 'Automatic restart after a late break changed.', 0),
+    (10, 'interval.started', 'An interval started.', 1),
+    (11, 'interval.ended', 'An interval ended.', 1),
+    (12, 'interval.elapsed', 'An interval reached its planned boundary.', 0),
+    (13, 'interval.approval-changed', 'An interval approval value changed.', 0),
+    (14, 'interval.deleted', 'An interval was deleted.', 0)
+ON DUPLICATE KEY UPDATE
+    `description` = VALUES(`description`),
+    `reconstruction` = VALUES(`reconstruction`);
+
 CREATE TABLE IF NOT EXISTS `trip_events` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `trip_id` BIGINT UNSIGNED NOT NULL,
-    `event` VARCHAR(191) NOT NULL,
+    `event_type_id` SMALLINT UNSIGNED NOT NULL,
     `timestamp` DATETIME(3) NOT NULL,
     `value` JSON NOT NULL,
     `client_token` CHAR(36) NULL,
     `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     KEY `idx_trip_events_trip_id` (`trip_id`),
+    KEY `idx_trip_events_event_type_id` (`event_type_id`),
     KEY `idx_trip_events_trip_time` (`trip_id`, `timestamp`, `id`),
     UNIQUE KEY `uq_trip_events_client_token` (`client_token`),
     CONSTRAINT `fk_trip_events_trip`
         FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
-    CONSTRAINT `chk_trip_events_event_not_empty`
-        CHECK (CHAR_LENGTH(TRIM(`event`)) > 0)
+    CONSTRAINT `fk_trip_events_event_type`
+        FOREIGN KEY (`event_type_id`) REFERENCES `event_types` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- The audit log deliberately has no foreign key on user_id. Historical records
@@ -430,7 +465,7 @@ BEGIN
          JSON_OBJECT(
              'id', NEW.`id`,
              'trip_id', NEW.`trip_id`,
-             'event', NEW.`event`,
+             'event_type_id', NEW.`event_type_id`,
              'timestamp', NEW.`timestamp`,
              'value', NEW.`value`,
              'client_token', NEW.`client_token`,
@@ -457,7 +492,7 @@ BEGIN
          JSON_OBJECT(
              'id', OLD.`id`,
              'trip_id', OLD.`trip_id`,
-             'event', OLD.`event`,
+             'event_type_id', OLD.`event_type_id`,
              'timestamp', OLD.`timestamp`,
              'value', OLD.`value`,
              'client_token', OLD.`client_token`,

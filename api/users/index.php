@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/bootstrap.php';
 
 function destroy_current_session(): void
 {
@@ -52,15 +52,12 @@ if ($method === 'DELETE') {
     }
 
     audited_write(static function (PDO $pdo) use ($userId): void {
-        $deleteAttributes = $pdo->prepare(
-            'DELETE a FROM attributes a INNER JOIN intervals i ON i.id = a.interval_id INNER JOIN trips t ON t.id = i.trip_id WHERE t.user_id = :user_id'
+        $deleteEvents = $pdo->prepare(
+            'DELETE e FROM trip_events e '
+            . 'INNER JOIN trips t ON t.id = e.trip_id '
+            . 'WHERE t.user_id = :user_id'
         );
-        $deleteAttributes->execute([':user_id' => $userId]);
-
-        $deleteIntervals = $pdo->prepare(
-            'DELETE i FROM intervals i INNER JOIN trips t ON t.id = i.trip_id WHERE t.user_id = :user_id'
-        );
-        $deleteIntervals->execute([':user_id' => $userId]);
+        $deleteEvents->execute([':user_id' => $userId]);
 
         $deleteTrips = $pdo->prepare(
             'DELETE FROM trips WHERE user_id = :user_id'

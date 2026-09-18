@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/bootstrap.php';
 
 $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
@@ -253,59 +253,16 @@ if ($method === 'GET') {
         }
 
         if ($verbose && $tripIndexes !== []) {
-            $eventParameters = [];
-            $placeholders = [];
-
-            foreach (array_keys($tripIndexes) as $index => $tripId) {
-                $placeholder = ':trip_id_' . $index;
-                $placeholders[] = $placeholder;
-                $eventParameters[$placeholder] = $tripId;
-            }
-
-            $eventStatement = db()->prepare(
-                'SELECT trip_id, id, event, `timestamp`, value, client_token, created_at '
-                . 'FROM trip_events '
-                . 'WHERE trip_id IN (' . implode(', ', $placeholders) . ') '
-                . 'ORDER BY trip_id ASC, `timestamp` ASC, id ASC'
+            $eventsByTrip = fetch_trip_events_grouped(
+                db(),
+                array_keys($tripIndexes),
+                'log'
             );
-            $eventStatement->execute($eventParameters);
-
-            while ($row = $eventStatement->fetch()) {
-                $tripId = (int) $row['trip_id'];
-                $tripIndex = $tripIndexes[$tripId];
-
-                try {
-                    $value = json_decode(
-                        (string) $row['value'],
-                        true,
-                        512,
-                        JSON_THROW_ON_ERROR
-                    );
-                }
-                catch (Throwable) {
-                    api_error(
-                        'Stored trip event value is invalid JSON.',
-                        500,
-                        'invalid_event_value'
-                    );
-                }
-
-                $trips[$tripIndex]['events'][] = [
-                    'id' => (int) $row['id'],
-                    'event' => (string) $row['event'],
-                    'timestamp' => (string) $row['timestamp'],
-                    'value' => $value,
-                    'clientToken' => $row['client_token'] === null
-                        ? null
-                        : (string) $row['client_token'],
-                    'createdAt' => (string) $row['created_at'],
-                ];
-            }
 
             foreach ($tripIndexes as $tripId => $tripIndex) {
-                $trips[$tripIndex]['eventCount'] = count(
-                    $trips[$tripIndex]['events']
-                );
+                $events = $eventsByTrip[$tripId] ?? [];
+                $trips[$tripIndex]['events'] = $events;
+                $trips[$tripIndex]['eventCount'] = count($events);
             }
         }
 
