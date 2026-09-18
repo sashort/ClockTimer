@@ -45,6 +45,7 @@ jobs:
              $HOME/deploy-clocktimer.sh
              cd /opt/bitnami/apache2/htdocs
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
+             sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
              sed -i \
                -e "s#href=\"app.css\"#href=\"app.css?v=$VERSION\"#" \
@@ -53,6 +54,7 @@ jobs:
                -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
+               -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
                index.html
              echo "Asset version: $VERSION"
              grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html'
