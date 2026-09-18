@@ -1,4 +1,4 @@
-name: Fix repeated Lunch after early end
+name: Fix closed interval after Early Start
 'on':
   push:
     branches:
@@ -22,17 +22,17 @@ jobs:
         run: python .github/scripts/fix_repeated_lunch_after_early_end.py
       - name: Syntax check
         run: node --check ClockTimer.js
-      - name: Verify earlystart is truncated before new interval insertion
+      - name: Verify active Early Start truncation for closed intervals
         run: |
           python - <<'PY'
           from pathlib import Path
           text = Path("ClockTimer.js").read_text()
           start = text.index("        #startIntervalLocal(")
-          end = text.index("        #getIntervalBufferRecord(", start)
-          block = text[start:end]
-          marker = "const activeEarlyStartOverwrite ="
+          block = text[start:]
+          marker = "let activeEarlyStartOverwrite;"
           assert marker in block
-          assert 'record.type ===\n                            "earlystart"' in block
+          assert "if (Number.isFinite(duration))" in block
+          assert 'record.type ===\n                                "earlystart"' in block
           assert "this.#trimOverwriteRecords(" in block
           trim = block.index("this.#trimOverwriteRecords(")
           first_insert = block.index("this.#insert({")
@@ -44,5 +44,5 @@ jobs:
           git config user.name "sashort"
           git config user.email "95879519+sashort@users.noreply.github.com"
           git add ClockTimer.js
-          git commit -m "Fix repeated Lunch after early interval end" || exit 0
+          git commit -m "Allow closed intervals to replace active Early Start" || exit 0
           git push origin HEAD:rename-prestart-latency
