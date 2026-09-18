@@ -1479,6 +1479,22 @@
                         );
 
                         if (
+                            this.#hasStartProperties()
+                        ) {
+                            this.#queueTripEvent(
+                                "trip.percent-mode-changed",
+                                new Date(),
+                                {
+                                    value:
+                                        normalized,
+                                    source
+                                }
+                            );
+
+                            this.#scheduleTripEventSync();
+                        }
+
+                        if (
                             context?.recalculate ===
                                 false
                         ) {
@@ -1528,6 +1544,27 @@
                         totalGoal: this.#getTotalGoal(),
                         source: semanticSource
                     });
+
+                    if (
+                        this.#hasStartProperties()
+                    ) {
+                        this.#queueTripEvent(
+                            "trip.goal-changed",
+                            new Date(),
+                            {
+                                goal:
+                                    name === "trip-goal"
+                                        ? "trip"
+                                        : "total",
+                                value:
+                                    newValue,
+                                source:
+                                    semanticSource
+                            }
+                        );
+
+                        this.#scheduleTripEventSync();
+                    }
 
                     if (newValue !== null) {
                         const semanticName =
@@ -4254,6 +4291,68 @@
                                     record,
                                     eventId
                                 );
+                            }
+
+                            break;
+                        }
+
+                        case "interval.elapsed": {
+                            const intervalKey =
+                                String(
+                                    value.intervalKey ??
+                                        ""
+                                );
+
+                            const record =
+                                this.#insertedRanges.find(
+                                    candidate =>
+                                        candidate.clockTimerEventKey ===
+                                            intervalKey
+                                );
+
+                            if (!record) {
+                                throw new Error(
+                                    "An interval.elapsed event references an unknown interval."
+                                );
+                            }
+
+                            const previousBehavior =
+                                this.#intervalElapsedBehavior;
+
+                            const behavior =
+                                this.#normalizeIntervalElapsedBehavior(
+                                    value.behavior,
+                                    previousBehavior
+                                );
+
+                            this.#intervalElapsedBehavior =
+                                behavior;
+
+                            this.#pendingIntervalRecord =
+                                record;
+
+                            record.clockTimerElapsedDispatched =
+                                false;
+
+                            try {
+                                const timeline =
+                                    this.#dateToTimelineTime(
+                                        eventDate
+                                    );
+
+                                if (
+                                    !this.#updateIntervalElapsed(
+                                        timeline
+                                    )
+                                ) {
+                                    throw new Error(
+                                        "An interval.elapsed event could not be replayed."
+                                    );
+                                }
+                            }
+                            finally {
+                                this.#intervalElapsedBehavior =
+                                    previousBehavior;
                             }
 
                             break;
@@ -11291,6 +11390,36 @@
                     decision.overridden;
                 record.clockTimerElapsedBoundaryType =
                     decision.boundaryType;
+
+                record.clockTimerEventKey ??=
+                    this.#createTripEventClientToken();
+
+                this.#queueTripEvent(
+                    "interval.elapsed",
+                    this.#timelineToISO(
+                        now
+                    ) ??
+                        new Date(),
+                    {
+                        intervalKey:
+                            record.clockTimerEventKey,
+                        boundaryType:
+                            decision.boundaryType,
+                        boundaryTime:
+                            this.#timelineToISO(
+                                boundary
+                            ),
+                        defaultBehavior:
+                            decision.defaultBehavior,
+                        behavior:
+                            decision.behavior,
+                        overridden:
+                            decision.overridden ===
+                                true
+                    }
+                );
+
+                this.#scheduleTripEventSync();
             }
             else {
                 decision = {
@@ -11481,6 +11610,25 @@
                         "intervalEnded",
                         intervalEndedDetail
                     );
+
+                    record.clockTimerEventKey ??=
+                        this.#createTripEventClientToken();
+
+                    this.#queueTripEvent(
+                        "interval.ended",
+                        this.#timelineToISO(
+                            now
+                        ) ??
+                            new Date(),
+                        {
+                            intervalKey:
+                                record.clockTimerEventKey,
+                            reason:
+                                "automatic-restart"
+                        }
+                    );
+
+                    this.#scheduleTripEventSync();
 
                     this.#emitSemanticIntervalEnded(
                         record,
