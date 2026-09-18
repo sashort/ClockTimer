@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
 require_once dirname(__DIR__) . '/_core/calendar.php';
 require_once dirname(__DIR__) . '/_core/calendar_search.php';
+require_once dirname(__DIR__) . '/_core/calendar_store.php';
 
 $method = require_method('GET', 'POST');
 authenticated_user_id();
@@ -18,27 +19,29 @@ try {
     $profiles = calendar_profiles($config);
     if (!is_string($profile) || !isset($profiles[$profile])) throw new InvalidArgumentException('Unknown calendar profile.');
     $definition = $profiles[$profile];
+    $range = $input['range'] ?? 'week';
+    if (!is_string($range) || !in_array($range, ['day', 'week', 'pay-period', 'month', 'year'], true)) throw new InvalidArgumentException('Unknown Trip Log Range.');
     $at = $input['at'] ?? gmdate('Y-m-d\TH:i:s\Z');
     $timezone = $definition['timezone'] ?? $input['timezone'] ?? null;
     if (!is_string($timezone) || !is_string($at)) throw new InvalidArgumentException('timezone and at must be strings.');
     // Validate timezone and timestamp before making a billable search request.
     $year = (int) calendar_moment($at, $timezone)->format('Y');
     $directory = calendar_cache_directory($config);
-    $record = calendar_cached_record($directory, $profile);
+    $record = calendar_stored_record(db(), $profile, $definition, $year);
     if ($record && (($record['definitionHash'] ?? null) !== hash('sha256', json_encode($definition, JSON_THROW_ON_ERROR)))) {
         $record = null;
     }
     $warning = null;
     $refreshNeeded = calendar_needs_refresh($record, $year, time());
-    $searchConfigured = !empty($config['openai_api_key']) || getenv('OPENAI_API_KEY');
-    if ($method === 'POST' || ($refreshNeeded && $searchConfigured && ($config['calendar_auto_refresh'] ?? false))) {
+    // User lookups are database-only; only explicit superuser updates discover rules.
+    if ($method === 'POST' && $refreshNeeded) {
         set_time_limit(110);
         // Release the session lock during potentially slow external searches.
         session_write_close();
         try {
-            $record = calendar_refresh($directory, $profile, $definition, $year,
+            $record = calendar_refresh_stored(db(), $profile, $definition, $year,
                 static fn(array $definition, int $year): array => calendar_discover($definition, $year, $config),
-                $method === 'POST');
+                $method === 'POST', $directory);
             $refreshNeeded = false;
         } catch (Throwable $error) {
             error_log('Calendar refresh: ' . $error->getMessage());
@@ -48,8 +51,6 @@ try {
     }
     if (!$record) api_error('Calendar rules have not been discovered. Configure search and refresh the calendar.', 503, 'calendar_not_discovered');
     $rules = calendar_validate_rules($record['rules']);
-    $range = $input['range'] ?? 'week';
-    if (!is_string($range)) throw new InvalidArgumentException('range must be a string.');
     $window = calendar_range($rules, $range, $at, $timezone);
     json_response([
         ...$window, 'profile' => $profile, 'rules' => $rules,

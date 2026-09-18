@@ -2,7 +2,7 @@
     "use strict";
 
     const API_BASE = "https://wmof.sashort-apps.com/";
-    const calendarRanges = new CalendarRange({baseUrl: API_BASE,
+    const calendarRanges = new CalendarRange({baseUrl: API_BASE, databaseOnly: true,
         profile: document.documentElement.dataset.calendarProfile || "walmart-us"});
     let tripLogRequestSequence = 0;
     let tripTotalsRefreshQueue = Promise.resolve();
@@ -12,7 +12,8 @@
         graphicalSettings: "wmof.clock.graphicalSettings",
         tripPreferences: "wmof.clock.tripPreferences",
         tripLogPinned: "wmof.clock.tripLogPinned",
-        tripLogRange: "wmof.clock.tripLogRange"
+        tripLogRange: "wmof.clock.tripLogRange",
+        customTripLogDates: "wmof.clock.customTripLogDates"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
@@ -81,6 +82,10 @@
     const tripListMenuButton = $("#tripListMenuButton");
     const tripLogPinButton = $("#tripLogPinButton");
     const tripLogRangeSelect = $("#tripLogRangeSelect");
+    const tripLogStartDate = $("#tripLogStartDate");
+    const tripLogEndDate = $("#tripLogEndDate");
+    const tripLogRangeError = $("#tripLogRangeError");
+    let tripRangeRevision = 0;
     const syncGoalsMenuButton = $("#syncGoalsMenuButton");
     const syncGoalsMenuIcon = syncGoalsMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
@@ -185,7 +190,8 @@
         "week",
         "pay-period",
         "month",
-        "year"
+        "year",
+        "custom"
     ]);
     let activeSettingsHelpButton;
     let settingsHelpAnimation;
@@ -369,36 +375,64 @@
             );
         }
 
-        if (notify) {
-            window.dispatchEvent(
-                new CustomEvent(
-                    "wmof:trip-log-range-changed",
-                    {
-                        detail: {
-                            range
-                        }
-                    }
-                )
-            );
-
-            if (
-                getTripListState() ===
-                    "open"
-            ) {
-                dispatchTripListRequest(
-                    "range"
-                );
+        const custom = range === "custom";
+        if (tripLogStartDate) tripLogStartDate.disabled = !custom;
+        if (tripLogEndDate) tripLogEndDate.disabled = !custom;
+        if (custom) {
+            let saved;
+            try { saved = JSON.parse(safeStorageGet(STORAGE.customTripLogDates)); } catch {}
+            if (saved?.start && saved?.end) {
+                tripLogStartDate.value = saved.start; tripLogEndDate.value = saved.end;
             }
-            else if (clockTimer.connected || clockTimer.autoSyncTripGoal) {
-                void refreshGoalTotalsForRange(range).catch(error => {
-                    if (!error.clockTimerOffline) window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {
-                        detail: {range, message: error.message}
-                    }));
-                });
+            if (!tripLogStartDate.value || !tripLogEndDate.value) {
+                const today = new Intl.DateTimeFormat("en-CA", {timeZone: calendarRanges.getTimezone(), year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
+                const parts = Object.fromEntries(today.map(part => [part.type, part.value]));
+                tripLogStartDate.value ||= `${parts.year}-${parts.month}-${parts.day}`;
+                tripLogEndDate.value ||= tripLogStartDate.value;
             }
         }
+        if (notify) refreshTripLogSelection();
+        else void resolveTripLogCalendar(range).catch(() => {});
 
         return range;
+    }
+
+    function showTripRangeError(message = "") {
+        if (tripLogRangeError) { tripLogRangeError.textContent = message; tripLogRangeError.hidden = !message; }
+        for (const input of [tripLogStartDate, tripLogEndDate]) input?.setAttribute("aria-invalid", String(Boolean(message)));
+    }
+
+    async function resolveTripLogCalendar(range = getTripLogRange()) {
+        const revision = tripRangeRevision;
+        const calendar = range === "custom"
+            ? CalendarRange.custom(tripLogStartDate.value, tripLogEndDate.value, calendarRanges.getTimezone())
+            : await calendarRanges.resolve({range});
+        if (revision === tripRangeRevision && range === getTripLogRange()) {
+            const dates = CalendarRange.dates(calendar);
+            if (range !== "custom") { tripLogStartDate.value = dates.start; tripLogEndDate.value = dates.end; }
+            showTripRangeError();
+        }
+        return calendar;
+    }
+
+    function refreshTripLogSelection() {
+        tripRangeRevision++;
+        tripLogRequestSequence++;
+        const range = getTripLogRange();
+        if (range === "custom") {
+            try { CalendarRange.custom(tripLogStartDate.value, tripLogEndDate.value, calendarRanges.getTimezone()); }
+            catch (error) { showTripRangeError(error.message); return; }
+            safeStorageSet(STORAGE.customTripLogDates, JSON.stringify({start: tripLogStartDate.value, end: tripLogEndDate.value}));
+        }
+        showTripRangeError();
+        window.dispatchEvent(new CustomEvent("wmof:trip-log-range-changed", {detail: {range}}));
+        if (getTripListState() === "open") void dispatchTripListRequest("range");
+        else void refreshGoalTotalsForRange(range).catch(error => {
+            if (!error.clockTimerOffline) {
+                showTripRangeError(error.message);
+                window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
+            }
+        });
     }
 
     function tripLogIsPinned() {
@@ -655,9 +689,11 @@
         const range = getTripLogRange();
         if (tripLogBody) tripLogBody.textContent = "Loading trips…";
         try {
-            const calendar = await calendarRanges.resolve({range});
+            const calendar = await resolveTripLogCalendar(range);
             if (sequence !== tripLogRequestSequence) return;
             const tripWindow = CalendarRange.tripWindow(calendar);
+            await updateTripTotals(tripWindow, () => sequence === tripLogRequestSequence);
+            if (sequence !== tripLogRequestSequence) return;
             const url = new URL("api/trips/", API_BASE);
             url.search = new URLSearchParams({
                 result: "list", minDateTime: tripWindow.startTime, maxDateTime: tripWindow.endTime,
@@ -675,7 +711,6 @@
             } while (page.trips.length === 1000);
             if (sequence !== tripLogRequestSequence) return;
             renderTripLog(data, calendar);
-            await updateTripTotals(tripWindow, () => sequence === tripLogRequestSequence);
             if (sequence !== tripLogRequestSequence) return;
         window.dispatchEvent(
             new CustomEvent(
@@ -743,15 +778,19 @@
 
     function updateTripTotals(tripWindow, isCurrent = () => true) {
         const task = tripTotalsRefreshQueue.catch(() => {}).then(() =>
-            isCurrent() ? clockTimer.calculateTripTotals(tripWindow.startTime, tripWindow.endTime) : null
+            isCurrent() ? clockTimer.calculateTripTotals(tripWindow.startTime, tripWindow.endTime).then(result => {
+                if (isCurrent()) updateSummaryValues();
+                return result;
+            }) : null
         );
         tripTotalsRefreshQueue = task;
         return task;
     }
 
     async function refreshGoalTotalsForRange(range) {
-        const calendar = await calendarRanges.resolve({range});
-        return updateTripTotals(CalendarRange.tripWindow(calendar), () => range === getTripLogRange());
+        const revision = tripRangeRevision;
+        const calendar = await resolveTripLogCalendar(range);
+        return updateTripTotals(CalendarRange.tripWindow(calendar), () => revision === tripRangeRevision && range === getTripLogRange());
     }
 
     function animateTripLogBody(
@@ -3706,6 +3745,14 @@
         }
     );
 
+    mainMenu?.addEventListener("toggle", event => {
+        if (event.newState === "open") void resolveTripLogCalendar().catch(error => showTripRangeError(error.message));
+    });
+
+    for (const input of [tripLogStartDate, tripLogEndDate]) input?.addEventListener("change", () => {
+        if (getTripLogRange() === "custom") refreshTripLogSelection();
+    });
+
     tripLogRangeSelect?.addEventListener(
         "change",
         event => {
@@ -4998,7 +5045,7 @@
             draft.lateBreakBehavior === "autoRestartTrip";
 
         if (draft.syncGoals) {
-            const calendar = await calendarRanges.resolve({range: getTripLogRange()});
+            const calendar = await resolveTripLogCalendar();
             const window = CalendarRange.tripWindow(calendar);
             try { await updateTripTotals(window); }
             catch (error) { if (!error.clockTimerOffline) throw error; }
@@ -6284,6 +6331,11 @@
         reserveSemanticEvent(event, "Actual start changed");
     }
 
+    function onCalendarRulesLoaded(event) {
+        calendarRanges.setDatabaseRecords(event.detail.calendars);
+        refreshTripLogSelection();
+    }
+
     function onConnected(event) {
         reserveSemanticEvent(event, "ClockTimer connected");
     }
@@ -6318,6 +6370,7 @@
         creationTimeChanged: onCreationTimeChanged,
         scheduledStartChanged: onScheduledStartChanged,
         actualStartChanged: onActualStartChanged,
+        calendarRulesLoaded: onCalendarRulesLoaded,
         connected: onConnected,
         disconnected: onDisconnected,
         aggregatesSynced: onAggregatesSynced

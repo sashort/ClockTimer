@@ -16,7 +16,7 @@ function rejects(callable $test): void {
     throw new RuntimeException('Expected an invalid calendar to be rejected.');
 }
 // Synthetic discovered rules for deterministic date arithmetic; production has no preset.
-$rules = ['weekStartDay' => 6, 'cutoffTime' => '00:00:00', 'payPeriodDays' => null,
+$rules = ['payPeriodAnchorBasis' => 'period-start', 'weekStartDay' => 6, 'cutoffTime' => '00:00:00', 'payPeriodDays' => null,
     'payPeriodAnchorDate' => null, 'recurring' => true, 'effectiveFrom' => '1970-01-01', 'effectiveThrough' => null];
 check('Friday belongs to the preceding Saturday week', function () use ($rules) {
     $result = calendar_range($rules, 'week', '2026-09-18T23:59:59-04:00', 'America/New_York');
@@ -70,7 +70,7 @@ check('Gregorian month and year boundaries supported', function () use ($rules) 
 });
 check('year rollover forces a new search', fn() => same(calendar_needs_refresh(['searchedYear' => 2026, 'verifiedAt' => time()], 2028, time()), true));
 check('fresh same-year rules do not repeat a search', fn() => same(calendar_needs_refresh(['searchedYear' => 2028, 'verifiedAt' => time()], 2028, time()), false));
-check('30-day-old verification requires refresh', fn() => same(calendar_needs_refresh(['searchedYear' => 2028, 'verifiedAt' => time() - 30 * 86400], 2028, time()), true));
+check('same-year discovery survives 300 days', fn() => same(calendar_needs_refresh(['searchedYear' => 2028, 'verifiedAt' => time() - 300 * 86400], 2028, time()), false));
 check('official domain accepted and lookalikes rejected', function () {
     same(calendar_source_allowed('https://one.walmart.com/calendar.pdf', ['one.walmart.com']), true);
     foreach (['https://one.walmart.com.attacker.test/calendar', 'https://attacker.test/one.walmart.com', 'http://one.walmart.com/calendar', 'https://bob@one.walmart.com/calendar'] as $url) {
@@ -153,4 +153,17 @@ try {
     }
     if (is_dir($cacheDirectory)) rmdir($cacheDirectory);
 }
+$fiscalRules = [...$payRules, 'payPeriodAnchorBasis' => 'fiscal-year-start', 'payPeriodAnchorDate' => '2026-01-31'];
+foreach ([['2026-01-31T05:00:00Z', 1, 1], ['2026-02-07T05:00:00Z', 2, 1], ['2026-02-14T05:00:00Z', 1, 2]] as [$at, $week, $period]) {
+    check("fiscal anchor calculates pay week $week in period $period", function () use ($fiscalRules, $at, $week, $period) {
+        $result = calendar_range($fiscalRules, 'pay-period', $at, 'America/New_York');
+        same($result['payWeek'], $week); same($result['payPeriodNumber'], $period);
+    });
+}
+check('Walmart fiscal anchor needs no invented observed period dates', function () use ($candidate, $definition, $url) {
+    $discovered = calendar_validate_discovery([...$candidate, 'observedPeriodStarts' => []], $definition, 2028, [$url]);
+    same($discovered['rules']['payPeriodAnchorBasis'], 'fiscal-year-start');
+});
+check('fiscal anchor cannot use a nonbiweekly cycle', fn() => rejects(fn() => calendar_validate_rules([...$fiscalRules, 'payPeriodDays' => 7])));
+check('fiscal anchor must start on the configured weekday', fn() => rejects(fn() => calendar_validate_rules([...$fiscalRules, 'payPeriodAnchorDate' => '2026-02-01'])));
 echo "$passed calendar checks passed.\n";

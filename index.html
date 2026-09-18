@@ -49,8 +49,14 @@
                     <option value="pay-period">Pay Period</option>
                     <option value="month">Month</option>
                     <option value="year">Year</option>
+                    <option value="custom">Custom</option>
                 </select>
             </label>
+            <div class="trip-log-date-menu">
+                <label for="tripLogStartDate">Start:</label><input id="tripLogStartDate" type="date" aria-label="Trip Log start date" disabled>
+                <label for="tripLogEndDate">End:</label><input id="tripLogEndDate" type="date" aria-label="Trip Log end date" disabled>
+            </div>
+            <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
             <hr>
             <button id="authButton" type="button">Login</button>
         </nav>

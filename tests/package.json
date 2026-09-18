@@ -3,7 +3,10 @@
   "type": "module",
   "scripts": {
     "test:trip-sync": "node autosync-rebuild.mjs",
-    "test:calendar": "node calendar-ranges.mjs"
+    "test:calendar": "node calendar-ranges.mjs",
+    "test:calendar-editor": "node calendar-editor.mjs",
+    "test:calendar-login": "node calendar-login.mjs",
+    "test:custom-range": "node custom-trip-range.mjs && node custom-range-goals.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

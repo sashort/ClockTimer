@@ -38,7 +38,13 @@ function calendar_validate_rules(array $rules): array
     if (!$rules['recurring'] && $through === null) {
         throw new InvalidArgumentException('A nonrecurring calendar must have an effective end date.');
     }
+    $basis = $rules['payPeriodAnchorBasis'] ?? 'period-start';
+    if (!in_array($basis, ['period-start', 'fiscal-year-start'], true)) throw new InvalidArgumentException('Invalid pay-period anchor basis.');
+    if ($basis === 'fiscal-year-start' && ($days !== 14 || (int) calendar_date($anchor)->format('w') !== $rules['weekStartDay'])) {
+        throw new InvalidArgumentException('A fiscal-year anchor requires a 14-day cycle starting on the first weekday.');
+    }
     return [
+        'payPeriodAnchorBasis' => $basis,
         'weekStartDay' => $rules['weekStartDay'], 'cutoffTime' => $rules['cutoffTime'],
         'payPeriodDays' => $days, 'payPeriodAnchorDate' => $anchor,
         'recurring' => $rules['recurring'], 'effectiveFrom' => $rules['effectiveFrom'],
@@ -125,6 +131,9 @@ function calendar_range(array $input, string $range, string $at, string $timezon
         'startLocal' => $startLocal->format(DateTimeInterface::ATOM),
         'endLocal' => $endLocal->format(DateTimeInterface::ATOM),
         'endExclusive' => true,
+        'payWeek' => $range === 'pay-period' && $rules['payPeriodDays'] === 14 ? (int) floor(($offset - $cycles * 14) / 7) + 1 : null,
+        'payPeriodNumber' => $range === 'pay-period' && $offset >= 0 ? $cycles + 1 : null,
+        'payPeriodAnchorBasis' => $rules['payPeriodAnchorBasis'],
         'extrapolated' => $rules['effectiveThrough'] !== null && $end->modify('-1 day')->format('Y-m-d') > $rules['effectiveThrough'],
     ];
 }
@@ -156,11 +165,11 @@ function calendar_cached_record(string $directory, string $profile): ?array
     return $value;
 }
 
-/** Current-year verification is refreshed after 30 days or a year change. */
+/** Successful discovery remains valid throughout its calendar year. */
 function calendar_needs_refresh(?array $record, int $year, int $now): bool
 {
     return !$record || ($record['searchedYear'] ?? null) !== $year ||
-        !is_int($record['verifiedAt'] ?? null) || $now - $record['verifiedAt'] >= 30 * 86400;
+        !is_int($record['verifiedAt'] ?? null);
 }
 
 /** Only a source-supported candidate is ever saved; failed searches keep the old record. */

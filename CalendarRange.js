@@ -74,13 +74,34 @@
             startTime: boundary(dateString(start), rules.cutoffTime, timezone).toISOString(),
             endTime: boundary(dateString(end), rules.cutoffTime, timezone).toISOString(),
             endExclusive: true,
+            payWeek: range === 'pay-period' && rules.payPeriodDays === 14 ? Math.floor(((date - start) / dayMilliseconds) / 7) + 1 : null,
+            payPeriodNumber: range === 'pay-period' && date >= civilDate(rules.payPeriodAnchorDate) ? Math.floor((date - civilDate(rules.payPeriodAnchorDate)) / dayMilliseconds / rules.payPeriodDays) + 1 : null,
+            payPeriodAnchorBasis: rules.payPeriodAnchorBasis || 'period-start',
             extrapolated: Boolean(rules.effectiveThrough && lastDay > rules.effectiveThrough)
         };
     }
     class CalendarRange {
-        constructor({baseUrl = location.origin + "/", fetcher = (...args) => fetch(...args), storage = localStorage, profile = "walmart-us"} = {}) {
+        constructor({baseUrl = location.origin + "/", fetcher = (...args) => fetch(...args), storage = localStorage, profile = "walmart-us", databaseOnly = false} = {}) {
             this.baseUrl = baseUrl; this.fetcher = fetcher; this.storage = storage;
-            this.profile = profile;
+            this.profile = profile; this.databaseOnly = databaseOnly; this.databaseRecords = [];
+        }
+        setDatabaseRecords(records) {
+            this.databaseRecords = Array.isArray(records) ? records : [];
+        }
+        getTimezone(profile = this.profile) {
+            return this.databaseRecords.find(record => record.profile === profile)?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+        static custom(startDate, endDate, timezone) {
+            const start = civilDate(startDate), last = civilDate(endDate);
+            if (last < start) throw new RangeError("End date must be on or after the start date.");
+            const end = new Date(last.getTime() + dayMilliseconds);
+            return {range: "custom", timezone, startTime: boundary(startDate, "00:00:00", timezone).toISOString(),
+                endTime: boundary(dateString(end), "00:00:00", timezone).toISOString(), endExclusive: true,
+                provenance: "custom", sources: [], extrapolated: false};
+        }
+        static dates(window) {
+            return {start: localParts(new Date(window.startTime), window.timezone).date,
+                end: localParts(new Date(Date.parse(window.endTime) - 1), window.timezone).date};
         }
         static calculate(...args) { return calculate(...args); }
         static tripWindow(window) {
@@ -88,6 +109,22 @@
             return {startTime: window.startTime, endTime: new Date(Date.parse(window.endTime) - 1).toISOString()};
         }
         async resolve({range = "week", at = new Date(), timezone = Intl.DateTimeFormat().resolvedOptions().timeZone, profile = this.profile} = {}) {
+            if (this.databaseOnly) {
+                const instant = new Date(at);
+                const matching = this.databaseRecords.filter(record => record.profile === profile);
+                const selectedTimezone = matching[0]?.timezone || timezone;
+                const localDate = localParts(instant, selectedTimezone).date;
+                const year = Number(localDate.slice(0, 4));
+                const record = matching.filter(record => record.searchedYear <= year &&
+                    !(range === "pay-period" && record.rules.payPeriodAnchorBasis === "fiscal-year-start" &&
+                        (record.rules.payPeriodAnchorDate > localDate ||
+                         (record.rules.payPeriodAnchorDate === localDate && localParts(instant, selectedTimezone).time < record.rules.cutoffTime))))
+                    .sort((a, b) => b.searchedYear - a.searchedYear)[0];
+                if (!record) throw new Error("No stored calendar rules cover this date. Ask a superuser to save the calendar.");
+                const result = calculate(record.rules, range, at, record.timezone || timezone);
+                return {...record, ...result, offline: false, refreshNeeded: record.searchedYear !== year,
+                    warning: record.searchedYear !== year ? "Using previously saved rules; ask a superuser to verify this year's calendar." : null};
+            }
             const key = `wmof.calendar.${profile}.${timezone}`;
             const url = new URL("api/calendar/", this.baseUrl);
             url.search = new URLSearchParams({range, at: new Date(at).toISOString(), timezone, profile});
@@ -100,7 +137,7 @@
                     error.authoritative = response.status < 500;
                     throw error;
                 }
-                if (record.provenance !== "web-search") throw new Error("Calendar rules have not been discovered from a source.");
+                if (!["web-search", "manual"].includes(record.provenance)) throw new Error("Calendar rules have not been discovered from a source.");
                 calculate(record.rules, range, at, record.timezone);
                 try { this.storage.setItem(key, JSON.stringify(record)); } catch {}
                 return {...record, offline: false};
@@ -108,7 +145,7 @@
                 if (error.authoritative) throw error;
                 let cached;
                 try { cached = JSON.parse(this.storage.getItem(key)); } catch {}
-                if (!cached?.rules || cached.provenance !== "web-search") throw error;
+                if (!cached?.rules || !["web-search", "manual"].includes(cached.provenance)) throw error;
                 const result = calculate(cached.rules, range, at, cached.timezone);
                 return {...cached, ...result, offline: true, refreshNeeded: true,
                     warning: "Using cached calendar rules while the calendar service is unavailable."};

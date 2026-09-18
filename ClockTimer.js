@@ -2362,6 +2362,8 @@
             this.#connectionState =
                 "connected";
 
+            this.#emitClockTimerEvent("calendarRulesLoaded", {calendars: detail.calendars ?? []});
+
             const networkStatus =
                 this.networkStatus;
 
@@ -2605,7 +2607,8 @@
                     data.csrfToken,
                     {
                         source: "resume",
-                        user: data.user
+                        user: data.user,
+                        calendars: data.calendars
                     }
                 );
 
@@ -3837,7 +3840,8 @@
                 data.csrfToken,
                 {
                     source: "connect",
-                    user: data.user
+                    user: data.user,
+                    calendars: data.calendars
                 }
             );
 

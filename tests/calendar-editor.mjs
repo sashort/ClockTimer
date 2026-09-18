@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {Window} from 'happy-dom';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const php=process.env.CLOCKTIMER_PHP||path.resolve(root,'../php/php.exe');
+const html=process.env.CLOCKTIMER_EDITOR_HTML ? (await import('node:fs')).readFileSync(process.env.CLOCKTIMER_EDITOR_HTML,'utf8') : execFileSync(php,['-r',"require 'api/_core/calendar_editor.php'; render_calendar_editor('test-token', ['walmart-us']);"],{cwd:root,encoding:'utf8'});
+const window=new Window({url:'https://clock.example/api/admin/calendar/?editor=1', settings:{disableJavaScriptEvaluation:true}});
+window.document.write(html);
+let saved;let mode='empty';
+const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-03',recurring:true,effectiveFrom:'1970-01-01',effectiveThrough:null};
+window.fetch=async(url,opts={})=>{
+ if(opts.method==='POST'){assert.equal(opts.headers['X-CSRF-Token'],'test-token');saved=JSON.parse(opts.body);return {ok:true,json:async()=>({record:{...saved,searchedYear:saved.year,provenance:'manual',verifiedAt:1700000000}})};}
+ return {ok:true,json:async()=>({record:mode==='empty'?null:{rules,searchedYear:2026,provenance:'web-search',verifiedAt:1700000000}})};
+};
+const script=window.document.querySelector('script').textContent;
+window.eval(script);
+const el=id=>window.document.getElementById(id);
+const settle=()=>new Promise(resolve=>setTimeout(resolve,10));
+assert(el('fields').disabled);
+el('load').click();await settle();assert(!el('fields').disabled);assert.equal(el('weekStartDay').value,'');assert(el('status').textContent.includes('No stored rules'));
+console.log('PASS empty records allow manual entry without invented rules');
+mode='stored';el('load').click();await settle();assert.equal(el('weekStartDay').value,'6');assert.match(el('cutoffTime').value,/^00:00(?::00)?$/);assert(el('recurring').checked);
+console.log('PASS loaded database rules populate editor fields');
+el('weekStartDay').value='0';el('note').value='Verified correction';el('form').dispatchEvent(new window.Event('submit',{cancelable:true}));await settle();assert.equal(saved.rules.weekStartDay,0);assert.equal(saved.rules.payPeriodDays,14);assert.equal(saved.rules.effectiveThrough,null);assert(el('status').textContent.includes('saved'));
+console.log('PASS manual save sends typed rules and CSRF token');
+el('year').value='2028';el('year').dispatchEvent(new window.Event('change'));assert(el('fields').disabled);
+console.log('PASS changing year requires reloading before editing');
+window.happyDOM.abort();

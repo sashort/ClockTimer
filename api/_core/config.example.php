@@ -8,7 +8,6 @@ return [
     'openai_api_key' => '',
     'calendar_search_model' => 'gpt-5.5',
     'calendar_extraction_model' => 'gpt-5.5',
-    'calendar_auto_refresh' => false, // Enable after configuring the key and store profile.
     'calendar_cache_directory' => '/var/lib/clocktimer/calendars',
     // Optional calendar_profiles: see docs/calendar-ranges.md for regional/store settings.
     'database' => [

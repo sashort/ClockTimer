@@ -26,6 +26,9 @@ function destroy_current_session(): void
     session_destroy();
 }
 
+require_once dirname(__DIR__) . '/_core/calendar.php';
+require_once dirname(__DIR__) . '/_core/calendar_store.php';
+
 $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
 if ($method === 'GET') {
@@ -38,6 +41,7 @@ if ($method === 'GET') {
     json_response([
         'user' => current_user(),
         'csrfToken' => csrf_token(),
+        'calendars' => calendar_login_records(db(), api_config()),
     ]);
 }
 
@@ -143,4 +147,5 @@ $user['permissions'] = (int) $user['permissions'];
 json_response([
     'user' => $user,
     'csrfToken' => $_SESSION['csrf_token'],
+    'calendars' => calendar_login_records(db(), api_config()),
 ]);

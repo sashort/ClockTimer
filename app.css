@@ -652,6 +652,33 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='5.2'/%3E%3Cpath d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1'/%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black'/%3E%3C/svg%3E");
 }
 
+.trip-log-date-menu {
+    margin: 2px 16px 8px 64px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    color: rgb(255 255 255 / 78%);
+    font-size: 12px;
+    font-weight: 600;
+}
+.trip-log-date-menu input {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 5px 3px;
+    border: 1px solid rgb(255 255 255 / 34%);
+    border-radius: 7px;
+    color: var(--wm-white);
+    background: rgb(32 41 51 / 94%);
+    color-scheme: dark;
+    font: inherit;
+    font-size: 11px;
+}
+.trip-log-date-menu input:disabled { opacity: .65; }
+.trip-log-date-menu input[aria-invalid="true"] { border-color: #ffb3b3; }
+.trip-log-range-error { margin: 0 16px 8px 64px; color: #ffb3b3; font-size: 12px; }
+
 .main-menu [data-dialog="graphicalSettingsDialog"]::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18h1.4a2.1 2.1 0 0 0 0-4.2h-1.1a1.8 1.8 0 0 1 0-3.6H16A5 5 0 0 0 21 8.3C21 5.3 17 3 12 3Z' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'/%3E%3Ccircle cx='7.8' cy='10' r='1.15' fill='black'/%3E%3Ccircle cx='10.4' cy='6.9' r='1.15' fill='black'/%3E%3Ccircle cx='14.4' cy='6.7' r='1.15' fill='black'/%3E%3Ccircle cx='17.2' cy='9.4' r='1.15' fill='black'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18h1.4a2.1 2.1 0 0 0 0-4.2h-1.1a1.8 1.8 0 0 1 0-3.6H16A5 5 0 0 0 21 8.3C21 5.3 17 3 12 3Z' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'/%3E%3Ccircle cx='7.8' cy='10' r='1.15' fill='black'/%3E%3Ccircle cx='10.4' cy='6.9' r='1.15' fill='black'/%3E%3Ccircle cx='14.4' cy='6.7' r='1.15' fill='black'/%3E%3Ccircle cx='17.2' cy='9.4' r='1.15' fill='black'/%3E%3C/svg%3E");
