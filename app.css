@@ -3604,7 +3604,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .settings-help-table td {
     padding: 8px 4px;
     border-bottom: 1px solid rgb(180 225 255 / 30%);
-    text-align: right;
+    text-align: center;
 }
 
 .settings-help-table th:first-child {
@@ -3624,6 +3624,8 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .settings-help-table .settings-help-total-percent {
+    background: var(--wm-yellow);
+    color: var(--wm-blue-dark);
     font-size: 1.5em;
     font-weight: 900;
 }
