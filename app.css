@@ -3568,6 +3568,25 @@ clock-timer[hide-latency] time-range[type="latency"] {
     font-weight: 700;
 }
 
+.main-menu .menu-help-button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    align-self: center;
+    justify-self: center;
+    display: grid;
+    gap: 0;
+    border: 1.5px solid rgb(180 225 255 / 88%);
+    border-radius: 50%;
+    background: var(--wm-blue);
+    color: var(--wm-white);
+    font-size: 18px;
+}
+
+.main-menu .menu-help-button::before {
+    content: none;
+}
+
 /* Trip controls share one status-icon column without shifting button labels. */
 .new-trip-button { position: relative; }
 .deferred-trip-icon { display:none;position:absolute;top:50%;right:12px;width:28px;height:28px;transform:translateY(-50%);pointer-events:none; }

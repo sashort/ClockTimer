@@ -36,7 +36,10 @@
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
             <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
-            <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
+            <div class="main-menu-row sync-goals-menu-row">
+                <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
+                <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
+            </div>
             <div class="trip-menu-group">
             <div class="main-menu-row trip-list-menu-row">
                 <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
@@ -349,6 +352,13 @@
         </div>
     </dialog>
 
+    <template id="settingsHelpSyncGoals" data-help-title="Sync Goals">
+        <p>Adjusts the current trip’s percent goal to help you reach your overall percent target across the selected trips.</p>
+        <p><strong>How to use:</strong> Choose your Trip Filter and Trip Log Range, set your overall percent target, then enable Sync Goals. As your totals change, the current trip’s goal and its remaining and estimated end times update automatically.</p>
+        <p><strong>Example:</strong> Your previous trips have <strong>1:00:00</strong> of standard time and <strong>1:10:00</strong> of counted elapsed time. Your overall target is <strong>100%</strong>.</p>
+        <p>A new trip has <strong>0:30:00</strong> of standard time. To finish at 100% overall, you have <strong>0:20:00</strong> available for this trip. Sync Goals sets its goal to <strong>150%</strong>.</p>
+        <p>When there’s no active trip, Sync Goals waits until you start one.</p>
+    </template>
     <template id="settingsHelpTolerance" data-help-title="Tolerance">
         <p><strong>Tolerance</strong> is the portion of <strong>your standard trip</strong> that remains after your goal-adjusted trip end.</p>
         <p>For example, when your goal is above 100%, the timer calculates an earlier target end for your trip. The time between that calculated end and your original standard end is Tolerance.</p>

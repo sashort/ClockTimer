@@ -3229,6 +3229,7 @@
 
     function getSettingsHelpTemplate(key) {
         const ids = {
+            syncGoals: "settingsHelpSyncGoals",
             tolerance: "settingsHelpTolerance",
             latency: "settingsHelpLatency",
             timeFormat: "settingsHelpTimeFormat",
@@ -3255,6 +3256,7 @@
 
     function hideSettingsHelpButton(button) {
         if (!button) return;
+        if (button.classList.contains("menu-help-button")) return;
 
         clearTimeout(
             settingsHelpRevealTimers.get(
@@ -3536,7 +3538,7 @@
         }
     );
 
-    graphicalDialog.querySelectorAll(
+    document.querySelectorAll(
         ".settings-help-button"
     ).forEach(
         button => {
