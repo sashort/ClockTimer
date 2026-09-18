@@ -7986,7 +7986,7 @@
             }
         }
 
-        #syncOpenOverwriteRangeElements(
+        #syncOverwriteRangeElements(
             record,
             effectiveEnd
         ) {
@@ -8140,6 +8140,14 @@
                         record.start,
                         end
                     );
+
+                    // Reconciliation may replace planned TimeRanges. Keep the
+                    // overwrite record authoritative by restoring/synchronizing
+                    // its visual segments after the mask is applied.
+                    this.#syncOverwriteRangeElements(
+                        record,
+                        end
+                    );
                 }
             }
         }
@@ -8192,7 +8200,7 @@
             record.end =
                 now;
 
-            this.#syncOpenOverwriteRangeElements(
+            this.#syncOverwriteRangeElements(
                 record,
                 now
             );
@@ -22660,6 +22668,14 @@
                             target.start,
                             target.end
                         );
+
+                    // Planned-range reconciliation is coordinated by ClockTimer.
+                    // Do not let TimeRange's generic sibling-overlap resolver
+                    // displace an authoritative overwrite while this range connects.
+                    range.setAttribute(
+                        "ignore-overlaps",
+                        ""
+                    );
 
                     ring.appendChild(range);
                 }
