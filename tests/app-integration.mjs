@@ -15,7 +15,7 @@ window.fetch=async(url,options={})=>{
     if(input.operation==='settings') Object.assign(stored.find(e=>e.event==='trip.started').value,input.settings);
  }
  const data=path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
- path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',first_name:'Alex',last_name:'Driver',preferred_name:'Al',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
  {tripId, trips:[],aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
@@ -31,6 +31,14 @@ assert.equal(window.document.querySelectorAll('#tripLogBody footer').length,0);
 console.log('PASS database date ranges populate before login and settings checks precede the action buttons');
 const c=window.document.querySelector('clock-timer');await c.connect('test','test');await settle();
 assert.equal(c.productionFilter,'all');
+assert.equal(window.document.querySelector('#profileUsername').value,'test');
+assert.equal(window.document.querySelector('#firstName').value,'Alex');
+assert.equal(window.document.querySelector('#lastName').value,'Driver');
+assert.equal(window.document.querySelector('#preferredName').value,'Al');
+window.document.querySelector('#firstName').value='Unsaved';
+window.document.querySelector('#profileDialog').dispatchEvent(new window.CustomEvent('opening'));
+assert.equal(window.document.querySelector('#firstName').value,'Alex');
+console.log('PASS restored/login user records populate profile fields and reopening discards unsaved changes');
 await c.calculateTripTotals('2026-09-18T04:00:00Z','2026-09-19T03:59:59.999Z');
 c.percentMode='total';c.renderedTimeMode='calculated-end';await settle();
 assert.equal(c.getSummarySnapshot().selected.renderedTime,undefined);

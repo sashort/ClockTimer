@@ -72,6 +72,16 @@
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
+    let signedInProfile;
+    function populateProfile(user = signedInProfile) {
+        if (!user) return;
+        signedInProfile = user;
+        for (const [id, field] of [["profileUsername", "username"], ["firstName", "first_name"],
+            ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
+            $("#" + id).value = user[field] ?? "";
+        }
+    }
+    profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
     const stateDialog = $("#stateSettingsDialog");
     const profileMenuButton = $("#profileMenuButton");
@@ -3973,7 +3983,7 @@
             if (!result?.connected) throw new Error("Login failed.");
             deliberatelyLoggedOut = false;
             safeStorageSet("wmof.deliberatelyLoggedOut", "false");
-            $("#profileUsername").value = result.user?.username || username;
+            populateProfile(result.user);
             syncNetworkStatusUI({ login: true });
         }
         catch (failure) {
@@ -6535,10 +6545,15 @@
     }
 
     function onConnected(event) {
+        populateProfile(event.detail?.user);
         reserveSemanticEvent(event, "ClockTimer connected");
     }
 
     function onDisconnected(event) {
+        if (event.detail?.source === "disconnect") {
+            signedInProfile = undefined;
+            for (const id of ["profileUsername", "firstName", "lastName", "preferredName"]) $("#" + id).value = "";
+        }
         reserveSemanticEvent(event, "ClockTimer disconnected");
     }
 
