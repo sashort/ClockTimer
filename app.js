@@ -5313,8 +5313,10 @@
             tripSetStartsNowTimestampLabel.textContent = "";
         }
 
-        const startWidth =
-            tripSetStartsNowStartCopy.scrollWidth;
+        // Measure the text itself, not the grid cell's reserved animation width.
+        const startText = document.createRange();
+        startText.selectNodeContents(tripSetStartsNowStartCopy);
+        const startWidth = startText.getBoundingClientRect?.().width || 0;
         const nowWidth =
             tripSetStartsNowNowLabel.scrollWidth;
         const timestampWidth =
