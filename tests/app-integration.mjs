@@ -44,6 +44,11 @@ c.percentMode='total';c.renderedTimeMode='calculated-end';await settle();
 assert.equal(c.getSummarySnapshot().selected.renderedTime,undefined);
 assert.equal(window.document.querySelector('#renderedTimeValue').textContent,'---');
 assert.equal(window.document.querySelector('#standardTimeValue').textContent,'---');
+for(const mode of ['elapsed','remaining']) {
+    c.renderedTimeMode=mode;await settle();
+    assert.equal(c.getSummarySnapshot().selected.renderedTime,undefined);
+    assert.equal(window.document.querySelector('#renderedTimeValue').textContent,'---');
+}
 c.percentMode='trip';c.renderedTimeMode='remaining';
 console.log('PASS empty logged-in Total scope shows a blank End Time instead of the current time');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();

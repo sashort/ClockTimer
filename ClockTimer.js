@@ -30882,7 +30882,7 @@
             const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
 
             let renderedTime;
-            if (this.#renderedTimeMode === "calculated-end" && !this.#hasStartProperties() &&
+            if (!this.#hasStartProperties() &&
                 standardTimeMilliseconds === 0 && actualTimeMilliseconds === 0 && countedTimeMilliseconds === 0) {
                 renderedTime = undefined;
             }
