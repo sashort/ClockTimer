@@ -3651,7 +3651,8 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#8
 .trip-log-body {padding-bottom:0;}
 
 .trip-log-settings-button::before {display:none;}
-.trip-log-settings-button svg {display:block;}
+.trip-log-settings-button {font-weight:400;}
+.trip-log-settings-button svg {display:block;flex:none;}
 .trip-log-settings-button[aria-expanded="true"] {background:rgb(255 255 255 / 12%);}
 .trip-log-settings {display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px);overflow:hidden;transition:grid-template-rows 200ms ease-in,opacity 200ms ease-in,transform 200ms ease-in;}
 .trip-log-settings.is-open {grid-template-rows:1fr;opacity:1;transform:translateY(0);transition-duration:250ms;transition-timing-function:ease-out;}
