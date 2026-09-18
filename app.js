@@ -26,10 +26,10 @@
         timerType: "radial-overflow",
         timerMode: "elapsed",
         tripColor: "#0053e2",
-        earlyStartColor: "#00a6d2",
+        earlyStartColor: "#4dbdf5",
         showEarlyStart: true,
         breakColor: "#001e60",
-        lunchColor: "#ffc420",
+        lunchColor: "#ffc220",
         breakBufferColor: "#6b7f99",
         showBreakBuffer: true,
         downColor: "#5f6772",
@@ -1763,6 +1763,15 @@
                 )
                     ? source[key]
                     : fallback;
+
+            // Move saved defaults to the reference palette; keep custom colors.
+            if (
+                (key === "lunchColor" && candidate === "#ffc420") ||
+                (key === "earlyStartColor" && candidate === "#00a6d2")
+            ) {
+                settings[key] = fallback;
+                continue;
+            }
 
             if (key === "showTolerance") {
                 settings[key] =
@@ -6187,7 +6196,7 @@
 
         if (normalized === "lunch") {
             endTripButton.style.background =
-                "var(--timer-lunch-color, #ffc420)";
+                "var(--timer-lunch-color, #ffc220)";
             endTripButton.style.color =
                 "var(--timer-lunch-text-color, #000000)";
             return;

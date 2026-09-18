@@ -128,9 +128,9 @@ assert.equal(helpPopover.parentElement,window.document.body,'menu help must not 
 assert.equal(window.document.querySelector('#graphicalHelpTitle').textContent,'Sync Goals');
 const helpTable=window.document.querySelector('#graphicalHelpBody .settings-help-table');
 assert.deepEqual([...helpTable.querySelectorAll('tbody th')].map(cell=>cell.textContent),['Previous','Active','Total']);
-assert.equal(helpTable.querySelectorAll('tbody tr')[1].lastElementChild.textContent,'?');
-assert.equal(helpTable.querySelectorAll('svg[role="img"]').length,2);
-assert.equal(helpTable.querySelector('.settings-help-total-percent').textContent,'100%');
+assert(helpTable.querySelector('.settings-help-active-percent .settings-help-sync-icon'));
+assert.equal(helpTable.querySelectorAll('svg[role="img"]').length,3);
+assert.equal(helpTable.querySelector('.settings-help-total-percent strong').textContent,'100%');
 assert.equal(window.document.querySelector('#syncGoalsMenuButton').getAttribute('aria-pressed'),syncPressed);
 window.document.querySelector('#graphicalHelpClose').click();await settle();
 assert(syncHelp.classList.contains('is-visible'));
