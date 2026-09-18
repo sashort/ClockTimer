@@ -354,17 +354,17 @@
 
     <template id="settingsHelpSyncGoals" data-help-title="Sync Goals">
         <p><strong>Sync Goals helps your current trip compensate for earlier trips so you reach your overall percent target.</strong></p>
-        <p>For example, if previous trips took <strong>10 minutes longer</strong> than their standard time, and your overall target is <strong>100%</strong>, Sync Goals aims to finish the current trip <strong>10 minutes faster</strong> than its standard time.</p>
-        <p><strong>Total Goal: 100%</strong></p>
+        <p>For example, if previous trips took <strong><span class="settings-help-time-difference">10</span> minutes longer</strong> than their standard time, and your overall target is <strong class="settings-help-goal-value">100%</strong>, Sync Goals aims to finish the current trip <strong><span class="settings-help-time-difference">10</span> minutes faster</strong> than its standard time.</p>
+        <p><strong>Total Goal: <span class="settings-help-goal-value">100%</span></strong></p>
         <table class="settings-help-table">
             <thead><tr><th scope="col">Trips</th><th scope="col">Standard</th><th scope="col">Time Elapsed</th><th scope="col">Percent</th></tr></thead>
             <tbody>
-                <tr><th scope="row">Previous</th><td>1:00:00</td><td>1:10:00</td><td>85.71%</td></tr>
+                <tr><th scope="row">Previous</th><td>1:00:00</td><td>1:<span class="settings-help-time-difference">10</span>:00</td><td>85.71%</td></tr>
                 <tr><th scope="row">Active</th><td>0:30:00</td><td><svg class="settings-help-table-icon" viewBox="0 0 24 24" role="img" aria-label="Trip in progress"><title>Trip in progress</title><circle cx="15" cy="4" r="2" fill="currentColor" stroke="none"/><path d="m5 10 4-3 4 1 3 5 4-2M13 8l-4 7-6 1m6-1 5 3-1 4" stroke-width="2.5"/></svg></td><td class="settings-help-active-percent"><svg class="settings-help-table-icon settings-help-sync-icon" viewBox="0 0 24 24" role="img" aria-label="Sync Goals calculates the active trip’s percent"><title>Sync Goals calculates the active trip’s percent</title><path d="M4 10a8 8 0 0 1 14-4l2 2M20 3v5h-5M20 14a8 8 0 0 1-14 4l-2-2M4 21v-5h5" stroke-width="2.5"/></svg></td></tr>
                 <tr class="settings-help-total-row"><th scope="row">Total</th><td>1:30:00</td><td><svg class="settings-help-table-icon settings-help-increasing-icon" viewBox="0 0 24 24" role="img" aria-label="Increasing total elapsed time"><title>Increasing total elapsed time</title><path d="m4 10 8-8 8 8Zm0 6 8-8 8 8Zm0 6 8-8 8 8Z"/></svg></td><td class="settings-help-total-percent"><strong>100%</strong><span>Target</span></td></tr>
             </tbody>
         </table>
-        <p>Sync Goals adjusts the active trip’s goal to bring the total to 100%.</p>
+        <p>Sync Goals adjusts the active trip’s goal to bring the total to <span class="settings-help-goal-value">100%</span>.</p>
     </template>
     <template id="settingsHelpTolerance" data-help-title="Tolerance">
         <p><strong>Tolerance</strong> is the portion of <strong>your standard trip</strong> that remains after your goal-adjusted trip end.</p>

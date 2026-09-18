@@ -3615,6 +3615,14 @@ clock-timer[hide-latency] time-range[type="latency"] {
     text-align: left;
 }
 
+.settings-help-time-difference {
+    color: var(--wm-yellow);
+}
+
+.settings-help-goal-value {
+    color: var(--wm-blue-light);
+}
+
 .settings-help-table tbody tr {
     height: 64px;
 }
