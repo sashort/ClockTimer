@@ -3735,6 +3735,44 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .number-pad-date-row input::-webkit-datetime-edit {text-align:center;display:block;}
 .number-pad-calendar-icon {position:absolute;left:calc(50% - 92px);width:18px;height:18px;}
 
+.number-pad-context.absolute-mode {
+    padding-inline: 16px;
+    text-align: left;
+}
+.number-pad-readout.absolute-mode .number-pad-display {
+    padding-inline: 16px;
+    justify-items: start;
+    text-align: left;
+}
+.number-pad-readout.absolute-mode .number-pad-date-row {
+    justify-content: flex-start;
+    padding-inline: 16px 48px;
+}
+.number-pad-readout.absolute-mode .number-pad-date-row input {
+    order: 0;
+    flex: 0 1 145px;
+    text-align: left;
+}
+.number-pad-readout.absolute-mode input::-webkit-datetime-edit {
+    text-align: left;
+}
+.number-pad-readout.absolute-mode .number-pad-calendar-icon {
+    position: static;
+    order: 1;
+    flex: 0 0 18px;
+    margin-left: 6px;
+}
+.number-pad-readout.absolute-mode .number-pad-backspace {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    align-self: center;
+    margin-right: 8px;
+}
+
 .trip-log-body.trip-log-merged {overflow:auto;}
 .trip-log-controls {display:grid;gap:10px;padding:14px;}
 .trip-log-controls label {display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.4fr);gap:12px;align-items:center;}

@@ -4508,6 +4508,7 @@
         const percentMode = numberPadState.mode === "percent";
         const absoluteMode = numberPadState.mode === "absolute";
         numberPadContext.textContent = numberPadState.title;
+        numberPadContext.classList.toggle("absolute-mode", absoluteMode);
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
             ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "---")
