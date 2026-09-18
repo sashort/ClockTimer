@@ -353,11 +353,18 @@
     </dialog>
 
     <template id="settingsHelpSyncGoals" data-help-title="Sync Goals">
-        <p>Adjusts the current trip’s percent goal to help you reach your overall percent target across the selected trips.</p>
-        <p><strong>How to use:</strong> Choose your Trip Filter and Trip Log Range, set your overall percent target, then enable Sync Goals. As your totals change, the current trip’s goal and its remaining and estimated end times update automatically.</p>
-        <p><strong>Example:</strong> Your previous trips have <strong>1:00:00</strong> of standard time and <strong>1:10:00</strong> of counted elapsed time. Your overall target is <strong>100%</strong>.</p>
-        <p>A new trip has <strong>0:30:00</strong> of standard time. To finish at 100% overall, you have <strong>0:20:00</strong> available for this trip. Sync Goals sets its goal to <strong>150%</strong>.</p>
-        <p>When there’s no active trip, Sync Goals waits until you start one.</p>
+        <p>Automatically adjusts your current trip’s goal to reach your overall percent target.</p>
+        <p>Choose a filter and date range, set your overall target, then enable Sync Goals. Goals and time estimates update as your totals change.</p>
+        <table class="settings-help-table">
+            <caption>Example: 100% overall target</caption>
+            <thead><tr><th scope="col">Trips</th><th scope="col">Standard</th><th scope="col">Counted time</th><th scope="col">Percent</th></tr></thead>
+            <tbody>
+                <tr><th scope="row">Previous</th><td>1:00:00</td><td>1:10:00</td><td>85.71%</td></tr>
+                <tr><th scope="row">Current goal</th><td>0:30:00</td><td>0:20:00</td><td>150%</td></tr>
+                <tr><th scope="row">Combined target</th><td>1:30:00</td><td>1:30:00</td><td>100%</td></tr>
+            </tbody>
+        </table>
+        <p>No active trip? Sync Goals waits until you start one.</p>
     </template>
     <template id="settingsHelpTolerance" data-help-title="Tolerance">
         <p><strong>Tolerance</strong> is the portion of <strong>your standard trip</strong> that remains after your goal-adjusted trip end.</p>

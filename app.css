@@ -3587,6 +3587,35 @@ clock-timer[hide-latency] time-range[type="latency"] {
     content: none;
 }
 
+.settings-help-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(12px, 3vw, 15px);
+    font-variant-numeric: tabular-nums;
+}
+
+.settings-help-table caption {
+    margin-bottom: 10px;
+    text-align: left;
+    font-weight: 700;
+}
+
+.settings-help-table th,
+.settings-help-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid rgb(180 225 255 / 30%);
+    text-align: right;
+}
+
+.settings-help-table th:first-child {
+    text-align: left;
+}
+
+.settings-help-table tbody tr:last-child {
+    color: #8bd5ff;
+    font-weight: 700;
+}
+
 /* Trip controls share one status-icon column without shifting button labels. */
 .new-trip-button { position: relative; }
 .deferred-trip-icon { display:none;position:absolute;top:50%;right:12px;width:28px;height:28px;transform:translateY(-50%);pointer-events:none; }
