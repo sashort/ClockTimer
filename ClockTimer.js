@@ -2230,6 +2230,19 @@
                     value: normalized
                 }
             );
+
+            if (this.#hasStartProperties()) {
+                this.#queueTripEvent(
+                    "trip.interval-elapsed-behavior-changed",
+                    new Date(),
+                    {
+                        value:
+                            normalized
+                    }
+                );
+
+                this.#scheduleTripEventSync();
+            }
         }
 
         #cloneAggregateSnapshot(value) {
@@ -4511,6 +4524,21 @@
                             break;
                         }
 
+                        case "trip.interval-elapsed-behavior-changed":
+                            if (
+                                typeof value.value ===
+                                    "string"
+                            ) {
+                                this.intervalElapsedBehavior =
+                                    value.value;
+                            }
+                            break;
+
+                        case "trip.auto-restart-after-late-break-changed":
+                            this.autoRestartTripAfterLateBreak =
+                                value.value === true;
+                            break;
+
                         case "trip.standard-time-changed":
                             this.standardTime =
                                 value.value;
@@ -5415,7 +5443,31 @@
         }
 
         set autoRestartTripAfterLateBreak(value) {
-            this.#autoRestartTripAfterLateBreak = Boolean(value);
+            const normalized =
+                Boolean(value);
+
+            if (
+                normalized ===
+                    this.#autoRestartTripAfterLateBreak
+            ) {
+                return;
+            }
+
+            this.#autoRestartTripAfterLateBreak =
+                normalized;
+
+            if (this.#hasStartProperties()) {
+                this.#queueTripEvent(
+                    "trip.auto-restart-after-late-break-changed",
+                    new Date(),
+                    {
+                        value:
+                            normalized
+                    }
+                );
+
+                this.#scheduleTripEventSync();
+            }
         }
 
         getActiveIntervalState(now = new Date()) {
