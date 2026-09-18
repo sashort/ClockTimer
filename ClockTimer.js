@@ -2650,6 +2650,40 @@
             );
         }
 
+        #parseTripEventTimestamp(value) {
+            if (value instanceof Date) {
+                return new Date(
+                    value.getTime()
+                );
+            }
+
+            let candidate =
+                String(value ?? "").trim();
+
+            if (
+                /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,3})?$/.test(
+                    candidate
+                )
+            ) {
+                candidate =
+                    candidate.replace(
+                        " ",
+                        "T"
+                    ) + "Z";
+            }
+
+            const date =
+                new Date(candidate);
+
+            if (Number.isNaN(date.getTime())) {
+                throw new TypeError(
+                    "Trip event timestamp is invalid."
+                );
+            }
+
+            return date;
+        }
+
         #queueTripEvent(
             event,
             timestamp,
@@ -5811,7 +5845,9 @@
         #stopLocal(
             stopTime = this.#dateToStandardTime(
                 new Date()
-            )
+            ),
+            referenceTimeline =
+                this.#getCurrentTimelineTime()
         ) {
             const parsed =
                 this.#validateClockTime(
@@ -5822,7 +5858,7 @@
             stopTime =
                 this.#resolveNear(
                     parsed.total,
-                    this.#getCurrentTimelineTime()
+                    referenceTimeline
                 );
 
             this.#stopTickTimer();
@@ -11293,7 +11329,8 @@
             length,
             attributes,
             startBuffer,
-            endBuffer
+            endBuffer,
+            at = new Date()
         ) {
             let intervalType;
             let duration;
@@ -11379,7 +11416,19 @@
             }
 
             const nowDate =
-                new Date();
+                at instanceof Date
+                    ? new Date(
+                        at.getTime()
+                    )
+                    : new Date(at);
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                return false;
+            }
 
             const now =
                 this.#getCurrentTimelineTime(
@@ -11625,13 +11674,27 @@
             return inserted;
         }
 
-        #endIntervalLocal() {
+        #endIntervalLocal(
+            at = new Date()
+        ) {
             if (!this.#started) {
                 return false;
             }
 
             const nowDate =
-                new Date();
+                at instanceof Date
+                    ? new Date(
+                        at.getTime()
+                    )
+                    : new Date(at);
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                return false;
+            }
 
             const now =
                 this.#getCurrentTimelineTime(
