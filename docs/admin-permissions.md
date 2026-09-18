@@ -4,7 +4,9 @@ The users.permissions column stores three flags: create_users = 1,
 modify_users = 2, superuser = 4. Combine them with bitwise OR.
 Superuser implies all permissions. No accounts are automatically promoted.
 
-Run database/admin_permissions.sql with a database administrator connection.
+The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
+CLI entry point and verifies the three permission definitions. For manual
+application, run database/admin_permissions.sql with a database administrator connection.
 For a fresh install, run it after database/create_database.sql.
 Grant the first superuser through your server-side database console, with the
 audit context described in create_database.sql, using the verified user ID.
@@ -25,7 +27,7 @@ DELETE remains limited to the signed-in account.
 
 Every account mutation requires a session cookie and X-CSRF-Token.
 Names and usernames are trimmed; passwords preserve spaces. Passwords are
-stored as bcrypt hashes and must contain 1–72 bytes. Account writes use the
+stored as bcrypt hashes and must contain 1â€“72 bytes. Account writes use the
 existing audit transaction and never return password hashes.
 Permission checks read the current database value rather than a login snapshot.
 
@@ -48,4 +50,9 @@ there is no blanket rollback guarantee. Open explicit transactions are rolled
 back before the request ends. Raw SQL can alter accounts, audit structures and
 schema if the database grants permit it; this is trusted superuser access.
 
-No admin interface or deployment changes are included.
+No admin interface is included. Tests are denied web access by tests/.htaccess.
+
+Run tests with PHP CLI and PDO SQLite:
+
+    php tests/admin_permissions.php
+    php tests/admin_sql_guards.php
