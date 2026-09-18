@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+function calendar_provider_error(int $status, array $response): string
+{
+    $detail = [];
+    // Never include the provider message: authentication errors may echo part of a key.
+    foreach (['code', 'type', 'param'] as $field) {
+        $value = $response['error'][$field] ?? null;
+        if (is_string($value) && preg_match('/^[a-zA-Z0-9_.-]{1,100}$/D', $value)) $detail[] = "$field=$value";
+    }
+    return "OpenAI calendar request failed (HTTP $status" . ($detail ? '; ' . implode(', ', $detail) : '') . ').';
+}
+
 function calendar_openai_request(array $payload, array $config): array
 {
     $key = $config['openai_api_key'] ?? getenv('OPENAI_API_KEY');
@@ -17,7 +28,11 @@ function calendar_openai_request(array $payload, array $config): array
     $raw = curl_exec($curl);
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     curl_close($curl);
-    if (!is_string($raw) || $status !== 200) throw new RuntimeException('The calendar search provider is unavailable.');
+    if (!is_string($raw)) throw new RuntimeException('The calendar search provider could not be reached.');
+    if ($status !== 200) {
+        $error = json_decode($raw, true);
+        throw new RuntimeException(calendar_provider_error($status, is_array($error) ? $error : []));
+    }
     $response = json_decode($raw, true, 128, JSON_THROW_ON_ERROR);
     if (($response['status'] ?? null) !== 'completed') throw new RuntimeException('Calendar search did not complete.');
     return $response;
