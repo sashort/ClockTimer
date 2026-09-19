@@ -69,8 +69,9 @@ const editable=c.getLocalTripLog()[0];
 const editorState=await c.tripEditorRequest(editable.id);
 await c.tripEditorRequest(editable.id,{operation:'settings',revision:editorState.revision,
     settings:{...editorState.settings,standardTime:'25:00',nonProduction:true}});
-await c.tripEditorRequest(editable.id,{operation:'add-entry',revision:editorState.revision,
-    entry:{start:'2026-09-18T12:02:00.000Z',end:'2026-09-18T12:03:00.000Z',type:'break',length:'0:01:00'}});
+await c.tripEditorRequest(editable.id,{operation:'entries',revision:editorState.revision,changes:[
+    {operation:'add-entry',entry:{start:'2026-09-18T12:02:00.000Z',end:'2026-09-18T12:03:00.000Z',type:'break',length:'0:01:00'}}
+]});
 const edited=c.getLocalTripLog().find(t=>String(t.id)===String(editable.id));
 assert.equal(edited.standardTimeMilliseconds,1500000);
 assert.equal(edited.nonProduction,true);

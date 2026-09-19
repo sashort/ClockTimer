@@ -95,6 +95,7 @@ console.log('PASS full app loads, defers without starting, resumes same reservat
 const earlier=new Date(Date.now()-120000);const earlierClock=[earlier.getHours(),earlier.getMinutes(),earlier.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
 await c.start({standardTime:'0:30:00',creationTime:earlierClock,creationDate:earlier,startTime:earlierClock,scheduledStart:earlierClock,nonProduction:true});
 await c.startInterval('down');
+assert(!c.getLocalTripLog().find(trip=>trip.running).events.some(event=>event.event==='trip.stopped'));
 const before=c.toJSON();const entry=stored.find(e=>e.event==='interval.started');
 const changedStart=new Date(Date.parse(entry.timestamp)-30000).toISOString();
 await c.tripEditorRequest(tripId,{operation:'entry',revision:'test-revision',entry:{intervalKey:entry.value.intervalKey,start:changedStart}});

@@ -1,5 +1,6 @@
 (() => {
     const node = (tag, text, className) => {const el=document.createElement(tag);if(text!==undefined) el.textContent=text;if(className) el.className=className;return el;};
+    const clone = value => JSON.parse(JSON.stringify(value));
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
     const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
@@ -15,7 +16,7 @@
         return icon;
     };
     class TripLog {
-        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.addBefore=new Map();this.newEntries=new Map();this.editor=null;this.settingsVisible=false;}
+        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.entrySessions=new Map();this.addBefore=new Map();this.newEntries=new Map();this.editor=null;this.settingsVisible=false;}
         setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));}}
         render(data,calendar) {
             this.calendar=calendar;
@@ -105,12 +106,12 @@
             if(trip.buffered)summary.lastElementChild.append(uncertainIcon());
             const menu=node('div',undefined,'trip-log-menu');const toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label',`Trip ${trip.id} actions`);toggle.setAttribute('aria-expanded','false');
             const actions=node('div',undefined,'trip-log-menu-actions');actions.hidden=true;
-            for(const [label,action] of [['Edit trip settings',()=>this.openSettings(trip)],['Edit entries',()=>{this.editing.add(trip.id);this.render({trips:this.trips},this.calendar);}],['Delete trip',()=>this.deleteTrip(trip)]]) {
+            for(const [label,action] of [['Edit trip settings',()=>this.openSettings(trip)],['Edit entries',()=>this.beginEntryEdit(trip)],['Delete trip',()=>this.deleteTrip(trip)]]) {
                 const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
             }
-            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);details.append(summary);
+            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!trip.running&&(!this.offline||trip.buffered))summary.append(menu);details.append(summary);
             const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?'Editing entries':'Trip entries'));
-            if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>{const key=String(trip.id);this.editing.delete(trip.id);this.addBefore.delete(key);this.newEntries.delete(key);this.rerender();});header.append(done);entries.append(header,node('p','Tap to edit. Swipe an interval to remove it. Long-press an entry to insert a new entry before it.'));}else entries.append(header);
+            if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>this.finishEntryEdit(trip,done));header.append(done);entries.append(header,node('p','Tap to edit. Swipe an interval to remove it. Long-press an entry to insert a new entry before it.'));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
             const intervalEntries=events.filter(e=>e.event==='interval.started'&&!deleted.has(e.value.intervalKey));
             const visible=events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
@@ -138,12 +139,21 @@
             const type=node('select');type.setAttribute('aria-label','New entry type');
             const prompt=node('option','Select entry');prompt.value='';type.append(prompt);
             for(const value of ['break','down','latency','trip','overtime','earlystart']){const option=node('option',value.replace(/(^|-)(\w)/g,(_,dash,letter)=>`${dash?' ':''}${letter.toUpperCase()}`));option.value=value;type.append(option);}
-            const cancel=node('option','Cancel');cancel.value='__cancel__';type.append(cancel);type.value=draft.type||'';
-            const commit=async()=>{if(!draft.start||!draft.type)return;try{time.disabled=true;type.disabled=true;const data=await this.options.request(trip.id),end=new Date(Date.parse(draft.start)+60000).toISOString();await this.options.request(trip.id,{operation:'add-entry',revision:data.revision,entry:{start:draft.start,end,type:draft.type,length:'0:01:00'}});this.root.querySelector(':scope>.trip-log-error')?.remove();this.newEntries.delete(String(trip.id));this.addBefore.delete(String(trip.id));await this.options.refresh();this.rerender();}catch(error){time.disabled=false;type.disabled=false;this.error(error);}};
-            time.addEventListener('click',async()=>{try{const data=await this.options.request(trip.id),base=this.date(data.settings.creationAnchor||trip.startTime);await this.options.numberPad({mode:'absolute',source:'Trip Log new entry time',initialValue:draft.start?this.clockValue(draft.start,base):undefined,tripDefaults:{creationDate:base},title:'Entry Time',onConfirm:async value=>{draft.start=value;this.rerender();await commit();}});}catch(error){this.error(error);}});
-            type.addEventListener('change',async()=>{if(type.value==='__cancel__'){this.cancelNewEntry(trip);return;}draft.type=type.value;this.rerender();await commit();});
-            row.append(time,type);return row;
+            type.value=draft.type||'';const cancel=node('button','Cancel','trip-log-entry-cancel');cancel.type='button';cancel.addEventListener('click',()=>this.cancelNewEntry(trip));row.classList.add('has-entry-cancel');
+            const commit=async()=>{if(!draft.start||!draft.type)return;const key=`draft-${Date.now()}-${Math.random().toString(16).slice(2)}`,end=new Date(Date.parse(draft.start)+60000).toISOString();trip.events.push({id:key,event:'interval.started',timestamp:draft.start,value:{type:draft.type,length:'0:01:00',intervalKey:key},_draft:true},{id:`${key}-end`,event:'interval.ended',timestamp:end,value:{intervalKey:key},_draft:true});this.newEntries.delete(String(trip.id));this.addBefore.delete(String(trip.id));this.rerender();};
+            time.addEventListener('click',async()=>{try{const session=this.entrySessions.get(String(trip.id)),base=this.date(session.settings.creationAnchor||trip.startTime);await this.options.numberPad({mode:'absolute',source:'Trip Log new entry time',initialValue:draft.start?this.clockValue(draft.start,base):undefined,tripDefaults:{creationDate:base},title:'Entry Time',onConfirm:async value=>{draft.start=value;this.rerender();await commit();}});}catch(error){this.error(error);}});
+            type.addEventListener('change',async()=>{draft.type=type.value;this.rerender();await commit();});
+            row.append(time,type,cancel);return row;
         }
+        async beginEntryEdit(trip) {if(trip.running)throw new Error('End the active trip before editing it.');if(this.editing.size&&!this.editing.has(trip.id))throw new Error('Finish the current entry edits first.');const data=await this.options.request(trip.id),key=String(trip.id);trip.events=clone(data.events);this.entrySessions.set(key,{revision:data.revision,original:clone(data.events),settings:data.settings});this.editing.add(trip.id);this.rerender();}
+        entryChanges(trip) {
+            const session=this.entrySessions.get(String(trip.id)),before=session.original,after=trip.events||[],changes=[];
+            const end=(events,key)=>events.find(event=>event.event==='interval.ended'&&event.value?.intervalKey===key);
+            for(const original of before.filter(event=>['trip.started','trip.stopped','interval.started'].includes(event.event))){const key=original.value?.intervalKey,current=key?after.find(event=>event.event==='interval.started'&&event.value?.intervalKey===key):after.find(event=>String(event.id)===String(original.id));if(!current){if(key)changes.push({operation:'delete-entry',entry:{eventId:original.id,intervalKey:key}});continue;}const originalEnd=key?end(before,key):null,currentEnd=key?end(after,key):null;if(iso(current.timestamp)!==iso(original.timestamp)||current.value?.type!==original.value?.type||(originalEnd&&currentEnd&&iso(originalEnd.timestamp)!==iso(currentEnd.timestamp)))changes.push({operation:'entry',entry:{eventId:original.id,intervalKey:key,start:iso(current.timestamp),type:current.value?.type,length:current.value?.length,end:currentEnd?iso(currentEnd.timestamp):undefined}});}
+            for(const current of after.filter(event=>event.event==='interval.started'&&event._draft)){const currentEnd=end(after,current.value.intervalKey);changes.push({operation:'add-entry',entry:{start:iso(current.timestamp),end:iso(currentEnd.timestamp),type:current.value.type,length:current.value.length}});}
+            return changes;
+        }
+        async finishEntryEdit(trip,button) {const key=String(trip.id),session=this.entrySessions.get(key);button.disabled=true;try{const changes=this.entryChanges(trip);if(changes.length)await this.options.request(trip.id,{operation:'entries',revision:session.revision,changes});this.editing.delete(trip.id);this.entrySessions.delete(key);this.addBefore.delete(key);this.newEntries.delete(key);this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();this.rerender();}catch(error){trip.events=clone(session.original);this.editing.delete(trip.id);this.entrySessions.delete(key);this.addBefore.delete(key);this.newEntries.delete(key);this.rerender();this.error(error);}finally{button.disabled=false;}}
         error(error) {if(this.editor){const msg=this.editor.querySelector('[role="alert"]');msg.textContent=error.message||String(error);}else {this.root.querySelector(':scope>.trip-log-error')?.remove();const msg=node('p',error.message||String(error),'trip-log-error');msg.setAttribute('role','alert');this.root.prepend(msg);}}
         modal(title) {
             this.editor?.remove();const dialog=node('dialog',undefined,'app-dialog trip-log-editor');const form=node('form');const heading=node('header',undefined,'dialog-header');heading.append(node('h2',title));const close=node('button','×');close.type='button';close.setAttribute('aria-label','Close editor');close.addEventListener('click',()=>dialog.close());heading.append(close);form.append(heading);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();if(this.editor===dialog)this.editor=null;});this.editor=dialog;dialog.showModal();return {dialog,form};
@@ -163,13 +173,11 @@
         async editEntryTime(trip,event,ended,addButton) {
             this.root.querySelector(':scope>.trip-log-error')?.remove();
             if(addButton)addButton.hidden=true;
-            try{const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));
+            try{const session=this.entrySessions.get(String(trip.id)),current=trip.events.find(candidate=>String(candidate.id)===String(event.id));
                 if(!current)throw new Error('Entry changed. Reopen the trip.');
-                const base=this.date(data.settings.creationAnchor||current.timestamp);
-                await this.options.numberPad({mode:'absolute',source:'Trip Log entry time',initialValue:this.clockValue(iso(current.timestamp),base),tripDefaults:{creationDate:base},title:'Entry Time',onCancel:()=>{if(addButton?.isConnected)addButton.hidden=false;},
-                    onConfirm:async value=>{try{const entry={eventId:current.id,intervalKey:current.value?.intervalKey,start:value,type:current.value?.type,length:current.value?.length};
-                        const currentEnd=current.event==='interval.started'?data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey):null;if(currentEnd)entry.end=iso(currentEnd.timestamp);
-                        await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();if(addButton?.isConnected)addButton.hidden=false;}catch(error){if(addButton?.isConnected)addButton.hidden=false;throw error;}}});
+                const base=this.date(session.settings.creationAnchor||current.timestamp);
+                await this.options.numberPad({mode:'absolute',source:'Trip Log entry time',initialValue:this.clockValue(iso(current.timestamp),base),tripDefaults:{creationDate:base},title:'Entry Time',onCancel:()=>{this.addBefore.delete(String(trip.id));this.rerender();},
+                    onConfirm:async value=>{current.timestamp=value;this.addBefore.delete(String(trip.id));this.root.querySelector(':scope>.trip-log-error')?.remove();this.rerender();}});
             }catch(error){if(addButton?.isConnected)addButton.hidden=false;throw error;}
         }
         async editEntryName(trip,event,ended,button,addButton) {
@@ -180,17 +188,16 @@
             const currentType=event.event==='interval.started'?(event.value?.type||'break'):event.event;
             const choices=event.event==='interval.started'?['break','down','latency','trip','overtime','earlystart']: [currentType];
             for(const value of choices){const option=node('option',value==='trip.started'?'Trip started':value==='trip.stopped'?'Trip ended':value.replace(/(^|-)(\w)/g,(_,dash,letter)=>`${dash?' ':''}${letter.toUpperCase()}`));option.value=value;select.append(option);}
-            const cancel=node('option','Cancel');cancel.value='__cancel__';select.append(cancel);select.value=currentType;button.replaceWith(select);select.focus();
-            const restore=()=>{if(select.isConnected)select.replaceWith(button);if(addButton?.isConnected)addButton.hidden=false;};
-            select.addEventListener('change',async()=>{if(select.value==='__cancel__'||event.event!=='interval.started'){restore();return;}try{const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));if(!current)throw new Error('Entry changed. Reopen the trip.');const entry={eventId:current.id,intervalKey:current.value.intervalKey,start:iso(current.timestamp),type:select.value,length:current.value.length};const currentEnd=data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey);if(currentEnd)entry.end=iso(currentEnd.timestamp);await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();restore();await this.options.refresh();}catch(error){restore();this.error(error);}});
+            select.value=currentType;button.replaceWith(select);const cancel=node('button','Cancel','trip-log-entry-cancel');cancel.type='button';select.parentElement.classList.add('has-entry-cancel');select.parentElement.append(cancel);select.focus();
+            const restore=()=>{this.addBefore.delete(String(trip.id));if(select.isConnected){select.replaceWith(button);cancel.remove();button.parentElement.classList.remove('has-entry-cancel');}this.rerender();};cancel.addEventListener('pointerdown',event=>event.preventDefault());cancel.addEventListener('click',restore);
+            select.addEventListener('change',async()=>{if(event.event!=='interval.started'){restore();return;}const current=trip.events.find(candidate=>String(candidate.id)===String(event.id));if(!current){restore();this.error(new Error('Entry changed. Reopen the trip.'));return;}current.value.type=select.value;this.root.querySelector(':scope>.trip-log-error')?.remove();restore();});
             select.addEventListener('blur',()=>{if(select.isConnected)restore();},{once:true});
         }
         async deleteEntry(trip,event) {
             this.root.querySelector(':scope>.trip-log-error')?.remove();
-            const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));
+            const current=trip.events.find(candidate=>String(candidate.id)===String(event.id));
             if(!current)throw new Error('Entry changed. Reopen the trip.');
-            await this.options.request(trip.id,{operation:'delete-entry',revision:data.revision,entry:{eventId:current.id,intervalKey:current.value?.intervalKey}});
-            this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();
+            const key=current.value?.intervalKey;trip.events=trip.events.filter(candidate=>candidate.value?.intervalKey!==key);this.rerender();
         }
         async openSettings(trip) {
             const data=await this.options.request(trip.id),settings={...data.settings};const {form}=this.modal('Edit Trip Settings');

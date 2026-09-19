@@ -15,6 +15,10 @@ $edited=trip_edit_apply($events,['operation'=>'entry','entry'=>['intervalKey'=>'
 check(trip_edit_aggregate($edited)['counted']===960000,'interval editing recalculates counted time');check(array_column($edited,'id')===[1,2,3,4],'editing keeps existing event IDs');
 $removed=trip_edit_apply($events,['operation'=>'delete-entry','entry'=>['intervalKey'=>'break1']]);check(count($removed)===2,'removal deletes both interval boundaries');check(trip_edit_aggregate($removed)['counted']===1200000,'removal recalculates aggregate');
 $added=trip_edit_apply($events,['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:10:00Z','end'=>'2026-09-18T12:12:00Z','length'=>'0:02:00']]);check(count($added)===6,'adding creates paired interval events');check(trip_edit_aggregate($added)['counted']===960000,'adding a down entry updates aggregates');
+$batch=trip_edit_apply($events,['operation'=>'entries','changes'=>[
+ ['operation'=>'delete-entry','entry'=>['intervalKey'=>'break1']],
+ ['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:10:00Z','end'=>'2026-09-18T12:12:00Z','length'=>'0:02:00']]
+]]);check(count($batch)===4,'entry batch applies additions and removals together');check(trip_edit_aggregate($batch)['counted']===1080000,'entry batch validates its final aggregate');
 $settings=trip_edit_settings($events);$settings['scheduledStart']='11:59:00';$settings['nonProduction']=true;$settings['standardTime']='0:30:00';
 $changed=trip_edit_apply($events,['operation'=>'settings','settings'=>$settings]);$a=trip_edit_aggregate($changed);
 check($a['startTime']==='2026-09-18 11:59:00','scheduled start contributes to elapsed start');check($a['nonProduction']===1&&$a['standard']===1800000,'settings edits persist production and standard duration');
@@ -24,4 +28,5 @@ rejects(fn()=>trip_edit_apply($events,['operation'=>'add-entry','entry'=>['type'
 rejects(fn()=>trip_edit_apply($events,['operation'=>'delete-entry','entry'=>['eventId'=>1]]),'trip boundary cannot be removed');
 rejects(fn()=>trip_edit_duration('0:00:00'),'rejects zero standard duration');
 rejects(fn()=>trip_edit_apply($events,['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:06:00Z','end'=>'2026-09-18T12:08:00Z']]),'rejects overlapping entries that cannot be replayed');
+rejects(fn()=>trip_edit_apply($events,['operation'=>'entries','changes'=>[['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:06:00Z','end'=>'2026-09-18T12:08:00Z']]]]),'rejects an invalid final entry batch');
 echo "$checks trip editor checks passed.\n";

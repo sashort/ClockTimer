@@ -34,9 +34,16 @@ function trip_edit_settings(array $events): array {
 }
 
 /** Edits preserve event IDs and interval keys; the normal ClockTimer replay remains authoritative. */
-function trip_edit_apply(array $events, array $input): array {
+function trip_edit_apply(array $events, array $input, bool $validate=true): array {
     $operation=$input['operation']??'';
-    if ($operation==='settings') {
+    if ($operation==='entries') {
+        $changes=$input['changes']??null;
+        if (!is_array($changes) || count($changes)>500) throw new InvalidArgumentException('Invalid entry changes.');
+        foreach ($changes as $change) {
+            if (!is_array($change) || !in_array($change['operation']??'', ['entry','add-entry','delete-entry'], true)) throw new InvalidArgumentException('Invalid entry change.');
+            $events=trip_edit_apply($events,$change,false);
+        }
+    } elseif ($operation==='settings') {
         $s=$input['settings']??null;
         if (!is_array($s) || !is_bool($s['nonProduction']??null)) throw new InvalidArgumentException('Invalid trip settings.');
         trip_edit_duration($s['standardTime']??'');
@@ -90,7 +97,7 @@ function trip_edit_apply(array $events, array $input): array {
         $events=array_values(array_filter($events,static fn($e)=>!($e['_delete']??false)));
     } else throw new InvalidArgumentException('Unknown edit operation.');
     usort($events,static fn($a,$b)=>strcmp($a['timestamp'],$b['timestamp'])?:((int)$a['id']<=>(int)$b['id']));
-    trip_edit_aggregate($events);
+    if ($validate) trip_edit_aggregate($events);
     return $events;
 }
 

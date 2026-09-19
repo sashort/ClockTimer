@@ -3898,6 +3898,8 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-entry-time:hover,.trip-log-entry-time:focus-visible,
 .trip-log-entry-name:hover,.trip-log-entry-name:focus-visible {border-color:var(--wm-blue-light);background:rgb(169 221 247 / 10%);}
 .trip-log-entry>select {min-width:0;padding:8px;border:1px solid var(--wm-blue-light);border-radius:5px;color:var(--wm-white);background:#39434e;font:inherit;}
+.trip-log-entry.has-entry-cancel {grid-template-columns:65px minmax(0,1fr) auto;}
+.trip-log-entry-cancel {align-self:stretch;border:1px solid var(--wm-blue-light);border-radius:5px;padding:6px 10px;color:var(--wm-blue-light);background:transparent;font:inherit;}
 .trip-log-entry.is-active-entry {
     --trip-log-active-sweep-color: var(--timer-trip-color, #0053e2);
     background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 42%,color-mix(in srgb,var(--trip-log-active-sweep-color) 42%,transparent) 50%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 58%,transparent 68%,transparent 100%);
