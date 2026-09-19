@@ -1415,6 +1415,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 
 .trip-time-edit:disabled {
     opacity: 0.38;
+    background: var(--wm-gray);
     cursor: not-allowed;
 }
 

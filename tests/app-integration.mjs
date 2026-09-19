@@ -69,7 +69,7 @@ const beforeDefer = Object.fromEntries(['StandardTime','ScheduledStart','ActualS
 setNow.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));
 assert(window.document.querySelector('#tripSetStartsNowActions').classList.contains('is-selecting'));
 const defer=window.document.querySelector('#tripDefer');defer.checked=true;defer.dispatchEvent(new window.Event('change',{bubbles:true}));
-assert.equal(window.document.querySelector('#tripSettingsPrimary').textContent,'OK');
+assert.equal(window.document.querySelector('#tripSettingsPrimary').textContent,'Defer');
 assert.equal(window.document.querySelector('#tripStandardTime').textContent,'---');
 assert.equal(window.document.querySelector('#tripActualStart').textContent,'---');
 assert.equal(window.document.querySelector('#tripScheduledStart').textContent,window.document.querySelector('#tripCreationTime').textContent);

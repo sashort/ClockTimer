@@ -83,3 +83,19 @@ for (const initialMeridiem of ['AM', 'PM', undefined]) {
     assert.equal(controller.get().meridiem, initialMeridiem);
 }
 console.log('PASS backspace clears original values and AM/PM; Reset restores AM, PM, or neither');
+
+const returnController = new Function(`
+    let tripSettingsNavigation = {returnTarget:'number-pad', numberPadState:{
+        mode:'duration', source:'standard-time', initial:'003000', pending:'003000', everEdited:false
+    }};
+    const tripSettingsSession = {values:{standardTime:'0:45:00'}};
+    function getTripSettingsReturnNumberPadState() { return tripSettingsNavigation.numberPadState; }
+    ${section('    function normalizeTimeDigits(', '    function normalizePercentDigits(')}
+    ${section('    function syncTripSettingsCallerAfterSave(', '    async function closeTripSettingsToNavigation(')}
+    syncTripSettingsCallerAfterSave();
+    return tripSettingsNavigation.numberPadState;
+`)();
+assert.equal(returnController.initial,'003000');
+assert.equal(returnController.pending,'04500');
+assert.equal(returnController.everEdited,true);
+console.log('PASS returning from Trip Settings preserves the original and marks the new numberpad value changed');

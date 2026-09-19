@@ -5512,7 +5512,6 @@
         const digits = normalizeTimeDigits(standardTime);
         if (!digits) return;
         const changed = digits !== state.initial;
-        state.initial = digits;
         state.pending = digits;
         state.replaceOnNextDigit = false;
         state.everEdited = Boolean(state.everEdited || changed);
@@ -5583,7 +5582,7 @@
         $("#tripDefer").checked = Boolean(settingsValues?.deferred);
         $("#tripDefer").disabled = live || !draft;
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
-        tripSettingsPrimary.textContent = settingsValues?.deferred ? "OK" : draft ? "Start Trip" : "Save";
+        tripSettingsPrimary.textContent = settingsValues?.deferred ? "Defer" : draft ? "Start Trip" : "Save";
         tripSettingsPrimary.value = draft ? "start" : "save";
         tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));
         syncTripStartsNowUI();
