@@ -13,6 +13,7 @@
         tripPreferences: "wmof.clock.tripPreferences",
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
+        tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
         customTripLogDates: "wmof.clock.customTripLogDates"
     };
 
@@ -780,6 +781,15 @@
     }
 
     let tripLogView;
+    function getTripLogIncludeCurrent() {
+        return safeStorageGet(STORAGE.tripLogIncludeCurrent) === "true";
+    }
+
+    function setTripLogIncludeCurrent(value) {
+        safeStorageSet(STORAGE.tripLogIncludeCurrent, String(Boolean(value)));
+        tripLogView?.rerender();
+    }
+
     function offlineTripLogData(calendar) {
         let cached;
         try {cached = JSON.parse(safeStorageGet("wmof.tripLogCache") || "null");} catch {}
@@ -806,6 +816,8 @@
         if (!tripLogBody) return;
         tripLogView ||= new TripLog(tripLogBody, {
             range:getTripLogRange, filter:()=>clockTimer.productionFilter || "all",
+            includeCurrent:getTripLogIncludeCurrent,
+            onIncludeCurrent:setTripLogIncludeCurrent,
             onRange:value=>setTripLogRange(value),
             onFilter:setTripProductionFilter,
             onDate:(key,value)=>{(key === "start" ? tripLogStartDate : tripLogEndDate).value=value;refreshTripLogSelection();},
@@ -830,7 +842,7 @@
                             : "trip";
                 if (clockTimer.networkStatus === "offline" || !clockTimer.currentTripId) {
                     const local=clockTimer.getLocalTripLog().find(trip=>trip.running);
-                    return local?{...local,activeState}:null;
+                    return local?{...local,activeState,includeInParentPercent:getTripLogIncludeCurrent()}:null;
                 }
                 const summary=clockTimer.getSummarySnapshot().trip;
                 const totalSummary=clockTimer.getSummarySnapshot().total;
@@ -838,12 +850,10 @@
                     summary.countedPercent<summary.percentGoal;
                 const totalGoalMissed=Number.isFinite(totalSummary?.countedPercent)&&Number.isFinite(totalSummary?.percentGoal)&&
                     totalSummary.countedPercent<totalSummary.percentGoal;
-                const snapshot=clockTimer.toJSON();
-                const first=snapshot.records.find(record=>Object.values(record)[0]?.type==="start");
-                const start=first?Object.keys(first)[0]:undefined;
+                const start=clockTimer.uiState?.trip_start_component?.date?.toISOString?.();
                 if(!start) return null;
                 return {id:clockTimer.currentTripId,running:true,activeState,
-                    includeInParentPercent:tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
+                    includeInParentPercent:getTripLogIncludeCurrent()||tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
                     actualTimeMilliseconds:summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};

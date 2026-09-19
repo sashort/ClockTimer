@@ -1,9 +1,9 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
 const w=new Window({url:'https://clock.example/'});w.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));w.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
-const root=w.document.createElement('div');w.document.body.append(root);let criteria='pay-period',filter='all',pad;
+const root=w.document.createElement('div');w.document.body.append(root);let criteria='pay-period',filter='all',pad,includeCurrentSetting=false;
 const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:'2:00',intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
 const settings={creationAnchor:'2026-09-18T00:00:00Z',standardTime:'20:00',creationTime:'11:00:00',scheduledStart:'12:00:00',startTime:'12:00:00',nonProduction:false};
-const view=new w.TripLog(root,{range:()=>criteria,filter:()=>filter,onFilter:v=>filter=v,onRange:v=>criteria=v,onDate(){},numberPad:async options=>pad=options,request:async()=>({events,settings,revision:'test'}),refresh:async()=>{}});
+const view=new w.TripLog(root,{range:()=>criteria,filter:()=>filter,includeCurrent:()=>includeCurrentSetting,onIncludeCurrent:value=>{includeCurrentSetting=value;view.rerender();},onFilter:v=>filter=v,onRange:v=>criteria=v,onDate(){},numberPad:async options=>pad=options,request:async()=>({events,settings,revision:'test'}),refresh:async()=>{}});
 const originalRequest=view.options.request;
 const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00Z',endTime:'2026-09-19T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
 const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00',standardTimeMilliseconds:1800000,actualTimeMilliseconds:1800000,events:[]},{id:1,startTime:'2026-09-18 12:00:00',endTime:'2026-09-18 12:20:00',standardTimeMilliseconds:1200000,actualTimeMilliseconds:1200000,events}];
@@ -19,7 +19,7 @@ assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilli
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
 const collapsed=root.querySelector('.trip-log-group');collapsed.open=false;collapsed.dispatchEvent(new w.Event('toggle'));
 let includeActive=false;
-view.options.liveTrip=()=>({...trips[1],running:true,activeState:'break',includeInParentPercent:includeActive,actualTimeMilliseconds:1200000,countedTimeMilliseconds:1200000});
+view.options.liveTrip=()=>({...trips[1],running:true,activeState:'break',includeInParentPercent:includeCurrentSetting||includeActive,actualTimeMilliseconds:1200000,countedTimeMilliseconds:1200000});
 view.render({trips},calendar);
 assert.equal(root.querySelector('.trip-log-group').open,false);
 assert(root.querySelector('.trip-log-trip.is-active-trip'));
@@ -32,6 +32,7 @@ assert.equal(root.querySelector('.trip-log-trip.is-active-trip>summary span:nth-
 assert.equal(root.querySelector('.trip-log-overview .trip-log-times').textContent,'Standard 0:30:00 · Actual 0:30:00');
 includeActive=true;view.render({trips},calendar);
 assert.equal(root.querySelector('.trip-log-overview .trip-log-times').textContent,'Standard 0:50:00 · Actual 0:50:00');
+includeActive=false;const includeCurrent=root.querySelector('[data-include-current]');includeCurrent.checked=true;includeCurrent.dispatchEvent(new w.Event('change'));assert.equal(root.querySelector('.trip-log-overview .trip-log-times').textContent,'Standard 0:50:00 · Actual 0:50:00');
 const firstSweepDelay=root.querySelector('.trip-log-trip.is-active-trip').style.getPropertyValue('--trip-log-active-sweep-delay');
 assert.match(firstSweepDelay,/^-\d+ms$/);
 assert.equal(root.querySelector('.trip-log-group.has-active-trip').style.getPropertyValue('--trip-log-active-sweep-delay'),firstSweepDelay);

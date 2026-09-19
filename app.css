@@ -3837,7 +3837,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-times {font-size:14px;font-weight:400;opacity:.85;margin-top:6px;}
 .trip-log-column-header {
     position:sticky;
-    top:0;
+    top:var(--trip-log-settings-height,0px);
     z-index:8;
     display:grid;
     grid-template-columns:var(--trip-log-columns,minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(65px,1fr) 24px);
@@ -3993,10 +3993,11 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-settings-button {font-weight:400;}
 .trip-log-settings-button svg {display:block;flex:none;}
 .trip-log-settings-button[aria-expanded="true"] {background:rgb(255 255 255 / 12%);}
-.trip-log-settings {display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px);overflow:hidden;transition:grid-template-rows 200ms ease-in,opacity 200ms ease-in,transform 200ms ease-in;}
+.trip-log-settings {position:sticky;top:0;z-index:9;display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px);overflow:hidden;background:var(--ui-gray-gradient,var(--wm-gray));transition:grid-template-rows 200ms ease-in,opacity 200ms ease-in,transform 200ms ease-in;}
 .trip-log-settings.is-open {grid-template-rows:1fr;opacity:1;transform:translateY(0);transition-duration:250ms;transition-timing-function:ease-out;}
 .trip-log-settings-content {min-height:0;overflow:hidden;}
 .trip-log-settings-divider {margin:0 14px 14px;border:0;border-top:1px solid rgb(255 255 255 / 35%);}
+.trip-log-controls .trip-log-include-current input {justify-self:start;width:22px;height:22px;margin:0;padding:0;accent-color:var(--wm-blue);}
 @media (prefers-reduced-motion:reduce) {.trip-log-settings,.trip-log-settings.is-open {transition-duration:0ms;}}
 
 .trip-log-body.trip-log-empty:not([hidden]) {display:flex;flex-direction:column;}

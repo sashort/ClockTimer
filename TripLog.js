@@ -20,7 +20,7 @@
     };
     class TripLog {
         constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.entrySessions=new Map();this.addBefore=new Map();this.newEntries=new Map();this.editor=null;this.settingsVisible=false;}
-        setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));}}
+        setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));const sync=()=>this.root.style.setProperty('--trip-log-settings-height',`${this.settingsVisible?box.getBoundingClientRect().height:0}px`);requestAnimationFrame(sync);box.addEventListener('transitionend',sync,{once:true});}}
         render(data,calendar) {
             this.calendar=calendar;
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
@@ -44,6 +44,7 @@
                 const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=this.options.range()!=='custom';});
+                const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent)includeCurrent.checked=Boolean(this.options.includeCurrent?.());
             }
             if(!reuseSettings)fragment.append(settings);
             this.root.classList.toggle('trip-log-empty',trips.length===0);
@@ -74,7 +75,7 @@
                 const input=node('input');input.type='date';input.value=values[key];input.disabled=this.options.range()!=='custom';input.setAttribute('aria-label',label==='Start:'?'Trip Log start date':'Trip Log end date');
                 input.addEventListener('change',()=>this.options.onDate(key,input.value));dates.append(node('span',label),input);
             }
-            box.append(dates);return box;
+            box.append(dates);const include=node('label',undefined,'trip-log-include-current');const check=node('input');check.type='checkbox';check.dataset.includeCurrent='true';check.checked=Boolean(this.options.includeCurrent?.());check.addEventListener('change',()=>this.options.onIncludeCurrent?.(check.checked));include.append(node('span','Include current trip'),check);box.append(include);return box;
         }
         civil(trip) {
             const parts=new Intl.DateTimeFormat('en-CA',{timeZone:this.calendar.timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso(trip.startTime)));

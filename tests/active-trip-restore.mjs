@@ -9,7 +9,7 @@ const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'C
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
 const events=[
- {id:1,event:'trip.started',timestamp:'2026-09-19T11:00:00Z',value:{standardTime:'1:00:00',creationTime:'11:00:00',scheduledStart:'11:00:00',startTime:'11:00:00',nonProduction:false}},
+ {id:1,event:'trip.started',timestamp:'2026-09-19T11:00:00Z',value:{standardTime:'1:00:00',creationTime:'07:00:00',scheduledStart:'07:00:00',startTime:'07:00:00',creationAnchor:'2026-09-19T04:00:00Z',nonProduction:false}},
  {id:2,event:'interval.started',timestamp:'2026-09-19T11:45:00Z',value:{type:'down',intervalKey:'down-1'}}
 ];
 let activeChecks=0;
@@ -26,6 +26,6 @@ for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])wi
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 let restored;timer.addEventListener('activeTripRestored',event=>{restored=event.detail;});
 await timer.connect('test','test');
-assert.equal(activeChecks,1);assert.equal(restored.tripId,77);assert.equal(timer.uiState.state,'down');assert.equal(timer.uiState.active_interval_type,'down');assert.equal(timer.uiState.controls.primary_action.action,'resume_trip');assert.match(timer.uiState.controls.primary_action.text,/^Resume Trip/);assert.equal(timer.uiState.available_actions.resume_trip,true);assert.equal(timer.uiState.available_actions.start_down,false);assert.equal(timer.uiState.trip_active,true);
+assert.equal(activeChecks,1);assert.equal(restored.tripId,77);assert.equal(timer.uiState.state,'down');assert.equal(timer.uiState.active_interval_type,'down');assert.equal(timer.uiState.trip_start_component.date.toISOString(),'2026-09-19T11:00:00.000Z');assert.equal(timer.uiState.controls.primary_action.action,'resume_trip');assert.match(timer.uiState.controls.primary_action.text,/^Resume Trip/);assert.equal(timer.uiState.available_actions.resume_trip,true);assert.equal(timer.uiState.available_actions.start_down,false);assert.equal(timer.uiState.trip_active,true);
 console.log('PASS login discovers and reconstructs the active trip, interval state, and available controls');
 timer.remove();window.happyDOM.abort();

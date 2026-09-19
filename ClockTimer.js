@@ -1392,6 +1392,11 @@
                 ? ""
                 : String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties();
+            const creationDate = this.#getJSONCreationDate();
+            const startMilliseconds = this.#getStartTimeMilliseconds();
+            const tripStartDate = creationDate instanceof Date && Number.isFinite(startMilliseconds)
+                ? new Date(creationDate.getTime() + startMilliseconds)
+                : null;
             const timedPause = intervalType === "break" || intervalType === "lunch";
             const downPause = intervalType === "down";
             const normalActions = !timedPause && !downPause;
@@ -1469,6 +1474,12 @@
                 ),
                 active_interval_type: interval?.open === false ? null : (interval?.intervalType || null),
                 trip_active: tripActive,
+                trip_start_component: this.#component(
+                    this.startTime,
+                    tripStartDate?.getTime(),
+                    tripStartDate,
+                    tripStartDate instanceof Date && !Number.isNaN(tripStartDate.getTime())
+                ),
                 paused: ["break", "lunch", "down", "buffer"].includes(state),
                 available_actions: availableActions,
                 controls
