@@ -3793,6 +3793,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transform:translateY(-50%);
 }
 .new-user-dialog {position:fixed;inset:0;width:min(94vw,620px);height:min(92dvh,760px);margin:auto;padding:0;overflow:hidden;box-sizing:border-box;}
+.new-user-dialog::backdrop {-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);background:rgb(0 0 0 / 38%);}
 .new-user-dialog .dialog-header {position:relative;display:flex;justify-content:center;padding:12px 64px;border-bottom:1px solid rgb(255 255 255 / 35%);}
 .new-user-dialog .dialog-header h2 {margin:0;text-align:center;}
 .new-user-dialog .dialog-close {position:absolute;top:50%;right:14px;transform:translateY(-50%);}
