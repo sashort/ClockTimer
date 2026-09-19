@@ -4,7 +4,10 @@
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
     const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
-    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+t.actualTimeMilliseconds,0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
+    const counted = trip => Number.isFinite(Number(trip.countedTimeMilliseconds))
+        ? Number(trip.countedTimeMilliseconds)
+        : Number(trip.actualTimeMilliseconds) || 0;
+    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+counted(t),0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
     const parentTrips = trips => trips.filter(trip=>!trip.running||trip.includeInParentPercent);
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     const uncertainIcon = () => {
@@ -48,7 +51,7 @@
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            const overviewTrips=parentTrips(trips);overview.append(emphasis,node('div',`Standard ${duration(total(overviewTrips,'standardTimeMilliseconds'))} · Actual ${duration(total(overviewTrips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
+            const overviewTrips=parentTrips(trips);overview.append(emphasis,node('div',`Standard ${duration(total(overviewTrips,'standardTimeMilliseconds'))} · Actual ${duration(overviewTrips.reduce((sum,trip)=>sum+counted(trip),0))}`,'trip-log-times'));fragment.append(overview);
             const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of ['Time','Standard','Actual','Percent','']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
@@ -96,13 +99,13 @@
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
                 const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group,true)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
-                const aggregateTrips=parentTrips(group);summary.append(heading,node('div',`Standard ${duration(total(aggregateTrips,'standardTimeMilliseconds'))} · Actual ${duration(total(aggregateTrips,'actualTimeMilliseconds'))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
+                const aggregateTrips=parentTrips(group);summary.append(heading,node('div',`Standard ${duration(total(aggregateTrips,'standardTimeMilliseconds'))} · Actual ${duration(aggregateTrips.reduce((sum,trip)=>sum+counted(trip),0))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
             return fragment;
         }
         trip(trip) {
             const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-            summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(trip.actualTimeMilliseconds)),node('strong',percent([trip]),'trip-log-actual'));
+            summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(counted(trip))),node('strong',percent([trip]),'trip-log-actual'));
             if(trip.buffered)summary.lastElementChild.append(uncertainIcon());
             const menu=node('div',undefined,'trip-log-menu');const toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label',`Trip ${trip.id} actions`);toggle.setAttribute('aria-expanded','false');
             const actions=node('div',undefined,'trip-log-menu-actions');actions.hidden=true;

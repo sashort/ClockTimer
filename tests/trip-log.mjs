@@ -10,6 +10,7 @@ const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00'
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.0%');
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.0%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
