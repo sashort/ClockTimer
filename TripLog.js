@@ -110,7 +110,7 @@
             }
             toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);details.append(summary);
             const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?'Editing entries':'Trip entries'));
-            if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>{const key=String(trip.id);this.editing.delete(trip.id);this.addBefore.delete(key);this.newEntries.delete(key);this.rerender();});header.append(done);entries.append(header,node('p','Select an entry to edit or remove it.'));}else entries.append(header);
+            if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>{const key=String(trip.id);this.editing.delete(trip.id);this.addBefore.delete(key);this.newEntries.delete(key);this.rerender();});header.append(done);entries.append(header,node('p','Tap to edit. Swipe an interval to remove it. Long-press an entry to insert a new entry before it.'));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
             const intervalEntries=events.filter(e=>e.event==='interval.started'&&!deleted.has(e.value.intervalKey));
             const visible=events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
@@ -122,8 +122,8 @@
                 const label=event.event==='trip.started'?'Trip started':event.event==='trip.stopped'?'Trip ended':`${event.value.type} · ${ended?duration(Date.parse(iso(ended.timestamp))-Date.parse(iso(event.timestamp))):'Still running'}`;
                 const row=node('div',undefined,'trip-log-entry');if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
                 if(this.editing.has(trip.id)){
-                    let suppressClick=false;const time=node('button',fmt.format(new Date(iso(event.timestamp))),'trip-log-entry-time');time.type='button';time.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryTime(trip,event,ended).catch(e=>this.error(e));});
-                    const name=node('button',label,'trip-log-entry-name');name.type='button';name.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryName(trip,event,ended,name).catch(e=>this.error(e));});row.append(time,name);
+                    let suppressClick=false;const time=node('button',fmt.format(new Date(iso(event.timestamp))),'trip-log-entry-time');time.type='button';time.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryTime(trip,event,ended,entries.querySelector('.trip-log-add')).catch(e=>this.error(e));});
+                    const name=node('button',label,'trip-log-entry-name');name.type='button';name.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryName(trip,event,ended,name,entries.querySelector('.trip-log-add')).catch(e=>this.error(e));});row.append(time,name);
                     let gesture,timer;row.addEventListener('pointerdown',pointer=>{gesture={x:pointer.clientX,y:pointer.clientY};timer=setTimeout(()=>{timer=undefined;suppressClick=true;this.addBefore.set(tripKey,eventKey);this.newEntries.delete(tripKey);this.rerender();},550);});row.addEventListener('pointermove',pointer=>{if(gesture&&(Math.abs(pointer.clientX-gesture.x)>10||Math.abs(pointer.clientY-gesture.y)>10)){clearTimeout(timer);timer=undefined;}});row.addEventListener('pointerup',pointer=>{clearTimeout(timer);timer=undefined;if(!gesture)return;const dx=pointer.clientX-gesture.x,dy=pointer.clientY-gesture.y;gesture=undefined;if(event.event==='interval.started'&&Math.abs(dx)>=60&&Math.abs(dx)>Math.abs(dy)*1.5)this.deleteEntry(trip,event).catch(error=>this.error(error));});row.addEventListener('pointercancel',()=>{clearTimeout(timer);timer=undefined;gesture=undefined;});
                 }else row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',label));entries.append(row);
             }
@@ -160,44 +160,29 @@
             if(remove){const del=node('button','Remove entry','danger');del.type='button';del.addEventListener('click',async()=>{if(!confirm('Remove this entry?'))return;try{del.disabled=true;submit.disabled=true;await remove();this.editor?.close();await this.options.refresh();}catch(e){this.error(e);}finally{del.disabled=false;submit.disabled=false;}});form.append(del);}
             form.addEventListener('submit',async e=>{e.preventDefault();submit.disabled=true;try{await save();this.editor?.close();await this.options.refresh();}catch(e){this.error(e);}finally{submit.disabled=false;}});
         }
-        async openEntry(trip,event,ended) {
-            const data=await this.options.request(trip.id);const adding=!event;
-            const current=event?data.events.find(e=>String(e.id)===String(event.id)):null;
-            if(event&&!current)throw new Error('Entry changed. Reopen the trip.');
-            event=current||event;
-            ended=event?.event==='interval.started'?data.events.find(e=>e.event==='interval.ended'&&e.value.intervalKey===event.value.intervalKey):null;
-            const start=adding?iso(trip.startTime):iso(event.timestamp),entry={eventId:event?.id,intervalKey:event?.value.intervalKey,start,end:ended?iso(ended.timestamp):adding?new Date(Math.min(Date.parse(iso(trip.endTime)),Date.parse(start)+60000)).toISOString():undefined,type:event?.value.type||'break',length:event?.value.length??(adding?'0:01:00':undefined)};
-            const {form}=this.modal(adding?'Add entry':'Edit entry');const base=this.date(data.settings.creationAnchor||start);
-            let endField,durationField;
-            const refreshDuration=()=>{if(entry.end)durationField?.setValue(duration(Date.parse(entry.end)-Date.parse(entry.start)));};
-            this.timeField(form,'Start time',entry.start,'absolute',v=>{entry.start=v;refreshDuration();},base);
-            if(adding||event.event==='interval.started'){
-                const type=node('label','Type');const select=node('select');for(const t of ['break','down','latency','trip','overtime','earlystart']){const option=node('option',t);option.value=t;select.append(option);}select.value=entry.type;select.addEventListener('change',()=>entry.type=select.value);type.append(select);form.append(type);
-                if(entry.end)endField=this.timeField(form,'End time',entry.end,'absolute',v=>{entry.end=v;refreshDuration();},base);else form.append(node('p','Still running'));
-                durationField=this.timeField(form,'Duration',entry.end?duration(Date.parse(entry.end)-Date.parse(entry.start)):entry.length||duration(Date.now()-Date.parse(entry.start)),'duration',v=>{entry.length=duration(milliseconds(v));if(entry.end){entry.end=new Date(Date.parse(entry.start)+milliseconds(v)).toISOString();endField.setValue(entry.end);}});
-            }
-            this.footer(form,()=>this.options.request(trip.id,{operation:adding?'add-entry':'entry',revision:data.revision,entry}),event?.event==='interval.started'?()=>this.options.request(trip.id,{operation:'delete-entry',revision:data.revision,entry}):null);
-        }
-        async editEntryTime(trip,event,ended) {
+        async editEntryTime(trip,event,ended,addButton) {
             this.root.querySelector(':scope>.trip-log-error')?.remove();
-            const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));
-            if(!current)throw new Error('Entry changed. Reopen the trip.');
-            const base=this.date(data.settings.creationAnchor||current.timestamp);
-            await this.options.numberPad({mode:'absolute',source:'Trip Log entry time',initialValue:this.clockValue(iso(current.timestamp),base),tripDefaults:{creationDate:base},title:'Entry Time',
-                onConfirm:async value=>{const entry={eventId:current.id,intervalKey:current.value?.intervalKey,start:value,type:current.value?.type,length:current.value?.length};
-                    const currentEnd=current.event==='interval.started'?data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey):null;if(currentEnd)entry.end=iso(currentEnd.timestamp);
-                    await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();}});
+            if(addButton)addButton.hidden=true;
+            try{const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));
+                if(!current)throw new Error('Entry changed. Reopen the trip.');
+                const base=this.date(data.settings.creationAnchor||current.timestamp);
+                await this.options.numberPad({mode:'absolute',source:'Trip Log entry time',initialValue:this.clockValue(iso(current.timestamp),base),tripDefaults:{creationDate:base},title:'Entry Time',onCancel:()=>{if(addButton?.isConnected)addButton.hidden=false;},
+                    onConfirm:async value=>{try{const entry={eventId:current.id,intervalKey:current.value?.intervalKey,start:value,type:current.value?.type,length:current.value?.length};
+                        const currentEnd=current.event==='interval.started'?data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey):null;if(currentEnd)entry.end=iso(currentEnd.timestamp);
+                        await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();if(addButton?.isConnected)addButton.hidden=false;}catch(error){if(addButton?.isConnected)addButton.hidden=false;throw error;}}});
+            }catch(error){if(addButton?.isConnected)addButton.hidden=false;throw error;}
         }
-        async editEntryName(trip,event,ended,button) {
+        async editEntryName(trip,event,ended,button,addButton) {
             this.root.querySelector(':scope>.trip-log-error')?.remove();
             if(button.parentElement?.querySelector('select'))return;
+            if(addButton)addButton.hidden=true;
             const select=node('select');select.setAttribute('aria-label','Entry type');
             const currentType=event.event==='interval.started'?(event.value?.type||'break'):event.event;
             const choices=event.event==='interval.started'?['break','down','latency','trip','overtime','earlystart']: [currentType];
             for(const value of choices){const option=node('option',value==='trip.started'?'Trip started':value==='trip.stopped'?'Trip ended':value.replace(/(^|-)(\w)/g,(_,dash,letter)=>`${dash?' ':''}${letter.toUpperCase()}`));option.value=value;select.append(option);}
             const cancel=node('option','Cancel');cancel.value='__cancel__';select.append(cancel);select.value=currentType;button.replaceWith(select);select.focus();
-            const restore=()=>select.replaceWith(button);
-            select.addEventListener('change',async()=>{if(select.value==='__cancel__'||event.event!=='interval.started'){restore();return;}try{const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));if(!current)throw new Error('Entry changed. Reopen the trip.');const entry={eventId:current.id,intervalKey:current.value.intervalKey,start:iso(current.timestamp),type:select.value,length:current.value.length};const currentEnd=data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey);if(currentEnd)entry.end=iso(currentEnd.timestamp);await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();}catch(error){restore();this.error(error);}});
+            const restore=()=>{if(select.isConnected)select.replaceWith(button);if(addButton?.isConnected)addButton.hidden=false;};
+            select.addEventListener('change',async()=>{if(select.value==='__cancel__'||event.event!=='interval.started'){restore();return;}try{const data=await this.options.request(trip.id),current=data.events.find(candidate=>String(candidate.id)===String(event.id));if(!current)throw new Error('Entry changed. Reopen the trip.');const entry={eventId:current.id,intervalKey:current.value.intervalKey,start:iso(current.timestamp),type:select.value,length:current.value.length};const currentEnd=data.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===current.value.intervalKey);if(currentEnd)entry.end=iso(currentEnd.timestamp);await this.options.request(trip.id,{operation:'entry',revision:data.revision,entry});this.root.querySelector(':scope>.trip-log-error')?.remove();restore();await this.options.refresh();}catch(error){restore();this.error(error);}});
             select.addEventListener('blur',()=>{if(select.isConnected)restore();},{once:true});
         }
         async deleteEntry(trip,event) {
