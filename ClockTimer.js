@@ -1,4 +1,11 @@
 (() => {
+    class ClockTimerUIState {
+        constructor(values = {}) {
+            Object.assign(this, values);
+            Object.freeze(this);
+        }
+    }
+
     class ClockTimer extends HTMLElement {
         static observedAttributes = [
             "trip-goal",
@@ -169,6 +176,24 @@
         #aggregateReconnectSnapshot;
 
         #tripTotals;
+
+        #externalStandardTime;
+
+        #externalCountedTime;
+
+        #uiState;
+
+        #uiStateName = "ready";
+
+        #uiPreviousState = null;
+
+        #uiStateEnteredAt = new Date();
+
+        #uiTransitionId = 0;
+
+        #uiTransitionStartedAt = new Date();
+
+        #configuring = false;
 
         #totalGoalNotPossibleState =
             false;
@@ -1236,7 +1261,7 @@
                 return true;
             }
 
-            return this.dispatchEvent(new CustomEvent(name, {
+            const result = this.dispatchEvent(new CustomEvent(name, {
                 detail: {
                     ...detail,
                     connected: this.#connectionState === "connected",
@@ -1246,6 +1271,224 @@
                 composed: true,
                 cancelable
             }));
+
+            if (!this.#configuring && name !== "uiStateChanged") {
+                this.#emitUIState(name, detail?.summary);
+            }
+
+            return result;
+        }
+
+        #transitionName(eventName) {
+            const names = {
+                cadenceTick: "tick",
+                started: "trip_started",
+                tripStarted: "trip_started",
+                tripStartedEarly: "trip_started_early",
+                tripStartedLate: "trip_started_late",
+                tripResumed: "trip_resumed",
+                breakStarted: "break_started",
+                breakEndedEarly: "break_ended",
+                breakEndedAutomatically: "break_ended",
+                breakEndedLate: "break_ended",
+                downTimeStarted: "down_started",
+                intervalStarted: "interval_started",
+                intervalEnded: "interval_ended",
+                cleared: "trip_ended",
+                prepared: "trip_deferred",
+                percentModeChanged: "configured",
+                renderedTimeModeChanged: "configured",
+                goalChanged: "configured"
+            };
+            return names[eventName] || eventName.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+        }
+
+        #currentUIStateName(now = new Date()) {
+            const interval = this.getActiveIntervalState?.(now);
+            const type = String(interval?.intervalType || "").trim().toLowerCase();
+            if (["break", "lunch", "down", "buffer"].includes(type)) return type;
+            if (this.#hasStartProperties()) return this.#started ? "running" : "deferred";
+            if (this.#preparedTrip) return "deferred";
+            return "ready";
+        }
+
+        #component(text, value, date = null, available = true) {
+            return Object.freeze({
+                text: available && typeof text === "string" && text ? text : "---",
+                value: available && Number.isFinite(value) ? value : null,
+                date: available && date instanceof Date && !Number.isNaN(date.getTime())
+                    ? new Date(date.getTime())
+                    : null,
+                available: Boolean(available)
+            });
+        }
+
+        #renderedTimeType() {
+            return this.#renderedTimeMode === "elapsed"
+                ? "calculated_start_time"
+                : this.#renderedTimeMode === "calculated-end"
+                    ? "calculated_end_time"
+                    : "time_remaining";
+        }
+
+        #renderedDate(text, now) {
+            if (this.#renderedTimeMode !== "calculated-end" || typeof text !== "string") return null;
+            const match = text.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+            if (!match) return null;
+            const date = new Date(now.getTime());
+            date.setHours(Number(match[1]), Number(match[2]), Number(match[3]), 0);
+            if (date.getTime() < now.getTime() - 1000) date.setDate(date.getDate() + 1);
+            return date;
+        }
+
+        #renderedTimeValue(text, selected, date) {
+            if (date instanceof Date) return date.getTime();
+            if (this.#renderedTimeMode === "elapsed") {
+                return Number(selected?.countedTimeElapsedMilliseconds);
+            }
+            if (typeof text !== "string") return NaN;
+            const normalized = text.replace(/[⁺⁻]$/u, "");
+            const match = normalized.match(/^(-)?(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+            if (!match) return NaN;
+            const value = ((Number(match[2] || 0) * 60 + Number(match[3])) * 60 + Number(match[4])) * 1000;
+            return match[1] ? -value : value;
+        }
+
+        getUIState(now = new Date(), options = {}) {
+            const summary = options.summary?.selected ? options.summary : this.#buildSummarySnapshot(now);
+            const state = this.#currentUIStateName(now);
+            const scope = summary.scope || (this.#percentMode === "total" ? "total" : "trip");
+            const selected = scope === "total" ? summary.total : scope === "trip" ? summary.trip : summary.selected;
+            const scopeLabel = scope === "total" ? "Total" : "Trip";
+            const suffix = this.#renderedTimeMode === "elapsed"
+                ? "Time Elapsed"
+                : this.#renderedTimeMode === "calculated-end"
+                    ? "End Time"
+                    : "Time Remaining";
+            const interval = this.getActiveIntervalState?.(now);
+            const standardText = selected?.standardTime;
+            const rawRenderedText = selected?.renderedTime;
+            const renderedText =
+                typeof rawRenderedText === "string" &&
+                (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed") &&
+                interval?.open === false
+                    ? `${rawRenderedText}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}`
+                    : rawRenderedText;
+            const renderedDate = this.#renderedDate(renderedText, now);
+            const countedPercent = Number(selected?.countedPercent);
+            const ordinaryGoal = scope === "standard"
+                ? Number(this.#getTripGoal())
+                : Number(selected?.percentGoal);
+            const goal = this.#percentMode === "auto" && this.#autoSyncTripGoal
+                ? Number(this.#renderedPercentGoal)
+                : ordinaryGoal;
+            const values = {
+                state,
+                state_class: `clock-timer-state-${state}`,
+                previous_state: options.previousState ?? this.#uiPreviousState,
+                transition: options.transition || "snapshot",
+                transition_phase: options.phase || "settled",
+                transition_id: options.transitionId ?? this.#uiTransitionId,
+                state_entered_at: new Date(this.#uiStateEnteredAt.getTime()),
+                transition_started_at: new Date(this.#uiTransitionStartedAt.getTime()),
+                transition_ended_at: options.phase === "active" ? null : new Date(now.getTime()),
+                changed_fields: Object.freeze([...(options.changedFields || [])]),
+                timestamp: new Date(now.getTime()),
+                rendered_time_type: this.#renderedTimeType(),
+                goal_type: this.#percentMode,
+                effective_goal_type: scope,
+                auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
+                standard_time_header_text: `${scopeLabel} Standard Time`,
+                standard_time_component: this.#component(
+                    standardText,
+                    Number(selected?.standardTimeMilliseconds),
+                    null,
+                    typeof standardText === "string" && Boolean(standardText)
+                ),
+                time_header_text: scope === "standard" ? `Standard ${suffix}` : `${scopeLabel} ${suffix}`,
+                time_header_short_text: scope === "standard" ? `Std. ${suffix}` : null,
+                time_component: this.#component(
+                    renderedText,
+                    this.#renderedTimeValue(renderedText, selected, renderedDate),
+                    renderedDate,
+                    typeof renderedText === "string" && Boolean(renderedText)
+                ),
+                current_percent_component: this.#component(
+                    Number.isFinite(countedPercent) ? `${Math.round(countedPercent * 100)}%` : undefined,
+                    countedPercent,
+                    null,
+                    Number.isFinite(countedPercent)
+                ),
+                goal_component: this.#component(
+                    Number.isFinite(goal) && goal > 0 ? `${Math.round(goal * 100)}%` : undefined,
+                    goal,
+                    null,
+                    Number.isFinite(goal) && goal > 0
+                ),
+                trip_goal_component: this.#component(
+                    `${Math.round(this.#getTripGoal() * 100)}%`, this.#getTripGoal(), null,
+                    Number.isFinite(this.#getTripGoal()) && this.#getTripGoal() > 0
+                ),
+                total_goal_component: this.#component(
+                    `${Math.round(this.#getTotalGoal() * 100)}%`, this.#getTotalGoal(), null,
+                    Number.isFinite(this.#getTotalGoal()) && this.#getTotalGoal() > 0
+                ),
+                active_interval_type: interval?.open === false ? null : (interval?.intervalType || null),
+                trip_active: this.#hasStartProperties(),
+                paused: ["break", "lunch", "down", "buffer"].includes(state)
+            };
+            return new ClockTimerUIState(values);
+        }
+
+        get uiState() {
+            return this.#uiState || this.getUIState();
+        }
+
+        #emitUIState(eventName, summary) {
+            const now = summary?.now instanceof Date ? summary.now : new Date();
+            const state = this.#currentUIStateName(now);
+            const changedState = state !== this.#uiStateName;
+            if (changedState) {
+                this.#uiPreviousState = this.#uiStateName;
+                this.#uiStateName = state;
+                this.#uiStateEnteredAt = new Date(now.getTime());
+                this.#uiTransitionId += 1;
+                this.#uiTransitionStartedAt = new Date(now.getTime());
+            }
+            const transition = this.#transitionName(eventName);
+            const previous = this.#uiState;
+            const active = this.getUIState(now, {
+                summary,
+                previousState: this.#uiPreviousState,
+                transition,
+                phase: changedState ? "active" : "settled",
+                transitionId: this.#uiTransitionId
+            });
+            const comparable = ["state", "rendered_time_type", "goal_type", "effective_goal_type",
+                "standard_time_component", "time_component", "current_percent_component", "goal_component"];
+            const changedFields = comparable.filter(key =>
+                JSON.stringify(previous?.[key]) !== JSON.stringify(active[key]));
+            this.#uiState = new ClockTimerUIState({...active, changed_fields: Object.freeze(changedFields)});
+            this.dispatchEvent(new CustomEvent("uiStateChanged", {
+                detail: this.#uiState,
+                bubbles: true,
+                composed: true
+            }));
+            if (changedState) queueMicrotask(() => {
+                if (this.#uiStateName !== state) return;
+                this.#uiState = this.getUIState(new Date(), {
+                    previousState: this.#uiPreviousState,
+                    transition,
+                    phase: "settled",
+                    transitionId: this.#uiTransitionId,
+                    changedFields: []
+                });
+                this.dispatchEvent(new CustomEvent("uiStateChanged", {
+                    detail: this.#uiState,
+                    bubbles: true,
+                    composed: true
+                }));
+            });
         }
 
         connectedCallback() {
@@ -4092,6 +4335,7 @@
             };
 
             this.#preparedTrip = prepared;
+            if (this.#eventsReady) this.#emitUIState("prepared");
 
             if (this.#connectionState !== "connected") {
                 return { ...prepared };
@@ -5052,6 +5296,7 @@
             if (!this.#clearLocal()) throw new Error("The completed trip could not be reset.");
             this.#tripId = undefined;
             this.#preparedTrip = undefined;
+            if (this.#eventsReady) this.#emitUIState("preparedTripDiscarded");
             this.#pendingIntervalRecord = undefined;
             this.#pendingTripEvents = [];
             const result = {synced, connected: this.#connectionState === "connected", tripId, intervalId: undefined};
@@ -5514,6 +5759,79 @@
             return this.#commitIntervalDeletion(
                 record
             );
+        }
+
+        #configurationDuration(value, name) {
+            if (value === null) return undefined;
+            if (Number.isFinite(value) && value >= 0) return Number(value);
+            if (typeof value === "string") {
+                const text = value.trim();
+                const match = text.match(/^(\d+):(\d{2}):(\d{2})$/);
+                if (match && Number(match[2]) < 60 && Number(match[3]) < 60) {
+                    return (Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])) * 1000;
+                }
+            }
+            throw new TypeError(`${name} must be milliseconds or h:mm:ss.`);
+        }
+
+        #configurationGoal(value, name) {
+            if (value === null) return null;
+            const parsed = this.#parseGoalValue(String(value), NaN);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                throw new TypeError(`${name} must be a positive ratio or percentage.`);
+            }
+            return `${Number((parsed * 100).toFixed(6))}%`;
+        }
+
+        configure(configuration = {}) {
+            if (!configuration || typeof configuration !== "object" || Array.isArray(configuration)) {
+                throw new TypeError("configuration must be an object.");
+            }
+            const has = key => Object.prototype.hasOwnProperty.call(configuration, key);
+            const renderedKey = has("rendered_time_type") ? "rendered_time_type" :
+                has("renderedTimeType") ? "renderedTimeType" : null;
+            const aliases = {
+                calculated_start_time: "elapsed",
+                calculated_end_time: "calculated-end",
+                "calculated_end time": "calculated-end",
+                time_remaining: "remaining"
+            };
+            this.#configuring = true;
+            try {
+                if (renderedKey) {
+                    const rendered = aliases[String(configuration[renderedKey]).trim().toLowerCase()];
+                    if (!rendered) throw new RangeError("rendered_time_type is invalid.");
+                    this.renderedTimeMode = rendered;
+                }
+                if (has("goal_type")) this.percentMode = configuration.goal_type;
+                if (has("auto_goal")) this.autoSyncTripGoal = Boolean(configuration.auto_goal);
+                if (has("trip_goal")) {
+                    const value = this.#configurationGoal(configuration.trip_goal, "trip_goal");
+                    if (value === null) this.removeAttribute("trip-goal");
+                    else this.setAttribute("trip-goal", value);
+                }
+                if (has("total_goal")) {
+                    const value = this.#configurationGoal(configuration.total_goal, "total_goal");
+                    if (value === null) this.removeAttribute("total-goal");
+                    else this.setAttribute("total-goal", value);
+                }
+                if (has("external_standard_time")) {
+                    this.#externalStandardTime = this.#configurationDuration(
+                        configuration.external_standard_time, "external_standard_time");
+                }
+                if (has("external_counted_time")) {
+                    this.#externalCountedTime = this.#configurationDuration(
+                        configuration.external_counted_time, "external_counted_time");
+                }
+                if (has("external_standard_time") || has("external_counted_time")) {
+                    this.#handleTripGoalChange("user");
+                }
+            }
+            finally {
+                this.#configuring = false;
+            }
+            this.#emitUIState("configured");
+            return this.uiState;
         }
 
         getSummarySnapshot(now = new Date()) {
@@ -31133,12 +31451,25 @@
                 ? this.#tripTotals
                 : undefined;
 
-            if (!base && !this.#hasStartProperties()) return undefined;
+            if (
+                !base &&
+                !this.#hasStartProperties() &&
+                !Number.isFinite(this.#externalStandardTime) &&
+                !Number.isFinite(this.#externalCountedTime)
+            ) return undefined;
 
             let standardTimeMilliseconds = Number(base?.standardTimeMilliseconds ?? 0);
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
             let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0);
             let allowanceCreditMilliseconds = 0;
+
+            if (Number.isFinite(this.#externalStandardTime)) {
+                standardTimeMilliseconds = this.#externalStandardTime;
+            }
+            if (Number.isFinite(this.#externalCountedTime)) {
+                countedTimeMilliseconds = this.#externalCountedTime;
+                actualTimeMilliseconds = this.#externalCountedTime;
+            }
 
             if (this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
@@ -32519,5 +32850,9 @@
             "clock-timer",
             ClockTimer
         );
+    }
+
+    if (!globalThis.ClockTimerUIState) {
+        globalThis.ClockTimerUIState = ClockTimerUIState;
     }
 })();

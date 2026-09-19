@@ -10,7 +10,8 @@
     "test:custom-range": "node custom-trip-range.mjs && node custom-range-goals.mjs",
     "test:trip-editor": "node trip-log.mjs && node app-integration.mjs",
     "test:numberpad": "node numberpad-meridiem.mjs",
-    "test:deferred-trip": "node deferred-trip.mjs"
+    "test:deferred-trip": "node deferred-trip.mjs",
+    "test:ui-state": "node clock-timer-ui-state.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

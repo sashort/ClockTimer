@@ -1566,8 +1566,9 @@
         const enabled =
             Boolean(value);
 
-        clockTimer.autoSyncTripGoal =
-            enabled;
+        clockTimer.configure({
+            auto_goal: enabled
+        });
 
         if (tripDraft) {
             tripDraft.syncGoals =
@@ -2798,16 +2799,23 @@
         const requested =
             normalizePercentMode(mode);
 
-        clockTimer.percentMode =
-            requested;
+        clockTimer.configure({
+            goal_type: requested
+        });
 
         return syncScopeUI(persist);
     }
 
     function applyRenderedTimeMode(mode, persist = true) {
         const next = RENDERED_TIME_MODES.includes(mode) ? mode : "remaining";
-        clockTimer.renderedTimeMode = next;
-        updateSummaryLabels();
+        clockTimer.configure({
+            rendered_time_type:
+                next === "elapsed"
+                    ? "calculated_start_time"
+                    : next === "calculated-end"
+                        ? "calculated_end_time"
+                        : "time_remaining"
+        });
         updateSummaryValues();
         if (persist) safeStorageSet(STORAGE.renderedTimeMode, next);
     }
@@ -2820,8 +2828,10 @@
     }
 
     function restoreGoalAttribute(name, snapshot) {
-        if (snapshot?.present) clockTimer.setAttribute(name, snapshot.value ?? "");
-        else clockTimer.removeAttribute(name);
+        clockTimer.configure({
+            [name === "total-goal" ? "total_goal" : "trip_goal"]:
+                snapshot?.present ? snapshot.value : null
+        });
     }
 
     function renderEndTimeGoalLock() {
@@ -2879,7 +2889,7 @@
         endTimeGoalOverride = undefined;
         restoreGoalAttribute("trip-goal", override.tripGoal);
         restoreGoalAttribute("total-goal", override.totalGoal);
-        clockTimer.autoSyncTripGoal = override.autoSyncTripGoal;
+        clockTimer.configure({auto_goal: override.autoSyncTripGoal});
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
@@ -2956,9 +2966,12 @@
         if (normalized.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
         restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
         restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-        clockTimer.autoSyncTripGoal = false;
+        clockTimer.configure({auto_goal: false});
         for (const scope of normalized) {
-            clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
+            clockTimer.configure({
+                [scope === "total" ? "total_goal" : "trip_goal"]:
+                    percentGoalAttribute(goals[scope])
+            });
         }
         endTimeGoalOverride.scopes = normalized;
         renderEndTimeGoalLock();
@@ -2993,14 +3006,17 @@
         else {
             restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
             restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-            clockTimer.autoSyncTripGoal = endTimeGoalOverride.autoSyncTripGoal;
+            clockTimer.configure({auto_goal: endTimeGoalOverride.autoSyncTripGoal});
             endTimeGoalOverride.deadline = deadline;
             endTimeGoalOverride.scopes = [...scopes];
         }
 
-        clockTimer.autoSyncTripGoal = false;
+        clockTimer.configure({auto_goal: false});
         for (const scope of scopes) {
-            clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
+            clockTimer.configure({
+                [scope === "total" ? "total_goal" : "trip_goal"]:
+                    percentGoalAttribute(goals[scope])
+            });
         }
         applyRenderedTimeMode("calculated-end");
         renderEndTimeGoalLock();
@@ -3045,102 +3061,6 @@
         return true;
     }
 
-    function updateSummaryLabels(summary) {
-        let snapshot = summary;
-
-        if (!snapshot?.scope) {
-            try {
-                snapshot =
-                    clockTimer.getSummarySnapshot?.(
-                        new Date()
-                    );
-            }
-            catch {
-                snapshot = undefined;
-            }
-        }
-
-        const mode =
-            clockTimer.renderedTimeMode;
-
-        const suffix =
-            mode === "elapsed"
-                ? "Time Elapsed"
-                : mode === "calculated-end"
-                    ? "End Time"
-                    : "Time Remaining";
-
-        const selectedScope = endTimeGoalDisplayScope(snapshot) ?? (
-            clockTimer.percentMode === "auto"
-                ? snapshot?.scope ?? "standard"
-                : clockTimer.percentMode === "total"
-                    ? "total"
-                    : "trip"
-        );
-
-        const standardLabel =
-            $("#standardTimeLabel");
-
-        const renderedLabel =
-            $("#renderedTimeLabel");
-
-        standardLabel.classList.remove(
-            "summary-label-responsive"
-        );
-        renderedLabel.classList.remove(
-            "summary-label-responsive"
-        );
-
-        if (selectedScope === "standard") {
-            standardLabel.textContent =
-                "Trip Standard Time";
-
-            const full =
-                document.createElement(
-                    "span"
-                );
-
-            full.className =
-                "summary-label-full";
-
-            full.textContent =
-                `Standard ${suffix}`;
-
-            const short =
-                document.createElement(
-                    "span"
-                );
-
-            short.className =
-                "summary-label-short";
-
-            short.textContent =
-                `Std. ${suffix}`;
-
-            renderedLabel.classList.add(
-                "summary-label-responsive"
-            );
-
-            renderedLabel.replaceChildren(
-                full,
-                short
-            );
-
-            return;
-        }
-
-        const scopeLabel =
-            selectedScope === "total"
-                ? "Total"
-                : "Trip";
-
-        standardLabel.textContent =
-            `${scopeLabel} Standard Time`;
-
-        renderedLabel.textContent =
-            `${scopeLabel} ${suffix}`;
-    }
-
     function formatSummaryPercent(value, fallback = "---") {
         const numeric = Number(value);
         return Number.isFinite(numeric)
@@ -3148,162 +3068,56 @@
             : fallback;
     }
 
-    function getMainRenderedTimeValue(selected) {
-        const renderedTime =
-            typeof selected?.renderedTime === "string"
-                ? selected.renderedTime
-                : "";
+    function renderClockTimerUIState(state) {
+        if (!state?.time_component || !state?.standard_time_component) return false;
+        app.dataset.clockTimerState = state.state;
+        app.classList.forEach(name => {
+            if (name.startsWith("clock-timer-state-")) app.classList.remove(name);
+        });
+        if (state.state_class) app.classList.add(state.state_class);
 
-        if (!renderedTime) return undefined;
-
-        const mode =
-            selected?.renderedTimeMode ??
-            clockTimer.renderedTimeMode;
-
-        if (mode !== "remaining" && mode !== "elapsed") {
-            return renderedTime;
+        const standardLabel = $("#standardTimeLabel");
+        const renderedLabel = $("#renderedTimeLabel");
+        standardLabel.classList.remove("summary-label-responsive");
+        renderedLabel.classList.remove("summary-label-responsive");
+        standardLabel.textContent = state.standard_time_header_text;
+        if (state.time_header_short_text) {
+            const full = document.createElement("span");
+            full.className = "summary-label-full";
+            full.textContent = state.time_header_text;
+            const short = document.createElement("span");
+            short.className = "summary-label-short";
+            short.textContent = state.time_header_short_text;
+            renderedLabel.classList.add("summary-label-responsive");
+            renderedLabel.replaceChildren(full, short);
         }
-
-        let intervalState;
-        try {
-            intervalState =
-                clockTimer.getActiveIntervalState?.(
-                    new Date()
-                );
+        else {
+            renderedLabel.textContent = state.time_header_text;
         }
-        catch {}
-
-        if (intervalState?.open !== false) {
-            return renderedTime;
-        }
-
-        return `${renderedTime}${mode === "remaining" ? "⁺" : "⁻"}`;
-    }
-
-    function updateSummaryValues(summary) {
-        let snapshot = summary;
-
-        if (!snapshot?.selected) {
-            try {
-                snapshot =
-                    clockTimer.getSummarySnapshot?.(
-                        new Date()
-                    );
-            }
-            catch {
-                snapshot = undefined;
-            }
-        }
-
-        updateSummaryLabels(snapshot);
-        renderEndTimeGoalLock();
-
-        const lockedDisplayScope = endTimeGoalDisplayScope(snapshot);
-        const scope = lockedDisplayScope ??
-            snapshot?.scope ??
-            (
-                clockTimer.percentMode === "total"
-                    ? "total"
-                    : "trip"
-            );
-
-        const selected = scope === "total"
-            ? snapshot?.total
-            : scope === "trip"
-                ? snapshot?.trip
-                : snapshot?.selected;
-
-        const standard =
-            scope === "standard"
-                ? (
-                    snapshot?.trip?.standardTime ||
-                    clockTimer.standardTime ||
-                    stagedStandardTime
-                )
-                : selected?.standardTime ||
-                    (
-                        scope !== "total"
-                            ? (
-                                clockTimer.standardTime ||
-                                stagedStandardTime
-                            )
-                            : undefined
-                    );
-
-        $("#standardTimeValue").textContent =
-            typeof standard === "string" && standard
-                ? standard
-                : "---";
-
-        let mainRenderedTime =
-            getMainRenderedTimeValue(
-                selected
-            );
-
-        if (
-            endTimeGoalOverride?.deadline instanceof Date &&
-            clockTimer.renderedTimeMode === "calculated-end" &&
-            endTimeGoalDisplayScope(snapshot)
-        ) {
-            mainRenderedTime = [
-                endTimeGoalOverride.deadline.getHours(),
-                endTimeGoalOverride.deadline.getMinutes(),
-                endTimeGoalOverride.deadline.getSeconds()
-            ].map(value => String(value).padStart(2, "0")).join(":");
-        }
-
-        $("#renderedTimeValue").textContent =
-            mainRenderedTime || "---";
-
-        $("#currentPercentValue").textContent =
-            selected?.available === false
-                ? "---"
-                : formatSummaryPercent(
-                    selected?.countedPercent
-                );
-
-        const goalButton =
-            $("#goalPercentValue");
-
-        const lockedGoal = lockedDisplayScope
-            ? parsePercentGoalAttribute(
-                clockTimer.getAttribute(
-                    getPercentGoalAttribute(lockedDisplayScope)
-                )
-            )
-            : undefined;
-        const automaticGoal =
-            clockTimer.percentMode === "auto" &&
-            clockTimer.autoSyncTripGoal
-                ? Number(clockTimer.renderedPercentGoal)
-                : undefined;
-
-        goalButton.textContent = formatSummaryPercent(
-            Number.isFinite(lockedGoal)
-                ? lockedGoal
-                : Number.isFinite(automaticGoal) && automaticGoal > 0
-                    ? automaticGoal
-                    : selected?.percentGoal,
-            "100%"
-        );
-
-        goalButton.setAttribute(
+        $("#standardTimeValue").textContent = state.standard_time_component.text;
+        $("#renderedTimeValue").textContent = state.time_component.text;
+        $("#currentPercentValue").textContent = state.current_percent_component.text;
+        $("#goalPercentValue").textContent = state.goal_component.text;
+        $("#goalPercentValue").setAttribute(
             "aria-label",
-            clockTimer.percentMode === "auto"
+            state.goal_type === "auto"
                 ? "Choose Trip or Total goal"
-                : clockTimer.percentMode === "total"
+                : state.goal_type === "total"
                     ? "Edit Total goal"
                     : "Edit Trip goal"
         );
+        renderEndTimeGoalLock();
+        renderSyncGoalsState(state.effective_goal_type);
+        return true;
+    }
 
-        renderSyncGoalsState(
-            scope
-        );
+    function updateSummaryValues(state = clockTimer.uiState) {
+        renderClockTimerUIState(state);
     }
 
     function queueSummaryRefresh() {
         queueMicrotask(() => {
-            updateSummaryValues();
+            renderClockTimerUIState(clockTimer.uiState);
             refreshAutoGoalDialog();
         });
     }
@@ -4041,11 +3855,12 @@
                 )
             );
 
-        clockTimer.percentMode =
+        applyScope(
             PERCENT_MODES[
                 (current + 1) %
                 PERCENT_MODES.length
-            ];
+            ]
+        );
     });
 
     scopeConnectionButton?.addEventListener(
@@ -4090,7 +3905,7 @@
             return;
         }
         const index = RENDERED_TIME_MODES.indexOf(clockTimer.renderedTimeMode);
-        clockTimer.renderedTimeMode = RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length];
+        applyRenderedTimeMode(RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length]);
     });
 
     for (const type of ["pointercancel", "pointerleave"]) {
@@ -5333,10 +5148,10 @@
                     ? "total-goal"
                     : "trip-goal";
 
-            clockTimer.setAttribute(
-                attribute,
-                `${percent}%`
-            );
+            clockTimer.configure({
+                [attribute === "total-goal" ? "total_goal" : "trip_goal"]:
+                    `${percent}%`
+            });
 
             return true;
         }
@@ -5584,7 +5399,7 @@
         const standardTime = String(draft?.standardTime || "").trim();
         if (!tripDraftCanStart(draft)) return false;
 
-        clockTimer.autoSyncTripGoal = Boolean(draft.syncGoals);
+        clockTimer.configure({auto_goal: Boolean(draft.syncGoals)});
         clockTimer.intervalElapsedBehavior = "startLatency";
         clockTimer.autoRestartTripAfterLateBreak =
             draft.lateBreakBehavior === "autoRestartTrip";
@@ -5863,7 +5678,7 @@
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
             if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
             clockTimer.nonProduction = values.nonProduction === true;
-            clockTimer.autoSyncTripGoal = Boolean(values.syncGoals);
+            clockTimer.configure({auto_goal: Boolean(values.syncGoals)});
             stagedStandardTime = values.standardTime || stagedStandardTime;
             return true;
         }
@@ -6810,13 +6625,15 @@
         ) {
             releaseEndTimeGoalOverride();
         }
-        updateSummaryValues(event.detail?.summary);
         renderTripActionState(event.detail?.now);
+    });
+
+    clockTimer.addEventListener("uiStateChanged", event => {
+        renderClockTimerUIState(event.detail);
     });
 
     clockTimer.addEventListener("started", event => {
         setTripControlState(true);
-        updateSummaryValues(event.detail?.summary);
     });
 
 
@@ -7107,8 +6924,9 @@
     clockTimer.intervalElapsedBehavior = "startLatency";
     clockTimer.autoRestartTripAfterLateBreak =
         tripPreferences.lateBreakBehavior === "autoRestartTrip";
-    clockTimer.autoSyncTripGoal =
-        tripPreferences.syncGoals;
+    clockTimer.configure({
+        auto_goal: tripPreferences.syncGoals
+    });
     renderSyncGoalsState();
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
