@@ -3807,12 +3807,12 @@ clock-timer[hide-latency] time-range[type="latency"] {
         transparent 68%,
         transparent 100%
     );
-    background-size: 300% 100%;
-    animation: trip-log-active-sweep 2.8s linear infinite;
+    background-size: 400% 100%;
+    animation: trip-log-active-sweep 11.2s linear infinite;
 }
 @keyframes trip-log-active-sweep {
     from { background-position: 100% 0; }
-    to { background-position: -50% 0; }
+    to { background-position: 0% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .trip-log-group.has-active-trip>summary,
