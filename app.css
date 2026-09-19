@@ -3809,6 +3809,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
     );
     background-size: 300% 100%;
     animation: trip-log-active-sweep 4.2s linear infinite;
+    animation-delay: var(--trip-log-active-sweep-delay, 0ms);
 }
 @keyframes trip-log-active-sweep {
     from { background-position: 100% 0; }
