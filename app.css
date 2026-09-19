@@ -230,6 +230,7 @@ html[data-trip-log-startup="unpinned"] .app {
 
 .rendered-time-cell {position:relative;min-width:0;display:grid;}
 .rendered-time-cell>.summary-cell {width:100%;height:100%;}
+#renderedTimeButton {-webkit-touch-callout:none;user-select:none;}
 .end-time-goal-lock {position:absolute;right:10px;bottom:7px;width:25px;height:25px;margin:0;padding:0;border:0;color:var(--wm-blue-light);background:transparent;}
 .end-time-goal-lock::before {content:"";position:absolute;inset:1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
 .end-time-goal-lock[hidden] {display:none;}
@@ -3922,7 +3923,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-entries {border-top:1px solid #ffffff30;padding:12px;background:rgb(255 255 255 / 4%);}
 .trip-log-entry-heading {display:flex;justify-content:space-between;align-items:center;}
 .trip-log-entries p {font-size:13px;font-weight:400;}
-.trip-log-entry {display:grid;grid-template-columns:65px minmax(0,1fr);gap:8px;width:100%;padding:8px 0;text-align:left;font-size:15px;font-weight:400;color:white;}
+.trip-log-entry {display:grid;grid-template-columns:65px minmax(0,1fr);gap:8px;width:100%;padding:8px 0;text-align:left;font-size:15px;font-weight:400;color:white;-webkit-touch-callout:none;user-select:none;}
 button.trip-log-entry {padding:10px;margin-top:5px;border:1px solid #92a0ae;border-radius:5px;background:transparent;}
 button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a9ddf7;background:#a9ddf720;}
 .trip-log-entry-time,.trip-log-entry-name {

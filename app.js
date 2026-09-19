@@ -4030,6 +4030,7 @@
 
     renderedTimeButton.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        event.preventDefault();
         renderedTimeLongPressed = false;
         cancelRenderedTimeLongPress();
         if (!tripIsLive() || clockTimer.renderedTimeMode !== "calculated-end") return;
@@ -4052,6 +4053,8 @@
     for (const type of ["pointercancel", "pointerleave"]) {
         renderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
     }
+
+    renderedTimeButton.addEventListener("contextmenu", event => event.preventDefault());
 
     $("#endTimeGoalLock")?.addEventListener("click", event => {
         event.stopPropagation();

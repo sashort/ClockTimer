@@ -109,7 +109,7 @@ console.log('PASS editing running entry/settings reloads the same active ClockTi
 async function enterLockedEndTime(mode,minutes){
     c.percentMode=mode;c.renderedTimeMode='calculated-end';await settle();
     const renderedTimeButton=window.document.querySelector('#renderedTimeButton');
-    renderedTimeButton.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true,pointerId:31,pointerType:'touch'}));
+    const endTimePress=new window.PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:31,pointerType:'touch'});renderedTimeButton.dispatchEvent(endTimePress);assert(endTimePress.defaultPrevented);
     await new Promise(resolve=>setTimeout(resolve,700));
     renderedTimeButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerId:31,pointerType:'touch'}));
     assert.equal(window.document.querySelector('#numberPadContext').textContent,'End Time');
@@ -157,7 +157,7 @@ window.document.querySelector('#endTimeGoalLock').click();for(const id of ['endT
 assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),'107%');assert.equal(c.getAttribute('total-goal'),'108%');
 console.log('PASS switching a single-scope End Time lock to Auto edits Trip and Total lock scopes');
 c.percentMode='trip';c.setAttribute('trip-goal','109%');c.autoSyncTripGoal=false;await enterLockedEndTime('trip',.05);
-assert(!window.document.querySelector('#endTimeGoalLock').hidden);await new Promise(resolve=>setTimeout(resolve,4000));
+assert(!window.document.querySelector('#endTimeGoalLock').hidden);for(let attempt=0;attempt<7&&!window.document.querySelector('#endTimeGoalLock').hidden;attempt++)await new Promise(resolve=>setTimeout(resolve,1000));
 assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),'109%');
 console.log('PASS elapsed locked End Time automatically restores normal goal operation');
 console.log('PASS long-pressed End Time locks Trip, Total, and Auto goals and restores normal goals');
