@@ -11,6 +11,13 @@ view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip su
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.0%');
+// Production regression: wall time is 10:03:36, but excluded intervals reduce
+// counted time to 9:05:01. The Trip Log must show the counted-time result.
+assert.equal(w.TripLog.percent([{
+ standardTimeMilliseconds:28421000,
+ actualTimeMilliseconds:36216727,
+ countedTimeMilliseconds:32701965
+}]),'86.9%');
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.0%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');

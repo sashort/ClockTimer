@@ -32562,11 +32562,13 @@
                     1000
                 ) * 1000;
 
-            return TemporalFormat.formatDuration(
-                Math.abs(
-                    displayMilliseconds
-                )
+            const duration = TemporalFormat.formatDuration(
+                Math.abs(displayMilliseconds)
             );
+
+            return displayMilliseconds < 0
+                ? `-${duration}`
+                : duration;
         }
 
         #calculateRenderedTime(
