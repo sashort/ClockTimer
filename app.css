@@ -3802,11 +3802,14 @@ clock-timer[hide-latency] time-range[type="latency"] {
     font-weight:700;
 }
 .trip-log-column-header span:not(:first-child) {text-align:center;}
+.trip-log-column-header span:first-child {padding-left:8px;}
 .trip-log-actual {color:#a9ddf7;white-space:nowrap;}
 .trip-log-group {border-top:1px solid rgb(255 255 255 / 20%);}
 .trip-log-group>summary {padding:12px;cursor:pointer;background:rgb(0 0 0 / 12%);}
 .trip-log-group-heading {display:flex;justify-content:space-between;gap:8px;}
-.trip-log-group>.trip-log-group {margin-left:14px;}
+.trip-log-group>.trip-log-group {margin-left:0;}
+.trip-log-group>.trip-log-group>summary {padding-left:26px;}
+.trip-log-group>.trip-log-group>.trip-log-group>summary {padding-left:40px;}
 .trip-log-trip {margin:8px 12px;border:1px solid rgb(255 255 255 / 20%);border-radius:5px;background:rgb(0 0 0 / 18%);}
 .trip-log-trip>summary {position:relative;display:grid;grid-template-columns:minmax(50px,1fr) repeat(2,minmax(50px,1fr)) minmax(65px,1fr) 24px;gap:6px;padding:12px 8px;align-items:center;font-size:15px;cursor:pointer;}
 .trip-log-trip>summary::before {content:"›";position:absolute;left:2px;top:50%;transform:translateY(-50%);}
@@ -3906,7 +3909,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     stroke-linejoin: round;
 }
 .trip-log-editor .danger {background:transparent;border:1px solid #ff8d8d;border-radius:7px;padding:10px;}
-@media (max-width:380px) {.trip-log-trip>summary {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:10px 12px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}
+@media (max-width:380px) {.trip-log-trip>summary,.trip-log-column-header {font-size:12px;gap:2px;grid-template-columns:45px repeat(2,minmax(42px,1fr)) minmax(50px,1fr) 22px;}.trip-log-controls label {font-size:13px;}.trip-log-date-controls {font-size:12px;gap:10px 12px;}.trip-log-date-controls input {padding:5px;font-size:12px;}}
 
 .trip-settings-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:center;}
 .trip-settings-options label {min-width:0;justify-content:center;}
