@@ -35,7 +35,7 @@ assert.equal(window.document.querySelector('#profileUsername').value,'test');
 assert.equal(window.document.querySelector('#firstName').value,'Alex');
 assert.equal(window.document.querySelector('#lastName').value,'Driver');
 assert.equal(window.document.querySelector('#preferredName').value,'Al');
-assert.equal(window.document.querySelector('#adminMenuGroup').hidden,false);window.document.querySelector('#adminMenuButton').click();assert.equal(window.document.querySelector('#adminSubmenu').hidden,false);assert.equal(window.document.querySelector('#newUserButton').hidden,false);
+assert.equal(window.document.querySelector('#adminMenuGroup').hidden,false);window.document.querySelector('#adminMenuButton').click();assert.equal(window.document.querySelector('#adminSubmenu').hidden,false);assert.equal(window.document.querySelector('#newUserButton').hidden,false);window.document.querySelector('#newUserButton').click();assert.equal(window.document.querySelector('#newUserFrame').src,'https://wmof.sashort-apps.com/api/admin/new-user/');
 window.document.querySelector('#firstName').value='Unsaved';
 window.document.querySelector('#profileDialog').dispatchEvent(new window.CustomEvent('opening'));
 assert.equal(window.document.querySelector('#firstName').value,'Alex');
