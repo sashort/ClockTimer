@@ -143,6 +143,7 @@ for(const mode of ['trip','total','auto']){
         window.document.querySelector('#endTimeLockForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await settle();
     }
     assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),originalTripGoal);assert.equal(c.getAttribute('total-goal'),originalTotalGoal);assert.equal(c.autoSyncTripGoal,originalAutoSync);
+    if(mode==='auto')assert.equal(window.document.querySelector('#goalPercentValue').textContent,`${Math.round(c.renderedPercentGoal*100)}%`);
 }
 c.setAttribute('trip-goal','106%');c.autoSyncTripGoal=false;
 await enterLockedEndTime('trip',8);const firstRelockedGoal=c.getAttribute('trip-goal');

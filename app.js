@@ -3265,8 +3265,24 @@
         const goalButton =
             $("#goalPercentValue");
 
+        const lockedGoal = lockedDisplayScope
+            ? parsePercentGoalAttribute(
+                clockTimer.getAttribute(
+                    getPercentGoalAttribute(lockedDisplayScope)
+                )
+            )
+            : undefined;
+        const automaticGoal =
+            clockTimer.percentMode === "auto"
+                ? Number(clockTimer.renderedPercentGoal)
+                : undefined;
+
         goalButton.textContent = formatSummaryPercent(
-            selected?.percentGoal,
+            Number.isFinite(lockedGoal)
+                ? lockedGoal
+                : Number.isFinite(automaticGoal) && automaticGoal > 0
+                    ? automaticGoal
+                    : selected?.percentGoal,
             "100%"
         );
 
