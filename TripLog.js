@@ -3,7 +3,8 @@
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
     const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
-    const percent = trips => {const standard=trips.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=trips.reduce((a,t)=>a+t.actualTimeMilliseconds,0);if(actual<=0)return '—';const value=standard/actual*100;return `${(trips.some(t=>t.running)&&value>=100?100:value).toFixed(1)}%`;};
+    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+t.actualTimeMilliseconds,0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
+    const parentTrips = trips => trips.filter(trip=>!trip.running||trip.includeInParentPercent);
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     const uncertainIcon = () => {
         const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -44,9 +45,9 @@
             this.root.classList.toggle('trip-log-empty',trips.length===0);
             if(trips.length) {
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
-            emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips),'trip-log-actual'));
+            emphasis.append(node('strong',`${trips.length} ${trips.length===1?'Trip':'Trips'}`),node('strong',percent(trips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            overview.append(emphasis,node('div',`Standard ${duration(total(trips,'standardTimeMilliseconds'))} · Actual ${duration(total(trips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
+            const overviewTrips=parentTrips(trips);overview.append(emphasis,node('div',`Standard ${duration(total(overviewTrips,'standardTimeMilliseconds'))} · Actual ${duration(total(overviewTrips,'actualTimeMilliseconds'))}`,'trip-log-times'));fragment.append(overview);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
             fragment.append(this.groups(trips,levels,calendar));
@@ -91,9 +92,9 @@
             const fragment=document.createDocumentFragment();if(!levels.length){for(const trip of trips)fragment.append(this.trip(trip));return fragment;}
             const [level,...rest]=levels;const groups=new Map();for(const trip of trips){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
-                const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group)}`,'trip-log-actual'));
+                const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group,true)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
-                summary.append(heading,node('div',`Standard ${duration(total(group,'standardTimeMilliseconds'))} · Actual ${duration(total(group,'actualTimeMilliseconds'))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
+                const aggregateTrips=parentTrips(group);summary.append(heading,node('div',`Standard ${duration(total(aggregateTrips,'standardTimeMilliseconds'))} · Actual ${duration(total(aggregateTrips,'actualTimeMilliseconds'))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
             return fragment;
         }
         trip(trip) {
@@ -112,9 +113,10 @@
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
             const intervalEntries=events.filter(e=>e.event==='interval.started'&&!deleted.has(e.value.intervalKey));
             const visible=events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
+            const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===event.value.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
             for(const event of visible){const ended=event.event==='interval.started'?events.find(e=>e.event==='interval.ended'&&e.value.intervalKey===event.value.intervalKey):null;
                 const label=event.event==='trip.started'?'Trip started':event.event==='trip.stopped'?'Trip ended':`${event.value.type} · ${ended?duration(Date.parse(iso(ended.timestamp))-Date.parse(iso(event.timestamp))):'Still running'}`;
-                const row=node(this.editing.has(trip.id)?'button':'div',undefined,'trip-log-entry');row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',label));if(row.tagName==='BUTTON'){row.type='button';row.addEventListener('click',()=>this.openEntry(trip,event,ended).catch(e=>this.error(e)));}entries.append(row);
+                const row=node(this.editing.has(trip.id)?'button':'div',undefined,'trip-log-entry');if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',label));if(row.tagName==='BUTTON'){row.type='button';row.addEventListener('click',()=>this.openEntry(trip,event,ended).catch(e=>this.error(e)));}entries.append(row);
             }
             if(this.editing.has(trip.id)){const add=node('button','+ Add entry','trip-log-add');add.type='button';add.addEventListener('click',()=>this.openEntry(trip).catch(e=>this.error(e)));entries.append(add);}
             details.append(entries);return details;
