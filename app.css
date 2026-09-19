@@ -233,6 +233,9 @@ html[data-trip-log-startup="unpinned"] .app {
 .end-time-goal-lock {position:absolute;right:10px;bottom:7px;width:25px;height:25px;margin:0;padding:0;border:0;color:var(--wm-blue-light);background:transparent;}
 .end-time-goal-lock::before {content:"";position:absolute;inset:1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
 .end-time-goal-lock[hidden] {display:none;}
+.end-time-goal-lock.is-rejecting {animation:end-time-lock-reject 550ms ease-in-out both;}
+@keyframes end-time-lock-reject {0%,100%{transform:translateX(0) scale(1);filter:drop-shadow(0 0 0 rgb(169 221 247 / 0%))}20%{transform:translateX(-4px) scale(1.15);filter:drop-shadow(0 0 7px rgb(169 221 247 / 92%))}40%{transform:translateX(4px) scale(1.08);filter:drop-shadow(0 0 12px rgb(169 221 247 / 72%))}60%{transform:translateX(-3px) scale(1.13);filter:drop-shadow(0 0 7px rgb(169 221 247 / 88%))}80%{transform:translateX(3px) scale(1.04);filter:drop-shadow(0 0 2px rgb(169 221 247 / 36%))}}
+@media (prefers-reduced-motion:reduce) {.end-time-goal-lock.is-rejecting {animation:end-time-lock-reject-reduced 300ms linear both;}@keyframes end-time-lock-reject-reduced {50%{opacity:.45}}}
 .app-dialog.end-time-lock-dialog {width:min(88vw,440px);background:rgb(0 30 96 / 88%);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);}
 .app-dialog.end-time-lock-dialog form {padding-bottom:16px;}
 .app-dialog.end-time-lock-dialog form>fieldset,.app-dialog.end-time-lock-dialog form>.end-time-lock-release-message,.app-dialog.end-time-lock-dialog form>.dialog-primary {margin-inline:16px;}
@@ -805,6 +808,7 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 }
 
 .auto-goal-option {
+    position: relative;
     min-width: 0;
     min-height: 96px;
     padding: 14px 10px;
@@ -817,6 +821,9 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     background: color-mix(in srgb, var(--wm-blue-dark) 78%, var(--wm-blue) 22%);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
 }
+.auto-goal-option:disabled {cursor:not-allowed;opacity:.62;filter:saturate(.55);}
+.auto-goal-option:disabled::before {content:"";position:absolute;inset:0;border-radius:inherit;background:rgb(0 30 96 / 34%);}
+.auto-goal-option:disabled::after {content:"";position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);background:var(--wm-blue-light);filter:drop-shadow(0 2px 4px rgb(0 0 0 / 45%));-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
 
 .auto-goal-option span {
     min-width: 0;

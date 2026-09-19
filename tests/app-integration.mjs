@@ -130,6 +130,9 @@ for(const mode of ['trip','total','auto']){
     if(mode!=='total')assert.notEqual(c.getAttribute('trip-goal'),originalTripGoal);
     if(mode!=='trip')assert.notEqual(c.getAttribute('total-goal'),originalTotalGoal);
     assert.notEqual(window.document.querySelector('#goalPercentValue').textContent,mode==='trip'?'111%':mode==='total'?'112%':'100%');
+    if(mode==='auto'){
+        window.document.querySelector('#goalPercentValue').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));assert(window.document.querySelector('#autoGoalDialog').open);assert(window.document.querySelector('[data-auto-goal-scope="trip"]').disabled);assert(window.document.querySelector('[data-auto-goal-scope="total"]').disabled);window.document.querySelector('#autoGoalDialog [data-close-dialog]').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));await new Promise(resolve=>setTimeout(resolve,300));
+    }
     window.document.querySelector('#endTimeGoalLock').click();await settle();
     if(mode==='auto'){
         assert(window.document.querySelector('#endTimeLockDialog').open);
@@ -142,8 +145,10 @@ for(const mode of ['trip','total','auto']){
 c.setAttribute('trip-goal','107%');c.setAttribute('total-goal','108%');c.autoSyncTripGoal=false;await enterLockedEndTime('trip',14);
 c.percentMode='total';await settle();assert(window.document.querySelector('#endTimeGoalLock').hidden);
 c.percentMode='trip';c.renderedTimeMode='remaining';await settle();assert(window.document.querySelector('#endTimeGoalLock').hidden);
+c.percentMode='trip';window.document.querySelector('#goalPercentValue').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));assert(!window.document.querySelector('#endTimeGoalLock').hidden);assert(window.document.querySelector('#endTimeGoalLock').classList.contains('is-rejecting'));await new Promise(resolve=>setTimeout(resolve,650));assert(window.document.querySelector('#endTimeGoalLock').hidden);
 c.renderedTimeMode='calculated-end';await settle();assert(!window.document.querySelector('#endTimeGoalLock').hidden);
 c.percentMode='auto';await settle();assert(!window.document.querySelector('#endTimeGoalLock').hidden);
+window.document.querySelector('#goalPercentValue').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));assert(window.document.querySelector('#autoGoalDialog').open);assert(window.document.querySelector('[data-auto-goal-scope="trip"]').disabled);assert(!window.document.querySelector('[data-auto-goal-scope="total"]').disabled);window.document.querySelector('#autoGoalDialog [data-close-dialog]').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));await new Promise(resolve=>setTimeout(resolve,300));
 window.document.querySelector('#endTimeGoalLock').click();assert(window.document.querySelector('#endTimeLockDialog').open);assert(window.document.querySelector('#endTimeTripLock').checked);assert(!window.document.querySelector('#endTimeTotalLock').checked);
 window.document.querySelector('#endTimeTotalLock').checked=true;window.document.querySelector('#endTimeTotalLock').dispatchEvent(new window.Event('change',{bubbles:true}));window.document.querySelector('#endTimeLockForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,300));
 assert(!window.document.querySelector('#endTimeGoalLock').hidden);assert.notEqual(c.getAttribute('trip-goal'),'107%');assert.notEqual(c.getAttribute('total-goal'),'108%');

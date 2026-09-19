@@ -177,6 +177,7 @@
     let renderedTimeLongPressed = false;
     let endTimeGoalOverride;
     let endTimeLockDialogInitialScopes = [];
+    let endTimeGoalLockFlashTimer;
     let syncNetworkStatus;
     let syncOfflineTransitionSequence = 0;
 
@@ -2829,9 +2830,12 @@
         const scopes = endTimeGoalOverride?.scopes || [];
         const mode = normalizePercentMode(clockTimer.percentMode);
         const appliesToMode = mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
+        const temporarilyVisible = endTimeGoalLockFlashTimer !== undefined && appliesToMode;
         const hidden = !endTimeGoalOverride ||
-            clockTimer.renderedTimeMode !== "calculated-end" ||
-            !appliesToMode;
+            (!temporarilyVisible && (
+                clockTimer.renderedTimeMode !== "calculated-end" ||
+                !appliesToMode
+            ));
         const visibilityChanged = lock.hidden !== hidden;
         lock.hidden = hidden;
         lock.setAttribute("aria-pressed", String(Boolean(endTimeGoalOverride)));
@@ -2845,6 +2849,28 @@
         if (mode !== "auto") return scopes.includes(mode) ? mode : undefined;
         if (scopes.includes(snapshot?.scope)) return snapshot.scope;
         return scopes.includes("trip") ? "trip" : scopes.includes("total") ? "total" : undefined;
+    }
+
+    function endTimeGoalLockedForMode(mode = normalizePercentMode(clockTimer.percentMode)) {
+        const scopes = endTimeGoalOverride?.scopes || [];
+        return mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
+    }
+
+    function flashEndTimeGoalLock() {
+        const lock = $("#endTimeGoalLock");
+        if (!lock || !endTimeGoalLockedForMode()) return false;
+        clearTimeout(endTimeGoalLockFlashTimer);
+        lock.hidden = false;
+        alignStatusIcons();
+        lock.classList.remove("is-rejecting");
+        void lock.offsetWidth;
+        lock.classList.add("is-rejecting");
+        endTimeGoalLockFlashTimer = setTimeout(() => {
+            lock.classList.remove("is-rejecting");
+            endTimeGoalLockFlashTimer = undefined;
+            renderEndTimeGoalLock();
+        }, 600);
+        return true;
     }
 
     function releaseEndTimeGoalOverride() {
@@ -5186,6 +5212,19 @@
             autoTotalGoalValue.textContent =
                 getConfiguredGoalDisplay("total");
         }
+
+        const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
+        for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
+            const scope = button.dataset.autoGoalScope === "total" ? "total" : "trip";
+            const locked = lockedScopes.has(scope);
+            button.disabled = locked;
+            button.setAttribute(
+                "aria-label",
+                locked
+                    ? `${scope === "total" ? "Total" : "Trip"} goal locked to End Time`
+                    : `Edit ${scope === "total" ? "Total" : "Trip"} goal`
+            );
+        }
     }
 
     function openAutoGoalDialog() {
@@ -6465,6 +6504,11 @@
     $("#goalPercentValue").addEventListener("pointerup", () => {
         if (clockTimer.percentMode === "auto") {
             openAutoGoalDialog();
+            return;
+        }
+
+        if (endTimeGoalLockedForMode()) {
+            flashEndTimeGoalLock();
             return;
         }
 
