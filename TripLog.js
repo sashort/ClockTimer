@@ -3,7 +3,7 @@
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
     const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
-    const percent = trips => {const standard=trips.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=trips.reduce((a,t)=>a+t.actualTimeMilliseconds,0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
+    const percent = trips => {const standard=trips.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=trips.reduce((a,t)=>a+t.actualTimeMilliseconds,0);if(actual<=0)return '—';const value=standard/actual*100;return `${(trips.some(t=>t.running)&&value>=100?100:value).toFixed(1)}%`;};
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     const uncertainIcon = () => {
         const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -106,7 +106,7 @@
             for(const [label,action] of [['Edit trip settings',()=>this.openSettings(trip)],['Edit entries',()=>{this.editing.add(trip.id);this.render({trips:this.trips},this.calendar);}],['Delete trip',()=>this.deleteTrip(trip)]]) {
                 const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
             }
-            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline&&!trip.buffered)summary.append(menu);details.append(summary);
+            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);details.append(summary);
             const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?'Editing entries':'Trip entries'));
             if(this.editing.has(trip.id)){const done=node('button','Done');done.type='button';done.addEventListener('click',()=>{this.editing.delete(trip.id);this.render({trips:this.trips},this.calendar);});header.append(done);entries.append(header,node('p','Select an entry to edit or remove it.'));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));

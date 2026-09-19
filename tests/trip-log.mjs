@@ -8,6 +8,9 @@ const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00
 const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00',standardTimeMilliseconds:1800000,actualTimeMilliseconds:1800000,events:[]},{id:1,startTime:'2026-09-18 12:00:00',endTime:'2026-09-18 12:20:00',standardTimeMilliseconds:1200000,actualTimeMilliseconds:1200000,events}];
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'100.0%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.0%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
 const collapsed=root.querySelector('.trip-log-group');collapsed.open=false;collapsed.dispatchEvent(new w.Event('toggle'));
 view.options.liveTrip=()=>({...trips[1],running:true,activeState:'break',actualTimeMilliseconds:1200000,countedTimeMilliseconds:1200000});
@@ -63,7 +66,7 @@ console.log('PASS empty range replaces overview with centered message and restor
 view.render({trips:[{...trips[0],id:'offline-one',buffered:true},{...trips[1],id:'offline-two',buffered:true}],offline:true,incomplete:true},calendar);
 assert.equal(root.querySelectorAll('.trip-log-trip').length,2);
 assert(root.querySelector('.trip-log-overview .calculation-uncertain-icon'));
-assert.equal(root.querySelectorAll('.trip-log-trip .trip-log-menu').length,0);
+assert.equal(root.querySelectorAll('.trip-log-trip .trip-log-menu').length,2);
 view.setSettingsVisible(false);
 view.render({trips:[],offline:true},calendar);
 assert.match(root.querySelector('.trip-log-empty-message').textContent,/Connect to load saved trips/);

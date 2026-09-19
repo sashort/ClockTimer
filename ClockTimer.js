@@ -5783,6 +5783,82 @@
         }
 
         async tripEditorRequest(tripId, change) {
+            const buffered = this.#completedTripQueue.find(trip =>
+                String(trip.tripId || `offline-${trip.payload.clientToken}`) === String(tripId));
+            if (buffered && this.#connectionState !== "connected") {
+                const response = () => ({
+                    tripId,
+                    events: buffered.log?.events || [],
+                    settings: {
+                        creationAnchor: buffered.payload.creationAnchor,
+                        standardTime: buffered.payload.standardTime,
+                        creationTime: buffered.payload.creationTime,
+                        scheduledStart: buffered.payload.scheduledStart,
+                        startTime: buffered.payload.startTime,
+                        nonProduction: buffered.payload.nonProduction === true
+                    },
+                    revision: `offline-${buffered.payload.clientToken}`
+                });
+                if (!change) return response();
+                if (change.operation === "delete-trip") {
+                    this.#completedTripQueue = this.#completedTripQueue.filter(trip => trip !== buffered);
+                    if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
+                    return {tripId, deleted: true, offline: true};
+                }
+                if (change.operation === "settings") {
+                    Object.assign(buffered.payload, change.settings);
+                    Object.assign(buffered.log, change.settings);
+                    const seconds = String(change.settings.standardTime || "").split(":")
+                        .reduce((sum, part) => sum * 60 + Number(part || 0), 0);
+                    if (Number.isFinite(seconds)) {
+                        buffered.log.standardTimeMilliseconds = seconds * 1000;
+                        buffered.payload.standardTimeMilliseconds = seconds * 1000;
+                        const stopped = buffered.events.find(event => event.event === "trip.stopped");
+                        if (stopped) stopped.value.standardTimeMilliseconds = seconds * 1000;
+                    }
+                    const start = buffered.events.find(event => event.event === "trip.started");
+                    if (start) Object.assign(start.value, change.settings);
+                }
+                else {
+                    const display = buffered.log.events || [];
+                    const entry = change.entry || {};
+                    const selected = display.find(event => String(event.id) === String(entry.eventId));
+                    const key = entry.intervalKey || selected?.value?.intervalKey || `offline-edit-${Date.now()}`;
+                    const findRaw = event => event.event === "interval.started" &&
+                        (event.value?.intervalKey === key || event.timestamp === selected?.timestamp);
+                    const originalRaw = buffered.events.find(findRaw);
+                    const rawKey = originalRaw?.value?.intervalKey || key;
+                    if (change.operation === "delete-entry") {
+                        buffered.log.events = display.filter(event => event.value?.intervalKey !== key);
+                        buffered.events = buffered.events.filter(event => event.value?.intervalKey !== rawKey);
+                    }
+                    else if (change.operation === "add-entry") {
+                        const started = {id:`offline-edit-${Date.now()}`,event:"interval.started",timestamp:entry.start,
+                            value:{type:entry.type,length:entry.length,intervalKey:key}};
+                        buffered.log.events.push(started);
+                        buffered.events.push({event:started.event,timestamp:started.timestamp,value:{...started.value},
+                            clientToken:this.#createTripEventClientToken(),synced:false});
+                        if (entry.end) {
+                            const ended = {id:`offline-edit-${Date.now()}-end`,event:"interval.ended",timestamp:entry.end,value:{intervalKey:key}};
+                            buffered.log.events.push(ended);
+                            buffered.events.push({event:ended.event,timestamp:ended.timestamp,value:{...ended.value},
+                                clientToken:this.#createTripEventClientToken(),synced:false});
+                        }
+                    }
+                    else if (change.operation === "entry" && selected) {
+                        selected.timestamp = entry.start;
+                        Object.assign(selected.value, {type:entry.type,length:entry.length,intervalKey:key});
+                        const raw = originalRaw;
+                        if (raw) {raw.timestamp=entry.start;Object.assign(raw.value,{type:entry.type,length:entry.length});}
+                        const ended = display.find(event => event.event === "interval.ended" && event.value?.intervalKey === key);
+                        const rawEnded = buffered.events.find(event => event.event === "interval.ended" && event.value?.intervalKey === rawKey);
+                        if (entry.end && ended) ended.timestamp=entry.end;
+                        if (entry.end && rawEnded) rawEnded.timestamp=entry.end;
+                    }
+                }
+                if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
+                return {...response(), offline: true};
+            }
             if (!(await this.#ensureConnected())) throw new Error("Connect before editing trips.");
             const active = Number(tripId) === this.#tripId && this.#hasStartProperties();
             if (active && change) this.#stopTickTimer();

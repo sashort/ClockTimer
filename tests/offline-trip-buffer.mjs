@@ -61,6 +61,19 @@ assert.notEqual(queue[0].payload.clientToken,queue[1].payload.clientToken);
 assert.deepEqual(queue.map(t=>t.events.map(e=>e.event)),[['trip.started','trip.stopped'],['trip.started','trip.stopped']]);
 console.log('PASS two trips complete offline, clear independently, and buffer separate identities and events');
 
+const editable=c.getLocalTripLog()[0];
+const editorState=await c.tripEditorRequest(editable.id);
+await c.tripEditorRequest(editable.id,{operation:'settings',revision:editorState.revision,
+    settings:{...editorState.settings,standardTime:'25:00',nonProduction:true}});
+await c.tripEditorRequest(editable.id,{operation:'add-entry',revision:editorState.revision,
+    entry:{start:'2026-09-18T12:02:00.000Z',end:'2026-09-18T12:03:00.000Z',type:'break',length:'0:01:00'}});
+const edited=c.getLocalTripLog().find(t=>String(t.id)===String(editable.id));
+assert.equal(edited.standardTimeMilliseconds,1500000);
+assert.equal(edited.nonProduction,true);
+assert(edited.events.some(event=>event.event==='interval.started'));
+assert.equal(JSON.parse(window.localStorage.getItem(storageKey))[0].payload.standardTime,'25:00');
+console.log('PASS buffered trips retain settings and entry edits while offline');
+
 c.remove();c=clock();
 assert.equal(c.status,'ready');
 assert.equal(c.getLocalTripLog().length,2);
@@ -76,16 +89,16 @@ assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,2);
 // Refresh again after the stop event was accepted but the timing PATCH failed.
 c.remove();c=clock();await c.connect('test','test');
 assert.equal(trips.size,2);
-assert.equal(events.size,4);
+assert.equal(events.size,6);
 assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,0);
-assert.deepEqual([...trips.values()].map(t=>[t.standardTimeMilliseconds,t.countedTimeMilliseconds]),[[1200000,480000],[1800000,720000]]);
+assert.deepEqual([...trips.values()].map(t=>[t.standardTimeMilliseconds,t.countedTimeMilliseconds]),[[1500000,480000],[1800000,720000]]);
 for(const trip of trips.values()){
     const tripEvents=[...events.values()].filter(e=>e.tripId===trip.id);
     assert.equal(tripEvents.filter(e=>e.event==='trip.started').length,1);
     assert.equal(tripEvents.filter(e=>e.event==='trip.stopped').length,1);
 }
 await c.connect('test','test');
-assert.equal(events.size,4);
+assert.equal(events.size,6);
 assert.equal(trips.size,2);
 assert.equal(requests.filter(r=>r.options.method==='DELETE').length,0);
 console.log('PASS reconnect after interrupted completion uploads both trips once with original timing and no DELETE');
@@ -97,7 +110,7 @@ await c.start({standardTime:'50:00'});
 assert.notEqual(c.status,'ready');
 offline=false;await c.connect('test','test');
 assert.equal(trips.size,4);
-assert.equal(events.size,7);
+assert.equal(events.size,9);
 const activeId=c.currentTripId;
 assert.equal([...events.values()].filter(e=>e.tripId===activeId).length,1);
 assert.equal([...events.values()].filter(e=>e.tripId===activeId)[0].event,'trip.started');
