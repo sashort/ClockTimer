@@ -9,6 +9,15 @@ const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00'
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
+const collapsed=root.querySelector('.trip-log-group');collapsed.open=false;collapsed.dispatchEvent(new w.Event('toggle'));
+view.options.liveTrip=()=>({...trips[1],running:true,actualTimeMilliseconds:2400000});
+view.render({trips},calendar);
+assert.equal(root.querySelector('.trip-log-group').open,false);
+assert(root.querySelector('.trip-log-trip.is-active-trip'));
+assert(root.querySelectorAll('.trip-log-group.has-active-trip').length>=2);
+assert.equal(root.querySelector('.trip-log-trip.is-active-trip>summary span:nth-of-type(2)').textContent,'0:40:00');
+view.options.liveTrip=undefined;
+console.log('PASS collapsed headers retain state while active trip values and parent activity markers update');
 assert.equal(root.querySelector('.trip-log-settings').getAttribute('aria-hidden'),'true');
 assert(root.querySelector('.trip-log-settings-content').inert);
 view.setSettingsVisible(true);

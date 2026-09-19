@@ -6524,7 +6524,8 @@
     }
     setInterval(()=>{
         if(tripIsLive() && getTripListState()==="open" && tripLogView && !tripLogView.editor && !numberPadDialog?.open &&
-            !tripLogBody.contains(document.activeElement) && !tripLogBody.querySelector(".trip-log-menu-actions:not([hidden])")) {
+            (!tripLogBody.contains(document.activeElement) || document.activeElement?.matches("summary")) &&
+            !tripLogBody.querySelector(".trip-log-menu-actions:not([hidden])")) {
             tripLogView.render({trips:tripLogView.trips, offline:tripLogView.offline, incomplete:tripLogView.incomplete, loginRequired:tripLogView.loginRequired},tripLogView.calendar);
         }
     },1000);

@@ -3795,6 +3795,32 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-trip>summary::before {content:"›";position:absolute;left:2px;top:50%;transform:translateY(-50%);}
 .trip-log-trip[open]>summary::before {content:"⌄";}
 .trip-log-trip>summary>strong:first-child {padding-left:8px;}
+.trip-log-group.has-active-trip>summary,
+.trip-log-trip.is-active-trip>summary {
+    background-image: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 32%,
+        rgb(77 189 245 / 10%) 42%,
+        rgb(169 221 247 / 32%) 50%,
+        rgb(77 189 245 / 10%) 58%,
+        transparent 68%,
+        transparent 100%
+    );
+    background-size: 300% 100%;
+    animation: trip-log-active-sweep 2.8s linear infinite;
+}
+@keyframes trip-log-active-sweep {
+    from { background-position: 100% 0; }
+    to { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .trip-log-group.has-active-trip>summary,
+    .trip-log-trip.is-active-trip>summary {
+        animation: none;
+        background-position: 50% 0;
+    }
+}
 .trip-log-menu {position:relative;visibility:hidden;}
 .trip-log-trip[open]>summary .trip-log-menu {visibility:visible;}
 .trip-log-menu button {border:0;border-radius:5px;background:transparent;color:white;padding:4px 8px;font-size:20px;}
