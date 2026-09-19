@@ -2904,12 +2904,34 @@
         $("#endTimeLockReleaseMessage").hidden = selectedEndTimeLockScopes().length !== 0;
     }
 
-    function goalForDeadline(summary, scope) {
+    function goalForDeadline(summary, scope, currentSummary, deadline) {
         const values = scope === "total" ? summary?.total : summary?.trip;
+        const currentValues = scope === "total" ? currentSummary?.total : currentSummary?.trip;
         const standard = Number(values?.standardTimeMilliseconds);
         let counted = Number(values?.countedTimeElapsedMilliseconds);
+        let currentCounted = Number(currentValues?.countedTimeElapsedMilliseconds);
         if (scope === "total") {
             counted -= Number(values?.allowanceCreditMilliseconds || 0);
+            currentCounted -= Number(currentValues?.allowanceCreditMilliseconds || 0);
+        }
+        if (
+            Number.isFinite(currentCounted) &&
+            counted <= currentCounted &&
+            deadline instanceof Date &&
+            deadline.getTime() > Date.now()
+        ) {
+            const activeInterval = clockTimer.getActiveIntervalState?.(new Date());
+            const activeType = String(activeInterval?.intervalType || "").toLowerCase();
+            const knownPauseRemaining =
+                (activeType === "break" || activeType === "lunch") &&
+                Number.isFinite(activeInterval?.remainingMilliseconds)
+                    ? Math.max(0, activeInterval.remainingMilliseconds)
+                    : 0;
+            const available = Math.max(
+                0,
+                deadline.getTime() - Date.now() - knownPauseRemaining
+            );
+            counted = currentCounted + available;
         }
         return Number.isFinite(standard) && standard > 0 &&
             Number.isFinite(counted) && counted > 0
@@ -2925,8 +2947,12 @@
         if (!endTimeGoalOverride) return false;
         const normalized = [...new Set(scopes)].filter(scope => scope === "trip" || scope === "total");
         if (normalized.length === 0) return releaseEndTimeGoalOverride();
+        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
         const summary = clockTimer.getSummarySnapshot?.(endTimeGoalOverride.deadline);
-        const goals = Object.fromEntries(normalized.map(scope => [scope, goalForDeadline(summary, scope)]));
+        const goals = Object.fromEntries(normalized.map(scope => [
+            scope,
+            goalForDeadline(summary, scope, currentSummary, endTimeGoalOverride.deadline)
+        ]));
         if (normalized.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
         restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
         restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
@@ -2946,10 +2972,14 @@
         if (!tripIsLive() || Number.isNaN(deadline.getTime()) || deadline.getTime() <= Date.now()) {
             return false;
         }
+        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
         const summary = clockTimer.getSummarySnapshot?.(deadline);
         const mode = normalizePercentMode(clockTimer.percentMode);
         const scopes = mode === "auto" ? ["trip", "total"] : [mode];
-        const goals = Object.fromEntries(scopes.map(scope => [scope, goalForDeadline(summary, scope)]));
+        const goals = Object.fromEntries(scopes.map(scope => [
+            scope,
+            goalForDeadline(summary, scope, currentSummary, deadline)
+        ]));
         if (scopes.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
 
         if (!endTimeGoalOverride) {
@@ -5278,8 +5308,7 @@
         const state = { ...numberPadState };
         if (state.onConfirm) {
             const value = !state.pending ? undefined : state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
-            await state.onConfirm(value);
-            return true;
+            return await state.onConfirm(value) !== false;
         }
         if (!numberPadHasChanges() && !state.startsTripOnConfirm) return false;
         if (state.mode === "percent") {

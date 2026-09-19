@@ -143,6 +143,12 @@ for(const mode of ['trip','total','auto']){
     }
     assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),originalTripGoal);assert.equal(c.getAttribute('total-goal'),originalTotalGoal);assert.equal(c.autoSyncTripGoal,originalAutoSync);
 }
+c.setAttribute('trip-goal','106%');c.autoSyncTripGoal=false;
+await enterLockedEndTime('trip',8);const firstRelockedGoal=c.getAttribute('trip-goal');
+await enterLockedEndTime('trip',16);const secondRelockedGoal=c.getAttribute('trip-goal');
+assert.notEqual(firstRelockedGoal,'106%');assert.notEqual(secondRelockedGoal,firstRelockedGoal);
+window.document.querySelector('#endTimeGoalLock').click();await settle();assert.equal(c.getAttribute('trip-goal'),'106%');
+console.log('PASS relocking during an open interval recalculates and applies the applicable goal');
 c.setAttribute('trip-goal','107%');c.setAttribute('total-goal','108%');c.autoSyncTripGoal=false;await enterLockedEndTime('trip',14);
 c.percentMode='total';await settle();assert(window.document.querySelector('#endTimeGoalLock').hidden);
 c.percentMode='trip';c.renderedTimeMode='remaining';await settle();assert(window.document.querySelector('#endTimeGoalLock').hidden);
