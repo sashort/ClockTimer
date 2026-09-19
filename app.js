@@ -5567,7 +5567,9 @@
             "actual-start": settingsValues
                 ? formatTripTimeDisplay(settingsValues.startTime, creationDate)
                 : "---",
-            "standard-time": settingsValues?.standardTime || "---"
+            "standard-time": settingsValues?.deferred
+                ? "---"
+                : settingsValues?.standardTime || "---"
         };
 
         $("#tripCreationTime").textContent = values["creation-time"];
@@ -5575,7 +5577,7 @@
         $("#tripActualStart").textContent = values["actual-start"];
         $("#tripStandardTime").textContent = values["standard-time"];
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
-            button.disabled = (!live && !draft) || (settingsValues?.deferred && ["scheduled-start", "actual-start"].includes(button.dataset.tripTimeField));
+            button.disabled = (!live && !draft) || (settingsValues?.deferred && ["standard-time", "scheduled-start", "actual-start"].includes(button.dataset.tripTimeField));
         });
         $("#tripProductive").checked = !settingsValues?.nonProduction;
         $("#tripDefer").checked = Boolean(settingsValues?.deferred);
@@ -5981,13 +5983,16 @@
         if (!session || session.live) return;
         const values = session.values;
         if (event.target.checked) {
-            session.loadedStarts = { scheduledStart: values.scheduledStart, startTime: values.startTime };
+            session.preDeferredValues = cloneTripSettingsValues(values);
             values.scheduledStart = values.creationTime;
             values.startTime = undefined;
+            tripStartsNowState = undefined;
+            tripStartsNowExiting = false;
         } else {
-            const loaded = session.loadedStarts || getTripMomentDefaults();
-            values.scheduledStart = loaded.scheduledStart;
-            values.startTime = loaded.startTime;
+            if (session.preDeferredValues) {
+                Object.assign(values, cloneTripSettingsValues(session.preDeferredValues));
+            }
+            session.preDeferredValues = undefined;
         }
         values.deferred = event.target.checked;
         tripStartsNowState = undefined;
