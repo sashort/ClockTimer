@@ -3170,16 +3170,20 @@
         updateSummaryLabels(snapshot);
         renderEndTimeGoalLock();
 
-        const selected =
-            snapshot?.selected;
-
-        const scope =
+        const lockedDisplayScope = endTimeGoalDisplayScope(snapshot);
+        const scope = lockedDisplayScope ??
             snapshot?.scope ??
             (
                 clockTimer.percentMode === "total"
                     ? "total"
                     : "trip"
             );
+
+        const selected = scope === "total"
+            ? snapshot?.total
+            : scope === "trip"
+                ? snapshot?.trip
+                : snapshot?.selected;
 
         const standard =
             scope === "standard"
@@ -3233,7 +3237,6 @@
         const goalButton =
             $("#goalPercentValue");
 
-        const lockedDisplayScope = endTimeGoalDisplayScope(snapshot);
         goalButton.textContent = formatSummaryPercent(
             lockedDisplayScope
                 ? endTimeGoalOverride.goals?.[lockedDisplayScope]

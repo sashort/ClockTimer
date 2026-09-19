@@ -130,6 +130,7 @@ for(const mode of ['trip','total','auto']){
     if(mode!=='total')assert.notEqual(c.getAttribute('trip-goal'),originalTripGoal);
     if(mode!=='trip')assert.notEqual(c.getAttribute('total-goal'),originalTotalGoal);
     assert.notEqual(window.document.querySelector('#goalPercentValue').textContent,mode==='trip'?'111%':mode==='total'?'112%':'100%');
+    const lockedScope=window.document.querySelector('#standardTimeLabel').textContent.startsWith('Total')?'total':'trip';const lockedSnapshot=c.getSummarySnapshot();assert(Math.abs(Number.parseFloat(window.document.querySelector('#currentPercentValue').textContent)-lockedSnapshot[lockedScope].countedPercent*100)<10);
     if(mode==='auto'){
         window.document.querySelector('#goalPercentValue').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));assert(window.document.querySelector('#autoGoalDialog').open);assert(window.document.querySelector('[data-auto-goal-scope="trip"]').disabled);assert(window.document.querySelector('[data-auto-goal-scope="total"]').disabled);window.document.querySelector('#autoGoalDialog [data-close-dialog]').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));await new Promise(resolve=>setTimeout(resolve,300));
     }
