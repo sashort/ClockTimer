@@ -31629,7 +31629,7 @@
 
             return {
                 standardTime: Number.isFinite(standardTimeMilliseconds) && standardTimeMilliseconds > 0
-                    ? this.#formatStandardTime(Math.max(0, standardTimeMilliseconds))
+                    ? this.#formatStandardTime(Math.max(0, standardTimeMilliseconds), {includeHours: true})
                     : undefined,
                 standardTimeMilliseconds,
                 actualTimeElapsedMilliseconds: actualTimeMilliseconds,
@@ -32001,7 +32001,8 @@
         #formatStandardTime(
             milliseconds,
             {
-                clock = false
+                clock = false,
+                includeHours = false
             } = {}
         ) {
             if (
@@ -32066,8 +32067,8 @@
             let result;
 
             if (
-                hours >
-                    0
+                includeHours ||
+                hours > 0
             ) {
                 result =
                     `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
@@ -32542,11 +32543,7 @@
                         1000
                     ) * 1000;
 
-            return TemporalFormat.formatDuration(
-                Math.abs(
-                    displayMilliseconds
-                )
-            );
+            return this.#formatStandardTime(Math.abs(displayMilliseconds), {includeHours: true});
         }
 
         #formatRemainingRenderedDuration(
@@ -32562,9 +32559,7 @@
                     1000
                 ) * 1000;
 
-            const duration = TemporalFormat.formatDuration(
-                Math.abs(displayMilliseconds)
-            );
+            const duration = this.#formatStandardTime(Math.abs(displayMilliseconds), {includeHours: true});
 
             return displayMilliseconds < 0
                 ? `-${duration}`

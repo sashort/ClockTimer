@@ -21,9 +21,11 @@ assert(states.some(item=>item.transition==='trip_started'&&item.state==='running
 window.__testTime+=1000;timer.dispatchEvent(new window.CustomEvent('test'));await new Promise(resolve=>setTimeout(resolve,10));
 const overtime=window.document.createElement('clock-timer');window.document.body.append(overtime);
 overtime.configure({rendered_time_type:'time_remaining',goal_type:'total',external_standard_time:1000,external_counted_time:2000});
-assert.equal(overtime.getSummarySnapshot().total.renderedTime,'-0:01');
-overtime.configure({external_counted_time:1000});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00');
-overtime.configure({external_counted_time:0});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:01');
+assert.equal(overtime.getSummarySnapshot().total.standardTime,'0:00:01');
+assert.equal(overtime.getSummarySnapshot().total.renderedTime,'-0:00:01');
+overtime.configure({external_counted_time:1000});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00:00');
+overtime.configure({external_counted_time:0});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00:01');
+overtime.configure({rendered_time_type:'calculated_start_time',external_counted_time:2000});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00:02');
 overtime.remove();
 console.log('PASS configure is partial and UI state describes values, state, and transitions');
 timer.remove();window.happyDOM.abort();
