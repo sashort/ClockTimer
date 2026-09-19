@@ -31220,6 +31220,7 @@
                 standardTimeMilliseconds,
                 actualTimeElapsedMilliseconds: actualTimeMilliseconds,
                 countedTimeElapsedMilliseconds: countedTimeMilliseconds,
+                allowanceCreditMilliseconds,
                 countedPercent,
                 percentGoal,
                 renderedTime,

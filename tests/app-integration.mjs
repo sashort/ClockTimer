@@ -106,6 +106,50 @@ const state=await c.tripEditorRequest(tripId);
 await c.tripEditorRequest(tripId,{operation:'settings',revision:state.revision,settings:{...state.settings,standardTime:'0:45:00',nonProduction:false}});
 assert.equal(c.standardTime,'45:00');assert.equal(c.nonProduction,false);assert.equal(window.document.querySelector('#app').dataset.tripState,'running');
 console.log('PASS editing running entry/settings reloads the same active ClockTimer and preserves running state');
+async function enterLockedEndTime(mode,minutes){
+    c.percentMode=mode;c.renderedTimeMode='calculated-end';await settle();
+    const renderedTimeButton=window.document.querySelector('#renderedTimeButton');
+    renderedTimeButton.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true,pointerId:31,pointerType:'touch'}));
+    await new Promise(resolve=>setTimeout(resolve,700));
+    renderedTimeButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerId:31,pointerType:'touch'}));
+    assert.equal(window.document.querySelector('#numberPadContext').textContent,'End Time');
+    const deadline=new Date(Date.now()+minutes*60*1000);const deadlineDigits=[deadline.getHours(),deadline.getMinutes(),deadline.getSeconds()].map(value=>String(value).padStart(2,'0')).join('');
+    const deadlineDate=[deadline.getFullYear(),String(deadline.getMonth()+1).padStart(2,'0'),String(deadline.getDate()).padStart(2,'0')].join('-');
+    backspace.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true,pointerId:32,pointerType:'touch'}));
+    backspace.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerId:32,pointerType:'touch'}));
+    for(const digit of deadlineDigits) window.document.querySelector(`[data-number="${digit}"]`).dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));
+    const deadlineDateInput=window.document.querySelector('#numberPadDate');deadlineDateInput.value=deadlineDate;deadlineDateInput.dispatchEvent(new window.Event('input',{bubbles:true}));
+    window.document.querySelector('#numberPadConfirm').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));await settle();
+    return deadline;
+}
+for(const mode of ['trip','total','auto']){
+    c.setAttribute('trip-goal','111%');c.setAttribute('total-goal','112%');c.autoSyncTripGoal=true;
+    const originalTripGoal=c.getAttribute('trip-goal'),originalTotalGoal=c.getAttribute('total-goal'),originalAutoSync=c.autoSyncTripGoal;
+    await enterLockedEndTime(mode,10+(mode==='total'?1:mode==='auto'?2:0));
+    assert(!window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.autoSyncTripGoal,false);
+    if(mode!=='total')assert.notEqual(c.getAttribute('trip-goal'),originalTripGoal);
+    if(mode!=='trip')assert.notEqual(c.getAttribute('total-goal'),originalTotalGoal);
+    window.document.querySelector('#endTimeGoalLock').click();await settle();
+    if(mode==='auto'){
+        assert(window.document.querySelector('#endTimeLockDialog').open);
+        for(const id of ['endTimeTripLock','endTimeTotalLock']){const control=window.document.querySelector(`#${id}`);control.checked=false;control.dispatchEvent(new window.Event('change',{bubbles:true}));}
+        assert(!window.document.querySelector('#endTimeLockReleaseMessage').hidden);
+        window.document.querySelector('#endTimeLockForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await settle();
+    }
+    assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),originalTripGoal);assert.equal(c.getAttribute('total-goal'),originalTotalGoal);assert.equal(c.autoSyncTripGoal,originalAutoSync);
+}
+c.setAttribute('trip-goal','107%');c.setAttribute('total-goal','108%');c.autoSyncTripGoal=false;await enterLockedEndTime('trip',14);c.percentMode='auto';await settle();
+window.document.querySelector('#endTimeGoalLock').click();assert(window.document.querySelector('#endTimeLockDialog').open);assert(window.document.querySelector('#endTimeTripLock').checked);assert(!window.document.querySelector('#endTimeTotalLock').checked);
+window.document.querySelector('#endTimeTotalLock').checked=true;window.document.querySelector('#endTimeTotalLock').dispatchEvent(new window.Event('change',{bubbles:true}));window.document.querySelector('#endTimeLockForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,300));
+assert(!window.document.querySelector('#endTimeGoalLock').hidden);assert.notEqual(c.getAttribute('trip-goal'),'107%');assert.notEqual(c.getAttribute('total-goal'),'108%');
+window.document.querySelector('#endTimeGoalLock').click();for(const id of ['endTimeTripLock','endTimeTotalLock']){const control=window.document.querySelector(`#${id}`);control.checked=false;control.dispatchEvent(new window.Event('change',{bubbles:true}));}assert(!window.document.querySelector('#endTimeLockReleaseMessage').hidden);window.document.querySelector('#endTimeLockForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,300));
+assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),'107%');assert.equal(c.getAttribute('total-goal'),'108%');
+console.log('PASS switching a single-scope End Time lock to Auto edits Trip and Total lock scopes');
+c.percentMode='trip';c.setAttribute('trip-goal','109%');c.autoSyncTripGoal=false;await enterLockedEndTime('trip',.05);
+assert(!window.document.querySelector('#endTimeGoalLock').hidden);await new Promise(resolve=>setTimeout(resolve,4000));
+assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),'109%');
+console.log('PASS elapsed locked End Time automatically restores normal goal operation');
+console.log('PASS long-pressed End Time locks Trip, Total, and Auto goals and restores normal goals');
 await c.endInterval();
 const completedId=c.currentTripId;
 const connectedFetch=window.fetch;

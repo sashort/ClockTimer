@@ -228,6 +228,19 @@ html[data-trip-log-startup="unpinned"] .app {
 
 .summary-cell strong { font-size: 28px; line-height: 1; }
 
+.rendered-time-cell {position:relative;min-width:0;display:grid;}
+.rendered-time-cell>.summary-cell {width:100%;height:100%;}
+.end-time-goal-lock {position:absolute;right:10px;bottom:7px;width:25px;height:25px;margin:0;padding:0;border:0;color:var(--wm-blue-light);background:transparent;}
+.end-time-goal-lock::before {content:"";position:absolute;inset:1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
+.end-time-goal-lock[hidden] {display:none;}
+.app-dialog.end-time-lock-dialog {width:min(88vw,440px);background:rgb(0 30 96 / 88%);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);}
+.app-dialog.end-time-lock-dialog form {padding-bottom:16px;}
+.app-dialog.end-time-lock-dialog form>fieldset,.app-dialog.end-time-lock-dialog form>.end-time-lock-release-message,.app-dialog.end-time-lock-dialog form>.dialog-primary {margin-inline:16px;}
+.app-dialog.end-time-lock-dialog fieldset label {grid-template-columns:1fr auto;}
+.app-dialog.end-time-lock-dialog fieldset input {width:24px;height:24px;}
+.app-dialog.end-time-lock-dialog .end-time-lock-release-message {padding:10px 12px;border:1px solid var(--wm-blue-light);border-radius:8px;color:var(--wm-blue-light);background:rgb(169 221 247 / 12%);text-align:center;}
+.app-dialog.end-time-lock-dialog .dialog-primary {min-height:46px;border:1px solid var(--wm-blue-light);border-radius:8px;color:var(--wm-white);background:var(--wm-blue);font:inherit;font-weight:700;}
+
 .percent-summary {
     grid-column: 1 / -1;
     display: flex;

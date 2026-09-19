@@ -78,10 +78,13 @@
                 <span class="summary-label" id="standardTimeLabel">Trip Standard Time</span>
                 <strong id="standardTimeValue">---</strong>
             </button>
-            <button id="renderedTimeButton" class="summary-cell" type="button">
-                <span class="summary-label" id="renderedTimeLabel">Trip Time Remaining</span>
-                <strong id="renderedTimeValue">---</strong>
-            </button>
+            <div class="rendered-time-cell">
+                <button id="renderedTimeButton" class="summary-cell" type="button">
+                    <span class="summary-label" id="renderedTimeLabel">Trip Time Remaining</span>
+                    <strong id="renderedTimeValue">---</strong>
+                </button>
+                <button id="endTimeGoalLock" class="end-time-goal-lock" type="button" aria-label="Release end-time goal lock" title="Release end-time goal lock" hidden></button>
+            </div>
             <div class="percent-summary" aria-live="polite">
                 <strong id="currentPercentValue">---</strong>
                 <span>/</span>
@@ -187,6 +190,22 @@
                 <button type="button" data-close-dialog>Cancel</button>
                 <button class="primary-action" type="submit" value="save">Save</button>
             </div>
+        </form>
+    </dialog>
+
+    <dialog id="endTimeLockDialog" class="app-dialog end-time-lock-dialog">
+        <form id="endTimeLockForm" method="dialog">
+            <header class="dialog-header">
+                <h2>End Time Locks</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <fieldset>
+                <legend>Goals locked to this end time</legend>
+                <label><span>Trip</span><input id="endTimeTripLock" type="checkbox"></label>
+                <label><span>Total</span><input id="endTimeTotalLock" type="checkbox"></label>
+            </fieldset>
+            <p id="endTimeLockReleaseMessage" class="end-time-lock-release-message" role="status" hidden>The lock will be removed and the previous percentages will be reinstated.</p>
+            <button class="dialog-primary" type="submit">OK</button>
         </form>
     </dialog>
 
