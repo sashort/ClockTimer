@@ -2923,7 +2923,7 @@
                 const summary = this.#buildSummarySnapshot(new Date()).trip;
                 trips.push({id: this.#tripId || `offline-${this.#preparedTrip?.clientToken || "active"}`,
                     ...payload, running: this.#started, buffered: this.networkStatus === "offline",
-                    actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
+                    actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     events: this.#localLogEvents(this.toJSON())});
             }

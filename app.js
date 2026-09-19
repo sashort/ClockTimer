@@ -833,7 +833,7 @@
                 if(!start) return null;
                 return {id:clockTimer.currentTripId,running:true,activeState,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
-                    actualTimeMilliseconds:summary.actualTimeElapsedMilliseconds,
+                    actualTimeMilliseconds:summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};
             }
         });
