@@ -4,6 +4,7 @@ const root=w.document.createElement('div');w.document.body.append(root);let crit
 const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:'2:00',intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
 const settings={creationAnchor:'2026-09-18T00:00:00Z',standardTime:'20:00',creationTime:'11:00:00',scheduledStart:'12:00:00',startTime:'12:00:00',nonProduction:false};
 const view=new w.TripLog(root,{range:()=>criteria,filter:()=>filter,onFilter:v=>filter=v,onRange:v=>criteria=v,onDate(){},numberPad:async options=>pad=options,request:async()=>({events,settings,revision:'test'}),refresh:async()=>{}});
+const originalRequest=view.options.request;
 const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00Z',endTime:'2026-09-19T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
 const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00',standardTimeMilliseconds:1800000,actualTimeMilliseconds:1800000,events:[]},{id:1,startTime:'2026-09-18 12:00:00',endTime:'2026-09-18 12:20:00',standardTimeMilliseconds:1200000,actualTimeMilliseconds:1200000,events}];
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
@@ -76,6 +77,15 @@ view.render({trips:[{...trips[0],id:'offline-one',buffered:true},{...trips[1],id
 assert.equal(root.querySelectorAll('.trip-log-trip').length,2);
 assert(root.querySelector('.trip-log-overview .calculation-uncertain-icon'));
 assert.equal(root.querySelectorAll('.trip-log-trip .trip-log-menu').length,2);
+const localEvents=events.map((event,index)=>({...event,id:`local-${index}`})),offlineTrip={...trips[1],id:'offline-two',buffered:true,events:localEvents};
+const offlineChanges=[];view.options.request=async(id,change)=>{if(change)offlineChanges.push(change);return {events:localEvents,settings,revision:'offline'};};view.options.refresh=async()=>{};
+view.editing.add('offline-two');view.render({trips:[offlineTrip],offline:true,incomplete:true},calendar);
+root.querySelector('.trip-log-entry-time').click();await new Promise(resolve=>setTimeout(resolve,10));assert.equal(pad.title,'Entry Time');await pad.onConfirm('2026-09-18T12:01:00Z');assert.equal(offlineChanges.at(-1).operation,'entry');
+const nameButton=root.querySelector('.trip-log-entry-name');nameButton.click();const inlineSelect=root.querySelector('.trip-log-entry>select');assert(inlineSelect);inlineSelect.value='__cancel__';inlineSelect.dispatchEvent(new w.Event('change'));assert(root.querySelector('.trip-log-entry-name'));
+const intervalRow=[...root.querySelectorAll('.trip-log-entry')].find(row=>row.textContent.includes('break'));intervalRow.dispatchEvent(new w.PointerEvent('pointerdown',{clientX:100,clientY:10}));intervalRow.dispatchEvent(new w.PointerEvent('pointerup',{clientX:20,clientY:12}));await new Promise(resolve=>setTimeout(resolve,10));assert.equal(offlineChanges.at(-1).operation,'delete-entry');
+view.error(new Error('first'));view.error(new Error('replacement'));assert.equal(root.querySelectorAll(':scope>.trip-log-error').length,1);assert.equal(root.querySelector(':scope>.trip-log-error').textContent,'replacement');root.querySelector(':scope>.trip-log-error').remove();
+view.options.request=originalRequest;
+console.log('PASS offline entry time, inline type cancellation, swipe deletion, and transient errors work');
 view.setSettingsVisible(false);
 view.render({trips:[],offline:true},calendar);
 assert.match(root.querySelector('.trip-log-empty-message').textContent,/Connect to load saved trips/);

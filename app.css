@@ -3884,6 +3884,20 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-entry {display:grid;grid-template-columns:65px minmax(0,1fr);gap:8px;width:100%;padding:8px 0;text-align:left;font-size:15px;font-weight:400;color:white;}
 button.trip-log-entry {padding:10px;margin-top:5px;border:1px solid #92a0ae;border-radius:5px;background:transparent;}
 button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a9ddf7;background:#a9ddf720;}
+.trip-log-entry-time,.trip-log-entry-name {
+    min-width:0;
+    padding:8px;
+    border:1px solid transparent;
+    border-radius:5px;
+    color:inherit;
+    background:transparent;
+    font:inherit;
+    font-weight:inherit;
+    text-align:left;
+}
+.trip-log-entry-time:hover,.trip-log-entry-time:focus-visible,
+.trip-log-entry-name:hover,.trip-log-entry-name:focus-visible {border-color:var(--wm-blue-light);background:rgb(169 221 247 / 10%);}
+.trip-log-entry>select {min-width:0;padding:8px;border:1px solid var(--wm-blue-light);border-radius:5px;color:var(--wm-white);background:#39434e;font:inherit;}
 .trip-log-entry.is-active-entry {
     --trip-log-active-sweep-color: var(--timer-trip-color, #0053e2);
     background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 42%,color-mix(in srgb,var(--trip-log-active-sweep-color) 42%,transparent) 50%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 58%,transparent 68%,transparent 100%);
