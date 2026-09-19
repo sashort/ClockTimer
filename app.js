@@ -4550,7 +4550,12 @@
         }
 
         $("#numberPadBackspace").disabled = !numberPadState.pending;
-        numberPadContext.style.setProperty("--number-pad-title-center", percentMode ? "50%" : absoluteMode ? "calc((100% - clamp(54px, 16vw, 72px)) / 2)" : "33.333%" );
+        numberPadContext.style.setProperty(
+            "--number-pad-title-center",
+            absoluteMode
+                ? "calc((100% - clamp(54px, 16vw, 72px)) / 2)"
+                : "50%"
+        );
         const changed = numberPadHasChanges();
         const clearAction = getNumberPadClearAction();
         numberPadClear.dataset.action = clearAction;
@@ -4584,7 +4589,6 @@
             !percentMode &&
             !numberPadState.onConfirm &&
             numberPadState.role !== "trip-settings-field";
-        if (numberPadState.onConfirm && !percentMode) numberPadContext.style.setProperty("--number-pad-title-center", "calc((100% - clamp(54px, 16vw, 72px)) / 2)");
         numberPadSettingsArea.hidden = !settingsVisible;
         numberPadSettingsArea.parentElement?.classList.toggle(
             "settings-hidden",
