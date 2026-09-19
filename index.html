@@ -38,6 +38,10 @@
                 <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
                 <button id="authButton" type="button">Login</button>
             </div>
+            <div id="adminMenuGroup" class="admin-menu-group" hidden>
+                <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu">Admin</button>
+                <div id="adminSubmenu" class="admin-submenu" hidden><button id="newUserButton" type="button" hidden>New User</button></div>
+            </div>
             <hr>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
             <div class="main-menu-row sync-goals-menu-row">
@@ -136,7 +140,7 @@
             <p id="loginError" class="form-error" role="alert"></p>
             <div class="dialog-actions two-actions">
                 <button id="loginButton" class="primary-action" type="submit" value="login">Login</button>
-                <button id="newUserButton" type="button">New User</button>
+                <button type="button" data-close-dialog>Cancel</button>
             </div>
         </form>
     </dialog>
@@ -184,6 +188,11 @@
                 <button class="primary-action" type="submit" value="save">Save</button>
             </div>
         </form>
+    </dialog>
+
+    <dialog id="newUserDialog" class="app-dialog new-user-dialog">
+        <header class="dialog-header"><h2>New User Access</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></header>
+        <iframe id="newUserFrame" title="New user invitation" loading="lazy"></iframe>
     </dialog>
 
     <dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">

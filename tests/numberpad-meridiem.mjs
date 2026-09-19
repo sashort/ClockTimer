@@ -84,6 +84,17 @@ for (const initialMeridiem of ['AM', 'PM', undefined]) {
 }
 console.log('PASS backspace clears original values and AM/PM; Reset restores AM, PM, or neither');
 
+const emptyController = new Function(`
+    let numberPadState;
+    ${section('    function numberPadValueValid(', '    function absoluteValuesEqual(')}
+    function numberPadHasChanges(){return true;}
+    ${section('    async function commitNumberPad(', '    function eraseNumberPadPendingValue(')}
+    return {set:state=>numberPadState=state,commit:commitNumberPad};
+`)();
+let cleared='unchanged';emptyController.set({mode:'absolute',pending:'',allowEmpty:true,onConfirm:value=>{cleared=value;}});
+assert.equal(await emptyController.commit(),true);assert.equal(cleared,undefined);
+console.log('PASS an allow-empty date confirms back to its draft row as blank');
+
 const returnController = new Function(`
     let tripSettingsNavigation = {returnTarget:'number-pad', numberPadState:{
         mode:'duration', source:'standard-time', initial:'003000', pending:'003000', everEdited:false

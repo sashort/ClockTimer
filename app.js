@@ -80,6 +80,7 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
+        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -1934,6 +1935,9 @@
 
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
+        const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
+        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);
+        if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
     }
@@ -4105,9 +4109,8 @@
         finally { syncNetworkStatusUI(); }
     });
 
-    $("#newUserButton").addEventListener("click", () => {
-        window.dispatchEvent(new CustomEvent("wmof:new-user-request", { detail: { apiBase: API_BASE } }));
-    });
+    $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
+    $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
     $("#profileForm").addEventListener("submit", event => {
         event.preventDefault();
@@ -4471,7 +4474,8 @@
     }
 
     function numberPadValueValid() {
-        if (!numberPadState || !numberPadState.pending) return false;
+        if (!numberPadState) return false;
+        if (!numberPadState.pending) return Boolean(numberPadState.allowEmpty);
         if (numberPadState.mode === "percent") {
             return Number.isInteger(Number(numberPadState.pending)) && Number(numberPadState.pending) > 0;
         }
@@ -4642,7 +4646,7 @@
         confirmTarget,
         backTarget,
         duration = 250,
-        onConfirm, onCancel, title
+        onConfirm, onCancel, title, allowEmpty = false
     } = {}) {
         await ensureNumberPadLoaded();
         const normalizedMode = mode === "percent"
@@ -4707,7 +4711,8 @@
                     ? "trip-settings"
                     : undefined
             ),
-            everEdited: false
+            everEdited: false,
+            allowEmpty: Boolean(allowEmpty)
         };
         if (
             source === "new-trip" &&
@@ -4970,7 +4975,7 @@
         if (!numberPadState || !numberPadValueValid()) return false;
         const state = { ...numberPadState };
         if (state.onConfirm) {
-            const value = state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
+            const value = !state.pending ? undefined : state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
             await state.onConfirm(value);
             return true;
         }

@@ -48,6 +48,19 @@ CREATE TABLE IF NOT EXISTS `permissions` (
         CHECK (`value` > 0 AND (`value` & (`value` - 1)) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `new_tokens` (
+    `token_hash` CHAR(64) NOT NULL,
+    `admin_user_id` BIGINT UNSIGNED NOT NULL,
+    `created_at` BIGINT NOT NULL,
+    `expires_at` BIGINT NOT NULL,
+    PRIMARY KEY (`token_hash`),
+    KEY `idx_new_tokens_expiry` (`expires_at`),
+    CONSTRAINT `fk_new_tokens_admin`
+        FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `trips` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL,

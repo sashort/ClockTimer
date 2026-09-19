@@ -1,0 +1,21 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__).'/_core/bootstrap.php';
+require_once dirname(__DIR__).'/_core/new_user_invites.php';
+$method=require_method('GET','POST');
+if($method==='POST'){
+    $input=json_input();$grant=$_SESSION['new_user_invitation']??null;
+    if(!is_array($grant)||(int)($grant['expiresAt']??0)<=time())api_error('This invitation has expired. Ask an administrator for a new one.',410,'invitation_expired');
+    if(!is_string($input['csrfToken']??null)||!is_string($grant['csrfToken']??null)||!hash_equals($grant['csrfToken'],$input['csrfToken']))api_error('The invitation form expired. Reload the scanned link.',403,'csrf_invalid');
+    if(($input['password']??null)!==($input['confirmPassword']??null))api_error('Passwords do not match.',422,'password_mismatch');
+    $account=array_intersect_key($input,array_flip(['firstName','lastName','preferredName','username','password']));
+    $user=create_invited_user(db(),(int)$grant['adminUserId'],$account);unset($_SESSION['new_user_invitation']);json_response(['user'=>$user,'created'=>true],201);
+}
+$record=consume_new_user_token(db(),is_string($_GET['token']??null)?$_GET['token']:'');
+if(!$record){http_response_code(410);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><meta name="viewport" content="width=device-width"><title>Invitation unavailable</title><p>This invitation is invalid, expired, or already used. Ask an administrator for a new one.</p>';exit;}
+$csrf=bin2hex(random_bytes(32));$_SESSION['new_user_invitation']=['adminUserId'=>$record['adminUserId'],'expiresAt'=>time()+NEW_USER_TOKEN_TTL,'csrfToken'=>$csrf];
+header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store');
+?><!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Profile</title><style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#001e60;color:#fff}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;box-sizing:border-box}form{width:min(92vw,520px);background:#293746;border:1px solid #a9ddf7;border-radius:14px;padding:24px;box-sizing:border-box}h1{margin-top:0;text-align:center}label{display:grid;gap:6px;margin:12px 0;font-weight:700}input,button{font:inherit;padding:12px;border-radius:7px;border:1px solid #a9ddf7}input{background:#fff;color:#001e60}button{width:100%;margin-top:12px;background:#0053e2;color:#fff;font-weight:700}#message{min-height:1.5em;color:#ffc220}</style></head><body><form id="profile"><h1>Create Profile</h1><label>First Name<input name="firstName" autocomplete="given-name" required maxlength="100"></label><label>Last Name<input name="lastName" autocomplete="family-name" required maxlength="100"></label><label>Preferred Name<input name="preferredName" autocomplete="nickname" maxlength="100"></label><label>Username<input name="username" autocomplete="username" required maxlength="191"></label><label>Password<input name="password" type="password" autocomplete="new-password" required maxlength="72"></label><label>Confirm Password<input name="confirmPassword" type="password" autocomplete="new-password" required maxlength="72"></label><p id="message" role="alert"></p><button type="submit">Create Profile</button></form><script>
+const form=document.getElementById('profile'),message=document.getElementById('message');form.addEventListener('submit',async event=>{event.preventDefault();message.textContent='Creating profile…';const body=Object.fromEntries(new FormData(form));body.csrfToken='<?=htmlspecialchars($csrf,ENT_QUOTES)?>';const response=await fetch(location.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok){message.textContent=data.message||'Unable to create profile.';return;}form.innerHTML='<h1>Profile Created</h1><p>You can now return to ClockTimer and log in.</p><a href="/">Open ClockTimer</a>';});
+</script></body></html>

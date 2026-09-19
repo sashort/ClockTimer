@@ -1,0 +1,17 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__,2).'/_core/bootstrap.php';
+require_once dirname(__DIR__,2).'/_core/new_user_invites.php';
+$actor=require_permission(PERMISSION_CREATE_USERS);
+$method=require_method('GET','POST');
+if($method==='POST'){$provided=$_POST['csrf_token']??'';$expected=$_SESSION['csrf_token']??'';if(!is_string($provided)||!is_string($expected)||$provided===''||!hash_equals($expected,$provided))api_error('The CSRF token is invalid or expired.',403,'invalid_csrf');$token=renew_or_create_new_user_token(db(),(int)$actor['id'],is_string($_POST['token']??null)?$_POST['token']:'');}
+else $token=create_new_user_token(db(),(int)$actor['id']);
+$scheme=(!empty($_SERVER['HTTPS'])&&strtolower((string)$_SERVER['HTTPS'])!=='off')?'https':'http';
+$host=(string)($_SERVER['HTTP_HOST']??'');
+if(!preg_match('/^[A-Za-z0-9.\-:\[\]]+$/D',$host))api_error('Invalid request host.',400,'invalid_host');
+$link=$scheme.'://'.$host.'/api/new-user/?token='.rawurlencode($token);
+header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store');
+?><!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>New User Invitation</title><style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#001e60;color:#fff}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}main{width:min(92vw,560px);text-align:center;background:#293746;border:1px solid #a9ddf7;border-radius:14px;padding:24px;box-sizing:border-box}h1{margin-top:0}#qr{display:inline-block;background:#fff;padding:14px;border-radius:10px}#qr img,#qr canvas,#qr svg{display:block;width:min(70vw,360px)!important;height:auto!important}a{color:#a9ddf7;overflow-wrap:anywhere}.expires{color:#ffc220;font-weight:700}button{font:inherit;font-weight:700;padding:12px 20px;border:1px solid #a9ddf7;border-radius:7px;background:#0053e2;color:#fff}</style></head><body><main><h1>Scan to Create Profile</h1><p>Have the new user scan this code with their camera.</p><div id="qr" aria-label="QR code for the new-user invitation"></div><p><a id="invite" href="<?=htmlspecialchars($link,ENT_QUOTES)?>"><?=htmlspecialchars($link)?></a></p><p class="expires">This single-use invitation expires in 15 minutes.</p><form method="post"><input type="hidden" name="csrf_token" value="<?=htmlspecialchars(csrf_token(),ENT_QUOTES)?>"><input type="hidden" name="token" value="<?=htmlspecialchars($token,ENT_QUOTES)?>"><button type="submit">Regenerate</button></form></main><script src="../../vendor/qrcode.min.js"></script><script>
+new QRCode(document.getElementById('qr'),{text:document.getElementById('invite').href,width:360,height:360,colorDark:'#001e60',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+</script></body></html>
