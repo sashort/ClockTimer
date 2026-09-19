@@ -3785,6 +3785,23 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-emphasis>strong+strong {border-left:1px solid #83909d;padding-left:18px;}
 .trip-log-emphasis .trip-log-actual::after {content:"Actual";display:block;font-size:16px;color:#d0d6dd;margin-top:4px;}
 .trip-log-times {font-size:14px;font-weight:400;opacity:.85;margin-top:6px;}
+.trip-log-column-header {
+    position:sticky;
+    top:0;
+    z-index:8;
+    display:grid;
+    grid-template-columns:minmax(50px,1fr) repeat(2,minmax(50px,1fr)) minmax(65px,1fr) 24px;
+    gap:6px;
+    margin:0;
+    padding:9px 20px;
+    border-block:1px solid rgb(255 255 255 / 32%);
+    color:var(--wm-white);
+    background:var(--ui-charcoal-gradient);
+    box-shadow:0 4px 9px rgb(0 0 0 / 22%);
+    font-size:13px;
+    font-weight:700;
+}
+.trip-log-column-header span:not(:first-child) {text-align:center;}
 .trip-log-actual {color:#a9ddf7;white-space:nowrap;}
 .trip-log-group {border-top:1px solid rgb(255 255 255 / 20%);}
 .trip-log-group>summary {padding:12px;cursor:pointer;background:rgb(0 0 0 / 12%);}
