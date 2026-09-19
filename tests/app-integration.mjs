@@ -129,6 +129,7 @@ for(const mode of ['trip','total','auto']){
     assert(!window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.autoSyncTripGoal,false);
     if(mode!=='total')assert.notEqual(c.getAttribute('trip-goal'),originalTripGoal);
     if(mode!=='trip')assert.notEqual(c.getAttribute('total-goal'),originalTotalGoal);
+    assert.notEqual(window.document.querySelector('#goalPercentValue').textContent,mode==='trip'?'111%':mode==='total'?'112%':'100%');
     window.document.querySelector('#endTimeGoalLock').click();await settle();
     if(mode==='auto'){
         assert(window.document.querySelector('#endTimeLockDialog').open);

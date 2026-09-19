@@ -2831,6 +2831,15 @@
         requestAnimationFrame(alignStatusIcons);
     }
 
+    function endTimeGoalDisplayScope(snapshot) {
+        if (!endTimeGoalOverride) return undefined;
+        const scopes = endTimeGoalOverride.scopes || [];
+        const mode = normalizePercentMode(clockTimer.percentMode);
+        if (mode !== "auto") return scopes.includes(mode) ? mode : undefined;
+        if (scopes.includes(snapshot?.scope)) return snapshot.scope;
+        return scopes.includes("trip") ? "trip" : scopes.includes("total") ? "total" : undefined;
+    }
+
     function releaseEndTimeGoalOverride() {
         const override = endTimeGoalOverride;
         if (!override) return false;
@@ -2893,6 +2902,7 @@
             clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
         }
         endTimeGoalOverride.scopes = normalized;
+        endTimeGoalOverride.goals = goals;
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
@@ -2930,6 +2940,7 @@
         for (const scope of scopes) {
             clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
         }
+        endTimeGoalOverride.goals = goals;
         applyRenderedTimeMode("calculated-end");
         renderEndTimeGoalLock();
         queueSummaryRefresh();
@@ -2998,12 +3009,13 @@
                     ? "End Time"
                     : "Time Remaining";
 
-        const selectedScope =
+        const selectedScope = endTimeGoalDisplayScope(snapshot) ?? (
             clockTimer.percentMode === "auto"
                 ? snapshot?.scope ?? "standard"
                 : clockTimer.percentMode === "total"
                     ? "total"
-                    : "trip";
+                    : "trip"
+        );
 
         const standardLabel =
             $("#standardTimeLabel");
@@ -3157,10 +3169,21 @@
                 ? standard
                 : "---";
 
-        const mainRenderedTime =
+        let mainRenderedTime =
             getMainRenderedTimeValue(
                 selected
             );
+
+        if (
+            endTimeGoalOverride?.deadline instanceof Date &&
+            clockTimer.renderedTimeMode === "calculated-end"
+        ) {
+            mainRenderedTime = [
+                endTimeGoalOverride.deadline.getHours(),
+                endTimeGoalOverride.deadline.getMinutes(),
+                endTimeGoalOverride.deadline.getSeconds()
+            ].map(value => String(value).padStart(2, "0")).join(":");
+        }
 
         $("#renderedTimeValue").textContent =
             mainRenderedTime || "---";
@@ -3175,11 +3198,13 @@
         const goalButton =
             $("#goalPercentValue");
 
-        goalButton.textContent =
-            formatSummaryPercent(
-                selected?.percentGoal,
-                "100%"
-            );
+        const lockedDisplayScope = endTimeGoalDisplayScope(snapshot);
+        goalButton.textContent = formatSummaryPercent(
+            lockedDisplayScope
+                ? endTimeGoalOverride.goals?.[lockedDisplayScope]
+                : selected?.percentGoal,
+            "100%"
+        );
 
         goalButton.setAttribute(
             "aria-label",
