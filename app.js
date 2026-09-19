@@ -812,13 +812,23 @@
             refresh:()=>dispatchTripListRequest("edit"),
             liveTrip:()=>{
                 if (!tripIsLive()) return null;
-                if (clockTimer.networkStatus === "offline" || !clockTimer.currentTripId) return clockTimer.getLocalTripLog().find(trip => trip.running) || null;
+                const interval=clockTimer.getActiveIntervalState?.(new Date());
+                const intervalType=String(interval?.intervalType||"").toLowerCase();
+                const activeState=interval?.phase==="latency"
+                    ? "latency"
+                    : ["break","lunch","down"].includes(intervalType)
+                        ? intervalType
+                        : "normal";
+                if (clockTimer.networkStatus === "offline" || !clockTimer.currentTripId) {
+                    const local=clockTimer.getLocalTripLog().find(trip=>trip.running);
+                    return local?{...local,activeState}:null;
+                }
                 const summary=clockTimer.getSummarySnapshot().trip;
                 const snapshot=clockTimer.toJSON();
                 const first=snapshot.records.find(record=>Object.values(record)[0]?.type==="start");
                 const start=first?Object.keys(first)[0]:undefined;
                 if(!start) return null;
-                return {id:clockTimer.currentTripId,running:true,startTime:start,endTime:new Date().toISOString(),
+                return {id:clockTimer.currentTripId,running:true,activeState,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
                     actualTimeMilliseconds:summary.actualTimeElapsedMilliseconds,
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};

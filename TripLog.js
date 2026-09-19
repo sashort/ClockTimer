@@ -90,14 +90,14 @@
         groups(trips,levels,calendar) {
             const fragment=document.createDocumentFragment();if(!levels.length){for(const trip of trips)fragment.append(this.trip(trip));return fragment;}
             const [level,...rest]=levels;const groups=new Map();for(const trip of trips){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
-            for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group');details.classList.toggle('has-active-trip',group.some(trip=>trip.running));if(group.some(trip=>trip.running))details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
+            for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
                 const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
                 summary.append(heading,node('div',`Standard ${duration(total(group,'standardTimeMilliseconds'))} · Actual ${duration(total(group,'actualTimeMilliseconds'))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
             return fragment;
         }
         trip(trip) {
-            const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running)details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
+            const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
             summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(trip.actualTimeMilliseconds)),node('strong',percent([trip]),'trip-log-actual'));
             if(trip.buffered)summary.lastElementChild.append(uncertainIcon());

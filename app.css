@@ -3797,13 +3797,14 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-trip>summary>strong:first-child {padding-left:8px;}
 .trip-log-group.has-active-trip>summary,
 .trip-log-trip.is-active-trip>summary {
+    --trip-log-active-sweep-color: var(--wm-blue-sky);
     background-image: linear-gradient(
         105deg,
         transparent 0%,
         transparent 32%,
-        rgb(77 189 245 / 10%) 42%,
-        rgb(169 221 247 / 32%) 50%,
-        rgb(77 189 245 / 10%) 58%,
+        color-mix(in srgb, var(--trip-log-active-sweep-color) 10%, transparent) 42%,
+        color-mix(in srgb, var(--trip-log-active-sweep-color) 42%, transparent) 50%,
+        color-mix(in srgb, var(--trip-log-active-sweep-color) 10%, transparent) 58%,
         transparent 68%,
         transparent 100%
     );
@@ -3811,6 +3812,14 @@ clock-timer[hide-latency] time-range[type="latency"] {
     animation: trip-log-active-sweep 4.2s linear infinite;
     animation-delay: var(--trip-log-active-sweep-delay, 0ms);
 }
+.trip-log-group.has-active-trip[data-active-state="break"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="break"]>summary {--trip-log-active-sweep-color:var(--timer-break-color,#001e60);}
+.trip-log-group.has-active-trip[data-active-state="lunch"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="lunch"]>summary {--trip-log-active-sweep-color:var(--timer-lunch-color,#ffc220);}
+.trip-log-group.has-active-trip[data-active-state="down"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="down"]>summary {--trip-log-active-sweep-color:var(--timer-down-color,#5f6772);}
+.trip-log-group.has-active-trip[data-active-state="latency"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="latency"]>summary {--trip-log-active-sweep-color:var(--timer-latency-color,#e1251b);}
 @keyframes trip-log-active-sweep {
     from { background-position: 100% 0; }
     to { background-position: 0% 0; }
