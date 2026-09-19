@@ -2826,9 +2826,16 @@
     function renderEndTimeGoalLock() {
         const lock = $("#endTimeGoalLock");
         if (!lock) return;
-        lock.hidden = !endTimeGoalOverride;
+        const scopes = endTimeGoalOverride?.scopes || [];
+        const mode = normalizePercentMode(clockTimer.percentMode);
+        const appliesToMode = mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
+        const hidden = !endTimeGoalOverride ||
+            clockTimer.renderedTimeMode !== "calculated-end" ||
+            !appliesToMode;
+        const visibilityChanged = lock.hidden !== hidden;
+        lock.hidden = hidden;
         lock.setAttribute("aria-pressed", String(Boolean(endTimeGoalOverride)));
-        requestAnimationFrame(alignStatusIcons);
+        if (!hidden && visibilityChanged) requestAnimationFrame(alignStatusIcons);
     }
 
     function endTimeGoalDisplayScope(snapshot) {
@@ -3135,6 +3142,7 @@
         }
 
         updateSummaryLabels(snapshot);
+        renderEndTimeGoalLock();
 
         const selected =
             snapshot?.selected;
@@ -3176,7 +3184,8 @@
 
         if (
             endTimeGoalOverride?.deadline instanceof Date &&
-            clockTimer.renderedTimeMode === "calculated-end"
+            clockTimer.renderedTimeMode === "calculated-end" &&
+            endTimeGoalDisplayScope(snapshot)
         ) {
             mainRenderedTime = [
                 endTimeGoalOverride.deadline.getHours(),
