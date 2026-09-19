@@ -2961,7 +2961,6 @@
             clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
         }
         endTimeGoalOverride.scopes = normalized;
-        endTimeGoalOverride.goals = goals;
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
@@ -3003,7 +3002,6 @@
         for (const scope of scopes) {
             clockTimer.setAttribute(getPercentGoalAttribute(scope), percentGoalAttribute(goals[scope]));
         }
-        endTimeGoalOverride.goals = goals;
         applyRenderedTimeMode("calculated-end");
         renderEndTimeGoalLock();
         queueSummaryRefresh();
@@ -3268,9 +3266,7 @@
             $("#goalPercentValue");
 
         goalButton.textContent = formatSummaryPercent(
-            lockedDisplayScope
-                ? endTimeGoalOverride.goals?.[lockedDisplayScope]
-                : selected?.percentGoal,
+            selected?.percentGoal,
             "100%"
         );
 
