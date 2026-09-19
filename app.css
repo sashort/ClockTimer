@@ -3797,7 +3797,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-trip>summary>strong:first-child {padding-left:8px;}
 .trip-log-group.has-active-trip>summary,
 .trip-log-trip.is-active-trip>summary {
-    --trip-log-active-sweep-color: var(--wm-blue-sky);
+    --trip-log-active-sweep-color: var(--timer-trip-color, #0053e2);
     background-image: linear-gradient(
         105deg,
         transparent 0%,
@@ -3820,6 +3820,14 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-trip.is-active-trip[data-active-state="down"]>summary {--trip-log-active-sweep-color:var(--timer-down-color,#5f6772);}
 .trip-log-group.has-active-trip[data-active-state="latency"]>summary,
 .trip-log-trip.is-active-trip[data-active-state="latency"]>summary {--trip-log-active-sweep-color:var(--timer-latency-color,#e1251b);}
+.trip-log-group.has-active-trip[data-active-state="buffer"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="buffer"]>summary {--trip-log-active-sweep-color:var(--timer-break-buffer-color,#6b7f99);}
+.trip-log-group.has-active-trip[data-active-state="trip"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="trip"]>summary {--trip-log-active-sweep-color:var(--timer-trip-color,#0053e2);}
+.trip-log-group.has-active-trip[data-active-state="early-start"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="early-start"]>summary {--trip-log-active-sweep-color:var(--timer-early-start-color,#4dbdf5);}
+.trip-log-group.has-active-trip[data-active-state="tolerance"]>summary,
+.trip-log-trip.is-active-trip[data-active-state="tolerance"]>summary {--trip-log-active-sweep-color:var(--timer-tolerance-color,#2e7d32);}
 @keyframes trip-log-active-sweep {
     from { background-position: 100% 0; }
     to { background-position: 0% 0; }

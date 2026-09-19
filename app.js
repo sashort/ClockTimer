@@ -814,11 +814,14 @@
                 if (!tripIsLive()) return null;
                 const interval=clockTimer.getActiveIntervalState?.(new Date());
                 const intervalType=String(interval?.intervalType||"").toLowerCase();
-                const activeState=interval?.phase==="latency"
-                    ? "latency"
-                    : ["break","lunch","down"].includes(intervalType)
-                        ? intervalType
-                        : "normal";
+                const phase=String(interval?.phase||"").toLowerCase();
+                const activeState=phase.endsWith("-buffer")
+                    ? "buffer"
+                    : ["latency","pending","late-start"].includes(phase)
+                        ? "latency"
+                        : ["break","lunch","down","tolerance","early-start","trip"].includes(intervalType)
+                            ? intervalType
+                            : "trip";
                 if (clockTimer.networkStatus === "offline" || !clockTimer.currentTripId) {
                     const local=clockTimer.getLocalTripLog().find(trip=>trip.running);
                     return local?{...local,activeState}:null;
@@ -3119,17 +3122,25 @@
 
         if (target === clockTimer) {
             const paletteRoot = document.documentElement;
+            const tripColor = settings.tripColor || GRAPHICAL_DEFAULTS.tripColor;
+            const earlyStartColor = settings.earlyStartColor || GRAPHICAL_DEFAULTS.earlyStartColor;
             const breakColor = settings.breakColor || GRAPHICAL_DEFAULTS.breakColor;
             const lunchColor = settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor;
+            const breakBufferColor = settings.breakBufferColor || GRAPHICAL_DEFAULTS.breakBufferColor;
             const downColor = settings.downColor || GRAPHICAL_DEFAULTS.downColor;
+            const toleranceColor = settings.toleranceColor || GRAPHICAL_DEFAULTS.toleranceColor;
             const latencyColor = settings.latencyColor || GRAPHICAL_DEFAULTS.latencyColor;
 
+            paletteRoot.style.setProperty("--timer-trip-color", tripColor);
+            paletteRoot.style.setProperty("--timer-early-start-color", earlyStartColor);
             paletteRoot.style.setProperty("--timer-break-color", breakColor);
             paletteRoot.style.setProperty("--timer-break-text-color", getContrastingTextColor(breakColor));
             paletteRoot.style.setProperty("--timer-lunch-color", lunchColor);
             paletteRoot.style.setProperty("--timer-lunch-text-color", getContrastingTextColor(lunchColor));
+            paletteRoot.style.setProperty("--timer-break-buffer-color", breakBufferColor);
             paletteRoot.style.setProperty("--timer-down-color", downColor);
             paletteRoot.style.setProperty("--timer-down-text-color", getContrastingTextColor(downColor));
+            paletteRoot.style.setProperty("--timer-tolerance-color", toleranceColor);
             paletteRoot.style.setProperty("--timer-latency-color", latencyColor);
         }
     }
