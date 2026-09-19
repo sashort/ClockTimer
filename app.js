@@ -3070,7 +3070,15 @@
 
     function renderClockTimerUIState(state) {
         if (!state?.time_component || !state?.standard_time_component) return false;
+        const tripStateChanged = app.dataset.tripState !== (state.trip_active ? "running" : "ready");
+        if (tripStateChanged) {
+            app.classList.add("trip-state-snap");
+            void app.offsetHeight;
+        }
         app.dataset.clockTimerState = state.state;
+        app.dataset.tripState = state.trip_active ? "running" : "ready";
+        app.dataset.state = state.state;
+        app.dataset.intervalState = state.active_interval_type || (state.trip_active ? "normal" : "none");
         app.classList.forEach(name => {
             if (name.startsWith("clock-timer-state-")) app.classList.remove(name);
         });
@@ -3106,8 +3114,22 @@
                     ? "Edit Total goal"
                     : "Edit Trip goal"
         );
+        const controls = state.controls;
+        if (controls) {
+            activeTripControls.hidden = !controls.active_trip_visible;
+            tripActionRow.hidden = !controls.trip_action_row_visible;
+            breakButton.hidden = !controls.break_visible;
+            downButton.hidden = !controls.down_visible;
+            endTripButton.hidden = !controls.primary_action?.visible;
+            endTripButton.disabled = controls.primary_action?.enabled === false;
+            endTripButton.textContent = controls.primary_action?.text || "End Trip";
+            setEndTripButtonIntervalPalette(state.active_interval_type);
+        }
         renderEndTimeGoalLock();
         renderSyncGoalsState(state.effective_goal_type);
+        if (tripStateChanged) {
+            requestAnimationFrame(() => app.classList.remove("trip-state-snap"));
+        }
         return true;
     }
 

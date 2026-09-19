@@ -14,8 +14,35 @@ if ($method === 'GET') {
     }
 
     $result = strtolower(trim($result));
-    if (!in_array($result, ['totals', 'list', 'count'], true)) {
-        api_error('result must be totals, list, or count.', 422, 'invalid_argument');
+    if (!in_array($result, ['totals', 'list', 'count', 'active'], true)) {
+        api_error('result must be totals, list, count, or active.', 422, 'invalid_argument');
+    }
+
+    if ($result === 'active') {
+        $statement = db()->prepare(
+            'SELECT t.id FROM trips t '
+            . 'WHERE t.user_id = :user_id '
+            . 'AND EXISTS ('
+            . 'SELECT 1 FROM trip_events started '
+            . 'INNER JOIN event_types started_type ON started_type.id = started.event_type_id '
+            . 'WHERE started.trip_id = t.id AND started_type.name = :started'
+            . ') '
+            . 'AND NOT EXISTS ('
+            . 'SELECT 1 FROM trip_events stopped '
+            . 'INNER JOIN event_types stopped_type ON stopped_type.id = stopped.event_type_id '
+            . 'WHERE stopped.trip_id = t.id AND stopped_type.name = :stopped'
+            . ') '
+            . 'ORDER BY t.id DESC LIMIT 1'
+        );
+        $statement->execute([
+            ':user_id' => $userId,
+            ':started' => 'trip.started',
+            ':stopped' => 'trip.stopped',
+        ]);
+        $tripId = (int) ($statement->fetchColumn() ?: 0);
+        json_response([
+            'activeTripId' => $tripId > 0 ? $tripId : null,
+        ]);
     }
 
     $minInput = $_GET['minDateTime'] ?? $_GET['startTime'] ?? null;

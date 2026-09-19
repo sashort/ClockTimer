@@ -42,3 +42,7 @@ Every display component has the same shape:
 `date` is populated for absolute times and is `null` for durations and percentages. Unavailable components provide `text: "---"`, `value: null`, `date: null`, and `available: false`.
 
 State objects include `state`, `state_class`, `previous_state`, `transition`, `transition_phase`, `transition_id`, `state_entered_at`, `transition_started_at`, `transition_ended_at`, and `changed_fields`. A state-changing event first emits an `active` transition and then a `settled` transition with the same identifier. Ticks retain the current state and use a settled `tick` transition.
+
+`available_actions` describes the operations allowed by the reconstructed state, including `start_trip`, `end_trip`, `resume_trip`, `end_interval`, `start_break`, `start_down`, and `edit_trip`. `controls` supplies the corresponding visibility, enabled state, action identifier, and button text for the main UI.
+
+After login or session restoration, ClockTimer queries for the user's unfinished trip. If one exists, it replays its persisted events, reconstructs the current running or interval state, and emits `activeTripRestored` followed by `uiStateChanged`. The UI therefore uses the same state path for restored and newly started trips.

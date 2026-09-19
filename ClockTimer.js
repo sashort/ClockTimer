@@ -1287,6 +1287,7 @@
                 tripStartedEarly: "trip_started_early",
                 tripStartedLate: "trip_started_late",
                 tripResumed: "trip_resumed",
+                activeTripRestored: "active_trip_restored",
                 breakStarted: "break_started",
                 breakEndedEarly: "break_ended",
                 breakEndedAutomatically: "break_ended",
@@ -1354,6 +1355,11 @@
             return match[1] ? -value : value;
         }
 
+        #actionClock(milliseconds) {
+            const seconds = Math.max(0, Math.floor(Number(milliseconds) / 1000) || 0);
+            return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+        }
+
         getUIState(now = new Date(), options = {}) {
             const summary = options.summary?.selected ? options.summary : this.#buildSummarySnapshot(now);
             const state = this.#currentUIStateName(now);
@@ -1382,6 +1388,34 @@
             const goal = this.#percentMode === "auto" && this.#autoSyncTripGoal
                 ? Number(this.#renderedPercentGoal)
                 : ordinaryGoal;
+            const intervalType = interval?.open === false
+                ? ""
+                : String(interval?.intervalType || "").trim().toLowerCase();
+            const tripActive = this.#hasStartProperties();
+            const timedPause = intervalType === "break" || intervalType === "lunch";
+            const downPause = intervalType === "down";
+            const normalActions = !timedPause && !downPause;
+            const primaryAction = intervalType === "down"
+                ? {action: "resume_trip", text: `Resume Trip : ${this.#actionClock(interval?.elapsedMilliseconds)}`, visible: true, enabled: true}
+                : intervalType === "break" || intervalType === "lunch"
+                    ? {action: "end_interval", text: `End ${intervalType === "lunch" ? "Lunch" : "Break"} : ${this.#actionClock(interval?.remainingMilliseconds)}`, visible: true, enabled: true}
+                    : {action: "end_trip", text: "End Trip", visible: tripActive, enabled: tripActive};
+            const availableActions = Object.freeze({
+                start_trip: !tripActive,
+                end_trip: tripActive && normalActions,
+                resume_trip: downPause,
+                end_interval: timedPause,
+                start_break: tripActive && !timedPause,
+                start_down: tripActive && normalActions,
+                edit_trip: tripActive
+            });
+            const controls = Object.freeze({
+                active_trip_visible: tripActive,
+                trip_action_row_visible: tripActive && !timedPause,
+                break_visible: tripActive && !timedPause,
+                down_visible: tripActive && normalActions,
+                primary_action: Object.freeze(primaryAction)
+            });
             const values = {
                 state,
                 state_class: `clock-timer-state-${state}`,
@@ -1434,8 +1468,10 @@
                     Number.isFinite(this.#getTotalGoal()) && this.#getTotalGoal() > 0
                 ),
                 active_interval_type: interval?.open === false ? null : (interval?.intervalType || null),
-                trip_active: this.#hasStartProperties(),
-                paused: ["break", "lunch", "down", "buffer"].includes(state)
+                trip_active: tripActive,
+                paused: ["break", "lunch", "down", "buffer"].includes(state),
+                available_actions: availableActions,
+                controls
             };
             return new ClockTimerUIState(values);
         }
@@ -4187,6 +4223,9 @@
                     await this.#ensureTripPersisted();
                     await this.#syncTripEvents();
                 }
+                else {
+                    await this.restoreActiveTrip();
+                }
 
                 await this.#refreshAggregateSnapshotAfterReconnect();
             }
@@ -4251,10 +4290,43 @@
                 await this.#ensureTripPersisted();
                 await this.#syncTripEvents();
             }
+            else {
+                await this.restoreActiveTrip();
+            }
 
             await this.#refreshAggregateSnapshotAfterReconnect();
 
             return { connected: true, user: data.user };
+        }
+
+        async restoreActiveTrip() {
+            if (this.#hasStartProperties()) {
+                return {
+                    restored: false,
+                    reason: "local-active-trip",
+                    tripId: this.#tripId,
+                    state: this.uiState
+                };
+            }
+            if (this.#connectionState !== "connected") {
+                return {restored: false, reason: "offline", tripId: null, state: this.uiState};
+            }
+            const data = await this.#apiRequest("trips", {query: {result: "active"}});
+            const tripId = Number(data?.activeTripId);
+            if (!Number.isInteger(tripId) || tripId < 1) {
+                this.#emitUIState("activeTripChecked");
+                return {restored: false, reason: "none", tripId: null, state: this.uiState};
+            }
+            await this.loadTrip(tripId);
+            const state = this.getUIState(new Date(), {
+                previousState: "ready",
+                transition: "active_trip_restored",
+                phase: "settled",
+                transitionId: this.#uiTransitionId
+            });
+            this.#uiState = state;
+            this.#emitClockTimerEvent("activeTripRestored", {tripId, state});
+            return {restored: true, reason: null, tripId, state: this.uiState};
         }
 
         async disconnect() {
