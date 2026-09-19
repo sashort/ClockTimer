@@ -2915,7 +2915,7 @@
 
         getLocalTripLog() {
             const trips = this.#completedTripQueue
-                .filter(trip => this.#syncUserId === undefined || trip.userId === undefined || trip.userId === this.#syncUserId)
+                .filter(trip => !trip.deleted && (this.#syncUserId === undefined || trip.userId === undefined || trip.userId === this.#syncUserId))
                 .map(trip => ({...trip.log, id: trip.tripId || `offline-${trip.payload.clientToken}`,
                     buffered: true, events: trip.log?.events || trip.events}));
             if (this.#hasStartProperties()) {
@@ -2999,6 +2999,17 @@
                     }
                     event.synced = true;
                     this.#saveCompletedTrips();
+                }
+                if (trip.deleted) {
+                    try {
+                        const editor = await this.#apiRequest("trip-editor", {query:{tripId:trip.tripId}});
+                        await this.#apiRequest("trip-editor", {method:"POST",csrf:true,body:{
+                            tripId:trip.tripId,operation:"delete-trip",revision:editor.revision
+                        }});
+                    }
+                    catch (error) {
+                        if (Number(error?.status) !== 404) throw error;
+                    }
                 }
                 this.#completedTripQueue = this.#completedTripQueue.filter(item => item !== trip);
                 this.#saveCompletedTrips();
@@ -5801,9 +5812,9 @@
                 });
                 if (!change) return response();
                 if (change.operation === "delete-trip") {
-                    this.#completedTripQueue = this.#completedTripQueue.filter(trip => trip !== buffered);
+                    buffered.deleted = true;
                     if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
-                    return {tripId, deleted: true, offline: true};
+                    return {tripId, deleted: true, queued: true, offline: true};
                 }
                 if (change.operation === "settings") {
                     Object.assign(buffered.payload, change.settings);
