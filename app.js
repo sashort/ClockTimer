@@ -3014,15 +3014,6 @@
                     : "Edit Trip goal"
         );
 
-        if (clockTimer.networkStatus === "offline" && selected?.available !== false && !deliberatelyLoggedOut) {
-            const total = scope === "total";
-            const targets = total ? [$("#standardTimeValue"), $("#renderedTimeValue"), $("#currentPercentValue")] :
-                getSyncGoalsState() ? [$("#renderedTimeValue"), goalButton] : [];
-            for (const target of targets) {
-                if (target.textContent !== "---") target.append(TripLog.uncertainIcon());
-            }
-        }
-
         renderSyncGoalsState(
             scope
         );

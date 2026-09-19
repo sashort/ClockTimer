@@ -117,6 +117,7 @@ assert.equal(window.document.querySelector('#activeTripControls').hidden,true);
 assert.equal(JSON.parse(window.localStorage.getItem('wmof.clock.completedTrips')).length,1);
 assert.equal(window.document.querySelector('#standardTimeValue').textContent,'---');
 assert.equal(window.document.querySelector('#renderedTimeValue').textContent,'---');
+assert.equal(window.document.querySelectorAll('#standardTimeValue .calculation-uncertain-icon, #renderedTimeValue .calculation-uncertain-icon, #currentPercentValue .calculation-uncertain-icon, #goalPercentValue .calculation-uncertain-icon').length,0);
 window.document.querySelector('#tripListMenuButton').click();
 await new Promise(r=>setTimeout(r,650));
 assert.equal(window.document.querySelectorAll('.trip-log-trip').length,1);
