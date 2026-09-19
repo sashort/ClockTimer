@@ -3273,7 +3273,8 @@
             )
             : undefined;
         const automaticGoal =
-            clockTimer.percentMode === "auto"
+            clockTimer.percentMode === "auto" &&
+            clockTimer.autoSyncTripGoal
                 ? Number(clockTimer.renderedPercentGoal)
                 : undefined;
 
