@@ -1855,6 +1855,27 @@ button:active:not(:disabled):not(#goalSyncButton) {
     grid-column: 1 / -1;
 }
 
+/* Down mode keeps its controls readable while visually quieting the rest of the UI. */
+.app[data-interval-state="down"] > :not(.trip-action-controls) {
+    filter: grayscale(80%);
+}
+
+.app[data-interval-state="down"] .trip-action-controls,
+.app[data-interval-state="down"] .active-trip-controls,
+.app[data-interval-state="down"] .trip-action-row {
+    filter: none;
+}
+
+.app[data-interval-state="down"] .clock-region {
+    perspective: 800px;
+}
+
+.app[data-interval-state="down"] .clock-region > #clockTimer {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform;
+}
+
 .break-dialog {
     width: min(680px, calc(100vw - 24px));
 }

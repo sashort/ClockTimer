@@ -6890,8 +6890,20 @@
     });
 
 
+    function animateDownTimeClockTransition() {
+        clockTimer.spin?.({ rotations: 1 });
+    }
+
+
     clockTimer.addEventListener("downTimeStarted", () => {
+        app.dataset.intervalState = "down";
+        animateDownTimeClockTransition();
         renderTripActionState();
+    });
+
+    clockTimer.addEventListener("downTimeEnded", () => {
+        renderTripActionState();
+        animateDownTimeClockTransition();
     });
 
     clockTimer.addEventListener("tripAutomaticallyRestarted", () => {
