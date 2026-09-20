@@ -5,6 +5,19 @@ function trip_edit_revision(array $events): string {
     return hash('sha256', json_encode($events, JSON_THROW_ON_ERROR));
 }
 
+function trip_edit_persistence_plan(array $existing, array $edited): array {
+    $before=[];foreach($existing as $event)if($event['id']!==null)$before[(string)$event['id']]=$event;
+    $keep=[];$delete=[];$insert=[];
+    foreach($edited as $event) {
+        $id=$event['id'];$original=$id===null?null:($before[(string)$id]??null);
+        if($original!==null&&$original['event']===$event['event']&&$original['timestamp']===$event['timestamp']&&$original['value']===$event['value']){$keep[]=(int)$id;unset($before[(string)$id]);continue;}
+        if($original!==null){$delete[]=(int)$id;unset($before[(string)$id]);}
+        $event['id']=null;$insert[]=$event;
+    }
+    foreach($before as $event)$delete[]=(int)$event['id'];
+    return ['keep'=>$keep,'delete'=>array_values(array_unique($delete)),'insert'=>$insert];
+}
+
 function trip_edit_duration(string $value): int {
     if (!preg_match('/^(?:(\d+):)?([0-5]?\d):([0-5]\d)(?:\.(\d{1,3}))?$/D', $value, $m)) throw new InvalidArgumentException('Use h:mm:ss.');
     $ms = ((int)$m[1]*3600+(int)$m[2]*60+(int)$m[3])*1000+(int)str_pad($m[4]??'',3,'0');
