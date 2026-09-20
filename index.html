@@ -43,7 +43,7 @@
                 <div id="adminSubmenu" class="admin-submenu" hidden><button id="newUserButton" type="button" hidden>New User</button></div>
             </div>
             <hr>
-            <button type="button" data-dialog="graphicalSettingsDialog">WMOF Settings</button>
+            <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
             <div class="main-menu-row sync-goals-menu-row">
                 <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                 <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
@@ -217,7 +217,8 @@
     <dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">
         <form id="graphicalSettingsForm" method="dialog">
             <header class="dialog-header">
-                <h2>WMOF Settings</h2>
+                <button id="graphicalHelpToggle" class="dialog-header-help" type="button" aria-label="Show setting help" aria-pressed="false">?</button>
+                <h2>Clock/Timer Settings</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
 
@@ -226,6 +227,18 @@
                 <button type="button" data-close-dialog>Cancel</button>
                 <button class="primary-action" type="submit" value="save">Save</button>
             </div>
+
+            <aside class="clock-preview" aria-label="Clock preview">
+                <div class="preview-title">Live Preview</div>
+                <clock-timer
+                    id="clockPreview"
+                    military-time="true"
+                    time-format="HHmm"
+                    visible-hours="12,3,6,9"
+                    tick-marks="[10]"
+                    indicator-symbol="▲"
+                ></clock-timer>
+            </aside>
 
             <div class="settings-grid graphical-settings-grid">
                 <div class="settings-groups">
@@ -359,17 +372,6 @@
 
                 </div>
 
-                <aside class="clock-preview" aria-label="Clock preview">
-                    <div class="preview-title">Live Preview</div>
-                    <clock-timer
-                        id="clockPreview"
-                        military-time="true"
-                        time-format="HHmm"
-                        visible-hours="12,3,6,9"
-                        tick-marks="[10]"
-                        indicator-symbol="▲"
-                    ></clock-timer>
-                </aside>
             </div>
 
         </form>

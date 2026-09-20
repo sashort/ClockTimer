@@ -236,6 +236,25 @@ assert(window.document.querySelector('.trip-log-settings').classList.contains('i
 assert.equal(window.document.querySelector('.trip-log-empty-message').textContent,'Log in to view saved trips.');
 console.log('PASS header gear shares close-button lifecycle and logged-out empty messages open the filters');
 const helpPopover=window.document.querySelector('#graphicalHelpPopover');
+const graphicalDialog=window.document.querySelector('#graphicalSettingsDialog');
+const graphicalHelpToggle=window.document.querySelector('#graphicalHelpToggle');
+assert.equal(graphicalHelpToggle.getAttribute('aria-pressed'),'false');
+graphicalHelpToggle.click();
+assert.equal(graphicalHelpToggle.getAttribute('aria-pressed'),'true');
+assert(graphicalDialog.classList.contains('show-setting-help'));
+assert([...graphicalDialog.querySelectorAll('input[type="color"]')].every(input=>input.closest('label, .timer-color-row').querySelector('.settings-help-button')));
+const preview=window.document.querySelector('#clockPreview');
+let previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];
+assert.equal(previewRanges.reduce((total,range)=>total+Date.parse(range.getAttribute('end-time'))-Date.parse(range.getAttribute('start-time')),0),90*60*1000);
+const earlyToggle=graphicalDialog.querySelector('[name="showEarlyStart"]');
+earlyToggle.checked=false;earlyToggle.dispatchEvent(new window.Event('input',{bubbles:true}));
+previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];
+assert.equal(previewRanges[1].getAttribute('type'),'trip');
+const bufferToggle=graphicalDialog.querySelector('[name="showBreakBuffer"]');
+bufferToggle.checked=false;bufferToggle.dispatchEvent(new window.Event('input',{bubbles:true}));
+previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];
+assert.equal(previewRanges[3].getAttribute('type'),'break');
+console.log('PASS graphical help starts hidden and the 90-minute preview reflects unsaved fallback settings');
 // Happy DOM does not implement the browser's top-layer Popover API.
 helpPopover.showPopover=()=>{};
 helpPopover.hidePopover=()=>{};

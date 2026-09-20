@@ -66,6 +66,29 @@
         inactiveRingWidth: "6px",
         borderWidth: "5px"
     };
+    const GRAPHICAL_HELP = {
+        timerMode: {
+            title: "Timer Mode",
+            text: "Elapsed fills the timer as counted time passes. Remaining begins full and decreases toward zero."
+        },
+        timerType: {
+            title: "Timer Type",
+            text: "Radial Overflow keeps each range at its configured width when ranges compete for space. Radial Fitted compresses the rings so the complete timer fits inside the clock."
+        },
+        tripColor: {title: "Trip Color", text: "The productive portion of the active trip uses this color."},
+        earlyStartColor: {title: "Early Start Color", text: "Checked: time worked before the scheduled start uses this color. Unchecked: early-start time uses the Trip color."},
+        lunchColor: {title: "Lunch Color", text: "Lunch intervals use this color and do not count as productive trip time."},
+        breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
+        breakBufferColor: {title: "Break Buffer Color", text: "Checked: the allowed buffer around a break or lunch is shown with this color. Unchecked: the buffer remains active but is transparent."},
+        downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
+        toleranceColor: {title: "Tolerance Color", text: "Checked: tolerance is always shown. Unchecked: tolerance is hidden. Mixed: Clock/Timer decides when the tolerance range is useful."},
+        latencyColor: {title: "Latency Color", text: "Checked: late time is shown with this color as it consumes the following trip range. Unchecked: latency is still calculated but its range is hidden."},
+        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color. Checked: the hour hand is visible. Unchecked: it is hidden."},
+        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color. Checked: the minute hand is visible. Unchecked: it is hidden."},
+        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color. Checked: the second hand is visible. Unchecked: it is hidden."},
+        hourColor: {title: "Hour Number Color", text: "Sets the color of the hour numbers and tick marks."},
+        timeColor: {title: "Current Time Color", text: "Sets the color of the current time displayed in the center of the clock."}
+    };
 
     const $ = selector => document.querySelector(selector);
     const clockTimer = $("#clockTimer");
@@ -214,6 +237,7 @@
         "custom"
     ]);
     let activeSettingsHelpButton;
+    let graphicalHelpVisible = false;
     let settingsHelpAnimation;
     let tripListButtonAnimation;
     let tripListBodyAnimationFrame;
@@ -3239,6 +3263,10 @@
         for (const [name, value] of Object.entries(variables)) setClockVariable(target, name, value);
         target.style.color = settings.hourColor || GRAPHICAL_DEFAULTS.hourColor;
 
+        if (target === clockPreview) {
+            renderClockPreviewRanges(settings);
+        }
+
         if (target === clockTimer) {
             const paletteRoot = document.documentElement;
             const tripColor = settings.tripColor || GRAPHICAL_DEFAULTS.tripColor;
@@ -3379,6 +3407,101 @@
         );
     }
 
+    function formatPreviewDate(value) {
+        const pad = (part, length = 2) => String(part).padStart(length, "0");
+        return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}.${pad(value.getMilliseconds(), 3)}`;
+    }
+
+    function renderClockPreviewRanges(settings = settingsFromForm($("#graphicalSettingsForm"))) {
+        if (!clockPreview) return;
+
+        clockPreview.querySelector('[data-settings-preview="ranges"]')?.remove();
+
+        const ring = document.createElement("ring-container");
+        ring.dataset.settingsPreview = "ranges";
+        ring.clockTimerRing = 0;
+        ring.clockTimerRingIndex = 0;
+        ring.clockTimerExternalRangeLayout =
+            settings.timerType === "radial-fitted";
+        ring.setAttribute("width", "18px");
+        ring.setAttribute("inset", "18px");
+
+        const segments = [
+            ["trip", 20],
+            [settings.showEarlyStart ? "earlystart" : "trip", 10],
+            ["break", 10],
+            [settings.showBreakBuffer ? "buffer" : "break", 10],
+            ["lunch", 15],
+            ["down", 10],
+            [settings.showTolerance === false ? "trip" : "tolerance", 5],
+            [settings.showLatency ? "latency" : "trip", 10]
+        ];
+        let cursor = new Date();
+        cursor.setSeconds(0, 0);
+        cursor = new Date(cursor.getTime() - 45 * 60 * 1000);
+
+        for (const [type, minutes] of segments) {
+            const end = new Date(cursor.getTime() + minutes * 60 * 1000);
+            const range = document.createElement("time-range");
+            range.setAttribute("type", type);
+            range.setAttribute("start-time", formatPreviewDate(cursor));
+            range.setAttribute("end-time", formatPreviewDate(end));
+            ring.append(range);
+            cursor = end;
+        }
+
+        clockPreview.prepend(ring);
+    }
+
+    function installGraphicalHelpButtons() {
+        const form = $("#graphicalSettingsForm");
+        for (const key of Object.keys(GRAPHICAL_HELP)) {
+            if (getSettingsHelpButton(key)) continue;
+            const control = form.elements[key];
+            if (!control) continue;
+            const button = document.createElement("button");
+            button.className = "settings-help-button";
+            button.type = "button";
+            button.dataset.helpKey = key;
+            button.setAttribute("aria-label", `About ${GRAPHICAL_HELP[key].title}`);
+            button.setAttribute("aria-hidden", "true");
+            button.tabIndex = -1;
+
+            const colorRow = control.closest(".timer-color-row");
+            if (colorRow) {
+                colorRow.classList.add("has-setting-help");
+                colorRow.querySelector("label")?.after(button);
+                continue;
+            }
+
+            const label = control.closest("label");
+            if (!label) continue;
+            label.classList.add("has-inline-setting-help");
+            if (control.type === "color") label.classList.add("has-inline-color-help");
+            const caption = document.createElement("span");
+            caption.className = "setting-help-caption";
+            for (const node of Array.from(label.childNodes)) {
+                if (node === control || node === button) continue;
+                if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) continue;
+                caption.append(node);
+            }
+            label.prepend(caption, button);
+        }
+    }
+
+    function setGraphicalHelpVisibility(visible) {
+        graphicalHelpVisible = Boolean(visible);
+        graphicalDialog.classList.toggle("show-setting-help", graphicalHelpVisible);
+        const toggle = $("#graphicalHelpToggle");
+        toggle?.setAttribute("aria-pressed", String(graphicalHelpVisible));
+        toggle?.setAttribute("aria-label", graphicalHelpVisible ? "Hide setting help" : "Show setting help");
+        graphicalDialog.querySelectorAll(".settings-help-button").forEach(button => {
+            button.setAttribute("aria-hidden", String(!graphicalHelpVisible));
+            button.tabIndex = graphicalHelpVisible ? 0 : -1;
+        });
+        if (!graphicalHelpVisible) void closeSettingsHelpPopover({immediate: true});
+    }
+
     function getGraphicalTimeFormatType(value) {
         const format = String(value || "").trim();
         if (!format || typeof TemporalFormat === "undefined") {
@@ -3478,6 +3601,15 @@
         button.classList.remove(
             "is-visible"
         );
+
+        if (
+            graphicalHelpVisible &&
+            graphicalDialog.contains(button)
+        ) {
+            button.setAttribute("aria-hidden", "false");
+            button.tabIndex = 0;
+            return;
+        }
 
         button.setAttribute(
             "aria-hidden",
@@ -3627,6 +3759,7 @@
         key,
         button
     ) {
+        const definition = GRAPHICAL_HELP[key];
         const template =
             getSettingsHelpTemplate(
                 key
@@ -3640,7 +3773,7 @@
         } = getSettingsHelpElements();
 
         if (
-            !template ||
+            (!template && !definition) ||
             !popover ||
             !title ||
             !body
@@ -3680,15 +3813,15 @@
             button
         );
 
-        title.textContent =
-            template.dataset.helpTitle ||
-            "Help";
-
-        body.replaceChildren(
-            template.content.cloneNode(
-                true
-            )
-        );
+        title.textContent = definition?.title || template.dataset.helpTitle || "Help";
+        if (definition) {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = definition.text;
+            body.replaceChildren(paragraph);
+        }
+        else {
+            body.replaceChildren(template.content.cloneNode(true));
+        }
 
         const latencyColor =
             graphicalDialog.querySelector(
@@ -3733,24 +3866,13 @@
         });
     }
 
-    graphicalDialog.querySelectorAll(
-        ".settings-help-label"
-    ).forEach(
-        label => {
-            label.addEventListener(
-                "click",
-                event => {
-                    event.preventDefault();
+    installGraphicalHelpButtons();
+    renderClockPreviewRanges();
+    setGraphicalHelpVisibility(false);
 
-                    revealSettingsHelpButton(
-                        getSettingsHelpButton(
-                            label.dataset.helpKey
-                        )
-                    );
-                }
-            );
-        }
-    );
+    $("#graphicalHelpToggle")?.addEventListener("click", () => {
+        setGraphicalHelpVisibility(!graphicalHelpVisible);
+    });
 
     document.querySelectorAll(
         ".settings-help-button"
@@ -4141,7 +4263,10 @@
                 openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
                 return;
             }
-            if (button.dataset.dialog === "graphicalSettingsDialog") fillGraphicalForm(getGraphicalSettings());
+            if (button.dataset.dialog === "graphicalSettingsDialog") {
+                setGraphicalHelpVisibility(false);
+                fillGraphicalForm(getGraphicalSettings());
+            }
             if (button.dataset.dialog === "stateSettingsDialog") fillTripPreferencesForm();
             openDialog(button.dataset.dialog, { fromPopover: true, reason: "popover-handoff" });
         });
