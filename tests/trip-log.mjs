@@ -11,6 +11,14 @@ view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip su
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.0%');
+const skippedBreakEvents=[
+ {event:'interval.started',timestamp:'2026-09-20 17:31:32.751',value:{intervalKey:'skip',type:'break',length:'10:00',startBuffer:'2:30',endBuffer:'2:30'}},
+ {event:'interval.ended',timestamp:'2026-09-20 17:31:45.017',value:{intervalKey:'skip'}}
+];
+const skippedBreak={standardTimeMilliseconds:3383000,actualTimeMilliseconds:3665607,countedTimeMilliseconds:3653341,events:skippedBreakEvents};
+assert.equal(w.TripLog.counted(skippedBreak),2765607);
+assert.equal(w.TripLog.percent([skippedBreak]),'122.3%');
+assert.equal(w.TripLog.counted({...skippedBreak,countedTimeMilliseconds:2765607}),2765607,'already-correct scheduled break allowance is not subtracted twice');
 // Production regression: wall time is 10:03:36, but excluded intervals reduce
 // counted time to 9:05:01. The Trip Log must show the counted-time result.
 assert.equal(w.TripLog.percent([{

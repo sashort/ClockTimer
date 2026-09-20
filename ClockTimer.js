@@ -30907,7 +30907,6 @@
             if (!Number.isFinite(timelineNow)) return 0;
 
             const countedTypes = new Set([
-                "earlystart",
                 "trip",
                 "tolerance",
                 "latency",

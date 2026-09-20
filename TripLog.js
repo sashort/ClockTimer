@@ -4,9 +4,16 @@
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
     const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
-    const counted = trip => Number.isFinite(Number(trip.countedTimeMilliseconds))
-        ? Number(trip.countedTimeMilliseconds)
-        : Number(trip.actualTimeMilliseconds) || 0;
+    const counted = trip => {
+        const wall=Number(trip.actualTimeMilliseconds)||0,stored=Number.isFinite(Number(trip.countedTimeMilliseconds))?Number(trip.countedTimeMilliseconds):wall;
+        if(trip.running||!Array.isArray(trip.events)||!Number.isFinite(wall)||wall<=0)return stored;
+        const deleted=new Set(trip.events.filter(event=>event.event==='interval.deleted').map(event=>event.value?.intervalKey));
+        const planned=trip.events.filter(event=>event.event==='interval.started'&&!deleted.has(event.value?.intervalKey)&&['break','lunch'].includes(String(event.value?.type||'').toLowerCase()))
+            .reduce((sum,event)=>sum+milliseconds(event.value?.length)+milliseconds(event.value?.startBuffer)+milliseconds(event.value?.endBuffer),0);
+        if(planned<=0)return stored;
+        const observedExcluded=Math.max(0,wall-stored);
+        return Math.max(0,stored-Math.max(0,planned-observedExcluded));
+    };
     const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+counted(t),0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
     const parentTrips = trips => trips.filter(trip=>!trip.running||trip.includeInParentPercent);
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
@@ -216,5 +223,5 @@
         }
         async deleteTrip(trip) {if(!confirm(`Delete ${trip.running?'the running trip':'this trip'} and all its entries?`))return;const data=await this.options.request(trip.id);await this.options.request(trip.id,{operation:'delete-trip',revision:data.revision});await this.options.refresh();}
     }
-    TripLog.duration=duration;TripLog.percent=percent;TripLog.uncertainIcon=uncertainIcon;window.TripLog=TripLog;
+    TripLog.duration=duration;TripLog.percent=percent;TripLog.counted=counted;TripLog.uncertainIcon=uncertainIcon;window.TripLog=TripLog;
 })();
