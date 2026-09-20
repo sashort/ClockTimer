@@ -844,7 +844,7 @@ class TimeRange extends HTMLElement {
             Number.isInteger(
                 range
             ) &&
-            range > 0
+            range >= 0
         ) {
             this.#setStartTime(
                 start
@@ -858,7 +858,7 @@ class TimeRange extends HTMLElement {
             Number.isInteger(
                 range
             ) &&
-            range > 0
+            range >= 0
         ) {
             this.#setEndTime(
                 end
@@ -902,7 +902,7 @@ class TimeRange extends HTMLElement {
             Number.isInteger(
                 range
             ) &&
-            range > 0
+            range >= 0
         ) {
             this.#setRangeLength(
                 range
@@ -958,7 +958,7 @@ class TimeRange extends HTMLElement {
                 Number.isInteger(
                     this.#rangeLength
                 ) &&
-                this.#rangeLength > 0
+                this.#rangeLength >= 0
             ) {
                 this.#endTime =
                     new Date(
@@ -1105,7 +1105,7 @@ class TimeRange extends HTMLElement {
 
         if (
             hadRangeLength &&
-            rightLength > 0
+            rightLength >= 0
         ) {
             right.setAttribute(
                 "range-length",
@@ -1191,7 +1191,7 @@ class TimeRange extends HTMLElement {
         if (
             !(start instanceof Date) ||
             !(end instanceof Date) ||
-            end.getTime() <=
+            end.getTime() <
                 start.getTime()
         ) {
             return false;
@@ -1266,7 +1266,7 @@ class TimeRange extends HTMLElement {
                 Number.isInteger(
                     this.#rangeLength
                 ) &&
-                this.#rangeLength > 0
+                this.#rangeLength >= 0
             ) {
                 this.#startTime =
                     new Date(
@@ -1326,7 +1326,7 @@ class TimeRange extends HTMLElement {
             !Number.isInteger(
                 value
             ) ||
-            value <= 0
+            value < 0
         ) {
             return;
         }
@@ -1472,7 +1472,7 @@ class TimeRange extends HTMLElement {
             !Number.isInteger(
                 this.#rangeLength
             ) ||
-            this.#rangeLength <= 0
+            this.#rangeLength < 0
         ) {
             return;
         }
@@ -1620,7 +1620,7 @@ class TimeRange extends HTMLElement {
             Number.isInteger(
                 value
             ) &&
-            value > 0
+            value >= 0
         ) {
             return value;
         }
@@ -1646,7 +1646,7 @@ class TimeRange extends HTMLElement {
 
         if (
             temporalDuration !== undefined &&
-            temporalDuration > 0 &&
+            temporalDuration >= 0 &&
             normalized.includes(
                 ":"
             )
@@ -1763,7 +1763,7 @@ class TimeRange extends HTMLElement {
             !Number.isInteger(
                 milliseconds
             ) ||
-            milliseconds <= 0
+            milliseconds < 0
         ) {
             return undefined;
         }
@@ -1786,7 +1786,7 @@ class TimeRange extends HTMLElement {
             !Number.isInteger(
                 milliseconds
             ) ||
-            milliseconds <= 0
+            milliseconds < 0
         ) {
             return undefined;
         }

@@ -10,6 +10,13 @@ Object.defineProperty(window,'AbortController',{value:globalThis.AbortController
 window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
 for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 
+const zeroRange=window.document.createElement('time-range');
+zeroRange.setAttribute('start-time','2026-09-19 12:00:00.000');zeroRange.setAttribute('end-time','2026-09-19 12:00:00.000');zeroRange.setAttribute('range-length','0');window.document.body.append(zeroRange);
+assert.equal(zeroRange.transitionTo({startTime:new window.Date('2026-09-19T12:00:01Z'),endTime:new window.Date('2026-09-19T12:00:01Z')}),true);
+assert.equal(zeroRange.getAttribute('range-length'),'0');
+assert.equal(zeroRange.transitionTo({startTime:new window.Date('2026-09-19T12:00:02Z'),endTime:new window.Date('2026-09-19T12:00:01Z')}),false);
+zeroRange.remove();
+
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 const states=[];timer.addEventListener('uiStateChanged',event=>states.push(event.detail));
 const configured=timer.configure({rendered_time_type:'calculated_end_time',goal_type:'total',auto_goal:false,trip_goal:'105%',total_goal:'110%',external_standard_time:'1:00:00',external_counted_time:3300000});
