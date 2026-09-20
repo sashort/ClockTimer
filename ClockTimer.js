@@ -336,22 +336,6 @@
         #starting =
             false;
 
-        #updatesSuspended =
-            false;
-
-        #asyncOperationBuffer =
-            [];
-
-        #pendingTickAlignmentMilliseconds;
-
-        #resumeTickAlignmentMilliseconds;
-
-        #asyncResumePending =
-            false;
-
-        #processingAsyncBatch =
-            false;
-
         #spinAnimation;
 
         #spinScaleAnimation;
@@ -1795,29 +1779,13 @@
                             break;
                         }
 
-                        if (
-                            this.#updatesSuspended &&
-                            !this.#processingAsyncBatch
-                        ) {
-                            this.#queueAsyncOperation({
-                                type: "trip-goal",
-                                source:
-                                    source === "start"
-                                        ? "start"
-                                        : source === "user"
-                                            ? "user"
-                                            : "automatic"
-                            });
-                        }
-                        else {
-                            this.#handleTripGoalChange(
-                                source === "start"
-                                    ? "start"
-                                    : source === "user"
-                                        ? "user"
-                                        : "automatic"
-                            );
-                        }
+                        this.#handleTripGoalChange(
+                            source === "start"
+                                ? "start"
+                                : source === "user"
+                                    ? "user"
+                                    : "automatic"
+                        );
                     }
                     break;
                 }
@@ -1869,20 +1837,9 @@
                                 : "automatic"
                         );
 
-                    if (
-                        this.#updatesSuspended &&
-                        !this.#processingAsyncBatch
-                    ) {
-                        this.#queueAsyncOperation({
-                            type: "trip-goal",
-                            source: goalUpdateSource
-                        });
-                    }
-                    else {
-                        this.#handleTripGoalChange(
-                            goalUpdateSource
-                        );
-                    }
+                    this.#handleTripGoalChange(
+                        goalUpdateSource
+                    );
                     break;
                 }
 
@@ -1930,17 +1887,7 @@
 
                 case "grayscale":
                 case "grayscale-ramp":
-                    if (
-                        this.#updatesSuspended &&
-                        !this.#processingAsyncBatch
-                    ) {
-                        this.#queueAsyncOperation({
-                            type: "grayscale"
-                        });
-                    }
-                    else {
-                        this.#runGrayscale();
-                    }
+                    this.#runGrayscale();
                     break;
             }
         }
@@ -7081,51 +7028,6 @@
             return this.#scheduledStartMilliseconds;
         }
 
-        #suspendUpdate() {
-            this.#updatesSuspended =
-                true;
-
-            return this;
-        }
-
-        #resumeUpdate() {
-            if (!this.#updatesSuspended) {
-                return this;
-            }
-
-            if (
-                Number.isFinite(
-                    this.#pendingTickAlignmentMilliseconds
-                )
-            ) {
-                this.#tickAlignmentMilliseconds =
-                    this.#millisecondsComponent(
-                        this.#pendingTickAlignmentMilliseconds
-                    );
-
-                this.#resumeTickAlignmentMilliseconds =
-                    this.#tickAlignmentMilliseconds;
-            }
-            else {
-                this.#resumeTickAlignmentMilliseconds =
-                    undefined;
-            }
-
-            this.#pendingTickAlignmentMilliseconds =
-                undefined;
-
-            this.#updatesSuspended =
-                false;
-
-            this.#asyncResumePending =
-                this.#asyncOperationBuffer.length > 0;
-
-            this.#stopTickTimer();
-            this.#scheduleNextTick();
-
-            return this;
-        }
-
         #stopLocal(
             stopTime = this.#dateToStandardTime(
                 new Date()
@@ -7201,31 +7103,6 @@
 
             this.#started =
                 false;
-
-            if (this.#updatesSuspended) {
-                const cancelledTypes =
-                    new Set([
-                        "insert",
-                        "overwrite",
-                        "replaceWithNext",
-                        "replaceToNext",
-                        "replaceWithPrevious",
-                        "replaceToPrevious",
-                        "startInterval",
-                        "closeInterval"
-                    ]);
-
-                this.#asyncOperationBuffer =
-                    this.#asyncOperationBuffer.filter(
-                        operation =>
-                            !cancelledTypes.has(
-                                operation.type
-                            )
-                    );
-
-                this.#asyncResumePending =
-                    this.#asyncOperationBuffer.length > 0;
-            }
 
             const ranges =
                 Array.from(
@@ -7430,21 +7307,6 @@
                 }
             }
 
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#queueAsyncOperation({
-                    type: "spin",
-                    rotations: normalizedRotations,
-                    duration,
-                    scaleSpeed,
-                    spinScaleFactor
-                });
-
-                return this;
-            }
-
             this.#runSpin(
                 normalizedRotations,
                 duration,
@@ -7453,97 +7315,6 @@
             );
 
             return this;
-        }
-
-        #queueAsyncOperation(operation) {
-            if (operation.type === "spin") {
-                this.#asyncOperationBuffer =
-                    this.#asyncOperationBuffer.filter(
-                        item =>
-                            item.type !== "spin"
-                    );
-            }
-
-            if (operation.type === "trip-goal") {
-                this.#asyncOperationBuffer =
-                    this.#asyncOperationBuffer.filter(
-                        item =>
-                            item.type !== "trip-goal"
-                    );
-            }
-
-            if (operation.type === "grayscale") {
-                this.#asyncOperationBuffer =
-                    this.#asyncOperationBuffer.filter(
-                        item =>
-                            item.type !== "grayscale"
-                    );
-            }
-
-            this.#asyncOperationBuffer.push(
-                operation
-            );
-        }
-
-        #recordPendingTickAlignment(milliseconds) {
-            if (
-                Number.isFinite(milliseconds)
-            ) {
-                this.#pendingTickAlignmentMilliseconds =
-                    this.#millisecondsComponent(
-                        milliseconds
-                    );
-            }
-        }
-
-        #recordStartTickAlignment(args = {}) {
-            const value =
-                args.scheduledStart ??
-                args.creationTime;
-
-            if (value === undefined) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-                return;
-            }
-
-            try {
-                const parsed =
-                    this.#validateClockTime(
-                        value,
-                        "scheduledStart"
-                    );
-
-                this.#recordPendingTickAlignment(
-                    parsed.total
-                );
-            }
-            catch {
-            }
-        }
-
-        #recordInsertTickAlignment(startTime) {
-            if (startTime === undefined) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-                return;
-            }
-
-            try {
-                const parsed =
-                    this.#parseInsertDateTime(
-                        startTime,
-                        "startTime"
-                    );
-
-                this.#recordPendingTickAlignment(
-                    parsed.getMilliseconds()
-                );
-            }
-            catch {
-            }
         }
 
         #parseCSSTimeMilliseconds(value, { throwOnInvalid = false } = {}) {
@@ -8087,134 +7858,6 @@
                 .catch(() => {});
         }
 
-        #flushAsyncOperations() {
-            if (!this.#asyncResumePending) {
-                return;
-            }
-
-            const operations =
-                this.#asyncOperationBuffer.splice(0);
-
-            this.#asyncResumePending =
-                false;
-
-            const resumeAlignment =
-                this.#resumeTickAlignmentMilliseconds;
-
-            this.#processingAsyncBatch =
-                true;
-
-            const RingContainerClass =
-                customElements.get(
-                    "ring-container"
-                );
-
-            if (RingContainerClass) {
-                RingContainerClass.batchResizing =
-                    true;
-            }
-
-            try {
-                for (const operation of operations) {
-                    switch (operation.type) {
-                        case "start":
-                            this.#startLocal(operation.args);
-                            break;
-
-                        case "stop":
-                            this.#stopLocal();
-                            break;
-
-                        case "insert":
-                            this.#insert(operation.args);
-                            break;
-
-                        case "overwrite":
-                            this.#overwrite(operation.args);
-                            break;
-
-                        case "replaceWithNext":
-                            this.#replaceWithNext();
-                            break;
-
-                        case "replaceToNext":
-                            this.#replaceToNext(operation.value);
-                            break;
-
-                        case "replaceWithPrevious":
-                            this.#replaceWithPrevious();
-                            break;
-
-                        case "replaceToPrevious":
-                            this.#replaceToPrevious(operation.value);
-                            break;
-
-                        case "startInterval":
-                            this.#startIntervalLocal(
-                                operation.intervalType,
-                                operation.length,
-                                operation.attributes,
-                                operation.startBuffer,
-                                operation.endBuffer
-                            );
-                            break;
-
-                        case "closeInterval":
-                            this.#endIntervalLocal();
-                            break;
-
-                        case "clear":
-                            this.#clearLocal();
-                            break;
-
-                        case "trip-goal":
-                            this.#handleTripGoalChange(
-                                operation.source ??
-                                "automatic"
-                            );
-                            break;
-
-                        case "spin":
-                            this.#runSpin(
-                                operation.rotations,
-                                operation.duration
-                            );
-                            break;
-
-                        case "grayscale":
-                            this.#runGrayscale();
-                            break;
-                    }
-
-                    if (RingContainerClass) {
-                        RingContainerClass.batchResizing =
-                            true;
-                    }
-                }
-            }
-            finally {
-                if (
-                    Number.isFinite(
-                        resumeAlignment
-                    )
-                ) {
-                    this.#tickAlignmentMilliseconds =
-                        resumeAlignment;
-                }
-
-                this.#resumeTickAlignmentMilliseconds =
-                    undefined;
-
-                this.#processingAsyncBatch =
-                    false;
-
-                if (RingContainerClass) {
-                    RingContainerClass.batchResizing =
-                        false;
-                }
-            }
-        }
-
         #startLocal({
             tripId,
             standardTime,
@@ -8280,29 +7923,6 @@
                 scheduledStart,
                 nonProduction
             };
-
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                const args = {
-                    tripId,
-                    standardTime,
-                    creationTime,
-                    startTime,
-                    scheduledStart,
-                    nonProduction
-                };
-
-                this.#recordStartTickAlignment(args);
-
-                this.#queueAsyncOperation({
-                    type: "start",
-                    args
-                });
-
-                return new Date();
-            }
 
             this.#preserveInsertedOnClear =
                 true;
@@ -8497,9 +8117,7 @@
                 }
             );
 
-            if (!this.#processingAsyncBatch) {
-                this.#tick();
-            }
+            this.#tick();
 
             this.#animateStartedRingWidths();
 
@@ -8594,28 +8212,6 @@
             rangeLength,
             otherAttributes
         } = {}) {
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                const args = {
-                    type,
-                    startTime,
-                    endTime,
-                    rangeLength,
-                    otherAttributes
-                };
-
-                this.#recordInsertTickAlignment(startTime);
-
-                this.#queueAsyncOperation({
-                    type: "insert",
-                    args
-                });
-
-                return;
-            }
-
             if (
                 typeof type !==
                     "string" ||
@@ -8876,31 +8472,6 @@
             const openEnded =
                 !hasEnd &&
                 !hasLength;
-
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                const args = {
-                    type,
-                    startTime,
-                    endTime,
-                    rangeLength
-                };
-
-                if (openEnded) {
-                    this.#recordPendingTickAlignment(
-                        new Date().getMilliseconds()
-                    );
-                }
-
-                this.#queueAsyncOperation({
-                    type: "overwrite",
-                    args
-                });
-
-                return;
-            }
 
             if (
                 typeof type !== "string" ||
@@ -12790,27 +12361,6 @@
             }
 
             if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    nowDate.getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "startInterval",
-                    intervalType,
-                    length,
-                    attributes:
-                        normalizedAttributes,
-                    startBuffer,
-                    endBuffer
-                });
-
-                return true;
-            }
-
-            if (
                 currentInterval?.open &&
                 !this.#closeOpenIntervalAt(
                     nowDate,
@@ -13051,17 +12601,6 @@
                 return false;
             }
 
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#queueAsyncOperation({
-                    type: "closeInterval"
-                });
-
-                return true;
-            }
-
             if (this.#pendingIntervalRecord) {
                 return this.#endPendingInterval(now);
             }
@@ -13077,21 +12616,6 @@
         }
 
         #replaceWithNext() {
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "replaceWithNext"
-                });
-
-                return;
-            }
-
             if (
                 !this.#started
             ) {
@@ -13258,22 +12782,6 @@
             }
 
             if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "replaceToNext",
-                    value: type
-                });
-
-                return;
-            }
-
-            if (
                 typeof type !==
                     "string" ||
                 type.trim() ===
@@ -13416,21 +12924,6 @@
                 return;
             }
 
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "replaceWithPrevious"
-                });
-
-                return;
-            }
-
             if (!this.#started) {
                 return;
             }
@@ -13536,22 +13029,6 @@
             type
         ) {
             if (!this.#hasStartProperties()) {
-                return;
-            }
-
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#recordPendingTickAlignment(
-                    new Date().getMilliseconds()
-                );
-
-                this.#queueAsyncOperation({
-                    type: "replaceToPrevious",
-                    value: type
-                });
-
                 return;
             }
 
@@ -13685,17 +13162,6 @@
 
             if (this.#started) {
                 return false;
-            }
-
-            if (
-                this.#updatesSuspended &&
-                !this.#processingAsyncBatch
-            ) {
-                this.#queueAsyncOperation({
-                    type: "clear"
-                });
-
-                return new Date();
             }
 
             this.#cancelToleranceTransition();
@@ -30886,10 +30352,6 @@
         }
 
         #startTickTimer() {
-            if (this.#processingAsyncBatch) {
-                return;
-            }
-
             this.#stopTickTimer();
 
             if (
@@ -30904,14 +30366,7 @@
         }
 
         #scheduleNextTick() {
-            if (this.#processingAsyncBatch) {
-                return;
-            }
-
-            if (
-                !this.#needsTick() &&
-                !this.#asyncResumePending
-            ) {
+            if (!this.#needsTick()) {
                 return;
             }
 
@@ -30944,10 +30399,7 @@
                         this.#tickTimeout =
                             undefined;
 
-                        if (
-                            !this.#needsTick() &&
-                            !this.#asyncResumePending
-                        ) {
+                        if (!this.#needsTick()) {
                             return;
                         }
 
@@ -31012,8 +30464,6 @@
         }
 
         #tick() {
-            this.#flushAsyncOperations();
-
             if (
                 !this.#needsTick()
             ) {
