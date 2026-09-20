@@ -277,6 +277,11 @@ window.document.querySelector('[data-help-key="toleranceColor"].settings-help-bu
 assert.equal(helpPopover.parentElement,window.document.querySelector('#graphicalSettingsDialog'),'settings help must remain inside its modal context');
 assert.equal(window.document.querySelector('#graphicalHelpTitle').textContent,'Tolerance Color');
 assert(window.document.querySelector('#graphicalHelpBody .settings-help-divider'));
-assert.match(window.document.querySelector('#graphicalHelpBody .settings-help-state-behavior').textContent,/Checked:.*Unchecked:/);
+assert.equal(window.document.querySelector('#graphicalHelpBody .settings-help-state-label').textContent,'Enabled');
+assert.equal(window.document.querySelector('#graphicalHelpBody .settings-help-state-behavior').textContent,'Tolerance is always shown.');
+window.document.querySelector('#graphicalHelpBody .settings-help-state-toggle').click();await settle();
+assert.equal(graphicalDialog.querySelector('[name="showTolerance"]').dataset.toleranceState,'false');
+assert.equal(window.document.querySelector('#graphicalHelpBody .settings-help-state-label').textContent,'Disabled');
+assert.equal(window.document.querySelector('#graphicalHelpBody .settings-help-state-behavior').textContent,'The underlying Trip range extends through tolerance.');
 console.log('PASS shared help moves out of the closed settings dialog for Sync Goals and back for settings help');
 window.happyDOM.abort();

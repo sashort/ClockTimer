@@ -76,16 +76,16 @@
             text: "Radial Overflow keeps each range at its configured width when ranges compete for space. Radial Fitted compresses the rings so the complete timer fits inside the clock."
         },
         tripColor: {title: "Trip Color", text: "The productive portion of the active trip uses this color."},
-        earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateText: "Checked: Early Start uses this color. Unchecked: that time extends the adjacent Trip range and uses the Trip color."},
+        earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateControl: "showEarlyStart", stateText: {true: "Early Start uses this color.", false: "The adjacent Trip range extends through Early Start and uses the Trip color."}},
         lunchColor: {title: "Lunch Color", text: "Lunch intervals use this color and do not count as productive trip time."},
         breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
-        breakBufferColor: {title: "Break Buffer Color", text: "Sets the color for the allowed buffer around a break or lunch.", stateText: "Checked: the buffer is shown with this color. Unchecked: the adjacent interval extends across the buffer."},
+        breakBufferColor: {title: "Break Buffer Color", text: "Sets the color for the allowed buffer around a break or lunch.", stateControl: "showBreakBuffer", stateText: {true: "The buffer is shown with this color.", false: "The adjacent interval extends across the buffer."}},
         downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
-        toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateText: "Checked: tolerance is always shown. Unchecked: the underlying Trip range extends through it. Mixed: Clock/Timer decides when the tolerance range is useful."},
-        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateText: "Checked: latency is shown with this color. Unchecked: latency is still calculated while the underlying Trip range remains visible."},
-        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color.", stateText: "Checked: the hour hand is visible. Unchecked: the hour hand is hidden."},
-        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color.", stateText: "Checked: the minute hand is visible. Unchecked: the minute hand is hidden."},
-        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color.", stateText: "Checked: the second hand is visible. Unchecked: the second hand is hidden."},
+        toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateControl: "showTolerance", stateText: {true: "Tolerance is always shown.", false: "The underlying Trip range extends through tolerance.", undefined: "Clock/Timer decides when the tolerance range is useful."}},
+        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateControl: "showLatency", stateText: {true: "Latency is shown with this color.", false: "Latency is still calculated while the underlying Trip range remains visible."}},
+        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color.", stateControl: "showHourHand", stateText: {true: "The hour hand is visible.", false: "The hour hand is hidden."}},
+        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color.", stateControl: "showMinuteHand", stateText: {true: "The minute hand is visible.", false: "The minute hand is hidden."}},
+        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color.", stateControl: "showSecondHand", stateText: {true: "The second hand is visible.", false: "The second hand is hidden."}},
         hourColor: {title: "Hour Number Color", text: "Sets the color of the hour numbers and tick marks."},
         timeColor: {title: "Current Time Color", text: "Sets the color of the current time displayed in the center of the clock."}
     };
@@ -3756,6 +3756,59 @@
         if (body) body.replaceChildren();
     }
 
+    function getGraphicalHelpState(control) {
+        return control?.name === "showTolerance"
+            ? getToleranceCheckboxValue(control)
+            : Boolean(control?.checked);
+    }
+
+    function syncGraphicalHelpState(definition, body) {
+        if (!definition?.stateControl || !body) return;
+        const source = $("#graphicalSettingsForm").elements[definition.stateControl];
+        const checkbox = body.querySelector(".settings-help-state-toggle");
+        const label = body.querySelector(".settings-help-state-label");
+        const description = body.querySelector(".settings-help-state-behavior");
+        if (!source || !checkbox || !label || !description) return;
+
+        const state = getGraphicalHelpState(source);
+        checkbox.checked = state === true;
+        checkbox.indeterminate = state === undefined;
+        checkbox.setAttribute("aria-checked", state === undefined ? "mixed" : String(state));
+        label.textContent = state === undefined ? "Automatic" : state ? "Enabled" : "Disabled";
+        description.textContent = definition.stateText[String(state)];
+    }
+
+    function appendGraphicalHelpState(definition, body) {
+        if (!definition?.stateControl) return;
+        const divider = document.createElement("hr");
+        divider.className = "settings-help-divider";
+        const row = document.createElement("label");
+        row.className = "settings-help-state-row";
+        const checkbox = document.createElement("input");
+        checkbox.className = "settings-help-state-toggle";
+        checkbox.type = "checkbox";
+        const label = document.createElement("strong");
+        label.className = "settings-help-state-label";
+        row.append(checkbox, label);
+        const state = document.createElement("p");
+        state.className = "settings-help-state-behavior";
+        body.append(divider, row, state);
+        checkbox.addEventListener("change", () => {
+            const source = $("#graphicalSettingsForm").elements[definition.stateControl];
+            source?.click();
+            syncGraphicalHelpState(definition, body);
+        });
+        syncGraphicalHelpState(definition, body);
+    }
+
+    function refreshActiveGraphicalHelpState() {
+        const key = activeSettingsHelpButton?.dataset.helpKey;
+        const definition = GRAPHICAL_HELP[key];
+        if (definition?.stateControl) {
+            syncGraphicalHelpState(definition, $("#graphicalHelpBody"));
+        }
+    }
+
     async function openSettingsHelpPopover(
         key,
         button
@@ -3818,16 +3871,8 @@
         if (definition) {
             const paragraph = document.createElement("p");
             paragraph.textContent = definition.text;
-            const content = [paragraph];
-            if (definition.stateText) {
-                const divider = document.createElement("hr");
-                divider.className = "settings-help-divider";
-                const state = document.createElement("p");
-                state.className = "settings-help-state-behavior";
-                state.textContent = definition.stateText;
-                content.push(divider, state);
-            }
-            body.replaceChildren(...content);
+            body.replaceChildren(paragraph);
+            appendGraphicalHelpState(definition, body);
         }
         else {
             body.replaceChildren(template.content.cloneNode(true));
@@ -4339,6 +4384,7 @@
                 settingsFromForm(form),
                 clockPreview
             );
+            refreshActiveGraphicalHelpState();
         }
     });
 
