@@ -236,6 +236,9 @@ assert(window.document.querySelector('.trip-log-settings').classList.contains('i
 assert.equal(window.document.querySelector('.trip-log-empty-message').textContent,'Log in to view saved trips.');
 console.log('PASS header gear shares close-button lifecycle and logged-out empty messages open the filters');
 const helpPopover=window.document.querySelector('#graphicalHelpPopover');
+// Happy DOM does not implement the browser's top-layer Popover API.
+helpPopover.showPopover=()=>{};
+helpPopover.hidePopover=()=>{};
 const graphicalDialog=window.document.querySelector('#graphicalSettingsDialog');
 const graphicalHelpToggle=window.document.querySelector('#graphicalHelpToggle');
 assert.equal(graphicalHelpToggle.getAttribute('aria-pressed'),'false');
@@ -250,6 +253,10 @@ assert([...graphicalDialog.querySelectorAll('input[type="color"]')].every(input=
 }));
 assert([...graphicalDialog.querySelectorAll('.settings-help-button')].every(button=>button.textContent.trim()==='?'));
 assert([...graphicalDialog.querySelectorAll('.timer-color-row')].every(row=>row.querySelectorAll('.settings-help-button').length===1));
+graphicalDialog.querySelector('[data-help-key="timerType"].settings-help-button').click();await settle();
+assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Overflow starts the ring at the minute mark where the trip began/);
+assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Fitted starts at the top of the clock/);
+window.document.querySelector('#graphicalHelpClose').click();await settle();
 const preview=window.document.querySelector('#clockPreview');
 let previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];
 assert.equal(previewRanges.reduce((total,range)=>total+Date.parse(range.getAttribute('end-time'))-Date.parse(range.getAttribute('start-time')),0),90*60*1000);
@@ -262,9 +269,6 @@ bufferToggle.checked=false;bufferToggle.dispatchEvent(new window.Event('input',{
 previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];
 assert.equal(previewRanges[3].getAttribute('type'),'break');
 console.log('PASS graphical help starts hidden and the 90-minute preview reflects unsaved fallback settings');
-// Happy DOM does not implement the browser's top-layer Popover API.
-helpPopover.showPopover=()=>{};
-helpPopover.hidePopover=()=>{};
 const syncHelp=window.document.querySelector('#syncGoalsHelpButton');
 const syncPressed=window.document.querySelector('#syncGoalsMenuButton').getAttribute('aria-pressed');
 syncHelp.click();await settle();
