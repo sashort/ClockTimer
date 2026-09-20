@@ -2757,10 +2757,11 @@ clock-timer[hide-latency] time-range[type="latency"] {
     padding: 0;
     display: grid;
     place-items: center;
-    border: 1.5px solid rgb(169 221 247 / 78%);
+    border: 1.5px solid rgb(169 221 247 / 88%);
     border-radius: 50%;
     color: var(--wm-white);
-    background: transparent;
+    background: var(--wm-blue);
+    box-shadow: var(--ui-inner-highlight), 0 4px 9px rgb(0 0 0 / 18%);
     font: inherit;
     font-size: 24px;
     font-weight: 700;
@@ -2768,8 +2769,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .dialog-header-help[aria-pressed="true"] {
-    color: var(--wm-blue-dark);
-    background: var(--wm-blue-light);
+    color: var(--wm-white);
+    background: var(--wm-blue);
+    box-shadow: 0 0 0 2px var(--wm-blue-light), var(--ui-inner-highlight), 0 4px 9px rgb(0 0 0 / 18%);
 }
 
 .graphical-dialog .graphical-settings-actions {
@@ -2826,26 +2828,26 @@ clock-timer[hide-latency] time-range[type="latency"] {
     touch-action: manipulation;
 }
 
-.timer-color-row.with-toggle.has-setting-help {
+.graphical-dialog.show-setting-help .timer-color-row.with-toggle.has-setting-help {
     grid-template-columns: 32px minmax(0, 1fr) 28px 68px;
     gap: 8px;
 }
 
-.timer-color-row.has-setting-help:not(.with-toggle) {
+.graphical-dialog.show-setting-help .timer-color-row.has-setting-help:not(.with-toggle) {
     grid-template-columns: 32px minmax(0, 1fr) 68px;
     gap: 8px;
 }
 
-.app-dialog label.has-inline-setting-help:not(.has-inline-color-help) {
+.graphical-dialog.show-setting-help label.has-inline-setting-help:not(.has-inline-color-help) {
     grid-template-columns: minmax(120px, 0.8fr) 32px minmax(0, 1.2fr);
 }
 
-.app-dialog label.has-inline-color-help {
+.graphical-dialog.show-setting-help label.has-inline-color-help {
     grid-template-columns: 32px minmax(0, 1fr);
     gap: 6px;
 }
 
-.app-dialog label.has-inline-color-help > input[type="color"] {
+.graphical-dialog.show-setting-help label.has-inline-color-help > input[type="color"] {
     grid-column: 1 / -1;
 }
 
@@ -3032,12 +3034,12 @@ clock-timer[hide-latency] time-range[type="latency"] {
         gap: 8px;
     }
 
-    .timer-color-row.with-toggle.has-setting-help {
+    .graphical-dialog.show-setting-help .timer-color-row.with-toggle.has-setting-help {
         grid-template-columns: 30px minmax(0, 1fr) 28px 68px;
         gap: 7px;
     }
 
-    .timer-color-row.has-setting-help:not(.with-toggle) {
+    .graphical-dialog.show-setting-help .timer-color-row.has-setting-help:not(.with-toggle) {
         grid-template-columns: 30px minmax(0, 1fr) 68px;
         gap: 7px;
     }
@@ -3919,6 +3921,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transition:
         opacity 250ms linear,
         visibility 0s linear 0s;
+}
+.graphical-dialog:not(.show-setting-help) .settings-help-button {
+    display: none;
 }
 .new-user-dialog {position:fixed;inset:0;width:min(94vw,620px);height:min(92dvh,760px);margin:auto;padding:0;overflow:hidden;box-sizing:border-box;}
 .new-user-dialog::backdrop {-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:rgb(0 0 0 / 38%);}
