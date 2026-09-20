@@ -1855,15 +1855,21 @@ button:active:not(:disabled):not(#goalSyncButton) {
     grid-column: 1 / -1;
 }
 
-/* Down mode keeps its controls readable while visually quieting the rest of the UI. */
-.app[data-interval-state="down"] > :not(.trip-action-controls) {
-    filter: grayscale(80%);
+/* Down mode quiets the full viewport while its controls and modal remain colored. */
+body:has(.app[data-interval-state="down"])::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    pointer-events: none;
+    background: rgb(0 0 0 / 0.001);
+    -webkit-backdrop-filter: grayscale(80%);
+    backdrop-filter: grayscale(80%);
 }
 
-.app[data-interval-state="down"] .trip-action-controls,
-.app[data-interval-state="down"] .active-trip-controls,
-.app[data-interval-state="down"] .trip-action-row {
-    filter: none;
+.app[data-interval-state="down"] .trip-action-controls {
+    position: relative;
+    z-index: 3001;
 }
 
 .app[data-interval-state="down"] .clock-region {

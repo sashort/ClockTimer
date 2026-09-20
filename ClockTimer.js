@@ -3397,7 +3397,9 @@
                 tripId: Number.isInteger(this.#tripId) ? this.#tripId : undefined,
                 intervalId: Number.isInteger(Number(record?.intervalId))
                     ? Number(record.intervalId)
-                    : undefined
+                    : undefined,
+                intervalKey:
+                    record?.clockTimerEventKey
             };
         }
 

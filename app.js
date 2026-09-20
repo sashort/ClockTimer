@@ -3181,7 +3181,10 @@
     function activeDownReference(){const trips=clockTimer.getLocalTripLog(),trip=trips.find(candidate=>candidate.running)||trips[trips.length-1];const events=trip?.events||[];const ended=new Set(events.filter(event=>event.event==="interval.ended").map(event=>event.value?.intervalKey));const start=[...events].reverse().find(event=>event.event==="interval.started"&&event.value?.type==="down"&&!ended.has(event.value?.intervalKey));return trip&&start?{tripId:trip.id||clockTimer.currentTripId,intervalKey:start.value.intervalKey}:null;}
 
     async function openDownDetailsModal(tripId,intervalKey,{editing=false,capture=false}={}){
-        const data=await clockTimer.downDetailsRequest(tripId,intervalKey);document.querySelector('.down-details-dialog')?.remove();
+        let data;
+        try {data=await clockTimer.downDetailsRequest(tripId,intervalKey);}
+        catch {data={active:Boolean(capture),hasImage:false,notes:''};}
+        document.querySelector('.down-details-dialog')?.remove();
         const dialog=document.createElement('dialog');dialog.className='app-dialog down-details-dialog';const form=document.createElement('form');form.method='dialog';
         const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.setAttribute('aria-label','Close Down Details');close.textContent='×';close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
         const body=document.createElement('div');body.className='down-details-body';const photo=document.createElement('div');photo.className='down-details-photo';let selectedImage;
@@ -4473,6 +4476,16 @@
             deliberatelyLoggedOut = false;
             safeStorageSet("wmof.deliberatelyLoggedOut", "false");
             populateProfile(result.user);
+
+            const loginCaller = peekUIReturnFrame();
+            if (
+                loginCaller?.type === "popover" &&
+                loginCaller.element === mainMenu
+            ) {
+                popUIReturnFrame(loginCaller);
+                mainMenu?.hidePopover?.();
+            }
+
             syncNetworkStatusUI({ login: true });
         }
         catch (failure) {
@@ -6561,7 +6574,13 @@
 
     downButton.addEventListener("pointerup", () => {
         void clockTimer.startInterval("down").then(async result => {
-            if (result) {renderTripActionState();const reference=activeDownReference();if(reference?.tripId&&reference.intervalKey)await openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});}
+            if (result) {
+                renderTripActionState();
+                const fallback=activeDownReference();
+                const tripId=result.tripId??fallback?.tripId??clockTimer.currentTripId;
+                const intervalKey=result.intervalKey??fallback?.intervalKey;
+                if(tripId&&intervalKey)await openDownDetailsModal(tripId,intervalKey,{editing:true,capture:true});
+            }
         }).catch(() => {});
     });
 
@@ -6891,7 +6910,10 @@
 
 
     function animateDownTimeClockTransition() {
-        clockTimer.spin?.({ rotations: 1 });
+        clockTimer.spin?.({
+            rotations: 1,
+            duration: "1.5s"
+        });
     }
 
 
