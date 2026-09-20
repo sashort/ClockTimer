@@ -151,6 +151,26 @@ CREATE TABLE IF NOT EXISTS `trip_events` (
         ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `down_interval_notes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `interval_key` VARCHAR(191) NOT NULL,
+    `notes` TEXT NOT NULL,
+    `created_at` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    KEY `idx_down_notes` (`trip_id`, `interval_key`, `id`),
+    CONSTRAINT `fk_down_notes_trip` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `down_interval_images` (
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `interval_key` VARCHAR(191) NOT NULL,
+    `mime_type` VARCHAR(80) NOT NULL,
+    `image` MEDIUMBLOB NOT NULL,
+    `created_at` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`trip_id`, `interval_key`),
+    CONSTRAINT `fk_down_images_trip` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- The audit log deliberately has no foreign key on user_id. Historical records
 -- must retain the actor's numeric ID even if that user is later deleted.
 CREATE TABLE IF NOT EXISTS `log` (

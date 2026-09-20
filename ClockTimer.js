@@ -2766,7 +2766,8 @@
 
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
             const headers = { "Accept": "application/json" };
-            if (body !== undefined) {
+            const multipart=typeof FormData!=="undefined"&&body instanceof FormData;
+            if (body !== undefined&&!multipart) {
                 headers["Content-Type"] = "application/json";
             }
             if (csrf) {
@@ -2788,7 +2789,7 @@
                         body:
                             body === undefined
                                 ? undefined
-                                : JSON.stringify(body),
+                                : multipart?body:JSON.stringify(body),
                         signal
                     }
                 );
@@ -6279,6 +6280,12 @@
             }
             return result;
             } finally {if(active && change && this.#needsTick()) this.#startTickTimer();}
+        }
+
+        async downDetailsRequest(tripId,intervalKey,change) {
+            if (!(await this.#ensureConnected())) throw new Error("Connect to save Down details.");
+            if(change instanceof FormData){change.set("tripId",String(tripId));change.set("intervalKey",String(intervalKey));return this.#apiRequest("down-details",{method:"POST",csrf:true,body:change});}
+            return this.#apiRequest("down-details",{query:{tripId,intervalKey}});
         }
 
         set nonProductionFilter(value) {

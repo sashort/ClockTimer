@@ -856,6 +856,8 @@
                 return result;
             },
             refresh:()=>dispatchTripListRequest("edit"),
+            downDetailsInfo:(tripId,intervalKey)=>clockTimer.downDetailsRequest(tripId,intervalKey),
+            openDownDetails:(trip,intervalKey,editing)=>openDownDetailsModal(trip.id,intervalKey,{editing}),
             liveTrip:()=>{
                 if (!tripIsLive()) return null;
                 const interval=clockTimer.getActiveIntervalState?.(new Date());
@@ -1541,6 +1543,8 @@
     function renderSyncGoalsState(
         renderedScope = getRenderedGoalScope()
     ) {
+        const state=renderedScope&&typeof renderedScope==="object"?renderedScope:clockTimer.uiState;
+        if(renderedScope&&typeof renderedScope==="object")renderedScope=state.effective_goal_type;
         const enabled =
             getSyncGoalsState();
 
@@ -1589,6 +1593,9 @@
         }
 
         if (goalSyncButton) {
+            const calculable=enabled&&normalizedConnectionStatus()==="online"&&tripIsLive()&&Boolean(state?.auto_goal_active)&&Boolean(state?.goal_component?.valid);
+            ensureSyncOfflineOverlay(goalSyncButton);
+            goalSyncButton.classList.toggle("sync-calculable",calculable);
             goalSyncButton.hidden =
                 renderedScope !==
                     "trip";
@@ -3164,11 +3171,24 @@
             setEndTripButtonIntervalPalette(state.active_interval_type);
         }
         renderEndTimeGoalLock();
-        renderSyncGoalsState(state.effective_goal_type);
+        renderSyncGoalsState(state);
         if (tripStateChanged) {
             requestAnimationFrame(() => app.classList.remove("trip-state-snap"));
         }
         return true;
+    }
+
+    function activeDownReference(){const trips=clockTimer.getLocalTripLog(),trip=trips.find(candidate=>candidate.running)||trips[trips.length-1];const events=trip?.events||[];const ended=new Set(events.filter(event=>event.event==="interval.ended").map(event=>event.value?.intervalKey));const start=[...events].reverse().find(event=>event.event==="interval.started"&&event.value?.type==="down"&&!ended.has(event.value?.intervalKey));return trip&&start?{tripId:trip.id||clockTimer.currentTripId,intervalKey:start.value.intervalKey}:null;}
+
+    async function openDownDetailsModal(tripId,intervalKey,{editing=false,capture=false}={}){
+        const data=await clockTimer.downDetailsRequest(tripId,intervalKey);document.querySelector('.down-details-dialog')?.remove();
+        const dialog=document.createElement('dialog');dialog.className='app-dialog down-details-dialog';const form=document.createElement('form');form.method='dialog';
+        const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.setAttribute('aria-label','Close Down Details');close.textContent='×';close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
+        const body=document.createElement('div');body.className='down-details-body';const photo=document.createElement('div');photo.className='down-details-photo';let selectedImage;
+        const image=document.createElement('img');image.alt='Down time photo';if(data.hasImage){image.src=data.imageUrl;photo.append(image);}else if(capture&&data.active){const camera=document.createElement('label');camera.className='down-details-camera';camera.innerHTML='<span aria-hidden="true">▣</span><strong>Take Photo</strong>';const input=document.createElement('input');input.type='file';input.accept='image/jpeg,image/png,image/webp,image/heic,image/heif';input.capture='environment';input.addEventListener('change',()=>{selectedImage=input.files?.[0];if(selectedImage){image.src=URL.createObjectURL(selectedImage);photo.replaceChildren(image);}});camera.append(input);photo.append(camera);}else {const empty=document.createElement('p');empty.textContent='No photo attached.';photo.append(empty);}body.append(photo);
+        const label=document.createElement('label');label.textContent='Notes';const notes=document.createElement('textarea');notes.maxLength=10000;notes.placeholder='Describe the cause of the down time…';notes.value=data.notes||'';notes.readOnly=!editing&&!capture;label.append(notes);body.append(label);
+        let deleteImage=false;if((editing||capture)&&data.hasImage){const remove=document.createElement('button');remove.type='button';remove.className='down-details-delete';remove.textContent='Delete Photo';remove.addEventListener('click',()=>{if(confirm('Delete this Down photo?')){deleteImage=true;photo.replaceChildren(Object.assign(document.createElement('p'),{textContent:'Photo will be deleted when saved.'}));remove.hidden=true;}});body.append(remove);}const helper=document.createElement('p');helper.className='down-details-helper';helper.textContent='One photo may be attached to this Down interval.';body.append(helper);form.append(body);
+        const actions=document.createElement('div');actions.className='dialog-actions two-actions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=(editing||capture)?'Cancel':'Close';cancel.addEventListener('click',()=>dialog.close());actions.append(cancel);if(editing||capture){const save=document.createElement('button');save.type='submit';save.className='primary-action';save.textContent='Save';actions.append(save);form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;try{const payload=new FormData();payload.set('notes',notes.value);if(selectedImage)payload.set('image',selectedImage);if(deleteImage)payload.set('deleteImage','1');await clockTimer.downDetailsRequest(tripId,intervalKey,payload);dialog.close();if(!tripLogBody.hidden)await dispatchTripListRequest('down-details');}catch(error){let alert=form.querySelector('[role=alert]');if(!alert){alert=document.createElement('p');alert.className='trip-log-error';alert.setAttribute('role','alert');body.append(alert);}alert.textContent=error.message;}finally{save.disabled=false;}});}form.append(actions);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
     }
 
     function updateSummaryValues(state = clockTimer.uiState) {
@@ -6540,8 +6560,8 @@
     });
 
     downButton.addEventListener("pointerup", () => {
-        void clockTimer.startInterval("down").then(result => {
-            if (result) renderTripActionState();
+        void clockTimer.startInterval("down").then(async result => {
+            if (result) {renderTripActionState();const reference=activeDownReference();if(reference?.tripId&&reference.intervalKey)await openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});}
         }).catch(() => {});
     });
 
