@@ -64,8 +64,10 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         if ($operation==='add-entry') {
             $key='edit-'.bin2hex(random_bytes(16));
             $entry['intervalKey']=$key;
+            $type=$entry['type']??'break';$approvedTime=$entry['approvedTime']??null;
+            if($type==='down' && $approvedTime!==null && $approvedTime!=='') trip_edit_duration($approvedTime);
             $events[]=['id'=>null,'event'=>'interval.started','timestamp'=>trip_edit_iso($entry['start']??''),
-                'value'=>['type'=>$entry['type']??'break','length'=>$entry['length']??null,'attributes'=>[], 'intervalKey'=>$key]];
+                'value'=>['type'=>$type,'length'=>$entry['length']??null,'approvedTime'=>$type==='down'?$approvedTime:null,'attributes'=>[], 'intervalKey'=>$key]];
             $events[]=['id'=>null,'event'=>'interval.ended','timestamp'=>trip_edit_iso($entry['end']??''),'value'=>['intervalKey'=>$key]];
             $found=true;
         }
@@ -75,9 +77,14 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                 if ($operation==='delete-entry') {$e['_delete']=true;continue;}
                 if ($e['event']==='interval.started') {
                     $e['timestamp']=trip_edit_iso($entry['start']??'');
-                    if (!in_array($entry['type']??null,['break','down','latency','trip','overtime','earlystart'],true)) throw new InvalidArgumentException('Unknown entry type.');
+                    if (!in_array($entry['type']??null,['break','lunch','down'],true)) throw new InvalidArgumentException('Unknown entry type.');
                     $e['value']['type']=$entry['type'];
                     if (isset($entry['length']) && $entry['length']!=='') {trip_edit_duration($entry['length']);$e['value']['length']=$entry['length'];}
+                    if ($entry['type']==='down') {
+                        $approvedTime=$entry['approvedTime']??null;
+                        if($approvedTime!==null && $approvedTime!=='') trip_edit_duration($approvedTime);
+                        $e['value']['approvedTime']=$approvedTime;
+                    } else unset($e['value']['approvedTime']);
                 } elseif ($e['event']==='interval.ended' && isset($entry['end'])) $e['timestamp']=trip_edit_iso($entry['end']);
             } elseif ($key===null && (int)($entry['eventId']??0)===(int)($e['id']??-1)) {
                 if ($operation==='delete-entry') throw new InvalidArgumentException('Trip start and end cannot be removed.');
@@ -93,6 +100,12 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             }
         }
         unset($e);
+        if(in_array($operation,['entry','add-entry'],true)) {
+            $type=$entry['type']??'';$approvedTime=$entry['approvedTime']??null;$approvalFound=false;
+            foreach($events as &$e)if(($e['event']??'')==='interval.approval-changed'&&($e['value']['intervalKey']??null)===$key){$approvalFound=true;if($type==='down'){$e['value']['state']='approved';$e['value']['value']=$approvedTime;}else $e['_delete']=true;}
+            unset($e);
+            if($type==='down'&&is_string($approvedTime)&&$approvedTime!==''&&!$approvalFound)$events[]=['id'=>null,'event'=>'interval.approval-changed','timestamp'=>trip_edit_iso($entry['end']??$entry['start']??''),'value'=>['intervalKey'=>$key,'state'=>'approved','value'=>$approvedTime]];
+        }
         if (!$found) throw new InvalidArgumentException('Entry no longer exists.');
         $events=array_values(array_filter($events,static fn($e)=>!($e['_delete']??false)));
     } else throw new InvalidArgumentException('Unknown edit operation.');
@@ -116,11 +129,12 @@ function trip_edit_aggregate(array $events): array {
         if($e['event']==='trip.stopped') $end=$time;
         $key=$e['value']['intervalKey']??'';
         if($e['event']==='interval.deleted') $deleted[$key]=true;
-        if($e['event']==='interval.started') $intervals[$key]=['start'=>$time,'type'=>$e['value']['type'],'end'=>null];
+        if($e['event']==='interval.started') $intervals[$key]=['start'=>$time,'type'=>$e['value']['type'],'length'=>$e['value']['length']??null,'startBuffer'=>$e['value']['startBuffer']??null,'endBuffer'=>$e['value']['endBuffer']??null,'approvedTime'=>$e['value']['approvedTime']??null,'end'=>null];
         if($e['event']==='interval.ended') {
             if(!isset($intervals[$key])) throw new InvalidArgumentException('Entry end precedes its start.');
             $intervals[$key]['end']=$time;
         }
+        if($e['event']==='interval.approval-changed'&&isset($intervals[$key]))$intervals[$key]['approvedTime']=($e['value']['state']??'')==='approved'?($e['value']['value']??null):'0:00:00';
     }
     if($start===null || !isset($s['standardTime'],$s['scheduledStart'],$s['creationAnchor'])) throw new InvalidArgumentException('Trip settings are incomplete.');
     $scheduled=(float)(new DateTimeImmutable(trip_edit_clock_iso($s['creationAnchor'],$s['scheduledStart']),new DateTimeZone('UTC')))->format('U.u')*1000;
@@ -132,7 +146,13 @@ function trip_edit_aggregate(array $events): array {
         $finish=$i['end']??$terminal;
         if($finish<=$i['start'] || $i['start']<$start || $finish>$terminal) throw new InvalidArgumentException('Entry must fit within the trip and end after its start.');
         $occupied[]=[$i['start'],$finish];
-        if(in_array($i['type'],['break','down'],true)) $excluded[]=[max($begin,$i['start']),min($terminal,$finish)];
+        if(in_array($i['type'],['break','lunch'],true)) {
+            $planned=0;foreach(['length','startBuffer','endBuffer'] as $field)if(is_string($i[$field])&&$i[$field]!=='')$planned+=trip_edit_duration($i[$field]);
+            $excluded[]=[max($begin,$i['start']),min($terminal,$i['start']+($planned?:$finish-$i['start']))];
+        } elseif($i['type']==='down') {
+            $approved=$i['approvedTime']==='0:00:00'?0:(is_string($i['approvedTime'])&&$i['approvedTime']!==''?trip_edit_duration($i['approvedTime']):$finish-$i['start']);
+            $excluded[]=[max($begin,$i['start']),min($terminal,$i['start']+$approved)];
+        }
     }
     usort($occupied,static fn($a,$b)=>$a[0]<=>$b[0]);$lastFinish=null;
     foreach($occupied as [$a,$b]) {if($lastFinish!==null && $a<$lastFinish) throw new InvalidArgumentException('Entries cannot overlap.');$lastFinish=$b;}

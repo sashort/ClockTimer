@@ -34,6 +34,8 @@
         breakBufferColor: "#6b7f99",
         showBreakBuffer: true,
         downColor: "#5f6772",
+        approvalSurplusColor: "#9c6b30",
+        approvalDeficitColor: "#7a1f3d",
         toleranceColor: "#2e7d32",
         latencyColor: "#e1251b",
         showTolerance: true,
@@ -81,6 +83,8 @@
         breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
         breakBufferColor: {title: "Break Buffer Color", text: "Sets the color for the allowed buffer around a break or lunch.", stateControl: "showBreakBuffer", stateText: {true: "The buffer is shown with this color.", false: "The adjacent interval extends across the buffer."}},
         downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
+        approvalSurplusColor: {title: "Approval Surplus Color", text: "Approval Surplus is extra approved Down time that remains excluded after Down ends."},
+        approvalDeficitColor: {title: "Approval Deficit Color", text: "Approval Deficit is the unapproved portion of a Down interval and counts as productive elapsed time."},
         toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateControl: "showTolerance", stateText: {true: "Tolerance is always shown.", false: "The underlying Trip range extends through tolerance.", undefined: "Clock/Timer decides when the tolerance range is useful."}},
         latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateControl: "showLatency", stateText: {true: "Latency is shown with this color.", false: "Latency is still calculated while the underlying Trip range remains visible."}},
         hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color.", stateControl: "showHourHand", stateText: {true: "The hour hand is visible.", false: "The hour hand is hidden."}},
@@ -3238,6 +3242,8 @@
             "--clock-timer-lunch-color": settings.lunchColor,
             "--clock-timer-break-buffer-color": settings.breakBufferColor,
             "--clock-timer-down-color": settings.downColor,
+            "--clock-timer-approval-surplus-color": settings.approvalSurplusColor,
+            "--clock-timer-approval-deficit-color": settings.approvalDeficitColor,
             "--clock-timer-tolerance-color": settings.toleranceColor,
             "--clock-timer-latency-color": settings.latencyColor,
             "--clock-timer-hour-hand-length": settings.hourHandLength,
@@ -3275,6 +3281,8 @@
             const lunchColor = settings.lunchColor || GRAPHICAL_DEFAULTS.lunchColor;
             const breakBufferColor = settings.breakBufferColor || GRAPHICAL_DEFAULTS.breakBufferColor;
             const downColor = settings.downColor || GRAPHICAL_DEFAULTS.downColor;
+            const approvalSurplusColor = settings.approvalSurplusColor || GRAPHICAL_DEFAULTS.approvalSurplusColor;
+            const approvalDeficitColor = settings.approvalDeficitColor || GRAPHICAL_DEFAULTS.approvalDeficitColor;
             const toleranceColor = settings.toleranceColor || GRAPHICAL_DEFAULTS.toleranceColor;
             const latencyColor = settings.latencyColor || GRAPHICAL_DEFAULTS.latencyColor;
 
@@ -3287,6 +3295,8 @@
             paletteRoot.style.setProperty("--timer-break-buffer-color", breakBufferColor);
             paletteRoot.style.setProperty("--timer-down-color", downColor);
             paletteRoot.style.setProperty("--timer-down-text-color", getContrastingTextColor(downColor));
+            paletteRoot.style.setProperty("--timer-approval-surplus-color", approvalSurplusColor);
+            paletteRoot.style.setProperty("--timer-approval-deficit-color", approvalDeficitColor);
             paletteRoot.style.setProperty("--timer-tolerance-color", toleranceColor);
             paletteRoot.style.setProperty("--timer-latency-color", latencyColor);
         }
@@ -3348,6 +3358,8 @@
             breakBufferColor: text("breakBufferColor"),
             showBreakBuffer: form.elements.showBreakBuffer.checked,
             downColor: text("downColor"),
+            approvalSurplusColor: text("approvalSurplusColor"),
+            approvalDeficitColor: text("approvalDeficitColor"),
             toleranceColor: text("toleranceColor"),
             latencyColor: text("latencyColor"),
             showTolerance:
@@ -3427,12 +3439,14 @@
         ring.setAttribute("inset", "18px");
 
         const segments = [
-            ["trip", 20],
+            ["trip", 10],
             [settings.showEarlyStart ? "earlystart" : "trip", 10],
             ["break", 10],
             [settings.showBreakBuffer ? "buffer" : "break", 10],
             ["lunch", 15],
             ["down", 10],
+            ["approval-surplus", 5],
+            ["approval-deficit", 5],
             [settings.showTolerance === false ? "trip" : "tolerance", 5],
             [settings.showLatency ? "latency" : "trip", 10]
         ];

@@ -2696,6 +2696,14 @@ clock-timer time-range[type="down"] {
     background: var(--clock-timer-down-color, #5f6772);
 }
 
+clock-timer time-range[type="approval-surplus"] {
+    background: var(--clock-timer-approval-surplus-color, #9c6b30);
+}
+
+clock-timer time-range[type="approval-deficit"] {
+    background: var(--clock-timer-approval-deficit-color, #7a1f3d);
+}
+
 clock-timer time-range[type="tolerance"] {
     background: var(--clock-timer-tolerance-color, #2e7d32);
 }
@@ -4054,6 +4062,12 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-entry>select {min-width:0;padding:8px;border:1px solid var(--wm-blue-light);border-radius:5px;color:var(--wm-white);background:#39434e;font:inherit;}
 .trip-log-entry.has-entry-cancel {grid-template-columns:65px minmax(0,1fr) auto;}
 .trip-log-entry-cancel {align-self:stretch;border:1px solid var(--wm-blue-light);border-radius:5px;padding:6px 10px;color:var(--wm-blue-light);background:transparent;font:inherit;}
+.trip-log-entry.has-approved-time {grid-template-columns:65px minmax(0,1fr) minmax(110px,auto);}
+.trip-log-entry.has-entry-remove {grid-template-columns:65px minmax(0,1fr) auto;}
+.trip-log-entry.has-approved-time.has-entry-remove {grid-template-columns:65px minmax(0,1fr) minmax(110px,auto) auto;}
+.trip-log-entry-approved {border:1px solid var(--wm-blue-light);border-radius:5px;padding:7px;color:var(--wm-blue-light);background:transparent;font:inherit;white-space:nowrap;}
+.trip-log-entry-remove {align-self:stretch;min-width:42px;border:1px solid #ff6b72;border-radius:5px;color:#ff6b72;background:transparent;font:inherit;font-size:25px;line-height:1;}
+.trip-log-new-entry-pair {display:contents;}
 .trip-log-entry.is-active-entry {
     --trip-log-active-sweep-color: var(--timer-trip-color, #0053e2);
     background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 42%,color-mix(in srgb,var(--trip-log-active-sweep-color) 42%,transparent) 50%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 58%,transparent 68%,transparent 100%);

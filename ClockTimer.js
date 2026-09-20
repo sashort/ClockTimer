@@ -2053,7 +2053,9 @@
                     "latency",
                     "end-buffer-extension",
                     "elapsed",
-                    "discrepancy"
+                    "discrepancy",
+                    "approval-surplus",
+                    "approval-deficit"
                 ]);
 
             const ranges =
@@ -8178,7 +8180,9 @@
                 "latency",
                 "overtime",
                 "remaining",
-                "discrepancy"
+                "discrepancy",
+                "approval-surplus",
+                "approval-deficit"
             ]).has(
                 String(type).trim()
             );
@@ -9385,7 +9389,9 @@
                 "elapsed",
                 "remaining",
                 "wave",
-                "discrepancy"
+                "discrepancy",
+                "approval-surplus",
+                "approval-deficit"
             ]);
         }
 
@@ -9802,7 +9808,7 @@
                     ) ?? ""
                 ).trim();
 
-            if (type === "discrepancy") {
+            if (["discrepancy", "approval-surplus", "approval-deficit"].includes(type)) {
                 throw new Error(
                     "discrepancy ranges are derived and cannot be modified."
                 );
@@ -10358,9 +10364,7 @@
             if (
                 target?.localName ===
                     "time-range" &&
-                target.getAttribute(
-                    "type"
-                ) === "discrepancy"
+                ["discrepancy", "approval-surplus", "approval-deficit"].includes(target.getAttribute("type"))
             ) {
                 throw new Error(
                     "discrepancy ranges are derived and cannot be modified."
@@ -27358,7 +27362,7 @@
 
             this.#appendApprovalRangeSegments({
                 record,
-                type: "discrepancy",
+                type: difference < 0 ? "approval-deficit" : "approval-surplus",
                 start:
                     discrepancyStart,
                 end:
@@ -27652,7 +27656,7 @@
 
             this.#appendApprovalRangeSegments({
                 record,
-                type: "discrepancy",
+                type: difference < 0 ? "approval-deficit" : "approval-surplus",
                 start:
                     discrepancyStart,
                 end:
@@ -30910,7 +30914,8 @@
                 "trip",
                 "tolerance",
                 "latency",
-                "overtime"
+                "overtime",
+                "approval-deficit"
             ]);
             const segments = [];
 
