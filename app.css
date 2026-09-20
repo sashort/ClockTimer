@@ -2954,6 +2954,18 @@ clock-timer[hide-latency] time-range[type="latency"] {
     margin: 0;
 }
 
+.settings-help-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+    border: 0;
+    background: rgb(169 221 247 / 42%);
+}
+
+.settings-help-state-behavior {
+    color: var(--wm-blue-light);
+}
+
 .settings-help-body code {
     padding: 2px 6px;
     border-radius: 5px;

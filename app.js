@@ -76,16 +76,16 @@
             text: "Radial Overflow keeps each range at its configured width when ranges compete for space. Radial Fitted compresses the rings so the complete timer fits inside the clock."
         },
         tripColor: {title: "Trip Color", text: "The productive portion of the active trip uses this color."},
-        earlyStartColor: {title: "Early Start Color", text: "Checked: time worked before the scheduled start uses this color. Unchecked: early-start time uses the Trip color."},
+        earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateText: "Checked: Early Start uses this color. Unchecked: that time extends the adjacent Trip range and uses the Trip color."},
         lunchColor: {title: "Lunch Color", text: "Lunch intervals use this color and do not count as productive trip time."},
         breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
-        breakBufferColor: {title: "Break Buffer Color", text: "Checked: the allowed buffer around a break or lunch is shown with this color. Unchecked: the buffer remains active but is transparent."},
+        breakBufferColor: {title: "Break Buffer Color", text: "Sets the color for the allowed buffer around a break or lunch.", stateText: "Checked: the buffer is shown with this color. Unchecked: the adjacent interval extends across the buffer."},
         downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
-        toleranceColor: {title: "Tolerance Color", text: "Checked: tolerance is always shown. Unchecked: tolerance is hidden. Mixed: Clock/Timer decides when the tolerance range is useful."},
-        latencyColor: {title: "Latency Color", text: "Checked: late time is shown with this color as it consumes the following trip range. Unchecked: latency is still calculated but its range is hidden."},
-        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color. Checked: the hour hand is visible. Unchecked: it is hidden."},
-        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color. Checked: the minute hand is visible. Unchecked: it is hidden."},
-        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color. Checked: the second hand is visible. Unchecked: it is hidden."},
+        toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateText: "Checked: tolerance is always shown. Unchecked: the underlying Trip range extends through it. Mixed: Clock/Timer decides when the tolerance range is useful."},
+        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateText: "Checked: latency is shown with this color. Unchecked: latency is still calculated while the underlying Trip range remains visible."},
+        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color.", stateText: "Checked: the hour hand is visible. Unchecked: the hour hand is hidden."},
+        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color.", stateText: "Checked: the minute hand is visible. Unchecked: the minute hand is hidden."},
+        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color.", stateText: "Checked: the second hand is visible. Unchecked: the second hand is hidden."},
         hourColor: {title: "Hour Number Color", text: "Sets the color of the hour numbers and tick marks."},
         timeColor: {title: "Current Time Color", text: "Sets the color of the current time displayed in the center of the clock."}
     };
@@ -3462,6 +3462,7 @@
             const button = document.createElement("button");
             button.className = "settings-help-button";
             button.type = "button";
+            button.textContent = "?";
             button.dataset.helpKey = key;
             button.setAttribute("aria-label", `About ${GRAPHICAL_HELP[key].title}`);
             button.setAttribute("aria-hidden", "true");
@@ -3817,7 +3818,16 @@
         if (definition) {
             const paragraph = document.createElement("p");
             paragraph.textContent = definition.text;
-            body.replaceChildren(paragraph);
+            const content = [paragraph];
+            if (definition.stateText) {
+                const divider = document.createElement("hr");
+                divider.className = "settings-help-divider";
+                const state = document.createElement("p");
+                state.className = "settings-help-state-behavior";
+                state.textContent = definition.stateText;
+                content.push(divider, state);
+            }
+            body.replaceChildren(...content);
         }
         else {
             body.replaceChildren(template.content.cloneNode(true));
