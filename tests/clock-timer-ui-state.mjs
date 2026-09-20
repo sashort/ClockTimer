@@ -17,6 +17,16 @@ assert.equal(zeroRange.getAttribute('range-length'),'0');
 assert.equal(zeroRange.transitionTo({startTime:new window.Date('2026-09-19T12:00:02Z'),endTime:new window.Date('2026-09-19T12:00:01Z')}),false);
 zeroRange.remove();
 
+window.customElements.get('time-range').animationDuration=0;
+const overlapHost=window.document.createElement('div');window.document.body.append(overlapHost);
+const positiveRange=window.document.createElement('time-range');positiveRange.setAttribute('start-time','2026-09-19 12:00:00.000');positiveRange.setAttribute('end-time','2026-09-19 12:10:00.000');overlapHost.append(positiveRange);const positiveEnd=positiveRange.getAttribute('end-time');
+const zeroInside=window.document.createElement('time-range');zeroInside.setAttribute('start-time','2026-09-19 12:05:00.000');zeroInside.setAttribute('end-time','2026-09-19 12:05:00.000');overlapHost.append(zeroInside);
+assert.equal(overlapHost.querySelectorAll('time-range').length,2);assert.equal(positiveRange.getAttribute('end-time'),positiveEnd);
+const secondHost=window.document.createElement('div');window.document.body.append(secondHost);
+const zeroFirst=window.document.createElement('time-range');zeroFirst.setAttribute('start-time','2026-09-19 12:05:00.000');zeroFirst.setAttribute('end-time','2026-09-19 12:05:00.000');secondHost.append(zeroFirst);
+const positiveSecond=window.document.createElement('time-range');positiveSecond.setAttribute('start-time','2026-09-19 12:00:00.000');positiveSecond.setAttribute('end-time','2026-09-19 12:10:00.000');secondHost.append(positiveSecond);
+assert.equal(secondHost.querySelectorAll('time-range').length,2);overlapHost.remove();secondHost.remove();
+
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 const states=[];timer.addEventListener('uiStateChanged',event=>states.push(event.detail));
 const configured=timer.configure({rendered_time_type:'calculated_end_time',goal_type:'total',auto_goal:false,trip_goal:'105%',total_goal:'110%',external_standard_time:'1:00:00',external_counted_time:3300000});

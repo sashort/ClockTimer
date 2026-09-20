@@ -4110,6 +4110,12 @@ class TimeRange extends HTMLElement {
         const addedEnd =
             newEnd.getTime();
 
+        // A zero-length range occupies no interval. Keep it available to grow,
+        // but do not let its boundary split, trim, or remove another range.
+        if (addedEnd <= addedStart) {
+            return;
+        }
+
         for (
             let i =
                 instances.length - 1;
@@ -4165,6 +4171,12 @@ class TimeRange extends HTMLElement {
 
             const existingEnd =
                 existingEndTime.getTime();
+
+            // Likewise, an existing zero-length range cannot conflict with a
+            // later positive-length range.
+            if (existingEnd <= existingStart) {
+                continue;
+            }
 
             if (
                 addedStart <=
