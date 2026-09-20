@@ -254,8 +254,9 @@ assert([...graphicalDialog.querySelectorAll('input[type="color"]')].every(input=
 assert([...graphicalDialog.querySelectorAll('.settings-help-button')].every(button=>button.textContent.trim()==='?'));
 assert([...graphicalDialog.querySelectorAll('.timer-color-row')].every(row=>row.querySelectorAll('.settings-help-button').length===1));
 graphicalDialog.querySelector('[data-help-key="timerType"].settings-help-button').click();await settle();
-assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Overflow starts the ring at the minute mark where the trip began/);
-assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Fitted starts at the top of the clock/);
+assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Overflow preserves the clock’s normal minute scale/);
+assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/continues into additional rings/);
+assert.match(window.document.querySelector('#graphicalHelpBody').textContent,/Fitted starts at the top of the clock and visually compresses the entire trip timeframe/);
 window.document.querySelector('#graphicalHelpClose').click();await settle();
 const preview=window.document.querySelector('#clockPreview');
 let previewRanges=[...preview.querySelectorAll('[data-settings-preview="ranges"] > time-range')];

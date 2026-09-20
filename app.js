@@ -73,7 +73,7 @@
         },
         timerType: {
             title: "Timer Type",
-            text: "Radial Overflow starts the ring at the minute mark where the trip began and continues around the clock. Radial Fitted starts at the top of the clock and fits the complete trip into the available ring."
+            text: "Radial Overflow preserves the clock’s normal minute scale. The ring starts at the minute mark where the trip began, follows the clock face, and continues into additional rings when the timeframe exceeds the available circle. Radial Fitted starts at the top of the clock and visually compresses the entire trip timeframe into one complete ring, with each range sized in proportion to its share of the trip."
         },
         tripColor: {title: "Trip Color", text: "The productive portion of the active trip uses this color."},
         earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateControl: "showEarlyStart", stateText: {true: "Early Start uses this color.", false: "The adjacent Trip range extends through Early Start and uses the Trip color."}},
