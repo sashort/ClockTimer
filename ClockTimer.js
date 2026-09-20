@@ -9317,17 +9317,23 @@
         #updateOpenOverwriteRange(
             nowDate
         ) {
+            this.#updateOpenOverwriteRangeTo(
+                this.#getCurrentTimelineTime(
+                    nowDate
+                )
+            );
+        }
+
+        #updateOpenOverwriteRangeTo(now) {
             const record =
                 this.#openOverwriteRange;
 
-            if (!record) {
+            if (
+                !record ||
+                !Number.isFinite(now)
+            ) {
                 return;
             }
-
-            const now =
-                this.#getCurrentTimelineTime(
-                    nowDate
-                );
 
             const previous =
                 Number.isFinite(
@@ -11778,22 +11784,24 @@
                         record
                     );
 
+            const activeLatency =
+                this.#openOverwriteRange;
+
+            if (
+                activeLatency?.openEnded === true &&
+                activeLatency.type === "latency" &&
+                activeLatency.clockTimerIntervalLatency ===
+                    record.id
+            ) {
+                return true;
+            }
+
             const current =
                 this.#getCurrentReplaceableRange(
                     now
                 );
-
             if (!current) {
                 return false;
-            }
-
-            if (
-                current.getAttribute("type") ===
-                    "latency" &&
-                current.clockTimerIntervalLatency ===
-                    record.id
-            ) {
-                return true;
             }
 
             if (
@@ -11804,16 +11812,36 @@
             }
 
             const replacement =
-                this.#replaceToNext(
-                    "latency"
-                );
-
+                this.#overwrite({
+                    type: "latency",
+                    startTime:
+                        this.#formatTimelineTime(
+                            boundary
+                        )
+                });
             if (!replacement) {
                 return false;
             }
 
+            const latencyRecord =
+                this.#openOverwriteRange;
+
+            if (
+                !latencyRecord ||
+                latencyRecord.type !== "latency"
+            ) {
+                return false;
+            }
+
+            latencyRecord.clockTimerIntervalLatency =
+                record.id;
+
             replacement.clockTimerIntervalLatency =
                 record.id;
+
+            this.#updateOpenOverwriteRangeTo(
+                now
+            );
 
             this.#emitClockTimerEvent(
                 "latencyStarted",
@@ -12215,10 +12243,38 @@
 
             this.#checkGoalMisses(now);
 
+            const activeLatency =
+                this.#openOverwriteRange;
+
+            if (
+                activeLatency?.openEnded === true &&
+                activeLatency.type === "latency" &&
+                activeLatency.clockTimerIntervalLatency ===
+                    record.id
+            ) {
+                this.#updateOpenOverwriteRangeTo(
+                    now
+                );
+
+                activeLatency.openEnded = false;
+                activeLatency.clockTimerGrowthMode =
+                    "fixed";
+                activeLatency.end = Math.max(
+                    activeLatency.start,
+                    now
+                );
+
+                this.#openOverwriteRange =
+                    undefined;
+                this.#openOverwriteLastTick =
+                    undefined;
+            }
+
             const current =
                 this.#getCurrentReplaceableRange(now);
 
             if (
+                !activeLatency &&
                 current?.getAttribute("type") ===
                     "latency" &&
                 current.clockTimerIntervalLatency ===
