@@ -1340,8 +1340,10 @@
         }
 
         #actionClock(milliseconds) {
-            const seconds = Math.max(0, Math.floor(Number(milliseconds) / 1000) || 0);
-            return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+            const numeric = Number(milliseconds);
+            const negative = Number.isFinite(numeric) && numeric < 0;
+            const seconds = Math.floor(Math.abs(numeric) / 1000) || 0;
+            return `${negative ? "-" : ""}${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
         }
 
         getUIState(now = new Date(), options = {}) {
@@ -1372,9 +1374,7 @@
             const goal = this.#percentMode === "auto" && this.#autoSyncTripGoal
                 ? Number(this.#renderedPercentGoal)
                 : ordinaryGoal;
-            const intervalType = interval?.open === false
-                ? ""
-                : String(interval?.intervalType || "").trim().toLowerCase();
+            const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties();
             const creationDate = this.#getJSONCreationDate();
             const startMilliseconds = this.#getStartTimeMilliseconds();
@@ -5962,7 +5962,7 @@
 
             const elapsedMilliseconds = Math.max(0, timelineNow - start);
             const remainingMilliseconds = Number.isFinite(end)
-                ? Math.max(0, end - timelineNow)
+                ? end - timelineNow
                 : undefined;
 
             return {
@@ -30909,6 +30909,7 @@
             const countedTypes = new Set([
                 "earlystart",
                 "trip",
+                "tolerance",
                 "latency",
                 "overtime"
             ]);

@@ -6654,10 +6654,12 @@
     });
 
     function formatIntervalClock(milliseconds) {
-        const totalSeconds = Math.max(0, Math.floor(Number(milliseconds) / 1000) || 0);
+        const numeric = Number(milliseconds);
+        const negative = Number.isFinite(numeric) && numeric < 0;
+        const totalSeconds = Math.floor(Math.abs(numeric) / 1000) || 0;
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
-        return `${minutes}:${String(seconds).padStart(2, "0")}`;
+        return `${negative ? "-" : ""}${minutes}:${String(seconds).padStart(2, "0")}`;
     }
 
     function setEndTripButtonIntervalPalette(intervalType) {
@@ -6721,6 +6723,9 @@
 
         if (intervalType === "break" || intervalType === "lunch") {
             app.dataset.intervalState = "break";
+            activeTripControls.hidden = false;
+            endTripButton.hidden = false;
+            endTripButton.disabled = false;
             setEndTripButtonIntervalPalette(
                 intervalType
             );
