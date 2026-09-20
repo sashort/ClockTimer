@@ -3471,7 +3471,7 @@
             const colorRow = control.closest(".timer-color-row");
             if (colorRow) {
                 colorRow.classList.add("has-setting-help");
-                colorRow.querySelector("label")?.after(button);
+                colorRow.querySelector("label")?.before(button);
                 continue;
             }
 
@@ -3486,7 +3486,8 @@
                 if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) continue;
                 caption.append(node);
             }
-            label.prepend(caption, button);
+            if (control.type === "color") label.prepend(button, caption);
+            else label.prepend(caption, button);
         }
     }
 

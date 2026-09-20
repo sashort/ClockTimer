@@ -243,6 +243,11 @@ graphicalHelpToggle.click();
 assert.equal(graphicalHelpToggle.getAttribute('aria-pressed'),'true');
 assert(graphicalDialog.classList.contains('show-setting-help'));
 assert([...graphicalDialog.querySelectorAll('input[type="color"]')].every(input=>input.closest('label, .timer-color-row').querySelector('.settings-help-button')));
+assert([...graphicalDialog.querySelectorAll('input[type="color"]')].every(input=>{
+ const row=input.closest('.timer-color-row');
+ if(row){const children=[...row.children];return children.indexOf(row.querySelector('.settings-help-button'))<children.indexOf(row.querySelector('label'));}
+ const label=input.closest('label'),children=[...label.children];return children.indexOf(label.querySelector('.settings-help-button'))<children.indexOf(label.querySelector('.setting-help-caption'));
+}));
 assert([...graphicalDialog.querySelectorAll('.settings-help-button')].every(button=>button.textContent.trim()==='?'));
 assert([...graphicalDialog.querySelectorAll('.timer-color-row')].every(row=>row.querySelectorAll('.settings-help-button').length===1));
 const preview=window.document.querySelector('#clockPreview');
