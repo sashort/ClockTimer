@@ -8296,7 +8296,7 @@
 
             if (
                 endDate &&
-                endDate.getTime() <=
+                endDate.getTime() <
                     startDate.getTime()
             ) {
                 return;
@@ -26242,9 +26242,9 @@
                 );
             }
 
-            if (total <= 0) {
+            if (total < 0) {
                 throw new RangeError(
-                    "rangeLength must be greater than zero."
+                    "rangeLength must not be negative."
                 );
             }
 
@@ -27668,7 +27668,7 @@
                 Number.isFinite(
                     effectiveEnd
                 ) &&
-                effectiveEnd <= start
+                effectiveEnd < start
             ) {
                 return;
             }
@@ -27709,6 +27709,39 @@
 
                 range.clockTimerStart =
                     String(start);
+
+                range.clockTimerInserted =
+                    record.id;
+
+                this.#applyOtherAttributes(
+                    range,
+                    record.otherAttributes
+                );
+
+                ring.appendChild(range);
+
+                return;
+            }
+
+            if (effectiveEnd === start) {
+                const ring =
+                    this.#ensureRing(
+                        this.#getTimerRingIndex(
+                            start
+                        )
+                    );
+
+                const range =
+                    this.#createTimeRange(
+                        record.type,
+                        start,
+                        start,
+                        {
+                            dynamic: true
+                        }
+                    );
+
+                delete range.clockTimerDynamic;
 
                 range.clockTimerInserted =
                     record.id;
