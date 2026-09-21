@@ -1946,7 +1946,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 /* Down mode quiets the full viewport while its controls and modal remain colored. */
-body:has(.app[data-interval-state="down"])::after {
+body::after {
     content: "";
     position: fixed;
     inset: 0;
@@ -1955,6 +1955,12 @@ body:has(.app[data-interval-state="down"])::after {
     background: rgb(0 0 0 / 0.001);
     -webkit-backdrop-filter: grayscale(100%);
     backdrop-filter: grayscale(100%);
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+}
+
+body:has(.app[data-interval-state="down"])::after {
+    opacity: 1;
 }
 
 .app[data-interval-state="down"][data-trip-list-state="closed"] .trip-action-controls {
