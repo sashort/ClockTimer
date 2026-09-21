@@ -141,6 +141,12 @@
     const tripActionRow = $(".trip-action-row");
     const breakButton = $("#breakButton");
     const downButton = $("#downButton");
+    const downTripControls = $("#downTripControls");
+    const downElapsedValue = $("#downElapsedValue");
+    const downDetailsButton = $("#downDetailsButton");
+    const downBreakButton = $("#downBreakButton");
+    const downResumeButton = $("#downResumeButton");
+    const downCancelButton = $("#downCancelButton");
     const breakDialog = $("#breakDialog");
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
@@ -3178,7 +3184,7 @@
         return true;
     }
 
-    function activeDownReference(){const trips=clockTimer.getLocalTripLog(),trip=trips.find(candidate=>candidate.running)||trips[trips.length-1];const events=trip?.events||[];const ended=new Set(events.filter(event=>event.event==="interval.ended").map(event=>event.value?.intervalKey));const start=[...events].reverse().find(event=>event.event==="interval.started"&&event.value?.type==="down"&&!ended.has(event.value?.intervalKey));return trip&&start?{tripId:trip.id||clockTimer.currentTripId,intervalKey:start.value.intervalKey}:null;}
+    function activeDownReference(){const active=clockTimer.getActiveIntervalState?.(new Date());if(String(active?.intervalType||'').toLowerCase()==='down'&&active?.intervalKey)return{tripId:clockTimer.currentTripId,intervalKey:active.intervalKey};const trips=clockTimer.getLocalTripLog(),trip=trips.find(candidate=>candidate.running)||trips[trips.length-1];const events=trip?.events||[];const ended=new Set(events.filter(event=>event.event==="interval.ended").map(event=>event.value?.intervalKey));const start=[...events].reverse().find(event=>event.event==="interval.started"&&event.value?.type==="down"&&!ended.has(event.value?.intervalKey));return trip&&start?{tripId:trip.id||clockTimer.currentTripId,intervalKey:start.value.intervalKey}:null;}
 
     async function openDownDetailsModal(tripId,intervalKey,{editing=false,capture=false}={}){
         let data;
@@ -3186,7 +3192,7 @@
         catch {data={active:Boolean(capture),hasImage:false,notes:''};}
         document.querySelector('.down-details-dialog')?.remove();
         const dialog=document.createElement('dialog');dialog.className='app-dialog down-details-dialog';const form=document.createElement('form');form.method='dialog';
-        const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.setAttribute('aria-label','Close Down Details');close.textContent='×';close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
+        const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.className='dialog-close';close.setAttribute('aria-label','Close Down Details');close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
         const body=document.createElement('div');body.className='down-details-body';const photo=document.createElement('div');photo.className='down-details-photo';let selectedImage;
         const image=document.createElement('img');image.alt='Down time photo';if(data.hasImage){image.src=data.imageUrl;photo.append(image);}else if(capture&&data.active){const camera=document.createElement('label');camera.className='down-details-camera';camera.innerHTML='<span aria-hidden="true">▣</span><strong>Take Photo</strong>';const input=document.createElement('input');input.type='file';input.accept='image/jpeg,image/png,image/webp,image/heic,image/heif';input.capture='environment';input.addEventListener('change',()=>{selectedImage=input.files?.[0];if(selectedImage){image.src=URL.createObjectURL(selectedImage);photo.replaceChildren(image);}});camera.append(input);photo.append(camera);}else {const empty=document.createElement('p');empty.textContent='No photo attached.';photo.append(empty);}body.append(photo);
         const label=document.createElement('label');label.textContent='Notes';const notes=document.createElement('textarea');notes.maxLength=10000;notes.placeholder='Describe the cause of the down time…';notes.value=data.notes||'';notes.readOnly=!editing&&!capture;label.append(notes);body.append(label);
@@ -6573,15 +6579,29 @@
     });
 
     downButton.addEventListener("pointerup", () => {
-        void clockTimer.startInterval("down").then(async result => {
-            if (result) {
-                renderTripActionState();
-                const fallback=activeDownReference();
-                const tripId=result.tripId??fallback?.tripId??clockTimer.currentTripId;
-                const intervalKey=result.intervalKey??fallback?.intervalKey;
-                if(tripId&&intervalKey)await openDownDetailsModal(tripId,intervalKey,{editing:true,capture:true});
-            }
+        void clockTimer.startInterval("down").then(result => {
+            if (result) renderTripActionState();
         }).catch(() => {});
+    });
+
+    downDetailsButton.addEventListener("pointerup", () => {
+        const reference=activeDownReference();
+        if(reference?.tripId&&reference.intervalKey)void openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});
+    });
+
+    downBreakButton.addEventListener("pointerup", () => {
+        openDialog("breakDialog", { reason: "down-break" });
+    });
+
+    downResumeButton.addEventListener("pointerup", () => {
+        void clockTimer.endInterval().then(() => renderTripActionState()).catch(() => {});
+    });
+
+    downCancelButton.addEventListener("pointerup", () => {
+        void (async () => {
+            await clockTimer.endInterval();
+            await endCurrentIntervalOrTrip();
+        })().catch(() => {});
     });
 
     breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
@@ -6749,6 +6769,9 @@
         renderSyncGoalsState();
         if (!tripIsLive()) {
             app.dataset.intervalState = "none";
+            downTripControls.hidden = true;
+            endTripButton.hidden = false;
+            tripActionRow.hidden = false;
             setEndTripButtonIntervalPalette();
             endTripButton.textContent = "End Trip";
             tripActionRow.hidden = false;
@@ -6766,13 +6789,15 @@
         if (intervalType === "down") {
             app.dataset.intervalState = "down";
             setEndTripButtonIntervalPalette();
-            endTripButton.textContent =
-                `Resume Trip : ${formatIntervalClock(interval.elapsedMilliseconds)}`;
-            tripActionRow.hidden = false;
-            breakButton.hidden = false;
-            downButton.hidden = true;
+            downElapsedValue.value = formatDuration(interval.elapsedMilliseconds);
+            downElapsedValue.textContent = downElapsedValue.value;
+            downTripControls.hidden = false;
+            endTripButton.hidden = true;
+            tripActionRow.hidden = true;
             return;
         }
+
+        downTripControls.hidden = true;
 
         if (intervalType === "break" || intervalType === "lunch") {
             app.dataset.intervalState = "break";
@@ -6792,6 +6817,7 @@
         }
 
         app.dataset.intervalState = "normal";
+        endTripButton.hidden = false;
         setEndTripButtonIntervalPalette();
         endTripButton.textContent = "End Trip";
         tripActionRow.hidden = false;

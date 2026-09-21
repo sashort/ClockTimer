@@ -1847,12 +1847,64 @@ button:active:not(:disabled):not(#goalSyncButton) {
     grid-template-rows: 1fr;
 }
 
-.app[data-interval-state="down"] .trip-action-row {
-    grid-template-columns: 1fr;
+.app[data-interval-state="down"] {
+    grid-template-rows: 52px 142px 190px 0 122px 1fr var(--trip-log-row-height);
 }
 
-.app[data-interval-state="down"] .break-button {
-    grid-column: 1 / -1;
+.app[data-interval-state="down"] .active-trip-controls {
+    grid-template-rows: 1fr;
+}
+
+.down-trip-controls {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 42px minmax(0, 1fr) minmax(0, .8fr);
+}
+
+.down-trip-controls[hidden] {
+    display: none;
+}
+
+.down-elapsed-value {
+    display: grid;
+    place-items: center;
+    color: var(--wm-white);
+    background: var(--timer-down-color, #5f6772);
+    font-size: 30px;
+    line-height: 1;
+}
+
+.down-action-row {
+    display: grid;
+    grid-template-columns: minmax(58px, .42fr) minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 0;
+}
+
+.down-details-button {
+    display: grid;
+    place-items: center;
+    color: var(--wm-white);
+    background: var(--timer-down-color, #5f6772);
+}
+
+.down-details-button svg {
+    width: 38px;
+    height: 38px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.down-resume-button {
+    color: var(--wm-blue-dark);
+    background: var(--wm-yellow);
+}
+
+.down-cancel-button {
+    color: var(--timer-down-text-color, #ffffff);
+    background: var(--timer-down-color, #5f6772);
 }
 
 /* Down mode quiets the full viewport while its controls and modal remain colored. */
@@ -1863,8 +1915,8 @@ body:has(.app[data-interval-state="down"])::after {
     z-index: 3000;
     pointer-events: none;
     background: rgb(0 0 0 / 0.001);
-    -webkit-backdrop-filter: grayscale(80%);
-    backdrop-filter: grayscale(80%);
+    -webkit-backdrop-filter: grayscale(100%);
+    backdrop-filter: grayscale(100%);
 }
 
 .app[data-interval-state="down"] .trip-action-controls {

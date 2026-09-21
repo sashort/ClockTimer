@@ -2,7 +2,7 @@ import fs from 'node:fs';import assert from 'node:assert/strict';import {Window}
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
-window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
+const animationCalls=[];window.Element.prototype.animate=function(keyframes,options){animationCalls.push({target:this,keyframes,options});return{finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}}};
 const errors=[];window.addEventListener('error',e=>errors.push(e.message));
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
 let eventId=1,tripId=41;const requests=[],stored=[];
@@ -172,6 +172,15 @@ assert(!window.document.querySelector('#endTimeGoalLock').hidden);for(let attemp
 assert(window.document.querySelector('#endTimeGoalLock').hidden);assert.equal(c.getAttribute('trip-goal'),'109%');
 console.log('PASS elapsed locked End Time automatically restores normal goal operation');
 console.log('PASS long-pressed End Time locks Trip, Total, and Auto goals and restores normal goals');
+await c.endInterval();
+let repeatedDownStarted=0;c.addEventListener('downTimeStarted',()=>repeatedDownStarted++);
+const downSpinBaseline=animationCalls.length;
+await c.startInterval('down');await settle();
+await c.endInterval();await settle();
+await c.startInterval('down');await settle();
+assert.equal(repeatedDownStarted,2);
+const repeatedDownSpins=animationCalls.slice(downSpinBaseline).filter(call=>call.target===c&&call.options?.duration===1500&&call.keyframes?.some?.(frame=>String(frame.transform||'').includes('rotateY(90deg)')));
+assert.equal(repeatedDownSpins.length,3,'Down start, exit, and second start each run the 1.5 second ClockTimer spin');
 await c.endInterval();
 const completedId=c.currentTripId;
 const connectedFetch=window.fetch;

@@ -87,5 +87,12 @@ const downRange=approval.querySelector('time-range[type="down"]');assert(downRan
 await approval.setIntervalApproval(downRange,'0:00:30');assert(approval.querySelector('time-range[type="approval-deficit"]'));assert.equal(approval.getSummarySnapshot().trip.countedTimeElapsedMilliseconds,30000);
 await approval.setIntervalApproval(downRange,'0:01:30');assert(approval.querySelector('time-range[type="approval-surplus"]'));assert.equal(approval.getSummarySnapshot().trip.countedTimeElapsedMilliseconds,0);
 approval.remove();
+const repeatedDown=window.document.createElement('clock-timer');window.document.body.append(repeatedDown);
+let downStartedCount=0;repeatedDown.addEventListener('downTimeStarted',()=>downStartedCount++);
+await repeatedDown.start({standardTime:'0:10:00'});
+await repeatedDown.startInterval('down');await repeatedDown.endInterval();window.__testTime+=1000;
+await repeatedDown.startInterval('down');
+assert.equal(downStartedCount,2,'each successfully started Down interval emits downTimeStarted');
+await repeatedDown.endInterval();repeatedDown.remove();
 console.log('PASS configure is partial and UI state describes values, state, and transitions');
 timer.remove();window.happyDOM.abort();

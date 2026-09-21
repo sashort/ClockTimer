@@ -101,6 +101,15 @@
                     <button id="breakButton" class="trip-action-button break-button" type="button">Break</button>
                     <button id="downButton" class="trip-action-button down-button" type="button">Down</button>
                 </div>
+                <div id="downTripControls" class="down-trip-controls" hidden>
+                    <output id="downElapsedValue" class="down-elapsed-value" aria-label="Down time elapsed">0:00:00</output>
+                    <div class="down-action-row">
+                        <button id="downDetailsButton" class="trip-action-button down-details-button" type="button" aria-label="Open Down details"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9.5h5l2-3h8l2 3h5v16H5z"/><circle cx="16" cy="17.5" r="5"/><path d="M23.5 23.5l5-5 2 2-5 5-3 .8z"/></svg></button>
+                        <button id="downBreakButton" class="trip-action-button break-button" type="button">Break</button>
+                        <button id="downResumeButton" class="trip-action-button down-resume-button" type="button">Resume</button>
+                    </div>
+                    <button id="downCancelButton" class="trip-action-button down-cancel-button" type="button">Cancel</button>
+                </div>
             </div>
         </section>
 

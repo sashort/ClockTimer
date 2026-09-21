@@ -5974,6 +5974,8 @@
                 intervalId: Number.isInteger(Number(record.intervalId))
                     ? Number(record.intervalId)
                     : undefined,
+                intervalKey:
+                    record.clockTimerEventKey,
                 type: currentType,
                 intervalType: String(intervalType || currentType || "").trim(),
                 phase: String(phase || currentType || "").trim(),
@@ -26466,27 +26468,39 @@
             range,
             attributes
         ) {
-            for (
-                const [name, value] of
-                    Object.entries(
-                        attributes ?? {}
-                    )
-            ) {
-                const normalizedName =
-                    name.toLowerCase();
+            const internalMutation =
+                range.clockTimerInternalMutation === true;
 
-                if (
-                    normalizedName === "start-time" ||
-                    normalizedName === "end-time" ||
-                    normalizedName === "range-length"
+            range.clockTimerInternalMutation = true;
+
+            try {
+                for (
+                    const [name, value] of
+                        Object.entries(
+                            attributes ?? {}
+                        )
                 ) {
-                    continue;
-                }
+                    const normalizedName =
+                        name.toLowerCase();
 
-                range.setAttribute(
-                    name,
-                    value
-                );
+                    if (
+                        normalizedName === "start-time" ||
+                        normalizedName === "end-time" ||
+                        normalizedName === "range-length"
+                    ) {
+                        continue;
+                    }
+
+                    range.setAttribute(
+                        name,
+                        value
+                    );
+                }
+            }
+            finally {
+                if (!internalMutation) {
+                    delete range.clockTimerInternalMutation;
+                }
             }
         }
 
