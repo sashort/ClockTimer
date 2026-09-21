@@ -86,12 +86,7 @@
         approvalSurplusColor: {title: "Approval Surplus Color", text: "Approval Surplus is extra approved Down time that remains excluded after Down ends."},
         approvalDeficitColor: {title: "Approval Deficit Color", text: "Approval Deficit is the unapproved portion of a Down interval and counts as productive elapsed time."},
         toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateControl: "showTolerance", stateText: {true: "Tolerance is always shown.", false: "The underlying Trip range extends through tolerance.", undefined: "Clock/Timer decides when the tolerance range is useful."}},
-        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateControl: "showLatency", stateText: {true: "Latency is shown with this color.", false: "Latency is still calculated while the underlying Trip range remains visible."}},
-        hourHandColor: {title: "Hour Hand Color", text: "Sets the hour hand color.", stateControl: "showHourHand", stateText: {true: "The hour hand is visible.", false: "The hour hand is hidden."}},
-        minuteHandColor: {title: "Minute Hand Color", text: "Sets the minute hand color.", stateControl: "showMinuteHand", stateText: {true: "The minute hand is visible.", false: "The minute hand is hidden."}},
-        secondHandColor: {title: "Second Hand Color", text: "Sets the second hand color.", stateControl: "showSecondHand", stateText: {true: "The second hand is visible.", false: "The second hand is hidden."}},
-        hourColor: {title: "Hour Number Color", text: "Sets the color of the hour numbers and tick marks."},
-        timeColor: {title: "Current Time Color", text: "Sets the color of the current time displayed in the center of the clock."}
+        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateControl: "showLatency", stateText: {true: "Latency is shown with this color.", false: "Latency is still calculated while the underlying Trip range remains visible."}}
     };
 
     const $ = selector => document.querySelector(selector);
