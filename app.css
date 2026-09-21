@@ -1848,11 +1848,15 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 .app[data-interval-state="down"] {
-    grid-template-rows: 52px 142px 230px 0 122px 1fr var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 230px 0 0 1fr var(--trip-log-row-height);
 }
 
 .app[data-interval-state="down"] .active-trip-controls {
     grid-template-rows: 1fr;
+}
+
+.app[data-interval-state="down"] .independent-timer {
+    display: none;
 }
 
 .down-trip-controls {
