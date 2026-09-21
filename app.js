@@ -5235,13 +5235,9 @@
                 return false;
             }
         }
-        if (target === "scheduled-start") {
-            showScheduledStartDialog({resolution: scheduledStartNeedsResolution});
-        }
-
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, {
             reason: "number-pad",
-            immediate: immediate || target === "trip-settings"
+            immediate: immediate || ["trip-settings", "scheduled-start"].includes(target)
         })) {
             if (target === "trip-settings" && tripSettingsDialog.open) {
                 closeDialog(tripSettingsDialog, {
@@ -5250,6 +5246,10 @@
                 });
             }
             return false;
+        }
+
+        if (target === "scheduled-start") {
+            showScheduledStartDialog({resolution: scheduledStartNeedsResolution});
         }
 
         if (target === "home") {

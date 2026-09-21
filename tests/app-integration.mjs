@@ -31,6 +31,13 @@ assert.equal(window.document.querySelector('#scheduledStartStandard').disabled,f
 assert.equal(window.document.querySelector('#scheduledStartAuto').required,false);
 assert.equal(window.document.querySelector('#scheduledStartNow').textContent,'Start Now');
 assert.equal(window.document.querySelector('#scheduledStartOnTime').textContent,'Start On Time');
+window.document.querySelector('#scheduledStartStandard').click();await settle();
+assert.equal(window.document.querySelector('#numberPadDialog').open,true);
+assert.equal(window.document.querySelector('#tripSettingsDialog').open,false);
+window.document.querySelector('#numberPadClear').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+assert.equal(window.document.querySelector('#numberPadDialog').open,false);
+assert.equal(window.document.querySelector('#scheduledStartDialog').open,true);
+window.document.querySelector('#scheduledStartCancel').click();await settle();
 console.log('PASS scheduled-start prompt exposes optional Standard Time and both start choices');
 const menuTestRoot=window.document.createElement('div');window.document.body.append(menuTestRoot);
 const menuTestTrip={id:901,startTime:'2026-09-20T12:00:00Z',standardTimeMilliseconds:60000,actualTimeMilliseconds:60000,countedTimeMilliseconds:60000,events:[]};
