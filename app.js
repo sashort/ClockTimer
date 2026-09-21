@@ -5689,7 +5689,7 @@
 
     function tripDraftFutureStartDate(draft = tripDraft) {
         const date = parseDateInput(draft?.creationDate);
-        const timeline = parseTimelineTime(draft?.startTime);
+        const timeline = parseTimelineTime(draft?.scheduledStart);
         if (!date || !Number.isFinite(timeline)) return undefined;
         return new Date(date.getTime() + timeline);
     }
@@ -5743,7 +5743,7 @@
             return false;
         }
         if (mode === "now") Object.assign(tripDraft, resumedTripStarts(tripDraft, new Date()));
-        else tripDraft.startTime = formatTimelineMilliseconds(parseTimelineTime(tripDraft.startTime));
+        else tripDraft.startTime = formatTimelineMilliseconds(parseTimelineTime(tripDraft.scheduledStart));
         stopScheduledStartTicker();
         scheduledStartAutoArmed = false;
         scheduledStartNeedsResolution = false;
