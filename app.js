@@ -5752,27 +5752,32 @@
         return true;
     }
 
-    function openMissingScheduledStandard() {
-        scheduledStartNeedsResolution = true;
-        scheduledStartReturnMode = "resolution";
-        scheduledStartAutoArmed = false;
-        stopScheduledStartTicker();
-        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-required",immediate:true});
-        tripSettingsSession = undefined;
-        beginTripSettingsSession();
-        openTripSettingsDialog("scheduled-standard-required", {duration:0});
-        drawAttentionToTripField("standard-time");
-    }
-
     function updateScheduledStartDialog() {
         const scheduled = tripDraftFutureStartDate();
         const remaining = scheduled ? scheduled.getTime() - Date.now() : 0;
-        scheduledStartCountdown.textContent = formatDuration(Math.max(0, remaining));
+        scheduledStartCountdown.textContent = `${remaining < 0 ? "-" : ""}${formatDuration(Math.abs(remaining))}`;
         scheduledStartStandardValue.textContent = String(tripDraft?.standardTime || "").trim() || "---";
-        if (scheduledStartAutoArmed && remaining <= 0) {
+        const scheduledTimeReached = remaining <= 0;
+        const canStart = tripDraftCanStart(tripDraft);
+        if (scheduledTimeReached && scheduledStartAutoArmed && canStart) {
             scheduledStartAutoArmed = false;
-            if (tripDraftCanStart(tripDraft)) void beginScheduledTrip("scheduled");
-            else openMissingScheduledStandard();
+            scheduledStartAuto.checked = false;
+            scheduledStartAuto.disabled = true;
+            void beginScheduledTrip("scheduled");
+            return;
+        }
+        if (scheduledTimeReached) {
+            scheduledStartAutoArmed = false;
+            scheduledStartAuto.checked = false;
+        }
+        scheduledStartAuto.disabled = scheduledTimeReached;
+        const missingRequiredStandard = scheduledTimeReached && !canStart;
+        scheduledStartNow.disabled = missingRequiredStandard;
+        scheduledStartOnTime.disabled = missingRequiredStandard;
+        if (missingRequiredStandard) {
+            scheduledStartNeedsResolution = true;
+            if (!scheduledStartStandard.classList.contains("needs-value")) flagScheduledStandardTime();
+            return;
         }
     }
 
@@ -5783,6 +5788,9 @@
         scheduledStartOnTime.hidden = !resolution;
         scheduledStartNow.hidden = false;
         scheduledStartAuto.checked = scheduledStartAutoArmed;
+        scheduledStartAuto.disabled = false;
+        scheduledStartNow.disabled = false;
+        scheduledStartOnTime.disabled = false;
         scheduledStartMessage.hidden = true;
         scheduledStartStandard.classList.remove("needs-value");
         updateScheduledStartDialog();
