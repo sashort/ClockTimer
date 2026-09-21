@@ -182,7 +182,6 @@
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
-    let scheduledStartReturnMode;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
@@ -4956,7 +4955,7 @@
     function getNumberPadClearAction() {
         if (!numberPadState) return "close";
         if (numberPadHasChanges() || (numberPadState.meridiem ?? null) !== (numberPadState.initialMeridiem ?? null)) return "reset";
-        if (numberPadState.backTarget === "trip-settings") return "back";
+        if (["trip-settings", "scheduled-start"].includes(numberPadState.backTarget)) return "back";
         if (
             numberPadState.role === "root" &&
             numberPadState.source === "standard-time" &&
@@ -5025,7 +5024,7 @@
             ? false
             : startsTrip
                 ? !valid
-                : (!changed || !valid);
+                : ((!changed && !numberPadState.allowEmpty) || !valid);
 
         const settingsVisible =
             !percentMode &&
@@ -5235,6 +5234,9 @@
             if (!openTripSettingsDialog("number-pad-return", { duration: 0 })) {
                 return false;
             }
+        }
+        if (target === "scheduled-start") {
+            showScheduledStartDialog({resolution: scheduledStartNeedsResolution});
         }
 
         if (numberPadDialog?.open && !closeDialog(numberPadDialog, {
@@ -5530,15 +5532,6 @@
         if (tripSettingsSession && state.source === "standard-time") {
             tripSettingsSession.values.standardTime = formatted;
             refreshTripSettingsValues();
-            if (scheduledStartReturnMode) {
-                const returnMode = scheduledStartReturnMode;
-                scheduledStartReturnMode = undefined;
-                setTimeout(() => {
-                    applyTripSettingsSession();
-                    if (tripSettingsDialog.open) closeDialog(tripSettingsDialog, {reason:"scheduled-standard-set",immediate:true});
-                    showScheduledStartDialog({resolution:returnMode === "resolution"});
-                }, 300);
-            }
             return true;
         }
         stagedStandardTime = formatted;
@@ -5816,12 +5809,24 @@
     scheduledStartClose.addEventListener("click", cancelScheduledStartPrompt);
     scheduledStartDialog.addEventListener("cancel", event => {event.preventDefault();cancelScheduledStartPrompt();});
     scheduledStartStandard.addEventListener("click", () => {
-        scheduledStartReturnMode = scheduledStartNeedsResolution ? "resolution" : "initial";
         if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-edit",immediate:true});
-        tripSettingsSession = undefined;
-        beginTripSettingsSession();
-        openTripSettingsDialog("scheduled-standard-edit", {duration:0});
-        drawAttentionToTripField("standard-time");
+        void openNumberPad({
+            mode: "time",
+            source: "standard-time",
+            initialValue: tripDraft?.standardTime || "",
+            role: "trip-settings-field",
+            workflow: "new-trip",
+            cancelTarget: "scheduled-start",
+            confirmTarget: "scheduled-start",
+            backTarget: "scheduled-start",
+            duration: 0,
+            allowEmpty: true,
+            onConfirm: value => {
+                if (!tripDraft) return false;
+                tripDraft.standardTime = value || "";
+                return true;
+            }
+        }).catch(() => showScheduledStartDialog({resolution: scheduledStartNeedsResolution}));
     });
 
     function tripDraftCanStart(draft = tripDraft) {
@@ -6319,6 +6324,7 @@
             cancelTarget: "home",
             confirmTarget: "trip-settings",
             backTarget: "trip-settings",
+            allowEmpty: field === "standard-time" && !live && tripDraftHasFutureStart(tripDefaults),
             duration: 0
         });
     }
