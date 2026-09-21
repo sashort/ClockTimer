@@ -6337,6 +6337,9 @@
             speechField.hidden = true;
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
             speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
+            speechField.setAttribute("speech-preproc", "WMOFSpeechPreprocess.values");
+            speechField.setAttribute("speech-preproc-field", "spokenValue");
+            speechField.setAttribute("speech-preproc-context", "keypad");
             numberPadDialog.append(speechField);
         }
         const backspace = $("#numberPadBackspace");
@@ -7420,8 +7423,7 @@
     }
 
     function setStandardTimeFromSpeech(timeValue) {
-        if (typeof EnglishDurationParser === "undefined") return false;
-        const formatted = EnglishDurationParser.format(EnglishDurationParser.parse(timeValue));
+        const formatted = EnglishDurationParser.format(timeValue);
         if (!formatted) return false;
 
         if (scheduledStartDialog.open && !scheduledStartStandard.disabled && tripDraft) {
@@ -7444,6 +7446,20 @@
     }
 
     const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
+    globalThis.WMOFSpeechPreprocess = {
+        values(groups, {field, kind}) {
+            if (kind === "keypad") {
+                if (!numberPadDialog?.open || !numberPadState) return false;
+                kind = numberPadState.mode === "absolute" ? "clock-parts" :
+                    numberPadState.mode === "percent" ? "percent" : "duration";
+            }
+            if (!field || typeof groups[field] !== "string") return false;
+            const value = EnglishSpeechValuePreprocessor.parse(groups[field], kind,
+                kind === "clock" ? {baseDate:new Date(), preferFuture:true} : undefined);
+            if (value === undefined || value === null || Number.isNaN(value)) return false;
+            return {...groups, [field]:value};
+        }
+    };
     let pendingSpeechReady;
     const cancelPendingSpeechReady = () => {
         if (pendingSpeechReady !== undefined) clearTimeout(pendingSpeechReady);
@@ -7457,15 +7473,14 @@
     speechCommands.setStandardTime = setStandardTimeFromSpeech;
     speechCommands.setKeypadValue = spokenValue => {
         if (!numberPadDialog?.open || !numberPadState) return false;
-        const value = String(spokenValue).trim();
         let pending, meridiem = numberPadState.meridiem;
         if (numberPadState.mode === "percent") {
-            const percent = globalThis.EnglishSpokenPercentParser?.parse(value);
+            const percent = spokenValue;
             if (!Number.isInteger(percent) || percent <= 0) return false;
             pending = String(percent);
         }
         else if (numberPadState.mode === "absolute") {
-            const parts = globalThis.EnglishSpokenTimeParser?.parseParts(value);
+            const parts = spokenValue;
             if (!parts) return false;
             if (parts.meridiem) meridiem = parts.meridiem.toUpperCase();
             else if (parts.hour > 12) meridiem = undefined;
@@ -7479,8 +7494,7 @@
             if (!absoluteDigitsValid(pending, meridiem)) return false;
         }
         else {
-            const duration = globalThis.EnglishDurationParser?.parse(value);
-            const formatted = globalThis.EnglishDurationParser?.format(duration);
+            const formatted = EnglishDurationParser.format(spokenValue);
             if (!formatted) return false;
             pending = normalizeTimeDigits(formatted);
             if (!timeDigitsValid(pending)) return false;
@@ -7503,9 +7517,9 @@
     };
     speechCommands.readyAt = async spokenTime => {
         cancelPendingSpeechReady();
-        if (tripIsLive() || $("#newTripButton")?.disabled || typeof EnglishSpokenTimeParser === "undefined") return false;
+        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
         const now = new Date();
-        const target = EnglishSpokenTimeParser.parse(spokenTime, { baseDate: now, preferFuture: true });
+        const target = spokenTime;
         if (!target) return false;
         if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
         const defaults = getTripMomentDefaults(now);
@@ -7560,7 +7574,7 @@
     speechCommands.resume = () => speechPointerUp(downResumeButton);
     speechCommands.setGoal = (goalScope, percent) => {
         const scope = String(goalScope).toLowerCase();
-        const value = globalThis.EnglishSpokenPercentParser?.parse(percent);
+        const value = percent;
         if (!['trip','total'].includes(scope) || !Number.isFinite(value) || value <= 0) return false;
         if ((endTimeGoalOverride?.scopes || []).includes(scope)) { flashEndTimeGoalLock(); return false; }
         clockTimer.configure({ [scope === "total" ? "total_goal" : "trip_goal"]: `${value}%` });
@@ -7580,8 +7594,8 @@
         return true;
     };
     speechCommands.lockEndTime = spokenTime => {
-        if (!tripIsLive() || typeof EnglishSpokenTimeParser === "undefined") return false;
-        const target = EnglishSpokenTimeParser.parse(spokenTime, { baseDate: new Date(), preferFuture: true });
+        if (!tripIsLive()) return false;
+        const target = spokenTime;
         return target ? applyEndTimeGoalOverride(target) : false;
     };
     speechCommands.showTripLog = () => { if (getTripListState() !== "open") void openTripList("speech"); return true; };
@@ -7603,13 +7617,18 @@
 
     const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
     const englishSpeech = englishLanguage?.speech;
-    const installSpeechCommand = (key, functionName, container = document.body, modal = true) => {
+    const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
         const pattern = englishSpeech?.commands?.[key];
         if (!pattern) return;
         const element = document.createElement("speech-command");
         element.hidden = true;
         element.setAttribute("speech-pattern", pattern);
         element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
+        if (valueKind && valueField) {
+            element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.values");
+            element.setAttribute("speech-preproc-context", valueKind);
+            element.setAttribute("speech-preproc-field", valueField);
+        }
         if (modal) element.setAttribute("speech-modal", "top-level");
         container.append(element);
     };
@@ -7618,13 +7637,22 @@
             if (!element) continue;
             element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
             element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
+            element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.values");
+            element.setAttribute("speech-preproc-context", "duration");
+            element.setAttribute("speech-preproc-field", "timeValue");
         }
         for (const [key, fn] of [
             ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
             ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
             ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
             ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
-        ]) installSpeechCommand(key, fn);
+        ]) {
+            const typedValues = {
+                readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
+                goal:["percent","percent"], lockEndTime:["clock","spokenTime"]
+            };
+            installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
+        }
         installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
         installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
         SpeechMenu.wakePhrase = englishSpeech.wakePhrase;

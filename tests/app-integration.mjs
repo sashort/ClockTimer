@@ -30,6 +30,7 @@ window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'))
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
+window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8')+'\nwindow.SpeechMenu=SpeechMenu;');
 window.eval(fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
@@ -94,9 +95,9 @@ speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'tru
 say('forty five minutes.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:45:00');
 speechToggle.click();
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
-const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
+const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(standardSpeechControl.getAttribute('speech-preproc'),'WMOFSpeechPreprocess.values');assert.equal(standardSpeechControl.getAttribute('speech-preproc-context'),'duration');assert.equal(window.WMOFSpeechCommands.setStandardTime(45*60000),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
 assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
-assert.equal(window.WMOFSpeechCommands.setGoal('trip','one hundred and five percent'),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total','95'),true);assert.equal(c.getAttribute('total-goal'),'95%');
+assert.equal(window.WMOFSpeechCommands.setGoal('trip',105),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total',95),true);assert.equal(c.getAttribute('total-goal'),'95%');
 speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
 say('trip goal 110 percent');assert.equal(c.getAttribute('trip-goal'),'110%');
 say('total goal ninety eight');assert.equal(c.getAttribute('total-goal'),'98%');

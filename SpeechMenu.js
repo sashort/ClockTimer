@@ -216,18 +216,27 @@ class SpeechMenu {
 
     static #processElement(element, transcript) {
         if (!SpeechMenu.#prepare(element)) return false;
-        let text = transcript;
-        try { if (element.speechPreprocFunc) text = element.speechPreprocFunc(text); }
-        catch (error) { SpeechMenu.#emit("speechMenuCommandError", {speechMenuElement: element, error}); return false; }
-        if (typeof text !== "string") return false;
+        const text = transcript;
         const regex = element.speechPattern;
         regex.lastIndex = 0;
         const args = new ParameterParser(element.speechFunc);
         let matched = false, result;
         while ((result = regex.exec(text)) !== null) {
             matched = true;
+            let values = result.groups || {};
+            if (element.speechPreprocFunc) {
+                try {
+                    const context = {
+                        kind: element.getAttribute("speech-preproc-context"),
+                        field: element.getAttribute("speech-preproc-field")
+                    };
+                    values = element.speechPreprocFunc(values, context);
+                }
+                catch (error) { SpeechMenu.#emit("speechMenuCommandError", {speechMenuElement: element, error}); return false; }
+                if (!values || typeof values !== "object") return false;
+            }
             const named = new Set(Object.values(result.groups || {}).filter(value => value !== undefined));
-            for (const [name, value] of Object.entries(result.groups || {})) {
+            for (const [name, value] of Object.entries(values)) {
                 if (!value) continue;
                 if (name === "_") args.restArguments?.push(...SpeechMenu.#list(value));
                 else if (name.startsWith("_")) args.setArgument(name.slice(1), SpeechMenu.#list(value));
