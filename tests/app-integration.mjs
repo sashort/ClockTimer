@@ -1,5 +1,7 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
+let recognition;
+window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 const animationCalls=[];window.Element.prototype.animate=function(keyframes,options){animationCalls.push({target:this,keyframes,options});return{finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}}};
@@ -85,6 +87,13 @@ const settingsButton=window.document.querySelector('#numberPadSettings');assert(
 const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
 const speechToggle=window.document.querySelector('#speechRecognitionButton');assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
 assert.equal(window.WMOFSpeechCommands.setGoal('trip','one hundred and five percent'),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total','95'),true);assert.equal(c.getAttribute('total-goal'),'95%');
+speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
+const say=transcript=>recognition.onresult({resultIndex:0,results:[Object.assign([{transcript}],{isFinal:true})]});
+say('trip goal 110 percent');assert.equal(c.getAttribute('trip-goal'),'110%');
+say('total goal ninety eight');assert.equal(c.getAttribute('total-goal'),'98%');
+say('Trip goal 105%.');assert.equal(c.getAttribute('trip-goal'),'105%');
+say('Total goal 97.');assert.equal(c.getAttribute('total-goal'),'97%');
+speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'false');
 const speechPatterns=[...window.document.querySelectorAll('speech-command[speech-modal="top-level"]')].map(element=>element.getAttribute('speech-pattern'));assert(speechPatterns.indexOf('^ready at (?<spokenTime>.+)$')<speechPatterns.indexOf('^ready$'));
 console.log('PASS speech commands register and the microphone menu toggle starts disabled');
 const setNow=window.document.querySelector('#tripSetStartsNow');

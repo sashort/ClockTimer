@@ -111,7 +111,8 @@ class SpeechMenu {
         let interim = "", final = "";
         for (let index = event.resultIndex; index < event.results.length; index++) {
             const result = event.results[index];
-            const text = result[0]?.transcript?.toLocaleLowerCase().trim();
+            const text = result[0]?.transcript?.toLocaleLowerCase().trim()
+                .replace(/[.!?]+$/g, "").trim();
             if (!text) continue;
             const key = result.isFinal ? "final" : "interim";
             if (key === "final") final += `${final ? " " : ""}${text}`;
