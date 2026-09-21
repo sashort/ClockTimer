@@ -2988,9 +2988,13 @@ clock-timer[hide-latency] time-range[type="latency"] {
 /* graphical-settings-help-v1 */
 .settings-help-row {
     display: grid;
-    grid-template-columns: minmax(120px, 0.8fr) 32px minmax(0, 1.2fr);
+    grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
     gap: 12px;
     align-items: center;
+}
+
+.graphical-dialog.show-setting-help .settings-help-row {
+    grid-template-columns: minmax(120px, 0.8fr) 32px minmax(0, 1.2fr);
 }
 
 .app-dialog .settings-help-row > .settings-help-label,
@@ -3203,8 +3207,12 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 @media (max-width: 480px) {
     .settings-help-row {
-        grid-template-columns: minmax(90px, 0.8fr) 30px minmax(0, 1.2fr);
+        grid-template-columns: minmax(90px, 0.8fr) minmax(0, 1.2fr);
         gap: 8px;
+    }
+
+    .graphical-dialog.show-setting-help .settings-help-row {
+        grid-template-columns: minmax(90px, 0.8fr) 30px minmax(0, 1.2fr);
     }
 
     .graphical-dialog.show-setting-help .timer-color-row.with-toggle.has-setting-help {
