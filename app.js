@@ -148,6 +148,17 @@
     const downResumeButton = $("#downResumeButton");
     const downCancelButton = $("#downCancelButton");
     const breakDialog = $("#breakDialog");
+    const scheduledStartDialog = $("#scheduledStartDialog");
+    const scheduledStartCountdown = $("#scheduledStartCountdown");
+    const scheduledStartStandard = $("#scheduledStartStandard");
+    const scheduledStartStandardValue = $("#scheduledStartStandardValue");
+    const scheduledStartAuto = $("#scheduledStartAuto");
+    const scheduledStartAutoOption = $("#scheduledStartAutoOption");
+    const scheduledStartMessage = $("#scheduledStartMessage");
+    const scheduledStartNow = $("#scheduledStartNow");
+    const scheduledStartOnTime = $("#scheduledStartOnTime");
+    const scheduledStartCancel = $("#scheduledStartCancel");
+    const scheduledStartClose = $("#scheduledStartClose");
     const tripSettingsDialog = $("#tripSettingsDialog");
     const tripSettingsForm = $("#tripSettingsForm");
     const tripSettingsTitle = $("#tripSettingsTitle");
@@ -173,6 +184,10 @@
     let tripStartsNowState;
     let tripStartsNowExiting = false;
     let tripStartsNowExitTimer;
+    let scheduledStartTicker;
+    let scheduledStartAutoArmed = false;
+    let scheduledStartNeedsResolution = false;
+    let scheduledStartReturnMode;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
@@ -5520,6 +5535,15 @@
         if (tripSettingsSession && state.source === "standard-time") {
             tripSettingsSession.values.standardTime = formatted;
             refreshTripSettingsValues();
+            if (scheduledStartReturnMode) {
+                const returnMode = scheduledStartReturnMode;
+                scheduledStartReturnMode = undefined;
+                setTimeout(() => {
+                    applyTripSettingsSession();
+                    if (tripSettingsDialog.open) closeDialog(tripSettingsDialog, {reason:"scheduled-standard-set",immediate:true});
+                    showScheduledStartDialog({resolution:returnMode === "resolution"});
+                }, 300);
+            }
             return true;
         }
         stagedStandardTime = formatted;
@@ -5667,6 +5691,135 @@
         state.replaceOnNextDigit = false;
         state.startsTripOnConfirm = true;
     }
+
+    function tripDraftFutureStartDate(draft = tripDraft) {
+        const date = parseDateInput(draft?.creationDate);
+        const timeline = parseTimelineTime(draft?.startTime);
+        if (!date || !Number.isFinite(timeline)) return undefined;
+        return new Date(date.getTime() + timeline);
+    }
+
+    function tripDraftHasFutureStart(draft = tripDraft, now = new Date()) {
+        const start = tripDraftFutureStartDate(draft);
+        return start instanceof Date && start.getTime() > now.getTime();
+    }
+
+    function futureTripClockIcon(date) {
+        const centerX = 10.5, centerY = 13;
+        const point = (turn, length) => {
+            const angle = turn * Math.PI * 2 - Math.PI / 2;
+            return [centerX + Math.cos(angle) * length, centerY + Math.sin(angle) * length];
+        };
+        const minuteTurn = date.getMinutes() / 60;
+        const hourTurn = (date.getHours() % 12 + minuteTurn) / 12;
+        const [hourX,hourY] = point(hourTurn, 3.2);
+        const [minuteX,minuteY] = point(minuteTurn, 4.6);
+        return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="${centerX}" cy="${centerY}" r="6.5"/><path d="M${centerX} ${centerY}L${hourX.toFixed(2)} ${hourY.toFixed(2)}M${centerX} ${centerY}L${minuteX.toFixed(2)} ${minuteY.toFixed(2)}M15.8 5.6a8.7 8.7 0 0 1 3.2 5.7M19.6 8.5l-.6 2.8-2.8-.6"/></svg>`;
+    }
+
+    function tripDraftCanRequestStart(draft = tripDraft) {
+        if (tripDraftCanStart(draft)) return true;
+        if (!draft || draft.deferred || !tripDraftHasFutureStart(draft)) return false;
+        const creationTime = parseTimelineTime(draft.creationTime);
+        const scheduledStart = parseTimelineTime(draft.scheduledStart);
+        const actualStart = parseTimelineTime(draft.startTime);
+        return Boolean(parseDateInput(draft.creationDate)) &&
+            Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 86400000 &&
+            Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
+            Number.isFinite(actualStart) && actualStart >= 0;
+    }
+
+    function stopScheduledStartTicker() {
+        clearInterval(scheduledStartTicker);
+        scheduledStartTicker = undefined;
+    }
+
+    function flagScheduledStandardTime() {
+        scheduledStartStandard.classList.remove("needs-value");
+        void scheduledStartStandard.offsetWidth;
+        scheduledStartStandard.classList.add("needs-value");
+        scheduledStartMessage.hidden = false;
+        scheduledStartMessage.textContent = "Enter Standard Time before starting the trip.";
+    }
+
+    async function beginScheduledTrip(mode) {
+        if (!tripDraftCanStart(tripDraft)) {
+            flagScheduledStandardTime();
+            return false;
+        }
+        if (mode === "now") Object.assign(tripDraft, resumedTripStarts(tripDraft, new Date()));
+        else tripDraft.startTime = formatTimelineMilliseconds(parseTimelineTime(tripDraft.startTime));
+        stopScheduledStartTicker();
+        scheduledStartAutoArmed = false;
+        scheduledStartNeedsResolution = false;
+        if (!await startTripDraft()) return false;
+        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-trip-start"});
+        return true;
+    }
+
+    function openMissingScheduledStandard() {
+        scheduledStartNeedsResolution = true;
+        scheduledStartReturnMode = "resolution";
+        scheduledStartAutoArmed = false;
+        stopScheduledStartTicker();
+        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-required",immediate:true});
+        tripSettingsSession = undefined;
+        beginTripSettingsSession();
+        openTripSettingsDialog("scheduled-standard-required", {duration:0});
+        drawAttentionToTripField("standard-time");
+    }
+
+    function updateScheduledStartDialog() {
+        const scheduled = tripDraftFutureStartDate();
+        const remaining = scheduled ? scheduled.getTime() - Date.now() : 0;
+        scheduledStartCountdown.textContent = formatDuration(Math.max(0, remaining));
+        scheduledStartStandardValue.textContent = String(tripDraft?.standardTime || "").trim() || "---";
+        if (scheduledStartAutoArmed && remaining <= 0) {
+            scheduledStartAutoArmed = false;
+            if (tripDraftCanStart(tripDraft)) void beginScheduledTrip("scheduled");
+            else openMissingScheduledStandard();
+        }
+    }
+
+    function showScheduledStartDialog({resolution=false}={}) {
+        scheduledStartNeedsResolution = Boolean(resolution);
+        scheduledStartAutoOption.hidden = resolution;
+        scheduledStartCancel.hidden = resolution;
+        scheduledStartOnTime.hidden = !resolution;
+        scheduledStartNow.hidden = false;
+        scheduledStartAuto.checked = scheduledStartAutoArmed;
+        scheduledStartMessage.hidden = true;
+        scheduledStartStandard.classList.remove("needs-value");
+        updateScheduledStartDialog();
+        stopScheduledStartTicker();
+        scheduledStartTicker = setInterval(updateScheduledStartDialog, 250);
+        if (!scheduledStartDialog.open) openDialogElement(scheduledStartDialog, {reason:resolution?"scheduled-start-resolution":"early-start"});
+    }
+
+    function cancelScheduledStartPrompt() {
+        scheduledStartAutoArmed = false;
+        scheduledStartNeedsResolution = false;
+        stopScheduledStartTicker();
+        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-start-cancel"});
+    }
+
+    scheduledStartAuto.addEventListener("change", () => {
+        scheduledStartAutoArmed = scheduledStartAuto.checked;
+        updateScheduledStartDialog();
+    });
+    scheduledStartNow.addEventListener("click", () => void beginScheduledTrip("now"));
+    scheduledStartOnTime.addEventListener("click", () => void beginScheduledTrip("scheduled"));
+    scheduledStartCancel.addEventListener("click", cancelScheduledStartPrompt);
+    scheduledStartClose.addEventListener("click", cancelScheduledStartPrompt);
+    scheduledStartDialog.addEventListener("cancel", event => {event.preventDefault();cancelScheduledStartPrompt();});
+    scheduledStartStandard.addEventListener("click", () => {
+        scheduledStartReturnMode = scheduledStartNeedsResolution ? "resolution" : "initial";
+        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-edit",immediate:true});
+        tripSettingsSession = undefined;
+        beginTripSettingsSession();
+        openTripSettingsDialog("scheduled-standard-edit", {duration:0});
+        drawAttentionToTripField("standard-time");
+    });
 
     function tripDraftCanStart(draft = tripDraft) {
         if (!draft || !parseDateInput(draft.creationDate)) return false;
@@ -6053,9 +6206,20 @@
         $("#tripDefer").checked = Boolean(settingsValues?.deferred);
         $("#tripDefer").disabled = live || !draft;
         tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
-        tripSettingsPrimary.textContent = settingsValues?.deferred ? "Defer" : draft ? "Start Trip" : "Save";
+        const futureTrip = Boolean(draft && !settingsValues?.deferred && tripDraftHasFutureStart(getTripSettingsCandidateDraft()));
+        tripSettingsPrimary.dataset.futureTrip = String(futureTrip);
+        if (futureTrip) {
+            tripSettingsPrimary.innerHTML = futureTripClockIcon(tripDraftFutureStartDate(getTripSettingsCandidateDraft()));
+            tripSettingsPrimary.setAttribute("aria-label", "Review future trip start");
+            tripSettingsPrimary.title = "Future trip";
+        }
+        else {
+            tripSettingsPrimary.textContent = settingsValues?.deferred ? "Defer" : draft ? "Start Trip" : "Save";
+            tripSettingsPrimary.setAttribute("aria-label", tripSettingsPrimary.textContent);
+            tripSettingsPrimary.removeAttribute("title");
+        }
         tripSettingsPrimary.value = draft ? "start" : "save";
-        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanStart(getTripSettingsCandidateDraft()));
+        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanRequestStart(getTripSettingsCandidateDraft()));
         syncTripStartsNowUI();
         if (settingsValues?.deferred) tripSetStartsNow.disabled = true;
     }
@@ -6489,6 +6653,14 @@
                     resetTripSettingsNavigation();
                     closeDialog(tripSettingsDialog, { reason: "trip-settings-defer" });
                     renderDeferredTrip();
+                    return;
+                }
+                if (tripDraftHasFutureStart(tripDraft)) {
+                    tripStartsNowState = undefined;
+                    tripSettingsSession = undefined;
+                    resetTripSettingsNavigation();
+                    closeDialog(tripSettingsDialog, { reason: "trip-settings-scheduled", immediate: true });
+                    showScheduledStartDialog();
                     return;
                 }
                 try {

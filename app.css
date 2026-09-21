@@ -2008,6 +2008,22 @@ body:has(.app[data-interval-state="down"])::after {
     width: min(680px, calc(100vw - 24px));
 }
 
+.scheduled-start-dialog {width:min(560px,calc(100vw - 24px));}
+.scheduled-start-dialog form {display:grid;gap:14px;}
+.scheduled-start-content {display:grid;gap:12px;padding:16px;}
+.scheduled-start-countdown,.scheduled-start-standard {display:grid;place-items:center;gap:5px;min-height:96px;padding:12px;border:2px solid var(--wm-blue-light);border-radius:13px;background:var(--wm-blue-dark);color:var(--wm-white);}
+.scheduled-start-countdown strong {color:var(--wm-blue-light);font-size:clamp(38px,10vw,58px);line-height:1;}
+.scheduled-start-standard {width:100%;font:inherit;}
+.scheduled-start-standard strong {font-size:clamp(25px,7vw,36px);}
+.scheduled-start-standard.needs-value {animation:scheduled-standard-alert .7s ease-in-out 2;box-shadow:0 0 0 4px rgb(255 194 32 / 65%);}
+.scheduled-start-auto {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid var(--wm-blue-light);border-radius:10px;font-weight:700;}
+.scheduled-start-auto input {width:24px;height:24px;}
+.scheduled-start-message {margin:0;text-align:center;color:var(--wm-yellow);font-weight:700;}
+.scheduled-start-actions {padding:0 16px 16px;}
+@keyframes scheduled-standard-alert {50%{background:var(--wm-yellow);color:var(--wm-blue-dark);}}
+.trip-settings-dialog #tripSettingsPrimary[data-future-trip="true"] {display:grid;place-items:center;}
+.trip-settings-dialog #tripSettingsPrimary[data-future-trip="true"] svg {width:42px;height:42px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+
 .break-dialog-content {
     display: grid;
     gap: 20px;

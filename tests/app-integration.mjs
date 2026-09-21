@@ -24,6 +24,14 @@ window.fetch=async(url,options={})=>{
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
 for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','CalendarRange','TripLog','app'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
+assert(window.document.querySelector('#scheduledStartDialog'));
+assert.equal(window.document.querySelector('#scheduledStartCountdown').textContent,'0:00:00');
+assert.equal(window.document.querySelector('#scheduledStartStandardValue').textContent,'---');
+assert.equal(window.document.querySelector('#scheduledStartStandard').disabled,false);
+assert.equal(window.document.querySelector('#scheduledStartAuto').required,false);
+assert.equal(window.document.querySelector('#scheduledStartNow').textContent,'Start Now');
+assert.equal(window.document.querySelector('#scheduledStartOnTime').textContent,'Start On Time');
+console.log('PASS scheduled-start prompt exposes optional Standard Time and both start choices');
 const menuTestRoot=window.document.createElement('div');window.document.body.append(menuTestRoot);
 const menuTestTrip={id:901,startTime:'2026-09-20T12:00:00Z',standardTimeMilliseconds:60000,actualTimeMilliseconds:60000,countedTimeMilliseconds:60000,events:[]};
 const menuTestView=new window.TripLog(menuTestRoot,{filter:()=> 'all',range:()=> 'day',includeCurrent:()=>false,liveTrip:()=>null,request:async()=>({}),refresh:async()=>{},onFilter:()=>{},onRange:()=>{},onDate:()=>{}});

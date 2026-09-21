@@ -610,6 +610,32 @@
         </form>
     </dialog>
 
+    <dialog id="scheduledStartDialog" class="app-dialog scheduled-start-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2>Scheduled Trip</h2>
+                <button id="scheduledStartClose" class="dialog-close" type="button" aria-label="Close">×</button>
+            </header>
+            <section class="scheduled-start-content">
+                <div class="scheduled-start-countdown">
+                    <span>Time Until Start</span>
+                    <strong id="scheduledStartCountdown">0:00:00</strong>
+                </div>
+                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button">
+                    <span>Standard Time</span>
+                    <strong id="scheduledStartStandardValue">---</strong>
+                </button>
+                <label id="scheduledStartAutoOption" class="scheduled-start-auto"><input id="scheduledStartAuto" type="checkbox"> Auto-Start on Schedule</label>
+                <p id="scheduledStartMessage" class="scheduled-start-message" role="status" hidden></p>
+            </section>
+            <div class="dialog-actions two-actions scheduled-start-actions">
+                <button id="scheduledStartCancel" type="button">Cancel</button>
+                <button id="scheduledStartNow" class="primary-action" type="button">Start Now</button>
+                <button id="scheduledStartOnTime" class="primary-action" type="button" hidden>Start On Time</button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id="breakDialog" class="app-dialog break-dialog">
         <section class="break-dialog-content">
             <header class="dialog-header">
