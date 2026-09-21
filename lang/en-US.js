@@ -28,7 +28,8 @@
                 showTripLog: "^(?:show )?trip log$",
                 hideTripLog: "^(?:hide|close) trip log$",
                 deferTrip: "^defer trip$",
-                renderedTimeMode: "^(?:time )?(?<timeMode>elapsed|remaining|end(?: time)?)$"
+                renderedTimeMode: "^(?:time )?(?<timeMode>elapsed|remaining|end(?: time)?)$",
+                keypadValue: "^(?<spokenValue>.+)$"
             })
         }),
         ui: Object.freeze({})

@@ -112,7 +112,10 @@ class SpeechMenu {
         for (let index = event.resultIndex; index < event.results.length; index++) {
             const result = event.results[index];
             const text = result[0]?.transcript?.toLocaleLowerCase().trim()
-                .replace(/[.!?]+$/g, "").trim();
+                .replace(/(\d)\.(?=\d)/g, "$1\uFFFF")
+                .replace(/[^\p{L}\p{N}\s:\uFFFF]/gu, " ")
+                .replace(/\uFFFF/g, ".")
+                .replace(/\s+/g, " ").trim();
             if (!text) continue;
             const key = result.isFinal ? "final" : "interim";
             if (key === "final") final += `${final ? " " : ""}${text}`;
@@ -152,7 +155,7 @@ class SpeechMenu {
         };
         if (firstMenu(document.querySelectorAll('speech-modal[speech-modal="top-level"]'))) return;
         if (first(document.querySelectorAll('speech-command[speech-modal="top-level"]'))) return;
-        const modal = document.querySelector("dialog:modal, dialog[open]");
+        const modal = [...document.querySelectorAll("dialog:modal, dialog[open]")].at(-1);
         if (modal && SpeechMenu.#processMenu(modal, text)) return;
         if (firstMenu(document.querySelectorAll('speech-modal:not([speech-modal="top-level"])'))) return;
         if (first(document.querySelectorAll('speech-command[speech-modal=""]'))) return;

@@ -6331,6 +6331,14 @@
     }
 
     function bindNumberPadEvents() {
+        const keypadSpeechPattern = globalThis.WMOFLanguages?.["en-US"]?.speech?.commands?.keypadValue;
+        if (keypadSpeechPattern) {
+            const speechField = document.createElement("speech-command");
+            speechField.hidden = true;
+            speechField.setAttribute("speech-pattern", keypadSpeechPattern);
+            speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
+            numberPadDialog.append(speechField);
+        }
         const backspace = $("#numberPadBackspace");
         let deleteTimer, held = false;
         const erase = eraseNumberPadPendingValue;
@@ -7447,6 +7455,43 @@
         return true;
     };
     speechCommands.setStandardTime = setStandardTimeFromSpeech;
+    speechCommands.setKeypadValue = spokenValue => {
+        if (!numberPadDialog?.open || !numberPadState) return false;
+        const value = String(spokenValue).trim();
+        let pending, meridiem = numberPadState.meridiem;
+        if (numberPadState.mode === "percent") {
+            const percent = globalThis.EnglishSpokenPercentParser?.parse(value);
+            if (!Number.isInteger(percent) || percent <= 0) return false;
+            pending = String(percent);
+        }
+        else if (numberPadState.mode === "absolute") {
+            const parts = globalThis.EnglishSpokenTimeParser?.parseParts(value);
+            if (!parts) return false;
+            if (parts.meridiem) meridiem = parts.meridiem.toUpperCase();
+            else if (parts.hour > 12) meridiem = undefined;
+            const hour = meridiem && parts.hour > 12 ? parts.hour % 12 || 12 : parts.hour;
+            pending = absoluteDigits(hour, parts.minute, 0);
+            if (parts.day) {
+                const date = new Date();
+                if (parts.day === "tomorrow") date.setDate(date.getDate() + 1);
+                numberPadState.pendingDate = formatDateInput(date);
+            }
+            if (!absoluteDigitsValid(pending, meridiem)) return false;
+        }
+        else {
+            const duration = globalThis.EnglishDurationParser?.parse(value);
+            const formatted = globalThis.EnglishDurationParser?.format(duration);
+            if (!formatted) return false;
+            pending = normalizeTimeDigits(formatted);
+            if (!timeDigitsValid(pending)) return false;
+        }
+        numberPadState.pending = pending;
+        numberPadState.meridiem = meridiem;
+        numberPadState.replaceOnNextDigit = false;
+        numberPadState.everEdited = true;
+        refreshNumberPad();
+        return true;
+    };
     speechCommands.ready = () => {
         if (tripIsLive() || $("#newTripButton")?.disabled) return false;
         cancelPendingSpeechReady();

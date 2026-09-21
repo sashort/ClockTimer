@@ -134,3 +134,5 @@ class EnglishSpokenTimeParser {
         return [hour, hour + 12];
     }
 }
+
+globalThis.EnglishSpokenTimeParser = EnglishSpokenTimeParser;

@@ -28,6 +28,7 @@ for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','Ca
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
+window.eval(fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8')+'\nwindow.SpeechMenu=SpeechMenu;');
 window.eval(fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'));
@@ -82,13 +83,21 @@ for(const mode of ['elapsed','remaining']) {
 }
 c.percentMode='trip';c.renderedTimeMode='remaining';
 console.log('PASS empty logged-in Total scope shows a blank End Time instead of the current time');
+const speechToggle=window.document.querySelector('#speechRecognitionButton');
+const say=transcript=>recognition.onresult({resultIndex:0,results:[Object.assign([{transcript}],{isFinal:true})]});
+window.document.querySelector('#goalPercentValue').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+speechToggle.click();say('One hundred and five percent!');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'105%');
+speechToggle.click();window.document.querySelector('#numberPadConfirm').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,350));
+assert.equal(c.getAttribute('trip-goal'),'105%');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
+say('forty five minutes.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:45:00');
+speechToggle.click();
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
-const speechToggle=window.document.querySelector('#speechRecognitionButton');assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
+assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
 assert.equal(window.WMOFSpeechCommands.setGoal('trip','one hundred and five percent'),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total','95'),true);assert.equal(c.getAttribute('total-goal'),'95%');
 speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
-const say=transcript=>recognition.onresult({resultIndex:0,results:[Object.assign([{transcript}],{isFinal:true})]});
 say('trip goal 110 percent');assert.equal(c.getAttribute('trip-goal'),'110%');
 say('total goal ninety eight');assert.equal(c.getAttribute('total-goal'),'98%');
 say('Trip goal 105%.');assert.equal(c.getAttribute('trip-goal'),'105%');

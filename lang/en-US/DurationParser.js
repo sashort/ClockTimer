@@ -49,3 +49,5 @@ class EnglishDurationParser {
         total+=current;return total;
     }
 }
+
+globalThis.EnglishDurationParser = EnglishDurationParser;
