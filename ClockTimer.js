@@ -1398,8 +1398,8 @@
             });
             const controls = Object.freeze({
                 active_trip_visible: tripActive,
-                trip_action_row_visible: tripActive && !timedPause,
-                break_visible: tripActive && !timedPause,
+                trip_action_row_visible: tripActive && normalActions,
+                break_visible: tripActive && normalActions,
                 down_visible: tripActive && normalActions,
                 primary_action: Object.freeze(primaryAction)
             });

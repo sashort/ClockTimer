@@ -7051,6 +7051,11 @@
     });
 
     clockTimer.addEventListener("tripLoaded", () => setTripControlState(!["ready","stopped"].includes(clockTimer.status)));
+    clockTimer.addEventListener("activeTripRestored", event => {
+        const state = event.detail?.state || clockTimer.uiState;
+        if (state) renderClockTimerUIState(state);
+        setTripControlState(Boolean(state?.trip_active));
+    });
     for (const event of ["intervalStarted","intervalEnded","intervalDeleted","stopped","cleared","completedTripsSynced"]) {
         clockTimer.addEventListener(event,()=>{if(getTripListState()==="open") void dispatchTripListRequest("trip-change");});
     }
