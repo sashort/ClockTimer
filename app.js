@@ -3210,7 +3210,7 @@
                 cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
                 const stage=document.createElement('div');stage.className='down-camera-stage';
                 const video=document.createElement('video');video.autoplay=true;video.muted=true;video.playsInline=true;video.srcObject=cameraStream;
-                const shutter=document.createElement('button');shutter.type='button';shutter.className='down-camera-shutter';shutter.textContent='Capture';
+                const shutter=document.createElement('button');shutter.type='button';shutter.className='down-camera-shutter';shutter.setAttribute('aria-label','Capture Down photo');shutter.textContent='Capture Photo';
                 shutter.addEventListener('click',async()=>{const canvas=document.createElement('canvas');canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720;canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.9));if(!blob)return;selectedImage=new File([blob],`down-${Date.now()}.jpg`,{type:'image/jpeg'});showSelectedImage();});
                 stage.append(video,shutter);photo.replaceChildren(stage);await video.play?.();
             }catch{openFileFallback();}
