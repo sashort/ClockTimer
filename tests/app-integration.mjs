@@ -24,6 +24,12 @@ window.fetch=async(url,options={})=>{
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
 for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','CalendarRange','TripLog','app'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
+const menuTestRoot=window.document.createElement('div');window.document.body.append(menuTestRoot);
+const menuTestTrip={id:901,startTime:'2026-09-20T12:00:00Z',standardTimeMilliseconds:60000,actualTimeMilliseconds:60000,countedTimeMilliseconds:60000,events:[]};
+const menuTestView=new window.TripLog(menuTestRoot,{filter:()=> 'all',range:()=> 'day',includeCurrent:()=>false,liveTrip:()=>null,request:async()=>({}),refresh:async()=>{},onFilter:()=>{},onRange:()=>{},onDate:()=>{}});
+menuTestView.render({trips:[menuTestTrip],offline:false,incomplete:false,loginRequired:false},{startTime:'2026-09-20T00:00:00Z',endTime:'2026-09-21T00:00:00Z',timezone:'UTC',rules:{cutoffTime:'00:00:00'}});
+const menuTestToggle=menuTestRoot.querySelector('.trip-log-menu>button'),menuTestActions=menuTestRoot.querySelector('.trip-log-menu-actions');menuTestToggle.click();assert.equal(menuTestActions.hidden,false);window.document.body.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true}));assert.equal(menuTestActions.hidden,true);assert.equal(menuTestToggle.getAttribute('aria-expanded'),'false');menuTestRoot.remove();
+console.log('PASS Trip Log action popup closes when pressing outside it');
 assert.match(window.document.querySelector('#tripLogStartDate').value,/^\d{4}-\d{2}-\d{2}$/);
 assert.match(window.document.querySelector('#tripLogEndDate').value,/^\d{4}-\d{2}-\d{2}$/);
 assert(window.document.querySelector('.trip-settings-options + #tripSetStartsNowActions'));

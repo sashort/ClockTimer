@@ -4504,14 +4504,15 @@
             safeStorageSet("wmof.deliberatelyLoggedOut", "false");
             populateProfile(result.user);
 
-            const loginCaller = peekUIReturnFrame();
-            if (
-                loginCaller?.type === "popover" &&
-                loginCaller.element === mainMenu
-            ) {
-                popUIReturnFrame(loginCaller);
-                mainMenu?.hidePopover?.();
+            for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
+                if (
+                    uiReturnStack[index]?.type === "popover" &&
+                    uiReturnStack[index]?.element === mainMenu
+                ) {
+                    uiReturnStack.splice(index, 1);
+                }
             }
+            hidePopoverForHandoff(mainMenu);
 
             syncNetworkStatusUI({ login: true });
         }
