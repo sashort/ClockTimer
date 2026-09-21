@@ -5527,8 +5527,8 @@
             return false;
         }
 
-        const formatted = renderTimeDigits(state.pending);
-        if (!formatted) return false;
+        const formatted = state.pending ? renderTimeDigits(state.pending) : "";
+        if (!formatted && !state.allowEmpty) return false;
         if (tripSettingsSession && state.source === "standard-time") {
             tripSettingsSession.values.standardTime = formatted;
             refreshTripSettingsValues();
