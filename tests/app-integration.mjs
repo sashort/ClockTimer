@@ -26,6 +26,7 @@ for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','Ca
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
+window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8')+'\nwindow.SpeechMenu=SpeechMenu;');
 window.eval(fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
@@ -83,6 +84,8 @@ const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEv
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
 const speechToggle=window.document.querySelector('#speechRecognitionButton');assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
+assert.equal(window.WMOFSpeechCommands.setGoal('trip','one hundred and five percent'),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total','95'),true);assert.equal(c.getAttribute('total-goal'),'95%');
+const speechPatterns=[...window.document.querySelectorAll('speech-command[speech-modal="top-level"]')].map(element=>element.getAttribute('speech-pattern'));assert(speechPatterns.indexOf('^ready at (?<spokenTime>.+)$')<speechPatterns.indexOf('^ready$'));
 console.log('PASS speech commands register and the microphone menu toggle starts disabled');
 const setNow=window.document.querySelector('#tripSetStartsNow');
 setNow.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));

@@ -7436,14 +7436,28 @@
     }
 
     const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
+    let pendingSpeechReady;
+    const cancelPendingSpeechReady = () => {
+        if (pendingSpeechReady !== undefined) clearTimeout(pendingSpeechReady);
+        pendingSpeechReady = undefined;
+    };
     const speechPointerUp = element => {
         if (!element || element.hidden || element.disabled) return false;
         element.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerType: "speech" }));
         return true;
     };
     speechCommands.setStandardTime = setStandardTimeFromSpeech;
-    speechCommands.ready = () => speechPointerUp($("#newTripButton"));
+    speechCommands.ready = () => {
+        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
+        cancelPendingSpeechReady();
+        pendingSpeechReady = setTimeout(() => {
+            pendingSpeechReady = undefined;
+            speechPointerUp($("#newTripButton"));
+        }, 1100);
+        return true;
+    };
     speechCommands.readyAt = async spokenTime => {
+        cancelPendingSpeechReady();
         if (tripIsLive() || $("#newTripButton")?.disabled || typeof EnglishSpokenTimeParser === "undefined") return false;
         const now = new Date();
         const target = EnglishSpokenTimeParser.parse(spokenTime, { baseDate: now, preferFuture: true });
@@ -7469,6 +7483,10 @@
         try { await clockTimer.prepareTrip({ timeout: 5000, at: now }); } catch {}
         showScheduledStartDialog();
         return true;
+    };
+    speechCommands.readyAtContinuation = spokenTime => {
+        if (pendingSpeechReady === undefined) return false;
+        return speechCommands.readyAt(spokenTime);
     };
     speechCommands.breakStart = () => speechPointerUp(breakButton);
     speechCommands.chooseBreak = breakChoice => {
@@ -7497,7 +7515,7 @@
     speechCommands.resume = () => speechPointerUp(downResumeButton);
     speechCommands.setGoal = (goalScope, percent) => {
         const scope = String(goalScope).toLowerCase();
-        const value = Number(percent);
+        const value = globalThis.EnglishSpokenPercentParser?.parse(percent);
         if (!['trip','total'].includes(scope) || !Number.isFinite(value) || value <= 0) return false;
         if ((endTimeGoalOverride?.scopes || []).includes(scope)) { flashEndTimeGoalLock(); return false; }
         clockTimer.configure({ [scope === "total" ? "total_goal" : "trip_goal"]: `${value}%` });
@@ -7557,7 +7575,7 @@
             element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
         }
         for (const [key, fn] of [
-            ["readyAt","readyAt"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
+            ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
             ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
             ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
             ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
@@ -7582,6 +7600,7 @@
         const enabled = speechRecognitionButton.getAttribute("aria-pressed") === "true";
         if (enabled) {
             SpeechMenu.stop();
+            cancelPendingSpeechReady();
             setSpeechButtonState(false);
             return;
         }
@@ -7592,7 +7611,7 @@
     });
     SpeechMenu.events.addEventListener("sleep", () => setSpeechButtonState(true, true));
     SpeechMenu.events.addEventListener("wake", () => setSpeechButtonState(true, false));
-    SpeechMenu.events.addEventListener("stop", () => setSpeechButtonState(false));
+    SpeechMenu.events.addEventListener("stop", () => { cancelPendingSpeechReady(); setSpeechButtonState(false); });
 
     const speechBreakEndDialog = $("#speechBreakEndDialog");
     $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));

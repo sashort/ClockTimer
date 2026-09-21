@@ -12,6 +12,7 @@
             commands: Object.freeze({
                 standardTime: "^standard time (?<timeValue>.+)$",
                 readyAt: "^ready at (?<spokenTime>.+)$",
+                readyAtContinuation: "^at (?<spokenTime>.+)$",
                 ready: "^ready$",
                 breakStart: "^break start$",
                 breakChoice: "^(?<breakChoice>10|15|long|short|lunch)$",
@@ -20,7 +21,7 @@
                 down: "^down(?: time)?$",
                 breakEnd: "^break end$",
                 resume: "^resume$",
-                goal: "^(?<goalScope>trip|total) goal (?<percent>\\d+)(?: percent)?$",
+                goal: "^(?<goalScope>trip|total) goal (?<percent>.+)$",
                 goalMode: "^(?<goalMode>auto|total|trip) mode$",
                 sync: "^sync(?: (?<syncAction>on|off))?$",
                 lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
