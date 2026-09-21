@@ -95,11 +95,9 @@
 
         #secondHand;
 
-        #hourHandAnimation;
+        #secondHandAngle;
 
-        #minuteHandAnimation;
-
-        #secondHandAnimation;
+        #secondHandTickAnimation;
 
         #handStartTimeout;
 
@@ -30430,6 +30428,10 @@
 
                                 const displayNow = new Date();
 
+                                this.#synchronizeHands(
+                                    displayNow
+                                );
+
                                 this.#updateDisplay(
                                     displayNow
                                 );
@@ -30665,12 +30667,6 @@
             this.#ensureHandRing();
 
             if (
-                this.#handsStarted
-            ) {
-                return;
-            }
-
-            if (
                 this.#handStartTimeout !==
                     undefined
             ) {
@@ -30682,54 +30678,21 @@
                     undefined;
             }
 
-            const milliseconds =
+            this.#handsStarted = true;
+
+            this.#synchronizeHands(
                 new Date()
-                    .getMilliseconds();
-
-            const delay =
-                milliseconds ===
-                    0
-                    ?
-                    0
-                    :
-                    1000 -
-                        milliseconds;
-
-            this.#handStartTimeout =
-                setTimeout(
-                    () => {
-                        this.#handStartTimeout =
-                            undefined;
-
-                        if (
-                            !this.isConnected
-                        ) {
-                            return;
-                        }
-
-                        this.#synchronizeHands();
-                    },
-                    delay
-                );
+            );
         }
 
         #stopHandAnimations() {
-            this.#hourHandAnimation
+            this.#secondHandTickAnimation
                 ?.cancel();
 
-            this.#minuteHandAnimation
-                ?.cancel();
-
-            this.#secondHandAnimation
-                ?.cancel();
-
-            this.#hourHandAnimation =
+            this.#secondHandTickAnimation =
                 undefined;
 
-            this.#minuteHandAnimation =
-                undefined;
-
-            this.#secondHandAnimation =
+            this.#secondHandAngle =
                 undefined;
 
             if (this.#handLayer) {
@@ -30746,17 +30709,8 @@
                 false;
         }
 
-        #synchronizeHands() {
-            if (
-                this.#handsStarted
-            ) {
-                return;
-            }
-
+        #synchronizeHands(now = new Date()) {
             this.#ensureHandRing();
-
-            const now =
-                new Date();
 
             const hours =
                 now.getHours() %
@@ -30768,114 +30722,99 @@
             const seconds =
                 now.getSeconds();
 
-            const milliseconds =
-                now.getMilliseconds();
-
-            const hourElapsed =
+            const hourAngle =
                 (
-                    (
-                        hours *
-                        60 *
-                        60
-                    ) +
-                    (
-                        minutes *
-                        60
-                    ) +
-                    seconds
-                ) *
-                    1000 +
-                milliseconds;
+                    hours +
+                    minutes / 60 +
+                    seconds / 3600
+                ) * 30;
 
-            const minuteElapsed =
+            const minuteAngle =
                 (
-                    (
-                        minutes *
-                        60
-                    ) +
-                    seconds
-                ) *
-                    1000 +
-                milliseconds;
+                    minutes +
+                    seconds / 60
+                ) * 6;
 
-            const secondElapsed =
-                seconds *
-                    1000 +
-                milliseconds;
+            const secondAngle =
+                seconds * 6;
 
-            const keyframes = [
-                {
-                    transform:
-                        "translate(-50%, -100%) rotate(0deg)"
-                },
-                {
-                    transform:
-                        "translate(-50%, -100%) rotate(360deg)"
-                }
-            ];
+            this.#hourHand.style.transform =
+                `translate(-50%, -100%) rotate(${hourAngle}deg)`;
 
-            this.#hourHandAnimation =
-                this.#hourHand.animate(
-                    keyframes,
-                    {
-                        duration:
-                            12 *
-                            60 *
-                            60 *
-                            1000,
+            this.#minuteHand.style.transform =
+                `translate(-50%, -100%) rotate(${minuteAngle}deg)`;
 
-                        iterations:
-                            Infinity,
+            const previousSecondAngle =
+                Number.isFinite(
+                    this.#secondHandAngle
+                )
+                    ? this.#secondHandAngle
+                    : secondAngle;
 
-                        easing:
-                            "linear"
-                    }
-                );
+            const secondAdvance =
+                (
+                    secondAngle -
+                    previousSecondAngle +
+                    360
+                ) % 360;
 
-            this.#minuteHandAnimation =
-                this.#minuteHand.animate(
-                    keyframes,
-                    {
-                        duration:
-                            60 *
-                            60 *
-                            1000,
+            const settledSecondAngle =
+                previousSecondAngle +
+                secondAdvance;
 
-                        iterations:
-                            Infinity,
+            this.#secondHand.style.transform =
+                `translate(-50%, -100%) rotate(${secondAngle}deg)`;
 
-                        easing:
-                            "linear"
-                    }
-                );
+            this.#secondHandTickAnimation
+                ?.cancel();
 
-            this.#secondHandAnimation =
-                this.#secondHand.animate(
-                    keyframes,
-                    {
-                        duration:
-                            60 *
-                            1000,
+            if (
+                secondAdvance > 0 &&
+                !globalThis.matchMedia?.(
+                    "(prefers-reduced-motion: reduce)"
+                )?.matches
+            ) {
+                const animation =
+                    this.#secondHand.animate(
+                        [
+                            {
+                                transform:
+                                    `translate(-50%, -100%) rotate(${previousSecondAngle}deg)`
+                            },
+                            {
+                                offset: 0.78,
+                                transform:
+                                    `translate(-50%, -100%) rotate(${settledSecondAngle + 0.8}deg)`
+                            },
+                            {
+                                transform:
+                                    `translate(-50%, -100%) rotate(${settledSecondAngle}deg)`
+                            }
+                        ],
+                        {
+                            duration: 180,
+                            easing: "ease-out"
+                        }
+                    );
 
-                        iterations:
-                            Infinity,
+                this.#secondHandTickAnimation =
+                    animation;
 
-                        easing:
-                            "linear"
-                    }
-                );
+                animation.finished
+                    .catch(() => {})
+                    .finally(() => {
+                        if (
+                            this.#secondHandTickAnimation ===
+                                animation
+                        ) {
+                            this.#secondHandTickAnimation =
+                                undefined;
+                        }
+                    });
+            }
 
-            this.#hourHandAnimation.currentTime =
-                hourElapsed;
-
-            this.#minuteHandAnimation.currentTime =
-                minuteElapsed;
-
-            this.#secondHandAnimation.currentTime =
-                secondElapsed;
-
-            this.#handsStarted =
-                true;
+            this.#secondHandAngle =
+                secondAngle;
 
             requestAnimationFrame(
                 () => {
