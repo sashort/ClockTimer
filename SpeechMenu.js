@@ -239,7 +239,8 @@ class SpeechMenu {
         }
         if (!matched) return false;
         try {
-            element.speechFunc.apply(element.speechFuncThis, args.argumentArray());
+            const outcome = element.speechFunc.apply(element.speechFuncThis, args.argumentArray());
+            if (outcome === false) return false;
             SpeechMenu.#emit("command", {speechMenuElement: element, transcript: text});
             return true;
         } catch (error) {

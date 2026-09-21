@@ -82,6 +82,8 @@ console.log('PASS empty logged-in Total scope shows a blank End Time instead of 
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
+const speechToggle=window.document.querySelector('#speechRecognitionButton');assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
+console.log('PASS speech commands register and the microphone menu toggle starts disabled');
 const setNow=window.document.querySelector('#tripSetStartsNow');
 setNow.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));
 assert(window.document.querySelector('#tripSetStartsNowActions').classList.contains('is-selecting'));

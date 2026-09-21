@@ -44,6 +44,7 @@
             </div>
             <hr>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
+            <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition"><span>Speech Recognition</span></button>
             <div class="main-menu-row sync-goals-menu-row">
                 <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                 <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
@@ -648,6 +649,17 @@
                 <button class="break-type-button" type="button" data-break-type="short-break">Short Break</button>
             </div>
         </section>
+    </dialog>
+
+    <dialog id="speechBreakEndDialog" class="app-dialog">
+        <form method="dialog">
+            <header class="dialog-header"><h2>End Break</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></header>
+            <p>Are you ready to end your break?</p>
+            <div class="dialog-actions two-actions">
+                <button id="speechBreakEndCancel" type="button">Cancel</button>
+                <button id="speechBreakEndConfirm" class="primary-action" type="button">OK</button>
+            </div>
+        </form>
     </dialog>
 
     <script src="TemporalFormat.js"></script>

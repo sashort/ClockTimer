@@ -10,7 +10,24 @@
             wakePhrase: "^listen$",
             sleepPhrase: "^mute$",
             commands: Object.freeze({
-                standardTime: "^standard time (?<timeValue>.+)$"
+                standardTime: "^standard time (?<timeValue>.+)$",
+                readyAt: "^ready at (?<spokenTime>.+)$",
+                ready: "^ready$",
+                breakStart: "^break start$",
+                breakChoice: "^(?<breakChoice>10|15|long|short|lunch)$",
+                confirm: "^ok(?:ay)?$",
+                cancel: "^cancel$",
+                down: "^down(?: time)?$",
+                breakEnd: "^break end$",
+                resume: "^resume$",
+                goal: "^(?<goalScope>trip|total) goal (?<percent>\\d+)(?: percent)?$",
+                goalMode: "^(?<goalMode>auto|total|trip) mode$",
+                sync: "^sync(?: (?<syncAction>on|off))?$",
+                lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
+                showTripLog: "^(?:show )?trip log$",
+                hideTripLog: "^(?:hide|close) trip log$",
+                deferTrip: "^defer trip$",
+                renderedTimeMode: "^(?:time )?(?<timeMode>elapsed|remaining|end(?: time)?)$"
             })
         }),
         ui: Object.freeze({})

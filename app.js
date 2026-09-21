@@ -111,6 +111,7 @@
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
     const mainMenu = $("#mainMenu");
+    const speechRecognitionButton = $("#speechRecognitionButton");
     const scopeToggle = $("#scopeToggle");
     const scopeConnectionButton = $("#scopeConnectionButton");
     const tripListMenuButton = $("#tripListMenuButton");
@@ -7435,23 +7436,176 @@
     }
 
     const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
+    const speechPointerUp = element => {
+        if (!element || element.hidden || element.disabled) return false;
+        element.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerType: "speech" }));
+        return true;
+    };
     speechCommands.setStandardTime = setStandardTimeFromSpeech;
+    speechCommands.ready = () => speechPointerUp($("#newTripButton"));
+    speechCommands.readyAt = async spokenTime => {
+        if (tripIsLive() || $("#newTripButton")?.disabled || typeof EnglishSpokenTimeParser === "undefined") return false;
+        const now = new Date();
+        const target = EnglishSpokenTimeParser.parse(spokenTime, { baseDate: now, preferFuture: true });
+        if (!target) return false;
+        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
+        const defaults = getTripMomentDefaults(now);
+        const scheduledStart = formatTimelineDateTime(target, defaults.creationDate);
+        const preferences = getTripPreferences();
+        if (!defaults || !scheduledStart) return false;
+        uiReturnStack.length = 0;
+        resetTripSettingsNavigation();
+        tripSettingsSession = undefined;
+        tripStartsNowState = undefined;
+        tripDraft = {
+            ...defaults,
+            standardTime: "",
+            scheduledStart,
+            startTime: scheduledStart,
+            lateBreakBehavior: preferences.lateBreakBehavior,
+            syncGoals: preferences.syncGoals
+        };
+        renderDeferredTrip();
+        try { await clockTimer.prepareTrip({ timeout: 5000, at: now }); } catch {}
+        showScheduledStartDialog();
+        return true;
+    };
+    speechCommands.breakStart = () => speechPointerUp(breakButton);
+    speechCommands.chooseBreak = breakChoice => {
+        if (!breakDialog.open) return false;
+        const kind = ({"10":"short-break",short:"short-break","15":"break",long:"break",lunch:"lunch"})[String(breakChoice).toLowerCase()];
+        const button = breakDialog.querySelector(`[data-break-type="${kind}"]`);
+        if (!button) return false;
+        breakDialog.querySelectorAll(".speech-focused").forEach(item => item.classList.remove("speech-focused"));
+        button.classList.add("speech-focused");
+        button.focus();
+        return true;
+    };
+    speechCommands.confirmBreak = () => {
+        const button = breakDialog.querySelector("[data-break-type].speech-focused");
+        if (!breakDialog.open || !button) return false;
+        button.click();
+        return true;
+    };
+    speechCommands.down = () => speechPointerUp(downButton);
+    speechCommands.breakEnd = () => {
+        const type = String(clockTimer.getActiveIntervalState?.(new Date())?.intervalType || "").toLowerCase();
+        if (type !== "break" && type !== "lunch") return false;
+        openDialog("speechBreakEndDialog", { reason: "speech-break-end" });
+        return true;
+    };
+    speechCommands.resume = () => speechPointerUp(downResumeButton);
+    speechCommands.setGoal = (goalScope, percent) => {
+        const scope = String(goalScope).toLowerCase();
+        const value = Number(percent);
+        if (!['trip','total'].includes(scope) || !Number.isFinite(value) || value <= 0) return false;
+        if ((endTimeGoalOverride?.scopes || []).includes(scope)) { flashEndTimeGoalLock(); return false; }
+        clockTimer.configure({ [scope === "total" ? "total_goal" : "trip_goal"]: `${value}%` });
+        queueSummaryRefresh();
+        return true;
+    };
+    speechCommands.setGoalMode = goalMode => {
+        const mode = String(goalMode).toLowerCase();
+        if (!PERCENT_MODES.includes(mode)) return false;
+        applyScope(mode);
+        return true;
+    };
+    speechCommands.sync = syncAction => {
+        const current = getSyncGoalsState();
+        const action = String(syncAction || "").toLowerCase();
+        setSyncGoals(action === "on" ? true : action === "off" ? false : !current);
+        return true;
+    };
+    speechCommands.lockEndTime = spokenTime => {
+        if (!tripIsLive() || typeof EnglishSpokenTimeParser === "undefined") return false;
+        const target = EnglishSpokenTimeParser.parse(spokenTime, { baseDate: new Date(), preferFuture: true });
+        return target ? applyEndTimeGoalOverride(target) : false;
+    };
+    speechCommands.showTripLog = () => { if (getTripListState() !== "open") void openTripList("speech"); return true; };
+    speechCommands.hideTripLog = () => { if (getTripListState() === "open") void closeTripList("speech"); return true; };
+    speechCommands.deferTrip = () => {
+        if (!numberPadDialog?.open || numberPadState?.workflow !== "new-trip" || !tripDraft) return false;
+        tripDraft.deferred = true;
+        tripDraft.standardTime = "";
+        renderDeferredTrip();
+        void closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
+        return true;
+    };
+    speechCommands.setRenderedTimeMode = timeMode => {
+        const value = String(timeMode).toLowerCase();
+        applyRenderedTimeMode(value.startsWith("end") ? "calculated-end" : value);
+        return true;
+    };
     globalThis.WMOFSpeechCommands = speechCommands;
-    const englishSpeech = globalThis.WMOFLanguages?.["en-US"]?.speech;
-    if (englishSpeech?.commands?.standardTime) {
-        for (const element of [
-            scheduledStartStandard,
-            tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')
-        ]) {
+
+    const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
+    const englishSpeech = englishLanguage?.speech;
+    const installSpeechCommand = (key, functionName, container = document.body, modal = true) => {
+        const pattern = englishSpeech?.commands?.[key];
+        if (!pattern) return;
+        const element = document.createElement("speech-command");
+        element.hidden = true;
+        element.setAttribute("speech-pattern", pattern);
+        element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
+        if (modal) element.setAttribute("speech-modal", "top-level");
+        container.append(element);
+    };
+    if (englishSpeech) {
+        for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
             if (!element) continue;
             element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
             element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
         }
-        if (typeof SpeechMenu !== "undefined") {
-            SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
-            SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
-            SpeechMenu.refresh();
+        for (const [key, fn] of [
+            ["readyAt","readyAt"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
+            ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
+            ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
+            ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
+        ]) installSpeechCommand(key, fn);
+        installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
+        installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
+        SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
+        SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+        SpeechMenu.refresh();
+    }
+
+    const setSpeechButtonState = (enabled, sleeping = false) => {
+        speechRecognitionButton?.setAttribute("aria-pressed", String(enabled));
+        speechRecognitionButton?.classList.toggle("is-sleeping", enabled && sleeping);
+        if (speechRecognitionButton) {
+            speechRecognitionButton.title = enabled ? "Disable Speech Recognition" : "Enable Speech Recognition";
+            speechRecognitionButton.setAttribute("aria-label", speechRecognitionButton.title);
         }
+    };
+    setSpeechButtonState(false);
+    speechRecognitionButton?.addEventListener("click", () => {
+        const enabled = speechRecognitionButton.getAttribute("aria-pressed") === "true";
+        if (enabled) {
+            SpeechMenu.stop();
+            setSpeechButtonState(false);
+            return;
+        }
+        if (SpeechMenu.start(englishLanguage?.speechRecognitionLanguage || "en-US")) {
+            setSpeechButtonState(true);
+            mainMenu?.hidePopover?.();
+        }
+    });
+    SpeechMenu.events.addEventListener("sleep", () => setSpeechButtonState(true, true));
+    SpeechMenu.events.addEventListener("wake", () => setSpeechButtonState(true, false));
+    SpeechMenu.events.addEventListener("stop", () => setSpeechButtonState(false));
+
+    const speechBreakEndDialog = $("#speechBreakEndDialog");
+    $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
+    $("#speechBreakEndConfirm")?.addEventListener("click", () => {
+        closeDialog(speechBreakEndDialog, { reason: "speech-confirm" });
+        void endCurrentIntervalOrTrip().catch(() => {});
+    });
+    if (englishSpeech && speechBreakEndDialog) {
+        installSpeechCommand("confirm", "confirmBreakEnd", speechBreakEndDialog, false);
+        installSpeechCommand("cancel", "cancelBreakEnd", speechBreakEndDialog, false);
+        speechCommands.confirmBreakEnd = () => { $("#speechBreakEndConfirm")?.click(); return true; };
+        speechCommands.cancelBreakEnd = () => { $("#speechBreakEndCancel")?.click(); return true; };
+        SpeechMenu.refresh();
     }
 
     const graphicalSettings = getGraphicalSettings();

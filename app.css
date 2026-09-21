@@ -822,6 +822,15 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     background: color-mix(in srgb, var(--wm-blue-dark) 78%, var(--wm-blue) 22%);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
 }
+
+#speechRecognitionButton::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+#speechRecognitionButton[aria-pressed="true"] { color: var(--wm-blue-light); }
+#speechRecognitionButton.is-sleeping::after { content: "Muted"; margin-left:auto; color:rgb(255 255 255 / 72%); font-size:13px; }
+.break-type-button.speech-focused { outline:3px solid var(--wm-blue-light); outline-offset:3px; }
 .auto-goal-option:disabled {cursor:not-allowed;opacity:.62;filter:saturate(.55);}
 .auto-goal-option:disabled::before {content:"";position:absolute;inset:0;border-radius:inherit;background:rgb(0 30 96 / 34%);}
 .auto-goal-option:disabled::after {content:"";position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);background:var(--wm-blue-light);filter:drop-shadow(0 2px 4px rgb(0 0 0 / 45%));-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
