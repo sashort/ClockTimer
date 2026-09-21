@@ -216,25 +216,23 @@ class SpeechMenu {
 
     static #processElement(element, transcript) {
         if (!SpeechMenu.#prepare(element)) return false;
-        const text = transcript;
+        let text = transcript;
+        try {
+            if (element.speechPreprocFunc) text = element.speechPreprocFunc(text, {
+                kind: element.getAttribute("speech-preproc-context"),
+                field: element.getAttribute("speech-preproc-field"),
+                pattern: element.getAttribute("speech-pattern")
+            });
+        }
+        catch (error) { SpeechMenu.#emit("speechMenuCommandError", {speechMenuElement: element, error}); return false; }
+        if (typeof text !== "string") return false;
         const regex = element.speechPattern;
         regex.lastIndex = 0;
         const args = new ParameterParser(element.speechFunc);
         let matched = false, result;
         while ((result = regex.exec(text)) !== null) {
             matched = true;
-            let values = result.groups || {};
-            if (element.speechPreprocFunc) {
-                try {
-                    const context = {
-                        kind: element.getAttribute("speech-preproc-context"),
-                        field: element.getAttribute("speech-preproc-field")
-                    };
-                    values = element.speechPreprocFunc(values, context);
-                }
-                catch (error) { SpeechMenu.#emit("speechMenuCommandError", {speechMenuElement: element, error}); return false; }
-                if (!values || typeof values !== "object") return false;
-            }
+            const values = result.groups || {};
             const named = new Set(Object.values(result.groups || {}).filter(value => value !== undefined));
             for (const [name, value] of Object.entries(values)) {
                 if (!value) continue;
