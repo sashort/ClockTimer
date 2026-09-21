@@ -9,7 +9,9 @@
         speech: Object.freeze({
             wakePhrase: "^listen$",
             sleepPhrase: "^mute$",
-            commands: Object.freeze({})
+            commands: Object.freeze({
+                standardTime: "^standard time (?<timeValue>.+)$"
+            })
         }),
         ui: Object.freeze({})
     });

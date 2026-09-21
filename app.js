@@ -7410,6 +7410,50 @@
         clockTimer.addEventListener(eventName, handler);
     }
 
+    function setStandardTimeFromSpeech(timeValue) {
+        if (typeof EnglishDurationParser === "undefined") return false;
+        const formatted = EnglishDurationParser.format(EnglishDurationParser.parse(timeValue));
+        if (!formatted) return false;
+
+        if (scheduledStartDialog.open && !scheduledStartStandard.disabled && tripDraft) {
+            tripDraft.standardTime = formatted;
+            scheduledStartStandard.classList.remove("needs-value");
+            scheduledStartMessage.hidden = true;
+            updateScheduledStartDialog();
+            return true;
+        }
+
+        const editButton = tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]');
+        if (tripSettingsDialog.open && editButton && !editButton.disabled) {
+            const session = tripSettingsSession || beginTripSettingsSession();
+            if (!session) return false;
+            session.values.standardTime = formatted;
+            refreshTripSettingsValues();
+            return true;
+        }
+        return false;
+    }
+
+    const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
+    speechCommands.setStandardTime = setStandardTimeFromSpeech;
+    globalThis.WMOFSpeechCommands = speechCommands;
+    const englishSpeech = globalThis.WMOFLanguages?.["en-US"]?.speech;
+    if (englishSpeech?.commands?.standardTime) {
+        for (const element of [
+            scheduledStartStandard,
+            tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')
+        ]) {
+            if (!element) continue;
+            element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
+            element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
+        }
+        if (typeof SpeechMenu !== "undefined") {
+            SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
+            SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            SpeechMenu.refresh();
+        }
+    }
+
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();
     app.dataset.tripListState = "closed";
