@@ -3176,6 +3176,12 @@
             endTripButton.textContent = controls.primary_action?.text || "End Trip";
             setEndTripButtonIntervalPalette(state.active_interval_type);
         }
+        if (
+            String(state.active_interval_type || "")
+                .toLowerCase() === "down"
+        ) {
+            renderTripActionState();
+        }
         renderEndTimeGoalLock();
         renderSyncGoalsState(state);
         if (tripStateChanged) {
