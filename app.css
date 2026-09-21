@@ -1848,7 +1848,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 .app[data-interval-state="down"] {
-    grid-template-rows: 52px 142px 190px 0 122px 1fr var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 230px 0 122px 1fr var(--trip-log-row-height);
 }
 
 .app[data-interval-state="down"] .active-trip-controls {
@@ -1858,33 +1858,66 @@ button:active:not(:disabled):not(#goalSyncButton) {
 .down-trip-controls {
     min-height: 0;
     display: grid;
-    grid-template-rows: 42px minmax(0, 1fr) minmax(0, .8fr);
+    grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .85fr);
+    gap: 4px;
+    padding: 3px;
+    background: var(--wm-blue);
 }
 
 .down-trip-controls[hidden] {
     display: none;
 }
 
-.down-elapsed-value {
+.trip-action-controls [hidden] {
+    display: none !important;
+}
+
+.down-elapsed-panel {
     display: grid;
+    grid-template-rows: auto 1fr;
     place-items: center;
+    min-height: 0;
+    padding: 7px 12px 4px;
+    border: 3px solid #91a1b0;
+    border-radius: 15px;
     color: var(--wm-white);
-    background: var(--timer-down-color, #5f6772);
-    font-size: 30px;
+    background: linear-gradient(180deg, #001e60, #03184e);
+    box-shadow: inset 0 1px 7px rgb(0 0 0 / 35%);
+}
+
+.down-elapsed-panel > span {
+    font-size: clamp(16px, 3.4vw, 25px);
+    line-height: 1;
+}
+
+.down-elapsed-value {
+    align-self: center;
+    color: var(--wm-blue-light, #a9ddf7);
+    background: transparent;
+    font-size: clamp(43px, 10vw, 68px);
+    font-weight: 800;
     line-height: 1;
 }
 
 .down-action-row {
     display: grid;
-    grid-template-columns: minmax(58px, .42fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(62px, .34fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px;
     min-height: 0;
+}
+
+.down-trip-controls .trip-action-button {
+    border-color: #91a1b0;
+    border-radius: 15px;
+    box-shadow: inset 0 1px 7px rgb(0 0 0 / 32%);
+    font-size: clamp(27px, 7vw, 48px);
 }
 
 .down-details-button {
     display: grid;
     place-items: center;
     color: var(--wm-white);
-    background: var(--timer-down-color, #5f6772);
+    background: linear-gradient(180deg, #001e60, #03184e);
 }
 
 .down-details-button svg {
@@ -1897,14 +1930,19 @@ button:active:not(:disabled):not(#goalSyncButton) {
     stroke-linejoin: round;
 }
 
+.down-action-row .break-button {
+    color: var(--wm-white);
+    background: linear-gradient(180deg, #001e60, #03184e);
+}
+
 .down-resume-button {
     color: var(--wm-blue-dark);
-    background: var(--wm-yellow);
+    background: linear-gradient(180deg, #ffad13, var(--wm-yellow));
 }
 
 .down-cancel-button {
     color: var(--timer-down-text-color, #ffffff);
-    background: var(--timer-down-color, #5f6772);
+    background: linear-gradient(180deg, #3f3f3f, #303030);
 }
 
 /* Down mode quiets the full viewport while its controls and modal remain colored. */
@@ -1919,9 +1957,31 @@ body:has(.app[data-interval-state="down"])::after {
     backdrop-filter: grayscale(100%);
 }
 
-.app[data-interval-state="down"] .trip-action-controls {
+.app[data-interval-state="down"][data-trip-list-state="closed"] .trip-action-controls {
     position: relative;
     z-index: 3001;
+}
+
+.app[data-interval-state="down"]:is(
+    [data-trip-list-state="opening"],
+    [data-trip-list-state="open"],
+    [data-trip-list-state="closing"]
+) .trip-log-button,
+.app[data-interval-state="down"]:is(
+    [data-trip-list-state="opening"],
+    [data-trip-list-state="open"],
+    [data-trip-list-state="closing"]
+) .trip-log-body {
+    z-index: 3003;
+    filter: grayscale(100%);
+}
+
+.app[data-interval-state="down"]:is(
+    [data-trip-list-state="opening"],
+    [data-trip-list-state="open"],
+    [data-trip-list-state="closing"]
+) .trip-log-close-button {
+    z-index: 3004;
 }
 
 .app[data-interval-state="down"] .clock-region {

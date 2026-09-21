@@ -6789,7 +6789,8 @@
         if (intervalType === "down") {
             app.dataset.intervalState = "down";
             setEndTripButtonIntervalPalette();
-            downElapsedValue.value = formatDuration(interval.elapsedMilliseconds);
+            downElapsedValue.value = formatDuration(interval.elapsedMilliseconds)
+                .replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
             downTripControls.hidden = false;
             endTripButton.hidden = true;
