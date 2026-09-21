@@ -77,10 +77,11 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         if ($operation==='add-entry') {
             $key='edit-'.bin2hex(random_bytes(16));
             $entry['intervalKey']=$key;
-            $type=$entry['type']??'break';$approvedTime=$entry['approvedTime']??null;
+            $type=$entry['type']??'break';$breakType=$entry['breakType']??null;$approvedTime=$entry['approvedTime']??null;
+            if ($type==='break' && !in_array($breakType,['break','short',null],true)) throw new InvalidArgumentException('Unknown break type.');
             if($type==='down' && $approvedTime!==null && $approvedTime!=='') trip_edit_duration($approvedTime);
             $events[]=['id'=>null,'event'=>'interval.started','timestamp'=>trip_edit_iso($entry['start']??''),
-                'value'=>['type'=>$type,'length'=>$entry['length']??null,'approvedTime'=>$type==='down'?$approvedTime:null,'attributes'=>[], 'intervalKey'=>$key]];
+                'value'=>['type'=>$type,'length'=>$entry['length']??null,'approvedTime'=>$type==='down'?$approvedTime:null,'attributes'=>$type==='break'?['breakType'=>$breakType??'break']:[], 'intervalKey'=>$key]];
             $events[]=['id'=>null,'event'=>'interval.ended','timestamp'=>trip_edit_iso($entry['end']??''),'value'=>['intervalKey'=>$key]];
             $found=true;
         }
@@ -92,6 +93,11 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                     $e['timestamp']=trip_edit_iso($entry['start']??'');
                     if (!in_array($entry['type']??null,['break','lunch','down'],true)) throw new InvalidArgumentException('Unknown entry type.');
                     $e['value']['type']=$entry['type'];
+                    if ($entry['type']==='break') {
+                        $breakType=$entry['breakType']??'break';
+                        if (!in_array($breakType,['break','short'],true)) throw new InvalidArgumentException('Unknown break type.');
+                        $e['value']['attributes']=array_merge($e['value']['attributes']??[],['breakType'=>$breakType]);
+                    } elseif (isset($e['value']['attributes']['breakType'])) unset($e['value']['attributes']['breakType']);
                     if (isset($entry['length']) && $entry['length']!=='') {trip_edit_duration($entry['length']);$e['value']['length']=$entry['length'];}
                     if ($entry['type']==='down') {
                         $approvedTime=$entry['approvedTime']??null;
