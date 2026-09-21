@@ -4235,9 +4235,12 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .down-details-dialog .dialog-close {width:58px;height:58px;justify-self:end;}
 .down-details-dialog .dialog-close::before {width:40px;height:40px;}
 .down-details-body {display:grid;grid-template-columns:1fr;gap:16px;min-height:0;padding:28px 28px 18px;overflow:auto;}
-.down-details-photo {height:clamp(250px,38dvh,390px);display:grid;place-items:center;overflow:hidden;border:3px dashed var(--wm-blue-light);border-radius:15px;background:radial-gradient(circle at center,#073581 0%,#001e60 72%);}
+.down-details-photo {position:relative;height:clamp(250px,38dvh,390px);display:grid;place-items:center;overflow:hidden;border:3px dashed var(--wm-blue-light);border-radius:15px;background:radial-gradient(circle at center,#073581 0%,#001e60 72%);}
 .down-details-photo img {width:100%;height:100%;object-fit:contain;}
 .down-details-photo p {color:rgb(255 255 255 / 72%);}
+.down-details-photo-clear {position:absolute;z-index:3;top:10px;right:10px;width:46px;height:46px;display:grid;place-items:center;padding:0;border:2px solid var(--wm-white);border-radius:8px;background:var(--wm-maroon);color:var(--wm-white);box-shadow:0 2px 8px rgb(0 0 0 / 42%);}
+.down-details-photo-clear svg {width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.down-details-photo-clear:focus-visible {outline:3px solid var(--wm-blue-light);outline-offset:2px;}
 .down-details-camera {width:100%;height:100%;display:grid;grid-template-columns:1fr;grid-auto-flow:row;place-content:center;justify-items:center;gap:24px;border:0;color:white;background:transparent;cursor:pointer;}
 .down-details-camera svg {width:110px;height:90px;fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;}
 .down-details-camera strong {padding:12px 38px;border:3px solid var(--wm-blue-light);border-radius:12px;background:var(--wm-blue);font-size:clamp(20px,4vw,30px);box-shadow:inset 0 1px 5px rgb(255 255 255 / 14%);}
