@@ -6,13 +6,16 @@ const window = new Window({url:"https://clock.example/"});
 Object.assign(globalThis, {
     window,
     document: window.document,
-    navigator: window.navigator,
     HTMLElement: window.HTMLElement,
     Element: window.Element,
     Node: window.Node,
     CustomEvent: window.CustomEvent,
     EventTarget: window.EventTarget,
     customElements: window.customElements
+});
+Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: window.navigator
 });
 
 let rafId = 0;
