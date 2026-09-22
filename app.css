@@ -4535,11 +4535,15 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 }
 
 .graphical-dialog .clock-preview {
-    --graphical-preview-clock-size:
+    --graphical-preview-clock-width:
         min(
-            230px,
-            50vw,
-            calc(var(--graphical-preview-height) - 24px)
+            520px,
+            calc(100% - 32px)
+        );
+    --graphical-preview-clock-height:
+        calc(
+            var(--graphical-preview-height) -
+            24px
         );
     position: absolute;
     inset: auto 0 0;
@@ -4559,13 +4563,15 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 }
 
 .graphical-dialog .clock-preview clock-timer {
-    inline-size: var(--graphical-preview-clock-size);
-    block-size: var(--graphical-preview-clock-size);
-    width: var(--graphical-preview-clock-size);
-    height: var(--graphical-preview-clock-size);
+    inline-size: var(--graphical-preview-clock-width);
+    block-size: var(--graphical-preview-clock-height);
+    width: var(--graphical-preview-clock-width);
+    height: var(--graphical-preview-clock-height);
+    max-width: 100%;
+    max-height: 100%;
     min-width: 0;
     min-height: 0;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: auto;
     pointer-events: none !important;
     opacity: 1;
     transition: opacity 150ms ease-out;
@@ -4604,11 +4610,12 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     }
 
     .graphical-dialog .clock-preview {
-        --graphical-preview-clock-size:
-            min(
-                220px,
-                64vw,
-                calc(var(--graphical-preview-height) - 18px)
+        --graphical-preview-clock-width:
+            calc(100% - 24px);
+        --graphical-preview-clock-height:
+            calc(
+                var(--graphical-preview-height) -
+                18px
             );
         padding: 8px 12px 10px;
     }
