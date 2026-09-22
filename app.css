@@ -38,6 +38,7 @@ button {
 
 .app {
     --trip-log-row-height: 74px;
+    --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
     --trip-log-layout-duration: 1000ms;
 
@@ -46,11 +47,36 @@ button {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-rows: 52px 142px 62px 29px 122px 1fr var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 62px 29px 122px 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
     overflow: hidden;
     transition:
         grid-template-rows var(--trip-log-layout-duration) ease-in-out;
+}
+
+.app[data-speech-active="true"] {
+    --speech-mic-row-height: 74px;
+}
+
+speech-mic-bar {
+    width: 100%;
+    height: 74px;
+    min-width: 0;
+    margin: 0;
+    align-self: start;
+    transform: translateY(calc(100% + 0.125in));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform var(--trip-log-layout-duration) ease-in-out,
+        opacity 250ms linear;
+    will-change: transform, opacity;
+}
+
+.app[data-speech-active="true"] speech-mic-bar {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .app[data-trip-log-pinned="false"] {
@@ -289,7 +315,7 @@ html[data-trip-log-startup="unpinned"] .app {
 }
 
 .app[data-trip-state="running"] {
-    grid-template-rows: 52px 142px 122px 0 122px 1fr var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 122px 0 122px 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
 }
 
 .app[data-trip-state="running"] .new-trip-button {
@@ -1926,7 +1952,7 @@ button:active:not(:disabled):not(#goalSyncButton) {
 }
 
 .app[data-interval-state="down"] {
-    grid-template-rows: 52px 142px 230px 0 0 1fr var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 230px 0 0 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
 }
 
 .app[data-interval-state="down"] .active-trip-controls {

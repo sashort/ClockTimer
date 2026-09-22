@@ -85,6 +85,97 @@
     };
 
     const $ = selector => document.querySelector(selector);
+
+    const loadClassicScript = source =>
+        new Promise((resolve, reject) => {
+            const existing = document.querySelector(
+                `script[data-runtime-source="${source}"]`
+            );
+
+            if (existing?.dataset.loaded === "true") {
+                resolve();
+                return;
+            }
+
+            const script =
+                existing ||
+                document.createElement("script");
+
+            const onLoad = () => {
+                script.dataset.loaded = "true";
+                resolve();
+            };
+
+            const onError = () => {
+                reject(
+                    new Error(
+                        `Unable to load ${source}.`
+                    )
+                );
+            };
+
+            script.addEventListener(
+                "load",
+                onLoad,
+                {once: true}
+            );
+
+            script.addEventListener(
+                "error",
+                onError,
+                {once: true}
+            );
+
+            if (!existing) {
+                script.src = source;
+                script.dataset.runtimeSource =
+                    source;
+                document.head.append(
+                    script
+                );
+            }
+        });
+
+    let speechRuntimePromise;
+    const ensureSpeechRuntime = () => {
+        if (
+            globalThis.SpeechMenu &&
+            customElements.get("speech-mic-bar")
+        ) {
+            return Promise.resolve();
+        }
+
+        if (!speechRuntimePromise) {
+            speechRuntimePromise =
+                Promise.resolve()
+                    .then(async () => {
+                        if (!globalThis.SpeechMenu) {
+                            await loadClassicScript(
+                                "SpeechMenu.js"
+                            );
+                        }
+
+                        if (
+                            !customElements.get(
+                                "speech-mic-bar"
+                            )
+                        ) {
+                            await loadClassicScript(
+                                "SpeechMicBar.js"
+                            );
+                        }
+
+                        document.dispatchEvent(
+                            new CustomEvent(
+                                "speech-runtime-ready"
+                            )
+                        );
+                    });
+        }
+
+        return speechRuntimePromise;
+    };
+
     const clockTimer = $("#clockTimer");
     const clockPreview = $("#clockPreview");
     if (clockPreview) {
@@ -111,6 +202,7 @@
     const authButton = $("#authButton");
     const mainMenu = $("#mainMenu");
     const speechRecognitionButton = $("#speechRecognitionButton");
+    const speechMicBar = $("#speechMicBar");
     const scopeToggle = $("#scopeToggle");
     const scopeConnectionButton = $("#scopeConnectionButton");
     const tripListMenuButton = $("#tripListMenuButton");
@@ -8775,102 +8867,146 @@
     };
     globalThis.WMOFSpeechCommands = speechCommands;
 
-    const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
-    const englishSpeech = englishLanguage?.speech;
-    const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
-        const pattern = englishSpeech?.commands?.[key];
-        if (!pattern) return;
-        const element = document.createElement("speech-command");
-        element.hidden = true;
-        element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
-        const speechTargets = {
-            readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
-            breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
-            resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
-            sync:"#syncGoalsMenuButton,#goalSyncButton", lockEndTime:"#renderedTimeButton", showTripLog:"#tripListMenuButton",
-            hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#renderedTimeButton",
-            breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
-        };
-        if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
-        element.setAttribute("speech-pattern", pattern);
-        element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
-        if (valueKind && valueField) {
-            element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
-            element.setAttribute("speech-preproc-context", valueKind);
-            element.setAttribute("speech-preproc-field", valueField);
+    void (async () => {
+        try {
+            await ensureSpeechRuntime();
         }
-        if (modal) element.setAttribute("speech-modal", "top-level");
-        container.append(element);
-    };
-    if (englishSpeech) {
-        for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
-            if (!element) continue;
-            element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
-            element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
-            element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
-            element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
-            element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
-            element.setAttribute("speech-preproc-context", "duration");
-            element.setAttribute("speech-preproc-field", "timeValue");
-        }
-        for (const [key, fn] of [
-            ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
-            ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
-            ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
-            ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
-        ]) {
-            const typedValues = {
-                readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
-                goal:["percent","percent"], lockEndTime:["clock","spokenTime"]
-            };
-            installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
-        }
-        installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
-        installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
-        SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
-        SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
-        SpeechMenu.refresh();
-    }
-
-    const setSpeechButtonState = (enabled, sleeping = false) => {
-        speechRecognitionButton?.setAttribute("aria-pressed", String(enabled));
-        speechRecognitionButton?.classList.toggle("is-sleeping", enabled && sleeping);
-        if (speechRecognitionButton) {
-            speechRecognitionButton.title = enabled ? "Disable Speech Recognition" : "Enable Speech Recognition";
-            speechRecognitionButton.setAttribute("aria-label", speechRecognitionButton.title);
-        }
-    };
-    setSpeechButtonState(false);
-    speechRecognitionButton?.addEventListener("click", () => {
-        const enabled = speechRecognitionButton.getAttribute("aria-pressed") === "true";
-        if (enabled) {
-            SpeechMenu.stop();
-            cancelPendingSpeechReady();
-            setSpeechButtonState(false);
+        catch (error) {
+            console.error(error);
             return;
         }
-        if (SpeechMenu.start(englishLanguage?.speechRecognitionLanguage || "en-US")) {
-            setSpeechButtonState(true);
-            mainMenu?.hidePopover?.();
-        }
-    });
-    SpeechMenu.events.addEventListener("sleep", () => setSpeechButtonState(true, true));
-    SpeechMenu.events.addEventListener("wake", () => setSpeechButtonState(true, false));
-    SpeechMenu.events.addEventListener("stop", () => { cancelPendingSpeechReady(); setSpeechButtonState(false); });
 
-    const speechBreakEndDialog = $("#speechBreakEndDialog");
-    $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
-    $("#speechBreakEndConfirm")?.addEventListener("click", () => {
-        closeDialog(speechBreakEndDialog, { reason: "speech-confirm" });
-        void endCurrentIntervalOrTrip().catch(() => {});
-    });
-    if (englishSpeech && speechBreakEndDialog) {
-        installSpeechCommand("confirm", "confirmBreakEnd", speechBreakEndDialog, false);
-        installSpeechCommand("cancel", "cancelBreakEnd", speechBreakEndDialog, false);
-        speechCommands.confirmBreakEnd = () => { $("#speechBreakEndConfirm")?.click(); return true; };
-        speechCommands.cancelBreakEnd = () => { $("#speechBreakEndCancel")?.click(); return true; };
-        SpeechMenu.refresh();
-    }
+        const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
+        const englishSpeech = englishLanguage?.speech;
+        const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
+            const pattern = englishSpeech?.commands?.[key];
+            if (!pattern) return;
+            const element = document.createElement("speech-command");
+            element.hidden = true;
+            element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
+            const speechTargets = {
+                readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
+                breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
+                resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
+                sync:"#syncGoalsMenuButton,#goalSyncButton", lockEndTime:"#renderedTimeButton", showTripLog:"#tripListMenuButton",
+                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#renderedTimeButton",
+                breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
+            };
+            if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
+            element.setAttribute("speech-pattern", pattern);
+            element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
+            if (valueKind && valueField) {
+                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-preproc-context", valueKind);
+                element.setAttribute("speech-preproc-field", valueField);
+            }
+            if (modal) element.setAttribute("speech-modal", "top-level");
+            container.append(element);
+        };
+        if (englishSpeech) {
+            for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
+                if (!element) continue;
+                element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
+                element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
+                element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
+                element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
+                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-preproc-context", "duration");
+                element.setAttribute("speech-preproc-field", "timeValue");
+            }
+            for (const [key, fn] of [
+                ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
+                ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
+                ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
+                ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
+            ]) {
+                const typedValues = {
+                    readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
+                    goal:["percent","percent"], lockEndTime:["clock","spokenTime"]
+                };
+                installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
+            }
+            installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
+            installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
+            SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
+            SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            SpeechMenu.refresh();
+        }
+
+        const setSpeechButtonState = (enabled, muted = false) => {
+            speechRecognitionButton?.setAttribute("aria-pressed", String(enabled));
+            speechRecognitionButton?.classList.toggle("is-sleeping", enabled && muted);
+            if (speechRecognitionButton) {
+                speechRecognitionButton.title = enabled ? "Disable Speech Recognition" : "Enable Speech Recognition";
+                speechRecognitionButton.setAttribute("aria-label", speechRecognitionButton.title);
+            }
+        };
+
+        setSpeechButtonState(false);
+
+        const setSpeechLayoutState = enabled => {
+            app.dataset.speechActive = String(Boolean(enabled));
+        };
+
+        speechMicBar?.addEventListener("started", () => {
+            setSpeechButtonState(true, false);
+            setSpeechLayoutState(true);
+        });
+
+        speechMicBar?.addEventListener("stopped", () => {
+            cancelPendingSpeechReady();
+            setSpeechButtonState(false, false);
+            setSpeechLayoutState(false);
+        });
+
+        speechMicBar?.addEventListener("speechCaptureEnded", () => {
+            cancelPendingSpeechReady();
+            setSpeechButtonState(false, false);
+            setSpeechLayoutState(false);
+        });
+
+        speechMicBar?.addEventListener("muted", () => {
+            setSpeechButtonState(true, true);
+        });
+
+        speechMicBar?.addEventListener("unmuted", () => {
+            setSpeechButtonState(true, false);
+        });
+
+        speechRecognitionButton?.addEventListener("click", async () => {
+            const enabled =
+                speechRecognitionButton.getAttribute("aria-pressed") === "true";
+
+            if (enabled) {
+                await SpeechMenu.stop();
+                return;
+            }
+
+            const started =
+                await SpeechMenu.start(
+                    englishLanguage?.speechRecognitionLanguage || "en-US"
+                );
+
+            if (started) {
+                mainMenu?.hidePopover?.();
+            }
+        });
+        
+        const speechBreakEndDialog = $("#speechBreakEndDialog");
+        $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
+        $("#speechBreakEndConfirm")?.addEventListener("click", () => {
+            closeDialog(speechBreakEndDialog, { reason: "speech-confirm" });
+            void endCurrentIntervalOrTrip().catch(() => {});
+        });
+        if (englishSpeech && speechBreakEndDialog) {
+            installSpeechCommand("confirm", "confirmBreakEnd", speechBreakEndDialog, false);
+            installSpeechCommand("cancel", "cancelBreakEnd", speechBreakEndDialog, false);
+            speechCommands.confirmBreakEnd = () => { $("#speechBreakEndConfirm")?.click(); return true; };
+            speechCommands.cancelBreakEnd = () => { $("#speechBreakEndCancel")?.click(); return true; };
+            SpeechMenu.refresh();
+        }
+
+    })();
 
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();

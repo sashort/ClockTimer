@@ -48,7 +48,16 @@
             insertionHost(host).append(element);
             created.set(entry.id, element);
         }
-        if (typeof SpeechMenu !== "undefined") SpeechMenu.refresh();
+        if (typeof SpeechMenu !== "undefined") {
+            SpeechMenu.refresh();
+        }
+        else {
+            document.addEventListener(
+                "speech-runtime-ready",
+                () => globalThis.SpeechMenu?.refresh?.(),
+                {once: true}
+            );
+        }
     };
     globalThis.WMOFSpeechEditorRuntime = {apply};
     fetch("api/speech-editor-config/", {credentials:"same-origin", cache:"no-store"})
