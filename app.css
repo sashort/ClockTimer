@@ -4436,3 +4436,95 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-body.trip-log-empty:not([hidden]) {display:flex;flex-direction:column;}
 .trip-log-empty .trip-log-settings {flex:0 0 auto;width:100%;}
 .trip-log-empty-message {flex:1;display:grid;place-items:center;min-height:80px;margin:0;padding:24px;text-align:center;font-size:clamp(22px,4vw,28px);font-weight:500;}
+
+
+/* graphical-settings-scroll-overlay-v1
+ * Issue #9: keep one reliable settings scroller and render the live preview
+ * as a non-interactive visual layer over the settings below the action row.
+ */
+.graphical-dialog {
+    overflow: hidden;
+}
+
+#graphicalSettingsForm {
+    position: relative;
+    min-height: 0;
+    max-height: 90dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.graphical-dialog .dialog-header,
+.graphical-dialog .graphical-settings-actions {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+}
+
+.graphical-dialog .dialog-header {
+    z-index: 4;
+}
+
+.graphical-dialog .graphical-settings-actions {
+    z-index: 4;
+}
+
+.graphical-dialog .graphical-settings-grid {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 16px;
+    overflow: hidden;
+    display: block;
+    isolation: isolate;
+}
+
+.graphical-dialog .graphical-settings-grid > .settings-groups {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+}
+
+.graphical-dialog .clock-preview {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 12px 16px 16px;
+    border: 0;
+    border-radius: 0;
+    background: rgb(0 30 96 / 44%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%);
+    opacity: 0.78;
+    pointer-events: none !important;
+    user-select: none;
+}
+
+.graphical-dialog .clock-preview clock-timer {
+    pointer-events: none !important;
+}
+
+@media (max-width: 720px) {
+    #graphicalSettingsForm {
+        max-height: 92dvh;
+    }
+
+    .graphical-dialog .graphical-settings-grid {
+        padding: 12px;
+    }
+
+    .graphical-dialog .clock-preview {
+        position: absolute;
+        inset: 0;
+        min-height: 0;
+    }
+}
