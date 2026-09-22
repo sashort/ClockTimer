@@ -86,6 +86,10 @@
     const $ = selector => document.querySelector(selector);
     const clockTimer = $("#clockTimer");
     const clockPreview = $("#clockPreview");
+    if (clockPreview) {
+        clockPreview.keepAspectRatio =
+            false;
+    }
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
