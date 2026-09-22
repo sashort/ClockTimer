@@ -148,6 +148,12 @@ const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
+assert.match(app, /preferredSpeechProvider/);
+assert.match(app, /Android\|iPhone\|iPad\|iPod/);
+assert.match(
+    app,
+    /recognitionProvider\s*=\s*preferredSpeechProvider\(\)/
+);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
