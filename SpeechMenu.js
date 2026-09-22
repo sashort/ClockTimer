@@ -681,7 +681,9 @@ class SpeechMenu {
         }
 
         SpeechMenu.#appendUtteranceFrame(
-            frame
+            frame,
+            level >=
+                SpeechMenu.#speechThreshold
         );
 
         if (
@@ -815,7 +817,8 @@ class SpeechMenu {
     }
 
     static #appendUtteranceFrame(
-        frame
+        frame,
+        streamAudio = true
     ) {
         if (!SpeechMenu.#utterance) {
             return;
@@ -829,6 +832,7 @@ class SpeechMenu {
             frame.length;
 
         if (
+            streamAudio &&
             frame.pcm &&
             SpeechMenu.#recognitionProvider
                 ?.kind === "streaming"
