@@ -33,12 +33,14 @@ assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*min-height:\s*90dvh;[^}]*h
 assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*max-height:\s*100%;[^}]*block-size:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-preview-height:\s*clamp\(210px, 46%, 270px\);[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px 16px calc\(var\(--graphical-preview-height\) \+ 16px\);[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*var\(--wm-blue-dark\);[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;[^}]*pointer-events:\s*none !important;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{[^}]*opacity:\s*0\.68;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-size:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
+assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-size\);[^}]*block-size:\s*var\(--graphical-preview-clock-size\);[^}]*width:\s*var\(--graphical-preview-clock-size\);[^}]*height:\s*var\(--graphical-preview-clock-size\);[^}]*aspect-ratio:\s*1 \/ 1;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
-assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-preview-height:\s*clamp\(190px, 44%, 250px\);/s);
+assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-preview-height:\s*clamp\(190px, 44%, 250px\);[\s\S]*?--graphical-preview-clock-size:[\s\S]*?220px,[\s\S]*?64vw,/s);
+assert.match(overlayCss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*transition-duration:\s*0ms;/s);
 
 assert.match(js, /const GRAPHICAL_DETAILS_DURATION = 180;/);
 assert.match(js, /function updateGraphicalPreviewOverlap\(/);
@@ -55,4 +57,4 @@ assert.match(js, /groups\?\.addEventListener\(\s*"scroll",\s*scheduleGraphicalPr
 assert.match(js, /new ResizeObserver\(\s*scheduleGraphicalPreviewOverlap\s*\)/s);
 assert.match(js, /opened &&\s*dialog === graphicalDialog[\s\S]*?updateGraphicalPreviewOverlap\(\{\s*immediate:\s*true\s*\}\)/s);
 
-console.log('PASS Clock/Timer settings start collapsed, animate details, and fade a bottom preview only over rendered settings');
+console.log('PASS Clock/Timer settings start collapsed, animate details, and render only a circular fading clock at the bottom');
