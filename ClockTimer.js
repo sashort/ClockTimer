@@ -19921,9 +19921,6 @@
                     this.#handRing
                 );
 
-            const diameter =
-                this.#getEffectiveRenderDiameter();
-
             let inset =
                 Number.parseFloat(
                     this.#handRing
@@ -19939,6 +19936,66 @@
             }
 
             if (
+                !this.#keepAspectRatio &&
+                Number.isFinite(inset)
+            ) {
+                const rect =
+                    this.getBoundingClientRect();
+
+                if (
+                    Number.isFinite(rect.width) &&
+                    Number.isFinite(rect.height) &&
+                    rect.width > 0 &&
+                    rect.height > 0
+                ) {
+                    const resolvedInset =
+                        Math.max(
+                            0,
+                            inset
+                        );
+
+                    const handWidth =
+                        Math.max(
+                            0,
+                            rect.width -
+                                resolvedInset *
+                                2
+                        );
+
+                    const handHeight =
+                        Math.max(
+                            0,
+                            rect.height -
+                                resolvedInset *
+                                2
+                        );
+
+                    this.#handLayer.style.inset =
+                        "auto";
+
+                    this.#handLayer.style.top =
+                        "50%";
+
+                    this.#handLayer.style.left =
+                        "50%";
+
+                    this.#handLayer.style.width =
+                        `${handWidth}px`;
+
+                    this.#handLayer.style.height =
+                        `${handHeight}px`;
+
+                    this.#handLayer.style.transform =
+                        "translate(-50%, -50%)";
+
+                    return;
+                }
+            }
+
+            const diameter =
+                this.#getEffectiveRenderDiameter();
+
+            if (
                 Number.isFinite(diameter) &&
                 Number.isFinite(inset)
             ) {
@@ -19949,7 +20006,8 @@
                             Math.max(
                                 0,
                                 inset
-                            ) * 2
+                            ) *
+                            2
                     );
 
                 this.#handLayer.style.inset =
@@ -19992,6 +20050,375 @@
                 "";
         }
 
+        #getEllipseRadiusForAngle(
+            rect,
+            angle
+        ) {
+            const radiusX =
+                rect.width /
+                2;
+
+            const radiusY =
+                rect.height /
+                2;
+
+            if (
+                !Number.isFinite(radiusX) ||
+                !Number.isFinite(radiusY) ||
+                radiusX <= 0 ||
+                radiusY <= 0
+            ) {
+                return undefined;
+            }
+
+            const radians =
+                angle *
+                Math.PI /
+                180;
+
+            const sin =
+                Math.sin(
+                    radians
+                );
+
+            const cos =
+                Math.cos(
+                    radians
+                );
+
+            const denominator =
+                Math.sqrt(
+                    (
+                        sin *
+                        sin
+                    ) /
+                        (
+                            radiusX *
+                            radiusX
+                        ) +
+                    (
+                        cos *
+                        cos
+                    ) /
+                        (
+                            radiusY *
+                            radiusY
+                        )
+                );
+
+            if (
+                !Number.isFinite(
+                    denominator
+                ) ||
+                denominator <= 0
+            ) {
+                return undefined;
+            }
+
+            return 1 /
+                denominator;
+        }
+
+        #getHandRadiusFraction(
+            hand
+        ) {
+            const type =
+                hand?.clockTimerHand;
+
+            if (
+                !type ||
+                !this.#handLayer
+            ) {
+                return undefined;
+            }
+
+            const value =
+                getComputedStyle(
+                    this
+                )
+                    .getPropertyValue(
+                        `--clock-timer-${type}-hand-length`
+                    )
+                    .trim();
+
+            const percentage =
+                value.match(
+                    /^(-?(?:\d+\.?\d*|\.\d+))%$/
+                );
+
+            if (percentage) {
+                const parsed =
+                    Number(
+                        percentage[1]
+                    );
+
+                if (
+                    Number.isFinite(
+                        parsed
+                    )
+                ) {
+                    return Math.max(
+                        0,
+                        parsed /
+                            50
+                    );
+                }
+            }
+
+            const layerRect =
+                this.#handLayer
+                    .getBoundingClientRect();
+
+            if (
+                !Number.isFinite(
+                    layerRect.height
+                ) ||
+                layerRect.height <= 0
+            ) {
+                return undefined;
+            }
+
+            const previousHeight =
+                hand.style.height;
+
+            hand.style.removeProperty(
+                "height"
+            );
+
+            const resolvedHeight =
+                Number.parseFloat(
+                    getComputedStyle(
+                        hand
+                    ).height
+                );
+
+            if (previousHeight) {
+                hand.style.height =
+                    previousHeight;
+            }
+            else {
+                hand.style.removeProperty(
+                    "height"
+                );
+            }
+
+            if (
+                !Number.isFinite(
+                    resolvedHeight
+                )
+            ) {
+                return undefined;
+            }
+
+            return Math.max(
+                0,
+                resolvedHeight /
+                    (
+                        layerRect.height /
+                        2
+                    )
+            );
+        }
+
+        #getHandLengthForAngle(
+            hand,
+            angle
+        ) {
+            if (
+                this.#keepAspectRatio ||
+                !this.#handLayer
+            ) {
+                return undefined;
+            }
+
+            const rect =
+                this.#handLayer
+                    .getBoundingClientRect();
+
+            const radius =
+                this.#getEllipseRadiusForAngle(
+                    rect,
+                    angle
+                );
+
+            const fraction =
+                this.#getHandRadiusFraction(
+                    hand
+                );
+
+            if (
+                !Number.isFinite(radius) ||
+                !Number.isFinite(fraction)
+            ) {
+                return undefined;
+            }
+
+            return Math.max(
+                0,
+                radius *
+                    fraction
+            );
+        }
+
+        #setHandGeometry(
+            hand,
+            angle
+        ) {
+            if (!hand) return;
+
+            const length =
+                this.#getHandLengthForAngle(
+                    hand,
+                    angle
+                );
+
+            if (
+                Number.isFinite(
+                    length
+                )
+            ) {
+                hand.style.height =
+                    `${length}px`;
+            }
+            else {
+                hand.style.removeProperty(
+                    "height"
+                );
+            }
+
+            hand.style.transform =
+                `translate(-50%, -100%) rotate(${angle}deg)`;
+        }
+
+        #syncEllipticalTickMarks() {
+            if (!this.#tickMarkLayer) {
+                return;
+            }
+
+            const tracks =
+                Array.from(
+                    this.#tickMarkLayer
+                        .children
+                );
+
+            if (
+                this.#keepAspectRatio
+            ) {
+                for (const track of tracks) {
+                    for (
+                        const property of
+                            [
+                                "inset",
+                                "left",
+                                "top",
+                                "width",
+                                "height",
+                                "transform"
+                            ]
+                    ) {
+                        track.style.removeProperty(
+                            property
+                        );
+                    }
+                }
+
+                return;
+            }
+
+            const rect =
+                this.#tickMarkLayer
+                    .getBoundingClientRect();
+
+            const radiusX =
+                rect.width /
+                2;
+
+            const radiusY =
+                rect.height /
+                2;
+
+            if (
+                !Number.isFinite(radiusX) ||
+                !Number.isFinite(radiusY) ||
+                radiusX <= 0 ||
+                radiusY <= 0
+            ) {
+                return;
+            }
+
+            for (const track of tracks) {
+                const second =
+                    Number(
+                        track.clockTimerTickSecond
+                    );
+
+                if (
+                    !Number.isFinite(
+                        second
+                    )
+                ) {
+                    continue;
+                }
+
+                const angle =
+                    second *
+                    6;
+
+                const radians =
+                    angle *
+                    Math.PI /
+                    180;
+
+                const sin =
+                    Math.sin(
+                        radians
+                    );
+
+                const cos =
+                    Math.cos(
+                        radians
+                    );
+
+                const x =
+                    50 +
+                    sin *
+                    50;
+
+                const y =
+                    50 -
+                    cos *
+                    50;
+
+                const rotation =
+                    Math.atan2(
+                        radiusX *
+                            sin,
+                        radiusY *
+                            cos
+                    ) *
+                    180 /
+                    Math.PI;
+
+                track.style.inset =
+                    "auto";
+
+                track.style.left =
+                    `${x}%`;
+
+                track.style.top =
+                    `${y}%`;
+
+                track.style.width =
+                    "0px";
+
+                track.style.height =
+                    "0px";
+
+                track.style.transform =
+                    `rotate(${rotation}deg)`;
+            }
+        }
+
         #syncTickMarkGeometry() {
             this.#ensureTickRing();
 
@@ -20012,6 +20439,8 @@
 
             this.#tickMarkLayer.style.inset =
                 inset;
+
+            this.#syncEllipticalTickMarks();
         }
 
         #startTickGeometryTracking() {
