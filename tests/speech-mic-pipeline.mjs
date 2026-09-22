@@ -59,10 +59,21 @@ assert.equal(typeof bar.setResponse, "function");
 assert.equal(typeof bar.clearResponse, "function");
 assert.equal(typeof bar.clear, "function");
 
-window.SpeechMenu.silenceTimeout = 5000;
 assert.equal(window.SpeechMenu.silenceTimeout, 5000);
+window.SpeechMenu.silenceTimeout = 6000;
+assert.equal(window.SpeechMenu.silenceTimeout, 6000);
+
+assert.equal(window.SpeechMenu.commitSilenceTimeout, 350);
+window.SpeechMenu.commitSilenceTimeout = 425;
+assert.equal(window.SpeechMenu.commitSilenceTimeout, 425);
 assert.throws(
     () => { window.SpeechMenu.silenceTimeout = 50; },
+    error =>
+        error?.name === "RangeError" &&
+        /at least 100 milliseconds/.test(error.message)
+);
+assert.throws(
+    () => { window.SpeechMenu.commitSilenceTimeout = 50; },
     error =>
         error?.name === "RangeError" &&
         /at least 100 milliseconds/.test(error.message)
@@ -78,8 +89,9 @@ assert.equal(bubbledStarted, 1);
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceStarted", {detail:{id:7}}));
 assert.equal(bar.getAttribute("state"), "utterance");
 
-window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceFinished", {detail:{id:7}}));
-window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscribed", {detail:{id:7,transcript:"start at five"}}));
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at"}}));
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at five"}}));
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscribed", {detail:{id:7,transcript:"start at five",live:true}}));
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechPreprocessed", {detail:{utteranceId:7,originalText:"start at five",processedText:"start at 5:00"}}));
 assert.equal(bar.getAttribute("phase"), "preprocessed");
 
@@ -117,3 +129,11 @@ console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*7;[^}]*display:\s*block;/s);
 assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
+
+const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
+assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
+assert.match(speechMenuSource, /interimResults\s*=\s*true/);
+assert.match(speechMenuSource, /recognition\.start\(\s*SpeechMenu\.#micTrack\s*\)/s);
+assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
+assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
