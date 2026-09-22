@@ -1,0 +1,154 @@
+name: Temporary live ClockTimer preview smoke
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/live-preview-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright@1.55.0 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Verify deployed live preview
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { chromium } from 'playwright';
+          import { PNG } from 'pngjs';
+
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({
+            viewport: { width: 1280, height: 900 }
+          });
+
+          try {
+            await page.goto('https://wmof.sashort-apps.com/', {
+              waitUntil: 'networkidle',
+              timeout: 60000
+            });
+
+            await page.waitForFunction(() =>
+              customElements.get('clock-timer') &&
+              document.querySelector('#clockPreview')
+            );
+
+            await page.evaluate(() => {
+              for (const dialog of document.querySelectorAll('dialog[open]')) {
+                try { dialog.close(); } catch {}
+              }
+
+              const dialog = document.querySelector('#graphicalSettingsDialog');
+              if (!dialog.open) dialog.showModal();
+            });
+
+            await page.waitForFunction(() => {
+              const preview = document.querySelector('#clockPreview');
+              if (!preview) return false;
+              const rect = preview.getBoundingClientRect();
+              return rect.width > 150 && rect.height > 100;
+            }, { timeout: 10000 });
+
+            await page.addStyleTag({
+              content: `
+                html, body,
+                #graphicalSettingsDialog,
+                #graphicalSettingsForm,
+                .graphical-settings-grid,
+                .clock-preview {
+                  background: transparent !important;
+                  box-shadow: none !important;
+                }
+
+                #graphicalSettingsDialog *:not(.clock-preview):not(.clock-preview *) {
+                  visibility: hidden !important;
+                }
+
+                .clock-preview,
+                .clock-preview * {
+                  visibility: visible !important;
+                }
+              `
+            });
+
+            await page.waitForTimeout(250);
+
+            const state = await page.evaluate(() => {
+              const preview = document.querySelector('#clockPreview');
+              const rect = preview.getBoundingClientRect();
+              const style = getComputedStyle(preview);
+
+              return {
+                width: rect.width,
+                height: rect.height,
+                display: style.display,
+                visibility: style.visibility,
+                opacity: Number.parseFloat(style.opacity || '1'),
+                keepAspectRatio: preview.keepAspectRatio,
+                faceBackground: style.getPropertyValue(
+                  '--clock-timer-face-background-color'
+                ).trim(),
+                activeRingBackground: style.getPropertyValue(
+                  '--clock-timer-active-ring-background-color'
+                ).trim(),
+                rings: Array.from(preview.children)
+                  .filter(child => child.localName === 'ring-container')
+                  .map(child => {
+                    const ringRect = child.getBoundingClientRect();
+                    return {
+                      width: ringRect.width,
+                      height: ringRect.height
+                    };
+                  })
+              };
+            });
+
+            assert(state.width > 150, 'live preview has usable width');
+            assert(state.height > 100, 'live preview has usable height');
+            assert.notEqual(state.display, 'none', 'live preview is displayed');
+            assert.notEqual(state.visibility, 'hidden', 'live preview is visible');
+            assert(state.opacity > 0, 'live preview opacity is nonzero');
+            assert.equal(state.keepAspectRatio, false, 'live preview uses free-aspect renderer');
+            assert.equal(state.faceBackground, 'transparent');
+            assert.equal(state.activeRingBackground, 'transparent');
+            assert(state.rings.length >= 4, 'live preview has renderer rings');
+            assert(state.rings.every(ring =>
+              Math.abs(ring.width - state.width) < 1 &&
+              Math.abs(ring.height - state.height) < 1
+            ), 'live preview rings fill the resolved render box');
+
+            const image = PNG.sync.read(
+              await page.locator('#clockPreview').screenshot({
+                omitBackground: true
+              })
+            );
+
+            let painted = 0;
+            for (let index = 3; index < image.data.length; index += 4) {
+              if (image.data[index] > 0) painted += 1;
+            }
+
+            assert(
+              painted > 100,
+              `live preview must paint visible pixels; got ${painted}`
+            );
+
+            console.log(JSON.stringify({ ...state, paintedPixels: painted }));
+            console.log('PASS deployed WMOF ClockTimer live preview paints');
+          }
+          finally {
+            await browser.close();
+          }
+          NODE
