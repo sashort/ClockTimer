@@ -249,6 +249,9 @@
         #intervalElapsedBehavior =
             "startLatency";
 
+        #keepAspectRatio =
+            true;
+
         #autoRestartTripAfterLateBreak =
             false;
 
@@ -481,6 +484,13 @@
                             at
                             50% 50%
                         );
+                }
+
+                :host([data-clock-timer-free-aspect-ratio]) {
+                    inline-size: 100%;
+                    block-size: 100%;
+                    aspect-ratio: auto;
+                    margin: 0;
                 }
 
                 #clock-face {
@@ -1557,6 +1567,11 @@
                 }
             }
             this.#captureFaceBackground();
+
+            this.toggleAttribute(
+                "data-clock-timer-free-aspect-ratio",
+                !this.#keepAspectRatio
+            );
 
             this.#ensureAttributes();
 
@@ -6020,6 +6035,49 @@
 
         get connected() {
             return this.networkStatus === "online";
+        }
+
+        get keepAspectRatio() {
+            return this.#keepAspectRatio;
+        }
+
+        set keepAspectRatio(value) {
+            const next =
+                Boolean(
+                    value
+                );
+
+            if (
+                next ===
+                    this.#keepAspectRatio
+            ) {
+                return;
+            }
+
+            this.#keepAspectRatio =
+                next;
+
+            this.toggleAttribute(
+                "data-clock-timer-free-aspect-ratio",
+                !next
+            );
+
+            this.#syncHandGeometry();
+            this.#syncTickMarkGeometry();
+            this.#scheduleHourRender();
+            this.#scheduleIndicatorSymbolUpdate();
+            this.#scheduleResponsiveMetrics();
+
+            if (
+                this.#handsStarted &&
+                this.isConnected
+            ) {
+                this.#synchronizeHands(
+                    new Date()
+                );
+            }
+
+            this.#refreshTimeRangeVisualGeometry();
         }
 
         get percentMode() {
