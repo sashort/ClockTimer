@@ -18177,11 +18177,6 @@
                 return;
             }
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             for (const range of record.ranges) {
                 this.#resumeRangeRendering(range);
             }
@@ -18252,11 +18247,6 @@
                 this.#ensureStateChangeOverlayRing(
                     state,
                     sourceRing
-                );
-
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
                 );
 
             const fittedBounds =
@@ -21732,11 +21722,6 @@
                 return;
             }
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
 
 
             const boundsChanged =
@@ -22757,10 +22742,6 @@
             range,
             state
         ) {
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
 
             if (
                 this.#timeRangeTimingAnimations.get(
@@ -22898,11 +22879,6 @@
             ) {
                 return;
             }
-
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
 
             if (!range.isConnected) {
                 this.#timeRangeTimingAnimations.delete(
@@ -23059,21 +23035,12 @@
                 range
             );
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             this.#resumeRangeRendering(range);
 
             return true;
         }
 
         #cancelTimeRangeTimingAnimations() {
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
 
             for (
                 const [range, state] of
@@ -23554,11 +23521,6 @@
                 range
             );
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             this.#suspendRangeRendering(range);
 
             state.suspendedRanges.add(
@@ -23773,11 +23735,6 @@
                 }
             }
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             for (const range of existing.values()) {
                 state.suspendedRanges.delete(
                     range
@@ -23869,11 +23826,6 @@
                 state.targetEnd
             );
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             for (
                 const range of
                     state.suspendedRanges
@@ -23948,11 +23900,6 @@
                     state.frame
                 );
             }
-
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
 
             for (
                 const range of
@@ -24564,11 +24511,6 @@
                             target.type,
                             target.start,
                             target.end
-                        );
-
-                    const TimeRangeClass =
-                        customElements.get(
-                            "time-range"
                         );
 
                     this.#suspendRangeRendering(range);
@@ -26515,11 +26457,6 @@
             ) {
                 return false;
             }
-
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
 
             const previousStart =
                 Number(
