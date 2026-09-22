@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: clocktimer-renderer-rebuild
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
