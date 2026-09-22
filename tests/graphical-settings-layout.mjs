@@ -36,7 +36,7 @@ assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px 16px calc\(var\(--graphical-preview-height\) \+ 16px\);[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-width:[^}]*--graphical-preview-clock-height:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
 assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*var\(--graphical-preview-clock-height\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*var\(--graphical-preview-clock-height\);[^}]*aspect-ratio:\s*auto;[^}]*background:\s*var\(--wm-blue-dark\);[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*var\(--graphical-preview-clock-height\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*var\(--graphical-preview-clock-height\);[^}]*aspect-ratio:\s*auto;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
@@ -62,17 +62,23 @@ assert.match(js, /graphicalDialog\.addEventListener\(\s*"opened",[\s\S]*?applyGr
 
 assert.match(clockTimerSource, /#keepAspectRatio\s*=\s*true;/);
 assert.match(clockTimerSource, /get keepAspectRatio\(\)\s*\{[\s\S]*?return this\.#keepAspectRatio;/s);
-assert.match(clockTimerSource, /set keepAspectRatio\(value\)\s*\{[\s\S]*?data-clock-timer-free-aspect-ratio/s);
-assert.match(clockTimerSource, /:host\(\[data-clock-timer-free-aspect-ratio\]\)\s*\{[^}]*inline-size:\s*100%;[^}]*block-size:\s*100%;[^}]*aspect-ratio:\s*auto;/s);
-assert.match(clockTimerSource, /:host\(\[data-clock-timer-free-aspect-ratio\]\) #hand-layer,[\s\S]*?#tick-marks\s*\{[^}]*opacity:\s*1 !important;/s, 'free-aspect visual layers stay painted');
-assert.match(clockTimerSource, /#getEffectiveRenderDiameter\(\)\s*\{[\s\S]*?Math\.min\(\s*rect\.width,\s*rect\.height\s*\)/s);
-assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?!this\.#keepAspectRatio[\s\S]*?const handWidth =[\s\S]*?rect\.width[\s\S]*?const handHeight =[\s\S]*?rect\.height[\s\S]*?this\.#handLayer\.style\.width =\s*\`\$\{handWidth\}px\`;[\s\S]*?this\.#handLayer\.style\.height =\s*\`\$\{handHeight\}px\`;/s);
+assert.match(clockTimerSource, /set keepAspectRatio\(value\)\s*\{[\s\S]*?data-clock-timer-free-aspect-ratio[\s\S]*?this\.refreshLayout\(\)/s);
+assert.match(clockTimerSource, /--clock-timer-face-background-color:\s*transparent;/);
+assert.match(clockTimerSource, /--clock-timer-active-ring-background-color:\s*transparent;/);
+assert.match(clockTimerSource, /#render-box\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*clip-path:\s*ellipse/s);
+assert.match(clockTimerSource, /#layoutRenderer\(\)\s*\{[\s\S]*?hostRect[\s\S]*?this\.#keepAspectRatio[\s\S]*?Math\.min\([\s\S]*?this\.#renderBox\.style\.width[\s\S]*?this\.#renderBox\.style\.height/s);
+assert.match(clockTimerSource, /#syncActiveRingBackground\(\)\s*\{[\s\S]*?#activeRingBackground[\s\S]*?renderedInset[\s\S]*?renderedWidth[\s\S]*?borderWidth/s);
+assert.match(clockTimerSource, /#face-background\s*\{[^}]*background:[\s\S]*?--clock-timer-face-background-color/s);
+assert.match(clockTimerSource, /#active-ring-background\s*\{[^}]*border-color:[\s\S]*?--clock-timer-active-ring-background-color/s);
+assert.match(clockTimerSource, /#getEffectiveRenderDiameter\(\)\s*\{[\s\S]*?#getRenderRect\(\)[\s\S]*?Math\.min\(\s*rect\.width,\s*rect\.height\s*\)/s);
+assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?#getRenderRect\(\)[\s\S]*?rect\.width[\s\S]*?rect\.height[\s\S]*?#handLayer\.style\.width[\s\S]*?#handLayer\.style\.height/s);
 assert.match(clockTimerSource, /#getEllipseRadiusForAngle\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?Math\.sqrt/s);
 assert.match(clockTimerSource, /#getHandLengthForAngle\([\s\S]*?radius \*\s*fraction/s);
 assert.match(clockTimerSource, /#syncEllipticalTickMarks\(\)[\s\S]*?Math\.atan2\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?track\.style\.left[\s\S]*?track\.style\.top/s);
 assert.match(clockTimerSource, /#synchronizeHands\([\s\S]*?#setHandGeometry\([\s\S]*?this\.#hourHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#minuteHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#secondHand/s);
 assert.match(clockTimerSource, /previousSecondHeight[\s\S]*?overshootSecondHeight[\s\S]*?settledSecondHeight[\s\S]*?keyframe\.height/s);
-assert.match(clockTimerSource, /refreshLayout\(\)\s*\{[\s\S]*?#syncFaceBackgroundFromExternalCSS\(\)[\s\S]*?#syncHandGeometry\(\)[\s\S]*?#syncTickMarkGeometry\(\)[\s\S]*?#scheduleHourRender\(\)[\s\S]*?#updateTickMarks\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)[\s\S]*?return true;/s);
+assert.match(clockTimerSource, /refreshLayout\(\)\s*\{[\s\S]*?#layoutRenderer\(\)[\s\S]*?#syncHandGeometry\(\)[\s\S]*?#syncTickMarkGeometry\(\)[\s\S]*?#scheduleHourRender\(\)[\s\S]*?#updateTickMarks\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)[\s\S]*?#syncActiveRingBackground\(\)[\s\S]*?return true;/s);
+assert.match(clockTimerSource, /#startSizeObserver\(\)\s*\{[\s\S]*?ResizeObserver[\s\S]*?#layoutRenderer\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)/s);
 assert.match(clockTimerSource, /#updateResponsiveMetrics\(\)\s*\{[\s\S]*?this\.#getEffectiveRenderDiameter\(\)/s);
 
-console.log('PASS Clock/Timer settings start collapsed, animate details, fade the bottom preview on overlap, and support free-aspect ClockTimer geometry');
+console.log('PASS Clock/Timer settings use the rebuilt render box, transparent preview surfaces, and unified square/ellipse geometry');
