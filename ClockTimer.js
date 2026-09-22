@@ -443,7 +443,6 @@
                     isolation: isolate;
                     perspective:
                         var(--clock-timer-spin-perspective, 800px);
-                    container-type: size;
                 }
 
                 #render-box {
