@@ -36,7 +36,7 @@ jobs:
 
           try {
             await page.goto('https://wmof.sashort-apps.com/', {
-              waitUntil: 'networkidle',
+              waitUntil: 'domcontentloaded',
               timeout: 60000
             });
 
