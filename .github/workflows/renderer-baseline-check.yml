@@ -1,0 +1,29 @@
+name: Renderer rebuild baseline check
+
+on:
+  push:
+    branches:
+      - rebuild-clocktimer-renderer
+    paths:
+      - '.github/workflows/renderer-baseline-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  main-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Run custom range goal baseline
+        working-directory: tests
+        run: node custom-range-goals.mjs
