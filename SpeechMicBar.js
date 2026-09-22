@@ -6,7 +6,9 @@ class SpeechMicBar extends HTMLElement {
         "unmuted",
         "utteranceStarted",
         "utteranceFinished",
+        "utteranceTranscriptChanged",
         "utteranceTranscribed",
+        "utteranceCommitted",
         "speechCommandMatched",
         "speechMenuMatched",
         "speechPreprocessed",
@@ -14,6 +16,7 @@ class SpeechMicBar extends HTMLElement {
         "speechCommandExecuted",
         "speechRecognitionError",
         "speechRecognitionFailed",
+        "speechRecognitionStreamingFailed",
         "speechCaptureEnded",
         "utteranceUnrecognized",
         "audioLevelChanged"
@@ -416,14 +419,41 @@ class SpeechMicBar extends HTMLElement {
                 break;
             case "utteranceFinished":
                 if (detail?.id === this.#currentUtteranceId) {
-                    this.setAttribute("state", globalThis.SpeechMenu?.muted ? "muted" : "listening");
-                    this.#showStatus("Processing…");
+                    this.setAttribute(
+                        "state",
+                        globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                    );
+
+                    if (!detail?.committed) {
+                        this.#showStatus("Processing…");
+                    }
+                }
+                break;
+            case "utteranceTranscriptChanged":
+                if (detail?.id === this.#currentUtteranceId) {
+                    this.#currentTranscript =
+                        detail.transcript || "";
+                    this.#showText(
+                        this.#currentTranscript
+                    );
                 }
                 break;
             case "utteranceTranscribed":
                 if (detail?.id === this.#currentUtteranceId) {
                     this.#currentTranscript = detail.transcript || "";
                     this.#showText(this.#currentTranscript);
+                }
+                break;
+            case "utteranceCommitted":
+                if (detail?.id === this.#currentUtteranceId) {
+                    this.setAttribute(
+                        "state",
+                        globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                    );
                 }
                 break;
             case "speechPreprocessed":
