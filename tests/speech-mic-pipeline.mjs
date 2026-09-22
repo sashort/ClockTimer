@@ -28,14 +28,26 @@ window.SpeechRecognition = class {
     abort() { this.onend?.(); }
 };
 
-window.eval(fs.readFileSync(new URL("../ParameterParser.js", import.meta.url), "utf8") + "\nwindow.ParameterParser = ParameterParser;");
-globalThis.ParameterParser = window.ParameterParser;
+const ParameterParser = Function(
+    fs.readFileSync(new URL("../ParameterParser.js", import.meta.url), "utf8") +
+    "\nreturn ParameterParser;"
+)();
+globalThis.ParameterParser = ParameterParser;
+window.ParameterParser = ParameterParser;
 
-window.eval(fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8"));
-globalThis.SpeechMenu = window.SpeechMenu;
+const SpeechMenu = Function(
+    fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8") +
+    "\nreturn SpeechMenu;"
+)();
+globalThis.SpeechMenu = SpeechMenu;
+window.SpeechMenu = SpeechMenu;
 
-window.eval(fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"));
-globalThis.SpeechMicBar = window.SpeechMicBar;
+const SpeechMicBar = Function(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8") +
+    "\nreturn SpeechMicBar;"
+)();
+globalThis.SpeechMicBar = SpeechMicBar;
+window.SpeechMicBar = SpeechMicBar;
 
 const bar = window.document.createElement("speech-mic-bar");
 window.document.body.append(bar);
