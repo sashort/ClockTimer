@@ -21916,6 +21916,16 @@
                         () => {
                             this.#scheduleResponsiveMetrics();
                             this.#scheduleIndicatorSymbolUpdate();
+                            this.#syncHandGeometry();
+                            this.#syncTickMarkGeometry();
+
+                            if (
+                                this.#handsStarted
+                            ) {
+                                this.#synchronizeHands(
+                                    new Date()
+                                );
+                            }
 
                             this.#refreshTimeRangeVisualGeometry();
                         }
@@ -31166,11 +31176,15 @@
             const secondAngle =
                 seconds * 6;
 
-            this.#hourHand.style.transform =
-                `translate(-50%, -100%) rotate(${hourAngle}deg)`;
+            this.#setHandGeometry(
+                this.#hourHand,
+                hourAngle
+            );
 
-            this.#minuteHand.style.transform =
-                `translate(-50%, -100%) rotate(${minuteAngle}deg)`;
+            this.#setHandGeometry(
+                this.#minuteHand,
+                minuteAngle
+            );
 
             const previousSecondAngle =
                 Number.isFinite(
@@ -31190,8 +31204,10 @@
                 previousSecondAngle +
                 secondAdvance;
 
-            this.#secondHand.style.transform =
-                `translate(-50%, -100%) rotate(${secondAngle}deg)`;
+            this.#setHandGeometry(
+                this.#secondHand,
+                secondAngle
+            );
 
             this.#secondHandTickAnimation
                 ?.cancel();
@@ -31202,22 +31218,68 @@
                     "(prefers-reduced-motion: reduce)"
                 )?.matches
             ) {
+                const previousSecondHeight =
+                    this.#getHandLengthForAngle(
+                        this.#secondHand,
+                        previousSecondAngle
+                    );
+
+                const overshootSecondAngle =
+                    settledSecondAngle +
+                    0.8;
+
+                const overshootSecondHeight =
+                    this.#getHandLengthForAngle(
+                        this.#secondHand,
+                        overshootSecondAngle
+                    );
+
+                const settledSecondHeight =
+                    this.#getHandLengthForAngle(
+                        this.#secondHand,
+                        settledSecondAngle
+                    );
+
+                const handKeyframe =
+                    (
+                        angle,
+                        height
+                    ) => {
+                        const keyframe = {
+                            transform:
+                                `translate(-50%, -100%) rotate(${angle}deg)`
+                        };
+
+                        if (
+                            Number.isFinite(
+                                height
+                            )
+                        ) {
+                            keyframe.height =
+                                `${height}px`;
+                        }
+
+                        return keyframe;
+                    };
+
                 const animation =
                     this.#secondHand.animate(
                         [
+                            handKeyframe(
+                                previousSecondAngle,
+                                previousSecondHeight
+                            ),
                             {
-                                transform:
-                                    `translate(-50%, -100%) rotate(${previousSecondAngle}deg)`
+                                ...handKeyframe(
+                                    overshootSecondAngle,
+                                    overshootSecondHeight
+                                ),
+                                offset: 0.78
                             },
-                            {
-                                offset: 0.78,
-                                transform:
-                                    `translate(-50%, -100%) rotate(${settledSecondAngle + 0.8}deg)`
-                            },
-                            {
-                                transform:
-                                    `translate(-50%, -100%) rotate(${settledSecondAngle}deg)`
-                            }
+                            handKeyframe(
+                                settledSecondAngle,
+                                settledSecondHeight
+                            )
                         ],
                         {
                             duration: 180,
