@@ -305,7 +305,7 @@ helpPopover.showPopover=()=>{};
 helpPopover.hidePopover=()=>{};
 const graphicalDialog=window.document.querySelector('#graphicalSettingsDialog');
 const settingsCategories=[...graphicalDialog.querySelectorAll('.settings-category')];
-assert.equal(settingsCategories.length,6);
+assert.equal(settingsCategories.length,4);
 assert.equal(settingsCategories.filter(category=>category.open).length,1);
 settingsCategories[1].open=true;settingsCategories[1].dispatchEvent(new window.Event('toggle'));
 assert.equal(settingsCategories.filter(category=>category.open).length,1);assert.equal(settingsCategories[1].open,true);
@@ -315,6 +315,23 @@ assert.equal(graphicalDialog.querySelector('[for="breakBufferColor"]').textConte
 assert.equal(graphicalDialog.querySelector('[for="toleranceColor"]').textContent,'B-Game');
 assert.equal(graphicalDialog.querySelector('[for="latencyColor"]').textContent,'Late Start');
 assert.deepEqual([...graphicalDialog.querySelectorAll('.timer-color-category>h3')].map(node=>node.textContent),['Normal','Performance','Time Based','Down Time']);
+assert.equal([...graphicalDialog.querySelectorAll('.settings-category>summary')].at(-1).textContent,'Clock Font and Color');
+assert(graphicalDialog.querySelector('[name="clockFont"]'));
+for(const removedName of ['hourFont','timeFont','hourFontSize','timeFontSize','hourHandWidth','minuteHandWidth','secondHandWidth','activeRingWidth','inactiveRingWidth','borderWidth']) {
+ assert.equal(graphicalDialog.querySelector(`[name="${removedName}"]`),null);
+}
+const clockFontInput=graphicalDialog.querySelector('[name="clockFont"]');
+clockFontInput.value='Georgia, serif';
+clockFontInput.dispatchEvent(new window.Event('input',{bubbles:true}));
+assert.equal(window.document.querySelector('#clockPreview').style.getPropertyValue('--clock-timer-hour-font'),'Georgia, serif');
+assert.equal(window.document.querySelector('#clockPreview').style.getPropertyValue('--clock-timer-time-font'),'Georgia, serif');
+const clockTimerSource=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
+assert.match(clockTimerSource,/static #BASE_METRICS\s*=\s*Object\.freeze/);
+assert.match(clockTimerSource,/#updateResponsiveMetrics\(\)/);
+for(const variable of ['--clock-timer-active-ring-width','--clock-timer-inactive-ring-width','--clock-timer-border-width','--clock-timer-hour-font-size','--clock-timer-time-font-size','--clock-timer-hour-hand-width','--clock-timer-minute-hand-width','--clock-timer-second-hand-width']) {
+ assert.match(clockTimerSource,new RegExp(variable));
+}
+console.log('PASS structural clock sizing is centralized while one GUI font drives both internal clock fonts');
 const appCssText=fs.readFileSync(new URL('../app.css',import.meta.url),'utf8');
 assert.match(appCssText,/clock-timer time-range\[type="overtime"\]\s*\{[^}]*--clock-timer-overtime-color/s);
 assert.match(appCssText,/clock-timer\[hide-overtime\] time-range\[type="overtime"\]\s*\{[^}]*--clock-timer-trip-color/s);

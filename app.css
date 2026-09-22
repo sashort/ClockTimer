@@ -398,16 +398,11 @@ clock-timer {
     background: transparent;
     --clock-timer-time-font: Helvetica, Arial, sans-serif;
     --clock-timer-hour-font: Helvetica, Arial, sans-serif;
-    --clock-timer-time-font-size: 48px;
-    --clock-timer-hour-font-size: 24px;
     --clock-timer-hour-hand-length: 28%;
-    --clock-timer-hour-hand-width: 5px;
     --clock-timer-hour-hand-color: var(--wm-white);
     --clock-timer-minute-hand-length: 38%;
-    --clock-timer-minute-hand-width: 4px;
     --clock-timer-minute-hand-color: var(--wm-white);
     --clock-timer-second-hand-length: 42%;
-    --clock-timer-second-hand-width: 2px;
     --clock-timer-second-hand-color: var(--wm-yellow);
     --clock-timer-time-color: var(--wm-white);
     --clock-timer-tick-color: var(--wm-white);
@@ -974,16 +969,35 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 
 .style-row > span { font-size: 16px; }
 
-.three-control-row {
-    grid-template-columns: minmax(90px, 0.8fr) repeat(3, minmax(0, 1fr));
+.hand-style-row {
+    grid-template-columns: minmax(130px, 1fr) minmax(90px, 0.7fr);
     align-items: end;
 }
 
-.three-control-row > label {
+.hand-style-row > label {
     display: grid;
     grid-template-columns: 1fr;
     gap: 5px;
     font-size: 13px;
+}
+
+.clock-color-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.clock-color-grid > label {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54px;
+    align-items: center;
+    gap: 10px;
+}
+
+.clock-color-grid input[type="color"] {
+    width: 54px;
+    min-width: 54px;
+    height: 38px;
+    justify-self: end;
 }
 
 .clock-preview {
@@ -1757,11 +1771,6 @@ button:active:not(:disabled):not(#goalSyncButton) {
         width: clamp(24px, 6.5vw, 27px);
         height: clamp(24px, 6.5vw, 27px);
         border-width: 2px;
-    }
-
-    clock-timer {
-        --clock-timer-time-font-size: clamp(40px, 11vw, 46px);
-        --clock-timer-hour-font-size: clamp(20px, 5.5vw, 23px);
     }
 
     .trip-log-button {

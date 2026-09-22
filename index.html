@@ -391,54 +391,33 @@
                     <details class="settings-category" name="clock-timer-settings-category">
                         <summary>Hand Styling</summary>
                         <div class="settings-category-content">
-                        <div class="style-row three-control-row">
+                        <div class="style-row hand-style-row">
                             <span class="hand-caption"><span>Hour Hand</span><input name="showHourHand" type="checkbox" checked aria-label="Show Hour Hand"></span>
                             <label>Length<input name="hourHandLength" value="28%"></label>
-                            <label>Width<input name="hourHandWidth" value="5px"></label>
-                            <label>Color<input name="hourHandColor" type="color" value="#ffffff"></label>
                         </div>
-                        <div class="style-row three-control-row">
+                        <div class="style-row hand-style-row">
                             <span class="hand-caption"><span>Minute Hand</span><input name="showMinuteHand" type="checkbox" checked aria-label="Show Minute Hand"></span>
                             <label>Length<input name="minuteHandLength" value="38%"></label>
-                            <label>Width<input name="minuteHandWidth" value="4px"></label>
-                            <label>Color<input name="minuteHandColor" type="color" value="#ffffff"></label>
                         </div>
-                        <div class="style-row three-control-row">
+                        <div class="style-row hand-style-row">
                             <span class="hand-caption"><span>Second Hand</span><input name="showSecondHand" type="checkbox" checked aria-label="Show Second Hand"></span>
                             <label>Length<input name="secondHandLength" value="42%"></label>
-                            <label>Width<input name="secondHandWidth" value="2px"></label>
-                            <label>Color<input name="secondHandColor" type="color" value="#ffc220"></label>
                         </div>
                     
                         </div>
                     </details>
 
                     <details class="settings-category" name="clock-timer-settings-category">
-                        <summary>Hour Number Styling</summary>
+                        <summary>Clock Font and Color</summary>
                         <div class="settings-category-content">
-                        <label>Font<input name="hourFont" value="Helvetica, Arial, sans-serif"></label>
-                        <label>Font Size<input name="hourFontSize" value="24px"></label>
-                        <label>Color<input name="hourColor" type="color" value="#ffffff"></label>
-                    
+                        <label>Clock Font<input name="clockFont" value="Helvetica, Arial, sans-serif"></label>
+                        <div class="clock-color-grid">
+                            <label>Hour Numbers<input name="hourColor" type="color" value="#ffffff"></label>
+                            <label>Current Time<input name="timeColor" type="color" value="#ffffff"></label>
+                            <label>Hour Hand<input name="hourHandColor" type="color" value="#ffffff"></label>
+                            <label>Minute Hand<input name="minuteHandColor" type="color" value="#ffffff"></label>
+                            <label>Second Hand<input name="secondHandColor" type="color" value="#ffc220"></label>
                         </div>
-                    </details>
-
-                    <details class="settings-category" name="clock-timer-settings-category">
-                        <summary>Current Time Styling</summary>
-                        <div class="settings-category-content">
-                        <label>Font<input name="timeFont" value="Helvetica, Arial, sans-serif"></label>
-                        <label>Font Size<input name="timeFontSize" value="48px"></label>
-                        <label>Color<input name="timeColor" type="color" value="#ffffff"></label>
-                    
-                        </div>
-                    </details>
-
-                    <details class="settings-category" name="clock-timer-settings-category">
-                        <summary>Ring Styling</summary>
-                        <div class="settings-category-content">
-                        <label>Active Ring Width<input name="activeRingWidth" value="12px"></label>
-                        <label>Inactive Ring Width<input name="inactiveRingWidth" value="6px"></label>
-                        <label>Border Width<input name="borderWidth" value="5px"></label>
                     
                         </div>
                     </details>

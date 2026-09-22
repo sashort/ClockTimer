@@ -52,23 +52,14 @@
         showMinuteHand: true,
         showSecondHand: true,
         hourHandLength: "28%",
-        hourHandWidth: "5px",
         hourHandColor: "#ffffff",
         minuteHandLength: "38%",
-        minuteHandWidth: "4px",
         minuteHandColor: "#ffffff",
         secondHandLength: "42%",
-        secondHandWidth: "2px",
         secondHandColor: "#ffc220",
-        hourFont: "Helvetica, Arial, sans-serif",
-        hourFontSize: "24px",
+        clockFont: "Helvetica, Arial, sans-serif",
         hourColor: "#ffffff",
-        timeFont: "Helvetica, Arial, sans-serif",
-        timeFontSize: "48px",
-        timeColor: "#ffffff",
-        activeRingWidth: "12px",
-        inactiveRingWidth: "6px",
-        borderWidth: "5px"
+        timeColor: "#ffffff"
     };
     const GRAPHICAL_HELP = {
         timerMode: {
@@ -1891,17 +1882,35 @@
 
         const settings = {};
 
+        const legacyClockFont =
+            typeof source.clockFont === "string"
+                ? source.clockFont
+                : (
+                    typeof source.timeFont === "string" &&
+                    source.timeFont !==
+                        GRAPHICAL_DEFAULTS.clockFont
+                        ? source.timeFont
+                        : typeof source.hourFont === "string"
+                            ? source.hourFont
+                            : typeof source.timeFont === "string"
+                                ? source.timeFont
+                                : undefined
+                );
+
         for (
             const [key, fallback] of
                 Object.entries(GRAPHICAL_DEFAULTS)
         ) {
             const candidate =
-                Object.prototype.hasOwnProperty.call(
-                    source,
-                    key
-                )
-                    ? source[key]
-                    : fallback;
+                key === "clockFont" &&
+                legacyClockFont !== undefined
+                    ? legacyClockFont
+                    : Object.prototype.hasOwnProperty.call(
+                        source,
+                        key
+                    )
+                        ? source[key]
+                        : fallback;
 
             // Move saved defaults to the reference palette; keep custom colors.
             if (
@@ -3312,22 +3321,14 @@
             "--clock-timer-overtime-color": settings.overtimeColor,
             "--clock-timer-latency-color": settings.latencyColor,
             "--clock-timer-hour-hand-length": settings.hourHandLength,
-            "--clock-timer-hour-hand-width": settings.hourHandWidth,
             "--clock-timer-hour-hand-color": settings.hourHandColor,
             "--clock-timer-minute-hand-length": settings.minuteHandLength,
-            "--clock-timer-minute-hand-width": settings.minuteHandWidth,
             "--clock-timer-minute-hand-color": settings.minuteHandColor,
             "--clock-timer-second-hand-length": settings.secondHandLength,
-            "--clock-timer-second-hand-width": settings.secondHandWidth,
             "--clock-timer-second-hand-color": settings.secondHandColor,
-            "--clock-timer-hour-font": settings.hourFont,
-            "--clock-timer-hour-font-size": settings.hourFontSize,
-            "--clock-timer-time-font": settings.timeFont,
-            "--clock-timer-time-font-size": settings.timeFontSize,
+            "--clock-timer-hour-font": settings.clockFont,
+            "--clock-timer-time-font": settings.clockFont,
             "--clock-timer-time-color": settings.timeColor,
-            "--clock-timer-active-ring-width": settings.activeRingWidth,
-            "--clock-timer-inactive-ring-width": settings.inactiveRingWidth,
-            "--clock-timer-border-width": settings.borderWidth,
             "--clock-timer-tick-color": settings.hourColor
         };
 
@@ -3446,23 +3447,14 @@
             showMinuteHand: form.elements.showMinuteHand.checked,
             showSecondHand: form.elements.showSecondHand.checked,
             hourHandLength: text("hourHandLength"),
-            hourHandWidth: text("hourHandWidth"),
             hourHandColor: text("hourHandColor"),
             minuteHandLength: text("minuteHandLength"),
-            minuteHandWidth: text("minuteHandWidth"),
             minuteHandColor: text("minuteHandColor"),
             secondHandLength: text("secondHandLength"),
-            secondHandWidth: text("secondHandWidth"),
             secondHandColor: text("secondHandColor"),
-            hourFont: text("hourFont"),
-            hourFontSize: text("hourFontSize"),
+            clockFont: text("clockFont"),
             hourColor: text("hourColor"),
-            timeFont: text("timeFont"),
-            timeFontSize: text("timeFontSize"),
-            timeColor: text("timeColor"),
-            activeRingWidth: text("activeRingWidth"),
-            inactiveRingWidth: text("inactiveRingWidth"),
-            borderWidth: text("borderWidth")
+            timeColor: text("timeColor")
         };
     }
 

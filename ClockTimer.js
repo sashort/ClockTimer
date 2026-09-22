@@ -29,6 +29,28 @@
         static #DAY =
             24 * ClockTimer.#HOUR;
 
+        static #REFERENCE_DIAMETER =
+            320;
+
+        static #BASE_METRICS =
+            Object.freeze({
+                activeRingWidth: 12,
+                inactiveRingWidth: 6,
+                borderWidth: 5,
+                hourFontSize: 24,
+                timeFontSize: 48,
+                hourHandWidth: 5,
+                minuteHandWidth: 4,
+                secondHandWidth: 2,
+                indicatorSymbolSize: 12,
+                tickInset: 6.4,
+                tickWidth: 1.12,
+                tickLength: 5.12,
+                majorTickWidth: 1.76,
+                majorTickLength: 9.6,
+                numberInset: 9.6
+            });
+
         #shadowRoot;
 
         #clockFace;
@@ -103,7 +125,7 @@
 
         #hoursRenderFrame;
 
-        #fontSizingFrame;
+        #responsiveMetricsFrame;
 
         #sizeObserver;
 
@@ -7530,14 +7552,14 @@
             this.#freezeTimeFontForSpin();
 
             if (
-                this.#fontSizingFrame !==
+                this.#responsiveMetricsFrame !==
                     undefined
             ) {
                 cancelAnimationFrame(
-                    this.#fontSizingFrame
+                    this.#responsiveMetricsFrame
                 );
 
-                this.#fontSizingFrame =
+                this.#responsiveMetricsFrame =
                     undefined;
             }
 
@@ -7663,7 +7685,7 @@
 
                 this.#restoreTimeFontAfterSpin();
 
-                this.#scheduleFontSizing();
+                this.#scheduleResponsiveMetrics();
             });
         }
 
@@ -21413,7 +21435,7 @@
 
                         this.#renderHours();
 
-                        this.#scheduleFontSizing();
+                        this.#scheduleResponsiveMetrics();
                     }
                 );
         }
@@ -21460,7 +21482,7 @@
                 this.#sizeObserver =
                     new ResizeObserver(
                         () => {
-                            this.#scheduleFontSizing();
+                            this.#scheduleResponsiveMetrics();
                             this.#scheduleIndicatorSymbolUpdate();
 
                             this.#refreshTimeRangeVisualGeometry();
@@ -21472,7 +21494,7 @@
                 );
             }
 
-            this.#scheduleFontSizing();
+            this.#scheduleResponsiveMetrics();
         }
 
         #stopSizeObserver() {
@@ -21483,19 +21505,19 @@
                 undefined;
 
             if (
-                this.#fontSizingFrame !==
+                this.#responsiveMetricsFrame !==
                     undefined
             ) {
                 cancelAnimationFrame(
-                    this.#fontSizingFrame
+                    this.#responsiveMetricsFrame
                 );
 
-                this.#fontSizingFrame =
+                this.#responsiveMetricsFrame =
                     undefined;
             }
         }
 
-        #scheduleFontSizing() {
+        #scheduleResponsiveMetrics() {
             if (
                 this.#spinAnimation
             ) {
@@ -21503,18 +21525,18 @@
             }
 
             if (
-                this.#fontSizingFrame !==
+                this.#responsiveMetricsFrame !==
                     undefined
             ) {
                 cancelAnimationFrame(
-                    this.#fontSizingFrame
+                    this.#responsiveMetricsFrame
                 );
             }
 
-            this.#fontSizingFrame =
+            this.#responsiveMetricsFrame =
                 requestAnimationFrame(
                     () => {
-                        this.#fontSizingFrame =
+                        this.#responsiveMetricsFrame =
                             undefined;
 
                         if (
@@ -21524,12 +21546,12 @@
                             return;
                         }
 
-                        this.#updateResponsiveFontSizes();
+                        this.#updateResponsiveMetrics();
                     }
                 );
         }
 
-        #updateResponsiveFontSizes() {
+        #updateResponsiveMetrics() {
             if (
                 this.#spinAnimation
             ) {
@@ -21552,104 +21574,163 @@
                 return;
             }
 
-            const hourSize =
-                Math.max(
-                    9,
-                    Math.min(
-                        22,
-                        diameter * 0.06
-                    )
+            const scale =
+                diameter /
+                ClockTimer.#REFERENCE_DIAMETER;
+
+            const metrics =
+                ClockTimer.#BASE_METRICS;
+
+            const scaled =
+                value =>
+                    Math.max(
+                        0,
+                        value * scale
+                    );
+
+            const setLength =
+                (name, value) => {
+                    this.style.setProperty(
+                        name,
+                        `${scaled(value)}px`
+                    );
+                };
+
+            setLength(
+                "--clock-timer-active-ring-width",
+                metrics.activeRingWidth
+            );
+
+            setLength(
+                "--clock-timer-inactive-ring-width",
+                metrics.inactiveRingWidth
+            );
+
+            setLength(
+                "--clock-timer-border-width",
+                metrics.borderWidth
+            );
+
+            setLength(
+                "--clock-timer-hour-font-size",
+                metrics.hourFontSize
+            );
+
+            setLength(
+                "--clock-timer-hour-hand-width",
+                metrics.hourHandWidth
+            );
+
+            setLength(
+                "--clock-timer-minute-hand-width",
+                metrics.minuteHandWidth
+            );
+
+            setLength(
+                "--clock-timer-second-hand-width",
+                metrics.secondHandWidth
+            );
+
+            setLength(
+                "--clock-timer-indicator-symbol-size",
+                metrics.indicatorSymbolSize
+            );
+
+            setLength(
+                "--clock-timer-tick-inset",
+                metrics.tickInset
+            );
+
+            setLength(
+                "--clock-timer-tick-width",
+                metrics.tickWidth
+            );
+
+            setLength(
+                "--clock-timer-tick-length",
+                metrics.tickLength
+            );
+
+            setLength(
+                "--clock-timer-major-tick-width",
+                metrics.majorTickWidth
+            );
+
+            setLength(
+                "--clock-timer-major-tick-length",
+                metrics.majorTickLength
+            );
+
+            setLength(
+                "--clock-timer-number-inset",
+                metrics.numberInset
+            );
+
+            const baseTimeSize =
+                scaled(
+                    metrics.timeFontSize
                 );
 
-            this.#hourLayer.style.setProperty(
-                "--clock-timer-auto-hour-font-size",
-                `${hourSize}px`
+            this.style.setProperty(
+                "--clock-timer-time-font-size",
+                `${baseTimeSize}px`
             );
 
             const text =
                 this.#timeElement.textContent ??
                 "";
 
-            if (!text) {
-                return;
+            let fittedSize =
+                baseTimeSize;
+
+            if (text) {
+                const computed =
+                    getComputedStyle(
+                        this.#timeElement
+                    );
+
+                const canvas =
+                    document.createElement(
+                        "canvas"
+                    );
+
+                const context =
+                    canvas.getContext(
+                        "2d"
+                    );
+
+                if (context) {
+                    context.font =
+                        computed.font;
+
+                    const measuredWidth =
+                        context.measureText(
+                            text
+                        ).width;
+
+                    const targetWidth =
+                        diameter * 0.66;
+
+                    if (
+                        Number.isFinite(measuredWidth) &&
+                        measuredWidth > targetWidth &&
+                        measuredWidth > 0
+                    ) {
+                        fittedSize =
+                            Math.max(
+                                1,
+                                baseTimeSize *
+                                    targetWidth /
+                                    measuredWidth
+                            );
+
+                        this.style.setProperty(
+                            "--clock-timer-time-font-size",
+                            `${fittedSize}px`
+                        );
+                    }
+                }
             }
-
-            const computed =
-                getComputedStyle(
-                    this.#timeElement
-                );
-
-            const currentSize =
-                Number.parseFloat(
-                    computed.fontSize
-                );
-
-            if (
-                !Number.isFinite(currentSize) ||
-                currentSize <= 0
-            ) {
-                return;
-            }
-
-            const canvas =
-                document.createElement(
-                    "canvas"
-                );
-
-            const context =
-                canvas.getContext(
-                    "2d"
-                );
-
-            if (!context) {
-                return;
-            }
-
-            context.font =
-                computed.font;
-
-            const measuredWidth =
-                context.measureText(
-                    text
-                ).width;
-
-            if (
-                !Number.isFinite(measuredWidth) ||
-                measuredWidth <= 0
-            ) {
-                return;
-            }
-
-            const targetWidth =
-                diameter * 0.66;
-
-            const minimumSize =
-                Math.max(
-                    10,
-                    diameter * 0.08
-                );
-
-            const maximumSize =
-                Math.max(
-                    minimumSize,
-                    diameter * 0.18
-                );
-
-            const fittedSize =
-                Math.max(
-                    minimumSize,
-                    Math.min(
-                        maximumSize,
-                        currentSize *
-                            targetWidth /
-                            measuredWidth
-                    )
-                );
-
-            this.#timeElement.style.setProperty(
-                "--clock-timer-auto-time-font-size",
-                `${fittedSize}px`
-            );
 
             const dateVisible =
                 this.hasAttribute(
@@ -21659,25 +21740,20 @@
             this.#dateElement.hidden =
                 !dateVisible;
 
-            if (!dateVisible) {
-                return;
+            if (dateVisible) {
+                this.style.setProperty(
+                    "--clock-timer-auto-date-font-size",
+                    `${fittedSize * 0.38}px`
+                );
+
+                this.style.setProperty(
+                    "--clock-timer-auto-date-offset",
+                    `${fittedSize * 0.72}px`
+                );
             }
 
-            const dateSize =
-                fittedSize * 0.38;
-
-            const dateOffset =
-                fittedSize * 0.72;
-
-            this.#dateElement.style.setProperty(
-                "--clock-timer-auto-date-font-size",
-                `${dateSize}px`
-            );
-
-            this.#dateElement.style.setProperty(
-                "--clock-timer-auto-date-offset",
-                `${dateOffset}px`
-            );
+            this.#syncHandGeometry();
+            this.#syncTickMarkGeometry();
         }
 
         #captureRadialFittedTripGoalAnimation(
@@ -32240,7 +32316,7 @@
             this.#timeElement.textContent =
                 displayTime;
 
-            this.#scheduleFontSizing();
+            this.#scheduleResponsiveMetrics();
         }
 
         #renderHours() {
