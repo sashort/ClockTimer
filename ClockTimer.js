@@ -20425,8 +20425,15 @@
         #syncTickMarkGeometry() {
             this.#ensureTickRing();
 
+            const renderedInset =
+                this.#tickRing
+                    ?.renderedInset;
+
             const inset =
-                this.#getTickInset();
+                renderedInset &&
+                String(renderedInset).trim()
+                    ? renderedInset
+                    : this.#getTickInset();
 
             this.#tickMarkLayer.style.left =
                 "";
@@ -31142,19 +31149,20 @@
                 previousSecondAngle +
                 secondAdvance;
 
-            this.#setHandGeometry(
-                this.#secondHand,
-                secondAngle
-            );
-
             this.#secondHandTickAnimation
                 ?.cancel();
 
-            if (
+            this.#secondHandTickAnimation =
+                undefined;
+
+            const animateSecondHand =
                 secondAdvance > 0 &&
                 !globalThis.matchMedia?.(
                     "(prefers-reduced-motion: reduce)"
-                )?.matches
+                )?.matches;
+
+            if (
+                animateSecondHand
             ) {
                 const previousSecondHeight =
                     this.#getHandLengthForAngle(
@@ -31221,9 +31229,15 @@
                         ],
                         {
                             duration: 180,
-                            easing: "ease-out"
+                            easing: "ease-out",
+                            fill: "both"
                         }
                     );
+
+                this.#setHandGeometry(
+                    this.#secondHand,
+                    settledSecondAngle
+                );
 
                 this.#secondHandTickAnimation =
                     animation;
@@ -31237,8 +31251,16 @@
                         ) {
                             this.#secondHandTickAnimation =
                                 undefined;
+
+                            animation.cancel();
                         }
                     });
+            }
+            else {
+                this.#setHandGeometry(
+                    this.#secondHand,
+                    secondAngle
+                );
             }
 
             this.#secondHandAngle =

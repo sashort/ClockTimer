@@ -264,7 +264,7 @@
 
                         <div class="timer-color-grid">
                             <section class="timer-color-category" aria-labelledby="normalRangeColors">
-                                <h3 id="normalRangeColors">Normal</h3>
+                                <h3 id="normalRangeColors">Boring Old Basics</h3>
                                 <div class="timer-color-category-rows">
                                     <div class="timer-color-row has-setting-help">
                                         <button class="settings-help-button" type="button" data-help-key="tripColor" aria-label="About Trip" aria-hidden="true" tabindex="-1">?</button>
@@ -378,36 +378,42 @@
                     </details>
 
                     <details class="settings-category">
-                        <summary>Hand Styling</summary>
+                        <summary>Clock Font, Hand and Colors</summary>
                         <div class="settings-category-content">
-                        <div class="style-row hand-style-row">
-                            <span class="hand-caption"><span>Hour Hand</span><input name="showHourHand" type="checkbox" checked aria-label="Show Hour Hand"></span>
-                            <label>Length<input name="hourHandLength" value="28%"></label>
-                        </div>
-                        <div class="style-row hand-style-row">
-                            <span class="hand-caption"><span>Minute Hand</span><input name="showMinuteHand" type="checkbox" checked aria-label="Show Minute Hand"></span>
-                            <label>Length<input name="minuteHandLength" value="38%"></label>
-                        </div>
-                        <div class="style-row hand-style-row">
-                            <span class="hand-caption"><span>Second Hand</span><input name="showSecondHand" type="checkbox" checked aria-label="Show Second Hand"></span>
-                            <label>Length<input name="secondHandLength" value="42%"></label>
-                        </div>
-                    
-                        </div>
-                    </details>
+                            <div class="clock-font-setting">
+                                <span class="clock-font-label">Clock Font</span>
+                                <div class="clock-font-picker" data-clock-font-picker>
+                                    <button class="clock-font-trigger" type="button" data-clock-font-trigger aria-haspopup="listbox" aria-expanded="false">
+                                        <span data-clock-font-active>Helvetica</span>
+                                        <span class="clock-font-chevron" aria-hidden="true">⌄</span>
+                                    </button>
+                                    <div class="clock-font-menu" data-clock-font-menu hidden>
+                                        <button class="clock-font-add" type="button" data-clock-font-add>+ Add New Font</button>
+                                        <div class="clock-font-editor" data-clock-font-editor hidden>
+                                            <input type="text" data-clock-font-input aria-label="New font name" placeholder="Font family">
+                                            <button class="clock-font-confirm" type="button" data-clock-font-confirm aria-label="Add font">✓</button>
+                                            <button class="clock-font-cancel" type="button" data-clock-font-cancel aria-label="Cancel adding font">×</button>
+                                        </div>
+                                        <div class="clock-font-options" data-clock-font-options role="listbox" aria-label="Ordered clock fonts"></div>
+                                    </div>
+                                    <input name="clockFont" type="hidden" value="Helvetica, Arial, sans-serif">
+                                </div>
+                            </div>
 
-                    <details class="settings-category">
-                        <summary>Clock Font and Color</summary>
-                        <div class="settings-category-content">
-                        <label>Clock Font<input name="clockFont" value="Helvetica, Arial, sans-serif"></label>
-                        <div class="clock-color-grid">
-                            <label>Hour Numbers<input name="hourColor" type="color" value="#ffffff"></label>
-                            <label>Current Time<input name="timeColor" type="color" value="#ffffff"></label>
-                            <label>Hour Hand<input name="hourHandColor" type="color" value="#ffffff"></label>
-                            <label>Minute Hand<input name="minuteHandColor" type="color" value="#ffffff"></label>
-                            <label>Second Hand<input name="secondHandColor" type="color" value="#ffc220"></label>
-                        </div>
-                    
+                            <div class="clock-hand-toggles" aria-label="Clock hands">
+                                <label class="toggle-row">Hour Hand<input name="showHourHand" type="checkbox" checked></label>
+                                <label class="toggle-row">Minute Hand<input name="showMinuteHand" type="checkbox" checked></label>
+                                <label class="toggle-row">Second Hand<input name="showSecondHand" type="checkbox" checked></label>
+                            </div>
+
+                            <div class="clock-color-grid">
+                                <label>Hour Numbers<input name="hourColor" type="color" value="#ffffff"></label>
+                                <label>Current Time<input name="timeColor" type="color" value="#ffffff"></label>
+                                <label>Border<input name="borderColor" type="color" value="#001e60"></label>
+                                <label>Hour Hand<input name="hourHandColor" type="color" value="#ffffff"></label>
+                                <label>Minute Hand<input name="minuteHandColor" type="color" value="#ffffff"></label>
+                                <label>Second Hand<input name="secondHandColor" type="color" value="#ffc220"></label>
+                            </div>
                         </div>
                     </details>
 
@@ -456,7 +462,7 @@
     </template>
 
     <template id="settingsHelpOvertime" data-help-title="Overtime">
-        <p><strong>Overtime</strong> is time beyond your standard trip end.</p>
+        <p><strong>Overtime</strong> is the time your trip runs over the standard time.</p>
         <p>When Overtime is off, that time is still counted but is shown as Trip time.</p>
     </template>
 

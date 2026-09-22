@@ -208,6 +208,18 @@ try {
         'free-aspect ClockTimer paints visible clock pixels'
     );
 
+    await page.waitForTimeout(1100);
+
+    const ellipseAfterTickScreenshot =
+        await page.locator('#ellipse').screenshot({
+            omitBackground: true
+        });
+
+    assert(
+        countPaintedPixels(ellipseAfterTickScreenshot) > 100,
+        'free-aspect ClockTimer remains painted after a second-hand tick'
+    );
+
     await page.evaluate(() => {
         document.querySelector('#square').keepAspectRatio = false;
     });

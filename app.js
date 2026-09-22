@@ -59,7 +59,8 @@
         secondHandColor: "#ffc220",
         clockFont: "Helvetica, Arial, sans-serif",
         hourColor: "#ffffff",
-        timeColor: "#ffffff"
+        timeColor: "#ffffff",
+        borderColor: "#001e60"
     };
     const GRAPHICAL_HELP = {
         timerMode: {
@@ -78,7 +79,7 @@
         downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
         approvalSurplusColor: {title: "Approval Surplus Color", text: "Approval Surplus is extra approved Down time that remains excluded after Down ends."},
         approvalDeficitColor: {title: "Approval Deficit Color", text: "Approval Deficit is the unapproved portion of a Down interval and counts as productive elapsed time."},
-        overtimeColor: {title: "Overtime Color", text: "Overtime is time beyond your standard trip end.", stateControl: "showOvertime", stateText: {true: "Overtime is shown with its own color.", false: "Overtime is still counted but is shown as Trip time."}},
+        overtimeColor: {title: "Overtime Color", text: "Overtime is the time your trip runs over the standard time.", stateControl: "showOvertime", stateText: {true: "Overtime is shown with its own color.", false: "Overtime is still counted but is shown as Trip time."}},
         toleranceColor: {title: "B-Game Color", text: "You aimed above 100%. B-Game shows the time after you miss that goal while you’re still above 100%.", stateControl: "showTolerance", stateText: {true: "B-Game is shown.", false: "That time is shown as Trip time.", undefined: "B-Game appears after you enter that portion of the trip."}},
         latencyColor: {title: "Late Start Color", text: "Sets the color for time that begins when you are late.", stateControl: "showLatency", stateText: {true: "Late Start is shown with this color.", false: "Late Start is still calculated while the underlying Trip range remains visible."}}
     };
@@ -88,7 +89,7 @@
     const clockPreview = $("#clockPreview");
     if (clockPreview) {
         clockPreview.keepAspectRatio =
-            false;
+            true;
     }
     const app = $("#app");
     const loginDialog = $("#loginDialog");
@@ -242,7 +243,7 @@
     const settingsHelpRevealTimers = new WeakMap();
     const graphicalDetailsAnimations = new WeakMap();
     const GRAPHICAL_DETAILS_DURATION = 180;
-    const SETTINGS_HELP_FADE_DURATION = 750;
+    const SETTINGS_HELP_FADE_DURATION = 250;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
     const TRIP_LIST_BODY_DELAY = 125;
@@ -3337,7 +3338,8 @@
             "--clock-timer-hour-font": settings.clockFont,
             "--clock-timer-time-font": settings.clockFont,
             "--clock-timer-time-color": settings.timeColor,
-            "--clock-timer-tick-color": settings.hourColor
+            "--clock-timer-tick-color": settings.hourColor,
+            "--clock-timer-border-color": settings.borderColor
         };
 
         for (const [name, value] of Object.entries(variables)) setClockVariable(target, name, value);
@@ -3462,8 +3464,460 @@
             secondHandColor: text("secondHandColor"),
             clockFont: text("clockFont"),
             hourColor: text("hourColor"),
-            timeColor: text("timeColor")
+            timeColor: text("timeColor"),
+            borderColor: text("borderColor")
         };
+    }
+
+    const GENERIC_CLOCK_FONTS =
+        new Set([
+            "serif",
+            "sans-serif",
+            "monospace",
+            "cursive",
+            "fantasy",
+            "system-ui",
+            "ui-serif",
+            "ui-sans-serif",
+            "ui-monospace",
+            "ui-rounded"
+        ]);
+
+    function splitClockFontList(value) {
+        return String(value || "")
+            .split(",")
+            .map(font =>
+                font.trim()
+                    .replace(/^(['"])(.*)\1$/, "$2")
+                    .trim()
+            )
+            .filter(Boolean);
+    }
+
+    function serializeClockFontList(fonts) {
+        return fonts
+            .map(font => String(font || "").trim())
+            .filter(Boolean)
+            .join(", ");
+    }
+
+    function clockFontCanRender(font) {
+        const normalized =
+            String(font || "")
+                .trim();
+
+        if (!normalized) return false;
+
+        if (
+            GENERIC_CLOCK_FONTS.has(
+                normalized.toLowerCase()
+            )
+        ) {
+            return true;
+        }
+
+        if (!document.fonts?.check) {
+            return true;
+        }
+
+        const escaped =
+            normalized.replace(
+                /[\\"]/g,
+                "\\$&"
+            );
+
+        try {
+            return document.fonts.check(
+                `16px "${escaped}"`
+            );
+        }
+        catch {
+            return false;
+        }
+    }
+
+    function getFirstRenderableClockFont(fonts) {
+        return (
+            fonts.find(
+                clockFontCanRender
+            ) ||
+            fonts[0] ||
+            "sans-serif"
+        );
+    }
+
+    function syncClockFontPicker(form) {
+        const picker =
+            form?.querySelector(
+                "[data-clock-font-picker]"
+            );
+
+        const control =
+            form?.elements?.clockFont;
+
+        if (!picker || !control) return;
+
+        const fonts =
+            splitClockFontList(
+                control.value
+            );
+
+        const normalizedFonts =
+            fonts.length > 0
+                ? fonts
+                : ["sans-serif"];
+
+        if (fonts.length === 0) {
+            control.value =
+                serializeClockFontList(
+                    normalizedFonts
+                );
+        }
+
+        const active =
+            getFirstRenderableClockFont(
+                normalizedFonts
+            );
+
+        const activeText =
+            picker.querySelector(
+                "[data-clock-font-active]"
+            );
+
+        if (activeText) {
+            activeText.textContent =
+                active;
+            activeText.style.fontFamily =
+                serializeClockFontList([
+                    active,
+                    "sans-serif"
+                ]);
+        }
+
+        const list =
+            picker.querySelector(
+                "[data-clock-font-options]"
+            );
+
+        if (!list) return;
+
+        list.replaceChildren();
+
+        for (
+            const [index, font] of
+                normalizedFonts.entries()
+        ) {
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "clock-font-option";
+
+            if (font === active) {
+                row.dataset.activeFont =
+                    "true";
+            }
+
+            const name =
+                document.createElement(
+                    "span"
+                );
+
+            name.className =
+                "clock-font-option-name";
+
+            name.textContent =
+                font;
+
+            name.style.fontFamily =
+                serializeClockFontList([
+                    font,
+                    "sans-serif"
+                ]);
+
+            const available =
+                document.createElement(
+                    "span"
+                );
+
+            available.className =
+                "clock-font-option-state";
+
+            available.textContent =
+                font === active
+                    ? "Active"
+                    : clockFontCanRender(font)
+                        ? "Available"
+                        : "Unavailable";
+
+            const remove =
+                document.createElement(
+                    "button"
+                );
+
+            remove.type =
+                "button";
+
+            remove.className =
+                "clock-font-remove";
+
+            remove.dataset.fontIndex =
+                String(index);
+
+            remove.setAttribute(
+                "aria-label",
+                `Remove ${font}`
+            );
+
+            remove.textContent =
+                "×";
+
+            row.append(
+                name,
+                available,
+                remove
+            );
+
+            list.appendChild(
+                row
+            );
+        }
+    }
+
+    function installClockFontPicker() {
+        const form =
+            $("#graphicalSettingsForm");
+
+        const picker =
+            form?.querySelector(
+                "[data-clock-font-picker]"
+            );
+
+        const control =
+            form?.elements?.clockFont;
+
+        if (!form || !picker || !control) {
+            return;
+        }
+
+        const trigger =
+            picker.querySelector(
+                "[data-clock-font-trigger]"
+            );
+
+        const menu =
+            picker.querySelector(
+                "[data-clock-font-menu]"
+            );
+
+        const addButton =
+            picker.querySelector(
+                "[data-clock-font-add]"
+            );
+
+        const editor =
+            picker.querySelector(
+                "[data-clock-font-editor]"
+            );
+
+        const input =
+            picker.querySelector(
+                "[data-clock-font-input]"
+            );
+
+        const confirm =
+            picker.querySelector(
+                "[data-clock-font-confirm]"
+            );
+
+        const cancel =
+            picker.querySelector(
+                "[data-clock-font-cancel]"
+            );
+
+        const closeEditor = () => {
+            if (editor) editor.hidden = true;
+            if (addButton) addButton.hidden = false;
+            if (input) input.value = "";
+        };
+
+        const closeMenu = () => {
+            if (menu) menu.hidden = true;
+            trigger?.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+            closeEditor();
+        };
+
+        const commitFonts = fonts => {
+            control.value =
+                serializeClockFontList(
+                    fonts.length > 0
+                        ? fonts
+                        : ["sans-serif"]
+                );
+
+            syncClockFontPicker(
+                form
+            );
+
+            control.dispatchEvent(
+                new Event(
+                    "input",
+                    {
+                        bubbles: true
+                    }
+                )
+            );
+        };
+
+        trigger?.addEventListener(
+            "click",
+            () => {
+                const opening =
+                    menu?.hidden !== false;
+
+                if (menu) menu.hidden = !opening;
+
+                trigger.setAttribute(
+                    "aria-expanded",
+                    String(opening)
+                );
+
+                if (!opening) {
+                    closeEditor();
+                }
+            }
+        );
+
+        addButton?.addEventListener(
+            "click",
+            () => {
+                addButton.hidden = true;
+                if (editor) editor.hidden = false;
+                input?.focus();
+            }
+        );
+
+        const addFont = () => {
+            const font =
+                String(
+                    input?.value || ""
+                ).trim();
+
+            if (!font) return;
+
+            const fonts =
+                splitClockFontList(
+                    control.value
+                );
+
+            if (
+                !fonts.some(
+                    existing =>
+                        existing.toLowerCase() ===
+                            font.toLowerCase()
+                )
+            ) {
+                fonts.unshift(
+                    font
+                );
+            }
+
+            commitFonts(
+                fonts
+            );
+
+            closeEditor();
+        };
+
+        confirm?.addEventListener(
+            "click",
+            addFont
+        );
+
+        cancel?.addEventListener(
+            "click",
+            closeEditor
+        );
+
+        input?.addEventListener(
+            "keydown",
+            event => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    addFont();
+                }
+                else if (
+                    event.key === "Escape"
+                ) {
+                    event.preventDefault();
+                    closeEditor();
+                }
+            }
+        );
+
+        picker.addEventListener(
+            "click",
+            event => {
+                const remove =
+                    event.target.closest(
+                        ".clock-font-remove"
+                    );
+
+                if (!remove) return;
+
+                const index =
+                    Number(
+                        remove.dataset.fontIndex
+                    );
+
+                const fonts =
+                    splitClockFontList(
+                        control.value
+                    );
+
+                if (
+                    Number.isInteger(index) &&
+                    index >= 0 &&
+                    index < fonts.length
+                ) {
+                    fonts.splice(
+                        index,
+                        1
+                    );
+
+                    commitFonts(
+                        fonts
+                    );
+                }
+            }
+        );
+
+        document.addEventListener(
+            "pointerdown",
+            event => {
+                if (
+                    !menu ||
+                    menu.hidden ||
+                    picker.contains(
+                        event.target
+                    )
+                ) {
+                    return;
+                }
+
+                closeMenu();
+            },
+            true
+        );
+
+        syncClockFontPicker(
+            form
+        );
     }
 
     function fillGraphicalForm(settings) {
@@ -3482,6 +3936,7 @@
             else control.value = value;
         }
         syncTimeFormatForMilitaryToggle(form);
+        syncClockFontPicker(form);
         applyGraphicalSettings(
             settingsFromForm(form),
             clockPreview
@@ -4655,6 +5110,8 @@
         graphicalDialog.addEventListener(
             "opened",
             () => {
+                resetGraphicalSettingsAccordion();
+
                 requestAnimationFrame(
                     () => {
                         applyGraphicalSettings(
@@ -4684,6 +5141,7 @@
 
     installGraphicalHelpButtons();
     installGraphicalSettingsAccordion();
+    installClockFontPicker();
     renderClockPreviewRanges();
     setGraphicalHelpVisibility(false);
 
@@ -4802,7 +5260,7 @@
         if (caller) pushUIReturnFrame(caller);
 
         const opened = openDialogElement(dialog, {
-            duration: fromPopover ? 750 : 250,
+            duration: 250,
             reason
         });
 

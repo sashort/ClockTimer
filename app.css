@@ -4438,6 +4438,150 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-empty-message {flex:1;display:grid;place-items:center;min-height:80px;margin:0;padding:24px;text-align:center;font-size:clamp(22px,4vw,28px);font-weight:500;}
 
 
+
+.clock-font-setting {
+    display: grid;
+    grid-template-columns: minmax(120px, .8fr) minmax(0, 1.2fr);
+    gap: 12px;
+    align-items: center;
+}
+
+.clock-font-label {
+    font-weight: 700;
+}
+
+.clock-font-picker {
+    position: relative;
+    min-width: 0;
+}
+
+.clock-font-trigger {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--wm-white);
+    border-radius: 8px;
+    color: var(--wm-white);
+    background: rgb(0 30 96 / 78%);
+    text-align: left;
+}
+
+.clock-font-chevron {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.clock-font-menu {
+    position: absolute;
+    z-index: 30;
+    inset: calc(100% + 6px) 0 auto;
+    padding: 6px;
+    display: grid;
+    gap: 4px;
+    border: 1px solid rgb(255 255 255 / 72%);
+    border-radius: 10px;
+    background: rgb(0 30 96 / 98%);
+    box-shadow: 0 12px 28px rgb(0 0 0 / 32%);
+}
+
+.clock-font-menu[hidden],
+.clock-font-editor[hidden] {
+    display: none !important;
+}
+
+.clock-font-add {
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 7px;
+    color: var(--wm-blue-light);
+    background: rgb(255 255 255 / 7%);
+    text-align: left;
+}
+
+.clock-font-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px 38px;
+    gap: 6px;
+    align-items: center;
+}
+
+.clock-font-editor input {
+    min-height: 38px;
+    padding-block: 7px;
+}
+
+.clock-font-confirm,
+.clock-font-cancel,
+.clock-font-remove {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: var(--wm-white);
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.clock-font-confirm {
+    color: #b7f7c2;
+}
+
+.clock-font-cancel,
+.clock-font-remove {
+    color: #ffb8b4;
+}
+
+.clock-font-options {
+    display: grid;
+    gap: 2px;
+}
+
+.clock-font-option {
+    min-height: 40px;
+    padding: 4px 2px 4px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 38px;
+    gap: 8px;
+    align-items: center;
+    border-radius: 7px;
+}
+
+.clock-font-option[data-active-font="true"] {
+    background: rgb(169 221 247 / 12%);
+}
+
+.clock-font-option-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clock-font-option-state {
+    color: rgb(255 255 255 / 62%);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.clock-hand-toggles {
+    display: grid;
+    gap: 6px;
+}
+
+.clock-hand-toggles .toggle-row {
+    min-height: 38px;
+}
+
+
 /* graphical-settings-scroll-overlay-v3
  * Issue #10: fixed-height modal, animated compact details, and a bottom
  * click-through preview that only becomes translucent over rendered settings.
@@ -4480,7 +4624,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 }
 
 .graphical-dialog .graphical-settings-grid {
-    --graphical-preview-height: clamp(210px, 30dvh, 270px);
+    --graphical-settings-inline-gap: 16px;
     position: relative;
     min-height: 0;
     margin: 0 !important;
@@ -4496,7 +4640,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     z-index: 1;
     min-width: 0;
     min-height: 0;
-    padding: 12px 16px calc(var(--graphical-preview-height) + 16px);
+    padding: 12px var(--graphical-settings-inline-gap) 16px;
     display: grid;
     align-content: start;
     gap: 6px;
@@ -4534,21 +4678,30 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     transform-origin: top;
 }
 
+.graphical-dialog .graphical-settings-grid > .settings-groups::after {
+    content: "";
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 1 / 1;
+    pointer-events: none;
+}
+
 .graphical-dialog .clock-preview {
-    --graphical-preview-clock-width:
-        min(
-            520px,
-            calc(100% - 32px)
-        );
     position: absolute;
-    inset: auto 0 0;
+    inset:
+        auto
+        var(--graphical-settings-inline-gap)
+        16px;
     z-index: 2;
-    height: var(--graphical-preview-height);
+    inline-size: auto;
+    block-size: auto;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
     min-height: 0;
     margin: 0 !important;
-    padding: 10px 16px 14px;
+    padding: 0;
     display: grid;
-    place-items: center;
+    place-items: stretch;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -4558,15 +4711,13 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 }
 
 .graphical-dialog .clock-preview clock-timer {
-    inline-size: var(--graphical-preview-clock-width);
-    block-size: calc(var(--graphical-preview-height) - 24px);
-    width: var(--graphical-preview-clock-width);
-    height: calc(var(--graphical-preview-height) - 24px);
-    max-width: 100%;
-    max-height: 100%;
+    inline-size: 100%;
+    block-size: 100%;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
-    aspect-ratio: auto;
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     --clock-timer-face-background-color: transparent;
     --clock-timer-active-ring-background-color: transparent;
@@ -4589,11 +4740,11 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     }
 
     .graphical-dialog .graphical-settings-grid {
-        --graphical-preview-height: clamp(190px, 28dvh, 250px);
+        --graphical-settings-inline-gap: 12px;
     }
 
     .graphical-dialog .graphical-settings-grid > .settings-groups {
-        padding: 10px 12px calc(var(--graphical-preview-height) + 12px);
+        padding: 10px var(--graphical-settings-inline-gap) 12px;
         gap: 5px;
     }
 
@@ -4609,14 +4760,10 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     }
 
     .graphical-dialog .clock-preview {
-        --graphical-preview-clock-width:
-            calc(100% - 24px);
-        padding: 8px 12px 10px;
-    }
-
-    .graphical-dialog .clock-preview clock-timer {
-        block-size: calc(var(--graphical-preview-height) - 18px);
-        height: calc(var(--graphical-preview-height) - 18px);
+        inset:
+            auto
+            var(--graphical-settings-inline-gap)
+            12px;
     }
 }
 

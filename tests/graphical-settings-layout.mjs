@@ -20,7 +20,7 @@ assert(previewStart > groupsStart, 'live preview is ordered after the settings g
 assert(!dialog.includes('Live Preview'), 'Live Preview title is removed');
 
 const detailsTags = dialog.match(/<details\b[^>]*class="settings-category[^"]*"[^>]*>/g) || [];
-assert.equal(detailsTags.length, 4, 'Clock/Timer Settings contains four top-level categories');
+assert.equal(detailsTags.length, 3, 'Clock/Timer Settings contains three top-level categories');
 for (const tag of detailsTags) {
     assert(!/\sopen(?:\s|>)/.test(tag), 'every Clock/Timer category starts collapsed');
     assert(!/name="clock-timer-settings-category"/.test(tag), 'native named-details exclusivity is disabled for managed animation');
@@ -32,18 +32,19 @@ const overlayCss = css.slice(overlayMarker);
 
 assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*min-height:\s*90dvh;[^}]*height:\s*90dvh;[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;/s);
 assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*max-height:\s*100%;[^}]*block-size:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-preview-height:\s*clamp\(210px, 30dvh, 270px\);[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px 16px calc\(var\(--graphical-preview-height\) \+ 16px\);[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-width:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-settings-inline-gap:\s*16px;[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px var\(--graphical-settings-inline-gap\) 16px;[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups::after\s*\{[^}]*inline-size:\s*100%;[^}]*aspect-ratio:\s*1 \/ 1;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
 assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*calc\(var\(--graphical-preview-height\) - 24px\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*calc\(var\(--graphical-preview-height\) - 24px\);[^}]*aspect-ratio:\s*auto;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*100%;[^}]*block-size:\s*100%;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
-assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-preview-height:\s*clamp\(190px, 28dvh, 250px\);[\s\S]*?--graphical-preview-clock-width:[\s\S]*?calc\(100% - 24px\);[\s\S]*?block-size:\s*calc\(var\(--graphical-preview-height\) - 18px\);[\s\S]*?height:\s*calc\(var\(--graphical-preview-height\) - 18px\);/s);
+assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-settings-inline-gap:\s*12px;[\s\S]*?padding:\s*10px var\(--graphical-settings-inline-gap\) 12px;[\s\S]*?\.graphical-dialog \.clock-preview\s*\{[\s\S]*?var\(--graphical-settings-inline-gap\)/s);
 assert.match(overlayCss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*transition-duration:\s*0ms;/s);
 
-assert.match(js, /clockPreview\.keepAspectRatio\s*=\s*false;/);
+assert.match(js, /clockPreview\.keepAspectRatio\s*=\s*true;/);
 assert.match(js, /const GRAPHICAL_DETAILS_DURATION = 180;/);
 assert.match(js, /function updateGraphicalPreviewOverlap\(/);
 assert.match(js, /graphicalRectsOverlap\(\s*rect,\s*visiblePreviewRect\s*\)/s);
@@ -58,7 +59,14 @@ assert.match(js, /groups\.scrollTop = 0;/);
 assert.match(js, /groups\?\.addEventListener\(\s*"scroll",\s*scheduleGraphicalPreviewOverlap/s);
 assert.match(js, /new ResizeObserver\(\s*scheduleGraphicalPreviewOverlap\s*\)/s);
 assert.match(js, /opened &&\s*dialog === graphicalDialog[\s\S]*?updateGraphicalPreviewOverlap\(\{\s*immediate:\s*true\s*\}\)/s);
-assert.match(js, /graphicalDialog\.addEventListener\(\s*"opened",[\s\S]*?applyGraphicalSettings\([\s\S]*?clockPreview[\s\S]*?requestAnimationFrame\([\s\S]*?clockPreview\s*\?\.refreshLayout\?\.\(\)/s);
+assert.match(js, /graphicalDialog\.addEventListener\(\s*"opened",[\s\S]*?resetGraphicalSettingsAccordion\(\)[\s\S]*?applyGraphicalSettings\([\s\S]*?clockPreview[\s\S]*?requestAnimationFrame\([\s\S]*?clockPreview\s*\?\.refreshLayout\?\.\(\)/s);
+assert.match(dialog, /<summary>Clock Font, Hand and Colors<\/summary>/);
+assert.doesNotMatch(dialog, /<summary>Hand Styling<\/summary>/);
+assert.match(dialog, /Boring Old Basics/);
+assert.match(dialog, /name="borderColor"/);
+assert.match(dialog, /\+ Add New Font/);
+assert.match(js, /const SETTINGS_HELP_FADE_DURATION = 250;/);
+assert.match(js, /duration:\s*250,\s*reason/s);
 
 assert.match(clockTimerSource, /#keepAspectRatio\s*=\s*true;/);
 assert.match(clockTimerSource, /get keepAspectRatio\(\)\s*\{[\s\S]*?return this\.#keepAspectRatio;/s);
@@ -76,8 +84,10 @@ assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?#getRenderRect
 assert.match(clockTimerSource, /#getEllipseRadiusForAngle\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?Math\.sqrt/s);
 assert.match(clockTimerSource, /#getHandLengthForAngle\([\s\S]*?radius \*\s*fraction/s);
 assert.match(clockTimerSource, /#syncEllipticalTickMarks\(\)[\s\S]*?Math\.atan2\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?track\.style\.left[\s\S]*?track\.style\.top/s);
+assert.match(clockTimerSource, /#syncTickMarkGeometry\(\)[\s\S]*?this\.#tickRing[\s\S]*?renderedInset[\s\S]*?this\.#tickMarkLayer\.style\.inset/s);
 assert.match(clockTimerSource, /#synchronizeHands\([\s\S]*?#setHandGeometry\([\s\S]*?this\.#hourHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#minuteHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#secondHand/s);
 assert.match(clockTimerSource, /previousSecondHeight[\s\S]*?overshootSecondHeight[\s\S]*?settledSecondHeight[\s\S]*?keyframe\.height/s);
+assert.match(clockTimerSource, /duration:\s*180,[\s\S]*?fill:\s*"both"[\s\S]*?this\.#setHandGeometry\(\s*this\.#secondHand,\s*settledSecondAngle/s);
 assert.match(clockTimerSource, /refreshLayout\(\)\s*\{[\s\S]*?#layoutRenderer\(\)[\s\S]*?#syncHandGeometry\(\)[\s\S]*?#syncTickMarkGeometry\(\)[\s\S]*?#scheduleHourRender\(\)[\s\S]*?#updateTickMarks\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)[\s\S]*?#syncActiveRingBackground\(\)[\s\S]*?return true;/s);
 assert.match(clockTimerSource, /#startSizeObserver\(\)\s*\{[\s\S]*?ResizeObserver[\s\S]*?#layoutRenderer\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)/s);
 assert.match(clockTimerSource, /#updateResponsiveMetrics\(\)\s*\{[\s\S]*?this\.#getEffectiveRenderDiameter\(\)/s);
