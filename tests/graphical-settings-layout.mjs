@@ -58,6 +58,7 @@ assert.match(js, /groups\.scrollTop = 0;/);
 assert.match(js, /groups\?\.addEventListener\(\s*"scroll",\s*scheduleGraphicalPreviewOverlap/s);
 assert.match(js, /new ResizeObserver\(\s*scheduleGraphicalPreviewOverlap\s*\)/s);
 assert.match(js, /opened &&\s*dialog === graphicalDialog[\s\S]*?updateGraphicalPreviewOverlap\(\{\s*immediate:\s*true\s*\}\)/s);
+assert.match(js, /graphicalDialog\.addEventListener\(\s*"opened",[\s\S]*?applyGraphicalSettings\([\s\S]*?clockPreview[\s\S]*?requestAnimationFrame\([\s\S]*?clockPreview\s*\?\.refreshLayout\?\.\(\)/s);
 
 assert.match(clockTimerSource, /#keepAspectRatio\s*=\s*true;/);
 assert.match(clockTimerSource, /get keepAspectRatio\(\)\s*\{[\s\S]*?return this\.#keepAspectRatio;/s);
@@ -71,6 +72,7 @@ assert.match(clockTimerSource, /#getHandLengthForAngle\([\s\S]*?radius \*\s*frac
 assert.match(clockTimerSource, /#syncEllipticalTickMarks\(\)[\s\S]*?Math\.atan2\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?track\.style\.left[\s\S]*?track\.style\.top/s);
 assert.match(clockTimerSource, /#synchronizeHands\([\s\S]*?#setHandGeometry\([\s\S]*?this\.#hourHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#minuteHand[\s\S]*?#setHandGeometry\([\s\S]*?this\.#secondHand/s);
 assert.match(clockTimerSource, /previousSecondHeight[\s\S]*?overshootSecondHeight[\s\S]*?settledSecondHeight[\s\S]*?keyframe\.height/s);
+assert.match(clockTimerSource, /refreshLayout\(\)\s*\{[\s\S]*?#syncFaceBackgroundFromExternalCSS\(\)[\s\S]*?#syncHandGeometry\(\)[\s\S]*?#syncTickMarkGeometry\(\)[\s\S]*?#scheduleHourRender\(\)[\s\S]*?#updateTickMarks\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)[\s\S]*?return true;/s);
 assert.match(clockTimerSource, /#updateResponsiveMetrics\(\)\s*\{[\s\S]*?this\.#getEffectiveRenderDiameter\(\)/s);
 
 console.log('PASS Clock/Timer settings start collapsed, animate details, fade the bottom preview on overlap, and support free-aspect ClockTimer geometry');
