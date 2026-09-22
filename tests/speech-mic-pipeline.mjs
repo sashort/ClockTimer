@@ -46,7 +46,12 @@ assert.equal(typeof bar.clear, "function");
 
 window.SpeechMenu.silenceTimeout = 5000;
 assert.equal(window.SpeechMenu.silenceTimeout, 5000);
-assert.throws(() => { window.SpeechMenu.silenceTimeout = 50; }, RangeError);
+assert.throws(
+    () => { window.SpeechMenu.silenceTimeout = 50; },
+    error =>
+        error?.name === "RangeError" &&
+        /at least 100 milliseconds/.test(error.message)
+);
 
 let bubbledStarted = 0;
 window.document.body.addEventListener("started", () => bubbledStarted++);
