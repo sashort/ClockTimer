@@ -4952,7 +4952,10 @@ class RingContainer extends HTMLElement {
                 box-sizing: border-box;
 
                 background:
-                    transparent !important;
+                    var(
+                        --ring-container-background-color,
+                        transparent
+                    ) !important;
 
                 grid-template-columns:
                     minmax(0, 1fr);

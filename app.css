@@ -4573,7 +4573,8 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     min-height: 0;
     aspect-ratio: auto;
     border-radius: 50%;
-    background: var(--wm-blue-dark);
+    --clock-timer-face-background-color: transparent;
+    --clock-timer-active-ring-background-color: transparent;
     --clock-timer-border-color: rgb(169 221 247 / 72%);
     pointer-events: none !important;
     opacity: 1;
