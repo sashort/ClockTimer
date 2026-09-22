@@ -94,19 +94,19 @@ try {
     preview.refreshLayout();
   });
 
-  await page.waitForFunction(() => {
-    const p=document.querySelector('#clockPreview');
-    const r=p.getBoundingClientRect();
-    return r.width>150 && r.height>100;
-  });
-
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
 
   const state = await page.evaluate(() => {
     const preview=document.querySelector('#clockPreview');
     const parent=preview.closest('.clock-preview');
     const grid=preview.closest('.graphical-settings-grid');
+    const form=preview.closest('#graphicalSettingsForm');
+    const dialog=preview.closest('#graphicalSettingsDialog');
     const rect=preview.getBoundingClientRect();
+    const parentRect=parent.getBoundingClientRect();
+    const gridRect=grid.getBoundingClientRect();
+    const formRect=form.getBoundingClientRect();
+    const dialogRect=dialog.getBoundingClientRect();
     const ps=getComputedStyle(preview);
     const pps=getComputedStyle(parent);
     const gs=getComputedStyle(grid);
@@ -116,6 +116,10 @@ try {
     });
     return {
       rect:{width:rect.width,height:rect.height,left:rect.left,top:rect.top},
+      parentRect:{width:parentRect.width,height:parentRect.height,left:parentRect.left,top:parentRect.top},
+      gridRect:{width:gridRect.width,height:gridRect.height,left:gridRect.left,top:gridRect.top},
+      formRect:{width:formRect.width,height:formRect.height,left:formRect.left,top:formRect.top},
+      dialogRect:{width:dialogRect.width,height:dialogRect.height,left:dialogRect.left,top:dialogRect.top},
       preview:{display:ps.display,visibility:ps.visibility,opacity:ps.opacity,color:ps.color},
       parent:{display:pps.display,visibility:pps.visibility,opacity:pps.opacity,zIndex:pps.zIndex,background:pps.backgroundColor},
       grid:{overflow:gs.overflow,zIndex:gs.zIndex},
@@ -124,9 +128,11 @@ try {
     };
   });
 
-  const image=PNG.sync.read(await page.locator('#clockPreview').screenshot({omitBackground:true}));
   let painted=0;
-  for(let i=3;i<image.data.length;i+=4) if(image.data[i]>0) painted++;
+  if (state.rect.width > 0 && state.rect.height > 0) {
+    const image=PNG.sync.read(await page.locator('#clockPreview').screenshot({omitBackground:true}));
+    for(let i=3;i<image.data.length;i+=4) if(image.data[i]>0) painted++;
+  }
 
   console.log(JSON.stringify({...state,paintedPixels:painted},null,2));
   assert(state.rect.width>150 && state.rect.height>100);
