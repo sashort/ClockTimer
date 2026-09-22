@@ -210,8 +210,28 @@ class SpeechMenu {
                     await context.resume();
                 }
 
+                const useAudioWorklet =
+                    provider.kind ===
+                    "streaming";
+
                 if (
-                    typeof context.createScriptProcessor !== "function"
+                    useAudioWorklet &&
+                    (
+                        !context.audioWorklet ||
+                        typeof window.AudioWorkletNode !==
+                            "function"
+                    )
+                ) {
+                    try { await context.close(); } catch {}
+                    throw new Error(
+                        "Streaming speech recognition requires AudioWorklet support."
+                    );
+                }
+
+                if (
+                    !useAudioWorklet &&
+                    typeof context.createScriptProcessor !==
+                        "function"
                 ) {
                     try { await context.close(); } catch {}
                     throw new Error(
@@ -251,28 +271,72 @@ class SpeechMenu {
                         stream
                     );
 
-                SpeechMenu.#processorNode =
-                    context.createScriptProcessor(
-                        2048,
-                        Math.max(
-                            1,
-                            SpeechMenu.#sourceNode
-                                .channelCount || 1
-                        ),
-                        1
-                    );
+                if (useAudioWorklet) {
+                    const runtimeScript =
+                        [...document.scripts]
+                            .find(
+                                script =>
+                                    /(?:^|\/)SpeechMenu\.js(?:\?|$)/
+                                        .test(script.src)
+                            );
+
+                    const version =
+                        runtimeScript
+                            ? new URL(
+                                runtimeScript.src
+                            ).search
+                            : "";
+
+                    const workletUrl =
+                        new URL(
+                            `SpeechAudioWorklet.js${version}`,
+                            document.baseURI
+                        );
+
+                    await context.audioWorklet
+                        .addModule(
+                            workletUrl.href
+                        );
+
+                    SpeechMenu.#processorNode =
+                        new window.AudioWorkletNode(
+                            context,
+                            "speech-audio-worklet"
+                        );
+
+                    SpeechMenu.#processorNode
+                        .port.addEventListener(
+                            "message",
+                            SpeechMenu.#onWorkletMessage
+                        );
+
+                    SpeechMenu.#processorNode
+                        .port.start?.();
+                }
+                else {
+                    SpeechMenu.#processorNode =
+                        context.createScriptProcessor(
+                            2048,
+                            Math.max(
+                                1,
+                                SpeechMenu.#sourceNode
+                                    .channelCount || 1
+                            ),
+                            1
+                        );
+
+                    SpeechMenu.#processorNode
+                        .addEventListener(
+                            "audioprocess",
+                            SpeechMenu.#onAudioProcess
+                        );
+                }
 
                 SpeechMenu.#silentGain =
                     context.createGain();
 
                 SpeechMenu.#silentGain.gain.value =
                     0;
-
-                SpeechMenu.#processorNode
-                    .addEventListener(
-                        "audioprocess",
-                        SpeechMenu.#onAudioProcess
-                    );
 
                 SpeechMenu.#sourceNode.connect(
                     SpeechMenu.#processorNode
@@ -513,15 +577,54 @@ class SpeechMenu {
                 )
                 : 0;
 
-        const frame = {
-            channels,
-            length:
-                channels[0].length
-        };
+        SpeechMenu.#processAudioFrame(
+            {
+                channels,
+                length:
+                    channels[0].length
+            },
+            level,
+            input.sampleRate
+        );
+    };
 
+    static #onWorkletMessage = event => {
+        if (
+            SpeechMenu.#stopped ||
+            !SpeechMenu.#audioContext ||
+            event.data?.type !== "audio" ||
+            !(event.data.pcm instanceof ArrayBuffer)
+        ) {
+            return;
+        }
+
+        const pcm =
+            new Int16Array(
+                event.data.pcm
+            );
+
+        if (!pcm.length) return;
+
+        SpeechMenu.#processAudioFrame(
+            {
+                pcm,
+                length:
+                    pcm.length
+            },
+            Number(event.data.level) || 0,
+            Number(event.data.sampleRate) ||
+                16000
+        );
+    };
+
+    static #processAudioFrame(
+        frame,
+        level,
+        sampleRate
+    ) {
         const frameMilliseconds =
             frame.length /
-            input.sampleRate *
+            sampleRate *
             1000;
 
         const now =
@@ -557,7 +660,7 @@ class SpeechMenu {
             else {
                 SpeechMenu.#appendPreRollFrame(
                     frame,
-                    input.sampleRate
+                    sampleRate
                 );
             }
 
@@ -616,7 +719,7 @@ class SpeechMenu {
                 );
             }
         }
-    };
+    }
 
     static #appendPreRollFrame(
         frame,
@@ -693,6 +796,22 @@ class SpeechMenu {
         SpeechMenu.#startLiveRecognition(
             SpeechMenu.#utterance
         );
+
+        if (
+            SpeechMenu.#recognitionProvider
+                ?.kind === "streaming"
+        ) {
+            for (const frame of frames) {
+                if (!frame.pcm) continue;
+
+                SpeechMenu.#recognitionProvider
+                    .pushAudio?.({
+                        id,
+                        pcm:
+                            frame.pcm
+                    });
+            }
+        }
     }
 
     static #appendUtteranceFrame(
@@ -708,6 +827,20 @@ class SpeechMenu {
 
         SpeechMenu.#utterance.sampleCount +=
             frame.length;
+
+        if (
+            frame.pcm &&
+            SpeechMenu.#recognitionProvider
+                ?.kind === "streaming"
+        ) {
+            SpeechMenu.#recognitionProvider
+                .pushAudio?.({
+                    id:
+                        SpeechMenu.#utterance.id,
+                    pcm:
+                        frame.pcm
+                });
+        }
     }
 
     static #finishUtterance(
@@ -719,9 +852,24 @@ class SpeechMenu {
 
         if (!utterance) return;
 
-        SpeechMenu.#stopLiveRecognition(
-            utterance
-        );
+        utterance.finished =
+            true;
+
+        if (
+            SpeechMenu.#recognitionProvider
+                ?.kind === "streaming"
+        ) {
+            SpeechMenu.#recognitionProvider
+                .endUtterance?.(
+                    utterance.id,
+                    reason
+                );
+        }
+        else {
+            SpeechMenu.#stopLiveRecognition(
+                utterance
+            );
+        }
 
         SpeechMenu.#utterance =
             undefined;
@@ -762,6 +910,13 @@ class SpeechMenu {
             void SpeechMenu.#commitUtterance(
                 utterance
             );
+            return;
+        }
+
+        if (
+            SpeechMenu.#recognitionProvider
+                ?.kind === "streaming"
+        ) {
             return;
         }
 
@@ -939,8 +1094,11 @@ class SpeechMenu {
             !utterance ||
             utterance.committed ||
             SpeechMenu.#stopped ||
-            SpeechMenu.#utterance !==
-                utterance ||
+            (
+                !utterance.finished &&
+                SpeechMenu.#utterance !==
+                    utterance
+            ) ||
             utterance.sessionGeneration !==
                 SpeechMenu.#sessionGeneration
         ) {
@@ -1019,8 +1177,11 @@ class SpeechMenu {
         }
 
         if (
-            SpeechMenu.#utterance !==
-                utterance ||
+            (
+                !utterance.finished &&
+                SpeechMenu.#utterance !==
+                    utterance
+            ) ||
             utterance.committed ||
             revision !==
                 utterance.transcriptRevision
@@ -2087,6 +2248,15 @@ class SpeechMenu {
                     "audioprocess",
                     SpeechMenu.#onAudioProcess
                 );
+            }
+            catch {}
+
+            try {
+                processor.port
+                    ?.removeEventListener(
+                        "message",
+                        SpeechMenu.#onWorkletMessage
+                    );
             }
             catch {}
 
