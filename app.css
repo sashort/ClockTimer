@@ -59,11 +59,16 @@ button {
 }
 
 speech-mic-bar {
+    box-sizing: border-box;
+    grid-row: 7;
+    display: block;
     width: 100%;
     height: 74px;
     min-width: 0;
+    min-height: 0;
     margin: 0;
     align-self: start;
+    overflow: hidden;
     transform: translateY(calc(100% + 0.125in));
     opacity: 0;
     pointer-events: none;
@@ -71,6 +76,12 @@ speech-mic-bar {
         transform var(--trip-log-layout-duration) ease-in-out,
         opacity 250ms linear;
     will-change: transform, opacity;
+}
+
+speech-mic-bar:not(:defined) {
+    border: 3px solid rgb(255 255 255 / 38%);
+    border-radius: 14px;
+    background: var(--ui-charcoal-gradient, #2f3943);
 }
 
 .app[data-speech-active="true"] speech-mic-bar {
@@ -507,6 +518,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
 
 
 .trip-log-button {
+    grid-row: 8;
     width: 100%;
     height: 74px;
     margin: 0;
