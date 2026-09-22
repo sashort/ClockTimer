@@ -108,8 +108,8 @@ assert.match(css, /--speech-mic-row-height:\s*0px/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
-assert.match(app, /await SpeechMenu\.start/);
-assert.match(app, /await SpeechMenu\.stop/);
+assert.match(app, /setSpeechLayoutState\(true\);[\s\S]*await SpeechMenu\.start/);
+assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*await SpeechMenu\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
