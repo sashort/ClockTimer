@@ -108,8 +108,12 @@ assert.match(css, /--speech-mic-row-height:\s*0px/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
-assert.match(app, /setSpeechLayoutState\(true\);[\s\S]*await SpeechMenu\.start/);
-assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*await SpeechMenu\.stop/);
+assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
+assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
+
+assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*7;[^}]*display:\s*block;/s);
+assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
+assert.match(css, /speech-mic-bar:not\(:defined\)/);
