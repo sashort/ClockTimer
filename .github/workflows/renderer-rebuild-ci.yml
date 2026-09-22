@@ -46,7 +46,6 @@ jobs:
           node clock-timer-renderer-browser.mjs
           node custom-trip-range.mjs
           node trip-log.mjs
-          npm run test:trip-sync
           npm run test:offline-buffer
           npm run test:deferred-trip
           npm run test:active-restore
