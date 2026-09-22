@@ -57,8 +57,6 @@
 
         #renderBox;
 
-        #activeRingBackground;
-
         #ringLayer;
 
         #faceBackground;
@@ -513,37 +511,6 @@
                     isolation: isolate;
                     pointer-events: none;
                 }
-
-                #active-ring-background {
-                    position: absolute;
-                    inset: 0;
-                    z-index: 0;
-                    box-sizing: border-box;
-                    border-style: solid;
-                    border-width: 0;
-                    border-color:
-                        var(
-                            --clock-timer-active-ring-background-color,
-                            transparent
-                        );
-                    border-radius: 50%;
-                    background: transparent;
-                    opacity: 0;
-                    transition-property:
-                        inset,
-                        border-width,
-                        opacity;
-                    transition-duration:
-                        var(--clock-timer-ring-resize-duration),
-                        var(--clock-timer-ring-resize-duration),
-                        100ms;
-                    transition-timing-function:
-                        linear,
-                        linear,
-                        linear;
-                    pointer-events: none;
-                }
-
                 #ring-slot {
                     position: absolute;
                     inset: 0;
@@ -898,14 +865,6 @@
             ringLayer.id =
                 "rings";
 
-            this.#activeRingBackground =
-                document.createElement(
-                    "div"
-                );
-
-            this.#activeRingBackground.id =
-                "active-ring-background";
-
             const ringSlot =
                 document.createElement(
                     "slot"
@@ -914,8 +873,7 @@
             ringSlot.id =
                 "ring-slot";
 
-            ringLayer.append(
-                this.#activeRingBackground,
+            ringLayer.appendChild(
                 ringSlot
             );
 
@@ -20033,76 +19991,27 @@
         }
 
         #syncActiveRingBackground() {
-            const layer =
-                this.#activeRingBackground;
-
-            if (!layer) {
-                return;
-            }
-
-            const ring =
-                Array.from(
+            for (
+                const ring of
                     this.#rings.values()
-                ).find(
-                    candidate =>
-                        candidate.isConnected &&
-                        candidate.hasAttribute(
-                            "active"
-                        )
-                );
-
-            if (!ring) {
-                layer.style.opacity =
-                    "0";
-
-                layer.style.borderWidth =
-                    "0px";
-
-                return;
-            }
-
-            const inset =
-                Number.parseFloat(
-                    ring.renderedInset ??
-                    ring.inset ??
-                    ""
-                );
-
-            const width =
-                Number.parseFloat(
-                    ring.renderedWidth ??
-                    ring.width ??
-                    ""
-                );
-
-            if (
-                !Number.isFinite(inset) ||
-                !Number.isFinite(width) ||
-                width <= 0
             ) {
-                layer.style.opacity =
-                    "0";
-
-                layer.style.borderWidth =
-                    "0px";
-
-                return;
+                if (
+                    ring.isConnected &&
+                    ring.hasAttribute(
+                        "active"
+                    )
+                ) {
+                    ring.style.setProperty(
+                        "--ring-container-background-color",
+                        "var(--clock-timer-active-ring-background-color, transparent)"
+                    );
+                }
+                else {
+                    ring.style.removeProperty(
+                        "--ring-container-background-color"
+                    );
+                }
             }
-
-            layer.style.inset =
-                `${Math.max(
-                    0,
-                    inset - width / 2
-                )}px`;
-
-            layer.style.borderWidth =
-                `${Math.max(
-                    0,
-                    width
-                )}px`;
-
-            layer.style.opacity =
-                "1";
         }
 
         #getEffectiveRenderDiameter() {
