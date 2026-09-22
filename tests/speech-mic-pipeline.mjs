@@ -27,6 +27,27 @@ window.SpeechRecognition = class {
     stop() { this.onend?.(); }
     abort() { this.onend?.(); }
 };
+globalThis.SpeechRecognition =
+    window.SpeechRecognition;
+
+Function(
+    fs.readFileSync(
+        new URL(
+            "../SpeechRecognitionProviders.js",
+            import.meta.url
+        ),
+        "utf8"
+    )
+)();
+
+assert.equal(
+    typeof globalThis.BrowserSpeechProvider,
+    "function"
+);
+assert.equal(
+    typeof globalThis.StreamingSpeechProvider,
+    "function"
+);
 
 const ParameterParser = Function(
     fs.readFileSync(new URL("../ParameterParser.js", import.meta.url), "utf8") +
@@ -64,6 +85,10 @@ window.SpeechMenu.silenceTimeout = 6000;
 assert.equal(window.SpeechMenu.silenceTimeout, 6000);
 
 assert.equal(window.SpeechMenu.commitSilenceTimeout, 350);
+assert.equal(window.SpeechMenu.recognitionProvider, "browser");
+window.SpeechMenu.recognitionProvider = "streaming";
+assert.equal(window.SpeechMenu.recognitionProvider, "streaming");
+window.SpeechMenu.recognitionProvider = "browser";
 window.SpeechMenu.commitSilenceTimeout = 425;
 assert.equal(window.SpeechMenu.commitSilenceTimeout, 425);
 assert.throws(
@@ -131,9 +156,18 @@ assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+const providerSource = fs.readFileSync(new URL("../SpeechRecognitionProviders.js", import.meta.url), "utf8");
+const workletSource = fs.readFileSync(new URL("../SpeechAudioWorklet.js", import.meta.url), "utf8");
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
-assert.match(speechMenuSource, /interimResults\s*=\s*true/);
-assert.match(speechMenuSource, /recognition\.start\(\s*SpeechMenu\.#micTrack\s*\)/s);
+assert.match(speechMenuSource, /#createRecognitionProvider/);
+assert.match(speechMenuSource, /provider\.startUtterance/);
+assert.match(speechMenuSource, /SpeechAudioWorklet\.js/);
+assert.match(providerSource, /interimResults\s*=\s*true/);
+assert.match(providerSource, /recognition\.start\(this\.#micTrack\)/);
+assert.match(providerSource, /class StreamingSpeechProvider/);
+assert.match(providerSource, /\/api\/speech\/stream/);
+assert.match(workletSource, /#targetRate = 16000/);
+assert.match(workletSource, /pcm:\s*packet\.buffer/);
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
 assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
