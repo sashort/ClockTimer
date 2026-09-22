@@ -21,13 +21,13 @@ const overlayMarker = css.indexOf('graphical-settings-scroll-overlay-v2');
 assert(overlayMarker >= 0, 'Clock/Timer settings v2 overlay styles are present');
 const overlayCss = css.slice(overlayMarker);
 
-assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*height:\s*90dvh;[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;/s);
-assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
+assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*min-height:\s*90dvh;[^}]*height:\s*90dvh;[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;/s);
+assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*max-height:\s*100%;[^}]*block-size:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*pointer-events:\s*none !important;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview \.preview-title\s*\{[^}]*opacity:\s*1;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*0\.72;/s);
-assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?\.graphical-dialog\s*\{[^}]*height:\s*92dvh;[^}]*max-height:\s*92dvh;/s);
+assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?\.graphical-dialog\s*\{[^}]*min-height:\s*92dvh;[^}]*height:\s*92dvh;[^}]*max-height:\s*92dvh;/s);
 
 console.log('PASS Clock/Timer settings keep a fixed-height modal, bounded scroller, and visible click-through Live Preview');
