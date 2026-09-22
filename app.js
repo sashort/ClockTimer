@@ -4294,6 +4294,7 @@
 
     function getSettingsHelpTemplate(key) {
         const ids = {
+            speechRecognition: "settingsHelpSpeechRecognition",
             syncGoals: "settingsHelpSyncGoals",
             tolerance: "settingsHelpTolerance",
             toleranceColor: "settingsHelpTolerance",
