@@ -4439,8 +4439,8 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 
 
 /* graphical-settings-scroll-overlay-v2
- * Issue #10: fixed-height modal, one bounded settings scroller, and a
- * click-through Live Preview whose title remains visible.
+ * Issue #10: fixed-height modal, one bounded settings scroller, compact
+ * details rows, and a click-through Live Preview overlay.
  */
 .graphical-dialog {
     box-sizing: border-box;
@@ -4495,13 +4495,33 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     z-index: 1;
     min-width: 0;
     min-height: 0;
-    padding: 16px;
+    padding: 12px 16px;
+    display: grid;
+    align-content: start;
+    gap: 6px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
+}
+
+.graphical-dialog .settings-category > summary {
+    min-height: 38px;
+    padding: 7px 36px 7px 12px;
+    font-size: 17px;
+    line-height: 1.15;
+}
+
+.graphical-dialog .settings-category > summary::after {
+    right: 12px;
+    font-size: 23px;
+}
+
+.graphical-dialog .settings-category-content {
+    padding: 8px 10px 10px;
+    gap: 8px;
 }
 
 .graphical-dialog .clock-preview {
@@ -4512,29 +4532,13 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     margin: 0 !important;
     padding: 12px 16px 16px;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
     place-items: center;
-    gap: 10px;
     border: 0;
     border-radius: 0;
     background: rgb(0 30 96 / 42%);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%);
     pointer-events: none !important;
     user-select: none;
-}
-
-.graphical-dialog .clock-preview .preview-title {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    margin: 0;
-    padding: 7px 12px;
-    justify-self: stretch;
-    text-align: center;
-    border-bottom: 1px solid rgb(255 255 255 / 38%);
-    background: rgb(0 30 96 / 72%);
-    box-shadow: 0 4px 10px rgb(0 0 0 / 18%);
-    opacity: 1;
 }
 
 .graphical-dialog .clock-preview clock-timer {
@@ -4550,7 +4554,19 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     }
 
     .graphical-dialog .graphical-settings-grid > .settings-groups {
-        padding: 12px;
+        padding: 10px 12px;
+        gap: 5px;
+    }
+
+    .graphical-dialog .settings-category > summary {
+        min-height: 36px;
+        padding-block: 6px;
+        font-size: 16px;
+    }
+
+    .graphical-dialog .settings-category-content {
+        padding: 7px 9px 9px;
+        gap: 7px;
     }
 
     .graphical-dialog .clock-preview {
