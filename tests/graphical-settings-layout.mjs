@@ -12,10 +12,9 @@ const dialog = html.slice(dialogStart, dialogEnd);
 const gridStart = dialog.indexOf('<div class="settings-grid graphical-settings-grid">');
 const groupsStart = dialog.indexOf('<div class="settings-groups">', gridStart);
 const previewStart = dialog.indexOf('<aside class="clock-preview"', gridStart);
-const titleStart = dialog.indexOf('<div class="preview-title">Live Preview</div>', previewStart);
 assert(gridStart >= 0, 'graphical settings content region exists');
 assert(previewStart > gridStart && previewStart < groupsStart, 'live preview is layered inside the settings region');
-assert(titleStart > previewStart, 'Live Preview title remains in the overlay');
+assert(!dialog.includes('Live Preview'), 'Live Preview title is removed');
 
 const overlayMarker = css.indexOf('graphical-settings-scroll-overlay-v2');
 assert(overlayMarker >= 0, 'Clock/Timer settings v2 overlay styles are present');
@@ -26,8 +25,10 @@ assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*ma
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*pointer-events:\s*none !important;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview \.preview-title\s*\{[^}]*opacity:\s*1;/s);
+assert.doesNotMatch(overlayCss, /\.clock-preview \.preview-title/);
+assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
+assert.match(overlayCss, /\.graphical-dialog \.settings-category-content\s*\{[^}]*padding:\s*8px 10px 10px;[^}]*gap:\s*8px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*0\.72;/s);
 assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?\.graphical-dialog\s*\{[^}]*min-height:\s*92dvh;[^}]*height:\s*92dvh;[^}]*max-height:\s*92dvh;/s);
 
-console.log('PASS Clock/Timer settings keep a fixed-height modal, bounded scroller, and visible click-through Live Preview');
+console.log('PASS Clock/Timer settings keep a fixed-height modal, compact categories, and click-through preview overlay');
