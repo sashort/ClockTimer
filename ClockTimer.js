@@ -2010,7 +2010,8 @@
                 new Set([
                     "start-time",
                     "end-time",
-                    "range-length"
+                    "range-length",
+                    "slot"
                 ]);
 
             const attributes = {};
@@ -7200,8 +7201,7 @@
                 this.querySelectorAll(
                     'time-range[type="elapsed"]'
                 )) {
-                elapsedRange.stopElapsedAnimation
-                    ?.();
+                this.#pauseRangeAnimation(elapsedRange);
 
                 elapsedRange.remove();
             }
@@ -8958,14 +8958,13 @@
                     rangeEnd <= end
                 ) {
                     if (
-                        typeof range.removeAnimated ===
-                            "function"
+                        typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                     ) {
                         this.#releaseTimeRangeTimingAnimation(
                             range
                         );
 
-                        range.removeAnimated({
+                        this.#removeRangeAnimated(range,{
                             collapseTo: "start"
                         });
                     }
@@ -9298,14 +9297,13 @@
                     existing[index];
 
                 if (
-                    typeof range.removeAnimated ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                 ) {
                     this.#releaseTimeRangeTimingAnimation(
                         range
                     );
 
-                    range.removeAnimated({
+                    this.#removeRangeAnimated(range,{
                         collapseTo: "start"
                     });
                 }
@@ -13389,10 +13387,9 @@
                             )
                     ) {
                         if (
-                            typeof range.snapToLogicalTiming ===
-                                "function"
+                            typeof this.#getRangeRenderer(range)?.snapRangeGeometry === "function"
                         ) {
-                            range.snapToLogicalTiming();
+                            this.#snapRangeGeometry(range);
                         }
                     }
 
@@ -13671,7 +13668,8 @@
                                         "end-time",
                                         "range-length",
                                         "ignore-overlaps",
-                                        "timer-mode-transitioning"
+                                        "timer-mode-transitioning",
+                                        "slot"
                                     ].includes(
                                         attribute.name.toLowerCase()
                                     )
@@ -18185,9 +18183,7 @@
                 );
 
             for (const range of record.ranges) {
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
             }
 
             record.ring.remove();
@@ -18315,9 +18311,7 @@
                     range.style.zIndex =
                         "100";
 
-                    TimeRangeClass?.suspendLayout?.(
-                        range
-                    );
+                    this.#suspendRangeRendering(range);
 
                     try {
                         record.ring.appendChild(
@@ -18325,9 +18319,7 @@
                         );
                     }
                     catch (error) {
-                        TimeRangeClass?.resumeLayout?.(
-                            range
-                        );
+                        this.#resumeRangeRendering(range);
 
                         throw error;
                     }
@@ -18424,9 +18416,7 @@
                 const range =
                     record.ranges.pop();
 
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 range.remove();
             }
@@ -19025,184 +19015,68 @@
             return animation;
         }
 
-        #applyTimerModeState(mode) {
-            if (mode !== "remaining") {
-                this.#removeRemainingRanges();
-                this.#syncWaveRange();
-                return;
-            }
-
+        #applyTimerModeState(
+            mode
+        ) {
             const start =
                 this.#getTimerModeTransitionStart();
 
-            if (Number.isFinite(start)) {
+            if (
+                Number.isFinite(
+                    start
+                )
+            ) {
                 this.#updateRemainingRanges(
                     start
                 );
             }
 
             this.#syncWaveRange();
+
+            for (
+                const ring of
+                    this.#getTimerRings()
+            ) {
+                ring.refreshLayerLayout?.({
+                    animate:
+                        false
+                });
+            }
         }
 
         #transitionTimerMode(
             previousMode,
             mode
         ) {
-            const previousOpacity =
-                this.#cancelTimerModeTransition();
+            this.#cancelTimerModeTransition();
 
-            const token =
-                ++this.#timerModeTransitionToken;
+            const start =
+                this.#getTimerModeTransitionStart();
 
-            const elapsedRanges =
-                Array.from(
-                    this.querySelectorAll(
-                        "time-range.elapsed"
-                    )
+            if (
+                Number.isFinite(
+                    start
+                )
+            ) {
+                this.#updateRemainingRanges(
+                    start
                 );
-
-            for (const range of elapsedRanges) {
-                range.setAttribute(
-                    "timer-mode-transitioning",
-                    ""
-                );
-            }
-
-            if (mode === "remaining") {
-                const start =
-                    this.#getTimerModeTransitionStart();
-
-                if (Number.isFinite(start)) {
-                    this.#updateRemainingRanges(
-                        start
-                    );
-                }
             }
 
             this.#syncWaveRange();
 
-            const remainingRanges =
-                Array.from(
-                    this.querySelectorAll(
-                        "time-range.remaining"
-                    )
-                );
+            for (
+                const ring of
+                    this.#getTimerRings()
+            ) {
+                ring.refreshLayerLayout?.({
+                    animate:
+                        true,
 
-            const animations = [];
-
-            for (const range of elapsedRanges) {
-                const target =
-                    this.#getRangeOpacity(
-                        range
-                    );
-
-                const from =
-                    previousOpacity.get(
-                        range
-                    ) ??
-                    (
-                        previousMode === "elapsed"
-                            ? target
-                            : 0
-                    );
-
-                const to =
-                    mode === "elapsed"
-                        ? target
-                        : 0;
-
-                const animation =
-                    this.#animateTimerModeRange(
-                        range,
-                        from,
-                        to
-                    );
-
-                if (animation) {
-                    animations.push(
-                        animation
-                    );
-                }
+                    duration:
+                        333
+                });
             }
-
-            for (const range of remainingRanges) {
-                const target =
-                    this.#getRangeOpacity(
-                        range
-                    );
-
-                const from =
-                    previousOpacity.get(
-                        range
-                    ) ??
-                    (
-                        previousMode === "remaining"
-                            ? target
-                            : 0
-                    );
-
-                const to =
-                    mode === "remaining"
-                        ? target
-                        : 0;
-
-                const animation =
-                    this.#animateTimerModeRange(
-                        range,
-                        from,
-                        to
-                    );
-
-                if (animation) {
-                    animations.push(
-                        animation
-                    );
-                }
-            }
-
-            const finish =
-                () => {
-                    if (
-                        token !==
-                            this.#timerModeTransitionToken
-                    ) {
-                        return;
-                    }
-
-                    for (const animation of animations) {
-                        this.#timerModeTransitionAnimations.delete(
-                            animation
-                        );
-
-                        animation.cancel();
-                    }
-
-                    for (const range of elapsedRanges) {
-                        range.removeAttribute(
-                            "timer-mode-transitioning"
-                        );
-                    }
-
-                    if (mode !== "remaining") {
-                        this.#removeRemainingRanges();
-                    }
-
-                    this.#syncWaveRange();
-                };
-
-            if (animations.length === 0) {
-                finish();
-                return;
-            }
-
-            Promise.allSettled(
-                animations.map(
-                    animation =>
-                        animation.finished
-                )
-            ).then(
-                finish
-            );
         }
 
         #handleTimerModeChange(
@@ -21464,10 +21338,9 @@
                     this.#getManagedTimeRanges()
             ) {
                 if (
-                    typeof range.refreshVisualGeometry ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.refreshRangeGeometry === "function"
                 ) {
-                    range.refreshVisualGeometry();
+                    this.#refreshRangeGeometry(range);
                 }
             }
         }
@@ -21864,13 +21737,7 @@
                     "time-range"
                 );
 
-            if (
-                !TimeRangeClass ||
-                typeof TimeRangeClass.suspendLayout !==
-                    "function"
-            ) {
-                return;
-            }
+
 
             const boundsChanged =
                 snapshot.bounds.start !==
@@ -22001,9 +21868,7 @@
                     continue;
                 }
 
-                TimeRangeClass.suspendLayout(
-                    range
-                );
+                this.#suspendRangeRendering(range);
 
                 this.#applyTimeRangeLayout(
                     range,
@@ -22421,17 +22286,13 @@
                 return;
             }
 
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
-                );
-
             const ranges =
                 this.#getTimerRanges()
                     .filter(
                         range =>
                             range.isConnected &&
-                            range.timeRangeExiting !== true
+                            range.timeRangeExiting !==
+                                true
                     );
 
             if (
@@ -22448,7 +22309,10 @@
             const suspended = [];
 
             try {
-                for (const range of ranges) {
+                for (
+                    const range of
+                        ranges
+                ) {
                     const start =
                         Number(
                             range.clockTimerStart
@@ -22460,28 +22324,28 @@
                         );
 
                     if (
-                        !Number.isFinite(start) ||
-                        !Number.isFinite(end) ||
+                        !Number.isFinite(
+                            start
+                        ) ||
+                        !Number.isFinite(
+                            end
+                        ) ||
                         end <= start
                     ) {
                         continue;
                     }
 
-                    const coordinatorManaged =
-                        this.#timeRangeTimingAnimations.has(
-                            range
-                        );
-
-                    if (coordinatorManaged) {
+                    if (
+                        this.#timeRangeTimingAnimations
+                            .has(
+                                range
+                            )
+                    ) {
                         continue;
                     }
 
-                    if (
-                        suspendLayout &&
-                        typeof TimeRangeClass?.suspendLayout ===
-                            "function"
-                    ) {
-                        TimeRangeClass.suspendLayout(
+                    if (suspendLayout) {
+                        this.#suspendRangeRendering(
                             range
                         );
 
@@ -22509,15 +22373,13 @@
                 }
             }
             finally {
-                if (
-                    typeof TimeRangeClass?.resumeLayout ===
-                        "function"
+                for (
+                    const range of
+                        suspended
                 ) {
-                    for (const range of suspended) {
-                        TimeRangeClass.resumeLayout(
-                            range
-                        );
-                    }
+                    this.#resumeRangeRendering(
+                        range
+                    );
                 }
             }
         }
@@ -22598,6 +22460,159 @@
             );
         }
 
+        #getRangeRenderer(
+            range
+        ) {
+            const renderer =
+                range?.parentElement;
+
+            return (
+                renderer?.localName ===
+                    "ring-container"
+            )
+                ? renderer
+                : undefined;
+        }
+
+        #suspendRangeRendering(
+            range
+        ) {
+            if (!range) {
+                return;
+            }
+
+            const renderer =
+                this.#getRangeRenderer(
+                    range
+                );
+
+            if (
+                typeof renderer
+                    ?.suspendRangeRendering ===
+                    "function"
+            ) {
+                renderer
+                    .suspendRangeRendering(
+                        range
+                    );
+
+                return;
+            }
+
+            range.clockTimerRangeRenderingSuspended =
+                true;
+        }
+
+        #resumeRangeRendering(
+            range
+        ) {
+            if (!range) {
+                return;
+            }
+
+            const renderer =
+                this.#getRangeRenderer(
+                    range
+                );
+
+            if (
+                typeof renderer
+                    ?.resumeRangeRendering ===
+                    "function"
+            ) {
+                renderer
+                    .resumeRangeRendering(
+                        range
+                    );
+
+                return;
+            }
+
+            delete range
+                .clockTimerRangeRenderingSuspended;
+        }
+
+        #refreshRangeGeometry(
+            range
+        ) {
+            return (
+                this.#getRangeRenderer(
+                    range
+                )
+                    ?.refreshRangeGeometry?.(
+                        range
+                    ) ??
+                false
+            );
+        }
+
+        #snapRangeGeometry(
+            range
+        ) {
+            return (
+                this.#getRangeRenderer(
+                    range
+                )
+                    ?.snapRangeGeometry?.(
+                        range
+                    ) ??
+                false
+            );
+        }
+
+        #animateRangeFromCollapsed(
+            range,
+            value
+        ) {
+            return (
+                this.#getRangeRenderer(
+                    range
+                )
+                    ?.animateRangeFromCollapsed?.(
+                        range,
+                        value
+                    ) ??
+                false
+            );
+        }
+
+        #removeRangeAnimated(
+            range,
+            options
+        ) {
+            const renderer =
+                this.#getRangeRenderer(
+                    range
+                );
+
+            if (
+                typeof renderer
+                    ?.removeRangeAnimated ===
+                    "function"
+            ) {
+                return renderer
+                    .removeRangeAnimated(
+                        range,
+                        options
+                    );
+            }
+
+            range?.remove?.();
+
+            return false;
+        }
+
+        #pauseRangeAnimation(
+            range
+        ) {
+            this.#getRangeRenderer(
+                range
+            )
+                ?.pauseRangeAnimation?.(
+                    range
+                );
+        }
+
         #calculateTimeRangeLayout(
             range,
             start,
@@ -22605,181 +22620,47 @@
             originMilliseconds,
             fittedBounds
         ) {
-            const TimeRangeClass =
-                customElements.get(
-                    "time-range"
+            const renderer =
+                this.#getRangeRenderer(
+                    range
                 );
 
-            const parent =
-                range?.parentElement;
-
             if (
-                !TimeRangeClass ||
-                typeof TimeRangeClass.calculateTimeAngle !==
+                !renderer ||
+                typeof renderer
+                    .calculateRangeLayout !==
                     "function" ||
-                typeof TimeRangeClass.calculateClipPath !==
-                    "function" ||
-                !parent ||
-                !Number.isFinite(start) ||
-                !Number.isFinite(end) ||
+                !Number.isFinite(
+                    start
+                ) ||
+                !Number.isFinite(
+                    end
+                ) ||
                 end < start
             ) {
                 return;
             }
 
-            const width =
-                parent.clientWidth;
-
-            const height =
-                parent.clientHeight;
-
-            if (
-                width <= 0 ||
-                height <= 0
-            ) {
-                return;
-            }
-
-            const rangeDuration =
-                end - start;
-
-            let origin;
-            let startAngle;
-            let endAngle;
-
-            if (
+            const bounds =
                 this.#getTimerType() ===
                     "radial-fitted"
-            ) {
-                const bounds =
-                    fittedBounds ??
-                    this.#getRadialFittedBounds();
-
-                if (!bounds) {
-                    return;
-                }
-
-                origin =
-                    bounds.start;
-
-                const degreesPerMillisecond =
-                    360 /
-                    bounds.duration;
-
-                startAngle =
-                    (
-                        start -
-                        bounds.start
-                    ) *
-                    degreesPerMillisecond;
-
-                endAngle =
-                    (
-                        end -
-                        bounds.start
-                    ) *
-                    degreesPerMillisecond;
-
-                startAngle =
-                    Math.max(
-                        0,
-                        Math.min(
-                            360,
-                            startAngle
-                        )
-                    );
-
-                endAngle =
-                    Math.max(
-                        0,
-                        Math.min(
-                            360,
-                            endAngle
-                        )
-                    );
-            }
-            else {
-                origin =
-                    Number.isFinite(
-                        originMilliseconds
+                    ? (
+                        fittedBounds ??
+                        this.#getRadialFittedBounds()
                     )
-                        ? originMilliseconds
-                        : this.#getTimeRangeOriginMilliseconds(
-                            range,
-                            start
-                        );
+                    : undefined;
 
-                const originDate =
-                    this.#timeRangeTimelineDate(
-                        origin
-                    );
-
-                startAngle =
-                    TimeRangeClass.calculateTimeAngle(
-                        this.#timeRangeTimelineDate(
-                            start
-                        ),
-                        originDate
-                    );
-
-                endAngle =
-                    TimeRangeClass.calculateTimeAngle(
-                        this.#timeRangeTimelineDate(
-                            end
-                        ),
-                        originDate
-                    );
-
-                if (
-                    rangeDuration >=
-                        ClockTimer.#HOUR
-                ) {
-                    endAngle =
-                        startAngle + 360;
-                }
-            }
-
-            if (
-                !Number.isFinite(startAngle) ||
-                !Number.isFinite(endAngle)
-            ) {
-                return;
-            }
-
-            const clipPath =
-                TimeRangeClass.calculateClipPath({
-                    startAngle,
-                    endAngle,
-                    width,
-                    height,
-                    parent,
-                    mode: "radial"
-                });
-
-            if (
-                typeof clipPath !==
-                    "string"
-            ) {
-                return;
-            }
-
-            return {
-                clipPath,
-                startAngle,
-                endAngle,
-                duration:
-                    rangeDuration,
-                renderStartTime:
-                    this.#formatTimelineTime(
-                        start
-                    ),
-                renderEndTime:
-                    this.#formatTimelineTime(
-                        end
-                    ),
-                originMilliseconds:
-                    origin
-            };
+            return renderer
+                .calculateRangeLayout(
+                    range,
+                    {
+                        start,
+                        end,
+                        originMilliseconds,
+                        fittedBounds:
+                            bounds
+                    }
+                );
         }
 
         #applyTimeRangeLayout(
@@ -22787,27 +22668,30 @@
             layout,
             commit = false
         ) {
-            if (!range || !layout) {
-                return false;
-            }
-
-            const method =
-                commit
-                    ? range.commitAnimatedLayout
-                    : range.applyAnimatedLayout;
+            const renderer =
+                this.#getRangeRenderer(
+                    range
+                );
 
             if (
-                typeof method !==
-                    "function"
+                !renderer ||
+                typeof renderer
+                    .applyRangeLayout !==
+                    "function" ||
+                !layout
             ) {
                 return false;
             }
 
             return (
-                method.call(
-                    range,
-                    layout
-                ) !== false
+                renderer
+                    .applyRangeLayout(
+                        range,
+                        layout,
+                        {
+                            commit
+                        }
+                    ) !== false
             );
         }
 
@@ -22964,11 +22848,9 @@
                         range
                     );
 
-                    TimeRangeClass?.resumeLayout?.(
-                        range
-                    );
+                    this.#resumeRangeRendering(range);
 
-                    range.refreshVisualGeometry?.();
+                    this.#refreshRangeGeometry(range);
                     return;
                 }
 
@@ -23001,9 +22883,7 @@
                 range
             );
 
-            TimeRangeClass?.resumeLayout?.(
-                range
-            );
+            this.#resumeRangeRendering(range);
         }
 
         #stepTimeRangeTimingAnimation(
@@ -23029,9 +22909,7 @@
                     range
                 );
 
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 return;
             }
@@ -23186,9 +23064,7 @@
                     "time-range"
                 );
 
-            TimeRangeClass?.resumeLayout?.(
-                range
-            );
+            this.#resumeRangeRendering(range);
 
             return true;
         }
@@ -23212,9 +23088,7 @@
                     );
                 }
 
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
             }
 
             this.#timeRangeTimingAnimations.clear();
@@ -23685,9 +23559,7 @@
                     "time-range"
                 );
 
-            TimeRangeClass?.suspendLayout?.(
-                range
-            );
+            this.#suspendRangeRendering(range);
 
             state.suspendedRanges.add(
                 range
@@ -23896,7 +23768,7 @@
                         );
                     }
                     else {
-                        range.snapToLogicalTiming?.();
+                        this.#snapRangeGeometry(range);
                     }
                 }
             }
@@ -23911,9 +23783,7 @@
                     range
                 );
 
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 this.#releaseTimeRangeTimingAnimation(
                     range
@@ -24008,9 +23878,7 @@
                 const range of
                     state.suspendedRanges
             ) {
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
             }
 
             state.suspendedRanges.clear();
@@ -24090,9 +23958,7 @@
                 const range of
                     state.suspendedRanges
             ) {
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
             }
 
             for (const fade of state.ringFades.values()) {
@@ -24705,9 +24571,7 @@
                             "time-range"
                         );
 
-                    TimeRangeClass?.suspendLayout?.(
-                        range
-                    );
+                    this.#suspendRangeRendering(range);
 
                     try {
                         ring.appendChild(
@@ -24715,23 +24579,20 @@
                         );
                     }
                     finally {
-                        TimeRangeClass?.resumeLayout?.(
-                            range
-                        );
+                        this.#resumeRangeRendering(range);
                     }
                 }
             }
 
             for (const range of unused) {
                 if (
-                    typeof range.removeAnimated ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                 ) {
                     this.#releaseTimeRangeTimingAnimation(
                         range
                     );
 
-                    range.removeAnimated({
+                    this.#removeRangeAnimated(range,{
                         collapseTo:
                             counterclockwiseOvertimeRemoval &&
                             range.getAttribute("type") ===
@@ -24769,10 +24630,9 @@
                     this.#getTimerRanges()
             ) {
                 if (
-                    typeof range.snapToLogicalTiming ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.snapRangeGeometry === "function"
                 ) {
-                    range.snapToLogicalTiming();
+                    this.#snapRangeGeometry(range);
                 }
             }
         }
@@ -24821,7 +24681,8 @@
                     "type",
                     "start-time",
                     "end-time",
-                    "range-length"
+                    "range-length",
+                    "slot"
                 ]);
 
             return Array.from(
@@ -26526,7 +26387,8 @@
                 if (
                     name === "start-time" ||
                     name === "end-time" ||
-                    name === "range-length"
+                    name === "range-length" ||
+                    name === "slot"
                 ) {
                     continue;
                 }
@@ -26682,9 +26544,7 @@
                     range
                 );
 
-                TimeRangeClass?.suspendLayout?.(
-                    range
-                );
+                this.#suspendRangeRendering(range);
 
                 this.#writeRangeTiming(
                     range,
@@ -26715,12 +26575,10 @@
                     );
                 }
 
-                TimeRangeClass?.resumeLayout?.(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 if (!targetLayout) {
-                    range.refreshVisualGeometry?.();
+                    this.#refreshRangeGeometry(range);
                 }
 
                 return true;
@@ -26752,16 +26610,25 @@
                 return true;
             }
 
+            const renderer =
+                this.#getRangeRenderer(
+                    range
+                );
+
             const canManageAnimation =
                 range.isConnected &&
-                TimeRangeClass &&
-                typeof TimeRangeClass.suspendLayout ===
+                renderer &&
+                typeof renderer
+                    .suspendRangeRendering ===
                     "function" &&
-                typeof TimeRangeClass.resumeLayout ===
+                typeof renderer
+                    .resumeRangeRendering ===
                     "function" &&
-                typeof range.applyAnimatedLayout ===
+                typeof renderer
+                    .calculateRangeLayout ===
                     "function" &&
-                typeof range.commitAnimatedLayout ===
+                typeof renderer
+                    .applyRangeLayout ===
                     "function";
 
             if (!canManageAnimation) {
@@ -26775,9 +26642,7 @@
                 return true;
             }
 
-            TimeRangeClass.suspendLayout(
-                range
-            );
+            this.#suspendRangeRendering(range);
 
             this.#writeRangeTiming(
                 range,
@@ -26801,11 +26666,9 @@
                 );
 
             if (!targetLayout) {
-                TimeRangeClass.resumeLayout(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
-                range.refreshVisualGeometry?.();
+                this.#refreshRangeGeometry(range);
                 return true;
             }
 
@@ -26825,9 +26688,7 @@
                     true
                 );
 
-                TimeRangeClass.resumeLayout(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 return true;
             }
@@ -26847,9 +26708,7 @@
                     true
                 );
 
-                TimeRangeClass.resumeLayout(
-                    range
-                );
+                this.#resumeRangeRendering(range);
 
                 return true;
             }
@@ -27217,14 +27076,13 @@
             ) {
                 if (
                     animate &&
-                    typeof range.removeAnimated ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                 ) {
                     this.#releaseTimeRangeTimingAnimation(
                         range
                     );
 
-                    range.removeAnimated({
+                    this.#removeRangeAnimated(range,{
                         collapseTo: "start"
                     });
                 }
@@ -27292,10 +27150,9 @@
 
                 try {
                     if (
-                        typeof range.removeAnimated ===
-                            "function"
+                        typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                     ) {
-                        range.removeAnimated({
+                        this.#removeRangeAnimated(range,{
                             targetStart:
                                 collapseTime,
                             targetEnd:
@@ -27422,7 +27279,7 @@
                     true;
 
                 try {
-                    range.removeAnimated({
+                    this.#removeRangeAnimated(range,{
                         targetStart:
                             attachmentTime,
                         targetEnd:
@@ -27636,14 +27493,13 @@
                     Number.isFinite(
                         animateFrom
                     ) &&
-                    typeof range.animateFromCollapsed ===
-                        "function"
+                    typeof this.#getRangeRenderer(range)?.animateRangeFromCollapsed === "function"
                 ) {
                     range.clockTimerInternalMutation =
                         true;
 
                     try {
-                        range.animateFromCollapsed(
+                        this.#animateRangeFromCollapsed(range,
                             this.#formatTimelineTime(
                                 animateFrom
                             )
@@ -28413,14 +28269,13 @@
                     existing[index];
 
                 if (
-                    typeof range.removeAnimated ===
-                        'function'
+                    typeof this.#getRangeRenderer(range)?.removeRangeAnimated === "function"
                 ) {
                     this.#releaseTimeRangeTimingAnimation(
                         range
                     );
 
-                    range.removeAnimated({
+                    this.#removeRangeAnimated(range,{
                         collapseTo: 'start'
                     });
                 }
@@ -29546,9 +29401,9 @@
             }
 
             if (
-                this.#getTimerMode() !==
-                    "remaining" ||
-                !Number.isFinite(start)
+                !Number.isFinite(
+                    start
+                )
             ) {
                 this.#removeRemainingRanges();
                 return;

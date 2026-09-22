@@ -1,33 +1,14 @@
 class TimeRange extends HTMLElement {
     static #instances = [];
-    static suspendedTimeRanges = [];
     static #percentGoal = 1;
-    static #calculatedEndTime;
     static #reordering = false;
-    static #animationDuration = 333;
+    static #activeTransaction;
 
     #startTime;
     #endTime;
     #rangeLength;
-    #shadowRoot;
-    #styleElement;
-    #geometryStyleElement;
-    #contourLayer;
-    #elapsedWaveLayer;
-    #appearanceObserver;
-    #appearanceRefreshFrame;
     #syncing = 0;
-    #suspendAnimations = false;
-    #renderStartTime;
-    #renderEndTime;
-    #animationFrame;
-    #animationStartedAt;
-    #animationFromStart;
-    #animationFromEnd;
-    #animationTargetStart;
-    #animationTargetEnd;
     #pendingRemoval = false;
-    #removeAfterAnimation = false;
 
     static get observedAttributes() {
         return [
@@ -42,94 +23,11 @@ class TimeRange extends HTMLElement {
         return TimeRange.#percentGoal;
     }
 
-    static get animationDuration() {
-        return TimeRange.#animationDuration;
-    }
-
-    static set animationDuration(value) {
-        const duration = Number(value);
-
-        if (
-            Number.isFinite(duration) &&
-            duration >= 0
-        ) {
-            TimeRange.#animationDuration =
-                duration;
-        }
-    }
-
-    static suspendLayout(
-        timeRange
-    ) {
-        if (
-            !(timeRange instanceof TimeRange)
-        ) {
-            return;
-        }
-
-        if (
-            !TimeRange.suspendedTimeRanges.includes(
-                timeRange
-            )
-        ) {
-            TimeRange.suspendedTimeRanges.push(
-                timeRange
-            );
-        }
-
-        if (
-            timeRange.#animationFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                timeRange.#animationFrame
-            );
-
-            timeRange.#animationFrame =
-                undefined;
-        }
-    }
-
-    static resumeLayout(
-        timeRange
-    ) {
-        if (
-            !(timeRange instanceof TimeRange)
-        ) {
-            return;
-        }
-
-        const index =
-            TimeRange.suspendedTimeRanges.indexOf(
-                timeRange
-            );
-
-        if (index !== -1) {
-            TimeRange.suspendedTimeRanges.splice(
-                index,
-                1
-            );
-        }
-    }
-
-    static #isLayoutSuspended(
-        timeRange
-    ) {
-        return (
-            timeRange instanceof TimeRange &&
-            TimeRange.suspendedTimeRanges.includes(
-                timeRange
-            )
-        );
-    }
-
     static set percentGoal(value) {
         let preventConvert = false;
 
         try {
-            if (
-                typeof value === "string"
-            ) {
+            if (typeof value === "string") {
                 value =
                     value.replace(
                         /\s/g,
@@ -164,351 +62,23 @@ class TimeRange extends HTMLElement {
             ) {
                 value = 1;
             }
-        } catch {
+        }
+        catch {
             value = 1;
         }
 
-        if (
-            value <= 0
-        ) {
+        if (value <= 0) {
             value = 1;
-        } else if (
+        }
+        else if (
             value > 1.5 &&
             !preventConvert
         ) {
-            value /=
-                100;
+            value /= 100;
         }
 
         TimeRange.#percentGoal =
             value;
-    }
-
-    static #getGroupTimeBounds(
-        parent
-    ) {
-        if (
-            !parent ||
-            typeof parent.querySelectorAll !==
-                "function"
-        ) {
-            return;
-        }
-
-        let earliestStart;
-        let latestEnd;
-
-        for (
-            const range of
-                parent.querySelectorAll(
-                    "time-range"
-                )
-        ) {
-            if (
-                !(range instanceof TimeRange) ||
-                range.#pendingRemoval ||
-                !(range.#startTime instanceof Date) ||
-                !(range.#endTime instanceof Date)
-            ) {
-                continue;
-            }
-
-            const start =
-                range.#startTime.getTime();
-
-            const end =
-                range.#endTime.getTime();
-
-            if (
-                earliestStart === undefined ||
-                start < earliestStart
-            ) {
-                earliestStart = start;
-            }
-
-            if (
-                latestEnd === undefined ||
-                end > latestEnd
-            ) {
-                latestEnd = end;
-            }
-        }
-
-        if (
-            earliestStart === undefined ||
-            latestEnd === undefined ||
-            latestEnd <= earliestStart
-        ) {
-            return;
-        }
-
-        return {
-            start: earliestStart,
-            end: latestEnd
-        };
-    }
-
-    static calculateTimeAngle(
-        time,
-        origin,
-        parent = undefined
-    ) {
-        if (!(time instanceof Date)) {
-            return;
-        }
-
-        if (parent !== undefined) {
-            const bounds =
-                TimeRange.#getGroupTimeBounds(
-                    parent
-                );
-
-            if (!bounds) {
-                return;
-            }
-
-            return (
-                (
-                    time.getTime() -
-                    bounds.start
-                ) /
-                (
-                    bounds.end -
-                    bounds.start
-                )
-            ) *
-            360;
-        }
-
-        const millisecondsInHour =
-            60 *
-            60 *
-            1000;
-
-        let milliseconds;
-
-        if (
-            origin instanceof Date
-        ) {
-            const difference =
-                time.getTime() -
-                origin.getTime();
-
-            if (
-                difference >= 0 &&
-                difference <=
-                    millisecondsInHour
-            ) {
-                milliseconds =
-                    difference;
-            }
-            else {
-                milliseconds =
-                    (
-                        difference %
-                            millisecondsInHour +
-                        millisecondsInHour
-                    ) %
-                    millisecondsInHour;
-            }
-        }
-        else {
-            milliseconds =
-                time.getMinutes() *
-                    60 *
-                    1000 +
-                time.getSeconds() *
-                    1000 +
-                time.getMilliseconds();
-        }
-
-        return (
-            360 /
-            millisecondsInHour
-        ) *
-        milliseconds;
-    }
-
-    constructor() {
-        super();
-
-        this.#shadowRoot =
-            this.attachShadow({
-                mode: "open"
-            });
-
-        const contourStyle =
-            document.createElement(
-                "style"
-            );
-
-        contourStyle.textContent = `
-            :host {
-                position: relative;
-            }
-
-            #contour {
-                position: absolute;
-                inset: 0;
-                pointer-events: none;
-                background-repeat: no-repeat;
-            }
-
-            :host([overlapping]) #contour {
-                display: none;
-            }
-
-            #elapsed-wave {
-                position: absolute;
-                inset: 0;
-                display: none;
-                pointer-events: none;
-                background-repeat: no-repeat;
-                transform-origin: 50% 50%;
-                will-change: transform;
-            }
-
-            :host(.elapsed),
-            :host(.remaining) {
-                background-color:
-                    rgb(255 255 255 / 25%);
-                animation: none !important;
-                transition: none !important;
-            }
-
-            :host(.elapsed:not([timer-mode-transitioning])):host-context(clock-timer[timer-mode="remaining"]) {
-                display: none !important;
-            }
-
-            :host([type="wave"]) {
-                animation: none !important;
-                transition: none !important;
-                background: transparent !important;
-                background-color: transparent !important;
-                background-image: none !important;
-            }
-
-            :host([type="wave"]) #elapsed-wave {
-                display: block;
-                animation: elapsed-wave-sweep 4.5s linear infinite;
-                animation-play-state:
-                    var(--elapsed-wave-play-state, running);
-            }
-
-            :host([type="wave"][state-change-wave]) #elapsed-wave {
-                animation: state-change-wave-sweep 750ms linear 1 both;
-            }
-
-            :host([type="wave"][timer-type-transition-wave]) #elapsed-wave {
-                animation:
-                    timer-type-transition-wave-sweep
-                    var(
-                        --timer-type-transition-wave-duration,
-                        1833ms
-                    )
-                    linear
-                    1
-                    both;
-                animation-play-state:
-                    var(
-                        --timer-type-transition-wave-play-state,
-                        running
-                    );
-            }
-
-            @keyframes state-change-wave-sweep {
-                0% {
-                    opacity: 1;
-                    transform: rotate(-180deg);
-                }
-
-                96% {
-                    opacity: 1;
-                }
-
-                100% {
-                    opacity: 0;
-                    transform: rotate(180deg);
-                }
-            }
-
-            @keyframes timer-type-transition-wave-sweep {
-                0% {
-                    opacity: 1;
-                    transform: rotate(-180deg);
-                }
-
-                100% {
-                    opacity: 1;
-                    transform: rotate(180deg);
-                }
-            }
-
-            @keyframes elapsed-wave-sweep {
-                0% {
-                    opacity: 0;
-                    transform: rotate(
-                        var(--elapsed-wave-start-angle, 0deg)
-                    );
-                }
-
-                3% {
-                    opacity: 1;
-                }
-
-                30.333% {
-                    opacity: 1;
-                }
-
-                33.333% {
-                    opacity: 0;
-                    transform: rotate(
-                        var(--elapsed-wave-end-angle, 360deg)
-                    );
-                }
-
-                100% {
-                    opacity: 0;
-                    transform: rotate(
-                        var(--elapsed-wave-end-angle, 360deg)
-                    );
-                }
-            }
-        `;
-
-        this.#contourLayer =
-            document.createElement(
-                "div"
-            );
-
-        this.#contourLayer.id =
-            "contour";
-
-        this.#elapsedWaveLayer =
-            document.createElement(
-                "div"
-            );
-
-        this.#elapsedWaveLayer.id =
-            "elapsed-wave";
-
-        this.#styleElement =
-            document.createElement(
-                "style"
-            );
-
-        this.#geometryStyleElement =
-            document.createElement(
-                "style"
-            );
-
-        this.#shadowRoot.append(
-            contourStyle,
-            this.#geometryStyleElement,
-            this.#styleElement,
-            this.#contourLayer,
-            this.#elapsedWaveLayer
-        );
     }
 
     #assertClockTimerMutationAllowed(
@@ -533,14 +103,17 @@ class TimeRange extends HTMLElement {
         const normalized =
             name === undefined
                 ? undefined
-                : String(name).toLowerCase();
+                : String(name)
+                    .toLowerCase();
 
         if (
             this.clockTimerApprovalReadOnly ===
                 true &&
             (
-                normalized === "approved" ||
-                normalized === "unapproved"
+                normalized ===
+                    "approved" ||
+                normalized ===
+                    "unapproved"
             )
         ) {
             throw new Error(
@@ -591,6 +164,7 @@ class TimeRange extends HTMLElement {
 
     remove() {
         this.#assertClockTimerMutationAllowed();
+
         return super.remove();
     }
 
@@ -601,19 +175,14 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        this.#suspendAnimations =
-            true;
-
         this.#initializeFromAttributes();
-
-        this.#suspendAnimations =
-            false;
 
         this.#syncing++;
 
         try {
             this.#normalizeAttributes();
-        } finally {
+        }
+        finally {
             this.#syncing--;
         }
 
@@ -627,50 +196,55 @@ class TimeRange extends HTMLElement {
             );
         }
 
-        if (
-            TimeRange.#instances.length > 1
-        ) {
-            this.#removeOverlaps();
-        }
+        const inherited =
+            TimeRange.#activeTransaction;
 
-        TimeRange.#reorderParent(
-            this.parentElement,
+        const transaction =
+            inherited ??
+            this.#createTransaction(
+                "connected",
+                "created"
+            );
+
+        const ownsTransaction =
+            inherited === undefined;
+
+        TimeRange.#recordCreated(
+            transaction,
             this
         );
 
-        this.#startAppearanceObserver();
-        this.#scheduleAppearanceRefresh();
-
-        if (
-            this.timeRangeFullEntry ===
-                true
-        ) {
-            delete this.timeRangeFullEntry;
-
-            this.#renderStartTime =
-                this.#cloneDate(
-                    this.#startTime
-                );
-
-            this.#renderEndTime =
-                this.#cloneDate(
-                    this.#endTime
-                );
-
-            this.#updateClipPath();
+        if (ownsTransaction) {
+            TimeRange.#activeTransaction =
+                transaction;
         }
-        else {
-            this.#renderStartTime =
-                this.#cloneDate(
-                    this.#startTime
-                );
 
-            this.#renderEndTime =
-                this.#cloneDate(
-                    this.#startTime
+        try {
+            if (
+                TimeRange.#instances.length >
+                    1
+            ) {
+                this.#removeOverlaps(
+                    transaction
                 );
+            }
 
-            this.#animateToLogicalTiming();
+            TimeRange.#reorderParent(
+                this.parentElement,
+                this
+            );
+        }
+        finally {
+            if (ownsTransaction) {
+                TimeRange.#activeTransaction =
+                    undefined;
+            }
+        }
+
+        if (ownsTransaction) {
+            this.#dispatchTransaction(
+                transaction
+            );
         }
     }
 
@@ -681,28 +255,12 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        this.#stopAppearanceObserver();
-
-        if (
-            this.#animationFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                this.#animationFrame
-            );
-
-            this.#animationFrame =
-                undefined;
-        }
-
         const index =
             TimeRange.#instances.indexOf(
                 this
             );
 
-        if (
-            index !== -1
-        ) {
+        if (index !== -1) {
             TimeRange.#instances.splice(
                 index,
                 1
@@ -723,8 +281,6 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        this.#scheduleAppearanceRefresh();
-
         if (
             name ===
                 "overlapping"
@@ -737,46 +293,99 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        if (
-            newValue === null
-        ) {
-            TimeRange.#updateParentClipPaths(
-                this.parentElement,
-                this
-            );
-
+        if (newValue === null) {
             return;
         }
 
-        switch (
-            name
-        ) {
-            case "start-time":
-                this.#setStartTime(
-                    this.#uniformDate(
-                        newValue,
-                        false
-                    )
-                );
-                break;
+        const inherited =
+            TimeRange.#activeTransaction;
 
-            case "end-time":
-                this.#setEndTime(
-                    this.#uniformDate(
-                        newValue,
-                        false
-                    )
-                );
-                break;
+        const transaction =
+            inherited ??
+            this.#createTransaction(
+                "attribute-change",
+                "changed"
+            );
 
-            case "range-length":
-                this.#setRangeLength(
-                    this.#parseRangeLength(
-                        newValue
-                    )
-                );
-                break;
+        const ownsTransaction =
+            inherited === undefined;
+
+        TimeRange.#recordBefore(
+            transaction,
+            this
+        );
+
+        if (ownsTransaction) {
+            TimeRange.#activeTransaction =
+                transaction;
         }
+
+        try {
+            switch (name) {
+                case "start-time":
+                    this.#setStartTime(
+                        this.#uniformDate(
+                            newValue,
+                            false
+                        )
+                    );
+                    break;
+
+                case "end-time":
+                    this.#setEndTime(
+                        this.#uniformDate(
+                            newValue,
+                            false
+                        )
+                    );
+                    break;
+
+                case "range-length":
+                    this.#setRangeLength(
+                        this.#parseRangeLength(
+                            newValue
+                        )
+                    );
+                    break;
+            }
+
+            this.#removeOverlaps(
+                transaction
+            );
+
+            TimeRange.#reorderParent(
+                this.parentElement,
+                this
+            );
+        }
+        finally {
+            if (ownsTransaction) {
+                TimeRange.#activeTransaction =
+                    undefined;
+            }
+        }
+
+        if (ownsTransaction) {
+            this.#dispatchTransaction(
+                transaction
+            );
+        }
+    }
+
+    get startTime() {
+        return this.#cloneDate(
+            this.#startTime
+        );
+    }
+
+    get endTime() {
+        return this.#cloneDate(
+            this.#endTime
+        );
+    }
+
+    get rangeLength() {
+        return this.#rangeLength;
     }
 
     #initializeFromAttributes() {
@@ -835,7 +444,8 @@ class TimeRange extends HTMLElement {
 
             this.#rangeLength =
                 range;
-        } finally {
+        }
+        finally {
             this.#syncing--;
         }
 
@@ -878,9 +488,7 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        if (
-            start instanceof Date
-        ) {
+        if (start instanceof Date) {
             this.#setStartTime(
                 start
             );
@@ -888,9 +496,7 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        if (
-            end instanceof Date
-        ) {
+        if (end instanceof Date) {
             this.#setEndTime(
                 end
             );
@@ -924,20 +530,16 @@ class TimeRange extends HTMLElement {
         value
     ) {
         if (
-            !(
-                value instanceof Date
-            )
+            !(value instanceof Date)
         ) {
-            return;
+            return false;
         }
 
         this.#startTime =
             value;
 
-        if (
-            this.#syncing !== 0
-        ) {
-            return;
+        if (this.#syncing !== 0) {
+            return true;
         }
 
         this.#syncing++;
@@ -967,7 +569,8 @@ class TimeRange extends HTMLElement {
                     );
 
                 this.#writeEndTimeAttribute();
-            } else if (
+            }
+            else if (
                 hasEnd &&
                 this.#endTime instanceof Date
             ) {
@@ -979,32 +582,146 @@ class TimeRange extends HTMLElement {
             }
 
             this.#writeStartTimeAttribute();
-        } finally {
+        }
+        finally {
             this.#syncing--;
         }
 
+        return true;
+    }
+
+    #getEndTime() {
+        return this.#endTime;
+    }
+
+    #setEndTime(
+        value
+    ) {
         if (
-            this.isConnected
+            !(value instanceof Date)
         ) {
-            if (
-                this.#suspendAnimations
-            ) {
-                this.#renderStartTime =
-                    this.#cloneDate(
-                        this.#startTime
-                    );
-
-                this.#renderEndTime =
-                    this.#cloneDate(
-                        this.#endTime
-                    );
-
-                this.#updateClipPath();
-            }
-            else {
-                this.#animateToLogicalTiming();
-            }
+            return false;
         }
+
+        this.#endTime =
+            value;
+
+        if (this.#syncing !== 0) {
+            return true;
+        }
+
+        this.#syncing++;
+
+        try {
+            const hasStart =
+                this.hasAttribute(
+                    "start-time"
+                );
+
+            const hasRange =
+                this.hasAttribute(
+                    "range-length"
+                );
+
+            if (
+                hasRange &&
+                Number.isInteger(
+                    this.#rangeLength
+                ) &&
+                this.#rangeLength >= 0
+            ) {
+                this.#startTime =
+                    new Date(
+                        this.#endTime.getTime() -
+                        this.#rangeLength
+                    );
+
+                this.#writeStartTimeAttribute();
+            }
+            else if (
+                hasStart &&
+                this.#startTime instanceof Date
+            ) {
+                this.#rangeLength =
+                    this.#endTime.getTime() -
+                    this.#startTime.getTime();
+
+                this.#writeRangeLengthAttribute();
+            }
+
+            this.#writeEndTimeAttribute();
+        }
+        finally {
+            this.#syncing--;
+        }
+
+        return true;
+    }
+
+    #setRangeLength(
+        value
+    ) {
+        if (
+            !Number.isInteger(
+                value
+            ) ||
+            value < 0
+        ) {
+            return false;
+        }
+
+        this.#rangeLength =
+            value;
+
+        if (this.#syncing !== 0) {
+            return true;
+        }
+
+        this.#syncing++;
+
+        try {
+            const hasStart =
+                this.hasAttribute(
+                    "start-time"
+                );
+
+            const hasEnd =
+                this.hasAttribute(
+                    "end-time"
+                );
+
+            if (
+                hasStart &&
+                this.#startTime instanceof Date
+            ) {
+                this.#endTime =
+                    new Date(
+                        this.#startTime.getTime() +
+                        this.#rangeLength
+                    );
+
+                this.#writeEndTimeAttribute();
+            }
+            else if (
+                hasEnd &&
+                this.#endTime instanceof Date
+            ) {
+                this.#startTime =
+                    new Date(
+                        this.#endTime.getTime() -
+                        this.#rangeLength
+                    );
+
+                this.#writeStartTimeAttribute();
+            }
+
+            this.#writeRangeLengthAttribute();
+        }
+        finally {
+            this.#syncing--;
+        }
+
+        return true;
     }
 
     split(
@@ -1012,7 +729,8 @@ class TimeRange extends HTMLElement {
         insert = false
     ) {
         if (
-            typeof insert !== "boolean" ||
+            typeof insert !==
+                "boolean" ||
             !(this.#startTime instanceof Date) ||
             !(this.#endTime instanceof Date)
         ) {
@@ -1039,10 +757,13 @@ class TimeRange extends HTMLElement {
             splitTime.getTime();
 
         if (
-            splitMilliseconds <= startMilliseconds ||
-            splitMilliseconds > endMilliseconds ||
+            splitMilliseconds <=
+                startMilliseconds ||
+            splitMilliseconds >
+                endMilliseconds ||
             (
-                splitMilliseconds === endMilliseconds &&
+                splitMilliseconds ===
+                    endMilliseconds &&
                 !insert
             )
         ) {
@@ -1052,102 +773,97 @@ class TimeRange extends HTMLElement {
         const parent =
             this.parentElement;
 
-        if (insert && !parent) {
+        if (
+            insert &&
+            !parent
+        ) {
             return;
         }
 
-        const originalEnd =
-            new Date(endMilliseconds);
+        const inherited =
+            TimeRange.#activeTransaction;
 
-        const hadRangeLength =
-            this.hasAttribute(
-                "range-length"
+        const transaction =
+            inherited ??
+            this.#createTransaction(
+                "split",
+                "split"
             );
 
-        const right =
-            document.createElement(
-                this.localName
-            );
+        const ownsTransaction =
+            inherited === undefined;
 
-        for (const attribute of this.attributes) {
-            if (
-                attribute.name === "start-time" ||
-                attribute.name === "end-time" ||
-                attribute.name === "range-length" ||
-                attribute.name === "ignore-overlaps"
-            ) {
-                continue;
+        TimeRange.#recordBefore(
+            transaction,
+            this
+        );
+
+        if (ownsTransaction) {
+            TimeRange.#activeTransaction =
+                transaction;
+        }
+
+        let right;
+
+        try {
+            right =
+                this.#cloneRangeForSplit(
+                    splitTime,
+                    new Date(
+                        endMilliseconds
+                    )
+                );
+
+            this.#syncing++;
+
+            try {
+                this.#endTime =
+                    splitTime;
+
+                this.#rangeLength =
+                    splitMilliseconds -
+                    startMilliseconds;
+
+                this.#writeEndTimeAttribute();
+                this.#writeRangeLengthAttribute();
+            }
+            finally {
+                this.#syncing--;
             }
 
-            right.setAttribute(
-                attribute.name,
-                attribute.value
+            TimeRange.#setAction(
+                transaction,
+                this,
+                "trimmed-end"
+            );
+
+            TimeRange.#recordCreated(
+                transaction,
+                right
+            );
+
+            if (insert) {
+                parent.insertBefore(
+                    right,
+                    this.nextSibling
+                );
+            }
+
+            TimeRange.#reorderParent(
+                parent,
+                this
             );
         }
-
-        right.setAttribute(
-            "start-time",
-            this.#formatDateTime(
-                splitTime
-            )
-        );
-
-        right.setAttribute(
-            "end-time",
-            this.#formatDateTime(
-                originalEnd
-            )
-        );
-
-        const rightLength =
-            endMilliseconds -
-            splitMilliseconds;
-
-        if (
-            hadRangeLength &&
-            rightLength >= 0
-        ) {
-            right.setAttribute(
-                "range-length",
-                this.#formatRangeLength(
-                    rightLength
-                )
-            );
+        finally {
+            if (ownsTransaction) {
+                TimeRange.#activeTransaction =
+                    undefined;
+            }
         }
 
-        right.setAttribute(
-            "ignore-overlaps",
-            ""
-        );
-
-        right.timeRangeFullEntry =
-            true;
-
-        const transitioned =
-            this.transitionTo({
-                startTime:
-                    new Date(
-                        startMilliseconds
-                    ),
-                endTime:
-                    splitTime
-            });
-
-        if (!transitioned) {
-            return;
-        }
-
-        if (
-            typeof this.snapToLogicalTiming ===
-                "function"
-        ) {
-            this.snapToLogicalTiming();
-        }
-
-        if (insert) {
-            parent.insertBefore(
-                right,
-                this.nextSibling
+        if (ownsTransaction) {
+            this.#dispatchTransaction(
+                transaction
             );
         }
 
@@ -1155,21 +871,6 @@ class TimeRange extends HTMLElement {
             this,
             right
         ];
-    }
-
-    stopElapsedAnimation() {
-        if (
-            this.getAttribute(
-                "type"
-            ) !== "elapsed"
-        ) {
-            return this;
-        }
-
-        this.#elapsedWaveLayer.style.animationPlayState =
-            "paused";
-
-        return this;
     }
 
     transitionTo({
@@ -1197,213 +898,74 @@ class TimeRange extends HTMLElement {
             return false;
         }
 
-        this.#syncing++;
+        const inherited =
+            TimeRange.#activeTransaction;
 
-        try {
-            this.#startTime =
-                start;
+        const transaction =
+            inherited ??
+            this.#createTransaction(
+                "programmatic-change",
+                "changed"
+            );
 
-            this.#endTime =
-                end;
+        const ownsTransaction =
+            inherited === undefined;
 
-            this.#rangeLength =
-                end.getTime() -
-                start.getTime();
+        TimeRange.#recordBefore(
+            transaction,
+            this
+        );
 
-            this.#writeStartTimeAttribute();
-            this.#writeEndTimeAttribute();
-            this.#writeRangeLengthAttribute();
-        } finally {
-            this.#syncing--;
+        if (ownsTransaction) {
+            TimeRange.#activeTransaction =
+                transaction;
         }
 
-        if (this.isConnected) {
-            this.#animateToLogicalTiming();
+        try {
+            this.#syncing++;
+
+            try {
+                this.#startTime =
+                    start;
+
+                this.#endTime =
+                    end;
+
+                this.#rangeLength =
+                    end.getTime() -
+                    start.getTime();
+
+                this.#writeStartTimeAttribute();
+                this.#writeEndTimeAttribute();
+                this.#writeRangeLengthAttribute();
+            }
+            finally {
+                this.#syncing--;
+            }
+
+            this.#removeOverlaps(
+                transaction
+            );
+
+            TimeRange.#reorderParent(
+                this.parentElement,
+                this
+            );
+        }
+        finally {
+            if (ownsTransaction) {
+                TimeRange.#activeTransaction =
+                    undefined;
+            }
+        }
+
+        if (ownsTransaction) {
+            this.#dispatchTransaction(
+                transaction
+            );
         }
 
         return true;
-    }
-
-    #getEndTime() {
-        return this.#endTime;
-    }
-
-    #setEndTime(
-        value
-    ) {
-        if (
-            !(
-                value instanceof Date
-            )
-        ) {
-            return;
-        }
-
-        this.#endTime =
-            value;
-
-        if (
-            this.#syncing !== 0
-        ) {
-            return;
-        }
-
-        this.#syncing++;
-
-        try {
-            const hasStart =
-                this.hasAttribute(
-                    "start-time"
-                );
-
-            const hasRange =
-                this.hasAttribute(
-                    "range-length"
-                );
-
-            if (
-                hasRange &&
-                Number.isInteger(
-                    this.#rangeLength
-                ) &&
-                this.#rangeLength >= 0
-            ) {
-                this.#startTime =
-                    new Date(
-                        this.#endTime.getTime() -
-                        this.#rangeLength
-                    );
-
-                this.#writeStartTimeAttribute();
-            } else if (
-                hasStart &&
-                this.#startTime instanceof Date
-            ) {
-                this.#rangeLength =
-                    this.#endTime.getTime() -
-                    this.#startTime.getTime();
-
-                this.#writeRangeLengthAttribute();
-            }
-
-            this.#writeEndTimeAttribute();
-        } finally {
-            this.#syncing--;
-        }
-
-        if (
-            this.isConnected
-        ) {
-            if (
-                this.#suspendAnimations
-            ) {
-                this.#renderStartTime =
-                    this.#cloneDate(
-                        this.#startTime
-                    );
-
-                this.#renderEndTime =
-                    this.#cloneDate(
-                        this.#endTime
-                    );
-
-                this.#updateClipPath();
-            }
-            else {
-                this.#animateToLogicalTiming();
-            }
-        }
-    }
-
-    #getRangeLength() {
-        return this.#rangeLength;
-    }
-
-    #setRangeLength(
-        value
-    ) {
-        if (
-            !Number.isInteger(
-                value
-            ) ||
-            value < 0
-        ) {
-            return;
-        }
-
-        this.#rangeLength =
-            value;
-
-        if (
-            this.#syncing !== 0
-        ) {
-            return;
-        }
-
-        this.#syncing++;
-
-        try {
-            const hasStart =
-                this.hasAttribute(
-                    "start-time"
-                );
-
-            const hasEnd =
-                this.hasAttribute(
-                    "end-time"
-                );
-
-            if (
-                hasStart &&
-                this.#startTime instanceof Date
-            ) {
-                this.#endTime =
-                    new Date(
-                        this.#startTime.getTime() +
-                        this.#rangeLength
-                    );
-
-                this.#writeEndTimeAttribute();
-            } else if (
-                hasEnd &&
-                this.#endTime instanceof Date
-            ) {
-                this.#startTime =
-                    new Date(
-                        this.#endTime.getTime() -
-                        this.#rangeLength
-                    );
-
-                this.#writeStartTimeAttribute();
-            }
-
-            this.#writeRangeLengthAttribute();
-        } finally {
-            this.#syncing--;
-        }
-
-        if (
-            this.isConnected
-        ) {
-            if (
-                this.#suspendAnimations
-            ) {
-                this.#renderStartTime =
-                    this.#cloneDate(
-                        this.#startTime
-                    );
-
-                this.#renderEndTime =
-                    this.#cloneDate(
-                        this.#endTime
-                    );
-
-                this.#updateClipPath();
-            }
-            else {
-                this.#animateToLogicalTiming();
-            }
-        }
     }
 
     #writeStartTimeAttribute() {
@@ -1411,9 +973,7 @@ class TimeRange extends HTMLElement {
             !this.hasAttribute(
                 "start-time"
             ) ||
-            !(
-                this.#startTime instanceof Date
-            )
+            !(this.#startTime instanceof Date)
         ) {
             return;
         }
@@ -1440,9 +1000,7 @@ class TimeRange extends HTMLElement {
             !this.hasAttribute(
                 "end-time"
             ) ||
-            !(
-                this.#endTime instanceof Date
-            )
+            !(this.#endTime instanceof Date)
         ) {
             return;
         }
@@ -1884,489 +1442,9 @@ class TimeRange extends HTMLElement {
         return result;
     }
 
-    static calculateEdgePoint(
-        angle,
-        width,
-        height
+    #cloneDate(
+        value
     ) {
-        const radians =
-            angle *
-            Math.PI /
-            180;
-
-        const centerX =
-            width /
-            2;
-
-        const centerY =
-            height /
-            2;
-
-        const dx =
-            Math.sin(
-                radians
-            );
-
-        const dy =
-            -Math.cos(
-                radians
-            );
-
-        const scaleX =
-            dx === 0
-                ? Infinity
-                : Math.abs(
-                    centerX /
-                    dx
-                );
-
-        const scaleY =
-            dy === 0
-                ? Infinity
-                : Math.abs(
-                    centerY /
-                    dy
-                );
-
-        const scale =
-            Math.min(
-                scaleX,
-                scaleY
-            );
-
-        return {
-            x:
-                centerX +
-                dx *
-                scale,
-
-            y:
-                centerY +
-                dy *
-                scale
-        };
-    }
-
-    static calculateCorners({
-        startAngle,
-        endAngle,
-        width,
-        height,
-        parent = undefined,
-        mode = "radial"
-    } = {}) {
-        const supportedModes =
-            new Set([
-                "radial",
-                "to-right",
-                "to-left",
-                "to-bottom",
-                "to-top"
-            ]);
-
-        if (!supportedModes.has(mode)) {
-            return;
-        }
-
-        if (
-            mode !== "radial" &&
-            parent === undefined
-        ) {
-            return;
-        }
-
-        if (mode !== "radial") {
-            const parentStyle =
-                getComputedStyle(parent);
-
-            const paddingLeft =
-                Number.parseFloat(parentStyle.paddingLeft) || 0;
-
-            const paddingRight =
-                Number.parseFloat(parentStyle.paddingRight) || 0;
-
-            const paddingTop =
-                Number.parseFloat(parentStyle.paddingTop) || 0;
-
-            const paddingBottom =
-                Number.parseFloat(parentStyle.paddingBottom) || 0;
-
-            const contentWidth =
-                Math.max(
-                    0,
-                    width -
-                        paddingLeft -
-                        paddingRight
-                );
-
-            const contentHeight =
-                Math.max(
-                    0,
-                    height -
-                        paddingTop -
-                        paddingBottom
-                );
-
-            const startProgress =
-                Math.max(
-                    0,
-                    Math.min(
-                        1,
-                        startAngle / 360
-                    )
-                );
-
-            const endProgress =
-                Math.max(
-                    0,
-                    Math.min(
-                        1,
-                        endAngle / 360
-                    )
-                );
-
-            if (mode === "to-right") {
-                const startX =
-                    paddingLeft +
-                    contentWidth * startProgress;
-
-                const endX =
-                    paddingLeft +
-                    contentWidth * endProgress;
-
-                return [
-                    { x: startX, y: paddingTop },
-                    { x: endX, y: paddingTop },
-                    { x: endX, y: paddingTop + contentHeight },
-                    { x: startX, y: paddingTop + contentHeight }
-                ];
-            }
-
-            if (mode === "to-left") {
-                const startX =
-                    paddingLeft +
-                    contentWidth *
-                        (1 - startProgress);
-
-                const endX =
-                    paddingLeft +
-                    contentWidth *
-                        (1 - endProgress);
-
-                return [
-                    { x: startX, y: paddingTop },
-                    { x: endX, y: paddingTop },
-                    { x: endX, y: paddingTop + contentHeight },
-                    { x: startX, y: paddingTop + contentHeight }
-                ];
-            }
-
-            if (mode === "to-bottom") {
-                const startY =
-                    paddingTop +
-                    contentHeight * startProgress;
-
-                const endY =
-                    paddingTop +
-                    contentHeight * endProgress;
-
-                return [
-                    { x: paddingLeft, y: startY },
-                    { x: paddingLeft + contentWidth, y: startY },
-                    { x: paddingLeft + contentWidth, y: endY },
-                    { x: paddingLeft, y: endY }
-                ];
-            }
-
-            const startY =
-                paddingTop +
-                contentHeight *
-                    (1 - startProgress);
-
-            const endY =
-                paddingTop +
-                contentHeight *
-                    (1 - endProgress);
-
-            return [
-                { x: paddingLeft, y: startY },
-                { x: paddingLeft + contentWidth, y: startY },
-                { x: paddingLeft + contentWidth, y: endY },
-                { x: paddingLeft, y: endY }
-            ];
-        }
-        const normalize =
-            angle =>
-                (
-                    (
-                        angle %
-                        360
-                    ) +
-                    360
-                ) %
-                360;
-
-        const clockwiseDistance =
-            (
-                from,
-                to
-            ) =>
-                (
-                    normalize(
-                        to
-                    ) -
-                    normalize(
-                        from
-                    ) +
-                    360
-                ) %
-                360;
-
-        const corners = [
-            {
-                x: 0,
-                y: 0
-            },
-            {
-                x: width,
-                y: 0
-            },
-            {
-                x: width,
-                y: height
-            },
-            {
-                x: 0,
-                y: height
-            }
-        ];
-
-        const totalDistance =
-            clockwiseDistance(
-                startAngle,
-                endAngle
-            );
-
-        return corners
-            .map(
-                corner => {
-                    const dx =
-                        corner.x -
-                        width /
-                        2;
-
-                    const dy =
-                        corner.y -
-                        height /
-                        2;
-
-                    const angle =
-                        normalize(
-                            Math.atan2(
-                                dx,
-                                -dy
-                            ) *
-                            180 /
-                            Math.PI
-                        );
-
-                    return {
-                        ...corner,
-                        angle
-                    };
-                }
-            )
-            .filter(
-                corner => {
-                    const distance =
-                        clockwiseDistance(
-                            startAngle,
-                            corner.angle
-                        );
-
-                    return (
-                        distance > 0 &&
-                        distance <
-                            totalDistance
-                    );
-                }
-            )
-            .sort(
-                (a, b) =>
-                    clockwiseDistance(
-                        startAngle,
-                        a.angle
-                    ) -
-                    clockwiseDistance(
-                        startAngle,
-                        b.angle
-                    )
-            );
-    }
-
-    static calculateClipPath({
-        startAngle,
-        endAngle,
-        width,
-        height,
-        parent = undefined,
-        mode = "radial"
-    } = {}) {
-        if (
-            !Number.isFinite(startAngle) ||
-            !Number.isFinite(endAngle) ||
-            !Number.isFinite(width) ||
-            !Number.isFinite(height) ||
-            width <= 0 ||
-            height <= 0
-        ) {
-            return;
-        }
-
-        if (
-            mode === "radial" &&
-            Math.abs(
-                endAngle - startAngle
-            ) >= 360
-        ) {
-            return "none";
-        }
-
-        const corners =
-            TimeRange.calculateCorners({
-                startAngle,
-                endAngle,
-                width,
-                height,
-                parent,
-                mode
-            });
-
-        if (!Array.isArray(corners)) {
-            return;
-        }
-
-        const pointText =
-            point =>
-                `${
-                    point.x /
-                    width *
-                    100
-                }% ${
-                    point.y /
-                    height *
-                    100
-                }%`;
-
-        if (mode !== "radial") {
-            return `polygon(${corners.map(pointText).join(", ")})`;
-        }
-
-        const startPoint =
-            TimeRange.calculateEdgePoint(
-                startAngle,
-                width,
-                height
-            );
-
-        const endPoint =
-            TimeRange.calculateEdgePoint(
-                endAngle,
-                width,
-                height
-            );
-
-        return `polygon(${[
-            "50% 50%",
-            pointText(startPoint),
-            ...corners.map(pointText),
-            pointText(endPoint)
-        ].join(", ")})`;
-    }
-
-    applyAnimatedLayout({
-        clipPath,
-        startAngle,
-        endAngle,
-        duration,
-        renderStartTime,
-        renderEndTime
-    } = {}) {
-        if (
-            typeof clipPath !== "string" ||
-            clipPath.trim() === ""
-        ) {
-            return false;
-        }
-
-        const renderStart =
-            this.#uniformDate(
-                renderStartTime,
-                false
-            );
-
-        const renderEnd =
-            this.#uniformDate(
-                renderEndTime,
-                false
-            );
-
-        if (
-            renderStart instanceof Date &&
-            renderEnd instanceof Date
-        ) {
-            this.#renderStartTime =
-                this.#cloneDate(
-                    renderStart
-                );
-
-            this.#renderEndTime =
-                this.#cloneDate(
-                    renderEnd
-                );
-        }
-
-        this.#updateContour();
-        this.#updateGeometryVariables();
-
-        this.#updateWaveGeometry(
-            startAngle,
-            endAngle,
-            duration
-        );
-
-        this.#applyClipPath(
-            clipPath
-        );
-
-        return true;
-    }
-
-    commitAnimatedLayout(
-        layout = {}
-    ) {
-        if (
-            !this.applyAnimatedLayout(
-                layout
-            )
-        ) {
-            return false;
-        }
-
-        this.#renderStartTime =
-            this.#cloneDate(
-                this.#startTime
-            );
-
-        this.#renderEndTime =
-            this.#cloneDate(
-                this.#endTime
-            );
-
-        return true;
-    }
-
-    #cloneDate(value) {
         return value instanceof Date
             ? new Date(
                 value.getTime()
@@ -2374,1577 +1452,451 @@ class TimeRange extends HTMLElement {
             : undefined;
     }
 
-    #getVisualTiming() {
-        return {
-            start:
-                this.#cloneDate(
-                    this.#renderStartTime ??
-                    this.#startTime
-                ),
-            end:
-                this.#cloneDate(
-                    this.#renderEndTime ??
-                    this.#endTime
+    #cloneRangeForSplit(
+        start,
+        end
+    ) {
+        const clone =
+            this.cloneNode(
+                false
+            );
+
+        clone.removeAttribute(
+            "start-time"
+        );
+
+        clone.removeAttribute(
+            "end-time"
+        );
+
+        clone.removeAttribute(
+            "range-length"
+        );
+
+        clone.removeAttribute(
+            "ignore-overlaps"
+        );
+
+        clone.setAttribute(
+            "start-time",
+            this.#formatDateTime(
+                start
+            )
+        );
+
+        clone.setAttribute(
+            "end-time",
+            this.#formatDateTime(
+                end
+            )
+        );
+
+        if (
+            this.hasAttribute(
+                "range-length"
+            )
+        ) {
+            clone.setAttribute(
+                "range-length",
+                this.#formatRangeLength(
+                    end.getTime() -
+                    start.getTime()
                 )
+            );
+        }
+
+        clone.setAttribute(
+            "ignore-overlaps",
+            ""
+        );
+
+        clone.timeRangeFullEntry =
+            true;
+
+        for (
+            const key of
+                Object.keys(
+                    this
+                )
+        ) {
+            if (
+                (
+                    key.startsWith(
+                        "clockTimer"
+                    ) ||
+                    key.startsWith(
+                        "timeRange"
+                    )
+                ) &&
+                key !==
+                    "timeRangeExiting"
+            ) {
+                clone[key] =
+                    this[key];
+            }
+        }
+
+        return clone;
+    }
+
+    static #snapshot(
+        range
+    ) {
+        if (
+            !(range instanceof TimeRange)
+        ) {
+            return null;
+        }
+
+        return {
+            startTime:
+                range.#cloneDate(
+                    range.#startTime
+                ),
+
+            endTime:
+                range.#cloneDate(
+                    range.#endTime
+                ),
+
+            rangeLength:
+                Number.isInteger(
+                    range.#rangeLength
+                )
+                    ? range.#rangeLength
+                    : undefined
         };
     }
 
-    #getAnimationDuration() {
-        const raw =
-            getComputedStyle(
-                this
-            ).getPropertyValue(
-                "--clock-timer-ring-resize-duration"
-            ).trim();
+    #createTransaction(
+        reason,
+        action
+    ) {
+        return {
+            source:
+                this,
 
-        const match =
-            raw.match(
-                /^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i
-            );
+            reason,
 
-        if (!match) {
-            return TimeRange.#animationDuration;
-        }
+            action,
 
-        const amount =
-            Number(
-                match[1]
-            );
+            before:
+                new Map(),
 
-        if (
-            !Number.isFinite(amount) ||
-            amount < 0
-        ) {
-            return TimeRange.#animationDuration;
-        }
+            actions:
+                new Map(),
 
-        return (
-            match[2].toLowerCase() ===
-                "s"
-        )
-            ? amount * 1000
-            : amount;
+            ranges:
+                new Set(),
+
+            removals:
+                new Set()
+        };
     }
 
-    #animateToLogicalTiming() {
-        if (
-            TimeRange.#isLayoutSuspended(
-                this
-            ) ||
-            !this.isConnected ||
-            !(this.#startTime instanceof Date) ||
-            !(this.#endTime instanceof Date)
-        ) {
-            return;
-        }
-
-        const visual =
-            this.#getVisualTiming();
-
-        this.#startTimingAnimation(
-            visual.start ?? this.#startTime,
-            visual.end ?? this.#startTime,
-            this.#startTime,
-            this.#endTime,
-            false
-        );
-    }
-
-    #startTimingAnimation(
-        fromStart,
-        fromEnd,
-        targetStart,
-        targetEnd,
-        removeAfter = false
+    static #recordBefore(
+        transaction,
+        range
     ) {
         if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
+            !transaction ||
+            !(range instanceof TimeRange)
         ) {
             return;
         }
 
+        transaction.ranges.add(
+            range
+        );
+
         if (
-            [
-                "remaining",
-                "wave"
-            ].includes(
-                this.getAttribute(
-                    "type"
+            !transaction.before.has(
+                range
+            )
+        ) {
+            transaction.before.set(
+                range,
+                TimeRange.#snapshot(
+                    range
                 )
+            );
+        }
+    }
+
+    static #recordCreated(
+        transaction,
+        range
+    ) {
+        if (
+            !transaction ||
+            !(range instanceof TimeRange)
+        ) {
+            return;
+        }
+
+        transaction.ranges.add(
+            range
+        );
+
+        if (
+            !transaction.before.has(
+                range
             )
         ) {
-            this.#renderStartTime =
-                this.#cloneDate(
-                    targetStart
-                );
-
-            this.#renderEndTime =
-                this.#cloneDate(
-                    targetEnd
-                );
-
-            this.#updateClipPath();
-
-            if (removeAfter) {
-                this.remove();
-            }
-
-            return;
-        }
-
-        if (
-            !(fromStart instanceof Date) ||
-            !(fromEnd instanceof Date) ||
-            !(targetStart instanceof Date) ||
-            !(targetEnd instanceof Date)
-        ) {
-            return;
-        }
-
-        if (
-            this.#animationFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                this.#animationFrame
+            transaction.before.set(
+                range,
+                null
             );
         }
 
-        this.#animationFromStart =
-            this.#cloneDate(fromStart);
-
-        this.#animationFromEnd =
-            this.#cloneDate(fromEnd);
-
-        this.#animationTargetStart =
-            this.#cloneDate(targetStart);
-
-        this.#animationTargetEnd =
-            this.#cloneDate(targetEnd);
-
-        this.#animationStartedAt =
-            performance.now();
-
-        this.#removeAfterAnimation =
-            removeAfter;
-
-        const duration =
-            this.#getAnimationDuration();
-
         if (
-            duration <= 0
+            !transaction.actions.has(
+                range
+            )
         ) {
-            this.#renderStartTime =
-                this.#cloneDate(targetStart);
-
-            this.#renderEndTime =
-                this.#cloneDate(targetEnd);
-
-            this.#updateClipPath();
-            this.#finishTimingAnimation();
-            return;
-        }
-
-        const step =
-            timestamp => {
-                const progress =
-                    Math.min(
-                        1,
-                        Math.max(
-                            0,
-                            (
-                                timestamp -
-                                this.#animationStartedAt
-                            ) /
-                            duration
-                        )
-                    );
-
-                const fromStartMs =
-                    this.#animationFromStart.getTime();
-
-                const fromEndMs =
-                    this.#animationFromEnd.getTime();
-
-                const targetStartMs =
-                    this.#animationTargetStart.getTime();
-
-                const targetEndMs =
-                    this.#animationTargetEnd.getTime();
-
-                this.#renderStartTime =
-                    new Date(
-                        fromStartMs +
-                        (
-                            targetStartMs -
-                            fromStartMs
-                        ) *
-                        progress
-                    );
-
-                this.#renderEndTime =
-                    new Date(
-                        fromEndMs +
-                        (
-                            targetEndMs -
-                            fromEndMs
-                        ) *
-                        progress
-                    );
-
-                this.#updateClipPath();
-
-                if (
-                    progress >= 1
-                ) {
-                    this.#animationFrame =
-                        undefined;
-
-                    this.#finishTimingAnimation();
-                    return;
-                }
-
-                this.#animationFrame =
-                    requestAnimationFrame(
-                        step
-                    );
-            };
-
-        this.#animationFrame =
-            requestAnimationFrame(
-                step
-            );
-    }
-
-    #finishTimingAnimation() {
-        const removeAfter =
-            this.#removeAfterAnimation;
-
-        this.#removeAfterAnimation =
-            false;
-
-        if (removeAfter) {
-            this.#pendingRemoval =
-                false;
-
-            HTMLElement.prototype.remove.call(
-                this
+            transaction.actions.set(
+                range,
+                "created"
             );
         }
     }
 
-    #animateOpacityIn() {
-        const duration =
-            this.#getAnimationDuration();
-
+    static #setAction(
+        transaction,
+        range,
+        action
+    ) {
         if (
-            duration <= 0 ||
-            typeof this.animate !==
-                "function"
+            !transaction ||
+            !(range instanceof TimeRange)
         ) {
             return;
         }
 
-        this.animate(
-            [
-                { opacity: 0 },
-                { opacity: 1 }
-            ],
-            {
-                duration,
-                easing: "linear"
-            }
+        transaction.ranges.add(
+            range
+        );
+
+        transaction.actions.set(
+            range,
+            action
         );
     }
 
-    snapToLogicalTiming() {
-        if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
-        ) {
-            return this;
-        }
-
-        if (
-            this.#animationFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                this.#animationFrame
-            );
-
-            this.#animationFrame =
-                undefined;
-        }
-
-        this.#removeAfterAnimation =
-            false;
-
-        this.#renderStartTime =
-            this.#cloneDate(
-                this.#startTime
-            );
-
-        this.#renderEndTime =
-            this.#cloneDate(
-                this.#endTime
-            );
-
-        this.#updateClipPath();
-
-        return this;
-    }
-
-    refreshVisualGeometry() {
-        if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
-        ) {
-            return this;
-        }
-
-        this.#updateClipPath();
-        this.#scheduleAppearanceRefresh();
-
-        return this;
-    }
-
-    animateFromCollapsed(
-        value
+    static #markCollision(
+        transaction
     ) {
-        if (
-            this.clockTimerInternalMutation !==
-                true
-        ) {
-            throw new Error(
-                "Collapsed-entry animations are ClockTimer-managed."
-            );
+        if (!transaction) {
+            return;
         }
 
-        const collapsed =
-            value instanceof Date
-                ? this.#cloneDate(value)
-                : this.#uniformDate(
-                    value,
-                    false
-                );
+        transaction.reason =
+            "collision";
 
-        if (
-            !(collapsed instanceof Date) ||
-            !(this.#startTime instanceof Date) ||
-            !(this.#endTime instanceof Date)
-        ) {
+        transaction.action =
+            "collision-resolved";
+    }
+
+    static #sameSnapshot(
+        left,
+        right
+    ) {
+        if (left === right) {
+            return true;
+        }
+
+        if (!left || !right) {
             return false;
         }
 
-        if (
-            this.#animationFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                this.#animationFrame
-            );
+        const milliseconds =
+            value =>
+                value instanceof Date
+                    ? value.getTime()
+                    : undefined;
 
-            this.#animationFrame =
-                undefined;
-        }
-
-        this.#renderStartTime =
-            this.#cloneDate(collapsed);
-
-        this.#renderEndTime =
-            this.#cloneDate(collapsed);
-
-        this.#updateClipPath();
-
-        this.#startTimingAnimation(
-            collapsed,
-            collapsed,
-            this.#startTime,
-            this.#endTime,
-            false
+        return (
+            milliseconds(
+                left.startTime
+            ) ===
+                milliseconds(
+                    right.startTime
+                ) &&
+            milliseconds(
+                left.endTime
+            ) ===
+                milliseconds(
+                    right.endTime
+                ) &&
+            left.rangeLength ===
+                right.rangeLength
         );
-
-        return true;
     }
 
-    removeAnimated({
-        collapseTo = "end",
-        targetStart,
-        targetEnd
-    } = {}) {
-        if (
-            this.clockTimerDerivedReadOnly ===
-                true &&
-            this.clockTimerInternalMutation !==
-                true
+    #dispatchTransaction(
+        transaction
+    ) {
+        if (!transaction) {
+            return;
+        }
+
+        const changes = [];
+
+        for (
+            const range of
+                transaction.ranges
         ) {
-            throw new Error(
-                "Derived discrepancy ranges cannot be modified."
-            );
+            const before =
+                transaction.before.has(
+                    range
+                )
+                    ? transaction.before.get(
+                        range
+                    )
+                    : TimeRange.#snapshot(
+                        range
+                    );
+
+            const after =
+                transaction.removals.has(
+                    range
+                )
+                    ? null
+                    : TimeRange.#snapshot(
+                        range
+                    );
+
+            if (
+                before !== null &&
+                after !== null &&
+                TimeRange.#sameSnapshot(
+                    before,
+                    after
+                )
+            ) {
+                continue;
+            }
+
+            const action =
+                transaction.actions.get(
+                    range
+                ) ??
+                (
+                    before === null
+                        ? "created"
+                        : after === null
+                            ? "removed"
+                            : "changed"
+                );
+
+            changes.push({
+                range,
+                action,
+                before,
+                after
+            });
         }
 
         if (
-            this.#pendingRemoval
+            changes.length ===
+                0
         ) {
             return;
         }
 
-        if (!this.isConnected) {
-            HTMLElement.prototype.remove.call(
-                this
+        const ranges =
+            changes.map(
+                change =>
+                    change.range
             );
-            return;
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "time-ranges-changed",
+                {
+                    bubbles: true,
+                    composed: true,
+                    cancelable: false,
+
+                    detail: {
+                        source:
+                            transaction.source,
+
+                        reason:
+                            transaction.reason,
+
+                        action:
+                            transaction.action,
+
+                        ranges,
+
+                        changes
+                    }
+                }
+            )
+        );
+
+        for (
+            const range of
+                transaction.removals
+        ) {
+            const parent =
+                range.parentElement;
+
+            if (
+                parent?.localName ===
+                    "ring-container" &&
+                typeof parent
+                    .removeRangeAnimated ===
+                    "function"
+            ) {
+                continue;
+            }
+
+            if (range.parentElement) {
+                range.parentElement
+                    .removeChild(
+                        range
+                    );
+            }
         }
+    }
 
-        this.#pendingRemoval =
+    #markForRemoval(
+        transaction,
+        range
+    ) {
+        TimeRange.#recordBefore(
+            transaction,
+            range
+        );
+
+        range.#pendingRemoval =
             true;
 
-        this.timeRangeExiting =
+        range.timeRangeExiting =
             true;
 
-        const instanceIndex =
+        const index =
             TimeRange.#instances.indexOf(
-                this
+                range
             );
 
-        if (
-            instanceIndex !== -1
-        ) {
+        if (index !== -1) {
             TimeRange.#instances.splice(
-                instanceIndex,
+                index,
                 1
             );
         }
 
-        const visual =
-            this.#getVisualTiming();
-
-        const normalizeTarget =
-            value => {
-                if (value instanceof Date) {
-                    return this.#cloneDate(
-                        value
-                    );
-                }
-
-                if (typeof value === "string") {
-                    return this.#uniformDate(
-                        value,
-                        false
-                    );
-                }
-
-                return undefined;
-            };
-
-        let finalStart =
-            normalizeTarget(
-                targetStart
-            );
-
-        let finalEnd =
-            normalizeTarget(
-                targetEnd
-            );
-
-        if (
-            !(finalStart instanceof Date) ||
-            !(finalEnd instanceof Date)
-        ) {
-            const collapseDate =
-                collapseTo === "start"
-                    ? (
-                        visual.start ??
-                        this.#startTime
-                    )
-                    : (
-                        visual.end ??
-                        this.#endTime
-                    );
-
-            finalStart =
-                this.#cloneDate(collapseDate);
-
-            finalEnd =
-                this.#cloneDate(collapseDate);
-        }
-
-        this.#startTimingAnimation(
-            visual.start ?? finalStart,
-            visual.end ?? finalEnd,
-            finalStart,
-            finalEnd,
-            true
-        );
-    }
-
-    get isExiting() {
-        return this.#pendingRemoval;
-    }
-
-    #getRingOriginTime() {
-        const parent =
-            this.parentElement;
-
-        if (
-            !parent ||
-            parent.localName !==
-                "ring-container" ||
-            parent.clockTimerRing ===
-                undefined
-        ) {
-            return undefined;
-        }
-
-        let earliest;
-
-        for (
-            const child of
-                parent.children
-        ) {
-            if (
-                child.localName !==
-                    "time-range"
-            ) {
-                continue;
-            }
-
-            const value =
-                child.getAttribute(
-                    "start-time"
-                );
-
-            if (
-                value === null
-            ) {
-                continue;
-            }
-
-            const start =
-                this.#uniformDate(
-                    value,
-                    false
-                );
-
-            if (
-                !(start instanceof Date)
-            ) {
-                continue;
-            }
-
-            if (
-                !(earliest instanceof Date) ||
-                start.getTime() <
-                    earliest.getTime()
-            ) {
-                earliest =
-                    start;
-            }
-        }
-
-        if (
-            !(earliest instanceof Date)
-        ) {
-            return undefined;
-        }
-
-        const hourOrigin =
-            new Date(
-                earliest.getTime()
-            );
-
-        hourOrigin.setMinutes(
-            0,
-            0,
-            0
+        transaction.removals.add(
+            range
         );
 
-        return hourOrigin;
-    }
-
-    static #updateParentClipPaths(
-        parent,
-        source
-    ) {
-        if (
-            !parent ||
-            TimeRange.#isLayoutSuspended(
-                source
-            )
-        ) {
-            return;
-        }
-
-        for (
-            const child of
-                parent.children
-        ) {
-            if (
-                child instanceof
-                    TimeRange
-            ) {
-                child.#updateClipPath();
-            }
-        }
-    }
-
-    #getRingInnerMargin(
-        ring
-    ) {
-        if (
-            ring.hasAttribute(
-                "inner-margin"
-            )
-        ) {
-            return (
-                ring.getAttribute(
-                    "inner-margin"
-                ) ??
-                "0px"
-            );
-        }
-
-        return (
-            ring.getAttribute(
-                "margin"
-            ) ??
-            "0px"
-        );
-    }
-
-    #getRingOuterMargin(
-        ring
-    ) {
-        if (
-            ring.hasAttribute(
-                "outer-margin"
-            )
-        ) {
-            return (
-                ring.getAttribute(
-                    "outer-margin"
-                ) ??
-                "0px"
-            );
-        }
-
-        return (
-            ring.getAttribute(
-                "margin"
-            ) ??
-            "0px"
-        );
-    }
-
-    #collapseRingMargins(
-        first,
-        second
-    ) {
-        return `calc(max(0px, ${first}, ${second}) + min(0px, ${first}, ${second}))`;
-    }
-
-    #getPreviousRingContainer(
-        ring
-    ) {
-        let sibling =
-            ring.previousElementSibling;
-
-        while (sibling) {
-            if (
-                sibling.localName ===
-                    "ring-container"
-            ) {
-                return sibling;
-            }
-
-            sibling =
-                sibling.previousElementSibling;
-        }
-
-        return null;
-    }
-
-    #getEffectiveRingInset(
-        ring
-    ) {
-        const inset =
-            ring.getAttribute(
-                "inset"
-            );
-
-        if (
-            inset !== null &&
-            inset.trim().toLowerCase() !==
-                "auto"
-        ) {
-            return inset;
-        }
-
-        const width =
-            ring.getAttribute(
-                "width"
-            ) ??
-            "0px";
-
-        const previous =
-            this.#getPreviousRingContainer(
-                ring
-            );
-
-        if (!previous) {
-            return `calc(${this.#getRingOuterMargin(ring)} + (${width} / 2))`;
-        }
-
-        const previousInset =
-            this.#getEffectiveRingInset(
-                previous
-            );
-
-        const previousWidth =
-            previous.getAttribute(
-                "width"
-            ) ??
-            "0px";
-
-        const adjoiningMargin =
-            this.#collapseRingMargins(
-                this.#getRingInnerMargin(
-                    previous
-                ),
-                this.#getRingOuterMargin(
-                    ring
-                )
-            );
-
-        return `calc((0px + ${previousInset}) + (${previousWidth} / 2) + ${adjoiningMargin} + (${width} / 2))`;
-    }
-
-    #resolveLength(
-        value
-    ) {
-        const measure =
-            document.createElement(
-                "div"
-            );
-
-        measure.style.position =
-            "absolute";
-
-        measure.style.visibility =
-            "hidden";
-
-        measure.style.pointerEvents =
-            "none";
-
-        measure.style.width =
-            value;
-
-        measure.style.height =
-            "0";
-
-        this.#shadowRoot.appendChild(
-            measure
-        );
-
-        const pixels =
-            measure.getBoundingClientRect()
-                .width;
-
-        measure.remove();
-
-        return Number.isFinite(
-            pixels
-        )
-            ? pixels
-            : 0;
-    }
-
-    #startAppearanceObserver() {
-        this.#stopAppearanceObserver();
-
-        this.#appearanceObserver =
-            new MutationObserver(
-                mutations => {
-                    if (
-                        mutations.some(
-                            mutation =>
-                                mutation.type === "attributes" ||
-                                mutation.type === "childList"
-                        )
-                    ) {
-                        this.#scheduleAppearanceRefresh();
-                    }
-                }
-            );
-
-        this.#appearanceObserver.observe(
-            this,
-            {
-                attributes: true
-            }
-        );
-
-        const parent =
-            this.parentElement;
-
-        if (parent) {
-            this.#appearanceObserver.observe(
-                parent,
-                {
-                    attributes: true,
-                    childList: true,
-                    subtree: true
-                }
-            );
-        }
-
-        const root =
-            this.getRootNode();
-
-        const clockTimer =
-            root?.host?.localName ===
-                "clock-timer"
-                ? root.host
-                : this.closest?.(
-                    "clock-timer"
-                );
-
-        if (clockTimer) {
-            this.#appearanceObserver.observe(
-                clockTimer,
-                {
-                    attributes: true,
-                    childList: true,
-                    subtree: true
-                }
-            );
-        }
-    }
-
-    #stopAppearanceObserver() {
-        this.#appearanceObserver?.disconnect();
-        this.#appearanceObserver =
-            undefined;
-
-        if (
-            this.#appearanceRefreshFrame !==
-                undefined
-        ) {
-            cancelAnimationFrame(
-                this.#appearanceRefreshFrame
-            );
-
-            this.#appearanceRefreshFrame =
-                undefined;
-        }
-    }
-
-    #scheduleAppearanceRefresh() {
-        if (
-            !this.isConnected ||
-            this.#appearanceRefreshFrame !==
-                undefined
-        ) {
-            return;
-        }
-
-        this.#appearanceRefreshFrame =
-            requestAnimationFrame(
-                () => {
-                    this.#appearanceRefreshFrame =
-                        undefined;
-
-                    this.#updateElapsedWaveAppearance();
-                }
-            );
-    }
-
-    #parseComputedColor(value) {
-        const match =
-            String(value ?? "").match(
-                /^rgba?\(\s*([\d.]+)\s*(?:,|\s)\s*([\d.]+)\s*(?:,|\s)\s*([\d.]+)(?:\s*(?:,|\/)\s*([\d.]+%?))?\s*\)$/i
-            );
-
-        if (!match) {
-            return undefined;
-        }
-
-        const alphaText =
-            match[4];
-
-        const alpha =
-            alphaText === undefined
-                ? 1
-                : alphaText.endsWith("%")
-                    ? Number(alphaText.slice(0, -1)) / 100
-                    : Number(alphaText);
-
-        return {
-            red: Number(match[1]),
-            green: Number(match[2]),
-            blue: Number(match[3]),
-            alpha: Number.isFinite(alpha)
-                ? Math.min(1, Math.max(0, alpha))
-                : 1
-        };
-    }
-
-    #updateElapsedWaveAppearance() {
-        if (!this.#elapsedWaveLayer) {
-            return;
-        }
-
-        if (
-            this.getAttribute(
-                "type"
-            ) !== "wave"
-        ) {
-            this.#elapsedWaveLayer.style.backgroundImage =
-                "none";
-
-            return;
-        }
-
-        const root =
-            this.getRootNode();
-
-        const clockTimer =
-            root?.host?.localName ===
-                "clock-timer"
-                ? root.host
-                : undefined;
-
-        const sourceRingIndex =
-            this.parentElement
-                ?.clockTimerRingIndex;
-
-        if (
-            this.hasAttribute(
-                "timer-type-transition-wave"
-            )
-        ) {
-            let borderColor = {
-                red: 0,
-                green: 0,
-                blue: 0,
-                alpha: 1
-            };
-
-            if (clockTimer) {
-                const borderRing =
-                    Array.from(
-                        clockTimer.children
-                    ).find(
-                        element =>
-                            element.localName ===
-                                "ring-container" &&
-                            element.clockTimerBorder !==
-                                undefined
-                    );
-
-                const borderFill =
-                    borderRing
-                        ? Array.from(
-                            borderRing.children
-                        ).find(
-                            element =>
-                                element.clockTimerBorderFill !==
-                                    undefined
-                        )
-                        : undefined;
-
-                const resolved =
-                    borderFill
-                        ? this.#parseComputedColor(
-                            getComputedStyle(
-                                borderFill
-                            ).backgroundColor
-                        )
-                        : undefined;
-
-                if (resolved) {
-                    borderColor =
-                        resolved;
-                }
-            }
-
-            const perceivedLightness =
-                (
-                    borderColor.red *
-                        0.299 +
-                    borderColor.green *
-                        0.587 +
-                    borderColor.blue *
-                        0.114
-                ) /
-                255;
-
-            const contrastChannel =
-                perceivedLightness < 0.6
-                    ? 255
-                    : 0;
-
-            const mix =
-                0.28;
-
-            const highlight = {
-                red:
-                    borderColor.red +
-                    (
-                        contrastChannel -
-                        borderColor.red
-                    ) *
-                    mix,
-                green:
-                    borderColor.green +
-                    (
-                        contrastChannel -
-                        borderColor.green
-                    ) *
-                    mix,
-                blue:
-                    borderColor.blue +
-                    (
-                        contrastChannel -
-                        borderColor.blue
-                    ) *
-                    mix
-            };
-
-            const rgba =
-                alpha =>
-                    `rgba(${Math.round(highlight.red)}, ${Math.round(highlight.green)}, ${Math.round(highlight.blue)}, ${alpha.toFixed(3)})`;
-
-            this.#elapsedWaveLayer.style.mixBlendMode =
-                "normal";
-
-            this.#elapsedWaveLayer.style.backgroundImage =
-                `conic-gradient(from 0deg at 50% 50%, ` +
-                `transparent 0deg, ` +
-                `transparent calc(180deg - var(--elapsed-wave-width, 12deg)), ` +
-                `${rgba(0.30)} calc(180deg - var(--elapsed-wave-shoulder, 4deg)), ` +
-                `${rgba(0.86)} 180deg, ` +
-                `${rgba(0.30)} calc(180deg + var(--elapsed-wave-shoulder, 4deg)), ` +
-                `transparent calc(180deg + var(--elapsed-wave-width, 12deg)), ` +
-                `transparent 360deg)`;
-
-            return;
-        }
-
-        let sourceRing;
-
-        if (clockTimer) {
-            for (
-                const ring of
-                    clockTimer.querySelectorAll(
-                        ":scope > ring-container"
-                    )
-            ) {
-                if (
-                    String(
-                        ring.clockTimerRingIndex ??
-                        ""
-                    ) ===
-                    String(
-                        sourceRingIndex ??
-                        ""
-                    )
-                ) {
-                    sourceRing = ring;
-                    break;
-                }
-            }
-        }
-
-        const sources =
-            sourceRing
-                ? Array.from(
-                    sourceRing.querySelectorAll(
-                        ":scope > time-range"
-                    )
-                )
-                : [];
-
-        let darkestLuminance = 1;
-        let lightestLuminance = 0;
-        let hasUnderlay = false;
-        let strongestOpacity = 0;
-
-        const channel =
-            value => {
-                const normalized =
-                    value / 255;
-
-                return normalized <= 0.04045
-                    ? normalized / 12.92
-                    : Math.pow(
-                        (normalized + 0.055) / 1.055,
-                        2.4
-                    );
-            };
-
-        for (const range of sources) {
-            const style =
-                getComputedStyle(
-                    range
-                );
-
-            if (
-                style.display === "none" ||
-                style.visibility === "hidden"
-            ) {
-                continue;
-            }
-
-            const opacityValue =
-                Number.parseFloat(
-                    style.opacity
-                );
-
-            const opacity =
-                Number.isFinite(
-                    opacityValue
-                )
-                    ? Math.min(
-                        1,
-                        Math.max(
-                            0,
-                            opacityValue
-                        )
-                    )
-                    : 1;
-
-            if (opacity <= 0) {
-                continue;
-            }
-
-            const color =
-                this.#parseComputedColor(
-                    style.backgroundColor
-                );
-
-            if (
-                color &&
-                color.alpha > 0
-            ) {
-                const luminance =
-                    0.2126 * channel(color.red) +
-                    0.7152 * channel(color.green) +
-                    0.0722 * channel(color.blue);
-
-                darkestLuminance =
-                    Math.min(
-                        darkestLuminance,
-                        luminance
-                    );
-
-                lightestLuminance =
-                    Math.max(
-                        lightestLuminance,
-                        luminance
-                    );
-
-                strongestOpacity =
-                    Math.max(
-                        strongestOpacity,
-                        opacity * color.alpha
-                    );
-
-                hasUnderlay =
-                    true;
-            }
-            else if (
-                style.backgroundImage !==
-                    "none"
-            ) {
-                hasUnderlay =
-                    true;
-
-                strongestOpacity =
-                    Math.max(
-                        strongestOpacity,
-                        opacity
-                    );
-            }
-        }
-
-        const contrastRange =
-            hasUnderlay
-                ? lightestLuminance -
-                    darkestLuminance
-                : 0;
-
-        let strength =
-            hasUnderlay
-                ? 0.48 +
-                    (1 - strongestOpacity) *
-                        0.18 +
-                    contrastRange *
-                        0.16
-                : 0.58;
-
-        strength =
-            Math.min(
-                0.82,
-                Math.max(
-                    0.46,
-                    strength
-                )
-            );
-
-        const shoulder =
-            strength * 0.38;
-
-        const rgba =
-            alpha =>
-                `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
-
-        this.#elapsedWaveLayer.style.mixBlendMode =
-            "screen";
-
-        this.#elapsedWaveLayer.style.backgroundImage =
-            `conic-gradient(from 0deg at 50% 50%, ` +
-            `transparent 0deg, ` +
-            `transparent calc(180deg - var(--elapsed-wave-width, 12deg)), ` +
-            `${rgba(shoulder)} calc(180deg - var(--elapsed-wave-shoulder, 4deg)), ` +
-            `${rgba(strength)} 180deg, ` +
-            `${rgba(shoulder)} calc(180deg + var(--elapsed-wave-shoulder, 4deg)), ` +
-            `transparent calc(180deg + var(--elapsed-wave-width, 12deg)), ` +
-            `transparent 360deg)`;
-    }
-
-    #updateContour() {
-        const parent =
-            this.parentElement;
-
-        if (
-            !parent ||
-            parent.localName !==
-                "ring-container" ||
-            !this.#contourLayer
-        ) {
-            return;
-        }
-
-        const width =
-            parent.clientWidth;
-
-        const height =
-            parent.clientHeight;
-
-        if (
-            width <= 0 ||
-            height <= 0
-        ) {
-            this.#contourLayer.style.backgroundImage =
-                "none";
-
-            return;
-        }
-
-        const ringWidth =
-            this.#resolveLength(
-                parent.renderedWidth ??
-                parent.getAttribute(
-                    "width"
-                ) ??
-                "0px"
-            );
-
-        const ringInset =
-            this.#resolveLength(
-                parent.renderedInset ??
-                this.#getEffectiveRingInset(
-                    parent
-                )
-            );
-
-        const radius =
-            Math.min(
-                width,
-                height
-            ) / 2;
-
-        const innerRadius =
-            Math.max(
-                0,
-                radius -
-                    ringInset -
-                    ringWidth / 2
-            );
-
-        const centerRadius =
-            Math.max(
-                0,
-                radius -
-                    ringInset
-            );
-
-        const outerRadius =
-            Math.max(
-                0,
-                radius -
-                    ringInset +
-                    ringWidth / 2
-            );
-
-        this.#contourLayer.style.backgroundImage =
-            `radial-gradient(circle at center, ` +
-            `rgba(0, 0, 0, 0.28) ${innerRadius}px, ` +
-            `rgba(255, 255, 255, 0.34) ${centerRadius}px, ` +
-            `rgba(0, 0, 0, 0.22) ${outerRadius}px)`;
-
-    }
-
-    #updateGeometryVariables() {
-        const parent =
-            this.parentElement;
-
-        if (!parent) {
-            return;
-        }
-
-        const ringInset =
-            parent.getAttribute(
-                "inset"
-            );
-
-        const ringWidth =
-            parent.getAttribute(
-                "width"
-            );
-
-        const effectiveRingInset =
-            ringInset &&
-                ringInset !== "auto"
-                ? ringInset
-                : "0px";
-
-        const effectiveRingWidth =
-            ringWidth ||
-                "0px";
-
-        this.#geometryStyleElement.textContent = `
-            :host {
-                --time-range-ring-inset: ${effectiveRingInset};
-                --time-range-ring-width: ${effectiveRingWidth};
-            }
-        `;
-    }
-
-    #applyClipPath(
-        clipPath
-    ) {
-        this.#styleElement.textContent = `
-            :host {
-                clip-path: ${clipPath};
-            }
-        `;
-    }
-
-    #updateWaveGeometry(
-        startAngle,
-        endAngle,
-        duration
-    ) {
-        if (
-            this.getAttribute("type") !==
-                "wave" ||
-            !Number.isFinite(startAngle) ||
-            !Number.isFinite(endAngle) ||
-            !Number.isFinite(duration)
-        ) {
-            return;
-        }
-
-        if (
-            duration >=
-                60 * 60 * 1000
-        ) {
-            const waveWidth = 38;
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-width",
-                `${waveWidth}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-shoulder",
-                `${waveWidth * 0.35}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-start-angle",
-                `${-waveWidth - 180}deg`
-            );
-
-            this.#elapsedWaveLayer.style.setProperty(
-                "--elapsed-wave-end-angle",
-                `${360 + waveWidth - 180}deg`
-            );
-
-            return;
-        }
-
-        const sweepEndAngle =
-            duration > 0 &&
-            endAngle <= startAngle
-                ? endAngle + 360
-                : endAngle;
-
-        const sweepAngle =
-            Math.max(
-                0,
-                sweepEndAngle - startAngle
-            );
-
-        const waveWidth =
-            Math.max(
-                1.5,
-                Math.min(
-                    38,
-                    sweepAngle * 0.4
-                )
-            );
-
-        this.#elapsedWaveLayer.style.setProperty(
-            "--elapsed-wave-width",
-            `${waveWidth}deg`
-        );
-
-        this.#elapsedWaveLayer.style.setProperty(
-            "--elapsed-wave-shoulder",
-            `${Math.max(0.5, waveWidth * 0.35)}deg`
-        );
-
-        this.#elapsedWaveLayer.style.setProperty(
-            "--elapsed-wave-start-angle",
-            `${startAngle - waveWidth - 180}deg`
-        );
-
-        this.#elapsedWaveLayer.style.setProperty(
-            "--elapsed-wave-end-angle",
-            `${sweepEndAngle + waveWidth - 180}deg`
-        );
-    }
-
-    #updateClipPath() {
-        if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
-        ) {
-            return;
-        }
-
-        const parent =
-            this.parentElement;
-
-        if (!parent) {
-            return;
-        }
-
-        this.#updateContour();
-        this.#updateGeometryVariables();
-
-        const width =
-            parent.clientWidth;
-
-        const height =
-            parent.clientHeight;
-
-        if (
-            width <= 0 ||
-            height <= 0
-        ) {
-            this.#styleElement.textContent =
-                "";
-
-            return;
-        }
-
-        if (
-            !(this.#startTime instanceof Date) ||
-            !(this.#endTime instanceof Date)
-        ) {
-            this.#applyClipPath(
-                "polygon(50% 50%, 50% 50%, 50% 50%)"
-            );
-
-            return;
-        }
-
-        const renderStart =
-            this.#renderStartTime instanceof Date
-                ? this.#renderStartTime
-                : this.#startTime;
-
-        const renderEnd =
-            this.#renderEndTime instanceof Date
-                ? this.#renderEndTime
-                : this.#endTime;
-
-        const duration =
-            renderEnd.getTime() -
-            renderStart.getTime();
-
-        const ringOrigin =
-            this.#getRingOriginTime();
-
-        const startAngle =
-            TimeRange.calculateTimeAngle(
-                renderStart,
-                ringOrigin
-            );
-
-        let endAngle =
-            TimeRange.calculateTimeAngle(
-                renderEnd,
-                ringOrigin
-            );
-
-        if (
-            !Number.isFinite(startAngle) ||
-            !Number.isFinite(endAngle)
-        ) {
-            return;
-        }
-
-        if (
-            duration >=
-                60 * 60 * 1000
-        ) {
-            endAngle =
-                startAngle + 360;
-        }
-
-        this.#updateWaveGeometry(
-            startAngle,
-            endAngle,
-            duration
-        );
-
-        const clipPath =
-            TimeRange.calculateClipPath({
-                startAngle,
-                endAngle,
-                width,
-                height,
-                parent,
-                mode: "radial"
-            });
-
-        if (clipPath === undefined) {
-            return;
-        }
-
-        this.#applyClipPath(
-            clipPath
+        TimeRange.#setAction(
+            transaction,
+            range,
+            "removed"
         );
     }
 
@@ -3954,18 +1906,30 @@ class TimeRange extends HTMLElement {
     ) {
         if (
             !parent ||
-            TimeRange.#reordering ||
-            TimeRange.#isLayoutSuspended(
-                source
-            )
+            TimeRange.#reordering
         ) {
             return;
         }
 
         const ranges =
-            Array.from(
-                parent.children
-            ).filter(
+            parent.localName ===
+                "ring-container" &&
+            typeof parent
+                .getLayerRanges ===
+                "function"
+                ? parent.getLayerRanges(
+                    source
+                )
+                : Array.from(
+                    parent.children
+                ).filter(
+                    child =>
+                        child instanceof
+                            TimeRange
+                );
+
+        const activeRanges =
+            ranges.filter(
                 child =>
                     child instanceof
                         TimeRange &&
@@ -3973,66 +1937,69 @@ class TimeRange extends HTMLElement {
             );
 
         if (
-            ranges.length <= 1
+            activeRanges.length <=
+                1
         ) {
             return;
         }
 
         const ordered =
-            [...ranges].sort(
-                (a, b) => {
-                    const aOverlapping =
-                        a.hasAttribute(
-                            "overlapping"
+            [...activeRanges]
+                .sort(
+                    (
+                        a,
+                        b
+                    ) => {
+                        const aOverlapping =
+                            a.hasAttribute(
+                                "overlapping"
+                            );
+
+                        const bOverlapping =
+                            b.hasAttribute(
+                                "overlapping"
+                            );
+
+                        if (
+                            aOverlapping !==
+                                bOverlapping
+                        ) {
+                            return aOverlapping
+                                ? 1
+                                : -1;
+                        }
+
+                        const aStart =
+                            a.#getStartTime();
+
+                        const bStart =
+                            b.#getStartTime();
+
+                        if (
+                            !(aStart instanceof Date) ||
+                            !(bStart instanceof Date)
+                        ) {
+                            return 0;
+                        }
+
+                        return (
+                            aStart.getTime() -
+                            bStart.getTime()
                         );
-
-                    const bOverlapping =
-                        b.hasAttribute(
-                            "overlapping"
-                        );
-
-                    if (
-                        aOverlapping !==
-                            bOverlapping
-                    ) {
-                        return aOverlapping
-                            ? 1
-                            : -1;
                     }
-
-                    const aStart =
-                        a.#getStartTime();
-
-                    const bStart =
-                        b.#getStartTime();
-
-                    if (
-                        !(
-                            aStart instanceof Date
-                        ) ||
-                        !(
-                            bStart instanceof Date
-                        )
-                    ) {
-                        return 0;
-                    }
-
-                    return (
-                        aStart.getTime() -
-                        bStart.getTime()
-                    );
-                }
-            );
-
-        const changed =
-            ordered.some(
-                (range, index) =>
-                    range !==
-                        ranges[index]
-            );
+                );
 
         if (
-            !changed
+            ordered.every(
+                (
+                    range,
+                    index
+                ) =>
+                    range ===
+                        activeRanges[
+                            index
+                        ]
+            )
         ) {
             return;
         }
@@ -4049,29 +2016,59 @@ class TimeRange extends HTMLElement {
                     range
                 );
             }
-        } finally {
+        }
+        finally {
             TimeRange.#reordering =
                 false;
         }
     }
 
-    #removeOverlaps() {
+    #getCollisionRanges() {
+        const parent =
+            this.parentElement;
+
         if (
-            TimeRange.#isLayoutSuspended(
-                this
-            )
+            parent?.localName ===
+                "ring-container" &&
+            typeof parent
+                .getCollisionRanges ===
+                "function"
         ) {
-            return;
+            return parent
+                .getCollisionRanges(
+                    this
+                );
         }
 
+        return TimeRange.#instances
+            .filter(
+                range =>
+                    range instanceof
+                        TimeRange &&
+                    range !== this &&
+                    range.parentElement ===
+                        parent
+            );
+    }
+
+    #removeOverlaps(
+        transaction
+    ) {
         if (
             this.hasAttribute(
                 "ignore-overlaps"
             )
         ) {
-            this.removeAttribute(
-                "ignore-overlaps"
-            );
+            this.#syncing++;
+
+            try {
+                this.removeAttribute(
+                    "ignore-overlaps"
+                );
+            }
+            finally {
+                this.#syncing--;
+            }
 
             return;
         }
@@ -4084,9 +2081,6 @@ class TimeRange extends HTMLElement {
             return;
         }
 
-        const instances =
-            TimeRange.#instances;
-
         const newStart =
             this.#getStartTime();
 
@@ -4094,12 +2088,8 @@ class TimeRange extends HTMLElement {
             this.#getEndTime();
 
         if (
-            !(
-                newStart instanceof Date
-            ) ||
-            !(
-                newEnd instanceof Date
-            )
+            !(newStart instanceof Date) ||
+            !(newEnd instanceof Date)
         ) {
             return;
         }
@@ -4110,41 +2100,27 @@ class TimeRange extends HTMLElement {
         const addedEnd =
             newEnd.getTime();
 
-        // A zero-length range occupies no interval. Keep it available to grow,
-        // but do not let its boundary split, trim, or remove another range.
-        if (addedEnd <= addedStart) {
+        if (
+            addedEnd <=
+                addedStart
+        ) {
             return;
         }
 
         for (
-            let i =
-                instances.length - 1;
-            i >= 0;
-            i--
+            const existing of
+                this.#getCollisionRanges()
         ) {
-            const existing =
-                instances[i];
-
             if (
                 !(existing instanceof TimeRange) ||
-                !existing.isConnected
-            ) {
-                instances.splice(
-                    i,
-                    1
-                );
-
-                continue;
-            }
-
-            if (
                 existing === this ||
-                existing.parentElement !==
-                    this.parentElement ||
+                !existing.isConnected ||
                 existing.hasAttribute(
                     "overlapping"
                 ) ||
-                existing.#pendingRemoval
+                existing.#pendingRemoval ||
+                existing.timeRangeExiting ===
+                    true
             ) {
                 continue;
             }
@@ -4156,12 +2132,8 @@ class TimeRange extends HTMLElement {
                 existing.#getEndTime();
 
             if (
-                !(
-                    existingStartTime instanceof Date
-                ) ||
-                !(
-                    existingEndTime instanceof Date
-                )
+                !(existingStartTime instanceof Date) ||
+                !(existingEndTime instanceof Date)
             ) {
                 continue;
             }
@@ -4172,9 +2144,10 @@ class TimeRange extends HTMLElement {
             const existingEnd =
                 existingEndTime.getTime();
 
-            // Likewise, an existing zero-length range cannot conflict with a
-            // later positive-length range.
-            if (existingEnd <= existingStart) {
+            if (
+                existingEnd <=
+                    existingStart
+            ) {
                 continue;
             }
 
@@ -4184,16 +2157,14 @@ class TimeRange extends HTMLElement {
                 addedEnd >=
                     existingEnd
             ) {
-                existing.removeAnimated({
-                    targetStart:
-                        this.#cloneDate(
-                            newStart
-                        ),
-                    targetEnd:
-                        this.#cloneDate(
-                            newEnd
-                        )
-                });
+                TimeRange.#markCollision(
+                    transaction
+                );
+
+                this.#markForRemoval(
+                    transaction,
+                    existing
+                );
 
                 continue;
             }
@@ -4204,6 +2175,15 @@ class TimeRange extends HTMLElement {
                 addedEnd <
                     existingEnd
             ) {
+                TimeRange.#markCollision(
+                    transaction
+                );
+
+                TimeRange.#recordBefore(
+                    transaction,
+                    existing
+                );
+
                 const originalEnd =
                     new Date(
                         existingEnd
@@ -4220,31 +2200,30 @@ class TimeRange extends HTMLElement {
                     existingStart
                 );
 
+                TimeRange.#setAction(
+                    transaction,
+                    existing,
+                    "trimmed-end"
+                );
+
                 const splitRange =
-                    document.createElement(
-                        "time-range"
-                    );
-
-                splitRange.setAttribute(
-                    "start-time",
-                    this.#formatDateTime(
-                        new Date(
-                            addedEnd
-                        )
-                    )
-                );
-
-                splitRange.setAttribute(
-                    "end-time",
-                    this.#formatDateTime(
-                        originalEnd
-                    )
-                );
+                    existing
+                        .#cloneRangeForSplit(
+                            new Date(
+                                addedEnd
+                            ),
+                            originalEnd
+                        );
 
                 existing.parentElement
                     ?.appendChild(
                         splitRange
                     );
+
+                TimeRange.#recordCreated(
+                    transaction,
+                    splitRange
+                );
 
                 continue;
             }
@@ -4257,6 +2236,15 @@ class TimeRange extends HTMLElement {
                 addedEnd <
                     existingEnd
             ) {
+                TimeRange.#markCollision(
+                    transaction
+                );
+
+                TimeRange.#recordBefore(
+                    transaction,
+                    existing
+                );
+
                 existing.#setStartTime(
                     new Date(
                         addedEnd
@@ -4266,6 +2254,12 @@ class TimeRange extends HTMLElement {
                 existing.#setRangeLength(
                     existingEnd -
                     addedEnd
+                );
+
+                TimeRange.#setAction(
+                    transaction,
+                    existing,
+                    "trimmed-start"
                 );
 
                 continue;
@@ -4279,6 +2273,15 @@ class TimeRange extends HTMLElement {
                 addedEnd >=
                     existingEnd
             ) {
+                TimeRange.#markCollision(
+                    transaction
+                );
+
+                TimeRange.#recordBefore(
+                    transaction,
+                    existing
+                );
+
                 existing.#setEndTime(
                     new Date(
                         addedStart
@@ -4289,8 +2292,22 @@ class TimeRange extends HTMLElement {
                     addedStart -
                     existingStart
                 );
+
+                TimeRange.#setAction(
+                    transaction,
+                    existing,
+                    "trimmed-end"
+                );
             }
         }
+    }
+
+    get isExiting() {
+        return (
+            this.#pendingRemoval ||
+            this.timeRangeExiting ===
+                true
+        );
     }
 }
 
