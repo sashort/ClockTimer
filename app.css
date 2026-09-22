@@ -4438,9 +4438,9 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-log-empty-message {flex:1;display:grid;place-items:center;min-height:80px;margin:0;padding:24px;text-align:center;font-size:clamp(22px,4vw,28px);font-weight:500;}
 
 
-/* graphical-settings-scroll-overlay-v2
- * Issue #10: fixed-height modal, one bounded settings scroller, compact
- * details rows, and a click-through Live Preview overlay.
+/* graphical-settings-scroll-overlay-v3
+ * Issue #10: fixed-height modal, animated compact details, and a bottom
+ * click-through preview that only becomes translucent over rendered settings.
  */
 .graphical-dialog {
     box-sizing: border-box;
@@ -4480,6 +4480,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 }
 
 .graphical-dialog .graphical-settings-grid {
+    --graphical-preview-height: clamp(210px, 46%, 270px);
     position: relative;
     min-height: 0;
     margin: 0 !important;
@@ -4495,7 +4496,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     z-index: 1;
     min-width: 0;
     min-height: 0;
-    padding: 12px 16px;
+    padding: 12px 16px calc(var(--graphical-preview-height) + 16px);
     display: grid;
     align-content: start;
     gap: 6px;
@@ -4505,6 +4506,10 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
+}
+
+.graphical-dialog .settings-category {
+    transform-origin: top;
 }
 
 .graphical-dialog .settings-category > summary {
@@ -4519,31 +4524,48 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     font-size: 23px;
 }
 
+.graphical-dialog .settings-category.is-closing > summary::after {
+    transform: translateY(-50%) rotate(0deg);
+}
+
 .graphical-dialog .settings-category-content {
     padding: 8px 10px 10px;
     gap: 8px;
+    transform-origin: top;
 }
 
 .graphical-dialog .clock-preview {
     position: absolute;
-    inset: 0;
+    inset: auto 0 0;
     z-index: 2;
+    height: var(--graphical-preview-height);
     min-height: 0;
     margin: 0 !important;
-    padding: 12px 16px 16px;
+    padding: 10px 16px 14px;
     display: grid;
     place-items: center;
     border: 0;
     border-radius: 0;
-    background: rgb(0 30 96 / 42%);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%);
+    background: var(--wm-blue-dark);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 -8px 18px rgb(0 0 0 / 20%);
+    opacity: 1;
+    transition: opacity 150ms ease-out;
+    will-change: opacity;
     pointer-events: none !important;
     user-select: none;
 }
 
+.graphical-dialog .clock-preview.has-settings-overlap {
+    opacity: 0.68;
+}
+
 .graphical-dialog .clock-preview clock-timer {
+    width: min(50vw, 230px, calc(100% - 20px));
+    height: min(50vw, 230px, calc(100% - 20px));
+    min-width: 0;
+    min-height: 0;
     pointer-events: none !important;
-    opacity: 0.72;
+    opacity: 1;
 }
 
 @media (max-width: 720px) {
@@ -4553,8 +4575,12 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
         max-height: 92dvh;
     }
 
+    .graphical-dialog .graphical-settings-grid {
+        --graphical-preview-height: clamp(190px, 44%, 250px);
+    }
+
     .graphical-dialog .graphical-settings-grid > .settings-groups {
-        padding: 10px 12px;
+        padding: 10px 12px calc(var(--graphical-preview-height) + 12px);
         gap: 5px;
     }
 
@@ -4570,9 +4596,17 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     }
 
     .graphical-dialog .clock-preview {
-        position: absolute;
-        inset: 0;
-        min-height: 0;
-        padding: 10px 12px 12px;
+        padding: 8px 12px 10px;
+    }
+
+    .graphical-dialog .clock-preview clock-timer {
+        width: min(64vw, 220px, calc(100% - 16px));
+        height: min(64vw, 220px, calc(100% - 16px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .graphical-dialog .clock-preview {
+        transition-duration: 0ms;
     }
 }
