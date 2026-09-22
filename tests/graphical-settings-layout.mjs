@@ -36,7 +36,7 @@ assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px 16px calc\(var\(--graphical-preview-height\) \+ 16px\);[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-width:[^}]*--graphical-preview-clock-height:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
 assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*var\(--graphical-preview-clock-height\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*var\(--graphical-preview-clock-height\);[^}]*aspect-ratio:\s*auto;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*var\(--graphical-preview-clock-height\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*var\(--graphical-preview-clock-height\);[^}]*aspect-ratio:\s*auto;[^}]*background:\s*var\(--wm-blue-dark\);[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
@@ -63,6 +63,7 @@ assert.match(clockTimerSource, /#keepAspectRatio\s*=\s*true;/);
 assert.match(clockTimerSource, /get keepAspectRatio\(\)\s*\{[\s\S]*?return this\.#keepAspectRatio;/s);
 assert.match(clockTimerSource, /set keepAspectRatio\(value\)\s*\{[\s\S]*?data-clock-timer-free-aspect-ratio/s);
 assert.match(clockTimerSource, /:host\(\[data-clock-timer-free-aspect-ratio\]\)\s*\{[^}]*inline-size:\s*100%;[^}]*block-size:\s*100%;[^}]*aspect-ratio:\s*auto;/s);
+assert.match(clockTimerSource, /:host\(\[data-clock-timer-free-aspect-ratio\]\) #hand-layer,[\s\S]*?#tick-marks\s*\{[^}]*opacity:\s*1 !important;/s, 'free-aspect visual layers stay painted');
 assert.match(clockTimerSource, /#getEffectiveRenderDiameter\(\)\s*\{[\s\S]*?Math\.min\(\s*rect\.width,\s*rect\.height\s*\)/s);
 assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?!this\.#keepAspectRatio[\s\S]*?const handWidth =[\s\S]*?rect\.width[\s\S]*?const handHeight =[\s\S]*?rect\.height[\s\S]*?this\.#handLayer\.style\.width =\s*\`\$\{handWidth\}px\`;[\s\S]*?this\.#handLayer\.style\.height =\s*\`\$\{handHeight\}px\`;/s);
 assert.match(clockTimerSource, /#getEllipseRadiusForAngle\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?Math\.sqrt/s);
