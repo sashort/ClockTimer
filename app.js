@@ -153,6 +153,8 @@
     const ensureSpeechRuntime = () => {
         if (
             globalThis.SpeechMenu &&
+            globalThis.BrowserSpeechProvider &&
+            globalThis.StreamingSpeechProvider &&
             customElements.get("speech-mic-bar")
         ) {
             return Promise.resolve();
@@ -162,6 +164,15 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
+                        if (
+                            !globalThis.BrowserSpeechProvider ||
+                            !globalThis.StreamingSpeechProvider
+                        ) {
+                            await loadClassicScript(
+                                "SpeechRecognitionProviders.js"
+                            );
+                        }
+
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
                                 "SpeechMenu.js"
