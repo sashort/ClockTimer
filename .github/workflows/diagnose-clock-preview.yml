@@ -1,0 +1,20 @@
+name: Diagnose Clock Preview
+on:
+  push:
+    branches: [diagnose-clock-preview]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          cd tests
+          npm install --no-audit --no-fund
+          npm install --no-save playwright@1.55.0 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - run: node tests/diagnose-clock-preview.mjs
