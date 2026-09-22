@@ -61,19 +61,6 @@
 
         #faceBackground;
 
-        #faceBackgroundFrame;
-
-        #hostTransparencyStyle;
-
-        #hostBackgroundOverride =
-            false;
-
-        #hostBackgroundInlineValue =
-            "";
-
-        #hostBackgroundInlinePriority =
-            "";
-
         #timeElement;
 
         #timeOutlineSignature;
@@ -451,6 +438,7 @@
                     position: relative;
                     display: block;
                     box-sizing: border-box;
+                    background: transparent !important;
                     overflow: visible;
                     isolation: isolate;
                     perspective:
@@ -818,15 +806,6 @@
                         );
                 }
             `
-
-            this.#hostTransparencyStyle =
-                document.createElement(
-                    "style"
-                );
-
-            this.#hostTransparencyStyle.textContent =
-                `:host { background: transparent !important; }`;
-
             const clockFace =
                 document.createElement(
                     "div"
@@ -1044,7 +1023,6 @@
 
             this.#shadowRoot.append(
                 style,
-                this.#hostTransparencyStyle,
                 this.#renderBox
             );
         }
@@ -1556,7 +1534,8 @@
                     } catch {}
                 }
             }
-            this.#captureFaceBackground();
+            this.#syncFaceBackgroundFromExternalCSS();
+            this.#syncFaceBackgroundGeometry();
 
             this.toggleAttribute(
                 "data-clock-timer-free-aspect-ratio",
@@ -1601,8 +1580,6 @@
 
             this.#syncHandGeometry();
 
-            this.#startFaceBackgroundTracking();
-
             this.#startHandAnimations();
 
             this.#startSizeObserver();
@@ -1634,8 +1611,6 @@
             this.#stopHandAnimations();
 
             this.#stopSizeObserver();
-
-            this.#stopFaceBackgroundTracking();
 
             this.#cancelTimerTypeTransition(
                 false
@@ -21100,9 +21075,6 @@
             );
         }
 
-        #captureFaceBackground() {
-            this.#syncFaceBackgroundFromExternalCSS();
-        }
 
         #syncFaceBackgroundFromExternalCSS() {
             if (!this.#faceBackground) {
@@ -21124,21 +21096,7 @@
                 "0";
         }
 
-        #startFaceBackgroundTracking() {
-            this.#syncFaceBackgroundFromExternalCSS();
-            this.#syncFaceBackgroundGeometry();
-        }
 
-        #stopFaceBackgroundTracking() {
-            if (this.#faceBackgroundFrame !== undefined) {
-                cancelAnimationFrame(
-                    this.#faceBackgroundFrame
-                );
-
-                this.#faceBackgroundFrame =
-                    undefined;
-            }
-        }
 
         #ensureNumberRing() {
             if (
