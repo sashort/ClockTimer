@@ -674,6 +674,8 @@ const heartbeat =
 
 heartbeat.unref?.();
 
+await whisper.start();
+
 server.listen(
     PORT,
     HOST,
@@ -682,4 +684,61 @@ server.listen(
             `ClockTimer speech service listening on http://${HOST}:${PORT}`
         );
     }
+);
+
+let shuttingDown = false;
+
+const shutdown = signal => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    console.log(
+        `ClockTimer speech service received ${signal}; shutting down.`
+    );
+
+    for (
+        const socket of
+            sockets.clients
+    ) {
+        try {
+            socket.close(
+                1001,
+                "server shutting down"
+            );
+        }
+        catch {}
+    }
+
+    sockets.close(() => {
+        server.close(() => {
+            void whisper
+                .stop()
+                .finally(
+                    () =>
+                        process.exit(0)
+                );
+        });
+    });
+
+    setTimeout(
+        () => {
+            void whisper
+                .stop()
+                .finally(
+                    () =>
+                        process.exit(1)
+                );
+        },
+        5000
+    ).unref?.();
+};
+
+process.once(
+    "SIGTERM",
+    () => shutdown("SIGTERM")
+);
+
+process.once(
+    "SIGINT",
+    () => shutdown("SIGINT")
 );
