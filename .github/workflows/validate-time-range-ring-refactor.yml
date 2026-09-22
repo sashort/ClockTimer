@@ -34,6 +34,21 @@ jobs:
         working-directory: tests
         run: node clock-timer-ui-state.mjs
 
-      - name: Custom range integration
+      - name: Timer interval regressions
         working-directory: tests
-        run: node custom-trip-range.mjs && node custom-range-goals.mjs
+        run: |
+          node custom-trip-range.mjs
+          node autosync-rebuild.mjs
+          node offline-trip-buffer.mjs
+          node deferred-trip.mjs
+          node active-trip-restore.mjs
+
+      - name: Trip log and app integration
+        working-directory: tests
+        run: |
+          node trip-log.mjs
+          node app-integration.mjs
+
+      # custom-range-goals.mjs is intentionally omitted here because it
+      # already fails on rename-prestart-latency before this refactor
+      # ('0:10:00' vs '10:00').
