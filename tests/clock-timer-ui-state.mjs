@@ -28,6 +28,12 @@ const positiveSecond=window.document.createElement('time-range');positiveSecond.
 assert.equal(secondHost.querySelectorAll('time-range').length,2);overlapHost.remove();secondHost.remove();
 
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
+assert.equal(timer.keepAspectRatio,true,'ClockTimer keeps a square aspect ratio by default');
+timer.keepAspectRatio=false;
+assert.equal(timer.keepAspectRatio,false);
+assert.equal(timer.hasAttribute('data-clock-timer-free-aspect-ratio'),true,'free-aspect mode is reflected internally for shadow styling');
+timer.keepAspectRatio=true;
+assert.equal(timer.hasAttribute('data-clock-timer-free-aspect-ratio'),false);
 const states=[];timer.addEventListener('uiStateChanged',event=>states.push(event.detail));
 const configured=timer.configure({rendered_time_type:'calculated_end_time',goal_type:'total',auto_goal:false,trip_goal:'105%',total_goal:'110%',external_standard_time:'1:00:00',external_counted_time:3300000});
 assert(configured instanceof window.ClockTimerUIState);assert.equal(configured.rendered_time_type,'calculated_end_time');assert.equal(configured.goal_type,'total');assert.equal(timer.getAttribute('trip-goal'),'105%');assert.equal(timer.getAttribute('total-goal'),'110%');
