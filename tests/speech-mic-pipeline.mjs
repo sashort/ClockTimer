@@ -49,7 +49,10 @@ const SpeechMicBar = Function(
 globalThis.SpeechMicBar = SpeechMicBar;
 window.SpeechMicBar = SpeechMicBar;
 
-const bar = new SpeechMicBar();
+if (!window.customElements.get("speech-mic-bar")) {
+    window.customElements.define("speech-mic-bar", SpeechMicBar);
+}
+const bar = window.document.createElement("speech-mic-bar");
 window.document.body.append(bar);
 
 assert.equal(typeof bar.setResponse, "function");
