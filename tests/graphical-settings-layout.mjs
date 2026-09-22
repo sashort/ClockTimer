@@ -67,9 +67,9 @@ assert.match(clockTimerSource, /--clock-timer-face-background-color:\s*transpare
 assert.match(clockTimerSource, /--clock-timer-active-ring-background-color:\s*transparent;/);
 assert.match(clockTimerSource, /#render-box\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*clip-path:\s*ellipse/s);
 assert.match(clockTimerSource, /#layoutRenderer\(\)\s*\{[\s\S]*?hostRect[\s\S]*?this\.#keepAspectRatio[\s\S]*?Math\.min\([\s\S]*?this\.#renderBox\.style\.width[\s\S]*?this\.#renderBox\.style\.height/s);
-assert.match(clockTimerSource, /#syncActiveRingBackground\(\)\s*\{[\s\S]*?#activeRingBackground[\s\S]*?renderedInset[\s\S]*?renderedWidth[\s\S]*?borderWidth/s);
+assert.match(clockTimerSource, /#syncActiveRingBackground\(\)\s*\{[\s\S]*?ring\.hasAttribute\([\s\S]*?"active"[\s\S]*?--ring-container-background-color[\s\S]*?--clock-timer-active-ring-background-color/s);
 assert.match(clockTimerSource, /#face-background\s*\{[^}]*background:[\s\S]*?--clock-timer-face-background-color/s);
-assert.match(clockTimerSource, /#active-ring-background\s*\{[^}]*border-color:[\s\S]*?--clock-timer-active-ring-background-color/s);
+assert.match(fs.readFileSync(new URL('../RingContainer.js', import.meta.url), 'utf8'), /#container\s*\{[\s\S]*?background:[\s\S]*?--ring-container-background-color/s);
 assert.match(clockTimerSource, /#getEffectiveRenderDiameter\(\)\s*\{[\s\S]*?#getRenderRect\(\)[\s\S]*?Math\.min\(\s*rect\.width,\s*rect\.height\s*\)/s);
 assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?#getRenderRect\(\)[\s\S]*?rect\.width[\s\S]*?rect\.height[\s\S]*?#handLayer\.style\.width[\s\S]*?#handLayer\.style\.height/s);
 assert.match(clockTimerSource, /#getEllipseRadiusForAngle\([\s\S]*?radiusX[\s\S]*?radiusY[\s\S]*?Math\.sqrt/s);
