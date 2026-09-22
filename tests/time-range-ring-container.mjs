@@ -51,8 +51,20 @@ window.cancelAnimationFrame =
             id
         );
 
-window.CSS.registerProperty =
+const css =
+    window.CSS;
+
+css.registerProperty =
     () => {};
+
+Object.defineProperty(
+    window,
+    "CSS",
+    {
+        value:
+            css
+    }
+);
 
 for (
     const name of
