@@ -57,6 +57,7 @@
                 stopped: false,
                 recognition: undefined,
                 prefix: "",
+                lastTranscript: "",
                 onTranscript,
                 onError
             };
@@ -104,6 +105,9 @@
                             .trim();
 
                     if (text) {
+                        state.lastTranscript =
+                            text;
+
                         state.onTranscript?.({
                             id,
                             text,
@@ -138,6 +142,10 @@
                         return;
                     }
 
+                    state.prefix =
+                        state.lastTranscript ||
+                        state.prefix;
+
                     queueMicrotask(startRecognition);
                 };
 
@@ -160,16 +168,12 @@
                 }
             };
 
-            state.setPrefix = value => {
-                state.prefix = value || "";
-            };
-
             startRecognition();
             return state;
         }
 
-        setUtterancePrefix(id, value) {
-            this.#utterances.get(id)?.setPrefix?.(value);
+        setUtterancePrefix() {
+            // Prefixes advance only when a browser recognition session ends.
         }
 
         endUtterance(id) {
