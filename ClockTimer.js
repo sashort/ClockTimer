@@ -493,6 +493,11 @@
                     margin: 0;
                 }
 
+                :host([data-clock-timer-free-aspect-ratio]) #hand-layer,
+                :host([data-clock-timer-free-aspect-ratio]) #tick-marks {
+                    opacity: 1 !important;
+                }
+
                 #clock-face {
                     position: absolute;
 
