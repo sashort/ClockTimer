@@ -3,7 +3,7 @@ name: Deploy to Lightsail
 on:
   push:
     branches:
-      - rename-prestart-latency
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -44,6 +44,11 @@ jobs:
             'set -euo pipefail
              $HOME/deploy-clocktimer.sh
              cd /opt/bitnami/apache2/htdocs
+             git fetch origin main
+             git checkout -B main origin/main
+             git reset --hard origin/main
+             echo "Deploy branch: $(git branch --show-current)"
+             echo "Deploy commit: $(git rev-parse HEAD)"
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
