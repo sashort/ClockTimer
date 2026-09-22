@@ -28,6 +28,15 @@ const positiveSecond=window.document.createElement('time-range');positiveSecond.
 assert.equal(secondHost.querySelectorAll('time-range').length,2);overlapHost.remove();secondHost.remove();
 
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
+const RingContainerClass=window.customElements.get('ring-container');
+const originalSnapGeometry=RingContainerClass.prototype.snapGeometry;
+let visibleLayoutSnapCount=0;
+RingContainerClass.prototype.snapGeometry=function(){visibleLayoutSnapCount+=1;return this;};
+const visibleLayoutRingCount=Array.from(timer.children).filter(child=>child.localName==='ring-container').length;
+assert(visibleLayoutRingCount>0,'ClockTimer creates direct RingContainer geometry');
+assert.equal(timer.refreshLayout(),true,'connected ClockTimer can refresh visible layout');
+assert.equal(visibleLayoutSnapCount,visibleLayoutRingCount,'visible layout refresh snaps every direct RingContainer before repainting');
+RingContainerClass.prototype.snapGeometry=originalSnapGeometry;
 assert.equal(timer.keepAspectRatio,true,'ClockTimer keeps a square aspect ratio by default');
 timer.keepAspectRatio=false;
 assert.equal(timer.keepAspectRatio,false);
