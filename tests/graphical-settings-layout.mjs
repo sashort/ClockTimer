@@ -65,6 +65,8 @@ assert.doesNotMatch(dialog, /<summary>Hand Styling<\/summary>/);
 assert.match(dialog, /Boring Old Basics/);
 assert.match(dialog, /name="borderColor"/);
 assert.match(dialog, /\+ Add New Font/);
+assert.match(overlayCss, /\.clock-hand-toggles \.toggle-row input\[type="checkbox"\]:checked\s*\{[^}]*background:\s*var\(--wm-yellow\);/s);
+assert.match(overlayCss, /\.clock-hand-toggles \.toggle-row input\[type="checkbox"\]:checked::before\s*\{[^}]*scale\(1\);/s);
 assert.match(js, /const SETTINGS_HELP_FADE_DURATION = 250;/);
 assert.match(js, /duration:\s*250,\s*reason/s);
 

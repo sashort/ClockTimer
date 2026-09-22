@@ -4581,6 +4581,46 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     min-height: 38px;
 }
 
+.clock-hand-toggles .toggle-row input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    place-content: center;
+    border: 2px solid rgb(255 255 255 / 88%);
+    border-radius: 6px;
+    color: var(--wm-blue-dark);
+    background: rgb(0 30 96 / 78%);
+    cursor: pointer;
+}
+
+.clock-hand-toggles .toggle-row input[type="checkbox"]::before {
+    content: "";
+    width: 11px;
+    height: 6px;
+    border-left: 3px solid currentColor;
+    border-bottom: 3px solid currentColor;
+    transform: rotate(-45deg) scale(0);
+    transform-origin: center;
+}
+
+.clock-hand-toggles .toggle-row input[type="checkbox"]:checked {
+    border-color: var(--wm-yellow);
+    background: var(--wm-yellow);
+}
+
+.clock-hand-toggles .toggle-row input[type="checkbox"]:checked::before {
+    transform: rotate(-45deg) scale(1);
+}
+
+.clock-hand-toggles .toggle-row input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--wm-blue-light);
+    outline-offset: 2px;
+}
+
 
 /* graphical-settings-scroll-overlay-v3
  * Issue #10: fixed-height modal, animated compact details, and a bottom
