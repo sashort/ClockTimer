@@ -106,6 +106,7 @@ function makeUtterance(id) {
         recognitionRunning: false,
         partialDirty: false,
         lastTranscript: "",
+        lastRecognizedBytes: 0,
         ended: false,
         cancelled: false
     };
@@ -125,7 +126,9 @@ function schedulePartial(
     if (
         utterance.ended ||
         utterance.cancelled ||
-        utterance.partialTimer
+        utterance.partialTimer ||
+        utterance.byteLength <=
+            utterance.lastRecognizedBytes
     ) {
         return;
     }
@@ -184,6 +187,27 @@ async function recognize(
         return;
     }
 
+    if (
+        final &&
+        utterance.lastTranscript &&
+        utterance.byteLength ===
+            utterance.lastRecognizedBytes
+    ) {
+        send(
+            socket,
+            transcriptMessage(
+                "final",
+                utterance.id,
+                utterance.lastTranscript
+            )
+        );
+
+        state.utterances.delete(
+            utterance.id
+        );
+        return;
+    }
+
     utterance.recognitionRunning = true;
     utterance.partialDirty = false;
 
@@ -192,6 +216,9 @@ async function recognize(
             utterance.chunks,
             utterance.byteLength
         );
+
+    const snapshotBytes =
+        snapshot.length;
 
     try {
         const text =
@@ -211,6 +238,12 @@ async function recognize(
         ) {
             return;
         }
+
+        utterance.lastRecognizedBytes =
+            Math.max(
+                utterance.lastRecognizedBytes,
+                snapshotBytes
+            );
 
         if (text) {
             utterance.lastTranscript =
@@ -281,11 +314,13 @@ async function recognize(
             !final &&
             !utterance.ended &&
             !utterance.cancelled &&
+            state.utterances.has(
+                utterance.id
+            ) &&
             (
                 utterance.partialDirty ||
-                state.utterances.has(
-                    utterance.id
-                )
+                utterance.byteLength >
+                    utterance.lastRecognizedBytes
             )
         ) {
             schedulePartial(
