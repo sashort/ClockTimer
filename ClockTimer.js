@@ -5864,6 +5864,20 @@
                 return false;
             }
 
+            for (
+                const child of
+                    this.children
+            ) {
+                if (
+                    child.localName ===
+                        "ring-container" &&
+                    typeof child.snapGeometry ===
+                        "function"
+                ) {
+                    child.snapGeometry();
+                }
+            }
+
             this.#syncFaceBackgroundFromExternalCSS();
             this.#syncFaceBackgroundGeometry();
             this.#scheduleResponsiveMetrics();
