@@ -35,7 +35,7 @@ jobs:
         working-directory: tests
         run: |
           npm install --no-audit --no-fund
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.55.0 pngjs@7.0.0
           npx playwright install --with-deps chromium
       - name: Renderer and UI tests
         working-directory: tests
@@ -45,4 +45,8 @@ jobs:
           node time-range-ring-container.mjs
           node clock-timer-renderer-browser.mjs
           node custom-trip-range.mjs
-          npm run test:trip-editor
+          node trip-log.mjs
+          npm run test:trip-sync
+          npm run test:offline-buffer
+          npm run test:deferred-trip
+          npm run test:active-restore
