@@ -400,6 +400,13 @@ class SpeechMicBar extends HTMLElement {
             case "unmuted":
                 this.setAttribute("state", "listening");
                 break;
+            case "speechRecognitionFailed":
+                this.setAttribute("state", "stopped");
+                this.#showStatus(
+                    detail?.message ||
+                    "Speech recognition unavailable"
+                );
+                break;
             case "utteranceStarted":
                 this.#currentUtteranceId = detail?.id;
                 this.setAttribute("state", "utterance");
