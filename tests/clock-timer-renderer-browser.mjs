@@ -2,9 +2,23 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
+import {PNG} from 'pngjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
+
+const countPaintedPixels = buffer => {
+    const png = PNG.sync.read(buffer);
+    let painted = 0;
+
+    for (let index = 3; index < png.data.length; index += 4) {
+        if (png.data[index] > 0) {
+            painted += 1;
+        }
+    }
+
+    return painted;
+};
 
 const browser = await chromium.launch({headless: true});
 const page = await browser.newPage({
@@ -23,7 +37,7 @@ try {
                 body {
                     margin: 0;
                     padding: 24px;
-                    background: rgb(240 240 240);
+                    background: transparent;
                 }
 
                 clock-timer {
@@ -40,9 +54,25 @@ try {
                     height: 300px;
                 }
 
+                #ellipse,
+                #preview {
+                    color: rgb(255 255 255);
+                    --clock-timer-border-color: rgb(255 255 255);
+                    --clock-timer-tick-color: rgb(255 255 255);
+                    --clock-timer-hour-hand-color: rgb(255 255 255);
+                    --clock-timer-minute-hand-color: rgb(255 255 255);
+                    --clock-timer-second-hand-color: rgb(255 194 32);
+                    --clock-timer-time-color: rgb(255 255 255);
+                }
+
                 #previewDialog {
                     border: 0;
                     padding: 24px;
+                    background: transparent;
+                }
+
+                #previewDialog::backdrop {
+                    background: transparent;
                 }
 
                 #preview {
@@ -53,7 +83,11 @@ try {
         </head>
         <body>
             <clock-timer id="square"></clock-timer>
-            <clock-timer id="ellipse"></clock-timer>
+            <clock-timer
+                id="ellipse"
+                visible-hours="12,3,6,9"
+                tick-marks="[10]"
+            ></clock-timer>
 
             <dialog id="previewDialog">
                 <clock-timer
@@ -151,6 +185,16 @@ try {
         'free-aspect render box uses the full host width'
     );
 
+    const ellipseScreenshot =
+        await page.locator('#ellipse').screenshot({
+            omitBackground: true
+        });
+
+    assert(
+        countPaintedPixels(ellipseScreenshot) > 100,
+        'free-aspect ClockTimer paints visible clock pixels'
+    );
+
     await page.evaluate(() => {
         document.querySelector('#square').keepAspectRatio = false;
     });
@@ -203,6 +247,16 @@ try {
     assert(visiblePreview.ring);
     assert.equal(visiblePreview.ring.width, 520);
     assert.equal(visiblePreview.ring.height, 220);
+
+    const previewScreenshot =
+        await page.locator('#preview').screenshot({
+            omitBackground: true
+        });
+
+    assert(
+        countPaintedPixels(previewScreenshot) > 100,
+        'closed-dialog ClockTimer paints after becoming visible'
+    );
 
     console.log(
         'PASS ClockTimer browser renderer uses one render box and recovers from closed-dialog layout'
