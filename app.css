@@ -4477,14 +4477,14 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
     margin: 0 !important;
     padding: 16px;
     overflow: hidden;
-    display: block;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
     isolation: isolate;
 }
 
 .graphical-dialog .graphical-settings-grid > .settings-groups {
     position: relative;
     z-index: 1;
-    height: 100%;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
