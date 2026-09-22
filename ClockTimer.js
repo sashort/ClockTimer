@@ -5859,6 +5859,31 @@
             return `${Number((parsed * 100).toFixed(6))}%`;
         }
 
+        refreshLayout() {
+            if (!this.isConnected) {
+                return false;
+            }
+
+            this.#syncFaceBackgroundFromExternalCSS();
+            this.#syncFaceBackgroundGeometry();
+            this.#scheduleResponsiveMetrics();
+            this.#syncHandGeometry();
+            this.#syncTickMarkGeometry();
+            this.#scheduleHourRender();
+            this.#updateTickMarks();
+            this.#scheduleIndicatorSymbolUpdate();
+
+            if (this.#handsStarted) {
+                this.#synchronizeHands(
+                    new Date()
+                );
+            }
+
+            this.#refreshTimeRangeVisualGeometry();
+
+            return true;
+        }
+
         configure(configuration = {}) {
             if (!configuration || typeof configuration !== "object" || Array.isArray(configuration)) {
                 throw new TypeError("configuration must be an object.");
