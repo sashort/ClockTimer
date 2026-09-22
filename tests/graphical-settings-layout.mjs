@@ -68,9 +68,12 @@ assert.match(dialog, /\+ Add New Font/);
 assert.match(dialog, /class="clock-hand-row"[\s\S]*?Hour Hand[\s\S]*?name="showHourHand"[\s\S]*?name="hourHandColor"/s);
 assert.match(dialog, /class="clock-hand-row"[\s\S]*?Minute Hand[\s\S]*?name="showMinuteHand"[\s\S]*?name="minuteHandColor"/s);
 assert.match(dialog, /class="clock-hand-row"[\s\S]*?Second Hand[\s\S]*?name="showSecondHand"[\s\S]*?name="secondHandColor"/s);
-assert.match(overlayCss, /\.clock-hand-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 28px 68px;/s);
-assert.match(overlayCss, /\.app-dialog \.clock-hand-row > input\[type="checkbox"\]:checked\s*\{[^}]*background:\s*var\(--wm-blue-light\);/s);
-assert.match(overlayCss, /\.app-dialog \.clock-hand-row > input\[type="checkbox"\]:checked::before\s*\{[^}]*scale\(1\);/s);
+assert.match(css, /\.clock-hand-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 28px 68px;/s);
+assert.match(css, /\.app-dialog \.clock-hand-row > input\[type="checkbox"\]:checked\s*\{[^}]*background:\s*var\(--wm-blue-light\);/s);
+assert.match(css, /\.app-dialog \.clock-hand-row > input\[type="checkbox"\]:checked::before\s*\{[^}]*scale\(1\);/s);
+assert.match(css, /\.clock-color-grid > label\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 68px;/s);
+assert.match(css, /\.clock-color-grid input\[type="color"\]\s*\{[^}]*width:\s*68px;[^}]*min-width:\s*68px;/s);
+assert.match(css, /\.app-dialog \.clock-hand-row > input\[type="color"\]\s*\{[^}]*width:\s*68px;[^}]*min-width:\s*68px;/s);
 assert.match(js, /const SETTINGS_HELP_FADE_DURATION = 250;/);
 assert.match(js, /duration:\s*250,\s*reason/s);
 

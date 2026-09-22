@@ -988,14 +988,14 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 
 .clock-color-grid > label {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 54px;
+    grid-template-columns: minmax(0, 1fr) 68px;
     align-items: center;
     gap: 10px;
 }
 
 .clock-color-grid input[type="color"] {
-    width: 54px;
-    min-width: 54px;
+    width: 68px;
+    min-width: 68px;
     height: 38px;
     justify-self: end;
 }
