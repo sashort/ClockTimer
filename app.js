@@ -86,6 +86,18 @@
 
     const $ = selector => document.querySelector(selector);
 
+    const speechRuntimeVersion = (() => {
+        try {
+            return new URL(
+                document.currentScript?.src ||
+                    location.href
+            ).search;
+        }
+        catch {
+            return "";
+        }
+    })();
+
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
             const existing = document.querySelector(
@@ -127,7 +139,8 @@
             );
 
             if (!existing) {
-                script.src = source;
+                script.src =
+                    `${source}${speechRuntimeVersion}`;
                 script.dataset.runtimeSource =
                     source;
                 document.head.append(
