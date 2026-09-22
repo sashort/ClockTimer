@@ -55,6 +55,10 @@
 
         #clockFace;
 
+        #renderBox;
+
+        #activeRingBackground;
+
         #ringLayer;
 
         #faceBackground;
@@ -416,6 +420,11 @@
                 }
 
                 :host {
+                    --clock-timer-face-background-color:
+                        transparent;
+
+                    --clock-timer-active-ring-background-color:
+                        transparent;
 
                     --clock-timer-tick-inset:
                         clamp(5px, 2cqi, 10px);
@@ -442,132 +451,120 @@
                         333ms;
 
                     position: relative;
-
                     display: block;
-
-                    inline-size:
-                        min(100cqw, 100cqh);
-
-                    block-size:
-                        min(100cqw, 100cqh);
-
-                    aspect-ratio:
-                        1 / 1;
-
-                    place-self:
-                        center;
-
-                    margin:
-                        auto;
-
-                    box-sizing:
-                        border-box;
-
-                    padding:
-                        2px;
-
-                    overflow:
-                        hidden;
-
-                    isolation:
-                        isolate;
-
+                    box-sizing: border-box;
+                    overflow: visible;
+                    isolation: isolate;
                     perspective:
                         var(--clock-timer-spin-perspective, 800px);
+                    container-type: size;
+                }
 
-                    container-type:
-                        size;
-
+                #render-box {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    width: 0;
+                    height: 0;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                    isolation: isolate;
+                    transform: translate(-50%, -50%);
                     clip-path:
                         ellipse(
                             50% 50%
                             at
                             50% 50%
                         );
-                }
-
-                :host([data-clock-timer-free-aspect-ratio]) {
-                    inline-size: 100%;
-                    block-size: 100%;
-                    aspect-ratio: auto;
-                    margin: 0;
-                }
-
-                :host([data-clock-timer-free-aspect-ratio]) #hand-layer,
-                :host([data-clock-timer-free-aspect-ratio]) #tick-marks {
-                    opacity: 1 !important;
+                    container-type: size;
+                    pointer-events: none;
                 }
 
                 #clock-face {
                     position: absolute;
-
-                    transform-style: preserve-3d;
-
                     inset: 0;
-
                     width: 100%;
                     height: 100%;
-
-                    isolation:
-                        isolate;
-
-                    pointer-events:
-                        none;
+                    box-sizing: border-box;
+                    isolation: isolate;
+                    transform-style: preserve-3d;
+                    pointer-events: none;
                 }
 
                 #face-background {
                     position: absolute;
                     inset: 0;
+                    z-index: -2;
                     border-radius: 50%;
-                    z-index: -1;
+                    background:
+                        var(
+                            --clock-timer-face-background-color,
+                            transparent
+                        );
                     pointer-events: none;
                 }
 
                 #rings {
                     position: absolute;
-
                     inset: 0;
-
                     width: 100%;
                     height: 100%;
-
                     z-index: 0;
+                    isolation: isolate;
+                    pointer-events: none;
+                }
 
-                    isolation:
-                        isolate;
+                #active-ring-background {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 0;
+                    box-sizing: border-box;
+                    border-style: solid;
+                    border-width: 0;
+                    border-color:
+                        var(
+                            --clock-timer-active-ring-background-color,
+                            transparent
+                        );
+                    border-radius: 50%;
+                    background: transparent;
+                    opacity: 0;
+                    transition-property:
+                        inset,
+                        border-width,
+                        opacity;
+                    transition-duration:
+                        var(--clock-timer-ring-resize-duration),
+                        var(--clock-timer-ring-resize-duration),
+                        100ms;
+                    transition-timing-function:
+                        linear,
+                        linear,
+                        linear;
+                    pointer-events: none;
+                }
 
-                    pointer-events:
-                        none;
+                #ring-slot {
+                    position: absolute;
+                    inset: 0;
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                    pointer-events: none;
                 }
 
                 ::slotted(ring-container) {
                     position: absolute;
-
+                    inset: 0;
                     display: block;
-
-                    box-sizing:
-                        border-box;
-
-                    background:
-                        transparent !important;
-
-                    pointer-events:
-                        none;
-                }
-
-                #tick-marks,
-                #hand-layer,
-                #indicator-ring {
-                    transition-property:
-                        inset;
-
-                    transition-duration:
-                        var(
-                            --clock-timer-ring-resize-duration
-                        );
-
-                    transition-timing-function:
-                        linear;
+                    width: 100%;
+                    height: 100%;
+                    min-width: 0;
+                    min-height: 0;
+                    box-sizing: border-box;
+                    background: transparent !important;
+                    pointer-events: none;
                 }
 
                 :host([hide-hour-hand]) .hour-hand,
@@ -576,101 +573,123 @@
                     display: none !important;
                 }
 
+                #tick-marks,
+                #hand-layer,
+                #indicator-ring {
+                    position: absolute;
+                    pointer-events: none;
+                }
+
                 #hand-layer {
-                    opacity: 0;
+                    z-index: 30;
+                    overflow: visible;
+                    opacity: 1;
+                }
 
-                    transition-property:
-                        inset, opacity;
+                .hour-hand,
+                .minute-hand,
+                .second-hand {
+                    display: block;
+                    border-radius: 999px;
+                }
 
-                    transition-duration:
+                .hour-hand {
+                    width:
                         var(
-                            --clock-timer-ring-resize-duration
-                        ),
-                        1500ms;
+                            --clock-timer-hour-hand-width,
+                            5px
+                        );
+                    height:
+                        var(
+                            --clock-timer-hour-hand-length,
+                            28%
+                        );
+                    background:
+                        var(
+                            --clock-timer-hour-hand-color,
+                            currentColor
+                        );
+                }
 
-                    transition-timing-function:
-                        linear, linear;
+                .minute-hand {
+                    width:
+                        var(
+                            --clock-timer-minute-hand-width,
+                            4px
+                        );
+                    height:
+                        var(
+                            --clock-timer-minute-hand-length,
+                            38%
+                        );
+                    background:
+                        var(
+                            --clock-timer-minute-hand-color,
+                            currentColor
+                        );
+                }
+
+                .second-hand {
+                    width:
+                        var(
+                            --clock-timer-second-hand-width,
+                            2px
+                        );
+                    height:
+                        var(
+                            --clock-timer-second-hand-length,
+                            42%
+                        );
+                    background:
+                        var(
+                            --clock-timer-second-hand-color,
+                            currentColor
+                        );
                 }
 
                 #tick-marks {
-                    position: absolute;
-
                     inset: 0;
-
                     z-index: 10;
-
-                    opacity: 0;
-
+                    opacity: 1;
                     transition-property:
-                        inset, opacity;
-
+                        inset;
                     transition-duration:
-                        var(
-                            --clock-timer-ring-resize-duration
-                        ),
-                        1500ms;
-
+                        var(--clock-timer-ring-resize-duration);
                     transition-timing-function:
-                        linear, linear;
-
-                    pointer-events:
-                        none;
+                        linear;
                 }
 
                 .tick-mark-track {
                     position: absolute;
-
-                    inset: 0;
-
-                    transform:
-                        rotate(
-                            var(--clock-timer-tick-angle)
-                        );
-
-                    transform-origin:
-                        50% 50%;
-
-                    pointer-events:
-                        none;
+                    pointer-events: none;
                 }
 
                 .tick-mark {
                     position: absolute;
-
                     top: 0;
                     left: 50%;
-
                     width:
                         var(
                             --clock-timer-tick-width
                         );
-
                     height:
                         var(
                             --clock-timer-tick-length
                         );
-
                     border-radius:
                         clamp(0px, 0.15cqi, 1px);
-
                     background:
                         var(
                             --clock-timer-tick-color
                         );
-
                     box-shadow:
                         var(
                             --clock-timer-tick-shadow
                         );
-
                     transform:
                         translateX(-50%);
-
-                    transform-origin:
-                        50% 0;
-
-                    pointer-events:
-                        none;
+                    transform-origin: 50% 0;
+                    pointer-events: none;
                 }
 
                 .tick-mark.major {
@@ -678,7 +697,6 @@
                         var(
                             --clock-timer-major-tick-width
                         );
-
                     height:
                         var(
                             --clock-timer-major-tick-length
@@ -686,13 +704,13 @@
                 }
 
                 #indicator-ring {
-                    position: absolute;
                     inset: 0;
                     z-index: 25;
-                    pointer-events: none;
                     opacity: 0;
-                    transition-property: opacity;
-                    transition-duration: var(--clock-timer-ring-resize-duration);
+                    transition-property:
+                        opacity;
+                    transition-duration:
+                        var(--clock-timer-ring-resize-duration);
                     transition-timing-function: linear;
                 }
 
@@ -712,9 +730,21 @@
                     width: max-content;
                     height: max-content;
                     line-height: 1;
-                    font-size: var(--clock-timer-indicator-symbol-size, 12px);
-                    color: var(--clock-timer-indicator-symbol-color, white);
-                    text-shadow: var(--clock-timer-indicator-symbol-shadow, 0 0 2px rgb(0 0 0 / 50%));
+                    font-size:
+                        var(
+                            --clock-timer-indicator-symbol-size,
+                            12px
+                        );
+                    color:
+                        var(
+                            --clock-timer-indicator-symbol-color,
+                            white
+                        );
+                    text-shadow:
+                        var(
+                            --clock-timer-indicator-symbol-shadow,
+                            0 0 2px rgb(0 0 0 / 50%)
+                        );
                     transform: translateX(-50%);
                     transform-origin: 50% 50%;
                     pointer-events: none;
@@ -726,18 +756,11 @@
 
                 #time-layer {
                     position: absolute;
-
                     inset: 0;
-
                     display: grid;
-
-                    place-items:
-                        center;
-
+                    place-items: center;
                     z-index: 100;
-
-                    pointer-events:
-                        none;
+                    pointer-events: none;
                 }
 
                 #date[hidden] {
@@ -746,37 +769,17 @@
 
                 #date,
                 #time {
-                    display:
-                        inline-block;
-
-                    box-sizing:
-                        border-box;
-
-                    width:
-                        fit-content;
-
-                    height:
-                        fit-content;
-
-                    max-width:
-                        100%;
-
-                    max-height:
-                        100%;
-
-                    place-self:
-                        center;
-
-                    background:
-                        transparent;
-
+                    display: inline-block;
+                    box-sizing: border-box;
+                    width: fit-content;
+                    height: fit-content;
+                    max-width: 100%;
+                    max-height: 100%;
+                    place-self: center;
+                    background: transparent;
                     line-height: 1;
-
-                    white-space:
-                        nowrap;
-
-                    pointer-events:
-                        none;
+                    white-space: nowrap;
+                    pointer-events: none;
                 }
 
                 #date {
@@ -819,7 +822,6 @@
                             --clock-timer-time-font,
                             inherit
                         );
-
                     font-size:
                         var(
                             --clock-timer-time-font-size,
@@ -828,13 +830,11 @@
                                 1rem
                             )
                         );
-
                     color:
                         var(
                             --clock-timer-time-color,
                             currentColor
                         );
-
                     -webkit-text-stroke:
                         var(
                             --clock-timer-time-outline-width,
@@ -844,14 +844,13 @@
                             --clock-timer-time-outline-color,
                             transparent
                         );
-
                     text-shadow:
                         var(
                             --clock-timer-time-outline-shadow,
                             none
                         );
                 }
-            `;
+            `
 
             this.#hostTransparencyStyle =
                 document.createElement(
@@ -859,7 +858,7 @@
                 );
 
             this.#hostTransparencyStyle.textContent =
-                `:host { background-color: transparent !important; }`;
+                `:host { background: transparent !important; }`;
 
             const clockFace =
                 document.createElement(
@@ -871,6 +870,14 @@
 
             clockFace.id =
                 "clock-face";
+
+            this.#renderBox =
+                document.createElement(
+                    "div"
+                );
+
+            this.#renderBox.id =
+                "render-box";
 
             this.#faceBackground =
                 document.createElement(
@@ -891,12 +898,24 @@
             ringLayer.id =
                 "rings";
 
+            this.#activeRingBackground =
+                document.createElement(
+                    "div"
+                );
+
+            this.#activeRingBackground.id =
+                "active-ring-background";
+
             const ringSlot =
                 document.createElement(
                     "slot"
                 );
 
-            ringLayer.appendChild(
+            ringSlot.id =
+                "ring-slot";
+
+            ringLayer.append(
+                this.#activeRingBackground,
                 ringSlot
             );
 
@@ -1061,10 +1080,14 @@
                 timeLayer
             );
 
+            this.#renderBox.appendChild(
+                clockFace
+            );
+
             this.#shadowRoot.append(
                 style,
                 this.#hostTransparencyStyle,
-                clockFace
+                this.#renderBox
             );
         }
 
@@ -1615,6 +1638,8 @@
                         false;
                 }
             }
+
+            this.#layoutRenderer();
 
             this.#syncHandGeometry();
 
@@ -5868,20 +5893,7 @@
                 return false;
             }
 
-            for (
-                const child of
-                    this.children
-            ) {
-                if (
-                    child.localName ===
-                        "ring-container" &&
-                    typeof child.snapGeometry ===
-                        "function"
-                ) {
-                    child.snapGeometry();
-                }
-            }
-
+            this.#layoutRenderer();
             this.#syncFaceBackgroundFromExternalCSS();
             this.#syncFaceBackgroundGeometry();
             this.#scheduleResponsiveMetrics();
@@ -5898,6 +5910,7 @@
             }
 
             this.#refreshTimeRangeVisualGeometry();
+            this.#syncActiveRingBackground();
 
             return true;
         }
@@ -6123,28 +6136,14 @@
                 next ===
                     this.#keepAspectRatio
             ) {
+                this.#layoutRenderer();
                 return;
             }
 
             this.#keepAspectRatio =
                 next;
 
-            this.#syncHandGeometry();
-            this.#syncTickMarkGeometry();
-            this.#scheduleHourRender();
-            this.#scheduleIndicatorSymbolUpdate();
-            this.#scheduleResponsiveMetrics();
-
-            if (
-                this.#handsStarted &&
-                this.isConnected
-            ) {
-                this.#synchronizeHands(
-                    new Date()
-                );
-            }
-
-            this.#refreshTimeRangeVisualGeometry();
+            this.refreshLayout();
         }
 
         get percentMode() {
@@ -19962,9 +19961,153 @@
             );
         }
 
+        #getRenderRect() {
+            const rect =
+                this.#renderBox
+                    ?.getBoundingClientRect?.();
+
+            if (
+                rect &&
+                Number.isFinite(rect.width) &&
+                Number.isFinite(rect.height)
+            ) {
+                return rect;
+            }
+
+            return this.getBoundingClientRect();
+        }
+
+        #layoutRenderer() {
+            if (!this.#renderBox) {
+                return false;
+            }
+
+            const hostRect =
+                this.getBoundingClientRect();
+
+            if (
+                !Number.isFinite(hostRect.width) ||
+                !Number.isFinite(hostRect.height) ||
+                hostRect.width <= 0 ||
+                hostRect.height <= 0
+            ) {
+                return false;
+            }
+
+            const width =
+                this.#keepAspectRatio
+                    ? Math.min(
+                        hostRect.width,
+                        hostRect.height
+                    )
+                    : hostRect.width;
+
+            const height =
+                this.#keepAspectRatio
+                    ? width
+                    : hostRect.height;
+
+            this.#renderBox.style.width =
+                `${width}px`;
+
+            this.#renderBox.style.height =
+                `${height}px`;
+
+            for (
+                const child of
+                    this.children
+            ) {
+                if (
+                    child.localName ===
+                        "ring-container" &&
+                    typeof child.snapGeometry ===
+                        "function"
+                ) {
+                    child.snapGeometry();
+                }
+            }
+
+            this.#syncActiveRingBackground();
+
+            return true;
+        }
+
+        #syncActiveRingBackground() {
+            const layer =
+                this.#activeRingBackground;
+
+            if (!layer) {
+                return;
+            }
+
+            const ring =
+                Array.from(
+                    this.#rings.values()
+                ).find(
+                    candidate =>
+                        candidate.isConnected &&
+                        candidate.hasAttribute(
+                            "active"
+                        )
+                );
+
+            if (!ring) {
+                layer.style.opacity =
+                    "0";
+
+                layer.style.borderWidth =
+                    "0px";
+
+                return;
+            }
+
+            const inset =
+                Number.parseFloat(
+                    ring.renderedInset ??
+                    ring.inset ??
+                    ""
+                );
+
+            const width =
+                Number.parseFloat(
+                    ring.renderedWidth ??
+                    ring.width ??
+                    ""
+                );
+
+            if (
+                !Number.isFinite(inset) ||
+                !Number.isFinite(width) ||
+                width <= 0
+            ) {
+                layer.style.opacity =
+                    "0";
+
+                layer.style.borderWidth =
+                    "0px";
+
+                return;
+            }
+
+            layer.style.inset =
+                `${Math.max(
+                    0,
+                    inset - width / 2
+                )}px`;
+
+            layer.style.borderWidth =
+                `${Math.max(
+                    0,
+                    width
+                )}px`;
+
+            layer.style.opacity =
+                "1";
+        }
+
         #getEffectiveRenderDiameter() {
             const rect =
-                this.getBoundingClientRect();
+                this.#getRenderRect();
 
             const diameter =
                 Math.min(
@@ -20002,79 +20145,20 @@
                     );
             }
 
-            if (
-                !this.#keepAspectRatio &&
-                Number.isFinite(inset)
-            ) {
-                const rect =
-                    this.getBoundingClientRect();
-
-                if (
-                    Number.isFinite(rect.width) &&
-                    Number.isFinite(rect.height) &&
-                    rect.width > 0 &&
-                    rect.height > 0
-                ) {
-                    const resolvedInset =
-                        Math.max(
-                            0,
-                            inset
-                        );
-
-                    const handWidth =
-                        Math.max(
-                            0,
-                            rect.width -
-                                resolvedInset *
-                                2
-                        );
-
-                    const handHeight =
-                        Math.max(
-                            0,
-                            rect.height -
-                                resolvedInset *
-                                2
-                        );
-
-                    this.#handLayer.style.inset =
-                        "auto";
-
-                    this.#handLayer.style.top =
-                        "50%";
-
-                    this.#handLayer.style.left =
-                        "50%";
-
-                    this.#handLayer.style.width =
-                        `${handWidth}px`;
-
-                    this.#handLayer.style.height =
-                        `${handHeight}px`;
-
-                    this.#handLayer.style.transform =
-                        "translate(-50%, -50%)";
-
-                    return;
-                }
-            }
-
-            const diameter =
-                this.#getEffectiveRenderDiameter();
+            const rect =
+                this.#getRenderRect();
 
             if (
-                Number.isFinite(diameter) &&
+                Number.isFinite(rect.width) &&
+                Number.isFinite(rect.height) &&
+                rect.width > 0 &&
+                rect.height > 0 &&
                 Number.isFinite(inset)
             ) {
-                const handDiameter =
+                const resolvedInset =
                     Math.max(
                         0,
-                        diameter -
-                            Math.max(
-                                0,
-                                inset
-                            ) *
-                            2
+                        inset
                     );
 
                 this.#handLayer.style.inset =
@@ -20087,10 +20171,18 @@
                     "50%";
 
                 this.#handLayer.style.width =
-                    `${handDiameter}px`;
+                    `${Math.max(
+                        0,
+                        rect.width -
+                            resolvedInset * 2
+                    )}px`;
 
                 this.#handLayer.style.height =
-                    `${handDiameter}px`;
+                    `${Math.max(
+                        0,
+                        rect.height -
+                            resolvedInset * 2
+                    )}px`;
 
                 this.#handLayer.style.transform =
                     "translate(-50%, -50%)";
@@ -20292,7 +20384,6 @@
             angle
         ) {
             if (
-                this.#keepAspectRatio ||
                 !this.#handLayer
             ) {
                 return undefined;
@@ -20362,47 +20453,15 @@
                 return;
             }
 
-            const tracks =
-                Array.from(
-                    this.#tickMarkLayer
-                        .children
-                );
-
-            if (
-                this.#keepAspectRatio
-            ) {
-                for (const track of tracks) {
-                    for (
-                        const property of
-                            [
-                                "inset",
-                                "left",
-                                "top",
-                                "width",
-                                "height",
-                                "transform"
-                            ]
-                    ) {
-                        track.style.removeProperty(
-                            property
-                        );
-                    }
-                }
-
-                return;
-            }
-
             const rect =
                 this.#tickMarkLayer
                     .getBoundingClientRect();
 
             const radiusX =
-                rect.width /
-                2;
+                rect.width / 2;
 
             const radiusY =
-                rect.height /
-                2;
+                rect.height / 2;
 
             if (
                 !Number.isFinite(radiusX) ||
@@ -20413,23 +20472,21 @@
                 return;
             }
 
-            for (const track of tracks) {
+            for (
+                const track of
+                    this.#tickMarkLayer.children
+            ) {
                 const second =
                     Number(
                         track.clockTimerTickSecond
                     );
 
-                if (
-                    !Number.isFinite(
-                        second
-                    )
-                ) {
+                if (!Number.isFinite(second)) {
                     continue;
                 }
 
                 const angle =
-                    second *
-                    6;
+                    second * 6;
 
                 const radians =
                     angle *
@@ -20448,20 +20505,16 @@
 
                 const x =
                     50 +
-                    sin *
-                    50;
+                    sin * 50;
 
                 const y =
                     50 -
-                    cos *
-                    50;
+                    cos * 50;
 
                 const rotation =
                     Math.atan2(
-                        radiusX *
-                            sin,
-                        radiusY *
-                            cos
+                        radiusX * sin,
+                        radiusY * cos
                     ) *
                     180 /
                     Math.PI;
@@ -21139,10 +21192,6 @@
         }
 
         #captureFaceBackground() {
-            if (!this.#faceBackground) {
-                return;
-            }
-
             this.#syncFaceBackgroundFromExternalCSS();
         }
 
@@ -21151,86 +21200,35 @@
                 return;
             }
 
-            const transparencySheet =
-                this.#hostTransparencyStyle
-                    ?.sheet;
-
-            if (transparencySheet) {
-                transparencySheet.disabled =
-                    true;
-            }
-
-            let backgroundColor;
-
-            try {
-                backgroundColor =
-                    getComputedStyle(this)
-                        .backgroundColor;
-            }
-            finally {
-                if (transparencySheet) {
-                    transparencySheet.disabled =
-                        false;
-                }
-            }
-
-            this.#faceBackground.style.backgroundColor =
-                backgroundColor;
+            this.#faceBackground.style.removeProperty(
+                "background-color"
+            );
 
             this.#updateTimeOutlineContrast();
         }
         #syncFaceBackgroundGeometry() {
-            if (!this.#faceBackground || !this.#borderRing) {
+            if (!this.#faceBackground) {
                 return;
             }
 
-            const inset = Number.parseFloat(
-                this.#borderRing.renderedInset
-            );
-
-            const width = Number.parseFloat(
-                this.#borderRing.renderedWidth
-            );
-
-            if (!Number.isFinite(inset) || !Number.isFinite(width)) {
-                return;
-            }
-
-            const innerEdge = Math.max(0, inset + width / 2);
-            this.#faceBackground.style.inset = `${innerEdge}px`;
+            this.#faceBackground.style.inset =
+                "0";
         }
 
         #startFaceBackgroundTracking() {
-            if (this.#faceBackgroundFrame !== undefined) {
-                return;
-            }
-
-            const update = () => {
-                this.#faceBackgroundFrame = undefined;
-
-                if (!this.isConnected) {
-                    return;
-                }
-
-                this.#syncFaceBackgroundFromExternalCSS();
-                this.#syncFaceBackgroundGeometry();
-                this.#faceBackgroundFrame = requestAnimationFrame(update);
-            };
-
             this.#syncFaceBackgroundFromExternalCSS();
             this.#syncFaceBackgroundGeometry();
-            this.#faceBackgroundFrame = requestAnimationFrame(update);
         }
 
         #stopFaceBackgroundTracking() {
             if (this.#faceBackgroundFrame !== undefined) {
-                cancelAnimationFrame(this.#faceBackgroundFrame);
-                this.#faceBackgroundFrame = undefined;
-            }
+                cancelAnimationFrame(
+                    this.#faceBackgroundFrame
+                );
 
-            this.style.removeProperty(
-                "background-color"
-            );
+                this.#faceBackgroundFrame =
+                    undefined;
+            }
         }
 
         #ensureNumberRing() {
@@ -21981,6 +21979,7 @@
                 this.#sizeObserver =
                     new ResizeObserver(
                         () => {
+                            this.#layoutRenderer();
                             this.#scheduleResponsiveMetrics();
                             this.#scheduleIndicatorSymbolUpdate();
                             this.#syncHandGeometry();
@@ -21995,6 +21994,7 @@
                             }
 
                             this.#refreshTimeRangeVisualGeometry();
+                            this.#syncActiveRingBackground();
                         }
                     );
 
@@ -22003,6 +22003,7 @@
                 );
             }
 
+            this.#layoutRenderer();
             this.#scheduleResponsiveMetrics();
         }
 
@@ -22054,6 +22055,8 @@
                         ) {
                             return;
                         }
+
+                        this.#layoutRenderer();
 
                         this.#updateResponsiveMetrics();
                     }
@@ -29097,6 +29100,8 @@
             else {
                 this.#ensurePermanentRingOrder();
             }
+
+            this.#syncActiveRingBackground();
 
             this.#scheduleHourRender();
             this.#scheduleIndicatorSymbolUpdate();
