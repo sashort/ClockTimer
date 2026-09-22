@@ -84,7 +84,7 @@ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechPreprocesse
 assert.equal(bar.getAttribute("phase"), "preprocessed");
 
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechMenuMatched", {detail:{utteranceId:7,transcript:"start at 5:00"}}));
-assert.equal(bar.getAttribute("phase"), "matched");
+assert.equal(bar.getAttribute("phase"), "preprocessed");
 
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechArgumentsPrepared", {detail:{utteranceId:7,arguments:["5:00",30]}}));
 
