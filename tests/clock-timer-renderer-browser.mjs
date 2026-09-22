@@ -159,6 +159,19 @@ try {
             };
         }, id);
 
+    const containment = await page.evaluate(() => {
+        const clock = document.querySelector('#ellipse');
+        return {
+            host: getComputedStyle(clock).containerType
+        };
+    });
+
+    assert.equal(
+        containment.host,
+        'normal',
+        'ClockTimer host must not establish size containment'
+    );
+
     const square = await measure('square');
     assert.equal(square.host.width, 480);
     assert.equal(square.host.height, 300);

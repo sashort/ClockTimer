@@ -32,15 +32,15 @@ const overlayCss = css.slice(overlayMarker);
 
 assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*min-height:\s*90dvh;[^}]*height:\s*90dvh;[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;/s);
 assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*max-height:\s*100%;[^}]*block-size:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-preview-height:\s*clamp\(210px, 46%, 270px\);[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-preview-height:\s*clamp\(210px, 30dvh, 270px\);[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
 assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px 16px calc\(var\(--graphical-preview-height\) \+ 16px\);[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-width:[^}]*--graphical-preview-clock-height:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*--graphical-preview-clock-width:[^}]*position:\s*absolute;[^}]*inset:\s*auto 0 0;[^}]*height:\s*var\(--graphical-preview-height\);[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
 assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*var\(--graphical-preview-clock-height\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*var\(--graphical-preview-clock-height\);[^}]*aspect-ratio:\s*auto;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
+assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*var\(--graphical-preview-clock-width\);[^}]*block-size:\s*calc\(var\(--graphical-preview-height\) - 24px\);[^}]*width:\s*var\(--graphical-preview-clock-width\);[^}]*height:\s*calc\(var\(--graphical-preview-height\) - 24px\);[^}]*aspect-ratio:\s*auto;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
 assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
-assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-preview-height:\s*clamp\(190px, 44%, 250px\);[\s\S]*?--graphical-preview-clock-width:[\s\S]*?calc\(100% - 24px\);[\s\S]*?--graphical-preview-clock-height:/s);
+assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-preview-height:\s*clamp\(190px, 28dvh, 250px\);[\s\S]*?--graphical-preview-clock-width:[\s\S]*?calc\(100% - 24px\);[\s\S]*?block-size:\s*calc\(var\(--graphical-preview-height\) - 18px\);[\s\S]*?height:\s*calc\(var\(--graphical-preview-height\) - 18px\);/s);
 assert.match(overlayCss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*transition-duration:\s*0ms;/s);
 
 assert.match(js, /clockPreview\.keepAspectRatio\s*=\s*false;/);
@@ -65,7 +65,8 @@ assert.match(clockTimerSource, /get keepAspectRatio\(\)\s*\{[\s\S]*?return this\
 assert.match(clockTimerSource, /set keepAspectRatio\(value\)\s*\{[\s\S]*?data-clock-timer-free-aspect-ratio[\s\S]*?this\.refreshLayout\(\)/s);
 assert.match(clockTimerSource, /--clock-timer-face-background-color:\s*transparent;/);
 assert.match(clockTimerSource, /--clock-timer-active-ring-background-color:\s*transparent;/);
-assert.match(clockTimerSource, /#render-box\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*clip-path:\s*ellipse/s);
+assert.doesNotMatch(clockTimerSource, /:host\s*\{[^}]*container-type:\s*size;/s);
+assert.match(clockTimerSource, /#render-box\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*clip-path:\s*ellipse[^}]*container-type:\s*size;/s);
 assert.match(clockTimerSource, /#layoutRenderer\(\)\s*\{[\s\S]*?hostRect[\s\S]*?this\.#keepAspectRatio[\s\S]*?Math\.min\([\s\S]*?this\.#renderBox\.style\.width[\s\S]*?this\.#renderBox\.style\.height/s);
 assert.match(clockTimerSource, /#syncActiveRingBackground\(\)\s*\{[\s\S]*?ring\.hasAttribute\([\s\S]*?"active"[\s\S]*?--ring-container-background-color[\s\S]*?--clock-timer-active-ring-background-color/s);
 assert.match(clockTimerSource, /#face-background\s*\{[^}]*background:[\s\S]*?--clock-timer-face-background-color/s);
