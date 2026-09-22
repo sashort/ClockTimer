@@ -254,6 +254,16 @@
             String(Boolean(enabled));
     };
 
+    const preferredSpeechProvider = () => {
+        const userAgent =
+            navigator.userAgent || "";
+
+        return /Android|iPhone|iPad|iPod/i
+            .test(userAgent)
+                ? "streaming"
+                : "browser";
+    };
+
     let speechActivationPending = false;
 
     setSpeechButtonState(false);
@@ -294,6 +304,15 @@
 
                 const englishLanguage =
                     globalThis.WMOFLanguages?.["en-US"];
+
+                if (
+                    globalThis.SpeechMenu &&
+                    !globalThis.SpeechMenu.started
+                ) {
+                    globalThis.SpeechMenu
+                        .recognitionProvider =
+                            preferredSpeechProvider();
+                }
 
                 const started =
                     await globalThis.SpeechMenu?.start?.(
