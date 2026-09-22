@@ -21,8 +21,9 @@ const overlayCss = css.slice(overlayMarker);
 
 assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*overflow:\s*hidden;/s);
 assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;[^}]*display:\s*flex;/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*overflow-y:\s*auto;/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*minmax\(0, 1fr\);/s);
+assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
+assert.doesNotMatch(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*height:\s*100%;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*opacity:\s*0\.78;[^}]*pointer-events:\s*none !important;/s);
 assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*pointer-events:\s*none !important;/s);
 
