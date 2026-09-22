@@ -400,19 +400,28 @@
                                 </div>
                             </div>
 
-                            <div class="clock-hand-toggles" aria-label="Clock hands">
-                                <label class="toggle-row">Hour Hand<input name="showHourHand" type="checkbox" checked></label>
-                                <label class="toggle-row">Minute Hand<input name="showMinuteHand" type="checkbox" checked></label>
-                                <label class="toggle-row">Second Hand<input name="showSecondHand" type="checkbox" checked></label>
+                            <div class="clock-hand-controls" aria-label="Clock hands">
+                                <div class="clock-hand-row">
+                                    <span>Hour Hand</span>
+                                    <input name="showHourHand" type="checkbox" checked aria-label="Show Hour Hand">
+                                    <input name="hourHandColor" type="color" value="#ffffff" aria-label="Hour Hand color">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span>Minute Hand</span>
+                                    <input name="showMinuteHand" type="checkbox" checked aria-label="Show Minute Hand">
+                                    <input name="minuteHandColor" type="color" value="#ffffff" aria-label="Minute Hand color">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span>Second Hand</span>
+                                    <input name="showSecondHand" type="checkbox" checked aria-label="Show Second Hand">
+                                    <input name="secondHandColor" type="color" value="#ffc220" aria-label="Second Hand color">
+                                </div>
                             </div>
 
                             <div class="clock-color-grid">
                                 <label>Hour Numbers<input name="hourColor" type="color" value="#ffffff"></label>
                                 <label>Current Time<input name="timeColor" type="color" value="#ffffff"></label>
                                 <label>Border<input name="borderColor" type="color" value="#001e60"></label>
-                                <label>Hour Hand<input name="hourHandColor" type="color" value="#ffffff"></label>
-                                <label>Minute Hand<input name="minuteHandColor" type="color" value="#ffffff"></label>
-                                <label>Second Hand<input name="secondHandColor" type="color" value="#ffc220"></label>
                             </div>
                         </div>
                     </details>
