@@ -19837,18 +19837,100 @@
             );
         }
 
+        #getEffectiveRenderDiameter() {
+            const rect =
+                this.getBoundingClientRect();
+
+            const diameter =
+                Math.min(
+                    rect.width,
+                    rect.height
+                );
+
+            return (
+                Number.isFinite(diameter) &&
+                diameter > 0
+            )
+                ? diameter
+                : undefined;
+        }
+
         #syncHandGeometry() {
             this.#ensureHandRing();
 
-            this.#handLayer.style.inset =
+            const insetValue =
                 this.#getRingInset(
                     this.#handRing
                 );
+
+            const diameter =
+                this.#getEffectiveRenderDiameter();
+
+            let inset =
+                Number.parseFloat(
+                    this.#handRing
+                        ?.renderedInset
+                );
+
+            if (!Number.isFinite(inset)) {
+                inset =
+                    this.#resolveTimerTypeTransitionLength(
+                        insetValue,
+                        this.#handRing
+                    );
+            }
+
+            if (
+                Number.isFinite(diameter) &&
+                Number.isFinite(inset)
+            ) {
+                const handDiameter =
+                    Math.max(
+                        0,
+                        diameter -
+                            Math.max(
+                                0,
+                                inset
+                            ) * 2
+                    );
+
+                this.#handLayer.style.inset =
+                    "auto";
+
+                this.#handLayer.style.top =
+                    "50%";
+
+                this.#handLayer.style.left =
+                    "50%";
+
+                this.#handLayer.style.width =
+                    `${handDiameter}px`;
+
+                this.#handLayer.style.height =
+                    `${handDiameter}px`;
+
+                this.#handLayer.style.transform =
+                    "translate(-50%, -50%)";
+
+                return;
+            }
+
+            this.#handLayer.style.inset =
+                insetValue;
+
+            this.#handLayer.style.top =
+                "";
+
+            this.#handLayer.style.left =
+                "";
 
             this.#handLayer.style.width =
                 "";
 
             this.#handLayer.style.height =
+                "";
+
+            this.#handLayer.style.transform =
                 "";
         }
 
@@ -21421,19 +21503,10 @@
                 return;
             }
 
-            const rect =
-                this.getBoundingClientRect();
-
             const diameter =
-                Math.min(
-                    rect.width,
-                    rect.height
-                );
+                this.#getEffectiveRenderDiameter();
 
-            if (
-                !Number.isFinite(diameter) ||
-                diameter <= 0
-            ) {
+            if (!Number.isFinite(diameter)) {
                 return;
             }
 
