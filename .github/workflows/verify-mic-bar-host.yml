@@ -1,0 +1,32 @@
+name: Verify mic bar host
+
+on:
+  push:
+    branches:
+      - verify-mic-bar-host
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: verify-mic-bar-host
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Syntax check
+        run: |
+          node --check SpeechMenu.js
+          node --check SpeechMicBar.js
+          node --check app.js
+      - name: Speech mic regression
+        working-directory: tests
+        run: node speech-mic-pipeline.mjs
+      - name: Graphical settings regression
+        working-directory: tests
+        run: node graphical-settings-layout.mjs
