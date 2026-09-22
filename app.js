@@ -8986,22 +8986,39 @@
             setSpeechButtonState(true, false);
         });
 
+        let speechStartPending = false;
+
         speechRecognitionButton?.addEventListener("click", async () => {
+            if (speechStartPending) return;
+
             const enabled =
                 speechRecognitionButton.getAttribute("aria-pressed") === "true";
 
             if (enabled) {
+                setSpeechButtonState(false, false);
+                setSpeechLayoutState(false);
                 await SpeechMenu.stop();
                 return;
             }
 
-            const started =
-                await SpeechMenu.start(
-                    englishLanguage?.speechRecognitionLanguage || "en-US"
-                );
+            speechStartPending = true;
+            setSpeechButtonState(true, false);
+            setSpeechLayoutState(true);
+            mainMenu?.hidePopover?.();
 
-            if (started) {
-                mainMenu?.hidePopover?.();
+            try {
+                const started =
+                    await SpeechMenu.start(
+                        englishLanguage?.speechRecognitionLanguage || "en-US"
+                    );
+
+                if (!started) {
+                    setSpeechButtonState(false, false);
+                    setSpeechLayoutState(false);
+                }
+            }
+            finally {
+                speechStartPending = false;
             }
         });
         
