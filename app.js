@@ -4297,6 +4297,13 @@
             category.getBoundingClientRect()
                 .height;
 
+        const renderedContentOpacity =
+            Number.parseFloat(
+                getComputedStyle(
+                    content
+                ).opacity
+            );
+
         const wasOpen =
             category.open;
 
@@ -4386,20 +4393,13 @@
         category.style.height =
             `${startHeight}px`;
 
-        const computedOpacity =
-            Number.parseFloat(
-                getComputedStyle(
-                    content
-                ).opacity
-            );
-
         const startOpacity =
             shouldOpen && !wasOpen
                 ? 0
                 : Number.isFinite(
-                    computedOpacity
+                    renderedContentOpacity
                 )
-                    ? computedOpacity
+                    ? renderedContentOpacity
                     : 1;
 
         const token =
