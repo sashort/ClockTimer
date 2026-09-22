@@ -7,13 +7,15 @@ class SpeechMicBar extends HTMLElement {
         "utteranceStarted",
         "utteranceFinished",
         "utteranceTranscribed",
+        "speechCommandMatched",
         "speechMenuMatched",
         "speechPreprocessed",
         "speechArgumentsPrepared",
         "speechCommandExecuted",
         "speechRecognitionError",
-        "speechRecognitionTrackUnsupported",
+        "speechRecognitionFailed",
         "speechCaptureEnded",
+        "utteranceUnrecognized",
         "audioLevelChanged"
     ];
 
@@ -271,8 +273,14 @@ class SpeechMicBar extends HTMLElement {
         }
 
         if (value instanceof Node) {
-            this.#sanitizeResponseNode(value);
-            this.#responseContent.append(value);
+            const visual =
+                value instanceof Element
+                    ? this.#cloneVisualElement(value)
+                    : value.cloneNode(true);
+
+            this.#responseContent.append(
+                visual
+            );
         }
         else {
             const span = document.createElement("span");
@@ -420,20 +428,31 @@ class SpeechMicBar extends HTMLElement {
                     );
                 }
                 break;
+            case "speechCommandMatched":
             case "speechMenuMatched":
-                if (detail?.utteranceId === this.#currentUtteranceId) {
+                if (
+                    detail?.utteranceId ===
+                    this.#currentUtteranceId &&
+                    this.getAttribute("phase") !== "preprocessed"
+                ) {
                     this.setAttribute("phase", "matched");
                 }
                 break;
             case "speechArgumentsPrepared":
                 if (detail?.utteranceId === this.#currentUtteranceId) {
                     this.#showArguments(detail.arguments || []);
-                    if (detail.targetBefore) this.setResponse(detail.targetBefore);
+                    if (detail.targetElement) this.setResponse(detail.targetElement);
                 }
                 break;
             case "speechCommandExecuted":
-                if (detail?.utteranceId === this.#currentUtteranceId && detail.targetAfter) {
-                    this.setResponse(detail.targetAfter);
+                if (
+                    detail?.utteranceId ===
+                    this.#currentUtteranceId &&
+                    detail.targetElement
+                ) {
+                    this.setResponse(
+                        detail.targetElement
+                    );
                 }
                 break;
         }
@@ -510,6 +529,176 @@ class SpeechMicBar extends HTMLElement {
         }
     }
 
+    #cloneVisualElement(source) {
+        const clone =
+            source.cloneNode(false);
+
+        this.#copyComputedStyle(
+            source,
+            clone
+        );
+
+        this.#sanitizeResponseNode(
+            clone
+        );
+
+        const before =
+            this.#clonePseudoElement(
+                source,
+                "::before"
+            );
+
+        if (before) {
+            clone.append(before);
+        }
+
+        for (
+            const child of
+                source.childNodes
+        ) {
+            if (
+                child instanceof Element
+            ) {
+                clone.append(
+                    this.#cloneVisualElement(
+                        child
+                    )
+                );
+            }
+            else {
+                clone.append(
+                    child.cloneNode(true)
+                );
+            }
+        }
+
+        const after =
+            this.#clonePseudoElement(
+                source,
+                "::after"
+            );
+
+        if (after) {
+            clone.append(after);
+        }
+
+        clone.style.setProperty(
+            "pointer-events",
+            "none",
+            "important"
+        );
+
+        return clone;
+    }
+
+    #copyComputedStyle(source, target, pseudo) {
+        let style;
+
+        try {
+            style =
+                getComputedStyle(
+                    source,
+                    pseudo
+                );
+        }
+        catch {
+            return;
+        }
+
+        if (!style) return;
+
+        for (
+            let index = 0;
+            index < style.length;
+            index++
+        ) {
+            const property =
+                style[index];
+
+            try {
+                target.style.setProperty(
+                    property,
+                    style.getPropertyValue(
+                        property
+                    ),
+                    style.getPropertyPriority(
+                        property
+                    )
+                );
+            }
+            catch {}
+        }
+    }
+
+    #clonePseudoElement(source, pseudo) {
+        let style;
+
+        try {
+            style =
+                getComputedStyle(
+                    source,
+                    pseudo
+                );
+        }
+        catch {
+            return undefined;
+        }
+
+        if (!style) return undefined;
+
+        const content =
+            style.content;
+
+        const hasContent =
+            content &&
+            content !== "none" &&
+            content !== "normal" &&
+            content !== '""';
+
+        const hasVisual =
+            style.backgroundImage !== "none" ||
+            style.maskImage !== "none" ||
+            style.webkitMaskImage !== "none";
+
+        if (
+            !hasContent &&
+            !hasVisual
+        ) {
+            return undefined;
+        }
+
+        const node =
+            document.createElement(
+                "span"
+            );
+
+        node.dataset.speechResponsePseudo =
+            pseudo === "::before"
+                ? "before"
+                : "after";
+
+        this.#copyComputedStyle(
+            source,
+            node,
+            pseudo
+        );
+
+        if (hasContent) {
+            node.textContent =
+                content.replace(
+                    /^["']|["']$/g,
+                    ""
+                );
+        }
+
+        node.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        return node;
+    }
+
     #sanitizeResponseNode(node) {
         if (!(node instanceof Element)) return;
         node.removeAttribute("id");
@@ -529,10 +718,7 @@ class SpeechMicBar extends HTMLElement {
             }
         }
     }
-}
 
-if (!customElements.get("speech-mic-bar")) {
-    customElements.define("speech-mic-bar", SpeechMicBar);
 }
 
 globalThis.SpeechMicBar = SpeechMicBar;
