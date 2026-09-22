@@ -27,6 +27,14 @@ const zeroFirst=window.document.createElement('time-range');zeroFirst.setAttribu
 const positiveSecond=window.document.createElement('time-range');positiveSecond.setAttribute('start-time','2026-09-19 12:00:00.000');positiveSecond.setAttribute('end-time','2026-09-19 12:10:00.000');secondHost.append(positiveSecond);
 assert.equal(secondHost.querySelectorAll('time-range').length,2);overlapHost.remove();secondHost.remove();
 
+const shadowedAspectTimer=window.document.createElement('clock-timer');
+Object.defineProperty(shadowedAspectTimer,'keepAspectRatio',{value:false,writable:true,configurable:true});
+window.document.body.append(shadowedAspectTimer);
+assert.equal(Object.prototype.hasOwnProperty.call(shadowedAspectTimer,'keepAspectRatio'),false,'connected ClockTimer upgrades a shadowing keepAspectRatio property');
+assert.equal(shadowedAspectTimer.keepAspectRatio,false,'upgraded keepAspectRatio preserves the pre-connect value');
+assert.equal(shadowedAspectTimer.hasAttribute('data-clock-timer-free-aspect-ratio'),true,'upgraded keepAspectRatio reflects free-aspect state');
+shadowedAspectTimer.remove();
+
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 const RingContainerClass=window.customElements.get('ring-container');
 const originalSnapGeometry=RingContainerClass.prototype.snapGeometry;
