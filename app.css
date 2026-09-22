@@ -4137,6 +4137,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .main-menu #adminMenuButton[aria-expanded="true"]::after {transform:rotate(90deg);}
 .main-menu .admin-submenu {margin:0 16px 4px 56px;border-left:1px solid rgb(255 255 255 / 75%);}
 .main-menu .admin-submenu button {padding:12px 14px;font-size:16px;color:var(--wm-blue-light);}
+.main-menu .admin-submenu a {display:block;padding:12px 14px;font-size:16px;font-weight:700;color:var(--wm-blue-light);text-decoration:none;border-radius:8px;}
+.main-menu .admin-submenu a:hover,.main-menu .admin-submenu a:focus-visible {background:rgb(255 255 255 / 10%);}
+.main-menu .admin-submenu a[hidden] {display:none;}
 #newUserButton::before {
     width:24px;height:24px;flex-basis:24px;
     -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='9' cy='8' r='4' fill='black'/%3E%3Cpath d='M2 21c0-4 3.1-7 7-7 2 0 3.8.8 5.1 2.1M18 11v8M14 15h8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");

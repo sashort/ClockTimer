@@ -103,7 +103,7 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);
+        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorLink").hidden=!(permissions&4);
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -2003,7 +2003,7 @@
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
         const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);
+        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorLink").hidden=!showAdmin||!(permissions&4);
         if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
@@ -7627,6 +7627,16 @@
         if (!pattern) return;
         const element = document.createElement("speech-command");
         element.hidden = true;
+        element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
+        const speechTargets = {
+            readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
+            breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
+            resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
+            sync:"#syncGoalsMenuButton,#goalSyncButton", lockEndTime:"#renderedTimeButton", showTripLog:"#tripListMenuButton",
+            hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#renderedTimeButton",
+            breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
+        };
+        if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
         element.setAttribute("speech-pattern", pattern);
         element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
         if (valueKind && valueField) {
@@ -7640,6 +7650,8 @@
     if (englishSpeech) {
         for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
             if (!element) continue;
+            element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
+            element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
             element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
             element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
             element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");

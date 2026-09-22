@@ -12,7 +12,8 @@
     "test:numberpad": "node numberpad-meridiem.mjs",
     "test:deferred-trip": "node deferred-trip.mjs",
     "test:ui-state": "node clock-timer-ui-state.mjs",
-    "test:active-restore": "node active-trip-restore.mjs"
+    "test:active-restore": "node active-trip-restore.mjs",
+    "test:speech-editor": "node speech-editor.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
