@@ -7,7 +7,8 @@ class SpeechMenu {
     static #events = new EventTarget();
     static #separator = ",";
     static #language = "en-US";
-    static #silenceTimeout = 1500;
+    static #silenceTimeout = 5000;
+    static #commitSilenceTimeout = 350;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
@@ -44,6 +45,7 @@ class SpeechMenu {
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
+    static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
 
@@ -57,6 +59,16 @@ class SpeechMenu {
         SpeechMenu.#silenceTimeout = Math.round(milliseconds);
         SpeechMenu.#emit("silenceTimeoutChanged", {
             silenceTimeout: SpeechMenu.#silenceTimeout
+        });
+    }
+    static set commitSilenceTimeout(value) {
+        const milliseconds = Number(value);
+        if (!Number.isFinite(milliseconds) || milliseconds < 100) {
+            throw new RangeError("SpeechMenu.commitSilenceTimeout must be at least 100 milliseconds.");
+        }
+        SpeechMenu.#commitSilenceTimeout = Math.round(milliseconds);
+        SpeechMenu.#emit("commitSilenceTimeoutChanged", {
+            commitSilenceTimeout: SpeechMenu.#commitSilenceTimeout
         });
     }
     static set debug(value) {
@@ -224,6 +236,8 @@ class SpeechMenu {
                         SpeechMenu.#language,
                     silenceTimeout:
                         SpeechMenu.#silenceTimeout,
+                    commitSilenceTimeout:
+                        SpeechMenu.#commitSilenceTimeout,
                     deliberate: true
                 });
 
@@ -472,6 +486,19 @@ class SpeechMenu {
             return;
         }
 
+        if (
+            SpeechMenu.#utterance.committed &&
+            level >= SpeechMenu.#speechThreshold
+        ) {
+            SpeechMenu.#finishUtterance(
+                "committed",
+                false
+            );
+            SpeechMenu.#beginUtterance(now);
+            SpeechMenu.#appendUtteranceFrame(frame);
+            return;
+        }
+
         SpeechMenu.#appendUtteranceFrame(
             frame
         );
@@ -488,6 +515,19 @@ class SpeechMenu {
                 frameMilliseconds;
 
             if (
+                !SpeechMenu.#utterance.committed &&
+                !SpeechMenu.#utterance.committing &&
+                SpeechMenu.#utterance.candidate &&
+                SpeechMenu.#utterance.silenceMilliseconds >=
+                    SpeechMenu.#commitSilenceTimeout
+            ) {
+                void SpeechMenu.#commitUtterance(
+                    SpeechMenu.#utterance
+                );
+            }
+
+            if (
+                SpeechMenu.#utterance &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
                     SpeechMenu.#silenceTimeout
@@ -553,7 +593,15 @@ class SpeechMenu {
             startedAt: now,
             silenceMilliseconds: 0,
             frames,
-            sampleCount
+            sampleCount,
+            transcript: "",
+            transcriptRevision: 0,
+            candidate: undefined,
+            committed: false,
+            committing: false,
+            liveRecognition: undefined,
+            liveRecognitionStopped: false,
+            recognitionPrefix: ""
         };
 
         SpeechMenu.#emit(
@@ -562,6 +610,10 @@ class SpeechMenu {
                 id,
                 startedAt: now
             }
+        );
+
+        SpeechMenu.#startLiveRecognition(
+            SpeechMenu.#utterance
         );
     }
 
@@ -589,6 +641,10 @@ class SpeechMenu {
 
         if (!utterance) return;
 
+        SpeechMenu.#stopLiveRecognition(
+            utterance
+        );
+
         SpeechMenu.#utterance =
             undefined;
 
@@ -612,12 +668,28 @@ class SpeechMenu {
                     utterance.startedAt,
                 finishedAt:
                     performance.now(),
-                durationMilliseconds
+                durationMilliseconds,
+                committed:
+                    Boolean(utterance.committed),
+                transcript:
+                    utterance.transcript || ""
             }
         );
 
         if (
+            utterance.candidate &&
+            !utterance.committed &&
+            !utterance.committing
+        ) {
+            void SpeechMenu.#commitUtterance(
+                utterance
+            );
+            return;
+        }
+
+        if (
             !recognize ||
+            utterance.committed ||
             !context ||
             utterance.sampleCount <= 0
         ) {
@@ -688,6 +760,386 @@ class SpeechMenu {
                                 recognitionInput
                             )
                 );
+    }
+
+    static #startLiveRecognition(
+        utterance
+    ) {
+        if (
+            !utterance ||
+            utterance.liveRecognitionStopped ||
+            utterance.committed ||
+            SpeechMenu.#stopped ||
+            utterance.sessionGeneration !==
+                SpeechMenu.#sessionGeneration ||
+            !SpeechMenu.#micTrack
+        ) {
+            return false;
+        }
+
+        const recognition =
+            new SpeechMenu.#Recognition();
+
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang =
+            SpeechMenu.#language;
+
+        utterance.liveRecognition =
+            recognition;
+
+        recognition.onresult =
+            event => {
+                let sessionText = "";
+                let allFinal = true;
+
+                for (
+                    let index = 0;
+                    index < event.results.length;
+                    index++
+                ) {
+                    const result =
+                        event.results[index];
+
+                    const value =
+                        result?.[0]?.transcript;
+
+                    if (value) {
+                        sessionText +=
+                            `${sessionText ? " " : ""}${value}`;
+                    }
+
+                    if (!result?.isFinal) {
+                        allFinal = false;
+                    }
+                }
+
+                const transcript =
+                    SpeechMenu.#normalizeTranscript(
+                        `${utterance.recognitionPrefix || ""} ${sessionText}`
+                    );
+
+                if (transcript) {
+                    void SpeechMenu.#handleLiveTranscript(
+                        utterance,
+                        transcript,
+                        allFinal
+                    );
+                }
+            };
+
+        recognition.onerror =
+            event => {
+                if (
+                    event.error === "aborted" ||
+                    event.error === "no-speech"
+                ) {
+                    return;
+                }
+
+                SpeechMenu.#emit(
+                    "speechRecognitionStreamingFailed",
+                    {
+                        utteranceId:
+                            utterance.id,
+                        error:
+                            event.error,
+                        message:
+                            event.message
+                    }
+                );
+            };
+
+        recognition.onend =
+            () => {
+                if (
+                    utterance.liveRecognition !==
+                        recognition
+                ) {
+                    return;
+                }
+
+                utterance.liveRecognition =
+                    undefined;
+
+                if (
+                    utterance.liveRecognitionStopped ||
+                    utterance.committed ||
+                    SpeechMenu.#stopped ||
+                    SpeechMenu.#utterance !==
+                        utterance
+                ) {
+                    return;
+                }
+
+                utterance.recognitionPrefix =
+                    utterance.transcript || "";
+
+                queueMicrotask(
+                    () =>
+                        SpeechMenu.#startLiveRecognition(
+                            utterance
+                        )
+                );
+            };
+
+        try {
+            recognition.start(
+                SpeechMenu.#micTrack
+            );
+            return true;
+        }
+        catch (error) {
+            utterance.liveRecognition =
+                undefined;
+            utterance.liveRecognitionStopped =
+                true;
+
+            SpeechMenu.#emit(
+                "speechRecognitionStreamingFailed",
+                {
+                    utteranceId:
+                        utterance.id,
+                    error:
+                        error?.name ||
+                        "TrackInputUnsupported",
+                    message:
+                        error?.message ||
+                        "Live speech recognition could not start from the persistent microphone track."
+                }
+            );
+            return false;
+        }
+    }
+
+    static #stopLiveRecognition(
+        utterance
+    ) {
+        if (!utterance) return;
+
+        utterance.liveRecognitionStopped =
+            true;
+
+        const recognition =
+            utterance.liveRecognition;
+
+        utterance.liveRecognition =
+            undefined;
+
+        if (!recognition) return;
+
+        try {
+            recognition.abort();
+        }
+        catch {}
+    }
+
+    static async #handleLiveTranscript(
+        utterance,
+        transcript,
+        isFinal
+    ) {
+        if (
+            !utterance ||
+            utterance.committed ||
+            SpeechMenu.#stopped ||
+            SpeechMenu.#utterance !==
+                utterance ||
+            utterance.sessionGeneration !==
+                SpeechMenu.#sessionGeneration
+        ) {
+            return;
+        }
+
+        if (
+            transcript ===
+            utterance.transcript
+        ) {
+            return;
+        }
+
+        utterance.transcript =
+            transcript;
+
+        const revision =
+            ++utterance.transcriptRevision;
+
+        SpeechMenu.#emit(
+            "utteranceTranscriptChanged",
+            {
+                id: utterance.id,
+                transcript,
+                isFinal:
+                    Boolean(isFinal)
+            }
+        );
+
+        if (isFinal) {
+            SpeechMenu.#emit(
+                "utteranceTranscribed",
+                {
+                    id: utterance.id,
+                    transcript,
+                    live: true
+                }
+            );
+        }
+
+        let candidate;
+
+        if (
+            SpeechMenu.#sleeping
+        ) {
+            if (
+                SpeechMenu.#test(
+                    SpeechMenu.#wakePhrase,
+                    transcript
+                )
+            ) {
+                candidate = {
+                    kind: "wake",
+                    transcript
+                };
+            }
+        }
+        else if (
+            SpeechMenu.#test(
+                SpeechMenu.#sleepPhrase,
+                transcript
+            )
+        ) {
+            candidate = {
+                kind: "mute",
+                transcript
+            };
+        }
+        else {
+            candidate =
+                await SpeechMenu.#processTranscript(
+                    transcript,
+                    utterance.id,
+                    false
+                );
+        }
+
+        if (
+            SpeechMenu.#utterance !==
+                utterance ||
+            utterance.committed ||
+            revision !==
+                utterance.transcriptRevision
+        ) {
+            return;
+        }
+
+        utterance.candidate =
+            candidate || undefined;
+
+        if (
+            utterance.candidate &&
+            utterance.silenceMilliseconds >=
+                SpeechMenu.#commitSilenceTimeout
+        ) {
+            await SpeechMenu.#commitUtterance(
+                utterance
+            );
+        }
+    }
+
+    static async #commitUtterance(
+        utterance
+    ) {
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing ||
+            !utterance.candidate
+        ) {
+            return false;
+        }
+
+        utterance.committing =
+            true;
+
+        const transcript =
+            utterance.transcript;
+
+        let committed =
+            false;
+
+        try {
+            if (
+                utterance.candidate.kind ===
+                    "wake"
+            ) {
+                SpeechMenu.#sleeping =
+                    false;
+
+                SpeechMenu.#emit(
+                    "unmuted",
+                    {
+                        utteranceId:
+                            utterance.id,
+                        transcript
+                    }
+                );
+
+                committed = true;
+            }
+            else if (
+                utterance.candidate.kind ===
+                    "mute"
+            ) {
+                SpeechMenu.#sleeping =
+                    true;
+
+                SpeechMenu.#emit(
+                    "muted",
+                    {
+                        utteranceId:
+                            utterance.id,
+                        transcript
+                    }
+                );
+
+                committed = true;
+            }
+            else {
+                committed =
+                    Boolean(
+                        await SpeechMenu
+                            .#processTranscript(
+                                transcript,
+                                utterance.id,
+                                true
+                            )
+                    );
+            }
+
+            if (committed) {
+                utterance.committed =
+                    true;
+
+                SpeechMenu.#stopLiveRecognition(
+                    utterance
+                );
+
+                SpeechMenu.#emit(
+                    "utteranceCommitted",
+                    {
+                        id:
+                            utterance.id,
+                        transcript
+                    }
+                );
+            }
+
+            return committed;
+        }
+        finally {
+            utterance.committing =
+                false;
+        }
     }
 
     static async #recognizeUtterance(
@@ -1012,7 +1464,8 @@ class SpeechMenu {
 
     static async #processTranscript(
         text,
-        utteranceId
+        utteranceId,
+        execute = true
     ) {
         const first =
             async elements => {
@@ -1020,15 +1473,18 @@ class SpeechMenu {
                     const element of
                         elements
                 ) {
-                    if (
+                    const result =
                         await SpeechMenu
                             .#processElement(
                                 element,
                                 text,
-                                utteranceId
-                            )
-                    ) {
-                        return true;
+                                utteranceId,
+                                undefined,
+                                execute
+                            );
+
+                    if (result) {
+                        return result;
                     }
                 }
 
@@ -1041,36 +1497,40 @@ class SpeechMenu {
                     const element of
                         elements
                 ) {
-                    if (
+                    const result =
                         await SpeechMenu
                             .#processMenu(
                                 element,
                                 text,
-                                utteranceId
-                            )
-                    ) {
-                        return true;
+                                utteranceId,
+                                execute
+                            );
+
+                    if (result) {
+                        return result;
                     }
                 }
 
                 return false;
             };
 
-        if (
+        let result =
             await firstMenu(
                 document.querySelectorAll(
                     'speech-modal[speech-modal="top-level"]'
                 )
-            )
-        ) return;
+            );
 
-        if (
+        if (result) return result;
+
+        result =
             await first(
                 document.querySelectorAll(
                     'speech-command[speech-modal="top-level"]'
                 )
-            )
-        ) return;
+            );
+
+        if (result) return result;
 
         const modal =
             [
@@ -1080,42 +1540,48 @@ class SpeechMenu {
                     )
             ].at(-1);
 
-        if (
-            modal &&
-            await SpeechMenu.#processMenu(
-                modal,
-                text,
-                utteranceId
-            )
-        ) return;
+        if (modal) {
+            result =
+                await SpeechMenu.#processMenu(
+                    modal,
+                    text,
+                    utteranceId,
+                    execute
+                );
 
-        if (
+            if (result) return result;
+        }
+
+        result =
             await firstMenu(
                 document.querySelectorAll(
                     'speech-modal:not([speech-modal="top-level"])'
                 )
-            )
-        ) return;
+            );
 
-        if (
+        if (result) return result;
+
+        result =
             await first(
                 document.querySelectorAll(
                     'speech-command[speech-modal=""]'
                 )
-            )
-        ) return;
+            );
 
-        if (modal) return;
+        if (result) return result;
 
-        if (
+        if (modal) return false;
+
+        result =
             await first(
                 document.querySelectorAll(
                     "details[open], [popover]:popover-open"
                 )
-            )
-        ) return;
+            );
 
-        await first(
+        if (result) return result;
+
+        return await first(
             document.querySelectorAll(
                 ":not(details):not(dialog):not(speech-modal)[speech-pattern]"
             )
@@ -1125,7 +1591,8 @@ class SpeechMenu {
     static async #processMenu(
         menu,
         text,
-        utteranceId
+        utteranceId,
+        execute = true
     ) {
         for (
             const element of
@@ -1133,16 +1600,18 @@ class SpeechMenu {
                     "[speech-pattern]:not([speech-modal])"
                 )
         ) {
-            if (
+            const result =
                 await SpeechMenu
                     .#processElement(
                         element,
                         text,
                         utteranceId,
-                        menu
-                    )
-            ) {
-                return true;
+                        menu,
+                        execute
+                    );
+
+            if (result) {
+                return result;
             }
         }
 
@@ -1366,7 +1835,8 @@ class SpeechMenu {
         element,
         transcript,
         utteranceId,
-        speechMenuElement
+        speechMenuElement,
+        execute = true
     ) {
         if (
             !SpeechMenu.#prepare(
@@ -1617,9 +2087,29 @@ class SpeechMenu {
                 targetSelector:
                     target.selector,
                 targetElement:
-                    target.element
+                    target.element,
+                provisional:
+                    !execute
             }
         );
+
+        if (!execute) {
+            return {
+                kind: "command",
+                utteranceId,
+                commandElement:
+                    element,
+                speechMenuElement,
+                transcript:
+                    text,
+                arguments:
+                    argumentValues.slice(),
+                targetSelector:
+                    target.selector,
+                targetElement:
+                    target.element
+            };
+        }
 
         if (
             target.element &&
