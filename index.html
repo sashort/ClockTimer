@@ -242,19 +242,9 @@
             </div>
 
             <div class="settings-grid graphical-settings-grid">
-            <aside class="clock-preview" aria-label="Clock preview">
-                <clock-timer
-                    id="clockPreview"
-                    military-time="true"
-                    time-format="HHmm"
-                    visible-hours="12,3,6,9"
-                    tick-marks="[10]"
-                    indicator-symbol="▲"
-                ></clock-timer>
-            </aside>
 
                 <div class="settings-groups">
-                    <details class="settings-category timer-settings-fieldset" name="clock-timer-settings-category" open>
+                    <details class="settings-category timer-settings-fieldset">
                         <summary>Timer Settings</summary>
                         <div class="settings-category-content">
                         <label>Timer Mode
@@ -358,7 +348,7 @@
                         </div>
                     </details>
 
-                    <details class="settings-category" name="clock-timer-settings-category">
+                    <details class="settings-category">
                         <summary>Time Display</summary>
                         <div class="settings-category-content">
                         <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
@@ -387,7 +377,7 @@
                         </div>
                     </details>
 
-                    <details class="settings-category" name="clock-timer-settings-category">
+                    <details class="settings-category">
                         <summary>Hand Styling</summary>
                         <div class="settings-category-content">
                         <div class="style-row hand-style-row">
@@ -406,7 +396,7 @@
                         </div>
                     </details>
 
-                    <details class="settings-category" name="clock-timer-settings-category">
+                    <details class="settings-category">
                         <summary>Clock Font and Color</summary>
                         <div class="settings-category-content">
                         <label>Clock Font<input name="clockFont" value="Helvetica, Arial, sans-serif"></label>
@@ -422,6 +412,17 @@
                     </details>
 
                 </div>
+
+            <aside class="clock-preview" aria-label="Clock preview">
+                <clock-timer
+                    id="clockPreview"
+                    military-time="true"
+                    time-format="HHmm"
+                    visible-hours="12,3,6,9"
+                    tick-marks="[10]"
+                    indicator-symbol="▲"
+                ></clock-timer>
+            </aside>
 
             </div>
 
