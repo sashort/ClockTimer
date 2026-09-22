@@ -37,8 +37,10 @@
         approvalSurplusColor: "#9c6b30",
         approvalDeficitColor: "#7a1f3d",
         toleranceColor: "#2e7d32",
+        overtimeColor: "#ff5c5c",
         latencyColor: "#e1251b",
         showTolerance: true,
+        showOvertime: true,
         showLatency: true,
         militaryTime: true,
         timeFormat: "HHmm",
@@ -81,12 +83,13 @@
         earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateControl: "showEarlyStart", stateText: {true: "Early Start uses this color.", false: "The adjacent Trip range extends through Early Start and uses the Trip color."}},
         lunchColor: {title: "Lunch Color", text: "Lunch intervals use this color and do not count as productive trip time."},
         breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
-        breakBufferColor: {title: "Break Buffer Color", text: "Sets the color for the allowed buffer around a break or lunch.", stateControl: "showBreakBuffer", stateText: {true: "The buffer is shown with this color.", false: "The adjacent interval extends across the buffer."}},
+        breakBufferColor: {title: "to/from Break Color", text: "Sets the color for the allowed time to or from Break or Lunch.", stateControl: "showBreakBuffer", stateText: {true: "to/from Break uses this color.", false: "The adjacent interval extends across that time."}},
         downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
         approvalSurplusColor: {title: "Approval Surplus Color", text: "Approval Surplus is extra approved Down time that remains excluded after Down ends."},
         approvalDeficitColor: {title: "Approval Deficit Color", text: "Approval Deficit is the unapproved portion of a Down interval and counts as productive elapsed time."},
-        toleranceColor: {title: "Tolerance Color", text: "Sets the color for the time allowed around a goal boundary.", stateControl: "showTolerance", stateText: {true: "Tolerance is always shown.", false: "The underlying Trip range extends through tolerance.", undefined: "Clock/Timer decides when the tolerance range is useful."}},
-        latencyColor: {title: "Latency Color", text: "Sets the color for late time as it consumes the following Trip range.", stateControl: "showLatency", stateText: {true: "Latency is shown with this color.", false: "Latency is still calculated while the underlying Trip range remains visible."}}
+        overtimeColor: {title: "Overtime Color", text: "Overtime is time beyond your standard trip end.", stateControl: "showOvertime", stateText: {true: "Overtime is shown with its own color.", false: "Overtime is still counted but is shown as Trip time."}},
+        toleranceColor: {title: "B-Game Color", text: "You aimed above 100%. B-Game shows the time after you miss that goal while you’re still above 100%.", stateControl: "showTolerance", stateText: {true: "B-Game is shown.", false: "That time is shown as Trip time.", undefined: "B-Game appears after you enter that portion of the trip."}},
+        latencyColor: {title: "Late Start Color", text: "Sets the color for time that begins when you are late.", stateControl: "showLatency", stateText: {true: "Late Start is shown with this color.", false: "Late Start is still calculated while the underlying Trip range remains visible."}}
     };
 
     const $ = selector => document.querySelector(selector);
@@ -3290,6 +3293,7 @@
         target.showTolerance = settings.showTolerance;
         target.toggleAttribute("render-early-start-as-trip", !Boolean(settings.showEarlyStart));
         target.toggleAttribute("hide-break-buffer", !Boolean(settings.showBreakBuffer));
+        target.toggleAttribute("hide-overtime", !Boolean(settings.showOvertime));
         target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
         target.toggleAttribute("hide-hour-hand", !Boolean(settings.showHourHand));
         target.toggleAttribute("hide-minute-hand", !Boolean(settings.showMinuteHand));
@@ -3305,6 +3309,7 @@
             "--clock-timer-approval-surplus-color": settings.approvalSurplusColor,
             "--clock-timer-approval-deficit-color": settings.approvalDeficitColor,
             "--clock-timer-tolerance-color": settings.toleranceColor,
+            "--clock-timer-overtime-color": settings.overtimeColor,
             "--clock-timer-latency-color": settings.latencyColor,
             "--clock-timer-hour-hand-length": settings.hourHandLength,
             "--clock-timer-hour-hand-width": settings.hourHandWidth,
@@ -3344,6 +3349,7 @@
             const approvalSurplusColor = settings.approvalSurplusColor || GRAPHICAL_DEFAULTS.approvalSurplusColor;
             const approvalDeficitColor = settings.approvalDeficitColor || GRAPHICAL_DEFAULTS.approvalDeficitColor;
             const toleranceColor = settings.toleranceColor || GRAPHICAL_DEFAULTS.toleranceColor;
+            const overtimeColor = settings.overtimeColor || GRAPHICAL_DEFAULTS.overtimeColor;
             const latencyColor = settings.latencyColor || GRAPHICAL_DEFAULTS.latencyColor;
 
             paletteRoot.style.setProperty("--timer-trip-color", tripColor);
@@ -3358,6 +3364,7 @@
             paletteRoot.style.setProperty("--timer-approval-surplus-color", approvalSurplusColor);
             paletteRoot.style.setProperty("--timer-approval-deficit-color", approvalDeficitColor);
             paletteRoot.style.setProperty("--timer-tolerance-color", toleranceColor);
+            paletteRoot.style.setProperty("--timer-overtime-color", overtimeColor);
             paletteRoot.style.setProperty("--timer-latency-color", latencyColor);
         }
     }
@@ -3421,11 +3428,13 @@
             approvalSurplusColor: text("approvalSurplusColor"),
             approvalDeficitColor: text("approvalDeficitColor"),
             toleranceColor: text("toleranceColor"),
+            overtimeColor: text("overtimeColor"),
             latencyColor: text("latencyColor"),
             showTolerance:
                 getToleranceCheckboxValue(
                     form.elements.showTolerance
                 ),
+            showOvertime: form.elements.showOvertime.checked,
             showLatency: form.elements.showLatency.checked,
             militaryTime: form.elements.militaryTime.checked,
             timeFormat: text("timeFormat"),
@@ -3499,7 +3508,7 @@
         ring.setAttribute("inset", "18px");
 
         const segments = [
-            ["trip", 10],
+            ["trip", 5],
             [settings.showEarlyStart ? "earlystart" : "trip", 10],
             ["break", 10],
             [settings.showBreakBuffer ? "buffer" : "break", 10],
@@ -3507,6 +3516,7 @@
             ["down", 10],
             ["approval-surplus", 5],
             ["approval-deficit", 5],
+            [settings.showOvertime ? "overtime" : "trip", 5],
             [settings.showTolerance === false ? "trip" : "tolerance", 5],
             [settings.showLatency ? "latency" : "trip", 10]
         ];
@@ -3637,7 +3647,10 @@
         const ids = {
             syncGoals: "settingsHelpSyncGoals",
             tolerance: "settingsHelpTolerance",
+            toleranceColor: "settingsHelpTolerance",
+            overtimeColor: "settingsHelpOvertime",
             latency: "settingsHelpLatency",
+            latencyColor: "settingsHelpLatency",
             timeFormat: "settingsHelpTimeFormat",
             dateFormat: "settingsHelpDateFormat",
             visibleHours: "settingsHelpVisibleHours",
@@ -3942,15 +3955,35 @@
             button
         );
 
-        title.textContent = definition?.title || template.dataset.helpTitle || "Help";
-        if (definition) {
-            const paragraph = document.createElement("p");
-            paragraph.textContent = definition.text;
-            body.replaceChildren(paragraph);
-            appendGraphicalHelpState(definition, body);
+        title.textContent =
+            template?.dataset.helpTitle ||
+            definition?.title ||
+            "Help";
+
+        if (template) {
+            body.replaceChildren(
+                template.content.cloneNode(true)
+            );
+            appendGraphicalHelpState(
+                definition,
+                body
+            );
         }
-        else {
-            body.replaceChildren(template.content.cloneNode(true));
+        else if (definition) {
+            const paragraph =
+                document.createElement("p");
+
+            paragraph.textContent =
+                definition.text;
+
+            body.replaceChildren(
+                paragraph
+            );
+
+            appendGraphicalHelpState(
+                definition,
+                body
+            );
         }
 
         const latencyColor =
@@ -3996,7 +4029,32 @@
         });
     }
 
+    function installGraphicalSettingsAccordion() {
+        const categories =
+            Array.from(
+                graphicalDialog.querySelectorAll(
+                    ".settings-category"
+                )
+            );
+
+        for (const category of categories) {
+            category.addEventListener(
+                "toggle",
+                () => {
+                    if (!category.open) return;
+
+                    for (const other of categories) {
+                        if (other !== category && other.open) {
+                            other.open = false;
+                        }
+                    }
+                }
+            );
+        }
+    }
+
     installGraphicalHelpButtons();
+    installGraphicalSettingsAccordion();
     renderClockPreviewRanges();
     setGraphicalHelpVisibility(false);
 

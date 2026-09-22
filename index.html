@@ -255,8 +255,9 @@
 
             <div class="settings-grid graphical-settings-grid">
                 <div class="settings-groups">
-                    <fieldset class="timer-settings-fieldset">
-                        <legend>Timer Settings</legend>
+                    <details class="settings-category timer-settings-fieldset" name="clock-timer-settings-category" open>
+                        <summary>Timer Settings</summary>
+                        <div class="settings-category-content">
                         <label>Timer Mode
                             <select name="timerMode">
                                 <option value="elapsed">Elapsed</option>
@@ -273,65 +274,94 @@
                         <hr class="timer-settings-divider">
 
                         <div class="timer-color-grid">
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="tripColor" aria-label="About Trip" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="tripColor" data-help-key="tripColor">Trip</label>
-                                <input id="tripColor" name="tripColor" type="color" value="#0053e2">
-                            </div>
-                            <div class="timer-color-row with-toggle has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="earlyStartColor" aria-label="About Early Start" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="earlyStartColor" data-help-key="earlyStartColor">Early Start</label>
-                                <input name="showEarlyStart" type="checkbox" checked aria-label="Show Early Start color">
-                                <input id="earlyStartColor" name="earlyStartColor" type="color" value="#4dbdf5" aria-label="Early Start color">
-                            </div>
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="lunchColor" aria-label="About Lunch" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="lunchColor" data-help-key="lunchColor">Lunch</label>
-                                <input id="lunchColor" name="lunchColor" type="color" value="#ffc220">
-                            </div>
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="breakColor" aria-label="About Break" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="breakColor" data-help-key="breakColor">Break</label>
-                                <input id="breakColor" name="breakColor" type="color" value="#001e60">
-                            </div>
-                            <div class="timer-color-row with-toggle has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="breakBufferColor" aria-label="About Break Buffer" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="breakBufferColor" data-help-key="breakBufferColor">Break Buffer</label>
-                                <input name="showBreakBuffer" type="checkbox" checked aria-label="Show Break Buffer">
-                                <input id="breakBufferColor" name="breakBufferColor" type="color" value="#6b7f99" aria-label="Break Buffer color">
-                            </div>
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="downColor" aria-label="About Down" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="downColor" data-help-key="downColor">Down</label>
-                                <input id="downColor" name="downColor" type="color" value="#5f6772">
-                            </div>
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="approvalSurplusColor" aria-label="About Approval Surplus" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="approvalSurplusColor" data-help-key="approvalSurplusColor">Approval Surplus</label>
-                                <input id="approvalSurplusColor" name="approvalSurplusColor" type="color" value="#9c6b30">
-                            </div>
-                            <div class="timer-color-row has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="approvalDeficitColor" aria-label="About Approval Deficit" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="approvalDeficitColor" data-help-key="approvalDeficitColor">Approval Deficit</label>
-                                <input id="approvalDeficitColor" name="approvalDeficitColor" type="color" value="#7a1f3d">
-                            </div>
-                            <div class="timer-color-row with-toggle has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="toleranceColor" aria-label="About Tolerance" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="toleranceColor" data-help-key="toleranceColor">Tolerance</label>
-                                <input name="showTolerance" type="checkbox" checked data-tolerance-state="true" aria-label="Tolerance display">
-                                <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32" aria-label="Tolerance color">
-                            </div>
-                            <div class="timer-color-row with-toggle has-setting-help">
-                                <button class="settings-help-button" type="button" data-help-key="latencyColor" aria-label="About Latency" aria-hidden="true" tabindex="-1">?</button>
-                                <label class="settings-help-label" for="latencyColor" data-help-key="latencyColor">Latency</label>
-                                <input name="showLatency" type="checkbox" checked aria-label="Show Latency">
-                                <input id="latencyColor" name="latencyColor" type="color" value="#e1251b" aria-label="Latency color">
-                            </div>
+                            <section class="timer-color-category" aria-labelledby="normalRangeColors">
+                                <h3 id="normalRangeColors">Normal</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="tripColor" aria-label="About Trip" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="tripColor" data-help-key="tripColor">Trip</label>
+                                        <input id="tripColor" name="tripColor" type="color" value="#0053e2">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakColor" aria-label="About Break" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="breakColor" data-help-key="breakColor">Break</label>
+                                        <input id="breakColor" name="breakColor" type="color" value="#001e60">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="lunchColor" aria-label="About Lunch" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="lunchColor" data-help-key="lunchColor">Lunch</label>
+                                        <input id="lunchColor" name="lunchColor" type="color" value="#ffc220">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakBufferColor" aria-label="About to/from Break" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="breakBufferColor" data-help-key="breakBufferColor">to/from Break</label>
+                                        <input name="showBreakBuffer" type="checkbox" checked aria-label="Show to/from Break">
+                                        <input id="breakBufferColor" name="breakBufferColor" type="color" value="#6b7f99" aria-label="to/from Break color">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="performanceRangeColors">
+                                <h3 id="performanceRangeColors">Performance</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="overtimeColor" aria-label="About Overtime" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="overtimeColor" data-help-key="overtimeColor">Overtime</label>
+                                        <input name="showOvertime" type="checkbox" checked aria-label="Show Overtime">
+                                        <input id="overtimeColor" name="overtimeColor" type="color" value="#ff5c5c" aria-label="Overtime color">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="toleranceColor" aria-label="About B-Game" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="toleranceColor" data-help-key="toleranceColor">B-Game</label>
+                                        <input name="showTolerance" type="checkbox" checked data-tolerance-state="true" aria-label="B-Game display">
+                                        <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32" aria-label="B-Game color">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="timeBasedRangeColors">
+                                <h3 id="timeBasedRangeColors">Time Based</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="earlyStartColor" aria-label="About Early Start" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="earlyStartColor" data-help-key="earlyStartColor">Early Start</label>
+                                        <input name="showEarlyStart" type="checkbox" checked aria-label="Show Early Start color">
+                                        <input id="earlyStartColor" name="earlyStartColor" type="color" value="#4dbdf5" aria-label="Early Start color">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="latencyColor" aria-label="About Late Start" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="latencyColor" data-help-key="latencyColor">Late Start</label>
+                                        <input name="showLatency" type="checkbox" checked aria-label="Show Late Start">
+                                        <input id="latencyColor" name="latencyColor" type="color" value="#e1251b" aria-label="Late Start color">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="downTimeRangeColors">
+                                <h3 id="downTimeRangeColors">Down Time</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="downColor" aria-label="About Down" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="downColor" data-help-key="downColor">Down</label>
+                                        <input id="downColor" name="downColor" type="color" value="#5f6772">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalSurplusColor" aria-label="About Approval Surplus" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="approvalSurplusColor" data-help-key="approvalSurplusColor">Approval Surplus</label>
+                                        <input id="approvalSurplusColor" name="approvalSurplusColor" type="color" value="#9c6b30">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalDeficitColor" aria-label="About Approval Deficit" aria-hidden="true" tabindex="-1">?</button>
+                                        <label class="settings-help-label" for="approvalDeficitColor" data-help-key="approvalDeficitColor">Approval Deficit</label>
+                                        <input id="approvalDeficitColor" name="approvalDeficitColor" type="color" value="#7a1f3d">
+                                    </div>
+                                </div>
+                            </section>
                         </div>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
-                    <fieldset>
-                        <legend>Time Display</legend>
+                    <details class="settings-category" name="clock-timer-settings-category">
+                        <summary>Time Display</summary>
+                        <div class="settings-category-content">
                         <label class="toggle-row">Military Time<input name="militaryTime" type="checkbox" checked></label>
                         <div class="settings-help-row">
                             <label class="settings-help-label" for="timeFormat" data-help-key="timeFormat">Time Format</label>
@@ -354,10 +384,13 @@
                             <input id="tickMarks" name="tickMarks" value="[10]">
                         </div>
                         <label>Indicator Symbol<input name="indicatorSymbol" value="▲"></label>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
-                    <fieldset>
-                        <legend>Hand Styling</legend>
+                    <details class="settings-category" name="clock-timer-settings-category">
+                        <summary>Hand Styling</summary>
+                        <div class="settings-category-content">
                         <div class="style-row three-control-row">
                             <span class="hand-caption"><span>Hour Hand</span><input name="showHourHand" type="checkbox" checked aria-label="Show Hour Hand"></span>
                             <label>Length<input name="hourHandLength" value="28%"></label>
@@ -376,28 +409,39 @@
                             <label>Width<input name="secondHandWidth" value="2px"></label>
                             <label>Color<input name="secondHandColor" type="color" value="#ffc220"></label>
                         </div>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
-                    <fieldset>
-                        <legend>Hour Number Styling</legend>
+                    <details class="settings-category" name="clock-timer-settings-category">
+                        <summary>Hour Number Styling</summary>
+                        <div class="settings-category-content">
                         <label>Font<input name="hourFont" value="Helvetica, Arial, sans-serif"></label>
                         <label>Font Size<input name="hourFontSize" value="24px"></label>
                         <label>Color<input name="hourColor" type="color" value="#ffffff"></label>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
-                    <fieldset>
-                        <legend>Current Time Styling</legend>
+                    <details class="settings-category" name="clock-timer-settings-category">
+                        <summary>Current Time Styling</summary>
+                        <div class="settings-category-content">
                         <label>Font<input name="timeFont" value="Helvetica, Arial, sans-serif"></label>
                         <label>Font Size<input name="timeFontSize" value="48px"></label>
                         <label>Color<input name="timeColor" type="color" value="#ffffff"></label>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
-                    <fieldset>
-                        <legend>Ring Styling</legend>
+                    <details class="settings-category" name="clock-timer-settings-category">
+                        <summary>Ring Styling</summary>
+                        <div class="settings-category-content">
                         <label>Active Ring Width<input name="activeRingWidth" value="12px"></label>
                         <label>Inactive Ring Width<input name="inactiveRingWidth" value="6px"></label>
                         <label>Border Width<input name="borderWidth" value="5px"></label>
-                    </fieldset>
+                    
+                        </div>
+                    </details>
 
                 </div>
 
@@ -428,25 +472,23 @@
         </table>
         <p>Sync Goals adjusts the active trip’s goal to bring the total to <span class="settings-help-goal-value">100%</span>.</p>
     </template>
-    <template id="settingsHelpTolerance" data-help-title="Tolerance">
-        <p><strong>Tolerance</strong> is the portion of <strong>your standard trip</strong> that remains after your goal-adjusted trip end.</p>
-        <p>For example, when your goal is above 100%, the timer calculates an earlier target end for your trip. The time between that calculated end and your original standard end is Tolerance.</p>
-        <div class="settings-help-state-grid">
-            <strong>Checked</strong><span>Always show your full tolerance period.</span>
-            <strong>Unchecked</strong><span>Never show tolerance. If tolerance would normally exist, your trip simply extends through that time to your standard end.</span>
-            <strong>Indeterminate</strong><span>Show tolerance only after you’ve entered it. As you move beyond your calculated trip end, the elapsed portion is revealed as tolerance.</span>
-        </div>
-        <p>Tolerance only applies when your goal produces a calculated end earlier than your standard end.</p>
+    <template id="settingsHelpTolerance" data-help-title="B-Game">
+        <p>You aimed above 100%. B-Game shows the time after you miss that goal while you’re still above 100%.</p>
     </template>
 
-    <template id="settingsHelpLatency" data-help-title="Latency">
-        <p class="settings-help-latency-lead"><strong>Latency</strong> is counted time that begins the moment you are <strong class="settings-help-late">LATE!</strong></p>
+    <template id="settingsHelpOvertime" data-help-title="Overtime">
+        <p><strong>Overtime</strong> is time beyond your standard trip end.</p>
+        <p>When Overtime is off, that time is still counted but is shown as Trip time.</p>
+    </template>
+
+    <template id="settingsHelpLatency" data-help-title="Late Start">
+        <p class="settings-help-latency-lead"><strong>Late Start</strong> is counted time that begins the moment you are <strong class="settings-help-late">LATE!</strong></p>
         <div class="settings-help-example-grid">
             <span aria-hidden="true">•</span><div><strong>Trip Start</strong> — You start your trip after your scheduled start.</div>
             <span aria-hidden="true">•</span><div><strong>Break</strong> — You return from Break after your break’s expected end.</div>
             <span aria-hidden="true">•</span><div><strong>Lunch</strong> — You return from Lunch after your lunch’s expected end.</div>
         </div>
-        <p>Latency continues until you resume your trip or start down time, and it counts as elapsed trip time.</p>
+        <p>Late Start continues until you resume your trip or start down time, and it counts as elapsed trip time.</p>
     </template>
 
     <template id="settingsHelpTimeFormat" data-help-title="Time Format">

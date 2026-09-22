@@ -44,6 +44,13 @@ overtime.configure({external_counted_time:1000});assert.equal(overtime.getSummar
 overtime.configure({external_counted_time:0});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00:01');
 overtime.configure({rendered_time_type:'calculated_start_time',external_counted_time:2000});assert.equal(overtime.getSummarySnapshot().total.renderedTime,'0:00:02');
 overtime.remove();
+const overtimeRangeTimer=window.document.createElement('clock-timer');window.document.body.append(overtimeRangeTimer);
+await overtimeRangeTimer.start({standardTime:'0:00:01'});
+window.__testTime+=2000;await new Promise(resolve=>setTimeout(resolve,1100));
+const overtimeRange=overtimeRangeTimer.querySelector('time-range[type="overtime"]');
+assert(overtimeRange,'time beyond standard end renders as an overtime time-range');
+assert(Number(overtimeRange.clockTimerEnd)>Number(overtimeRange.clockTimerStart));
+overtimeRangeTimer.remove();
 const tolerance=window.document.createElement('clock-timer');window.document.body.append(tolerance);
 tolerance.configure({trip_goal:'200%'});
 await tolerance.start({standardTime:'0:01:40'});

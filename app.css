@@ -903,7 +903,67 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     align-items: start;
 }
 
-.settings-groups { display: grid; gap: 12px; }
+.settings-groups { display: grid; gap: 8px; }
+
+.graphical-dialog .settings-category {
+    margin: 0;
+    overflow: clip;
+    border: 1px solid rgb(255 255 255 / 54%);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--wm-blue-dark) 88%, var(--wm-blue) 12%);
+}
+
+.graphical-dialog .settings-category > summary {
+    position: relative;
+    min-height: 48px;
+    padding: 11px 42px 11px 14px;
+    box-sizing: border-box;
+    cursor: pointer;
+    list-style: none;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    user-select: none;
+}
+
+.graphical-dialog .settings-category > summary::-webkit-details-marker { display: none; }
+
+.graphical-dialog .settings-category > summary::after {
+    content: "›";
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    transform-origin: center;
+    font-size: 28px;
+    line-height: 1;
+    transition: transform 160ms ease;
+}
+
+.graphical-dialog .settings-category[open] > summary::after {
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.graphical-dialog .settings-category-content {
+    padding: 12px 14px 14px;
+    display: grid;
+    gap: 12px;
+    border-top: 1px solid rgb(255 255 255 / 22%);
+}
+
+.timer-color-grid { display: grid; gap: 12px; }
+.timer-color-category { display: grid; gap: 7px; }
+.timer-color-category > h3 { margin: 2px 0 0; font-size: 17px; line-height: 1.2; }
+.timer-color-category-rows {
+    overflow: hidden;
+    display: grid;
+    border: 1px solid rgb(169 221 247 / 28%);
+    border-radius: 10px;
+}
+.timer-color-category-rows .timer-color-row { padding: 7px 8px; }
+.timer-color-category-rows .timer-color-row + .timer-color-row {
+    border-top: 1px solid rgb(169 221 247 / 18%);
+}
 
 .style-row {
     display: grid;
@@ -2882,6 +2942,14 @@ clock-timer time-range[type="tolerance"] {
     background: var(--clock-timer-tolerance-color, #2e7d32);
 }
 
+clock-timer time-range[type="overtime"] {
+    background: var(--clock-timer-overtime-color, #ff5c5c);
+}
+
+clock-timer[hide-overtime] time-range[type="overtime"] {
+    background: var(--clock-timer-trip-color, #0053e2);
+}
+
 clock-timer time-range[type="latency"] {
     background: var(--clock-timer-latency-color, #e1251b);
 }
@@ -2976,7 +3044,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .graphical-dialog .clock-preview {
     position: sticky;
     top: 137px;
-    z-index: 3;
+    z-index: 6;
     min-height: 270px;
     margin: 0 !important;
     padding: 10px 16px 14px;
