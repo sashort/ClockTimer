@@ -4652,6 +4652,33 @@
             resetGraphicalSettingsAccordion
         );
 
+        graphicalDialog.addEventListener(
+            "opened",
+            () => {
+                requestAnimationFrame(
+                    () => {
+                        applyGraphicalSettings(
+                            settingsFromForm(
+                                $("#graphicalSettingsForm")
+                            ),
+                            clockPreview
+                        );
+
+                        requestAnimationFrame(
+                            () => {
+                                clockPreview
+                                    ?.refreshLayout?.();
+
+                                updateGraphicalPreviewOverlap({
+                                    immediate: true
+                                });
+                            }
+                        );
+                    }
+                );
+            }
+        );
+
         resetGraphicalSettingsAccordion();
     }
 
