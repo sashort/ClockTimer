@@ -1558,6 +1558,10 @@
         }
 
         connectedCallback() {
+            this.#upgradeProperty(
+                "keepAspectRatio"
+            );
+
             if (!this.#completedTripsRestored) {
                 this.#completedTripsRestored = true;
                 const key = this.getAttribute("offline-trip-storage-key");
@@ -6081,6 +6085,25 @@
             return this.networkStatus === "online";
         }
 
+        #upgradeProperty(name) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    this,
+                    name
+                )
+            ) {
+                return;
+            }
+
+            const value =
+                this[name];
+
+            delete this[name];
+
+            this[name] =
+                value;
+        }
+
         get keepAspectRatio() {
             return this.#keepAspectRatio;
         }
@@ -6091,6 +6114,11 @@
                     value
                 );
 
+            this.toggleAttribute(
+                "data-clock-timer-free-aspect-ratio",
+                !next
+            );
+
             if (
                 next ===
                     this.#keepAspectRatio
@@ -6100,11 +6128,6 @@
 
             this.#keepAspectRatio =
                 next;
-
-            this.toggleAttribute(
-                "data-clock-timer-free-aspect-ratio",
-                !next
-            );
 
             this.#syncHandGeometry();
             this.#syncTickMarkGeometry();
