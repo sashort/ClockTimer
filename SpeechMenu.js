@@ -1031,11 +1031,6 @@ class SpeechMenu {
 
                     if (!transcript) return;
 
-                    provider.setUtterancePrefix?.(
-                        utterance.id,
-                        transcript
-                    );
-
                     void SpeechMenu.#handleLiveTranscript(
                         utterance,
                         transcript,
