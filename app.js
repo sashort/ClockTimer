@@ -216,6 +216,95 @@
     const mainMenu = $("#mainMenu");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
+
+    const setSpeechButtonState = (enabled, muted = false) => {
+        speechRecognitionButton?.setAttribute(
+            "aria-pressed",
+            String(enabled)
+        );
+        speechRecognitionButton?.classList.toggle(
+            "is-sleeping",
+            enabled && muted
+        );
+        if (speechRecognitionButton) {
+            speechRecognitionButton.title =
+                enabled
+                    ? "Disable Speech Recognition"
+                    : "Enable Speech Recognition";
+            speechRecognitionButton.setAttribute(
+                "aria-label",
+                speechRecognitionButton.title
+            );
+        }
+    };
+
+    const setSpeechLayoutState = enabled => {
+        app.dataset.speechActive =
+            String(Boolean(enabled));
+    };
+
+    let speechActivationPending = false;
+
+    setSpeechButtonState(false);
+    setSpeechLayoutState(false);
+
+    speechRecognitionButton?.addEventListener(
+        "click",
+        async () => {
+            if (speechActivationPending) return;
+
+            const enabled =
+                speechRecognitionButton.getAttribute(
+                    "aria-pressed"
+                ) === "true";
+
+            if (enabled) {
+                setSpeechButtonState(false, false);
+                setSpeechLayoutState(false);
+
+                try {
+                    await ensureSpeechRuntime();
+                    await globalThis.SpeechMenu?.stop?.();
+                }
+                catch (error) {
+                    console.error(error);
+                }
+
+                return;
+            }
+
+            speechActivationPending = true;
+            setSpeechButtonState(true, false);
+            setSpeechLayoutState(true);
+            mainMenu?.hidePopover?.();
+
+            try {
+                await ensureSpeechRuntime();
+
+                const englishLanguage =
+                    globalThis.WMOFLanguages?.["en-US"];
+
+                const started =
+                    await globalThis.SpeechMenu?.start?.(
+                        englishLanguage?.speechRecognitionLanguage ||
+                            "en-US"
+                    );
+
+                if (!started) {
+                    setSpeechButtonState(false, false);
+                    setSpeechLayoutState(false);
+                }
+            }
+            catch (error) {
+                console.error(error);
+                setSpeechButtonState(false, false);
+                setSpeechLayoutState(false);
+            }
+            finally {
+                speechActivationPending = false;
+            }
+        }
+    );
     const scopeToggle = $("#scopeToggle");
     const scopeConnectionButton = $("#scopeConnectionButton");
     const tripListMenuButton = $("#tripListMenuButton");
@@ -8946,21 +9035,6 @@
             SpeechMenu.refresh();
         }
 
-        const setSpeechButtonState = (enabled, muted = false) => {
-            speechRecognitionButton?.setAttribute("aria-pressed", String(enabled));
-            speechRecognitionButton?.classList.toggle("is-sleeping", enabled && muted);
-            if (speechRecognitionButton) {
-                speechRecognitionButton.title = enabled ? "Disable Speech Recognition" : "Enable Speech Recognition";
-                speechRecognitionButton.setAttribute("aria-label", speechRecognitionButton.title);
-            }
-        };
-
-        setSpeechButtonState(false);
-
-        const setSpeechLayoutState = enabled => {
-            app.dataset.speechActive = String(Boolean(enabled));
-        };
-
         speechMicBar?.addEventListener("started", () => {
             setSpeechButtonState(true, false);
             setSpeechLayoutState(true);
@@ -8986,42 +9060,6 @@
             setSpeechButtonState(true, false);
         });
 
-        let speechStartPending = false;
-
-        speechRecognitionButton?.addEventListener("click", async () => {
-            if (speechStartPending) return;
-
-            const enabled =
-                speechRecognitionButton.getAttribute("aria-pressed") === "true";
-
-            if (enabled) {
-                setSpeechButtonState(false, false);
-                setSpeechLayoutState(false);
-                await SpeechMenu.stop();
-                return;
-            }
-
-            speechStartPending = true;
-            setSpeechButtonState(true, false);
-            setSpeechLayoutState(true);
-            mainMenu?.hidePopover?.();
-
-            try {
-                const started =
-                    await SpeechMenu.start(
-                        englishLanguage?.speechRecognitionLanguage || "en-US"
-                    );
-
-                if (!started) {
-                    setSpeechButtonState(false, false);
-                    setSpeechLayoutState(false);
-                }
-            }
-            finally {
-                speechStartPending = false;
-            }
-        });
-        
         const speechBreakEndDialog = $("#speechBreakEndDialog");
         $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
         $("#speechBreakEndConfirm")?.addEventListener("click", () => {
