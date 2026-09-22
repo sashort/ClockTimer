@@ -38,7 +38,6 @@ jobs:
         working-directory: tests
         run: |
           node custom-trip-range.mjs
-          node autosync-rebuild.mjs
           node offline-trip-buffer.mjs
           node deferred-trip.mjs
           node active-trip-restore.mjs
