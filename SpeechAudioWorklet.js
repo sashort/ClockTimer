@@ -3,133 +3,208 @@
 class SpeechAudioWorkletProcessor extends AudioWorkletProcessor {
     #targetRate = 16000;
     #packetSamples = 320;
-    #source = [];
+    #source = new Float32Array(0);
     #sourcePosition = 0;
     #packet = new Int16Array(320);
     #packetOffset = 0;
+    #packetSquareTotal = 0;
 
     process(inputs) {
-        const input = inputs?.[0];
-        if (!input?.length || !input[0]?.length) {
+        const input =
+            inputs?.[0];
+
+        if (
+            !input?.length ||
+            !input[0]?.length
+        ) {
             return true;
         }
 
-        const length = input[0].length;
-        const mono = new Float32Array(length);
-        let squareTotal = 0;
+        const length =
+            input[0].length;
 
-        for (let index = 0; index < length; index++) {
+        const mono =
+            new Float32Array(length);
+
+        for (
+            let index = 0;
+            index < length;
+            index++
+        ) {
             let value = 0;
-            for (let channel = 0; channel < input.length; channel++) {
-                value += input[channel]?.[index] || 0;
+
+            for (
+                let channel = 0;
+                channel < input.length;
+                channel++
+            ) {
+                value +=
+                    input[channel]?.[index] ||
+                    0;
             }
-            value /= input.length;
-            mono[index] = value;
-            squareTotal += value * value;
+
+            mono[index] =
+                value /
+                input.length;
         }
 
-        const level =
-            Math.sqrt(squareTotal / Math.max(1, length));
-
-        this.#source.push(mono);
-        this.#drain(level);
+        this.#appendSource(mono);
+        this.#drain();
 
         return true;
     }
 
-    #drain(level) {
-        const ratio = sampleRate / this.#targetRate;
-        const source = this.#flattenSource();
+    #appendSource(samples) {
+        if (!this.#source.length) {
+            this.#source = samples;
+            return;
+        }
+
+        const joined =
+            new Float32Array(
+                this.#source.length +
+                samples.length
+            );
+
+        joined.set(
+            this.#source,
+            0
+        );
+
+        joined.set(
+            samples,
+            this.#source.length
+        );
+
+        this.#source = joined;
+    }
+
+    #drain() {
+        const ratio =
+            sampleRate /
+            this.#targetRate;
 
         while (
-            this.#sourcePosition + 1 < source.length
+            this.#sourcePosition + 1 <
+            this.#source.length
         ) {
             const leftIndex =
-                Math.floor(this.#sourcePosition);
+                Math.floor(
+                    this.#sourcePosition
+                );
+
             const fraction =
-                this.#sourcePosition - leftIndex;
-            const left = source[leftIndex];
+                this.#sourcePosition -
+                leftIndex;
+
+            const left =
+                this.#source[
+                    leftIndex
+                ];
+
             const right =
-                source[leftIndex + 1] ?? left;
+                this.#source[
+                    leftIndex + 1
+                ];
+
             const sample =
-                left + (right - left) * fraction;
+                left +
+                (
+                    right -
+                    left
+                ) *
+                fraction;
 
             const clamped =
-                Math.max(-1, Math.min(1, sample));
+                Math.max(
+                    -1,
+                    Math.min(
+                        1,
+                        sample
+                    )
+                );
 
-            this.#packet[this.#packetOffset++] =
+            this.#packetSquareTotal +=
+                clamped *
+                clamped;
+
+            this.#packet[
+                this.#packetOffset++
+            ] =
                 clamped < 0
-                    ? Math.round(clamped * 0x8000)
-                    : Math.round(clamped * 0x7fff);
+                    ? Math.round(
+                        clamped *
+                        0x8000
+                    )
+                    : Math.round(
+                        clamped *
+                        0x7fff
+                    );
 
-            this.#sourcePosition += ratio;
+            this.#sourcePosition +=
+                ratio;
 
             if (
                 this.#packetOffset ===
                 this.#packetSamples
             ) {
-                const packet = this.#packet;
+                const packet =
+                    this.#packet;
+
+                const level =
+                    Math.sqrt(
+                        this.#packetSquareTotal /
+                        this.#packetSamples
+                    );
+
                 this.#packet =
-                    new Int16Array(this.#packetSamples);
-                this.#packetOffset = 0;
+                    new Int16Array(
+                        this.#packetSamples
+                    );
+
+                this.#packetOffset =
+                    0;
+
+                this.#packetSquareTotal =
+                    0;
 
                 this.port.postMessage(
                     {
                         type: "audio",
                         level,
-                        sampleRate: this.#targetRate,
-                        pcm: packet.buffer
+                        sampleRate:
+                            this.#targetRate,
+                        pcm:
+                            packet.buffer
                     },
                     [packet.buffer]
                 );
             }
         }
 
-        const consumed =
-            Math.floor(this.#sourcePosition);
-
-        if (consumed > 0) {
-            this.#sourcePosition -= consumed;
-            this.#consumeSource(consumed);
-        }
-    }
-
-    #flattenSource() {
-        let total = 0;
-        for (const block of this.#source) {
-            total += block.length;
-        }
-
-        const result = new Float32Array(total);
-        let offset = 0;
-
-        for (const block of this.#source) {
-            result.set(block, offset);
-            offset += block.length;
-        }
-
-        return result;
-    }
-
-    #consumeSource(count) {
-        let remaining = count;
-
-        while (
-            remaining > 0 &&
-            this.#source.length
+        if (
+            this.#source.length <= 1
         ) {
-            const block = this.#source[0];
-
-            if (remaining >= block.length) {
-                remaining -= block.length;
-                this.#source.shift();
-                continue;
-            }
-
-            this.#source[0] =
-                block.slice(remaining);
-            remaining = 0;
+            return;
         }
+
+        const consumed =
+            Math.min(
+                Math.floor(
+                    this.#sourcePosition
+                ),
+                this.#source.length - 1
+            );
+
+        if (consumed <= 0) return;
+
+        this.#source =
+            this.#source.slice(
+                consumed
+            );
+
+        this.#sourcePosition -=
+            consumed;
     }
 }
 
