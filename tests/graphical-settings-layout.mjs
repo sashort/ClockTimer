@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app.css', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const clockTimerSource = fs.readFileSync(new URL('../ClockTimer.js', import.meta.url), 'utf8');
 
 const dialogStart = html.indexOf('<dialog id="graphicalSettingsDialog"');
 const dialogEnd = html.indexOf('</dialog>', dialogStart);
@@ -57,4 +58,8 @@ assert.match(js, /groups\?\.addEventListener\(\s*"scroll",\s*scheduleGraphicalPr
 assert.match(js, /new ResizeObserver\(\s*scheduleGraphicalPreviewOverlap\s*\)/s);
 assert.match(js, /opened &&\s*dialog === graphicalDialog[\s\S]*?updateGraphicalPreviewOverlap\(\{\s*immediate:\s*true\s*\}\)/s);
 
-console.log('PASS Clock/Timer settings start collapsed, animate details, and render only a circular fading clock at the bottom');
+assert.match(clockTimerSource, /#getEffectiveRenderDiameter\(\)\s*\{[\s\S]*?Math\.min\(\s*rect\.width,\s*rect\.height\s*\)/s);
+assert.match(clockTimerSource, /#syncHandGeometry\(\)\s*\{[\s\S]*?const handDiameter =[\s\S]*?diameter[\s\S]*?inset[\s\S]*?this\.#handLayer\.style\.width =\s*\`\$\{handDiameter\}px\`;[\s\S]*?this\.#handLayer\.style\.height =\s*\`\$\{handDiameter\}px\`;[\s\S]*?translate\(-50%, -50%\)/s);
+assert.match(clockTimerSource, /#updateResponsiveMetrics\(\)\s*\{[\s\S]*?this\.#getEffectiveRenderDiameter\(\)/s);
+
+console.log('PASS Clock/Timer settings start collapsed, animate details, render only a circular fading clock, and keep hand geometry square');
