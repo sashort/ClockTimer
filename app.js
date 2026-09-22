@@ -236,6 +236,8 @@
     const tripFieldAttentionAnimations = new WeakMap();
     const dialogCloseTimers = new WeakMap();
     const settingsHelpRevealTimers = new WeakMap();
+    const graphicalDetailsAnimations = new WeakMap();
+    const GRAPHICAL_DETAILS_DURATION = 180;
     const SETTINGS_HELP_FADE_DURATION = 750;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
@@ -252,6 +254,8 @@
     ]);
     let activeSettingsHelpButton;
     let graphicalHelpVisible = false;
+    let graphicalPreviewAnimationFrame;
+    let graphicalPreviewResizeObserver;
     let settingsHelpAnimation;
     let tripListButtonAnimation;
     let tripListBodyAnimationFrame;
@@ -4021,7 +4025,17 @@
         });
     }
 
-    function installGraphicalSettingsAccordion() {
+    function getGraphicalSettingsLayout() {
+        const groups =
+            graphicalDialog.querySelector(
+                ".graphical-settings-grid > .settings-groups"
+            );
+
+        const preview =
+            graphicalDialog.querySelector(
+                ".graphical-settings-grid > .clock-preview"
+            );
+
         const categories =
             Array.from(
                 graphicalDialog.querySelectorAll(
@@ -4029,20 +4043,612 @@
                 )
             );
 
-        for (const category of categories) {
-            category.addEventListener(
-                "toggle",
-                () => {
-                    if (!category.open) return;
+        return {
+            groups,
+            preview,
+            categories
+        };
+    }
 
-                    for (const other of categories) {
-                        if (other !== category && other.open) {
-                            other.open = false;
-                        }
+    function graphicalRectsOverlap(first, second) {
+        return (
+            first.right > second.left &&
+            first.left < second.right &&
+            first.bottom > second.top &&
+            first.top < second.bottom
+        );
+    }
+
+    function updateGraphicalPreviewOverlap({
+        immediate = false
+    } = {}) {
+        const {
+            groups,
+            preview,
+            categories
+        } = getGraphicalSettingsLayout();
+
+        if (!groups || !preview) return;
+
+        const applyOverlap = () => {
+            if (!graphicalDialog.open) {
+                preview.classList.remove(
+                    "has-settings-overlap"
+                );
+                return;
+            }
+
+            const previewRect =
+                preview.getBoundingClientRect();
+
+            const groupsRect =
+                groups.getBoundingClientRect();
+
+            const visiblePreviewRect = {
+                top: Math.max(
+                    previewRect.top,
+                    groupsRect.top
+                ),
+                right: Math.min(
+                    previewRect.right,
+                    groupsRect.right
+                ),
+                bottom: Math.min(
+                    previewRect.bottom,
+                    groupsRect.bottom
+                ),
+                left: Math.max(
+                    previewRect.left,
+                    groupsRect.left
+                )
+            };
+
+            const hasVisiblePreviewArea =
+                visiblePreviewRect.right >
+                    visiblePreviewRect.left &&
+                visiblePreviewRect.bottom >
+                    visiblePreviewRect.top;
+
+            const overlaps =
+                hasVisiblePreviewArea &&
+                categories.some(
+                    category => {
+                        const rect =
+                            category.getBoundingClientRect();
+
+                        return (
+                            rect.width > 0 &&
+                            rect.height > 0 &&
+                            graphicalRectsOverlap(
+                                rect,
+                                visiblePreviewRect
+                            )
+                        );
                     }
+                );
+
+            preview.classList.toggle(
+                "has-settings-overlap",
+                overlaps
+            );
+        };
+
+        if (!immediate) {
+            applyOverlap();
+            return;
+        }
+
+        const previousTransition =
+            preview.style.transition;
+
+        preview.style.transition =
+            "none";
+
+        applyOverlap();
+
+        void preview.offsetWidth;
+
+        if (previousTransition) {
+            preview.style.transition =
+                previousTransition;
+        }
+        else {
+            preview.style.removeProperty(
+                "transition"
+            );
+        }
+    }
+
+    function scheduleGraphicalPreviewOverlap() {
+        if (graphicalPreviewAnimationFrame) return;
+
+        graphicalPreviewAnimationFrame =
+            requestAnimationFrame(
+                () => {
+                    graphicalPreviewAnimationFrame =
+                        undefined;
+
+                    updateGraphicalPreviewOverlap();
+                }
+            );
+    }
+
+    function cancelGraphicalDetailsAnimation(category) {
+        const state =
+            graphicalDetailsAnimations.get(
+                category
+            );
+
+        if (!state) return;
+
+        state.heightAnimation?.cancel();
+        state.contentAnimation?.cancel();
+
+        graphicalDetailsAnimations.delete(
+            category
+        );
+    }
+
+    function finishGraphicalCategoryAnimation(
+        category,
+        shouldOpen,
+        token
+    ) {
+        const state =
+            graphicalDetailsAnimations.get(
+                category
+            );
+
+        if (!state || state.token !== token) {
+            return;
+        }
+
+        state.heightAnimation?.cancel();
+        state.contentAnimation?.cancel();
+
+        if (!shouldOpen) {
+            category.open = false;
+        }
+
+        category.style.removeProperty(
+            "height"
+        );
+
+        category.classList.remove(
+            "is-opening",
+            "is-closing"
+        );
+
+        graphicalDetailsAnimations.delete(
+            category
+        );
+
+        scheduleGraphicalPreviewOverlap();
+    }
+
+    function followGraphicalDetailsAnimation(
+        animation,
+        token,
+        category
+    ) {
+        const tick = () => {
+            const state =
+                graphicalDetailsAnimations.get(
+                    category
+                );
+
+            if (
+                !state ||
+                state.token !== token ||
+                (
+                    animation.playState !== "running" &&
+                    animation.playState !== "pending"
+                )
+            ) {
+                updateGraphicalPreviewOverlap();
+                return;
+            }
+
+            updateGraphicalPreviewOverlap();
+
+            requestAnimationFrame(
+                tick
+            );
+        };
+
+        requestAnimationFrame(
+            tick
+        );
+    }
+
+    function animateGraphicalCategory(
+        category,
+        shouldOpen
+    ) {
+        const summary =
+            category.querySelector(
+                ":scope > summary"
+            );
+
+        const content =
+            category.querySelector(
+                ":scope > .settings-category-content"
+            );
+
+        if (!summary || !content) return;
+
+        const existing =
+            graphicalDetailsAnimations.get(
+                category
+            );
+
+        const currentlyTargetedOpen =
+            existing?.shouldOpen ??
+            category.open;
+
+        if (
+            currentlyTargetedOpen === shouldOpen &&
+            existing
+        ) {
+            return;
+        }
+
+        const startHeight =
+            category.getBoundingClientRect()
+                .height;
+
+        const wasOpen =
+            category.open;
+
+        cancelGraphicalDetailsAnimation(
+            category
+        );
+
+        category.style.removeProperty(
+            "height"
+        );
+
+        category.classList.remove(
+            "is-opening",
+            "is-closing"
+        );
+
+        if (shouldOpen) {
+            category.open = true;
+            category.classList.add(
+                "is-opening"
+            );
+        }
+        else {
+            category.classList.add(
+                "is-closing"
+            );
+        }
+
+        const categoryStyle =
+            getComputedStyle(
+                category
+            );
+
+        const borderHeight =
+            (
+                Number.parseFloat(
+                    categoryStyle.borderTopWidth
+                ) || 0
+            ) +
+            (
+                Number.parseFloat(
+                    categoryStyle.borderBottomWidth
+                ) || 0
+            );
+
+        const endHeight =
+            shouldOpen
+                ? category.getBoundingClientRect()
+                    .height
+                : summary.getBoundingClientRect()
+                    .height + borderHeight;
+
+        const reducedMotion =
+            typeof matchMedia === "function" &&
+            matchMedia(
+                "(prefers-reduced-motion: reduce)"
+            ).matches;
+
+        const duration =
+            reducedMotion
+                ? 0
+                : GRAPHICAL_DETAILS_DURATION;
+
+        if (
+            duration === 0 ||
+            typeof category.animate !== "function"
+        ) {
+            category.open =
+                shouldOpen;
+
+            category.style.removeProperty(
+                "height"
+            );
+
+            category.classList.remove(
+                "is-opening",
+                "is-closing"
+            );
+
+            updateGraphicalPreviewOverlap({
+                immediate: true
+            });
+
+            return;
+        }
+
+        category.style.height =
+            `${startHeight}px`;
+
+        const computedOpacity =
+            Number.parseFloat(
+                getComputedStyle(
+                    content
+                ).opacity
+            );
+
+        const startOpacity =
+            shouldOpen && !wasOpen
+                ? 0
+                : Number.isFinite(
+                    computedOpacity
+                )
+                    ? computedOpacity
+                    : 1;
+
+        const token =
+            Symbol(
+                "graphical-details-animation"
+            );
+
+        const heightAnimation =
+            category.animate(
+                [
+                    {
+                        height:
+                            `${startHeight}px`
+                    },
+                    {
+                        height:
+                            `${endHeight}px`
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.2,.8,.2,1)",
+                    fill: "both"
+                }
+            );
+
+        const contentAnimation =
+            content.animate(
+                [
+                    {
+                        opacity:
+                            startOpacity
+                    },
+                    {
+                        opacity:
+                            shouldOpen
+                                ? 1
+                                : 0
+                    }
+                ],
+                {
+                    duration:
+                        Math.min(
+                            duration,
+                            150
+                        ),
+                    easing: "ease-out",
+                    fill: "both"
+                }
+            );
+
+        graphicalDetailsAnimations.set(
+            category,
+            {
+                token,
+                shouldOpen,
+                heightAnimation,
+                contentAnimation
+            }
+        );
+
+        followGraphicalDetailsAnimation(
+            heightAnimation,
+            token,
+            category
+        );
+
+        heightAnimation.finished
+            .then(
+                () =>
+                    finishGraphicalCategoryAnimation(
+                        category,
+                        shouldOpen,
+                        token
+                    )
+            )
+            .catch(
+                () => {}
+            );
+    }
+
+    function toggleGraphicalCategory(
+        category
+    ) {
+        const categories =
+            getGraphicalSettingsLayout()
+                .categories;
+
+        const state =
+            graphicalDetailsAnimations.get(
+                category
+            );
+
+        const shouldOpen =
+            !(
+                state?.shouldOpen ??
+                category.open
+            );
+
+        if (shouldOpen) {
+            for (const other of categories) {
+                if (other === category) continue;
+
+                const otherState =
+                    graphicalDetailsAnimations.get(
+                        other
+                    );
+
+                if (
+                    otherState?.shouldOpen ??
+                    other.open
+                ) {
+                    animateGraphicalCategory(
+                        other,
+                        false
+                    );
+                }
+            }
+        }
+
+        animateGraphicalCategory(
+            category,
+            shouldOpen
+        );
+    }
+
+    function resetGraphicalSettingsAccordion() {
+        const {
+            groups,
+            preview,
+            categories
+        } = getGraphicalSettingsLayout();
+
+        if (graphicalPreviewAnimationFrame) {
+            cancelAnimationFrame(
+                graphicalPreviewAnimationFrame
+            );
+
+            graphicalPreviewAnimationFrame =
+                undefined;
+        }
+
+        for (const category of categories) {
+            cancelGraphicalDetailsAnimation(
+                category
+            );
+
+            category.open = false;
+
+            category.style.removeProperty(
+                "height"
+            );
+
+            category.classList.remove(
+                "is-opening",
+                "is-closing"
+            );
+        }
+
+        if (groups) {
+            groups.scrollTop = 0;
+        }
+
+        preview?.classList.remove(
+            "has-settings-overlap"
+        );
+    }
+
+    function installGraphicalSettingsAccordion() {
+        const {
+            groups,
+            preview,
+            categories
+        } = getGraphicalSettingsLayout();
+
+        for (const category of categories) {
+            const summary =
+                category.querySelector(
+                    ":scope > summary"
+                );
+
+            summary?.addEventListener(
+                "click",
+                event => {
+                    event.preventDefault();
+
+                    toggleGraphicalCategory(
+                        category
+                    );
                 }
             );
         }
+
+        groups?.addEventListener(
+            "scroll",
+            scheduleGraphicalPreviewOverlap,
+            {
+                passive: true
+            }
+        );
+
+        window.addEventListener(
+            "resize",
+            scheduleGraphicalPreviewOverlap,
+            {
+                passive: true
+            }
+        );
+
+        if (
+            typeof ResizeObserver ===
+            "function"
+        ) {
+            graphicalPreviewResizeObserver =
+                new ResizeObserver(
+                    scheduleGraphicalPreviewOverlap
+                );
+
+            if (groups) {
+                graphicalPreviewResizeObserver.observe(
+                    groups
+                );
+            }
+
+            if (preview) {
+                graphicalPreviewResizeObserver.observe(
+                    preview
+                );
+            }
+
+            for (const category of categories) {
+                graphicalPreviewResizeObserver.observe(
+                    category
+                );
+            }
+        }
+
+        graphicalDialog.addEventListener(
+            "opening",
+            resetGraphicalSettingsAccordion
+        );
+
+        graphicalDialog.addEventListener(
+            "closed",
+            resetGraphicalSettingsAccordion
+        );
+
+        resetGraphicalSettingsAccordion();
     }
 
     installGraphicalHelpButtons();
@@ -4168,6 +4774,16 @@
             duration: fromPopover ? 750 : 250,
             reason
         });
+
+        if (
+            opened &&
+            dialog === graphicalDialog
+        ) {
+            updateGraphicalPreviewOverlap({
+                immediate: true
+            });
+        }
+
         if (!opened) {
             if (caller) popUIReturnFrame(caller);
             return false;
