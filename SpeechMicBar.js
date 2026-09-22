@@ -726,6 +726,10 @@ class SpeechMicBar extends HTMLElement {
         }
     }
 
+} 
+
+if (!customElements.get("speech-mic-bar")) {
+    customElements.define("speech-mic-bar", SpeechMicBar);
 }
 
 globalThis.SpeechMicBar = SpeechMicBar;
