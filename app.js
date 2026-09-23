@@ -300,9 +300,6 @@
         PERMISSION_DEVELOPER_PREVIEW |
         PERMISSION_DEVELOPER;
 
-    const SPEECH_TRAINING_PERMISSION_MASK =
-        SPEECH_EDITOR_PERMISSION_MASK;
-
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
@@ -354,9 +351,6 @@
             !canUseSpeechTools;
 
         $("#speechEditorButton").hidden =
-            !canUseSpeechTools;
-
-        $("#speechTrainingButton").hidden =
             !canUseSpeechTools;
 
         $("#sqlConsoleButton").hidden =
@@ -2448,9 +2442,6 @@
             !canUseSpeechTools;
 
         $("#speechEditorButton").hidden =
-            !canUseSpeechTools;
-
-        $("#speechTrainingButton").hidden =
             !canUseSpeechTools;
 
         $("#sqlConsoleButton").hidden =
@@ -6388,21 +6379,6 @@
                         "openSpeechEditorClick",
                     action:
                         "openSpeechEditor",
-                    preventDefault:
-                        true
-                })
-        );
-
-    $("#speechTrainingButton")
-        .addEventListener(
-            "click",
-            globalThis
-                .WMOFInteractionFunctions
-                .bindAction({
-                    name:
-                        "openSpeechTrainingClick",
-                    action:
-                        "openSpeechTraining",
                     preventDefault:
                         true
                 })
@@ -11155,44 +11131,6 @@
 
                     throw error;
                 }
-            },
-
-            openSpeechTraining() {
-                const permissions =
-                    Number(
-                        signedInProfile
-                            ?.permissions
-                    ) ||
-                    0;
-
-                if (
-                    !(
-                        permissions &
-                        SPEECH_TRAINING_PERMISSION_MASK
-                    )
-                ) {
-                    throw new Error(
-                        "Developer or Developer Preview permission is required."
-                    );
-                }
-
-                const opened =
-                    window.open(
-                        API_BASE +
-                        "api/admin/speech-training/",
-                        "wmofSpeechTraining"
-                    );
-
-                if (!opened) {
-                    throw new Error(
-                        "The Speech Training window was blocked by the browser."
-                    );
-                }
-
-                mainMenu
-                    ?.hidePopover?.();
-
-                return true;
             },
 
             openSqlConsole() {
