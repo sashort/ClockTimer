@@ -42,6 +42,16 @@ window.fetch =
 window.eval(
     fs.readFileSync(
         new URL(
+            "../SpeechFunctionRegistry.js",
+            import.meta.url
+        ),
+        "utf8"
+    )
+);
+
+window.eval(
+    fs.readFileSync(
+        new URL(
             "../SpeechEditorRuntime.js",
             import.meta.url
         ),
@@ -233,6 +243,42 @@ assert.ok(
     functions.includes(
         "WMOFSpeechPreprocess.normalize"
     )
+);
+
+
+const roles =
+    window.WMOFSpeechEditorRuntime
+        .listFunctionRoles();
+
+assert.ok(
+    roles.preprocFunctions.includes(
+        "WMOFSpeechPreprocess.normalize"
+    ),
+    "tagged preprocessors should populate only the preproc role"
+);
+
+assert.ok(
+    !roles.speechFunctions.includes(
+        "WMOFSpeechPreprocess.normalize"
+    ),
+    "tagged preprocessors should be excluded from speech-function choices"
+);
+
+assert.ok(
+    roles.speechFunctions.includes(
+        "WMOFSpeechCommands.breakStart"
+    ),
+    "untagged functions should remain speech-function choices"
+);
+
+assert.ok(
+    !functions.some(
+        name =>
+            name.startsWith(
+                "WMOFSpeechFunctionRegistry."
+            )
+    ),
+    "registry helper methods should not appear as selectable speech functions"
 );
 
 assert.ok(
