@@ -173,7 +173,23 @@
         </section>
 
         <speech-mic-bar id="speechMicBar" aria-label="Speech recognition"></speech-mic-bar>
-        <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level"></speech-menu>
+        <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">
+            <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-target="#newTripButton" speech-pattern="^ready at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.scheduleStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-target="#newTripButton" speech-pattern="^at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.continueStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
+            <speech-command data-speech-editor-id="builtin:ready:page" data-speech-target="#newTripButton" speech-pattern="^ready$" speech-function="WMOFActions.prepareStartMenu"></speech-command>
+            <speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFActions.openBreakMenu"></speech-command>
+            <speech-command data-speech-editor-id="builtin:down:page" data-speech-target="#downButton" speech-pattern="^down(?: time)?$" speech-function="WMOFActions.startDownTime"></speech-command>
+            <speech-command data-speech-editor-id="builtin:breakEnd:page" data-speech-target="#breakButton" speech-pattern="^break end$" speech-function="WMOFActions.openBreakEndMenu"></speech-command>
+            <speech-command data-speech-editor-id="builtin:resume:page" data-speech-target="#downResumeButton" speech-pattern="^resume$" speech-function="WMOFActions.resumeTrip"></speech-command>
+            <speech-command data-speech-editor-id="builtin:goal:page" data-speech-target="#goalPercentValue" speech-pattern="^(?&lt;goalScope&gt;trip|total) goal (?&lt;percent&gt;.+)$" speech-function="WMOFActions.changeGoal" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="percent" speech-preproc-field="percent"></speech-command>
+            <speech-command data-speech-editor-id="builtin:goalMode:page" data-speech-target="#scopeToggle" speech-pattern="^(?&lt;goalMode&gt;auto|total|trip) mode$" speech-function="WMOFActions.changeGoalMode"></speech-command>
+            <speech-command data-speech-editor-id="builtin:sync:page" data-speech-target="#toggleSyncMenuButton,#toggleSyncGoalButton" speech-pattern="^sync(?: (?&lt;syncAction&gt;on|off))?$" speech-function="WMOFActions.toggleSync"></speech-command>
+            <speech-command data-speech-editor-id="builtin:lockEndTime:page" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^lock end time(?: to)? (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.lockEndTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
+            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-target="#tripListMenuButton" speech-pattern="^(?:show )?trip log$" speech-function="WMOFActions.openTripLog"></speech-command>
+            <speech-command data-speech-editor-id="builtin:hideTripLog:page" data-speech-target="#tripListMenuButton" speech-pattern="^(?:hide|close) trip log$" speech-function="WMOFActions.closeTripLog"></speech-command>
+            <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-target="#tripDefer" speech-pattern="^defer trip$" speech-function="WMOFActions.deferTrip"></speech-command>
+            <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^(?:time )?(?&lt;timeMode&gt;elapsed|remaining|end(?: time)?)$" speech-function="WMOFActions.toggleRenderedTime"></speech-command>
+        </speech-menu>
         <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody">Trip Log</button>
         <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="Close Trip Log" hidden></button>
         <button id="tripLogSettingsButton" class="trip-log-close-button trip-log-settings-button" type="button" aria-label="Show Trip Log settings" aria-expanded="false" aria-controls="tripLogSettings" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M9.528,4.392 L10.436,2.123 L13.564,2.123 L14.472,4.392 L15.632,4.872 L17.878,3.910 L20.090,6.122 L19.128,8.368 L19.608,9.528 L21.877,10.436 L21.877,13.564 L19.608,14.472 L19.128,15.632 L20.090,17.878 L17.878,20.090 L15.632,19.128 L14.472,19.608 L13.564,21.877 L10.436,21.877 L9.528,19.608 L8.368,19.128 L6.122,20.090 L3.910,17.878 L4.872,15.632 L4.392,14.472 L2.123,13.564 L2.123,10.436 L4.392,9.528 L4.872,8.368 L3.910,6.122 L6.122,3.910 L8.368,4.872 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
@@ -627,7 +643,7 @@
                         <span class="trip-time-description">Expected duration.</span>
                     </div>
                     <output id="tripStandardTime" class="trip-time-value">---</output>
-                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-pattern="^standard time (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue"><span aria-hidden="true"></span></button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="scheduled-start">
                     <div class="trip-time-copy">
@@ -697,7 +713,7 @@
                     <span>Time Until Start</span>
                     <strong id="scheduledStartCountdown">0:00:00</strong>
                 </div>
-                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button">
+                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-target="#scheduledStartStandard" speech-pattern="^standard time (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue">
                     <span>Standard Time</span>
                     <strong id="scheduledStartStandardValue">---</strong>
                 </button>
@@ -723,6 +739,10 @@
                 <button class="break-type-button lunch" type="button" data-break-type="lunch">Lunch</button>
                 <button class="break-type-button" type="button" data-break-type="short-break">Short Break</button>
             </div>
+            <speech-menu data-speech-editor-id="builtin:menu:breakDialog">
+                <speech-command data-speech-editor-id="builtin:breakChoice:breakDialog" data-speech-target="#breakDialog [data-break-type]" speech-pattern="^(?&lt;breakChoice&gt;10|15|long|short|lunch)$" speech-function="WMOFActions.chooseBreakType"></speech-command>
+                <speech-command data-speech-editor-id="builtin:confirm:breakDialog" data-speech-target="#breakDialog [data-break-type]" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmBreakType"></speech-command>
+            </speech-menu>
         </section>
     </dialog>
 
@@ -734,6 +754,10 @@
                 <button id="speechBreakEndCancel" type="button">Cancel</button>
                 <button id="speechBreakEndConfirm" class="primary-action" type="button">OK</button>
             </div>
+            <speech-menu data-speech-editor-id="builtin:menu:speechBreakEndDialog">
+                <speech-command data-speech-editor-id="builtin:confirm:speechBreakEndDialog" data-speech-target="#speechBreakEndConfirm" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmBreakEnd"></speech-command>
+                <speech-command data-speech-editor-id="builtin:cancel:speechBreakEndDialog" data-speech-target="#speechBreakEndCancel" speech-pattern="^cancel$" speech-function="WMOFActions.cancelBreakEnd"></speech-command>
+            </speech-menu>
         </form>
     </dialog>
 
