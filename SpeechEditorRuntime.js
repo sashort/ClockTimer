@@ -723,11 +723,19 @@
                     )
         )
         .then(
-            config =>
+            config => {
+                globalThis
+                    .WMOFActionFunctions
+                    ?.registerMacros?.(
+                        config.macros ||
+                        []
+                    );
+
                 apply(
                     config.entries ||
                     []
-                )
+                );
+            }
         )
         .catch(
             error =>
