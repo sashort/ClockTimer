@@ -3607,6 +3607,746 @@
             scheduleApply();
         };
 
+    const regexBuilderCanTarget =
+        () => {
+            const edit =
+                candidateEditElement();
+
+            return Boolean(
+                edit &&
+                !edit.matches(
+                    "speech-menu"
+                )
+            );
+        };
+
+    const regexBuilderIsLive =
+        () =>
+            $("regexBuilderLive")
+                .getAttribute(
+                    "aria-pressed"
+                ) ===
+                "true";
+
+    const setRegexBuilderMessage =
+        (
+            message,
+            error = false
+        ) => {
+            $("regexBuilderMessage")
+                .textContent =
+                message || "";
+
+            $("regexBuilderMessage")
+                .classList
+                .toggle(
+                    "error",
+                    error
+                );
+        };
+
+    const refreshRegexBuilderControls =
+        () => {
+            const valid =
+                Boolean(
+                    regexBuilderResult
+                        .valid
+                );
+
+            const canTarget =
+                regexBuilderCanTarget();
+
+            $("regexBuilderCopy")
+                .disabled =
+                !valid;
+
+            $("regexBuilderPaste")
+                .disabled =
+                !valid ||
+                !canTarget;
+
+            $("regexBuilderLive")
+                .disabled =
+                !canTarget;
+
+            if (
+                !canTarget &&
+                regexBuilderIsLive()
+            ) {
+                $("regexBuilderLive")
+                    .setAttribute(
+                        "aria-pressed",
+                        "false"
+                    );
+            }
+        };
+
+    const applyRegexBuilderPattern =
+        (
+            source = "paste"
+        ) => {
+            if (
+                !regexBuilderResult
+                    .valid ||
+                !regexBuilderCanTarget()
+            ) {
+                return false;
+            }
+
+            const input =
+                form.elements
+                    .namedItem(
+                        "speech-pattern"
+                    );
+
+            if (!input) {
+                return false;
+            }
+
+            if (
+                input.value ===
+                regexBuilderResult
+                    .pattern
+            ) {
+                return true;
+            }
+
+            input.value =
+                regexBuilderResult
+                    .pattern;
+
+            input.dispatchEvent(
+                new Event(
+                    "input",
+                    {
+                        bubbles:
+                            true
+                    }
+                )
+            );
+
+            setRegexBuilderMessage(
+                source === "live"
+                    ? "Live pattern updated in the editor draft."
+                    : "Regex pasted into speech-pattern. Save changes to commit it."
+            );
+
+            return true;
+        };
+
+    const setRegexBuilderLive =
+        enabled => {
+            const active =
+                Boolean(
+                    enabled &&
+                    regexBuilderCanTarget()
+                );
+
+            $("regexBuilderLive")
+                .setAttribute(
+                    "aria-pressed",
+                    String(active)
+                );
+
+            if (active) {
+                if (
+                    regexBuilderResult
+                        .valid
+                ) {
+                    applyRegexBuilderPattern(
+                        "live"
+                    );
+                }
+                else {
+                    setRegexBuilderMessage(
+                        "Live is on. The draft will update when the template becomes valid."
+                    );
+                }
+            }
+            else if (enabled) {
+                setRegexBuilderMessage(
+                    "Select a Speech Command or speech-enabled element before enabling Live.",
+                    true
+                );
+            }
+        };
+
+    const regexBuilderContextChoices =
+        () => {
+            const choices = [];
+
+            for (
+                const template of
+                globalThis
+                    .WMOFRegexBuilder
+                    ?.templates ||
+                []
+            ) {
+                choices.push({
+                    kind:
+                        "Templates",
+                    canonical:
+                        template.token
+                            .slice(
+                                1,
+                                -1
+                            ),
+                    label:
+                        template.token,
+                    description:
+                        template.description
+                });
+            }
+
+            if (frameDocument) {
+                const contexts =
+                    new Set();
+
+                for (
+                    const element of
+                    frameDocument
+                        .querySelectorAll(
+                            "[speech-preproc-context]"
+                        )
+                ) {
+                    const value =
+                        element
+                            .getAttribute(
+                                "speech-preproc-context"
+                            )
+                            ?.trim();
+
+                    if (
+                        value &&
+                        /^[A-Za-z_$][\w$]*$/
+                            .test(value)
+                    ) {
+                        contexts.add(
+                            value
+                        );
+                    }
+                }
+
+                for (
+                    const context of
+                    [...contexts]
+                        .sort()
+                ) {
+                    choices.push({
+                        kind:
+                            "Existing contexts",
+                        canonical:
+                            context,
+                        label:
+                            "<" +
+                            context +
+                            ">",
+                        description:
+                            "Existing speech preprocessing context."
+                    });
+                }
+
+                const fields =
+                    new Set();
+
+                for (
+                    const element of
+                    frameDocument
+                        .querySelectorAll(
+                            "[speech-preproc-field]"
+                        )
+                ) {
+                    const value =
+                        element
+                            .getAttribute(
+                                "speech-preproc-field"
+                            )
+                            ?.trim();
+
+                    if (
+                        value &&
+                        /^[A-Za-z_$][\w$]*$/
+                            .test(value)
+                    ) {
+                        fields.add(
+                            value
+                        );
+                    }
+                }
+
+                for (
+                    const element of
+                    frameDocument
+                        .querySelectorAll(
+                            "[speech-pattern]"
+                        )
+                ) {
+                    for (
+                        const field of
+                        namedFields(
+                            element
+                                .getAttribute(
+                                    "speech-pattern"
+                                ) ||
+                                ""
+                        )
+                    ) {
+                        fields.add(
+                            field
+                        );
+                    }
+                }
+
+                for (
+                    const field of
+                    [...fields]
+                        .sort()
+                ) {
+                    choices.push({
+                        kind:
+                            "Existing fields",
+                        canonical:
+                            field,
+                        label:
+                            "<" +
+                            field +
+                            ">",
+                        description:
+                            "Existing named speech capture."
+                    });
+                }
+            }
+
+            return choices;
+        };
+
+    const renderRegexBuilderPicker =
+        choices => {
+            const picker =
+                $("regexBuilderPicker");
+
+            picker.replaceChildren();
+
+            let previousKind;
+
+            for (
+                const choice of
+                choices
+            ) {
+                if (
+                    choice.kind !==
+                    previousKind
+                ) {
+                    const heading =
+                        document
+                            .createElement(
+                                "div"
+                            );
+
+                    heading.className =
+                        "regex-picker-heading";
+
+                    heading.textContent =
+                        choice.kind;
+
+                    picker.append(
+                        heading
+                    );
+
+                    previousKind =
+                        choice.kind;
+                }
+
+                const button =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                button.type =
+                    "button";
+                button.className =
+                    "regex-picker-option";
+                button.setAttribute(
+                    "role",
+                    "option"
+                );
+
+                const token =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                token.className =
+                    "regex-picker-token";
+
+                token.textContent =
+                    choice.label;
+
+                const description =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                description.className =
+                    "regex-picker-description";
+
+                description.textContent =
+                    choice.description ||
+                    "";
+
+                button.append(
+                    token,
+                    description
+                );
+
+                button.addEventListener(
+                    "pointerdown",
+                    event =>
+                        event.preventDefault()
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        const input =
+                            $("regexBuilderInput");
+
+                        const range =
+                            regexBuilderPickerRange;
+
+                        if (!range) {
+                            return;
+                        }
+
+                        const before =
+                            input.value.slice(
+                                0,
+                                range.start
+                            );
+
+                        const after =
+                            input.value.slice(
+                                range.closed
+                                    ? range.end + 1
+                                    : range.end
+                            );
+
+                        const inserted =
+                            "<" +
+                            choice.canonical +
+                            ">";
+
+                        input.value =
+                            before +
+                            inserted +
+                            after;
+
+                        const caret =
+                            before.length +
+                            inserted.length;
+
+                        input.setSelectionRange(
+                            caret,
+                            caret
+                        );
+
+                        picker.hidden =
+                            true;
+
+                        regexBuilderPickerRange =
+                            undefined;
+
+                        updateRegexBuilder();
+                        input.focus();
+                    }
+                );
+
+                picker.append(
+                    button
+                );
+            }
+
+            picker.hidden =
+                choices.length === 0;
+        };
+
+    const showRegexBuilderPicker =
+        (
+            range,
+            choices
+        ) => {
+            regexBuilderPickerRange =
+                range;
+
+            renderRegexBuilderPicker(
+                choices
+            );
+        };
+
+    const hideRegexBuilderPicker =
+        () => {
+            $("regexBuilderPicker")
+                .hidden =
+                true;
+
+            regexBuilderPickerRange =
+                undefined;
+        };
+
+    const regexBuilderChoicesFor =
+        value => {
+            const source =
+                String(value || "");
+
+            const inferred =
+                globalThis
+                    .WMOFRegexBuilder
+                    ?.inferWildcard(
+                        source
+                    ) ||
+                [];
+
+            if (inferred.length) {
+                return inferred.map(
+                    canonical => ({
+                        kind:
+                            inferred.length > 1
+                                ? "Matching wildcard templates"
+                                : "Template",
+                        canonical,
+                        label:
+                            "<" +
+                            canonical +
+                            ">",
+                        description:
+                            "Inferred from <" +
+                            source +
+                            ">."
+                    })
+                );
+            }
+
+            const filter =
+                source
+                    .trim()
+                    .toLowerCase();
+
+            return regexBuilderContextChoices()
+                .filter(
+                    choice =>
+                        !filter ||
+                        choice.canonical
+                            .toLowerCase()
+                            .includes(
+                                filter
+                            ) ||
+                        choice.label
+                            .toLowerCase()
+                            .includes(
+                                filter
+                            )
+                );
+        };
+
+    const updateRegexBuilder =
+        () => {
+            regexBuilderResult =
+                globalThis
+                    .WMOFRegexBuilder
+                    ?.compile(
+                        $("regexBuilderInput")
+                            .value
+                    ) ||
+                {
+                    valid:
+                        false,
+                    pattern:
+                        "",
+                    error:
+                        "Regex Builder is unavailable."
+                };
+
+            $("regexBuilderRegexRow")
+                .dataset
+                .valid =
+                String(
+                    regexBuilderResult
+                        .valid
+                );
+
+            $("regexBuilderOutput")
+                .textContent =
+                regexBuilderResult
+                    .valid
+                    ? regexBuilderResult
+                        .pattern
+                    : (
+                        "Invalid: " +
+                        regexBuilderResult
+                            .error
+                    );
+
+            refreshRegexBuilderControls();
+
+            if (
+                regexBuilderResult
+                    .valid &&
+                regexBuilderIsLive()
+            ) {
+                applyRegexBuilderPattern(
+                    "live"
+                );
+            }
+        };
+
+    const handleRegexBuilderInput =
+        () => {
+            const input =
+                $("regexBuilderInput");
+
+            let caret =
+                input.selectionStart ??
+                input.value.length;
+
+            if (
+                caret > 0 &&
+                input.value[
+                    caret - 1
+                ] === ">"
+            ) {
+                const close =
+                    caret - 1;
+
+                const start =
+                    input.value
+                        .lastIndexOf(
+                            "<",
+                            close
+                        );
+
+                if (start >= 0) {
+                    const raw =
+                        input.value.slice(
+                            start + 1,
+                            close
+                        );
+
+                    const candidates =
+                        globalThis
+                            .WMOFRegexBuilder
+                            ?.inferWildcard(
+                                raw
+                            ) ||
+                        [];
+
+                    if (
+                        candidates.length ===
+                            1
+                    ) {
+                        const replacement =
+                            "<" +
+                            candidates[0] +
+                            ">";
+
+                        input.value =
+                            input.value.slice(
+                                0,
+                                start
+                            ) +
+                            replacement +
+                            input.value.slice(
+                                close + 1
+                            );
+
+                        caret =
+                            start +
+                            replacement.length;
+
+                        input.setSelectionRange(
+                            caret,
+                            caret
+                        );
+
+                        hideRegexBuilderPicker();
+                    }
+                    else if (
+                        candidates.length >
+                            1
+                    ) {
+                        showRegexBuilderPicker(
+                            {
+                                start,
+                                end:
+                                    close,
+                                closed:
+                                    true
+                            },
+                            regexBuilderChoicesFor(
+                                raw
+                            )
+                        );
+                    }
+                    else {
+                        hideRegexBuilderPicker();
+                    }
+                }
+            }
+            else {
+                const start =
+                    input.value
+                        .lastIndexOf(
+                            "<",
+                            Math.max(
+                                0,
+                                caret - 1
+                            )
+                        );
+
+                const previousClose =
+                    input.value
+                        .lastIndexOf(
+                            ">",
+                            Math.max(
+                                0,
+                                caret - 1
+                            )
+                        );
+
+                if (
+                    start >= 0 &&
+                    start >
+                        previousClose
+                ) {
+                    const raw =
+                        input.value.slice(
+                            start + 1,
+                            caret
+                        );
+
+                    showRegexBuilderPicker(
+                        {
+                            start,
+                            end:
+                                caret,
+                            closed:
+                                false
+                        },
+                        regexBuilderChoicesFor(
+                            raw
+                        )
+                    );
+                }
+                else {
+                    hideRegexBuilderPicker();
+                }
+            }
+
+            updateRegexBuilder();
+        };
+
     const normalizeFunctionRoles =
         value => {
             const source =
