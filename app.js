@@ -7684,13 +7684,12 @@
         const keypadSpeechPattern = globalThis.WMOFLanguages?.["en-US"]?.speech?.commands?.keypadValue;
         if (keypadSpeechPattern) {
             const speechField = document.createElement("speech-command");
-            speechField.hidden = true;
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
             speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
             speechField.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
-            numberPadDialog.append(speechField);
+            ensureSpeechMenu(numberPadDialog).append(speechField);
         }
         const backspace = $("#numberPadBackspace");
         let deleteTimer, held = false;
@@ -8970,6 +8969,66 @@
     };
     globalThis.WMOFSpeechCommands = speechCommands;
 
+    function ensureSpeechMenu(
+        container = document.body,
+        modalMode
+    ) {
+        if (
+            modalMode === "top-level"
+        ) {
+            const topLevel =
+                document.getElementById(
+                    "speechTopLevelMenu"
+                );
+
+            if (topLevel) {
+                return topLevel;
+            }
+        }
+
+        const selector =
+            modalMode
+                ? `speech-menu[speech-modal="${modalMode}"]`
+                : "speech-menu:not([speech-modal])";
+
+        let menu;
+
+        try {
+            menu =
+                [
+                    ...container.children
+                ].find(
+                    element =>
+                        element.matches?.(
+                            selector
+                        )
+                );
+        }
+        catch {}
+
+        if (menu) {
+            return menu;
+        }
+
+        menu =
+            document.createElement(
+                "speech-menu"
+            );
+
+        menu.dataset.speechRuntimeMenu =
+            "true";
+
+        if (modalMode) {
+            menu.setAttribute(
+                "speech-modal",
+                modalMode
+            );
+        }
+
+        container.append(menu);
+        return menu;
+    }
+
     void (async () => {
         try {
             await ensureSpeechRuntime();
@@ -8984,8 +9043,18 @@
         const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
             const pattern = englishSpeech?.commands?.[key];
             if (!pattern) return;
+            const modalMode =
+                modal === true
+                    ? "top-level"
+                    : modal === "default"
+                        ? "default"
+                        : undefined;
+            const speechMenu =
+                ensureSpeechMenu(
+                    container,
+                    modalMode
+                );
             const element = document.createElement("speech-command");
-            element.hidden = true;
             element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
             const speechTargets = {
                 readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
@@ -9003,8 +9072,7 @@
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
-            if (modal) element.setAttribute("speech-modal", "top-level");
-            container.append(element);
+            speechMenu.append(element);
         };
         if (englishSpeech) {
             for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
