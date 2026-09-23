@@ -11182,6 +11182,16 @@
                 }
 
                 if (
+                    trainingOnly &&
+                    preset !==
+                    "training"
+                ) {
+                    throw new Error(
+                        "Training-only access is locked to the Training workspace."
+                    );
+                }
+
+                if (
                     preset ===
                     "training"
                 ) {
