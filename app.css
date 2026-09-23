@@ -4197,31 +4197,37 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 .speech-build-icon{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;color:currentColor;}
 .speech-build-icon svg{width:30px;height:30px;overflow:visible;}
-.speech-build-mic{fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round;}
+.speech-build-mic{fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round;clip-path:inset(0);}
+#speechMenuButton.speech-build-active .speech-build-mic{animation:speech-mic-build 570ms ease-out both;}
+@keyframes speech-mic-build{
+  from{clip-path:inset(100% 0 0 0);}
+  to{clip-path:inset(0);}
+}
 .speech-build-scaffold path{fill:none;stroke:#ffc220;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 180ms ease-in;}
-#speechMenuButton[aria-expanded="true"] .rail-left,
-#speechMenuButton[aria-expanded="true"] .rail-right{stroke-dashoffset:0;transition-delay:0ms;}
-#speechMenuButton[aria-expanded="true"] .floor-1{stroke-dashoffset:0;transition-delay:90ms;}
-#speechMenuButton[aria-expanded="true"] .brace-1a,
-#speechMenuButton[aria-expanded="true"] .brace-1b{stroke-dashoffset:0;transition-delay:150ms;}
-#speechMenuButton[aria-expanded="true"] .floor-2{stroke-dashoffset:0;transition-delay:210ms;}
-#speechMenuButton[aria-expanded="true"] .brace-2a,
-#speechMenuButton[aria-expanded="true"] .brace-2b{stroke-dashoffset:0;transition-delay:270ms;}
-#speechMenuButton[aria-expanded="true"] .floor-3{stroke-dashoffset:0;transition-delay:330ms;}
-#speechMenuButton[aria-expanded="true"] .floor-top{stroke-dashoffset:0;transition-delay:390ms;}
-#speechMenuButton:not([aria-expanded="true"]) .floor-top{transition-delay:0ms;}
-#speechMenuButton:not([aria-expanded="true"]) .floor-3{transition-delay:45ms;}
-#speechMenuButton:not([aria-expanded="true"]) .brace-2a,
-#speechMenuButton:not([aria-expanded="true"]) .brace-2b{transition-delay:90ms;}
-#speechMenuButton:not([aria-expanded="true"]) .floor-2{transition-delay:135ms;}
-#speechMenuButton:not([aria-expanded="true"]) .brace-1a,
-#speechMenuButton:not([aria-expanded="true"]) .brace-1b{transition-delay:180ms;}
-#speechMenuButton:not([aria-expanded="true"]) .floor-1{transition-delay:225ms;}
-#speechMenuButton:not([aria-expanded="true"]) .rail-left,
-#speechMenuButton:not([aria-expanded="true"]) .rail-right{transition-delay:270ms;}
+#speechMenuButton.speech-build-active .rail-left,
+#speechMenuButton.speech-build-active .rail-right{stroke-dashoffset:0;transition-delay:0ms;}
+#speechMenuButton.speech-build-active .floor-1{stroke-dashoffset:0;transition-delay:90ms;}
+#speechMenuButton.speech-build-active .brace-1a,
+#speechMenuButton.speech-build-active .brace-1b{stroke-dashoffset:0;transition-delay:150ms;}
+#speechMenuButton.speech-build-active .floor-2{stroke-dashoffset:0;transition-delay:210ms;}
+#speechMenuButton.speech-build-active .brace-2a,
+#speechMenuButton.speech-build-active .brace-2b{stroke-dashoffset:0;transition-delay:270ms;}
+#speechMenuButton.speech-build-active .floor-3{stroke-dashoffset:0;transition-delay:330ms;}
+#speechMenuButton.speech-build-active .floor-top{stroke-dashoffset:0;transition-delay:390ms;}
+#speechMenuButton:not(.speech-build-active) .floor-top{transition-delay:0ms;}
+#speechMenuButton:not(.speech-build-active) .floor-3{transition-delay:45ms;}
+#speechMenuButton:not(.speech-build-active) .brace-2a,
+#speechMenuButton:not(.speech-build-active) .brace-2b{transition-delay:90ms;}
+#speechMenuButton:not(.speech-build-active) .floor-2{transition-delay:135ms;}
+#speechMenuButton:not(.speech-build-active) .brace-1a,
+#speechMenuButton:not(.speech-build-active) .brace-1b{transition-delay:180ms;}
+#speechMenuButton:not(.speech-build-active) .floor-1{transition-delay:225ms;}
+#speechMenuButton:not(.speech-build-active) .rail-left,
+#speechMenuButton:not(.speech-build-active) .rail-right{transition-delay:270ms;}
 @media (prefers-reduced-motion: reduce){
   .speech-build-scaffold path,.main-menu #speechMenuButton::after{transition:none!important;}
-  #speechMenuButton[aria-expanded="true"] .speech-build-scaffold path{stroke-dashoffset:0;}
+  #speechMenuButton.speech-build-active .speech-build-scaffold path{stroke-dashoffset:0;}
+  #speechMenuButton.speech-build-active .speech-build-mic{animation:none;}
 }
 
 #newUserButton::before {
