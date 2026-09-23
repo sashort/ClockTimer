@@ -1195,7 +1195,7 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 }
 .macro-step-header {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) repeat(4, auto);
     align-items: center;
     gap: 6px;
 }
