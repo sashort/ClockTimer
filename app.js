@@ -7718,7 +7718,7 @@
             const speechField = document.createElement("speech-command");
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
             speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
-            speechField.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+            speechField.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
             ensureSpeechMenu(numberPadDialog).append(speechField);
@@ -8828,23 +8828,98 @@
     }
 
     const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
-    globalThis.WMOFSpeechPreprocess = {
-        normalize(text, {field, kind, pattern}) {
-            if (kind === "keypad") {
-                if (!numberPadDialog?.open || !numberPadState) return text;
-                kind = numberPadState.mode === "absolute" ? "clock-parts" :
-                    numberPadState.mode === "percent" ? "percent" : "duration";
+    globalThis
+        .WMOFProcessingFunctions
+        .define(
+            "normalizeSpeechValue",
+            (
+                text,
+                {
+                    field,
+                    kind,
+                    pattern
+                }
+            ) => {
+                if (kind === "keypad") {
+                    if (
+                        !numberPadDialog
+                            ?.open ||
+                        !numberPadState
+                    ) {
+                        return text;
+                    }
+
+                    kind =
+                        numberPadState
+                            .mode ===
+                            "absolute"
+                            ? "clock-parts"
+                            : numberPadState
+                                .mode ===
+                                "percent"
+                                ? "percent"
+                                : "duration";
+                }
+
+                if (
+                    !field ||
+                    !pattern
+                ) {
+                    return text;
+                }
+
+                const match =
+                    new RegExp(
+                        pattern,
+                        "i"
+                    )
+                        .exec(text);
+
+                const phrase =
+                    match?.groups
+                        ?.[field];
+
+                if (
+                    typeof phrase !==
+                        "string"
+                ) {
+                    return text;
+                }
+
+                const normalized =
+                    EnglishSpeechValuePreprocessor
+                        .normalize(
+                            phrase,
+                            kind
+                        );
+
+                if (
+                    normalized ===
+                        undefined
+                ) {
+                    return text;
+                }
+
+                const start =
+                    match.index +
+                    match[0]
+                        .lastIndexOf(
+                            phrase
+                        );
+
+                return (
+                    text.slice(
+                        0,
+                        start
+                    ) +
+                    normalized +
+                    text.slice(
+                        start +
+                            phrase.length
+                    )
+                );
             }
-            if (!field || !pattern) return text;
-            const match = new RegExp(pattern, "i").exec(text);
-            const phrase = match?.groups?.[field];
-            if (typeof phrase !== "string") return text;
-            const normalized = EnglishSpeechValuePreprocessor.normalize(phrase, kind);
-            if (normalized === undefined) return text;
-            const start = match.index + match[0].lastIndexOf(phrase);
-            return text.slice(0, start) + normalized + text.slice(start + phrase.length);
-        }
-    };
+        );
     let pendingSpeechReady;
     const cancelPendingSpeechReady = () => {
         if (pendingSpeechReady !== undefined) clearTimeout(pendingSpeechReady);
@@ -9100,7 +9175,7 @@
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
             if (valueKind && valueField) {
-                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
@@ -9113,7 +9188,7 @@
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
                 element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
-                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", "duration");
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
