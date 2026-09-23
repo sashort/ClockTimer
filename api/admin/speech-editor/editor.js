@@ -10609,15 +10609,33 @@
         .define(
             "getSpeechTemplate",
             input => {
-                const entry =
-                    editorEntryReference(
-                        input
-                    );
-
                 const element =
                     editorElementReference(
                         input
                     );
+
+                let entry =
+                    String(
+                        input?.id ||
+                        ""
+                    )
+                        .trim()
+                        ? draft.find(
+                            candidate =>
+                                candidate.id ===
+                                input.id
+                        )
+                        : null;
+
+                if (
+                    !entry &&
+                    element
+                ) {
+                    entry =
+                        entryForElement(
+                            element
+                        );
+                }
 
                 if (
                     !entry &&
