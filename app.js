@@ -12715,6 +12715,17 @@
             setSpeechLayoutState(true);
         });
 
+        speechMicBar?.addEventListener(
+            "utteranceStarted",
+            () => {
+                void globalThis
+                    .WMOFPresentationSetters
+                    ?.dismissSpeechResponse?.({
+                        fast: true
+                    });
+            }
+        );
+
         speechMicBar?.addEventListener("stopped", () => {
             cancelPendingSpeechReady();
             setSpeechButtonState(false, false);
