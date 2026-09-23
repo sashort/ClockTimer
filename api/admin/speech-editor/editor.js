@@ -8052,82 +8052,50 @@
                         if (
                             api.isRecording()
                         ) {
-                            const recording =
-                                api.stopRecording();
-
-                            macroWorking.steps =
-                                cloneMacroValue(
-                                    recording.steps ||
-                                    []
-                                );
-
-                            $("macroRecord")
-                                .setAttribute(
-                                    "aria-pressed",
-                                    "false"
-                                );
-
-                            $("macroRecord")
-                                .textContent =
-                                "● Record";
-
-                            $("macroRecordingState")
-                                .textContent =
-                                "Not recording";
-
-                            renderMacroBuilder();
+                            editorActions
+                                .stopMacroRecording({});
 
                             return;
                         }
 
-                        api.startRecording({
-                            name:
-                                macroWorking.name
-                        });
-
-                        macroWorking.steps =
-                            [];
-
-                        if (overlay) {
-                            $("overlayToggle")
-                                .click();
-                        }
-
-                        $("macroRecord")
-                            .setAttribute(
-                                "aria-pressed",
-                                "true"
-                            );
-
-                        $("macroRecord")
-                            .textContent =
-                            "■ Stop";
-
-                        $("macroRecordingState")
-                            .textContent =
-                            "Recording actions…";
-
-                        renderMacroSteps();
-                        updateMacroControls();
+                        editorActions
+                            .startMacroRecording({
+                                name:
+                                    macroWorking.name
+                            });
                     }
                 );
 
             $("macroStage")
                 .addEventListener(
                     "click",
-                    stageMacro
+                    () => {
+                        try {
+                            editorActions
+                                .stageMacro({
+                                    macro:
+                                        macroWorking
+                                });
+                        }
+                        catch (
+                            error
+                        ) {
+                            $("macroMessage")
+                                .classList.add(
+                                    "error"
+                                );
+
+                            $("macroMessage")
+                                .textContent =
+                                error.message;
+                        }
+                    }
                 );
 
             $("macroTest")
                 .addEventListener(
                     "click",
                     async () => {
-                        if (
-                            !stageMacro()
-                        ) {
-                            return;
-                        }
-
                         const supplied =
                             Object.fromEntries(
                                 macroWorking
@@ -8150,10 +8118,23 @@
                             );
 
                         try {
-                            await macroApi()
-                                .runMacro(
-                                    macroWorking.name,
-                                    supplied
+                            editorActions
+                                .stageMacro({
+                                    macro:
+                                        macroWorking
+                                });
+
+                            await editorActions
+                                .runMacro({
+                                    name:
+                                        macroWorking.name,
+                                    parameters:
+                                        supplied
+                                });
+
+                            $("macroMessage")
+                                .classList.remove(
+                                    "error"
                                 );
 
                             $("macroMessage")
@@ -8188,30 +8169,16 @@
                         const name =
                             macroEditingName;
 
-                        draftMacros =
-                            draftMacros
-                                .filter(
-                                    macro =>
-                                        macro.name !==
-                                        name
-                                );
-
-                        macroApi()
-                            ?.removeMacro?.(
-                                name
-                            );
-
-                        removeMacroRole(
-                            name
-                        );
-
-                        resetMacroBuilder();
-                        syncFunctionCatalog();
-                        updateButtons();
-
-                        $("macroMessage")
-                            .textContent =
-                            "Macro removed. Save changes to persist.";
+                        if (
+                            editorActions
+                                .deleteMacro({
+                                    name
+                                })
+                        ) {
+                            $("macroMessage")
+                                .textContent =
+                                "Macro removed. Save changes to persist.";
+                        }
                     }
                 );
 
