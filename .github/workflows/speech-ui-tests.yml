@@ -32,6 +32,7 @@ jobs:
         run: |
           node --check SpeechMenu.js
           node --check SpeechEditorRuntime.js
+          node --check ActionFunctions.js
           node --check app.js
           node --check api/admin/speech-editor/RegexBuilder.js
           node --check api/admin/speech-editor/editor.js
@@ -50,6 +51,7 @@ jobs:
         run: |
           npm run test:speech-editor
           npm run test:speech-phrases
+          npm run test:action-macros
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
