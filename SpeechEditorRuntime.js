@@ -7,7 +7,8 @@
         "speech-preproc",
         "speech-preproc-context",
         "speech-preproc-field",
-        "speech-modal"
+        "speech-modal",
+        "speech-index"
     ];
     const created = new Map();
 
@@ -324,6 +325,15 @@
                     find(entry);
 
                 if (element) {
+                    if (
+                        !element.dataset
+                            .speechEditorId
+                    ) {
+                        element.dataset
+                            .speechEditorId =
+                            entry.id;
+                    }
+
                     applyAttributes(
                         element,
                         entry.attrs
@@ -433,6 +443,173 @@
             created.set(
                 entry.id,
                 element
+            );
+        }
+
+        const orderEntries =
+            new Map(
+                entries
+                    .filter(
+                        entry =>
+                            Number.isInteger(
+                                entry.order
+                            )
+                    )
+                    .map(
+                        entry => [
+                            entry.id,
+                            entry.order
+                        ]
+                    )
+            );
+
+        const entryOrder =
+            element =>
+                orderEntries.get(
+                    element?.dataset
+                        ?.speechEditorId
+                );
+
+        const reorderAtSlots =
+            (
+                parent,
+                selector
+            ) => {
+                if (!parent) return;
+
+                const elements =
+                    [
+                        ...parent.children
+                    ].filter(
+                        element =>
+                            element.matches(
+                                selector
+                            )
+                    );
+
+                if (
+                    elements.length < 2 ||
+                    !elements.some(
+                        element =>
+                            Number.isInteger(
+                                entryOrder(
+                                    element
+                                )
+                            )
+                    )
+                ) {
+                    return;
+                }
+
+                const sorted =
+                    elements
+                        .map(
+                            (element, domOrder) => ({
+                                element,
+                                domOrder,
+                                order:
+                                    entryOrder(
+                                        element
+                                    )
+                            })
+                        )
+                        .sort(
+                            (left, right) => {
+                                const leftOrder =
+                                    Number.isInteger(
+                                        left.order
+                                    )
+                                        ? left.order
+                                        : left.domOrder;
+
+                                const rightOrder =
+                                    Number.isInteger(
+                                        right.order
+                                    )
+                                        ? right.order
+                                        : right.domOrder;
+
+                                return (
+                                    leftOrder -
+                                        rightOrder ||
+                                    left.domOrder -
+                                        right.domOrder
+                                );
+                            }
+                        )
+                        .map(
+                            item =>
+                                item.element
+                        );
+
+                if (
+                    sorted.every(
+                        (element, index) =>
+                            element ===
+                            elements[index]
+                    )
+                ) {
+                    return;
+                }
+
+                const markers =
+                    elements.map(
+                        element => {
+                            const marker =
+                                document
+                                    .createComment(
+                                        "speech-editor-order"
+                                    );
+
+                            element.before(
+                                marker
+                            );
+                            element.remove();
+                            return marker;
+                        }
+                    );
+
+                markers.forEach(
+                    (marker, index) =>
+                        marker.replaceWith(
+                            sorted[index]
+                        )
+                );
+            };
+
+        for (
+            const menu of
+            document.querySelectorAll(
+                "speech-menu"
+            )
+        ) {
+            reorderAtSlots(
+                menu,
+                "speech-command"
+            );
+        }
+
+        const menuParents =
+            new Set(
+                [
+                    ...document
+                        .querySelectorAll(
+                            "speech-menu"
+                        )
+                ]
+                    .map(
+                        menu =>
+                            menu.parentElement
+                    )
+                    .filter(
+                        Boolean
+                    )
+            );
+
+        for (const parent of menuParents) {
+            reorderAtSlots(
+                parent,
+                "speech-menu"
             );
         }
 
