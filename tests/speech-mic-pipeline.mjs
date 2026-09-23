@@ -118,6 +118,9 @@ assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLa
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
+assert.match(app, /speechDiagnosticsEnabled/);
+assert.match(app, /loadClassicScript\(\s*"SpeechDiagnostics\.js"\s*\)/s);
+assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
@@ -133,6 +136,12 @@ const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
 assert.match(speechMenuSource, /new globalThis\.SherpaRecognizer/);
+assert.match(speechMenuSource, /echoCancellation:\s*false/);
+assert.match(speechMenuSource, /noiseSuppression:\s*false/);
+assert.match(speechMenuSource, /autoGainControl:\s*false/);
+assert.match(speechMenuSource, /static #executionEnabled = true;/);
+assert.match(speechMenuSource, /speechRecognitionTiming/);
+assert.match(speechMenuSource, /captureSettings:/);
 assert.match(speechMenuSource, /context\.audioWorklet\.addModule/);
 assert.match(speechMenuSource, /new AudioWorkletNodeCtor\(\s*context,\s*"wmof-speech-capture"/s);
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
@@ -154,5 +163,15 @@ assert.match(sherpaWorkerSource, /stream\.inputFinished\(\)/);
 assert.match(sherpaWorkerSource, /new Float32Array\(\s*6400\s*\)/s);
 assert.match(sherpaWorkerSource, /hotwordsBuf/);
 assert.doesNotMatch(sherpaWorkerSource, /WebSocket|fetch\([^)]*speech/i);
+
+const diagnosticsSource = fs.readFileSync(
+    new URL("../SpeechDiagnostics.js", import.meta.url),
+    "utf8"
+);
+assert.match(diagnosticsSource, /Raw Sherpa Diagnostics/);
+assert.match(diagnosticsSource, /Execute matched commands/);
+assert.match(diagnosticsSource, /SpeechMenu\.executionEnabled\s*=\s*false/);
+assert.match(diagnosticsSource, /Copy JSON/);
+assert.match(diagnosticsSource, /firstTranscriptMilliseconds/);
 
 console.log("PASS Sherpa client ASR baseline architecture");
