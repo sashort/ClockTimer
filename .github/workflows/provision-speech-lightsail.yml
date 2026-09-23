@@ -18,14 +18,14 @@ jobs:
     timeout-minutes: 60
 
     env:
-      SPEECH_REF: 7540a24b938bd03c38cb1b7ab9b549a0dc99a9f3
+      SPEECH_REF: cdee00629855cb680c7edb33c0db5da8c307b35e
       WHISPER_CPP_REF: a44e07845931421bb6f3447ce0010ed9dc76a118
 
     steps:
       - name: Checkout tested speech branch
         uses: actions/checkout@v4
         with:
-          ref: 7540a24b938bd03c38cb1b7ab9b549a0dc99a9f3
+          ref: cdee00629855cb680c7edb33c0db5da8c307b35e
 
       - name: Validate provisioning scripts
         shell: bash
