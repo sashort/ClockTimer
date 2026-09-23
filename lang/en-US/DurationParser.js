@@ -16,9 +16,9 @@ class EnglishDurationParser {
             const hours = Number(digits.slice(0, 2));
             const minutes = Number(digits.slice(2));
 
-            if (minutes <= 59) {
-                return (hours * 3600 + minutes * 60) * 1000;
-            }
+            return minutes <= 59
+                ? (hours * 3600 + minutes * 60) * 1000
+                : undefined;
         }
 
         let seconds = 0, matched = false;
