@@ -247,6 +247,47 @@ assert.ok(
     "speech-index must not override effective scope precedence"
 );
 
+const compactCommand =
+    window.document
+        .createElement(
+            "speech-command"
+        );
+
+compactCommand.setAttribute(
+    "speech-pattern",
+    "^break start$"
+);
+
+compactCommand.setAttribute(
+    "speech-function",
+    "Commands.sync"
+);
+
+window.document
+    .querySelector(
+        "#top"
+    )
+    .append(
+        compactCommand
+    );
+
+SpeechMenu.refresh();
+
+compactCommand
+    .speechCompactPattern
+    .lastIndex =
+    0;
+
+assert.equal(
+    compactCommand
+        .speechCompactPattern
+        .test(
+            "breakstart"
+        ),
+    true,
+    "compact matching should tolerate omitted whitespace without rewriting the transcript"
+);
+
 console.log(
     "PASS SpeechMenu extrapolates available phrases using live precedence"
 );
