@@ -30,6 +30,8 @@ $previewAllowedActions = [
     'getEditorState',
     'getPreviewElements',
     'getSpeechCatalog',
+    'getSpeechTemplateSyntax',
+    'getSpeechTemplate',
     'validateChanges',
     'selectElement',
     'setOverlay',
