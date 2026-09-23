@@ -292,6 +292,9 @@
         PERMISSION_DEVELOPER_PREVIEW |
         PERMISSION_DEVELOPER;
 
+    const SPEECH_TRAINING_PERMISSION_MASK =
+        SPEECH_EDITOR_PERMISSION_MASK;
+
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
@@ -303,7 +306,61 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#accessTokensButton").hidden=!(permissions&ACCESS_TOKEN_PERMISSION_MASK);$("#speechEditorButton").hidden=!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
+        const permissions =
+            Number(user.permissions) || 0;
+
+        const canCreateUsers =
+            Boolean(
+                permissions &
+                (
+                    1 |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
+        const canManageTokens =
+            Boolean(
+                permissions &
+                ACCESS_TOKEN_PERMISSION_MASK
+            );
+
+        const canUseSpeechTools =
+            Boolean(
+                permissions &
+                SPEECH_EDITOR_PERMISSION_MASK
+            );
+
+        const canUseSql =
+            Boolean(
+                permissions &
+                PERMISSION_SUPERUSER
+            );
+
+        $("#newUserButton").hidden =
+            !canCreateUsers;
+
+        $("#accessTokensButton").hidden =
+            !canManageTokens;
+
+        $("#speechAdminGroup").hidden =
+            !canUseSpeechTools;
+
+        $("#speechEditorButton").hidden =
+            !canUseSpeechTools;
+
+        $("#speechTrainingButton").hidden =
+            !canUseSpeechTools;
+
+        $("#sqlConsoleButton").hidden =
+            !canUseSql;
+
+        $("#adminMenuGroup").hidden =
+            !(
+                canCreateUsers ||
+                canManageTokens ||
+                canUseSpeechTools ||
+                canUseSql
+            );
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -2328,9 +2385,90 @@
 
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
-        const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#accessTokensButton").hidden=!showAdmin||!(permissions&ACCESS_TOKEN_PERMISSION_MASK);$("#speechEditorButton").hidden=!showAdmin||!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
-        if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
+        const permissions =
+            Number(
+                signedInProfile?.permissions
+            ) || 0;
+
+        const canCreateUsers =
+            connected &&
+            Boolean(
+                permissions &
+                (
+                    1 |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
+        const canManageTokens =
+            connected &&
+            Boolean(
+                permissions &
+                ACCESS_TOKEN_PERMISSION_MASK
+            );
+
+        const canUseSpeechTools =
+            connected &&
+            Boolean(
+                permissions &
+                SPEECH_EDITOR_PERMISSION_MASK
+            );
+
+        const canUseSql =
+            connected &&
+            Boolean(
+                permissions &
+                PERMISSION_SUPERUSER
+            );
+
+        const showAdmin =
+            canCreateUsers ||
+            canManageTokens ||
+            canUseSpeechTools ||
+            canUseSql;
+
+        $("#adminMenuGroup").hidden =
+            !showAdmin;
+
+        $("#newUserButton").hidden =
+            !canCreateUsers;
+
+        $("#accessTokensButton").hidden =
+            !canManageTokens;
+
+        $("#speechAdminGroup").hidden =
+            !canUseSpeechTools;
+
+        $("#speechEditorButton").hidden =
+            !canUseSpeechTools;
+
+        $("#speechTrainingButton").hidden =
+            !canUseSpeechTools;
+
+        $("#sqlConsoleButton").hidden =
+            !canUseSql;
+
+        if (!showAdmin) {
+            $("#adminSubmenu").hidden =
+                true;
+
+            $("#adminMenuButton")
+                .setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+        }
+
+        if (!canUseSpeechTools) {
+            $("#speechSubmenu").hidden =
+                true;
+
+            $("#speechMenuButton")
+                .setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+        }
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
     }
@@ -6174,7 +6312,47 @@
             )
     );
 
-    $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
+    $("#adminMenuButton")
+        .addEventListener(
+            "click",
+            () => {
+                const submenu =
+                    $("#adminSubmenu");
+
+                const open =
+                    submenu.hidden;
+
+                submenu.hidden =
+                    !open;
+
+                $("#adminMenuButton")
+                    .setAttribute(
+                        "aria-expanded",
+                        String(open)
+                    );
+            }
+        );
+
+    $("#speechMenuButton")
+        .addEventListener(
+            "click",
+            () => {
+                const submenu =
+                    $("#speechSubmenu");
+
+                const open =
+                    submenu.hidden;
+
+                submenu.hidden =
+                    !open;
+
+                $("#speechMenuButton")
+                    .setAttribute(
+                        "aria-expanded",
+                        String(open)
+                    );
+            }
+        );
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
     $("#accessTokensButton")
@@ -6202,6 +6380,36 @@
                         "openSpeechEditorClick",
                     action:
                         "openSpeechEditor",
+                    preventDefault:
+                        true
+                })
+        );
+
+    $("#speechTrainingButton")
+        .addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    name:
+                        "openSpeechTrainingClick",
+                    action:
+                        "openSpeechTraining",
+                    preventDefault:
+                        true
+                })
+        );
+
+    $("#sqlConsoleButton")
+        .addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    name:
+                        "openSqlConsoleClick",
+                    action:
+                        "openSqlConsole",
                     preventDefault:
                         true
                 })
@@ -10939,6 +11147,82 @@
 
                     throw error;
                 }
+            },
+
+            openSpeechTraining() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        SPEECH_TRAINING_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/speech-training/",
+                        "wmofSpeechTraining"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Speech Training window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
+            },
+
+            openSqlConsole() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        PERMISSION_SUPERUSER
+                    )
+                ) {
+                    throw new Error(
+                        "Superuser permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/sql/?console=1",
+                        "wmofSqlConsole"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The SQL window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
             },
 
             async disconnectUser() {
