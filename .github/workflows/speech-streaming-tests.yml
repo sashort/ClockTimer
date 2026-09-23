@@ -97,6 +97,7 @@ jobs:
           c++ \
             -std=c++17 \
             -I/tmp/whisper.cpp/include \
+            -I/tmp/whisper.cpp/ggml/include \
             -I/tmp/whisper.cpp/examples \
             /tmp/validate-grammar.cpp \
             /tmp/whisper.cpp/examples/grammar-parser.cpp \
