@@ -1,0 +1,712 @@
+name: Provision speech backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/provision-speech-lightsail.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: clocktimer-speech-provision
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      SPEECH_REF: f0433879959e2131f2994db445c8ac61ff4b61a1
+      WHISPER_CPP_REF: a44e07845931421bb6f3447ce0010ed9dc76a118
+
+    steps:
+      - name: Checkout tested speech branch
+        uses: actions/checkout@v4
+        with:
+          ref: f0433879959e2131f2994db445c8ac61ff4b61a1
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_SSH_KEY: ${{ secrets.LAMP_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$LAMP_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$LAMP_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package speech runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf /tmp/clocktimer-speech-deploy.tgz             speech/server.js             speech/protocol.js             speech/grammar.js             speech/whisper-service.js             speech/package.json             speech/clocktimer-speech.service             speech/whisper-server-grammar.patch
+
+      - name: Upload speech runtime
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_USER: ${{ secrets.LAMP_USER }}
+        run: |
+          set -euo pipefail
+          scp             -i ~/.ssh/id_ed25519             /tmp/clocktimer-speech-deploy.tgz             "$LAMP_USER@$LAMP_HOST:/tmp/clocktimer-speech-deploy.tgz"
+
+      - name: Provision speech service
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_USER: ${{ secrets.LAMP_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh             -i ~/.ssh/id_ed25519             "$LAMP_USER@$LAMP_HOST"             "WHISPER_CPP_REF='$WHISPER_CPP_REF' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          STAGE=/tmp/clocktimer-speech-release
+          WHISPER_SRC="$HOME/.cache/clocktimer-whisper"
+          APACHE_ROOT=/opt/bitnami/apache2
+          APACHECTL="$APACHE_ROOT/bin/apachectl"
+          HTTPD_CONF="$APACHE_ROOT/conf/httpd.conf"
+
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          tar -xzf /tmp/clocktimer-speech-deploy.tgz -C "$STAGE"
+
+          missing=0
+          for command in git cmake g++ make curl python3 node npm; do
+            if ! command -v "$command" >/dev/null 2>&1; then
+              missing=1
+              break
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            sudo -n apt-get update
+            sudo -n env DEBIAN_FRONTEND=noninteractive               apt-get install -y                 git                 cmake                 build-essential                 curl                 ca-certificates                 python3                 nodejs                 npm
+          fi
+
+          mkdir -p "$HOME/.cache"
+
+          if [ ! -d "$WHISPER_SRC/.git" ]; then
+            rm -rf "$WHISPER_SRC"
+            git clone               https://github.com/ggml-org/whisper.cpp.git               "$WHISPER_SRC"
+          fi
+
+          git -C "$WHISPER_SRC" fetch origin
+          git -C "$WHISPER_SRC" reset --hard "$WHISPER_CPP_REF"
+          git -C "$WHISPER_SRC" clean -fdx
+          git -C "$WHISPER_SRC" apply             "$STAGE/speech/whisper-server-grammar.patch"
+
+          cmake             -S "$WHISPER_SRC"             -B "$WHISPER_SRC/build"             -DWHISPER_BUILD_TESTS=OFF
+
+          JOBS=$(nproc)
+          if [ "$JOBS" -gt 2 ]; then
+            JOBS=2
+          fi
+
+          cmake             --build "$WHISPER_SRC/build"             --target whisper-server             -j "$JOBS"
+
+          sudo -n install -d             -o root -g root -m 755             /opt/clocktimer-speech/bin             /opt/clocktimer-speech/src
+
+          sudo -n install -d             -o daemon -g daemon -m 750             /var/lib/clocktimer/speech             /var/lib/clocktimer/speech/models             /var/lib/clocktimer/speech/tmp
+
+          sudo -n install -m 755             "$WHISPER_SRC/build/bin/whisper-server"             /opt/clocktimer-speech/bin/whisper-server
+
+          MODEL=/var/lib/clocktimer/speech/models/ggml-base.en.bin
+
+          if [ ! -s "$MODEL" ]; then
+            (
+              cd "$WHISPER_SRC"
+              sh ./models/download-ggml-model.sh base.en
+            )
+
+            sudo -n install               -o daemon -g daemon -m 640               "$WHISPER_SRC/models/ggml-base.en.bin"               "$MODEL"
+          fi
+
+          for file in             server.js             protocol.js             grammar.js             whisper-service.js
+          do
+            sudo -n install -m 644               "$STAGE/speech/$file"               "/opt/clocktimer-speech/src/$file"
+          done
+
+          sudo -n install -m 644             "$STAGE/speech/package.json"             /opt/clocktimer-speech/package.json
+
+          (
+            cd /opt/clocktimer-speech
+            sudo -n npm install               --omit=dev               --ignore-scripts
+          )
+
+          sudo -n install -m 644             "$STAGE/speech/clocktimer-speech.service"             /etc/systemd/system/clocktimer-speech.service
+
+          sudo -n systemctl daemon-reload
+          sudo -n systemctl enable clocktimer-speech.service
+          sudo -n systemctl restart clocktimer-speech.service
+
+          healthy=0
+          for attempt in $(seq 1 120); do
+            if curl               --fail               --silent               --show-error               http://127.0.0.1:8765/health               >/tmp/clocktimer-speech-health.json
+            then
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$healthy" -ne 1 ]; then
+            sudo -n systemctl status               clocktimer-speech.service               --no-pager || true
+            sudo -n journalctl               -u clocktimer-speech.service               -n 120               --no-pager || true
+            exit 1
+          fi
+
+          cat /tmp/clocktimer-speech-health.json
+
+          JFK_WAV="$WHISPER_SRC/samples/jfk.wav"             node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import WebSocket from "file:///opt/clocktimer-speech/node_modules/ws/wrapper.mjs";
+
+          const wav =
+              fs.readFileSync(
+                  process.env.JFK_WAV
+              );
+
+          if (
+              wav.toString("ascii", 0, 4) !== "RIFF" ||
+              wav.toString("ascii", 8, 12) !== "WAVE"
+          ) {
+              throw new Error("Unexpected JFK WAV container.");
+          }
+
+          let offset = 12;
+          let pcm;
+          let channels;
+          let sampleRate;
+          let bitsPerSample;
+
+          while (offset + 8 <= wav.length) {
+              const id =
+                  wav.toString(
+                      "ascii",
+                      offset,
+                      offset + 4
+                  );
+
+              const size =
+                  wav.readUInt32LE(
+                      offset + 4
+                  );
+
+              const start =
+                  offset + 8;
+
+              if (id === "fmt ") {
+                  channels =
+                      wav.readUInt16LE(start + 2);
+                  sampleRate =
+                      wav.readUInt32LE(start + 4);
+                  bitsPerSample =
+                      wav.readUInt16LE(start + 14);
+              }
+              else if (id === "data") {
+                  pcm =
+                      wav.subarray(
+                          start,
+                          start + size
+                      );
+              }
+
+              offset =
+                  start +
+                  size +
+                  (size % 2);
+          }
+
+          if (
+              channels !== 1 ||
+              sampleRate !== 16000 ||
+              bitsPerSample !== 16 ||
+              !pcm?.length
+          ) {
+              throw new Error(
+                  "JFK sample is not mono 16 kHz PCM16."
+              );
+          }
+
+          const socket =
+              new WebSocket(
+                  "ws://127.0.0.1:8765/api/speech/stream",
+                  {
+                      headers: {
+                          Origin:
+                              "https://wmof.sashort-apps.com"
+                      }
+                  }
+              );
+
+          const result =
+              await new Promise(
+                  (resolve, reject) => {
+                      const timer =
+                          setTimeout(
+                              () =>
+                                  reject(
+                                      new Error(
+                                          "Timed out waiting for end-to-end speech transcription."
+                                      )
+                                  ),
+                              90000
+                          );
+
+                      socket.on(
+                          "open",
+                          () => {
+                              socket.send(
+                                  JSON.stringify({
+                                      type:
+                                          "session-start",
+                                      sessionId:
+                                          "provision-e2e",
+                                      language:
+                                          "en-US",
+                                      context: {},
+                                      audio: {
+                                          encoding:
+                                              "pcm_s16le",
+                                          sampleRate:
+                                              16000,
+                                          channels:
+                                              1
+                                      }
+                                  })
+                              );
+
+                              socket.send(
+                                  JSON.stringify({
+                                      type:
+                                          "utterance-start",
+                                      sessionId:
+                                          "provision-e2e",
+                                      utteranceId:
+                                          1
+                                  })
+                              );
+
+                              let sequence = 0;
+
+                              for (
+                                  let index = 0;
+                                  index < pcm.length;
+                                  index += 640
+                              ) {
+                                  const chunk =
+                                      pcm.subarray(
+                                          index,
+                                          Math.min(
+                                              pcm.length,
+                                              index + 640
+                                          )
+                                      );
+
+                                  const packet =
+                                      Buffer.allocUnsafe(
+                                          8 +
+                                          chunk.length
+                                      );
+
+                                  packet.writeUInt32LE(
+                                      1,
+                                      0
+                                  );
+                                  packet.writeUInt32LE(
+                                      sequence++,
+                                      4
+                                  );
+                                  chunk.copy(
+                                      packet,
+                                      8
+                                  );
+                                  socket.send(packet);
+                              }
+
+                              socket.send(
+                                  JSON.stringify({
+                                      type:
+                                          "utterance-end",
+                                      sessionId:
+                                          "provision-e2e",
+                                      utteranceId:
+                                          1,
+                                      reason:
+                                          "test"
+                                  })
+                              );
+                          }
+                      );
+
+                      socket.on(
+                          "message",
+                          data => {
+                              const message =
+                                  JSON.parse(
+                                      data.toString()
+                                  );
+
+                              if (
+                                  message.type ===
+                                  "ping"
+                              ) {
+                                  socket.send(
+                                      JSON.stringify({
+                                          type:
+                                              "pong",
+                                          at:
+                                              message.at
+                                      })
+                                  );
+                                  return;
+                              }
+
+                              if (
+                                  message.type ===
+                                  "error"
+                              ) {
+                                  reject(
+                                      new Error(
+                                          message.message ||
+                                          message.error
+                                      )
+                                  );
+                                  return;
+                              }
+
+                              if (
+                                  message.type ===
+                                  "final"
+                              ) {
+                                  clearTimeout(timer);
+                                  resolve(
+                                      String(
+                                          message.text ||
+                                          ""
+                                      )
+                                  );
+                              }
+                          }
+                      );
+
+                      socket.on(
+                          "error",
+                          reject
+                      );
+                  }
+              );
+
+          socket.close();
+
+          if (
+              !/(ask not|fellow americans|your country)/i
+                  .test(result)
+          ) {
+              throw new Error(
+                  "Unexpected JFK transcription: " +
+                  result
+              );
+          }
+
+          console.log(
+              "End-to-end transcript:",
+              result
+          );
+          NODE
+
+          if [ ! -x "$APACHECTL" ]; then
+            echo "Bitnami apachectl not found at $APACHECTL" >&2
+            exit 1
+          fi
+
+          sudo -n cp -n             "$HTTPD_CONF"             "$HTTPD_CONF.before-clocktimer-speech"             2>/dev/null || true
+
+          for module in proxy_module proxy_wstunnel_module; do
+            if ! sudo -n "$APACHECTL" -M 2>/dev/null |
+              grep -q "$module"
+            then
+              if [ "$module" = "proxy_module" ]; then
+                so=proxy
+              else
+                so=proxy_wstunnel
+              fi
+
+              sudo -n sed -i -E                 "s|^[[:space:]]*#[[:space:]]*(LoadModule[[:space:]]+$module[[:space:]]+modules/mod_$so\\.so)|\\1|"                 "$HTTPD_CONF"
+            fi
+          done
+
+          for module in proxy_module proxy_wstunnel_module; do
+            if ! sudo -n "$APACHECTL" -M 2>/dev/null |
+              grep -q "$module"
+            then
+              echo "Apache module $module is not loaded." >&2
+              exit 1
+            fi
+          done
+
+          sudo -n python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import shutil
+          import sys
+
+          root = Path("/opt/bitnami/apache2/conf")
+          domain = "wmof.sashort-apps.com"
+          begin = "# BEGIN CLOCKTIMER SPEECH PROXY"
+          end = "# END CLOCKTIMER SPEECH PROXY"
+
+          proxy = """
+              # BEGIN CLOCKTIMER SPEECH PROXY
+              ProxyPass        "/api/speech/stream" "ws://127.0.0.1:8765/api/speech/stream"
+              ProxyPassReverse "/api/speech/stream" "ws://127.0.0.1:8765/api/speech/stream"
+              # END CLOCKTIMER SPEECH PROXY
+          """.rstrip()
+
+          block_pattern = re.compile(
+              r"<VirtualHost\b[^>]*>.*?</VirtualHost>",
+              re.IGNORECASE | re.DOTALL,
+          )
+
+          host_pattern = re.compile(
+              r"(?im)^\s*Server(?:Name|Alias)\s+[^\n]*\b"
+              + re.escape(domain)
+              + r"(?::\d+)?\b"
+          )
+
+          matches = []
+
+          for path in root.rglob("*.conf"):
+              try:
+                  text = path.read_text()
+              except Exception:
+                  continue
+
+              for match in block_pattern.finditer(text):
+                  block = match.group(0)
+                  header = block.split(">", 1)[0]
+
+                  if (
+                      ":443" in header
+                      and host_pattern.search(block)
+                  ):
+                      matches.append(
+                          (
+                              path,
+                              text,
+                              match.start(),
+                              match.end(),
+                              block,
+                          )
+                      )
+
+          if len(matches) != 1:
+              print(
+                  "Expected exactly one TLS vhost for "
+                  + domain
+                  + ", found "
+                  + str(len(matches)),
+                  file=sys.stderr,
+              )
+
+              for path in root.rglob("*.conf"):
+                  try:
+                      if domain in path.read_text():
+                          print(
+                              "Domain appears in: "
+                              + str(path),
+                              file=sys.stderr,
+                          )
+                  except Exception:
+                      pass
+
+              sys.exit(2)
+
+          path, text, start, finish, block = matches[0]
+
+          marked = re.compile(
+              r"\n\s*"
+              + re.escape(begin)
+              + r".*?"
+              + re.escape(end)
+              + r"\s*",
+              re.DOTALL,
+          )
+
+          if begin in block:
+              block = marked.sub(
+                  "\n" + proxy + "\n",
+                  block,
+              )
+          else:
+              block = block.rsplit(
+                  "</VirtualHost>",
+                  1,
+              )[0].rstrip()
+              block += "\n" + proxy + "\n</VirtualHost>"
+
+          backup = Path(
+              str(path)
+              + ".before-clocktimer-speech"
+          )
+
+          if not backup.exists():
+              shutil.copy2(
+                  path,
+                  backup,
+              )
+
+          path.write_text(
+              text[:start]
+              + block
+              + text[finish:]
+          )
+
+          Path(
+              "/tmp/clocktimer-speech-vhost-path"
+          ).write_text(
+              str(path)
+          )
+
+          print(
+              "Updated TLS vhost:",
+              path,
+          )
+          PY
+
+          VHOST_FILE=$(cat /tmp/clocktimer-speech-vhost-path)
+
+          if ! sudo -n "$APACHECTL" -t; then
+            echo "Apache config test failed; restoring backups." >&2
+            sudo -n cp               "$VHOST_FILE.before-clocktimer-speech"               "$VHOST_FILE"
+
+            if [ -f "$HTTPD_CONF.before-clocktimer-speech" ]; then
+              sudo -n cp                 "$HTTPD_CONF.before-clocktimer-speech"                 "$HTTPD_CONF"
+            fi
+
+            sudo -n "$APACHECTL" -t || true
+            exit 1
+          fi
+
+          sudo -n /opt/bitnami/ctlscript.sh restart apache
+
+          curl             --fail             --silent             --show-error             http://127.0.0.1:8765/health
+
+          sudo -n systemctl status             clocktimer-speech.service             --no-pager
+          REMOTE
+
+      - name: Verify public WebSocket route
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install             --omit=dev             --ignore-scripts             --prefix speech
+
+          node --input-type=module <<'NODE'
+          import WebSocket from "./speech/node_modules/ws/wrapper.mjs";
+
+          const socket =
+              new WebSocket(
+                  "wss://wmof.sashort-apps.com/api/speech/stream",
+                  {
+                      headers: {
+                          Origin:
+                              "https://wmof.sashort-apps.com"
+                      }
+                  }
+              );
+
+          await new Promise(
+              (resolve, reject) => {
+                  const timer =
+                      setTimeout(
+                          () =>
+                              reject(
+                                  new Error(
+                                      "Timed out verifying the public speech WebSocket route."
+                                  )
+                              ),
+                          15000
+                      );
+
+                  socket.on(
+                      "open",
+                      () => {
+                          socket.send(
+                              JSON.stringify({
+                                  type:
+                                      "session-start",
+                                  sessionId:
+                                      "public-route-test",
+                                  language:
+                                      "en-US",
+                                  context: {},
+                                  audio: {
+                                      encoding:
+                                          "pcm_s16le",
+                                      sampleRate:
+                                          16000,
+                                      channels:
+                                          1
+                                  }
+                              })
+                          );
+
+                          socket.send(
+                              JSON.stringify({
+                                  type: "ping",
+                                  at: 424242
+                              })
+                          );
+                      }
+                  );
+
+                  socket.on(
+                      "message",
+                      data => {
+                          const message =
+                              JSON.parse(
+                                  data.toString()
+                              );
+
+                          if (
+                              message.type === "pong" &&
+                              message.at === 424242
+                          ) {
+                              clearTimeout(timer);
+                              resolve();
+                          }
+                      }
+                  );
+
+                  socket.on(
+                      "unexpected-response",
+                      (_request, response) => {
+                          reject(
+                              new Error(
+                                  "Public WebSocket returned HTTP "
+                                  + response.statusCode
+                              )
+                          );
+                      }
+                  );
+
+                  socket.on(
+                      "error",
+                      reject
+                  );
+              }
+          );
+
+          socket.close();
+
+          console.log(
+              "Public speech WebSocket route verified."
+          );
+          NODE
