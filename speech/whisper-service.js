@@ -398,8 +398,7 @@ export class WhisperService {
                     String(this.#threads),
                     "--tmp-dir",
                     this.#tmpDir,
-                    "-nt",
-                    "-nc"
+                    "-nt"
                 ],
                 {
                     stdio:
