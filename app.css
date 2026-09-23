@@ -4256,7 +4256,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .main-menu .admin-submenu a:hover,.main-menu .admin-submenu a:focus-visible {background:rgb(255 255 255 / 10%);}
 .main-menu .admin-submenu a[hidden] {display:none;}
 
-.speech-admin-group[hidden],.speech-submenu[hidden]{display:none;}
+.speech-tools-group[hidden],.speech-submenu[hidden]{display:none;}
 .main-menu #speechMenuButton::before{display:none;}
 .main-menu #speechMenuButton{gap:14px;}
 .main-menu #speechMenuButton::after{content:"›";margin-left:auto;font-size:24px;line-height:1;transition:transform 220ms ease-in-out;}
