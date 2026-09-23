@@ -1,0 +1,53 @@
+name: Speech UI tests
+
+on:
+  push:
+    branches:
+      - sherpa-client-asr
+  pull_request:
+    paths:
+      - "SpeechMenu.js"
+      - "SpeechEditorRuntime.js"
+      - "app.js"
+      - "index.html"
+      - "app.css"
+      - "api/admin/speech-editor/**"
+      - "api/speech-editor-config/**"
+      - "tests/speech-*.mjs"
+      - "tests/package.json"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check SpeechMenu.js
+          node --check SpeechEditorRuntime.js
+          node --check app.js
+          node --check api/admin/speech-editor/editor.js
+
+      - name: Check PHP syntax
+        run: |
+          php -l api/admin/speech-editor/index.php
+          php -l api/speech-editor-config/index.php
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+
+      - name: Run speech tests
+        working-directory: tests
+        run: |
+          npm run test:speech-editor
+          npm run test:speech-phrases
+          node speech-mic-pipeline.mjs
+          node speech-value-preprocessor.mjs
