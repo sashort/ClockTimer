@@ -3,7 +3,8 @@
     color: #fff;
     background: #062760;
     font-size: 15px;
-    --phrase-pane-height: 48%;
+    --phrase-pane-height: 34%;
+    --attribute-pane-height: 34%;
 }
 
 * { box-sizing: border-box; }
@@ -179,13 +180,16 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 .inspector {
     display: grid;
     grid-template-rows:
-        minmax(150px, var(--phrase-pane-height))
+        minmax(120px, var(--phrase-pane-height))
         12px
-        minmax(180px, 1fr);
+        minmax(150px, var(--attribute-pane-height))
+        12px
+        minmax(150px, 1fr);
 }
 
 .phrase-pane,
-.attribute-pane {
+.attribute-pane,
+.regex-builder-pane {
     min-height: 0;
     overflow: auto;
     padding: 16px;
@@ -193,7 +197,9 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 .phrase-pane { padding-bottom: 10px; }
 .attribute-pane {
     padding-top: 13px;
-    border-top: 1px solid rgb(255 255 255 / 8%);
+}
+.regex-builder-pane {
+    padding-top: 13px;
 }
 
 .inspector h2 {
@@ -773,9 +779,6 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 /* Regex Builder --------------------------------------------------------- */
 .regex-builder {
     position: relative;
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid #567c9d;
 }
 .regex-builder-heading {
     display: flex;
@@ -872,6 +875,9 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
     letter-spacing: .04em;
     text-transform: uppercase;
 }
+.regex-picker-heading.app-specific {
+    color: #ffc220;
+}
 .inspector .regex-picker-option {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -884,10 +890,25 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
     text-align: left;
     font-weight: 400;
 }
+.inspector .regex-picker-option.app-specific {
+    border-left: 3px solid #ffc220;
+    background: rgb(255 194 32 / 8%);
+}
+.inspector .regex-picker-option.app-specific .regex-picker-token {
+    color: #ffe08a;
+}
 .inspector .regex-picker-option:hover,
 .inspector .regex-picker-option:focus-visible {
     color: #071d3b;
     background: #a9ddf7;
+}
+.inspector .regex-picker-option.app-specific:hover,
+.inspector .regex-picker-option.app-specific:focus-visible {
+    background: #ffc220;
+}
+.inspector .regex-picker-option.app-specific:hover .regex-picker-token,
+.inspector .regex-picker-option.app-specific:focus-visible .regex-picker-token {
+    color: #071d3b;
 }
 .regex-picker-token {
     min-width: 0;
