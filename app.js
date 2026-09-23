@@ -7259,7 +7259,11 @@
             scheduledStartAutoArmed = false;
             scheduledStartAuto.checked = false;
             scheduledStartAuto.disabled = true;
-            void beginScheduledTrip("scheduled");
+            void globalThis
+                .WMOFActions
+                .startScheduledTrip(
+                    "scheduled"
+                );
             return;
         }
         if (scheduledTimeReached) {
@@ -7302,35 +7306,110 @@
         if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-start-cancel"});
     }
 
-    scheduledStartAuto.addEventListener("change", () => {
-        scheduledStartAutoArmed = scheduledStartAuto.checked;
-        updateScheduledStartDialog();
-    });
-    scheduledStartNow.addEventListener("click", () => void beginScheduledTrip("now"));
-    scheduledStartOnTime.addEventListener("click", () => void beginScheduledTrip("scheduled"));
-    scheduledStartCancel.addEventListener("click", cancelScheduledStartPrompt);
-    scheduledStartClose.addEventListener("click", cancelScheduledStartPrompt);
-    scheduledStartDialog.addEventListener("cancel", event => {event.preventDefault();cancelScheduledStartPrompt();});
-    scheduledStartStandard.addEventListener("click", () => {
-        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-edit",immediate:true});
-        void openNumberPad({
-            mode: "time",
-            source: "standard-time",
-            initialValue: tripDraft?.standardTime || "",
-            role: "trip-settings-field",
-            workflow: "new-trip",
-            cancelTarget: "scheduled-start",
-            confirmTarget: "scheduled-start",
-            backTarget: "scheduled-start",
-            duration: 0,
-            allowEmpty: true,
-            onConfirm: value => {
-                if (!tripDraft) return false;
-                tripDraft.standardTime = value || "";
-                return true;
-            }
-        }).catch(() => showScheduledStartDialog({resolution: scheduledStartNeedsResolution}));
-    });
+    scheduledStartAuto.addEventListener(
+        "change",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "changeScheduledStartAutoInput",
+                () =>
+                    globalThis
+                        .WMOFActions
+                        .changeScheduledStartAuto(
+                            scheduledStartAuto
+                                .checked
+                        )
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartNow,
+            event:
+                "click",
+            name:
+                "startScheduledTripNowClick",
+            action:
+                "startScheduledTrip",
+            args:
+                () => [
+                    "now"
+                ]
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartOnTime,
+            event:
+                "click",
+            name:
+                "startScheduledTripOnTimeClick",
+            action:
+                "startScheduledTrip",
+            args:
+                () => [
+                    "scheduled"
+                ]
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartCancel,
+            event:
+                "click",
+            name:
+                "cancelScheduledStartClick",
+            action:
+                "cancelScheduledStart"
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartClose,
+            event:
+                "click",
+            name:
+                "closeScheduledStartClick",
+            action:
+                "cancelScheduledStart"
+        });
+
+    scheduledStartDialog.addEventListener(
+        "cancel",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "cancelScheduledStartDialog",
+                event => {
+                    event.preventDefault();
+
+                    return globalThis
+                        .WMOFActions
+                        .cancelScheduledStart();
+                }
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartStandard,
+            event:
+                "click",
+            name:
+                "openScheduledStandardTimeEditorClick",
+            action:
+                "openScheduledStandardTimeEditor"
+        });
 
     function tripDraftCanStart(draft = tripDraft) {
         if (!draft || !parseDateInput(draft.creationDate)) return false;
