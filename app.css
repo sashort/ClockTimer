@@ -4204,6 +4204,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
   to{clip-path:inset(0);}
 }
 .speech-build-scaffold path{fill:none;stroke:#ffc220;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 180ms ease-in;}
+.speech-build-crane{opacity:0;transition:opacity 140ms ease-in-out;}
+.speech-build-crane path{fill:none;stroke:#003b73;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;}
+#speechMenuButton.speech-build-active .speech-build-crane{opacity:1;transition-delay:300ms;}
 #speechMenuButton.speech-build-active .rail-left,
 #speechMenuButton.speech-build-active .rail-right{stroke-dashoffset:0;transition-delay:0ms;}
 #speechMenuButton.speech-build-active .floor-1{stroke-dashoffset:0;transition-delay:90ms;}
@@ -4225,7 +4228,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 #speechMenuButton:not(.speech-build-active) .rail-left,
 #speechMenuButton:not(.speech-build-active) .rail-right{transition-delay:270ms;}
 @media (prefers-reduced-motion: reduce){
-  .speech-build-scaffold path,.main-menu #speechMenuButton::after{transition:none!important;}
+  .speech-build-scaffold path,.speech-build-crane,.main-menu #speechMenuButton::after{transition:none!important;}
   #speechMenuButton.speech-build-active .speech-build-scaffold path{stroke-dashoffset:0;}
   #speechMenuButton.speech-build-active .speech-build-mic{animation:none;}
 }
