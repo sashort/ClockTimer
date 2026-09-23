@@ -15,15 +15,15 @@
     ]);
 
     const templates = Object.freeze([
-        {token:"<letters:3>", label:"Letters", description:"Exact or ranged letters: <letters:3>, <letters:2..5>, <letters:+>."},
-        {token:"<digits:3>", label:"Digits", description:"Exact or ranged digits: <digits:3>, <digits:2..5>, <digits:+>."},
-        {token:"<decimal:2.2>", label:"Decimal", description:"Digits before and after a decimal point."},
-        {token:"<words:+>", label:"Words", description:"One or more words; ranges such as <words:2..4> are supported."},
-        {token:"<alphanumeric:3..8>", label:"Alphanumeric", description:"Letters or digits with an exact or ranged length."},
-        {token:"<time>", label:"Time", description:"A named spoken-time slot."},
-        {token:"<duration>", label:"Duration", description:"A named spoken-duration slot."},
-        {token:"<percent>", label:"Percent", description:"A named spoken-percent slot."},
-        {token:"<date>", label:"Date", description:"A named spoken-date slot."}
+        {group:"app", token:"<time>", label:"Time", description:"WMOF spoken clock-time value."},
+        {group:"app", token:"<duration>", label:"Duration", description:"WMOF spoken duration value."},
+        {group:"app", token:"<percent>", label:"Percent", description:"WMOF spoken percent value."},
+        {group:"app", token:"<date>", label:"Date", description:"WMOF spoken date value."},
+        {group:"generic", token:"<letters:3>", label:"Letters", description:"Exact or ranged letters: <letters:3>, <letters:2..5>, <letters:+>."},
+        {group:"generic", token:"<digits:3>", label:"Digits", description:"Exact or ranged digits: <digits:3>, <digits:2..5>, <digits:+>."},
+        {group:"generic", token:"<decimal:2.2>", label:"Decimal", description:"Digits before and after a decimal point."},
+        {group:"generic", token:"<words:+>", label:"Words", description:"One or more words; ranges such as <words:2..4> are supported."},
+        {group:"generic", token:"<alphanumeric:3..8>", label:"Alphanumeric", description:"Letters or digits with an exact or ranged length."}
     ]);
 
     const escapeRegex = value =>
@@ -137,6 +137,72 @@
         const body = named ? named[2] : value;
         const withName = canonical => name ? name + ":" + canonical : canonical;
         const candidates = [];
+
+        const lowerBody =
+            body.toLowerCase();
+
+        const appMatches = [];
+
+        if (
+            /^(?:noon|midnight)$/
+                .test(lowerBody) ||
+            /^(?:0?[1-9]|1[0-2])(?::[0-5]\d)?\s*(?:a\.?m\.?|p\.?m\.?)$/
+                .test(lowerBody)
+        ) {
+            appMatches.push(
+                "time"
+            );
+        }
+
+        if (
+            /^(?:[01]?\d|2[0-3]):[0-5]\d$/
+                .test(lowerBody) ||
+            /^(?:0?[1-9]|1[0-2]):[0-5]\d$/
+                .test(lowerBody)
+        ) {
+            appMatches.push(
+                "time",
+                "duration"
+            );
+        }
+
+        if (
+            /^\d{1,3}:[0-5]\d:[0-5]\d$/
+                .test(lowerBody)
+        ) {
+            appMatches.push(
+                "duration"
+            );
+        }
+
+        if (
+            /^\d+(?:\.\d+)?\s*%$/
+                .test(lowerBody)
+        ) {
+            appMatches.push(
+                "percent"
+            );
+        }
+
+        if (
+            /^\d{4}-\d{1,2}-\d{1,2}$/
+                .test(lowerBody) ||
+            /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/
+                .test(lowerBody)
+        ) {
+            appMatches.push(
+                "date"
+            );
+        }
+
+        for (
+            const match of
+            appMatches
+        ) {
+            candidates.push(
+                withName(match)
+            );
+        }
 
         if (/^A+$/.test(body)) {
             candidates.push(withName("letters:" + body.length));
