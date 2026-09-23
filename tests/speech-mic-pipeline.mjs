@@ -107,6 +107,7 @@ assert.equal(bar.getAttribute("state"), "stopped");
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 assert.match(html, /<speech-mic-bar id="speechMicBar"/);
+assert.doesNotMatch(html, /independentTimerValue|independentStart|independentStop|independentReset|independent-timer/);
 assert.doesNotMatch(html, /<script src="SpeechMenu\\.js"/);
 
 const primedSpeechIds = [
@@ -156,12 +157,14 @@ assert.doesNotMatch(html, /id="speechAdminGroup"/);
 
 const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
 assert.match(css, /--speech-mic-row-height:\s*0px/);
+assert.doesNotMatch(css, /independent-timer|independent-timer-controls|independent-timer-value|play-icon|stop-icon/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
+assert.doesNotMatch(app, /startIndependentTimer|stopIndependentTimer|resetIndependentTimer|renderIndependentTimer|timerAccumulated|timerStartedAt/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 assert.match(app, /speechDiagnosticsEnabled/);
 assert.match(app, /speech-pipeline/);
