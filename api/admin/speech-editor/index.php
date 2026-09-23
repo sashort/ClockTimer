@@ -21,16 +21,28 @@ header('Cache-Control: no-store');
         <button id="saveButton" class="primary" type="button" disabled>Save changes</button>
     </header>
     <main class="layout">
+        <aside class="dom-navigator" aria-label="DOM navigator">
+            <header class="navigator-header">
+                <h2>DOM Navigator</h2>
+                <label class="navigator-search">
+                    <span class="sr-only">Filter DOM elements</span>
+                    <input id="domSearch" type="search" placeholder="Search elements…" autocomplete="off" spellcheck="false">
+                </label>
+            </header>
+            <div id="domTree" class="dom-tree" role="tree" aria-label="Application DOM"></div>
+        </aside>
+
         <section class="preview" aria-label="WMOF preview">
             <iframe id="appFrame" title="WMOF application" src="../../../index.html"></iframe>
-            <div id="previewHint">Click a control to inspect its speech elements. Turn off the overlay to use the page.</div>
+            <div id="previewHint">Click an element to select it. Turn off the overlay to interact with the app.</div>
         </section>
+
         <aside class="inspector" aria-label="Speech command editor">
             <section class="phrase-pane" aria-label="Speech phrases">
                 <div class="pane-heading">
                     <div>
                         <h2>Speech Phrases</h2>
-                        <p class="subtle">Candidates are grouped by source element. Speech menus expand to show their child commands.</p>
+                        <p class="subtle">Available phrases, grouped by candidate and SpeechMenu precedence.</p>
                     </div>
                 </div>
                 <div id="phraseList" class="phrase-list" role="tree" aria-label="Configured speech phrases"></div>
@@ -42,8 +54,8 @@ header('Cache-Control: no-store');
 
             <section class="attribute-pane" aria-label="Speech attributes">
                 <div class="selection-heading">
-                    <h2 id="selectedTitle">Select a phrase or control</h2>
-                    <p id="selectedPath" class="subtle">Choose a phrase group, a speech menu, or click a control in the preview.</p>
+                    <h2 id="selectedTitle">Select an element</h2>
+                    <p id="selectedPath" class="subtle">Choose an item in the DOM navigator, phrase list, or preview.</p>
                 </div>
 
                 <label id="speechMenuToggleField" class="speech-menu-toggle" hidden>
