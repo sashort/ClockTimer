@@ -2145,16 +2145,6 @@ class SpeechMenu {
         source,
         limit = 128
     ) {
-"
-                );
-
-        return result;
-    }
-
-    static #expandRegexSource(
-        source,
-        limit = 128
-    ) {
         if (typeof source !== "string") {
             return [];
         }
