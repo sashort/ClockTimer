@@ -57,10 +57,10 @@ jobs:
 
              cd /opt/bitnami/apache2/htdocs
 
-             REGISTRY_BACKUP=/tmp/clocktimer-SpeechFunctionRegistry.js
-             rm -f "$REGISTRY_BACKUP"
-             if [ -f SpeechFunctionRegistry.js ]; then
-               cp SpeechFunctionRegistry.js "$REGISTRY_BACKUP"
+             ROLES_BACKUP=/tmp/clocktimer-SpeechFunctionRoles.js
+             rm -f "$ROLES_BACKUP"
+             if [ -f SpeechFunctionRoles.js ]; then
+               cp SpeechFunctionRoles.js "$ROLES_BACKUP"
              fi
 
              git reset --hard HEAD
@@ -68,9 +68,9 @@ jobs:
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
              git reset --hard "origin/$DEPLOY_BRANCH"
 
-             if [ -s "$REGISTRY_BACKUP" ]; then
-               cp "$REGISTRY_BACKUP" SpeechFunctionRegistry.js
-               rm -f "$REGISTRY_BACKUP"
+             if [ -s "$ROLES_BACKUP" ]; then
+               cp "$ROLES_BACKUP" SpeechFunctionRoles.js
+               rm -f "$ROLES_BACKUP"
              fi
 
              echo "Deploy branch: $(git branch --show-current)"
@@ -79,8 +79,8 @@ jobs:
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database connectivity check passed."
 
-             sudo -n chown "$(id -un)":daemon SpeechFunctionRegistry.js
-             sudo -n chmod 664 SpeechFunctionRegistry.js
+             sudo -n chown "$(id -un)":daemon SpeechFunctionRoles.js
+             sudo -n chmod 664 SpeechFunctionRoles.js
 
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
@@ -91,6 +91,7 @@ jobs:
                -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechFunctionRoles.js\"#src=\"SpeechFunctionRoles.js?v=$VERSION\"#" \
                -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
                -e "s#src=\"UtilityFunctions.js\"#src=\"UtilityFunctions.js?v=$VERSION\"#" \
                -e "s#src=\"SpeechProcessingFunctions.js\"#src=\"SpeechProcessingFunctions.js?v=$VERSION\"#" \
