@@ -89,12 +89,14 @@ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscri
 assert.equal(bar.getAttribute("phase"), null);
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscribed", {detail:{id:7,transcript:"start at five",live:true}}));
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechPreprocessed", {detail:{utteranceId:7,originalText:"start at five",processedText:"start at 5:00"}}));
-assert.equal(bar.getAttribute("phase"), "preprocessed");
+assert.equal(bar.getAttribute("phase"), null);
 
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechMenuMatched", {detail:{utteranceId:7,transcript:"start at 5:00"}}));
-assert.equal(bar.getAttribute("phase"), "preprocessed");
+assert.equal(bar.getAttribute("phase"), "matched");
 
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechArgumentsPrepared", {detail:{utteranceId:7,arguments:["5:00",30]}}));
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechCommandExecuted", {detail:{utteranceId:7,transcript:"start at 5:00"}}));
+assert.equal(bar.getAttribute("phase"), "preprocessed");
 
 bar.setResponse("Done");
 bar.clear();
@@ -445,4 +447,9 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /case "speechCommandExecuted":[\s\S]*#showPreprocessed\(\s*this\.#currentTranscript,\s*formatted\s*\)/
+);
+
+assert.match(
+    speechMenuSource,
+    /if \(committed\)[\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)/
 );
