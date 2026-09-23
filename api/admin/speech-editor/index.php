@@ -30,13 +30,23 @@ header('Cache-Control: no-store');
                 </select>
             </label>
         </div>
+        <label class="workspace-layout-control">
+            <span>Workspace</span>
+            <select id="workspacePreset" aria-label="Workspace layout">
+                <option value="custom">Custom</option>
+                <option value="authoring">Authoring</option>
+                <option value="macro">Macro</option>
+                <option value="regex">Regex</option>
+            </select>
+        </label>
         <button id="overlayToggle" type="button" aria-pressed="true">Overlay: On</button>
         <button id="discardButton" type="button" disabled>Discard</button>
         <button id="saveButton" class="primary" type="button" disabled>Save changes</button>
     </header>
     <main class="layout">
-        <aside class="dom-navigator" aria-label="DOM navigator">
-            <header class="navigator-header">
+        <aside id="leftDock" class="workspace-dock workspace-dock-left" data-workspace-dock="left" aria-label="Left workspace dock">
+        <section class="dom-navigator workspace-pane" data-pane-id="dom" aria-label="DOM navigator">
+            <header class="navigator-header workspace-pane-heading">
                 <h2>DOM Navigator</h2>
                 <label class="navigator-search">
                     <span class="sr-only">Filter DOM elements</span>
@@ -44,6 +54,7 @@ header('Cache-Control: no-store');
                 </label>
             </header>
             <div id="domTree" class="dom-tree" role="tree" aria-label="Application DOM"></div>
+        </section>
         </aside>
 
         <section class="preview" aria-label="WMOF preview">
@@ -70,9 +81,9 @@ header('Cache-Control: no-store');
             <div id="previewHint">Click an element to select it. Turn off the overlay to interact with the app.</div>
         </section>
 
-        <aside class="inspector" aria-label="Speech command editor">
-            <section class="phrase-pane" aria-label="Speech phrases">
-                <div class="pane-heading">
+        <aside id="rightDock" class="inspector workspace-dock workspace-dock-right" data-workspace-dock="right" aria-label="Speech command editor">
+            <section class="phrase-pane workspace-pane" data-pane-id="phrases" aria-label="Speech phrases">
+                <div class="pane-heading workspace-pane-heading">
                     <div>
                         <h2>Speech Phrases</h2>
                         <p class="subtle">Available phrases, grouped by candidate and SpeechMenu precedence.</p>
@@ -81,12 +92,8 @@ header('Cache-Control: no-store');
                 <div id="phraseList" class="phrase-list" role="tree" aria-label="Configured speech phrases"></div>
             </section>
 
-            <div id="inspectorSplitter" class="inspector-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize phrase list and attribute editor" tabindex="0">
-                <span aria-hidden="true"></span>
-            </div>
-
-            <section class="attribute-pane" aria-label="Speech attributes">
-                <div class="selection-heading">
+            <section class="attribute-pane workspace-pane" data-pane-id="attributes" aria-label="Speech attributes">
+                <div class="selection-heading workspace-pane-heading">
                     <h2 id="selectedTitle">Select an element</h2>
                     <p id="selectedPath" class="subtle">Choose an item in the DOM navigator, phrase list, or preview.</p>
                 </div>
@@ -153,12 +160,8 @@ header('Cache-Control: no-store');
                 <p id="status" role="status" aria-live="polite"></p>
             </section>
 
-            <div id="regexBuilderSplitter" class="inspector-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize attribute editor and regex builder" tabindex="0">
-                <span aria-hidden="true"></span>
-            </div>
-
-            <section id="regexBuilderPanel" class="regex-builder regex-builder-pane" aria-label="Speech pattern regex builder">
-                <div class="regex-builder-heading">
+            <section id="regexBuilderPanel" class="regex-builder regex-builder-pane workspace-pane" data-pane-id="regex" aria-label="Speech pattern regex builder">
+                <div class="regex-builder-heading workspace-pane-heading">
                     <div>
                         <h3>Regex Builder</h3>
                         <p>Write the phrase you want recognized; the builder handles regex syntax and recognizer-safe normalization.</p>
@@ -187,6 +190,68 @@ header('Cache-Control: no-store');
                     <button id="regexBuilderLive" type="button" aria-pressed="false" disabled>Live</button>
                 </div>
                 <p id="regexBuilderMessage" class="regex-builder-message" role="status" aria-live="polite"></p>
+            </section>
+
+            <section id="macroPanel" class="macro-builder-pane workspace-pane" data-pane-id="macro" aria-label="Macro builder">
+                <div class="pane-heading workspace-pane-heading macro-builder-heading">
+                    <div>
+                        <h2>Macro Builder</h2>
+                        <p class="subtle">Record action functions, then bind each argument to a fixed value, parameter, or &lt;context&gt;.</p>
+                    </div>
+                </div>
+
+                <div class="macro-toolbar">
+                    <label>
+                        <span>Macro</span>
+                        <select id="macroSelect">
+                            <option value="">New macro…</option>
+                        </select>
+                    </label>
+                    <label class="macro-name-field">
+                        <span>Function name</span>
+                        <span class="macro-function-prefix">WMOFActions.</span>
+                        <input id="macroName" type="text" autocomplete="off" spellcheck="false" placeholder="startProductionTrip">
+                    </label>
+                </div>
+
+                <p id="macroNameMessage" class="macro-message" role="status"></p>
+
+                <div class="macro-actions">
+                    <button id="macroRecord" class="primary" type="button" aria-pressed="false">● Record</button>
+                    <button id="macroNew" type="button">New</button>
+                    <button id="macroTest" type="button" disabled>▶ Test</button>
+                    <button id="macroStage" type="button" disabled>Save Macro</button>
+                    <button id="macroDelete" class="remove" type="button" disabled>Delete</button>
+                </div>
+
+                <div class="macro-section-heading">
+                    <h3>Actions</h3>
+                    <span id="macroRecordingState">Not recording</span>
+                </div>
+                <div id="macroSteps" class="macro-steps"></div>
+
+                <div class="macro-section-heading">
+                    <h3>Parameters</h3>
+                    <button id="macroAddParameter" type="button">+ Parameter</button>
+                </div>
+                <div id="macroParameters" class="macro-parameters"></div>
+
+                <datalist id="macroContextOptions">
+                    <option value="currentTrip">
+                    <option value="currentTrip.id">
+                    <option value="currentTrip.status">
+                    <option value="currentTrip.summary">
+                    <option value="activeInterval">
+                    <option value="activeInterval.intervalType">
+                    <option value="activeInterval.type">
+                    <option value="activeInterval.key">
+                    <option value="renderedTime.mode">
+                    <option value="sync.enabled">
+                    <option value="sync.connection">
+                    <option value="goal.mode">
+                </datalist>
+
+                <p id="macroMessage" class="macro-message" role="status" aria-live="polite"></p>
             </section>
         </aside>
     </main>
