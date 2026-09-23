@@ -17,12 +17,14 @@ $defaultFunctionRoles = [
 ];
 
 $read = static function () use ($path): array {
-    if (!is_file($path)) return ['entries' => [], 'revision' => 'empty'];
+    if (!is_file($path)) return ['entries' => [], 'macros' => [], 'revision' => 'empty'];
     $raw = file_get_contents($path);
     if ($raw === false) api_error('Speech configuration could not be read.', 500, 'read_failed');
     $data = json_decode($raw, true);
     if (!is_array($data) || !is_array($data['entries'] ?? null)) api_error('Speech configuration is invalid.', 500, 'invalid_config');
-    return ['entries' => $data['entries'], 'revision' => hash('sha256', $raw)];
+    $macros = $data['macros'] ?? [];
+    if (!is_array($macros) || !array_is_list($macros)) api_error('Speech macro configuration is invalid.', 500, 'invalid_config');
+    return ['entries' => $data['entries'], 'macros' => $macros, 'revision' => hash('sha256', $raw)];
 };
 
 $normalizeRoles = static function (mixed $value) use ($roleNames): array {
@@ -90,10 +92,15 @@ require_csrf();
 
 $input = json_input();
 $entries = $input['entries'] ?? null;
+$macros = $input['macros'] ?? null;
 $functionRoles = $input['functionRoles'] ?? null;
 
 if (!is_array($entries) || !array_is_list($entries) || count($entries) > 250) {
     api_error('Invalid speech entries.', 422, 'invalid_entries');
+}
+
+if (!is_array($macros) || !array_is_list($macros) || count($macros) > 100) {
+    api_error('Invalid speech macros.', 422, 'invalid_macros');
 }
 
 if (!is_array($functionRoles)) {
@@ -112,6 +119,154 @@ if (
     !hash_equals($currentRegistry['registryRevision'], $input['registryRevision'])
 ) {
     api_error('Speech function roles changed since this editor opened. Reload before saving.', 409, 'stale_registry_revision');
+}
+
+$actionVerbPattern = '/^(?:add|apply|begin|cancel|change|choose|clear|close|confirm|connect|create|delete|defer|disable|disconnect|edit|enable|end|enter|hide|load|lock|move|open|prepare|release|remove|reorder|request|reset|resume|save|schedule|select|set|show|start|stop|submit|switch|toggle|unlock|update)/D';
+$identifierPattern = '/^[A-Za-z_$][\\w$]*$/D';
+$contextPattern = '/^(?:[A-Za-z_$][\\w$]*)(?:\\.[A-Za-z_$][\\w$]*)*$/D';
+
+$containsUnsupportedMacroLiteral = static function (mixed $value) use (&$containsUnsupportedMacroLiteral): bool {
+    if (!is_array($value)) return false;
+    if (isset($value['__wmofMacroUnsupported'])) return true;
+    foreach ($value as $child) {
+        if ($containsUnsupportedMacroLiteral($child)) return true;
+    }
+    return false;
+};
+
+$currentMacroNames = [];
+foreach (($current['macros'] ?? []) as $currentMacro) {
+    if (is_array($currentMacro) && is_string($currentMacro['name'] ?? null)) {
+        $currentMacroNames['WMOFActions.' . $currentMacro['name']] = true;
+    }
+}
+
+$nativeActionNames = [];
+foreach (($currentRegistry['functionRoles']['action'] ?? []) as $registeredAction) {
+    if (is_string($registeredAction) && !isset($currentMacroNames[$registeredAction])) {
+        $nativeActionNames[$registeredAction] = true;
+    }
+}
+
+$macroNames = [];
+foreach ($macros as $macro) {
+    if (!is_array($macro)) api_error('Invalid macro.', 422, 'invalid_macro');
+
+    $macroName = $macro['name'] ?? null;
+    if (
+        !is_string($macroName) ||
+        !preg_match($identifierPattern, $macroName) ||
+        !preg_match($actionVerbPattern, $macroName)
+    ) {
+        api_error('Macro names must be valid action names that start with a verb.', 422, 'invalid_macro_name');
+    }
+
+    if (isset($macroNames[$macroName])) {
+        api_error('Macro names must be unique.', 422, 'duplicate_macro_name');
+    }
+
+    if (isset($nativeActionNames['WMOFActions.' . $macroName])) {
+        api_error('A native action function already uses this macro name.', 422, 'macro_name_collision');
+    }
+
+    $macroNames[$macroName] = true;
+
+    $parameters = $macro['parameters'] ?? null;
+    $steps = $macro['steps'] ?? null;
+
+    if (!is_array($parameters) || !array_is_list($parameters) || count($parameters) > 50) {
+        api_error('Invalid macro parameters.', 422, 'invalid_macro');
+    }
+
+    if (!is_array($steps) || !array_is_list($steps) || count($steps) < 1 || count($steps) > 200) {
+        api_error('A macro needs between 1 and 200 actions.', 422, 'invalid_macro');
+    }
+
+    $parameterNames = [];
+
+    foreach ($parameters as $parameter) {
+        if (!is_array($parameter)) api_error('Invalid macro parameter.', 422, 'invalid_macro');
+
+        $parameterName = $parameter['name'] ?? null;
+        $parameterType = $parameter['type'] ?? 'value';
+
+        if (
+            !is_string($parameterName) ||
+            !preg_match($identifierPattern, $parameterName) ||
+            isset($parameterNames[$parameterName])
+        ) {
+            api_error('Macro parameter names must be unique valid identifiers.', 422, 'invalid_macro_parameter');
+        }
+
+        if (!is_string($parameterType) || strlen($parameterType) > 50) {
+            api_error('Invalid macro parameter type.', 422, 'invalid_macro_parameter');
+        }
+
+        if (
+            array_key_exists('default', $parameter) &&
+            $containsUnsupportedMacroLiteral($parameter['default'])
+        ) {
+            api_error('Macro parameter defaults must be serializable.', 422, 'invalid_macro_parameter');
+        }
+
+        $parameterNames[$parameterName] = true;
+    }
+
+    foreach ($steps as $step) {
+        if (!is_array($step)) api_error('Invalid macro action.', 422, 'invalid_macro_step');
+
+        $action = $step['action'] ?? null;
+        $args = $step['args'] ?? null;
+
+        if (!is_string($action) || !preg_match($identifierPattern, $action)) {
+            api_error('Macro actions must reference valid action function names.', 422, 'invalid_macro_step');
+        }
+
+        if ($action === $macroName) {
+            api_error('A macro cannot call itself.', 422, 'recursive_macro');
+        }
+
+        if (!is_array($args) || !array_is_list($args) || count($args) > 30) {
+            api_error('Invalid macro action arguments.', 422, 'invalid_macro_step');
+        }
+
+        foreach ($args as $argument) {
+            if (!is_array($argument)) api_error('Invalid macro argument.', 422, 'invalid_macro_argument');
+
+            $source = $argument['source'] ?? 'literal';
+
+            if (!in_array($source, ['literal', 'parameter', 'context'], true)) {
+                api_error('Invalid macro argument source.', 422, 'invalid_macro_argument');
+            }
+
+            if ($source === 'parameter') {
+                $name = $argument['name'] ?? null;
+                if (!is_string($name) || !isset($parameterNames[$name])) {
+                    api_error('Macro argument references an unknown parameter.', 422, 'invalid_macro_argument');
+                }
+            }
+
+            if ($source === 'context') {
+                $pathValue = $argument['path'] ?? '';
+                if (
+                    !is_string($pathValue) ||
+                    (
+                        $pathValue !== '' &&
+                        !preg_match($contextPattern, $pathValue)
+                    )
+                ) {
+                    api_error('Invalid macro context path.', 422, 'invalid_macro_argument');
+                }
+            }
+
+            if (
+                $source === 'literal' &&
+                $containsUnsupportedMacroLiteral($argument['value'] ?? null)
+            ) {
+                api_error('Recorded arguments must be converted to parameters or context before saving.', 422, 'invalid_macro_argument');
+            }
+        }
+    }
 }
 
 $allowedAttributes = ['speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-modal', 'speech-index'];
@@ -166,7 +321,7 @@ foreach ($roleNames as $role) {
     $normalizedRoles[$role] = array_values($names);
 }
 
-$encoded = json_encode(['entries' => $entries], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
+$encoded = json_encode(['entries' => $entries, 'macros' => $macros], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
 $registryEncoded = $renderRegistry(
     $normalizedRoles
 );
@@ -192,6 +347,7 @@ if (!rename($configTemporary, $path)) {
 
 json_response([
     'entries' => $entries,
+    'macros' => $macros,
     'revision' => hash('sha256', $encoded),
     'functionRoles' => $normalizedRoles,
     'registryRevision' => hash('sha256', $registryEncoded)
