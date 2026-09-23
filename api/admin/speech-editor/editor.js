@@ -10613,6 +10613,266 @@
             }
         );
 
+    const agentEndpoint =
+        "agent/";
+
+    const editorAgentInstance =
+        (
+            globalThis.crypto
+                ?.randomUUID?.() ||
+            (
+                Date.now()
+                    .toString(
+                        36
+                    ) +
+                Math.random()
+                    .toString(
+                        36
+                    )
+                    .slice(
+                        2
+                    )
+            )
+        )
+            .replace(
+                /[^A-Za-z0-9_-]/g,
+                ""
+            );
+
+    let agentBridgeStarted =
+        false;
+
+    let agentBridgeTimer;
+
+    let agentPublishTimer;
+
+    const agentBridgeFetch =
+        async (
+            url = "",
+            options = {}
+        ) => {
+            const response =
+                await fetch(
+                    agentEndpoint +
+                    url,
+                    {
+                        ...options,
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json",
+                            "X-CSRF-Token":
+                                document.body
+                                    .dataset
+                                    .csrf,
+                            ...(
+                                options.headers ||
+                                {}
+                            )
+                        }
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Speech Editor agent request failed."
+                );
+            }
+
+            return data;
+        };
+
+    const publishAgentBridge =
+        async () => {
+            await agentBridgeFetch(
+                "",
+                {
+                    method:
+                        "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body:
+                        JSON.stringify({
+                            operation:
+                                "register",
+                            editorInstance:
+                                editorAgentInstance,
+                            manifest:
+                                editorActionFunctions
+                                    .getManifest(),
+                            state:
+                                editorActionFunctions
+                                    .getState()
+                        })
+                }
+            );
+        };
+
+    const scheduleAgentPublish =
+        () => {
+            if (!agentBridgeStarted) {
+                return;
+            }
+
+            clearTimeout(
+                agentPublishTimer
+            );
+
+            agentPublishTimer =
+                setTimeout(
+                    () => {
+                        void publishAgentBridge()
+                            .catch(
+                                () => {}
+                            );
+                    },
+                    250
+                );
+        };
+
+    editorActionFunctions
+        .events
+        .addEventListener(
+            "actioncompleted",
+            scheduleAgentPublish
+        );
+
+    const completeAgentRequest =
+        (
+            requestId,
+            {
+                ok,
+                result,
+                error
+            }
+        ) =>
+            agentBridgeFetch(
+                "",
+                {
+                    method:
+                        "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body:
+                        JSON.stringify({
+                            operation:
+                                "complete",
+                            requestId,
+                            editorInstance:
+                                editorAgentInstance,
+                            ok:
+                                Boolean(
+                                    ok
+                                ),
+                            result:
+                                ok
+                                    ? result
+                                    : undefined,
+                            error:
+                                ok
+                                    ? undefined
+                                    : String(
+                                        error ||
+                                        "Editor action failed."
+                                    ),
+                            state:
+                                editorActionFunctions
+                                    .getState()
+                        })
+                }
+            );
+
+    const pollAgentBridge =
+        async () => {
+            if (!agentBridgeStarted) {
+                return;
+            }
+
+            try {
+                const data =
+                    await agentBridgeFetch(
+                        "?operation=next&editorInstance=" +
+                        encodeURIComponent(
+                            editorAgentInstance
+                        )
+                    );
+
+                const request =
+                    data.request;
+
+                if (request) {
+                    try {
+                        const result =
+                            await editorActionFunctions
+                                .executeJSON(
+                                    request.command
+                                );
+
+                        await completeAgentRequest(
+                            request.requestId,
+                            {
+                                ok:
+                                    true,
+                                result
+                            }
+                        );
+                    }
+                    catch (
+                        error
+                    ) {
+                        await completeAgentRequest(
+                            request.requestId,
+                            {
+                                ok:
+                                    false,
+                                error:
+                                    error.message
+                            }
+                        );
+                    }
+                }
+            }
+            catch {}
+
+            clearTimeout(
+                agentBridgeTimer
+            );
+
+            agentBridgeTimer =
+                setTimeout(
+                    pollAgentBridge,
+                    750
+                );
+        };
+
+    const startAgentBridge =
+        async () => {
+            if (agentBridgeStarted) {
+                return;
+            }
+
+            agentBridgeStarted =
+                true;
+
+            try {
+                await publishAgentBridge();
+            }
+            catch {}
+
+            void pollAgentBridge();
+        };
+
     addEventListener(
         "beforeunload",
         event => {
@@ -10696,6 +10956,8 @@
                 syncFunctionCatalog();
                 renderMacroBuilder();
                 renderAll();
+
+                void startAgentBridge();
             }
         )
         .catch(
