@@ -5882,108 +5882,209 @@
         }
     });
 
-    $("#graphicalSettingsForm").addEventListener("submit", event => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        syncMilitaryToggleForTimeFormat(form);
-        syncTimeFormatForMilitaryToggle(form);
-        const settings = settingsFromForm(form);
-        applyGraphicalSettings(settings);
-        saveGraphicalSettings(settings);
-        void closeDialogWithReturn(graphicalDialog, { reason: "graphical-settings-save" }).catch(() => {});
-    });
+    $("#graphicalSettingsForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveGraphicalSettingsSubmit",
+                event => {
+                    event.preventDefault();
+
+                    const form =
+                        event.currentTarget;
+
+                    syncMilitaryToggleForTimeFormat(
+                        form
+                    );
+
+                    syncTimeFormatForMilitaryToggle(
+                        form
+                    );
+
+                    globalThis
+                        .WMOFActions
+                        .updateGraphicalSettings(
+                            settingsFromForm(
+                                form
+                            )
+                        );
+
+                    void closeDialogWithReturn(
+                        graphicalDialog,
+                        {
+                            reason:
+                                "graphical-settings-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
+                }
+            )
+    );
 
     $("#resetGraphicalSettings").addEventListener("click", () => fillGraphicalForm({ ...GRAPHICAL_DEFAULTS }));
 
-    $("#stateSettingsForm").addEventListener("submit", event => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        const preferences = {
-            ...getTripPreferences(),
-            lateBreakBehavior:
-                form.elements.lateBreakBehavior.value === "autoRestartTrip"
-                    ? "autoRestartTrip"
-                    : "showLateWindow"
-        };
-        saveTripPreferences(preferences);
-        if (!tripIsLive() && !tripDraft) {
-            clockTimer.intervalElapsedBehavior = "startLatency";
-            clockTimer.autoRestartTripAfterLateBreak =
-                preferences.lateBreakBehavior === "autoRestartTrip";
-        }
-        void closeDialogWithReturn(stateDialog, { reason: "state-settings-save" }).catch(() => {});
-    });
+    $("#stateSettingsForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveStateSettingsSubmit",
+                event => {
+                    event.preventDefault();
 
-    $("#loginForm").addEventListener("submit", async event => {
-        event.preventDefault();
-        const username = $("#loginUsername").value.trim();
-        const password = $("#loginPassword").value;
-        const error = $("#loginError");
-        error.textContent = "";
+                    globalThis
+                        .WMOFActions
+                        .changeLateBreakBehavior(
+                            event
+                                .currentTarget
+                                .elements
+                                .lateBreakBehavior
+                                .value
+                        );
 
-        if (normalizedConnectionStatus() === "offline") {
-            animateOfflineClouds();
-        }
-
-        loginPending = true;
-        try {
-            const result = await clockTimer.connect(username, password);
-            if (!result?.connected) throw new Error("Login failed.");
-            deliberatelyLoggedOut = false;
-            safeStorageSet("wmof.deliberatelyLoggedOut", "false");
-            populateProfile(result.user);
-
-            for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
-                if (
-                    uiReturnStack[index]?.type === "popover" &&
-                    uiReturnStack[index]?.element === mainMenu
-                ) {
-                    uiReturnStack.splice(index, 1);
+                    void closeDialogWithReturn(
+                        stateDialog,
+                        {
+                            reason:
+                                "state-settings-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
                 }
-            }
-            hidePopoverForHandoff(mainMenu);
+            )
+    );
 
-            syncNetworkStatusUI({ login: true });
-        }
-        catch (failure) {
-            error.textContent = failure?.message || "Unable to login.";
-        }
-        finally {
-            loginPending = false;
-        }
-    });
+    $("#loginForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "connectUserSubmit",
+                async event => {
+                    event.preventDefault();
 
-    authButton.addEventListener("pointerup", async () => {
-        if (clockTimer.networkStatus !== "online") {
-            clearTimeout(loginPromptTimeout);
-            loginPromptTimeout = undefined;
-            initialLoginAttemptPending = false;
-            openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
-            return;
-        }
-        mainMenu?.hidePopover?.();
-        deliberatelyLoggedOut = true;
-        safeStorageSet("wmof.deliberatelyLoggedOut", "true");
-        clearTimeout(loginPromptTimeout);
-        try { await clockTimer.disconnect(); }
-        catch {}
-        finally { syncNetworkStatusUI(); }
-    });
+                    const error =
+                        $("#loginError");
+
+                    error.textContent =
+                        "";
+
+                    try {
+                        await globalThis
+                            .WMOFActions
+                            .connectUser(
+                                $("#loginUsername")
+                                    .value,
+                                $("#loginPassword")
+                                    .value
+                            );
+                    }
+                    catch (failure) {
+                        error.textContent =
+                            failure
+                                ?.message ||
+                            "Unable to login.";
+                    }
+                }
+            )
+    );
+
+    authButton.addEventListener(
+        "pointerup",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "changeAuthenticationPointerUp",
+                async () => {
+                    if (
+                        clockTimer
+                            .networkStatus !==
+                            "online"
+                    ) {
+                        clearTimeout(
+                            loginPromptTimeout
+                        );
+
+                        loginPromptTimeout =
+                            undefined;
+
+                        initialLoginAttemptPending =
+                            false;
+
+                        openDialog(
+                            "loginDialog",
+                            {
+                                fromPopover:
+                                    true,
+                                reason:
+                                    "popover-handoff"
+                            }
+                        );
+
+                        return;
+                    }
+
+                    try {
+                        await globalThis
+                            .WMOFActions
+                            .disconnectUser();
+                    }
+                    catch {}
+                }
+            )
+    );
 
     $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
-    $("#profileForm").addEventListener("submit", event => {
-        event.preventDefault();
-        void closeDialogWithReturn(profileDialog, { reason: "profile-save" }).catch(() => {});
-        window.dispatchEvent(new CustomEvent("wmof:profile-save", {
-            detail: Object.fromEntries(new FormData(event.currentTarget))
-        }));
-    });
+    $("#profileForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveProfileSubmit",
+                event => {
+                    event.preventDefault();
 
-    $("#resetPasswordButton").addEventListener("click", () => {
-        window.dispatchEvent(new CustomEvent("wmof:reset-password-request", { detail: { apiBase: API_BASE } }));
-    });
+                    globalThis
+                        .WMOFActions
+                        .saveProfileData(
+                            Object.fromEntries(
+                                new FormData(
+                                    event
+                                        .currentTarget
+                                )
+                            )
+                        );
+
+                    void closeDialogWithReturn(
+                        profileDialog,
+                        {
+                            reason:
+                                "profile-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
+                }
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#resetPasswordButton"),
+            event:
+                "click",
+            name:
+                "requestPasswordResetClick",
+            action:
+                "requestPasswordReset"
+        });
 
     async function fetchResource(url, options = {}) {
         return fetch(url, options)
