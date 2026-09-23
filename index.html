@@ -49,7 +49,7 @@
                 <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition">?</button>
             </div>
             <div class="main-menu-row sync-goals-menu-row">
-                <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
+                <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                 <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
             </div>
             <div class="trip-menu-group">
@@ -83,7 +83,7 @@
                 <strong id="standardTimeValue">---</strong>
             </button>
             <div class="rendered-time-cell">
-                <button id="renderedTimeButton" class="summary-cell" type="button">
+                <button id="toggleRenderedTimeButton" class="summary-cell" type="button" data-editor-action="toggleRenderedTime">
                     <span class="summary-label" id="renderedTimeLabel">Trip Time Remaining</span>
                     <strong id="renderedTimeValue">---</strong>
                 </button>
@@ -93,7 +93,7 @@
                 <strong id="currentPercentValue">---</strong>
                 <span>/</span>
                 <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="Edit percent goal">100%</button>
-                <button id="goalSyncButton" class="goal-sync-button" type="button" aria-label="Enable Sync Goals" aria-pressed="false" hidden></button>
+                <button id="toggleSyncGoalButton" class="goal-sync-button" type="button" data-editor-action="toggleSync" aria-label="Enable Sync Goals" aria-pressed="false" hidden></button>
             </div>
         </section>
 
