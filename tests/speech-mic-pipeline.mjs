@@ -119,6 +119,9 @@ assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S
 assert.match(app, /ensureSpeechRuntime/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 assert.match(app, /speechDiagnosticsEnabled/);
+assert.match(app, /speech-pipeline/);
+assert.match(app, /speechPipeline\s*=\s*[\s\S]*"silero"[\s\S]*"raw"/);
+assert.match(app, /loadClassicScript\(\s*"SileroVad\.js"\s*\)/s);
 assert.match(app, /loadClassicScript\(\s*"SpeechDiagnostics\.js"\s*\)/s);
 assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
 
@@ -140,6 +143,12 @@ assert.match(speechMenuSource, /echoCancellation:\s*false/);
 assert.match(speechMenuSource, /noiseSuppression:\s*false/);
 assert.match(speechMenuSource, /autoGainControl:\s*false/);
 assert.match(speechMenuSource, /static #executionEnabled = true;/);
+assert.match(speechMenuSource, /static #pipeline = "raw";/);
+assert.match(speechMenuSource, /SpeechMenu\.pipeline must be "raw" or "silero"/);
+assert.match(speechMenuSource, /new globalThis\.SileroVad/);
+assert.match(speechMenuSource, /minSilenceDuration:\s*SpeechMenu[\s\S]*#commitSilenceTimeout\s*\/\s*1000/s);
+assert.match(speechMenuSource, /"vad-silence"/);
+assert.match(speechMenuSource, /speechVadChanged/);
 assert.match(speechMenuSource, /speechRecognitionTiming/);
 assert.match(speechMenuSource, /captureSettings:/);
 assert.match(speechMenuSource, /context\.audioWorklet\.addModule/);
@@ -163,6 +172,23 @@ assert.match(sherpaWorkerSource, /stream\.inputFinished\(\)/);
 assert.match(sherpaWorkerSource, /new Float32Array\(\s*6400\s*\)/s);
 assert.match(sherpaWorkerSource, /hotwordsBuf/);
 assert.doesNotMatch(sherpaWorkerSource, /WebSocket|fetch\([^)]*speech/i);
+
+const sileroSource = fs.readFileSync(
+    new URL("../SileroVad.js", import.meta.url),
+    "utf8"
+);
+const sileroWorkerSource = fs.readFileSync(
+    new URL("../speech/SileroVadWorker.js", import.meta.url),
+    "utf8"
+);
+assert.match(sileroSource, /static sampleRate = 16000;/);
+assert.match(sileroSource, /static windowSize = 512;/);
+assert.match(sileroSource, /speech\/SileroVadWorker\.js/);
+assert.match(sileroWorkerSource, /silero_vad\.onnx/);
+assert.match(sileroWorkerSource, /minSilenceDuration/);
+assert.match(sileroWorkerSource, /vad\.isDetected\(\)/);
+assert.match(sileroWorkerSource, /"speechStart"/);
+assert.match(sileroWorkerSource, /"speechEnd"/);
 
 const diagnosticsSource = fs.readFileSync(
     new URL("../SpeechDiagnostics.js", import.meta.url),
