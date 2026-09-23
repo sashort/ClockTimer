@@ -203,6 +203,22 @@
                         value(
                             input = {}
                         ) {
+                            const definition =
+                                metadata.get(
+                                    validation.name
+                                );
+
+                            if (
+                                definition
+                                    ?.mutates !==
+                                    false &&
+                                !mutationAllowedProvider()
+                            ) {
+                                throw new Error(
+                                    "Developer permission is required for Speech Editor changes."
+                                );
+                            }
+
                             return implementations
                                 .get(
                                     validation.name
