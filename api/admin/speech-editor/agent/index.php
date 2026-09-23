@@ -9,6 +9,12 @@ $user = require_any_permission(
     PERMISSION_DEVELOPER_PREVIEW,
     PERMISSION_DEVELOPER
 );
+
+$canWrite = has_permission(
+    $user,
+    PERMISSION_DEVELOPER
+);
+
 require_csrf();
 
 header('Cache-Control: no-store, private');
@@ -19,6 +25,18 @@ const SPEECH_EDITOR_AGENT_LEASE_SECONDS = 20;
 const SPEECH_EDITOR_AGENT_MAX_COMMAND_BYTES = 131072;
 const SPEECH_EDITOR_AGENT_MAX_BODY_BYTES = 1048576;
 const SPEECH_EDITOR_AGENT_CONNECTED_SECONDS = 10;
+
+$previewAllowedActions = [
+    'getEditorState',
+    'validateChanges',
+    'selectElement',
+    'setOverlay',
+    'setViewport',
+    'applyWorkspacePreset',
+    'moveWorkspacePane',
+    'compileSpeechPattern',
+    'reloadPreview',
+];
 
 if ($method === 'POST') {
     $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
@@ -365,6 +383,38 @@ if (
     flock($handle, LOCK_UN);
     fclose($handle);
     api_error('Editor command must contain action or actions.', 422, 'invalid_command');
+}
+
+if (!$canWrite) {
+    $requestedActions = [];
+
+    if (is_string($command['action'] ?? null)) {
+        $requestedActions[] = $command['action'];
+    }
+
+    if (is_array($command['actions'] ?? null)) {
+        foreach ($command['actions'] as $item) {
+            if (!is_array($item) || !is_string($item['action'] ?? null)) {
+                flock($handle, LOCK_UN);
+                fclose($handle);
+                api_error('Invalid editor action batch.', 422, 'invalid_command');
+            }
+
+            $requestedActions[] = $item['action'];
+        }
+    }
+
+    foreach ($requestedActions as $actionName) {
+        if (!in_array($actionName, $previewAllowedActions, true)) {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+            api_error(
+                'Developer Preview access is read-only for Speech Editor changes.',
+                403,
+                'developer_preview_read_only'
+            );
+        }
+    }
 }
 
 if (is_array($command['actions'] ?? null)) {
