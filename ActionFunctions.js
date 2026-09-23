@@ -1481,6 +1481,18 @@
                 );
             },
 
+            getImplementation(name) {
+                const implementation =
+                    implementations.get(
+                        normalizeName(name)
+                    );
+
+                return typeof implementation ===
+                    "function"
+                    ? implementation
+                    : undefined;
+            },
+
             describe(name) {
                 const normalized =
                     normalizeName(name);
