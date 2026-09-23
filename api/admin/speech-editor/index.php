@@ -125,8 +125,8 @@ header('Referrer-Policy: no-referrer');
                 <form id="attributeForm" autocomplete="off" hidden>
                     <label class="field" data-candidate-field>
                         <span>speech-template</span>
-                        <input name="speech-template" spellcheck="false" placeholder="set [the] {trip|total} goal to <percent>">
-                        <small class="field-hint">Natural Speech Editor syntax. When present, it compiles to speech-pattern.</small>
+                        <input name="speech-template" spellcheck="false" readonly placeholder="set [the] {trip|total} goal to <percent>">
+                        <small class="field-hint">Natural Speech Editor syntax. Edit it in the Regex Builder; it compiles to speech-pattern.</small>
                     </label>
 
                     <label class="field" data-candidate-field>
