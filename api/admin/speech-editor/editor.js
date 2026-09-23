@@ -19,7 +19,8 @@
         "speech-preproc",
         "speech-preproc-context",
         "speech-preproc-field",
-        "speech-modal"
+        "speech-modal",
+        "speech-index"
     ];
 
     const ignoredNavigatorTags =
@@ -45,6 +46,10 @@
     let applyTimer;
     let refreshTimer;
     let frameObserver;
+    const tierOpenState = new Map();
+    const menuOpenState = new Map();
+    let draggedPhraseItem;
+    let viewportResizeObserver;
 
     const status =
         (message, error = false) => {
@@ -326,9 +331,38 @@
         element => {
             if (!element) return null;
 
-            const id =
+            let id =
                 element.dataset
                     ?.speechEditorId;
+
+            if (
+                !id &&
+                element.matches(
+                    "speech-menu, speech-command"
+                )
+            ) {
+                id =
+                    "existing:" +
+                    element.tagName
+                        .toLowerCase()
+                        .replace(
+                            "speech-",
+                            ""
+                        ) +
+                    ":" +
+                    sanitizeId(
+                        selectorFor(
+                            element
+                        ) ||
+                        element.dataset
+                            ?.speechTarget ||
+                        "body"
+                    );
+
+                element.dataset
+                    .speechEditorId =
+                    id;
+            }
 
             if (id) {
                 const savedEntry =
@@ -345,25 +379,17 @@
                     id,
                     kind: "existing",
                     target:
-                        element.dataset
-                            .speechTarget ||
                         selectorFor(
                             element
                         ) ||
+                        element.dataset
+                            .speechTarget ||
                         "body",
                     attrs:
                         snapshot(
                             element
                         )
                 };
-            }
-
-            if (
-                element.matches(
-                    "speech-menu, speech-command"
-                )
-            ) {
-                return null;
             }
 
             const target =
