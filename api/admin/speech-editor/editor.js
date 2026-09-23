@@ -8489,123 +8489,2022 @@
         return "";
     };
 
+
+    const editorElementReference =
+        input => {
+            if (!frameDocument) {
+                return null;
+            }
+
+            if (
+                input?.id
+            ) {
+                const escaped =
+                    CSS.escape(
+                        String(
+                            input.id
+                        )
+                    );
+
+                const byId =
+                    frameDocument
+                        .querySelector(
+                            '[data-speech-editor-id="' +
+                            escaped +
+                            '"]'
+                        );
+
+                if (byId) {
+                    return byId;
+                }
+            }
+
+            const selector =
+                String(
+                    input?.selector ||
+                    input?.target ||
+                    ""
+                )
+                    .trim();
+
+            if (!selector) {
+                return (
+                    candidateEditElement() ||
+                    selectedElement ||
+                    null
+                );
+            }
+
+            try {
+                return frameDocument
+                    .querySelector(
+                        selector
+                    );
+            }
+            catch {
+                return null;
+            }
+        };
+
+    const editorEntryReference =
+        (
+            input,
+            {
+                createAttribute = false
+            } = {}
+        ) => {
+            const id =
+                String(
+                    input?.id ||
+                    ""
+                )
+                    .trim();
+
+            if (id) {
+                const found =
+                    draft.find(
+                        entry =>
+                            entry.id ===
+                            id
+                    );
+
+                if (found) {
+                    return found;
+                }
+            }
+
+            const element =
+                editorElementReference(
+                    input
+                );
+
+            if (element) {
+                const writable =
+                    writableEntry(
+                        element
+                    );
+
+                if (writable) {
+                    return writable;
+                }
+            }
+
+            if (!createAttribute) {
+                return null;
+            }
+
+            const target =
+                String(
+                    input?.selector ||
+                    input?.target ||
+                    (
+                        element
+                            ? selectorFor(
+                                element
+                            )
+                            : ""
+                    )
+                )
+                    .trim();
+
+            if (!target) {
+                throw new Error(
+                    "A target selector is required."
+                );
+            }
+
+            const existing =
+                draft.find(
+                    entry =>
+                        normalizeKind(
+                            entry.kind
+                        ) ===
+                            "attribute" &&
+                        entry.target ===
+                            target
+                );
+
+            if (existing) {
+                return existing;
+            }
+
+            const entry = {
+                id:
+                    id ||
+                    "edit:attribute:" +
+                    sanitizeId(
+                        target
+                    ),
+                kind:
+                    "attribute",
+                target,
+                attrs: {}
+            };
+
+            draft.push(
+                entry
+            );
+
+            return entry;
+        };
+
+    const normalizeEditorAttributes =
+        value => {
+            if (
+                !value ||
+                typeof value !==
+                    "object" ||
+                Array.isArray(
+                    value
+                )
+            ) {
+                throw new TypeError(
+                    "attrs must be an object."
+                );
+            }
+
+            const result = {};
+
+            for (
+                const [
+                    name,
+                    raw
+                ] of Object.entries(
+                    value
+                )
+            ) {
+                if (
+                    !attributeNames
+                        .includes(
+                            name
+                        )
+                ) {
+                    throw new Error(
+                        "Unsupported speech attribute: " +
+                        name
+                    );
+                }
+
+                if (
+                    raw ===
+                        undefined ||
+                    raw ===
+                        null ||
+                    raw ===
+                        ""
+                ) {
+                    result[name] =
+                        undefined;
+
+                    continue;
+                }
+
+                result[name] =
+                    String(
+                        raw
+                    );
+            }
+
+            return result;
+        };
+
+    const applyEditorAttributes =
+        (
+            entry,
+            attrs,
+            replace = false
+        ) => {
+            if (replace) {
+                entry.attrs =
+                    {};
+            }
+
+            entry.attrs =
+                entry.attrs ||
+                {};
+
+            for (
+                const [
+                    name,
+                    value
+                ] of Object.entries(
+                    normalizeEditorAttributes(
+                        attrs
+                    )
+                )
+            ) {
+                if (
+                    value ===
+                        undefined
+                ) {
+                    delete entry
+                        .attrs[
+                            name
+                        ];
+                }
+                else {
+                    entry.attrs[
+                        name
+                    ] =
+                        value;
+                }
+            }
+
+            return entry;
+        };
+
+    const createEditorId =
+        kind =>
+            "edit:" +
+            kind +
+            ":" +
+            Date.now()
+                .toString(
+                    36
+                ) +
+            Math.random()
+                .toString(
+                    36
+                )
+                .slice(
+                    2,
+                    7
+                );
+
+    const persistEditorChanges =
+        async () => {
+            const error =
+                validate();
+
+            if (error) {
+                throw new Error(
+                    error
+                );
+            }
+
+            $("saveButton").disabled =
+                true;
+
+            try {
+                const response =
+                    await fetch(
+                        endpoint,
+                        {
+                            method:
+                                "PUT",
+                            credentials:
+                                "same-origin",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                                "X-CSRF-Token":
+                                    document
+                                        .body
+                                        .dataset
+                                        .csrf
+                            },
+                            body:
+                                JSON.stringify({
+                                    entries:
+                                        draft,
+                                    macros:
+                                        draftMacros,
+                                    revision,
+                                    functionRoles:
+                                        draftFunctionRoles,
+                                    registryRevision
+                                })
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        "Save failed."
+                    );
+                }
+
+                saved =
+                    normalizeEntries(
+                        data.entries
+                    );
+
+                draft =
+                    structuredClone(
+                        saved
+                    );
+
+                savedMacros =
+                    Array.isArray(
+                        data.macros
+                    )
+                        ? data.macros
+                        : [];
+
+                draftMacros =
+                    structuredClone(
+                        savedMacros
+                    );
+
+                macrosLoaded =
+                    true;
+
+                revision =
+                    data.revision;
+
+                savedFunctionRoles =
+                    normalizeFunctionRoles(
+                        data.functionRoles
+                    );
+
+                draftFunctionRoles =
+                    structuredClone(
+                        savedFunctionRoles
+                    );
+
+                registryRevision =
+                    data.registryRevision;
+
+                frame.contentWindow
+                    .location
+                    .reload();
+
+                status(
+                    "Speech commands and macros saved."
+                );
+
+                return {
+                    saved:
+                        true,
+                    revision,
+                    registryRevision
+                };
+            }
+            finally {
+                updateButtons();
+            }
+        };
+
+    const discardEditorChanges =
+        () => {
+            setRegexBuilderLive(
+                false
+            );
+
+            draft =
+                structuredClone(
+                    saved
+                );
+
+            draftMacros =
+                structuredClone(
+                    savedMacros
+                );
+
+            resetMacroBuilder();
+
+            draftFunctionRoles =
+                structuredClone(
+                    savedFunctionRoles
+                );
+
+            functionCombo.refresh();
+            preprocCombo.refresh();
+
+            syncMacrosToFrame();
+
+            frame.contentWindow
+                .location
+                .reload();
+
+            status(
+                "Unsaved speech changes discarded."
+            );
+
+            updateButtons();
+
+            return true;
+        };
+
+    const workspaceSnapshot =
+        () => ({
+            left:
+                [
+                    ...workspaceDock(
+                        "left"
+                    )
+                        .querySelectorAll(
+                            ":scope > .workspace-pane"
+                        )
+                ]
+                    .map(
+                        pane =>
+                            pane.dataset
+                                .paneId
+                    ),
+            right:
+                [
+                    ...workspaceDock(
+                        "right"
+                    )
+                        .querySelectorAll(
+                            ":scope > .workspace-pane"
+                        )
+                ]
+                    .map(
+                        pane =>
+                            pane.dataset
+                                .paneId
+                    ),
+            sizes:
+                Object.fromEntries(
+                    workspacePaneIds()
+                        .map(
+                            id => [
+                                id,
+                                workspacePane(
+                                    id
+                                )
+                                    ?.style
+                                    ?.flex ||
+                                ""
+                            ]
+                        )
+                )
+        });
+
+    const restoreWorkspaceSnapshot =
+        state => {
+            if (!state) {
+                return;
+            }
+
+            for (
+                const side of
+                [
+                    "left",
+                    "right"
+                ]
+            ) {
+                const dock =
+                    workspaceDock(
+                        side
+                    );
+
+                for (
+                    const id of
+                    state[side] ||
+                    []
+                ) {
+                    const pane =
+                        workspacePane(
+                            id
+                        );
+
+                    if (pane) {
+                        dock.append(
+                            pane
+                        );
+
+                        pane.style.flex =
+                            state.sizes?.[
+                                id
+                            ] ||
+                            "";
+                    }
+                }
+            }
+
+            refreshWorkspace();
+        };
+
+    const editorStateSnapshot =
+        () => ({
+            version:
+                1,
+            loaded:
+                macrosLoaded,
+            dirty:
+                dirty(),
+            revision,
+            registryRevision,
+            overlay,
+            viewport: {
+                screenSize:
+                    $("screenSizeSelect")
+                        .value,
+                compareSize:
+                    $("compareSizeSelect")
+                        .value
+            },
+            selection:
+                selectedLocator
+                    ? structuredClone(
+                        selectedLocator
+                    )
+                    : null,
+            workspace:
+                workspaceSnapshot(),
+            entries:
+                structuredClone(
+                    draft
+                ),
+            macros:
+                structuredClone(
+                    draftMacros
+                ),
+            functionRoles:
+                structuredClone(
+                    draftFunctionRoles
+                ),
+            functions:
+                functionNames
+                    .slice()
+                    .sort(
+                        (
+                            left,
+                            right
+                        ) =>
+                            left.localeCompare(
+                                right
+                            )
+                    )
+        });
+
+    editorActionFunctions
+        .setStateProvider(
+            editorStateSnapshot
+        );
+
+    editorActionFunctions
+        .setTransactionProvider({
+            snapshot() {
+                return {
+                    draft:
+                        structuredClone(
+                            draft
+                        ),
+                    draftMacros:
+                        structuredClone(
+                            draftMacros
+                        ),
+                    draftFunctionRoles:
+                        structuredClone(
+                            draftFunctionRoles
+                        ),
+                    macroWorking:
+                        structuredClone(
+                            macroWorking
+                        ),
+                    macroEditingName,
+                    selectedLocator:
+                        selectedLocator
+                            ? structuredClone(
+                                selectedLocator
+                            )
+                            : undefined,
+                    overlay,
+                    viewport: {
+                        screenSize:
+                            $("screenSizeSelect")
+                                .value,
+                        compareSize:
+                            $("compareSizeSelect")
+                                .value
+                    },
+                    workspace:
+                        workspaceSnapshot()
+                };
+            },
+
+            restore(
+                snapshot
+            ) {
+                draft =
+                    structuredClone(
+                        snapshot.draft
+                    );
+
+                draftMacros =
+                    structuredClone(
+                        snapshot
+                            .draftMacros
+                    );
+
+                draftFunctionRoles =
+                    structuredClone(
+                        snapshot
+                            .draftFunctionRoles
+                    );
+
+                macroWorking =
+                    structuredClone(
+                        snapshot
+                            .macroWorking
+                    );
+
+                macroEditingName =
+                    snapshot
+                        .macroEditingName;
+
+                selectedLocator =
+                    snapshot
+                        .selectedLocator
+                        ? structuredClone(
+                            snapshot
+                                .selectedLocator
+                        )
+                        : undefined;
+
+                overlay =
+                    Boolean(
+                        snapshot.overlay
+                    );
+
+                $("overlayToggle")
+                    .textContent =
+                    "Overlay: " +
+                    (
+                        overlay
+                            ? "On"
+                            : "Off"
+                    );
+
+                $("overlayToggle")
+                    .setAttribute(
+                        "aria-pressed",
+                        String(
+                            overlay
+                        )
+                    );
+
+                frame.classList
+                    .toggle(
+                        "editor-overlay-on",
+                        overlay
+                    );
+
+                frame.classList
+                    .toggle(
+                        "editor-overlay-off",
+                        !overlay
+                    );
+
+                $("screenSizeSelect")
+                    .value =
+                    snapshot.viewport
+                        ?.screenSize ||
+                    "";
+
+                $("compareSizeSelect")
+                    .value =
+                    snapshot.viewport
+                        ?.compareSize ||
+                    "";
+
+                restoreWorkspaceSnapshot(
+                    snapshot.workspace
+                );
+
+                syncMacrosToFrame();
+                functionCombo.refresh();
+                preprocCombo.refresh();
+                renderMacroBuilder();
+                applyViewport();
+                scheduleApply();
+                updateButtons();
+            }
+        });
+
+    editorActionFunctions
+        .define(
+            "getEditorState",
+            () =>
+                editorStateSnapshot(),
+            {
+                description:
+                    "Return the current Speech Editor draft, macro catalog, function roles, selection, viewport and workspace state.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    additionalProperties:
+                        false
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "validateChanges",
+            () => {
+                const error =
+                    validate();
+
+                return {
+                    valid:
+                        !error,
+                    error:
+                        error ||
+                        ""
+                };
+            },
+            {
+                description:
+                    "Validate the current editor draft without saving it.",
+                mutates:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "selectElement",
+            input => {
+                const element =
+                    editorElementReference(
+                        input
+                    );
+
+                if (!element) {
+                    throw new Error(
+                        "Speech Editor element was not found."
+                    );
+                }
+
+                selectElement(
+                    element,
+                    {
+                        scrollPhrase:
+                            input
+                                ?.scrollPhrase !==
+                            false
+                    }
+                );
+
+                return {
+                    locator:
+                        structuredClone(
+                            selectedLocator
+                        ),
+                    label:
+                        displayName(
+                            element
+                        )
+                };
+            },
+            {
+                description:
+                    "Select a preview element by CSS selector or speech-editor id.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    properties: {
+                        id: {
+                            type:
+                                "string"
+                        },
+                        selector: {
+                            type:
+                                "string"
+                        },
+                        scrollPhrase: {
+                            type:
+                                "boolean"
+                        }
+                    }
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setOverlay",
+            input => {
+                overlay =
+                    input?.enabled ===
+                    undefined
+                        ? !overlay
+                        : Boolean(
+                            input.enabled
+                        );
+
+                $("overlayToggle")
+                    .textContent =
+                    "Overlay: " +
+                    (
+                        overlay
+                            ? "On"
+                            : "Off"
+                    );
+
+                $("overlayToggle")
+                    .setAttribute(
+                        "aria-pressed",
+                        String(
+                            overlay
+                        )
+                    );
+
+                frame.classList
+                    .toggle(
+                        "editor-overlay-on",
+                        overlay
+                    );
+
+                frame.classList
+                    .toggle(
+                        "editor-overlay-off",
+                        !overlay
+                    );
+
+                return {
+                    enabled:
+                        overlay
+                };
+            },
+            {
+                description:
+                    "Enable, disable, or toggle the preview selection overlay.",
+                input: {
+                    type:
+                        "object",
+                    properties: {
+                        enabled: {
+                            type:
+                                "boolean"
+                        }
+                    }
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setViewport",
+            input => {
+                if (
+                    input?.screenSize !==
+                    undefined
+                ) {
+                    $("screenSizeSelect")
+                        .value =
+                        String(
+                            input.screenSize ||
+                            ""
+                        );
+                }
+
+                if (
+                    input?.compareSize !==
+                    undefined
+                ) {
+                    $("compareSizeSelect")
+                        .value =
+                        String(
+                            input.compareSize ||
+                            ""
+                        );
+                }
+
+                applyViewport();
+
+                return {
+                    screenSize:
+                        $("screenSizeSelect")
+                            .value,
+                    compareSize:
+                        $("compareSizeSelect")
+                            .value
+                };
+            },
+            {
+                description:
+                    "Set the preview and comparison viewport presets.",
+                input: {
+                    type:
+                        "object",
+                    properties: {
+                        screenSize: {
+                            type:
+                                "string"
+                        },
+                        compareSize: {
+                            type:
+                                "string"
+                        }
+                    }
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "applyWorkspacePreset",
+            input => {
+                const preset =
+                    String(
+                        input?.preset ||
+                        ""
+                    );
+
+                if (
+                    ![
+                        "authoring",
+                        "macro",
+                        "regex"
+                    ].includes(
+                        preset
+                    )
+                ) {
+                    throw new Error(
+                        "Unknown workspace preset: " +
+                        preset
+                    );
+                }
+
+                applyWorkspacePreset(
+                    preset
+                );
+
+                return {
+                    preset
+                };
+            },
+            {
+                description:
+                    "Apply a named Speech Editor workspace layout."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "moveWorkspacePane",
+            input => {
+                const pane =
+                    workspacePane(
+                        String(
+                            input?.pane ||
+                            ""
+                        )
+                    );
+
+                const side =
+                    String(
+                        input?.side ||
+                        ""
+                    );
+
+                if (
+                    !pane ||
+                    ![
+                        "left",
+                        "right"
+                    ].includes(
+                        side
+                    )
+                ) {
+                    throw new Error(
+                        "pane and side (left/right) are required."
+                    );
+                }
+
+                moveWorkspacePane(
+                    pane,
+                    side
+                );
+
+                return {
+                    pane:
+                        pane.dataset
+                            .paneId,
+                    side
+                };
+            },
+            {
+                description:
+                    "Move a workspace pane to the left or right dock."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setSpeechAttributes",
+            input => {
+                const entry =
+                    editorEntryReference(
+                        input,
+                        {
+                            createAttribute:
+                                true
+                        }
+                    );
+
+                applyEditorAttributes(
+                    entry,
+                    input?.attrs ||
+                    {},
+                    Boolean(
+                        input?.replace
+                    )
+                );
+
+                selectedLocator = {
+                    type:
+                        "editor-id",
+                    value:
+                        entry.id
+                };
+
+                scheduleApply();
+
+                return structuredClone(
+                    entry
+                );
+            },
+            {
+                description:
+                    "Create or update speech attributes for an entry or preview target selector.",
+                input: {
+                    type:
+                        "object",
+                    required: [
+                        "attrs"
+                    ],
+                    properties: {
+                        id: {
+                            type:
+                                "string"
+                        },
+                        selector: {
+                            type:
+                                "string"
+                        },
+                        target: {
+                            type:
+                                "string"
+                        },
+                        attrs: {
+                            type:
+                                "object"
+                        },
+                        replace: {
+                            type:
+                                "boolean"
+                        }
+                    }
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "addSpeechMenu",
+            input => {
+                const target =
+                    String(
+                        input?.target ||
+                        input?.selector ||
+                        ""
+                    )
+                        .trim();
+
+                if (!target) {
+                    throw new Error(
+                        "A target selector is required."
+                    );
+                }
+
+                const existing =
+                    draft.find(
+                        entry =>
+                            normalizeKind(
+                                entry.kind
+                            ) ===
+                                "menu" &&
+                            entry.target ===
+                                target
+                    );
+
+                if (existing) {
+                    return structuredClone(
+                        existing
+                    );
+                }
+
+                const entry = {
+                    id:
+                        String(
+                            input?.id ||
+                            createEditorId(
+                                "menu"
+                            )
+                        ),
+                    kind:
+                        "menu",
+                    target,
+                    attrs: {}
+                };
+
+                if (
+                    Number.isInteger(
+                        input?.order
+                    )
+                ) {
+                    entry.order =
+                        input.order;
+                }
+
+                applyEditorAttributes(
+                    entry,
+                    input?.attrs ||
+                    {},
+                    true
+                );
+
+                draft.push(
+                    entry
+                );
+
+                selectedLocator = {
+                    type:
+                        "editor-id",
+                    value:
+                        entry.id
+                };
+
+                scheduleApply();
+
+                return structuredClone(
+                    entry
+                );
+            },
+            {
+                description:
+                    "Add a Speech Menu attached to a target selector."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "removeSpeechMenu",
+            input => {
+                let entry =
+                    editorEntryReference(
+                        input
+                    );
+
+                if (
+                    !entry &&
+                    input?.target
+                ) {
+                    entry =
+                        draft.find(
+                            candidate =>
+                                normalizeKind(
+                                    candidate.kind
+                                ) ===
+                                    "menu" &&
+                                candidate.target ===
+                                    input.target
+                        );
+                }
+
+                if (!entry) {
+                    throw new Error(
+                        "Speech Menu was not found."
+                    );
+                }
+
+                if (
+                    entry.id
+                        .startsWith(
+                            "edit:"
+                        )
+                ) {
+                    draft =
+                        draft.filter(
+                            candidate =>
+                                candidate.id !==
+                                    entry.id &&
+                                candidate.parentId !==
+                                    entry.id
+                        );
+                }
+                else {
+                    entry =
+                        draft.find(
+                            candidate =>
+                                candidate.id ===
+                                entry.id
+                        ) ||
+                        normalizeEntry(
+                            entry
+                        );
+
+                    if (
+                        !draft.includes(
+                            entry
+                        )
+                    ) {
+                        draft.push(
+                            entry
+                        );
+                    }
+
+                    entry.attrs =
+                        {};
+                }
+
+                selectedLocator = {
+                    type:
+                        "selector",
+                    value:
+                        entry.target
+                };
+
+                scheduleApply();
+
+                return true;
+            },
+            {
+                description:
+                    "Remove an editor-created Speech Menu and its commands, or clear a built-in menu configuration."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "addSpeechCommand",
+            input => {
+                let parent =
+                    String(
+                        input?.parentId ||
+                        ""
+                    )
+                        .trim()
+                        ? draft.find(
+                            entry =>
+                                entry.id ===
+                                input.parentId
+                        )
+                        : null;
+
+                if (!parent) {
+                    const menuElement =
+                        editorElementReference({
+                            id:
+                                input?.parentId,
+                            selector:
+                                input?.menuSelector ||
+                                input?.menuTarget
+                        });
+
+                    if (
+                        menuElement?.matches(
+                            "speech-menu"
+                        )
+                    ) {
+                        parent =
+                            writableEntry(
+                                menuElement
+                            );
+                    }
+                }
+
+                if (!parent) {
+                    const target =
+                        String(
+                            input?.menuTarget ||
+                            ""
+                        )
+                            .trim();
+
+                    if (target) {
+                        parent =
+                            draft.find(
+                                entry =>
+                                    normalizeKind(
+                                        entry.kind
+                                    ) ===
+                                        "menu" &&
+                                    entry.target ===
+                                        target
+                            );
+                    }
+                }
+
+                if (
+                    !parent ||
+                    normalizeKind(
+                        parent.kind
+                    ) !==
+                        "menu"
+                ) {
+                    throw new Error(
+                        "A valid parent Speech Menu is required."
+                    );
+                }
+
+                const entry = {
+                    id:
+                        String(
+                            input?.id ||
+                            createEditorId(
+                                "command"
+                            )
+                        ),
+                    kind:
+                        "command",
+                    target:
+                        String(
+                            input?.target ||
+                            parent.target ||
+                            "body"
+                        ),
+                    parentId:
+                        parent.id,
+                    attrs: {}
+                };
+
+                if (
+                    Number.isInteger(
+                        input?.order
+                    )
+                ) {
+                    entry.order =
+                        input.order;
+                }
+
+                applyEditorAttributes(
+                    entry,
+                    input?.attrs ||
+                    {},
+                    true
+                );
+
+                draft.push(
+                    entry
+                );
+
+                selectedLocator = {
+                    type:
+                        "editor-id",
+                    value:
+                        entry.id
+                };
+
+                scheduleApply();
+
+                return structuredClone(
+                    entry
+                );
+            },
+            {
+                description:
+                    "Add a Speech Command to a Speech Menu."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "removeSpeechConfiguration",
+            input => {
+                const entry =
+                    editorEntryReference(
+                        input
+                    );
+
+                if (!entry) {
+                    throw new Error(
+                        "Speech configuration was not found."
+                    );
+                }
+
+                if (
+                    normalizeKind(
+                        entry.kind
+                    ) ===
+                        "menu"
+                ) {
+                    return editorActions
+                        .removeSpeechMenu({
+                            id:
+                                entry.id,
+                            target:
+                                entry.target
+                        });
+                }
+
+                if (
+                    entry.id
+                        .startsWith(
+                            "edit:"
+                        )
+                ) {
+                    draft =
+                        draft.filter(
+                            candidate =>
+                                candidate.id !==
+                                entry.id
+                        );
+                }
+                else {
+                    const writable =
+                        draft.find(
+                            candidate =>
+                                candidate.id ===
+                                entry.id
+                        ) ||
+                        normalizeEntry(
+                            entry
+                        );
+
+                    if (
+                        !draft.includes(
+                            writable
+                        )
+                    ) {
+                        draft.push(
+                            writable
+                        );
+                    }
+
+                    writable.attrs =
+                        {};
+                }
+
+                scheduleApply();
+
+                return true;
+            },
+            {
+                description:
+                    "Remove a Speech Command/attribute entry or clear configuration on a built-in element."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "reorderSpeechEntries",
+            input => {
+                if (
+                    !Array.isArray(
+                        input?.entries
+                    )
+                ) {
+                    throw new TypeError(
+                        "entries must be an array."
+                    );
+                }
+
+                for (
+                    const item of
+                    input.entries
+                ) {
+                    const entry =
+                        draft.find(
+                            candidate =>
+                                candidate.id ===
+                                item?.id
+                        );
+
+                    if (!entry) {
+                        throw new Error(
+                            "Speech entry was not found: " +
+                            item?.id
+                        );
+                    }
+
+                    const order =
+                        Number(
+                            item?.order
+                        );
+
+                    if (
+                        !Number.isInteger(
+                            order
+                        ) ||
+                        order <
+                            0
+                    ) {
+                        throw new Error(
+                            "Speech entry order must be a non-negative integer."
+                        );
+                    }
+
+                    entry.order =
+                        order;
+                }
+
+                scheduleApply();
+
+                return structuredClone(
+                    input.entries
+                );
+            },
+            {
+                description:
+                    "Set persisted order values for one or more speech entries."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setFunctionRole",
+            input => {
+                const name =
+                    String(
+                        input?.name ||
+                        ""
+                    )
+                        .trim();
+
+                const role =
+                    String(
+                        input?.role ||
+                        ""
+                    )
+                        .trim();
+
+                if (!name) {
+                    throw new Error(
+                        "Function name is required."
+                    );
+                }
+
+                if (
+                    role &&
+                    !Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            draftFunctionRoles,
+                            role
+                        )
+                ) {
+                    throw new Error(
+                        "Unknown function role: " +
+                        role
+                    );
+                }
+
+                setFunctionRole(
+                    name,
+                    role
+                );
+
+                return {
+                    name,
+                    role
+                };
+            },
+            {
+                description:
+                    "Assign or clear a Speech Editor function role."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "compileSpeechPattern",
+            input => {
+                const template =
+                    String(
+                        input?.template ||
+                        ""
+                    );
+
+                return (
+                    globalThis
+                        .WMOFRegexBuilder
+                        ?.compile(
+                            template
+                        ) ||
+                    {
+                        valid:
+                            false,
+                        pattern:
+                            "",
+                        error:
+                            "Regex Builder is unavailable."
+                    }
+                );
+            },
+            {
+                description:
+                    "Compile a human-readable speech phrase template into a speech-pattern regex.",
+                mutates:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setRegexTemplate",
+            input => {
+                $("regexBuilderInput")
+                    .value =
+                    String(
+                        input?.template ||
+                        ""
+                    );
+
+                updateRegexBuilder();
+
+                if (
+                    input?.apply ===
+                        true
+                ) {
+                    if (
+                        !applyRegexBuilderPattern(
+                            "json"
+                        )
+                    ) {
+                        throw new Error(
+                            regexBuilderResult
+                                .error ||
+                            "Regex pattern could not be applied."
+                        );
+                    }
+                }
+
+                return structuredClone(
+                    regexBuilderResult
+                );
+            },
+            {
+                description:
+                    "Set the Regex Builder phrase template and optionally apply its compiled pattern to the selected speech target."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "stageMacro",
+            input => {
+                const macro =
+                    input?.macro;
+
+                if (
+                    !macro ||
+                    typeof macro !==
+                        "object"
+                ) {
+                    throw new TypeError(
+                        "macro is required."
+                    );
+                }
+
+                macroWorking =
+                    structuredClone(
+                        macro
+                    );
+
+                macroEditingName =
+                    draftMacros.some(
+                        item =>
+                            item.name ===
+                            macroWorking.name
+                    )
+                        ? macroWorking.name
+                        : "";
+
+                $("macroName")
+                    .value =
+                    macroWorking.name ||
+                    "";
+
+                renderMacroBuilder();
+
+                if (!stageMacro()) {
+                    throw new Error(
+                        $("macroMessage")
+                            .textContent ||
+                        "Macro validation failed."
+                    );
+                }
+
+                return structuredClone(
+                    macroWorking
+                );
+            },
+            {
+                description:
+                    "Validate and stage a complete macro definition in the editor draft."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "deleteMacro",
+            input => {
+                const name =
+                    String(
+                        input?.name ||
+                        ""
+                    )
+                        .trim();
+
+                if (!name) {
+                    throw new Error(
+                        "Macro name is required."
+                    );
+                }
+
+                const before =
+                    draftMacros.length;
+
+                draftMacros =
+                    draftMacros.filter(
+                        macro =>
+                            macro.name !==
+                            name
+                    );
+
+                if (
+                    draftMacros.length ===
+                    before
+                ) {
+                    return false;
+                }
+
+                macroApi()
+                    ?.removeMacro?.(
+                        name
+                    );
+
+                removeMacroRole(
+                    name
+                );
+
+                if (
+                    macroEditingName ===
+                    name
+                ) {
+                    resetMacroBuilder();
+                }
+
+                syncFunctionCatalog();
+                updateButtons();
+                renderMacroBuilder();
+
+                return true;
+            },
+            {
+                description:
+                    "Delete a staged macro by name."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "runMacro",
+            async input => {
+                const name =
+                    String(
+                        input?.name ||
+                        ""
+                    )
+                        .trim();
+
+                if (!name) {
+                    throw new Error(
+                        "Macro name is required."
+                    );
+                }
+
+                return macroApi()
+                    ?.runMacro?.(
+                        name,
+                        input?.parameters ||
+                        {},
+                        input?.context
+                    );
+            },
+            {
+                description:
+                    "Execute a macro against the preview application.",
+                transactional:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "startMacroRecording",
+            input => {
+                const api =
+                    macroApi();
+
+                if (!api) {
+                    throw new Error(
+                        "Preview action runtime is not ready."
+                    );
+                }
+
+                api.startRecording({
+                    name:
+                        String(
+                            input?.name ||
+                            macroWorking
+                                .name ||
+                            ""
+                        )
+                });
+
+                macroWorking.steps =
+                    [];
+
+                if (overlay) {
+                    editorActions
+                        .setOverlay({
+                            enabled:
+                                false
+                        });
+                }
+
+                $("macroRecord")
+                    .setAttribute(
+                        "aria-pressed",
+                        "true"
+                    );
+
+                $("macroRecord")
+                    .textContent =
+                    "■ Stop";
+
+                $("macroRecordingState")
+                    .textContent =
+                    "Recording actions…";
+
+                renderMacroSteps();
+                updateMacroControls();
+
+                return true;
+            },
+            {
+                description:
+                    "Start recording WMOFActions calls from the preview application.",
+                transactional:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "stopMacroRecording",
+            () => {
+                const api =
+                    macroApi();
+
+                const recording =
+                    api?.stopRecording?.() ||
+                    {
+                        name:
+                            "",
+                        steps: []
+                    };
+
+                macroWorking.steps =
+                    structuredClone(
+                        recording.steps ||
+                        []
+                    );
+
+                $("macroRecord")
+                    .setAttribute(
+                        "aria-pressed",
+                        "false"
+                    );
+
+                $("macroRecord")
+                    .textContent =
+                    "● Record";
+
+                $("macroRecordingState")
+                    .textContent =
+                    "Not recording";
+
+                renderMacroBuilder();
+
+                return structuredClone(
+                    recording
+                );
+            },
+            {
+                description:
+                    "Stop macro recording and load the recorded actions into the Macro Builder.",
+                transactional:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "saveChanges",
+            () =>
+                persistEditorChanges(),
+            {
+                description:
+                    "Validate and persist the current Speech Editor draft.",
+                transactional:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "discardChanges",
+            () =>
+                discardEditorChanges(),
+            {
+                description:
+                    "Discard all unsaved Speech Editor changes and reload the preview.",
+                transactional:
+                    false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "reloadPreview",
+            () => {
+                frame.contentWindow
+                    .location
+                    .reload();
+
+                return true;
+            },
+            {
+                description:
+                    "Reload the WMOF preview iframe without changing the editor draft.",
+                transactional:
+                    false
+            }
+        );
+
     $("saveButton")
         .addEventListener(
             "click",
             async () => {
-                const error =
-                    validate();
-
-                if (error) {
-                    status(
-                        error,
-                        true
-                    );
-                    return;
-                }
-
-                $("saveButton").disabled =
-                    true;
-
                 try {
-                    const response =
-                        await fetch(
-                            endpoint,
-                            {
-                                method:
-                                    "PUT",
-                                credentials:
-                                    "same-origin",
-                                headers: {
-                                    "Content-Type":
-                                        "application/json",
-                                    "X-CSRF-Token":
-                                        document
-                                            .body
-                                            .dataset
-                                            .csrf
-                                },
-                                body:
-                                    JSON.stringify({
-                                        entries:
-                                            draft,
-                                        macros:
-                                            draftMacros,
-                                        revision,
-                                        functionRoles:
-                                            draftFunctionRoles,
-                                        registryRevision
-                                    })
-                            }
-                        );
-
-                    const data =
-                        await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(
-                            data.message ||
-                            "Save failed."
-                        );
-                    }
-
-                    saved =
-                        normalizeEntries(
-                            data.entries
-                        );
-
-                    draft =
-                        structuredClone(
-                            saved
-                        );
-
-                    savedMacros =
-                        Array.isArray(
-                            data.macros
-                        )
-                            ? data.macros
-                            : [];
-
-                    draftMacros =
-                        structuredClone(
-                            savedMacros
-                        );
-
-                    macrosLoaded =
-                        true;
-
-                    revision =
-                        data.revision;
-
-                    savedFunctionRoles =
-                        normalizeFunctionRoles(
-                            data.functionRoles
-                        );
-
-                    draftFunctionRoles =
-                        structuredClone(
-                            savedFunctionRoles
-                        );
-
-                    registryRevision =
-                        data.registryRevision;
-
-                    frame.contentWindow
-                        .location
-                        .reload();
-
-                    status(
-                        "Speech commands and macros saved."
-                    );
+                    await editorActions
+                        .saveChanges();
                 }
-                catch (error) {
+                catch (
+                    error
+                ) {
                     status(
                         error.message,
                         true
                     );
                 }
-
-                updateButtons();
             }
         );
 
@@ -8613,37 +10512,8 @@
         .addEventListener(
             "click",
             () => {
-                setRegexBuilderLive(
-                    false
-                );
-
-                draft =
-                    structuredClone(
-                        saved
-                    );
-
-                draftMacros =
-                    structuredClone(
-                        savedMacros
-                    );
-
-                resetMacroBuilder();
-
-                draftFunctionRoles =
-                    structuredClone(
-                        savedFunctionRoles
-                    );
-
-                functionCombo.refresh();
-                preprocCombo.refresh();
-
-                frame.contentWindow
-                    .location
-                    .reload();
-
-                status(
-                    "Unsaved speech changes discarded."
-                );
+                editorActions
+                    .discardChanges();
             }
         );
 
