@@ -2462,7 +2462,8 @@
                     "speech-function",
                     "speech-preproc",
                     "speech-preproc-context",
-                    "speech-preproc-field"
+                    "speech-preproc-field",
+                    "speech-index"
                 ]
             ) {
                 const input =
@@ -2540,7 +2541,7 @@
             ) {
                 $("removeButton")
                     .textContent =
-                    "Disable Speech Command";
+                    "Delete Speech Command";
             }
             else {
                 $("removeButton")
@@ -2984,6 +2985,7 @@
                     attributeFilter: [
                         "speech-pattern",
                         "speech-modal",
+                        "speech-index",
                         "open",
                         "hidden",
                         "disabled"
