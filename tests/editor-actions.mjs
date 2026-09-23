@@ -142,8 +142,60 @@ assert.equal(
     "state provider should expose the current semantic editor state"
 );
 
+api.setMutationAllowedProvider(
+    () => false
+);
+
+assert.throws(
+    () =>
+        actions.setValue({
+            value:
+                20
+        }),
+    /Developer permission is required/,
+    "Developer Preview should reject direct GUI calls to mutating editor actions"
+);
+
+await assert.rejects(
+    () =>
+        api.execute({
+            action:
+                "setValue",
+            input: {
+                value:
+                    20
+            }
+        }),
+    /Developer permission is required/,
+    "Developer Preview should reject JSON execution of mutating editor actions"
+);
+
+assert.equal(
+    await api.execute({
+        action:
+            "validateProbe",
+        input: {
+            fail:
+                false
+        }
+    }),
+    true,
+    "Developer Preview should allow inspection-only editor actions"
+);
+
+api.setMutationAllowedProvider(
+    () => true
+);
+
 const manifest =
     api.getManifest();
+
+assert.equal(
+    manifest.capabilities
+        .atomicBatches,
+    true,
+    "manifest should advertise atomic batch support"
+);
 
 assert.ok(
     manifest.actions.some(
