@@ -35,6 +35,9 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check SpeechMenu.js
+          node --check SherpaRecognizer.js
+          node --check speech/SherpaWorker.js
+          node --check speech/SpeechAudioWorklet.js
           node --check SpeechEditorRuntime.js
           node --check ActionFunctions.js
           node --check app.js
