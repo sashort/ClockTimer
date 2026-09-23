@@ -540,7 +540,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /#candidateCommitSilenceTimeout[\s\S]*candidatePool[\s\S]*continuation/
+    /#candidateCommitTimeout[\s\S]*candidatePool[\s\S]*continuation/
 );
 assert.match(
     speechMenuSource,
@@ -596,4 +596,21 @@ assert.match(
 assert.match(
     html,
     /builtin:closeSurface:default" speech-available="WMOFSpeechAvailability\.canCloseSurface"/
+);
+
+assert.match(
+    speechMenuSource,
+    /candidateCommitTimer:\s*undefined/
+);
+assert.match(
+    speechMenuSource,
+    /#scheduleCandidateCommit\([\s\S]*setTimeout\([\s\S]*#commitUtterance/
+);
+assert.match(
+    speechMenuSource,
+    /#cancelCandidateWork\([\s\S]*candidateCommitTimer[\s\S]*clearTimeout/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /silenceMilliseconds\s*>=\s*SpeechMenu[\s\S]{0,220}#candidateCommitTimeout/
 );
