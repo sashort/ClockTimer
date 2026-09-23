@@ -191,6 +191,10 @@ assert.match(css, /stroke-dasharray:100;stroke-dashoffset:100/);
 assert.match(css, /@keyframes speech-mic-build/);
 assert.match(css, /from\{clip-path:inset\(100% 0 0 0\);\}/);
 assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-mic/);
+assert.match(html, /class="speech-build-crane"/);
+assert.match(css, /\.speech-build-crane\{opacity:0/);
+assert.match(css, /stroke:#003b73/);
+assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{opacity:1/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
