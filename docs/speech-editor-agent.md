@@ -99,3 +99,35 @@ external side effects, such as `saveChanges` and `runMacro`, cannot run inside a
 atomic batch.
 
 To persist a validated draft, enqueue `saveChanges` as a separate command.
+
+
+## Natural speech templates
+
+The editor persists the human-readable Regex Builder source as `speech-template`
+alongside the compiled `speech-pattern`.
+
+For example:
+
+```json
+{
+  "action": "setSpeechTemplate",
+  "input": {
+    "selector": "#tripActionControls",
+    "template": "set [the] {trip|total} goal to <percent>"
+  }
+}
+```
+
+The editor compiles the template and updates both attributes atomically. Agents can
+inspect the syntax with `getSpeechTemplateSyntax`, inspect one target with
+`getSpeechTemplate`, or inspect all live templates through `getSpeechCatalog`.
+
+Template syntax includes:
+
+- `[text]` for optional content;
+- `{one|two|three}` for alternatives;
+- `<template>` for wildcards such as `<time>`, `<duration>`, and `<percent>`;
+- `<name:template>` for named captures.
+
+If the raw `speech-pattern` is edited so it no longer matches its stored natural
+template, the editor clears `speech-template` to avoid exposing stale source text.
