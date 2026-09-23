@@ -14,7 +14,7 @@
     "test:ui-state": "node clock-timer-ui-state.mjs",
     "test:active-restore": "node active-trip-restore.mjs",
     "test:speech-editor": "node speech-editor.mjs",
-    "test:speech-pipeline": "node speech-mic-pipeline.mjs && node speech-browser-provider.mjs && node speech-streaming-protocol.mjs && node speech-audio-worklet.mjs && node --check ../SpeechMenu.js && node --check ../SpeechRecognitionProviders.js && node --check ../SpeechAudioWorklet.js && node --check ../speech/server.js && node --check ../speech/protocol.js && node --check ../speech/whisper-service.js"
+    "test:speech-pipeline": "node speech-mic-pipeline.mjs && node speech-browser-provider.mjs && node speech-streaming-protocol.mjs && node speech-audio-worklet.mjs && node speech-value-preprocessor.mjs && node --check ../SpeechMenu.js && node --check ../SpeechRecognitionProviders.js && node --check ../SpeechAudioWorklet.js && node --check ../speech/server.js && node --check ../speech/protocol.js && node --check ../speech/whisper-service.js"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

@@ -2,6 +2,8 @@ class EnglishSpeechValuePreprocessor {
     static normalize(value, kind) {
         const phrase = String(value ?? "").trim();
         switch (kind) {
+            case "number":
+                return EnglishSpokenNumberParser.normalizeText(phrase);
             case "duration": {
                 const duration = EnglishDurationParser.parse(phrase);
                 return EnglishDurationParser.format(duration);
@@ -27,6 +29,8 @@ class EnglishSpeechValuePreprocessor {
         const phrase = String(value ?? "").trim();
         if (!phrase) return undefined;
         switch (kind) {
+            case "number":
+                return EnglishSpokenNumberParser.parse(phrase);
             case "duration":
                 return EnglishDurationParser.parse(phrase);
             case "clock":
