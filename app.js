@@ -9981,7 +9981,7 @@
 
         const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
         const englishSpeech = englishLanguage?.speech;
-        const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
+        const installSpeechCommand = (key, actionName, container = document.body, modal = true, valueKind, valueField) => {
             const pattern = englishSpeech?.commands?.[key];
             if (!pattern) return;
             const modalMode =
@@ -10007,7 +10007,7 @@
             };
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
             element.setAttribute("speech-pattern", pattern);
-            element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
+            element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
                 element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", valueKind);
@@ -10021,16 +10021,16 @@
                 element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
-                element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
+                element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
                 element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", "duration");
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
-                ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
-                ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
-                ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
+                ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"], ["goal","changeGoal"], ["goalMode","changeGoalMode"],
+                ["sync","changeSyncState"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","changeRenderedTimeMode"]
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
@@ -10038,8 +10038,8 @@
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
-            installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
-            installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
+            installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
+            installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
             SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
             SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
             SpeechMenu.refresh();
@@ -10071,16 +10071,51 @@
         });
 
         const speechBreakEndDialog = $("#speechBreakEndDialog");
-        $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
-        $("#speechBreakEndConfirm")?.addEventListener("click", () => {
-            closeDialog(speechBreakEndDialog, { reason: "speech-confirm" });
-            void endCurrentIntervalOrTrip().catch(() => {});
-        });
-        if (englishSpeech && speechBreakEndDialog) {
-            installSpeechCommand("confirm", "confirmBreakEnd", speechBreakEndDialog, false);
-            installSpeechCommand("cancel", "cancelBreakEnd", speechBreakEndDialog, false);
-            speechCommands.confirmBreakEnd = () => { $("#speechBreakEndConfirm")?.click(); return true; };
-            speechCommands.cancelBreakEnd = () => { $("#speechBreakEndCancel")?.click(); return true; };
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    $("#speechBreakEndCancel"),
+                event:
+                    "click",
+                name:
+                    "cancelBreakEndClick",
+                action:
+                    "cancelBreakEnd"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    $("#speechBreakEndConfirm"),
+                event:
+                    "click",
+                name:
+                    "confirmBreakEndClick",
+                action:
+                    "confirmBreakEnd"
+            });
+
+        if (
+            englishSpeech &&
+            speechBreakEndDialog
+        ) {
+            installSpeechCommand(
+                "confirm",
+                "confirmBreakEnd",
+                speechBreakEndDialog,
+                false
+            );
+
+            installSpeechCommand(
+                "cancel",
+                "cancelBreakEnd",
+                speechBreakEndDialog,
+                false
+            );
+
             SpeechMenu.refresh();
         }
 
