@@ -52,6 +52,46 @@ window.document.body.append(bar);
 assert.equal(typeof bar.setResponse, "function");
 assert.equal(typeof bar.clearResponse, "function");
 assert.equal(typeof bar.clear, "function");
+assert.equal(typeof bar.showOptions, "function");
+assert.equal(typeof bar.hideOptions, "function");
+assert.equal(typeof bar.promoteTopLayer, "function");
+
+const optionCommand =
+    window.document
+        .createElement(
+            "speech-command"
+        );
+optionCommand.setAttribute(
+    "data-speech-target",
+    "#newTripButton"
+);
+optionCommand.setAttribute(
+    "speech-preproc-field",
+    "spokenTime"
+);
+optionCommand.setAttribute(
+    "speech-preproc-context",
+    "clock"
+);
+
+assert.equal(
+    bar.showOptions([
+        {
+            element:
+                optionCommand,
+            phrases: [
+                "ready",
+                "ready at <spokenTime>"
+            ]
+        }
+    ]),
+    true
+);
+assert.equal(bar.optionsOpen, true);
+await bar.hideOptions({
+    duration: 0
+});
+assert.equal(bar.optionsOpen, false);
 
 assert.equal(window.SpeechMenu.silenceTimeout, 5000);
 window.SpeechMenu.silenceTimeout = 6000;
@@ -110,7 +150,18 @@ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("stopped", {detail
 assert.equal(bar.getAttribute("state"), "stopped");
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
-assert.match(html, /<speech-mic-bar id="speechMicBar"/);
+assert.match(
+    html,
+    /<speech-mic-bar id="speechMicBar" popover="manual"/
+);
+assert.match(
+    html,
+    /speech-modal="default"[\s\S]*\^\(\?:voice \)\?options\$[\s\S]*WMOFActions\.showSpeechOptions/
+);
+assert.match(
+    html,
+    /speech-modal="default"[\s\S]*\^\(\?:cancel\|close\)\$[\s\S]*WMOFActions\.closeActiveSurface/
+);
 assert.doesNotMatch(html, /independentTimerValue|independentStart|independentStop|independentReset|independent-timer/);
 assert.doesNotMatch(html, /<script src="SpeechMenu\\.js"/);
 
@@ -163,6 +214,14 @@ const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
 assert.match(css, /--speech-mic-row-height:\s*0px/);
 assert.doesNotMatch(css, /independent-timer|independent-timer-controls|independent-timer-value|play-icon|stop-icon/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);
+assert.match(
+    css,
+    /speech-mic-bar\[popover\][\s\S]*position:\s*fixed;[\s\S]*overflow:\s*visible/
+);
+assert.match(
+    css,
+    /speech-mic-bar\[popover\]:popover-open/
+);
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
@@ -182,6 +241,34 @@ assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
 assert.match(app, /openSpeechTraining\(\)/);
 assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
+assert.match(
+    app,
+    /prepareStartMenu\(\)[\s\S]*armSpeechReadyContinuation\(\)[\s\S]*openStartMenuWorkflow/
+);
+assert.doesNotMatch(
+    app,
+    /prepareStartMenu\(\)[\s\S]{0,700}1100/
+);
+assert.match(
+    app,
+    /SPEECH_READY_CONTINUATION_WINDOW\s*=\s*1800/
+);
+assert.match(
+    app,
+    /dialog\.showModal\(\);[\s\S]*promoteTopLayer/
+);
+assert.match(
+    app,
+    /"toggle"[\s\S]*event\.newState\s*===\s*"open"[\s\S]*promoteTopLayer/
+);
+assert.match(
+    app,
+    /showSpeechOptions\(\)[\s\S]*showOptions/
+);
+assert.match(
+    app,
+    /closeActiveSurface\(\)[\s\S]*closeActiveSpeechSurface/
+);
 assert.match(app, /element:\s*\$\("#speechTrainingButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechTraining"/);
 assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
 assert.match(app, /speech-build-active/);
@@ -279,6 +366,34 @@ assert.doesNotMatch(
 assert.match(
     speechMicBarSource,
     /#scheduleRejectedClear[\s\S]*2000/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsPanel[\s\S]*grid-template-columns:[\s\S]*max-content/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*subgrid/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-card[\s\S]*grid-template-columns:[\s\S]*subgrid/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-phrase code/
+);
+assert.match(
+    speechMicBarSource,
+    /duration:\s*750/
+);
+assert.match(
+    speechMicBarSource,
+    /data-speech-target/
+);
+assert.match(
+    speechMicBarSource,
+    /context === "clock"[\s\S]*return "time"/
 );
 assert.match(
     speechMicBarSource,
