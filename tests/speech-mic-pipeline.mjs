@@ -22,12 +22,6 @@ let rafId = 0;
 window.requestAnimationFrame = globalThis.requestAnimationFrame = callback => ++rafId;
 window.cancelAnimationFrame = globalThis.cancelAnimationFrame = () => {};
 
-window.SpeechRecognition = class {
-    start() {}
-    stop() { this.onend?.(); }
-    abort() { this.onend?.(); }
-};
-
 const ParameterParser = Function(
     fs.readFileSync(new URL("../ParameterParser.js", import.meta.url), "utf8") +
     "\nreturn ParameterParser;"
@@ -123,6 +117,7 @@ const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
+assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
@@ -131,9 +126,33 @@ assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
+const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
+const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
+
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
-assert.match(speechMenuSource, /interimResults\s*=\s*true/);
-assert.match(speechMenuSource, /recognition\.start\(\s*SpeechMenu\.#micTrack\s*\)/s);
+assert.match(speechMenuSource, /new globalThis\.SherpaRecognizer/);
+assert.match(speechMenuSource, /context\.audioWorklet\.addModule/);
+assert.match(speechMenuSource, /new AudioWorkletNodeCtor\(\s*context,\s*"wmof-speech-capture"/s);
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
 assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
+assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition|createScriptProcessor/);
+
+assert.match(sherpaRecognizerSource, /static sampleRate = 16000;/);
+assert.match(sherpaRecognizerSource, /new Worker\(workerUrl\)/);
+assert.match(sherpaRecognizerSource, /speech\/SherpaWorker\.js/);
+
+assert.match(audioWorkletSource, /targetSampleRate = 16000;/);
+assert.match(audioWorkletSource, /registerProcessor\(\s*"wmof-speech-capture"/s);
+assert.match(audioWorkletSource, /this\.port\.postMessage/);
+
+assert.match(sherpaWorkerSource, /decodingMethod:\s*"modified_beam_search"/);
+assert.match(sherpaWorkerSource, /createOnlineRecognizer\(/);
+assert.match(sherpaWorkerSource, /stream\.acceptWaveform\(\s*16000/s);
+assert.match(sherpaWorkerSource, /stream\.inputFinished\(\)/);
+assert.match(sherpaWorkerSource, /new Float32Array\(\s*6400\s*\)/s);
+assert.match(sherpaWorkerSource, /hotwordsBuf/);
+assert.doesNotMatch(sherpaWorkerSource, /WebSocket|fetch\([^)]*speech/i);
+
+console.log("PASS Sherpa client ASR baseline architecture");
