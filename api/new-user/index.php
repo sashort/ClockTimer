@@ -54,11 +54,18 @@ if ($method === 'POST') {
         $account
     );
 
-    if (!empty($grant['singleUse'])) {
-        unset($_SESSION['new_user_invitation']);
+    $preservedInvitation =
+        empty($grant['singleUse'])
+            ? $grant
+            : null;
+
+    $_SESSION = [];
+    session_regenerate_id(true);
+
+    if ($preservedInvitation !== null) {
+        $_SESSION['new_user_invitation'] = $preservedInvitation;
     }
 
-    session_regenerate_id(true);
     $_SESSION['user_id'] = (int) $user['id'];
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
