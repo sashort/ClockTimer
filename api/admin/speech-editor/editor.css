@@ -972,3 +972,292 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
         grid-column: 3;
     }
 }
+
+
+/* Workspace docking ----------------------------------------------------- */
+.workspace-layout-control {
+    display: grid;
+    gap: 3px;
+    color: #a9ddf7;
+    font-size: 11px;
+    font-weight: 700;
+}
+.workspace-layout-control select {
+    min-width: 118px;
+    padding: 7px 9px;
+    color: #fff;
+    background: #16385f;
+    border: 1px solid #8cb4d3;
+    border-radius: 7px;
+    font: inherit;
+}
+
+.workspace-dock {
+    min-width: 0;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #789fbe;
+    border-radius: 12px;
+    background: #0b2656;
+}
+.workspace-dock-left .dom-navigator {
+    flex: 1 1 0;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+}
+.inspector.workspace-dock {
+    grid-template-rows: none;
+}
+.workspace-pane {
+    min-width: 0;
+    min-height: 84px;
+    flex: 1 1 0;
+    overflow: auto;
+}
+.workspace-pane[data-workspace-size] {
+    flex-grow: 0;
+}
+.workspace-pane-heading {
+    position: relative;
+    cursor: grab;
+}
+.workspace-pane-heading:active {
+    cursor: grabbing;
+}
+.workspace-pane.is-dragging {
+    opacity: .55;
+}
+.workspace-dock.is-drop-target {
+    outline: 3px solid #a9ddf7;
+    outline-offset: -4px;
+}
+.workspace-pane-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+.inspector .workspace-pane-controls button,
+.workspace-dock-left .workspace-pane-controls button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1;
+}
+.workspace-dock-left .workspace-pane-controls button {
+    color: #fff;
+    background: #354657;
+    border: 1px solid #91b6d5;
+    cursor: pointer;
+}
+.workspace-splitter {
+    position: relative;
+    flex: 0 0 10px;
+    min-height: 10px;
+    cursor: row-resize;
+    background: #173a61;
+    border-top: 1px solid #7299ba;
+    border-bottom: 1px solid #7299ba;
+    outline: none;
+}
+.workspace-splitter::after {
+    content: "";
+    position: absolute;
+    width: 48px;
+    height: 3px;
+    left: 50%;
+    top: 50%;
+    border-radius: 2px;
+    background: #a9ddf7;
+    transform: translate(-50%, -50%);
+}
+.workspace-splitter:hover,
+.workspace-splitter:focus-visible {
+    background: #28577f;
+}
+
+/* Macro Builder --------------------------------------------------------- */
+.macro-builder-pane {
+    padding: 14px;
+}
+.macro-builder-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.macro-builder-heading > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.macro-toolbar {
+    display: grid;
+    grid-template-columns: minmax(120px, .8fr) minmax(190px, 1.2fr);
+    gap: 9px;
+    margin-top: 10px;
+}
+.macro-toolbar label,
+.macro-parameter-card label {
+    display: grid;
+    gap: 5px;
+    color: #bcd7e9;
+    font-size: 11px;
+    font-weight: 700;
+}
+.macro-toolbar select,
+.macro-toolbar input,
+.macro-argument-row select,
+.macro-argument-row input,
+.macro-step-action,
+.macro-parameter-card select,
+.macro-parameter-card input {
+    width: 100%;
+    min-width: 0;
+    padding: 7px 8px;
+    color: #fff;
+    background: #173a61;
+    border: 1px solid #789fbe;
+    border-radius: 6px;
+    font: 12px/1.3 Consolas, "SFMono-Regular", monospace;
+}
+.macro-name-field {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+}
+.macro-name-field > span:first-child {
+    grid-column: 1 / -1;
+}
+.macro-function-prefix {
+    align-self: center;
+    color: #9fc9e8;
+    padding-bottom: 7px;
+    font: 12px/1 Consolas, monospace;
+}
+.macro-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 12px;
+}
+.inspector .macro-actions button,
+.inspector #macroAddParameter {
+    padding: 7px 9px;
+    font-size: 11px;
+}
+.inspector #macroRecord[aria-pressed="true"] {
+    color: #071d3b;
+    background: #ffc220;
+}
+.macro-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 11px 0 6px;
+    padding-top: 8px;
+    border-top: 1px solid #41658a;
+}
+.macro-section-heading h3 {
+    margin: 0;
+    font-size: 14px;
+}
+.macro-section-heading span {
+    margin-left: auto;
+    color: #9fc9e8;
+    font-size: 11px;
+}
+.macro-section-heading button {
+    margin-left: auto;
+}
+.macro-steps,
+.macro-parameters {
+    display: grid;
+    gap: 8px;
+}
+.macro-empty {
+    margin: 4px 0;
+    padding: 10px;
+    color: #9fc9e8;
+    border: 1px dashed #587fa2;
+    border-radius: 7px;
+    font-size: 11px;
+}
+.macro-step-card,
+.macro-parameter-card {
+    padding: 9px;
+    border: 1px solid #587fa2;
+    border-radius: 8px;
+    background: #102e53;
+}
+.macro-step-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px;
+}
+.macro-step-number {
+    color: #a9ddf7;
+    font: 800 11px/1 Consolas, monospace;
+}
+.inspector .macro-step-header button {
+    padding: 5px 7px;
+    font-size: 11px;
+}
+.macro-arguments {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+}
+.macro-argument-row {
+    display: grid;
+    grid-template-columns: 74px 92px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+}
+.macro-argument-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: #bcd7e9;
+    font: 11px/1.2 Consolas, monospace;
+}
+.macro-parameter-card {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) 92px minmax(110px, 1fr) auto;
+    align-items: end;
+    gap: 7px;
+}
+.inspector .macro-parameter-card button {
+    padding: 7px 8px;
+    font-size: 11px;
+}
+.macro-message {
+    min-height: 1.25em;
+    margin: 5px 0;
+    color: #9fc9e8;
+    font-size: 11px;
+}
+.macro-message.error {
+    color: #ff9696;
+}
+
+@media (max-width: 1250px) {
+    .macro-toolbar {
+        grid-template-columns: 1fr;
+    }
+    .macro-argument-row {
+        grid-template-columns: 68px 86px minmax(0, 1fr);
+    }
+    .macro-parameter-card {
+        grid-template-columns: 1fr 90px;
+    }
+}
+
+@media (max-width: 980px) {
+    .workspace-dock {
+        min-height: 420px;
+    }
+}
