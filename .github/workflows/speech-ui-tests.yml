@@ -34,12 +34,16 @@ jobs:
           node --check SpeechEditorRuntime.js
           node --check ActionFunctions.js
           node --check app.js
+          node --check api/admin/speech-editor/EditorActionFunctions.js
           node --check api/admin/speech-editor/RegexBuilder.js
           node --check api/admin/speech-editor/editor.js
 
       - name: Check PHP syntax
         run: |
           php -l api/admin/speech-editor/index.php
+          php -l api/admin/speech-editor/agent/index.php
+          php -l api/_core/permissions.php
+          php -l api/_core/csrf.php
           php -l api/speech-editor-config/index.php
 
       - name: Install test dependencies
@@ -53,6 +57,7 @@ jobs:
           npm run test:speech-phrases
           npm run test:action-macros
           npm run test:editor-actions
+          php admin_permissions.php
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
