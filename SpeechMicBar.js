@@ -1629,8 +1629,14 @@ class SpeechMicBar extends HTMLElement {
                             : "listening"
                     );
 
-                    if (!detail?.committed) {
-                        this.#showStatus("Processing…");
+                    if (
+                        !detail?.committed &&
+                        detail?.reason !==
+                            "no-candidates"
+                    ) {
+                        this.#showStatus(
+                            "Processing…"
+                        );
                     }
                 }
                 break;
@@ -1718,7 +1724,10 @@ class SpeechMicBar extends HTMLElement {
             case "utteranceUnrecognized":
                 if (detail?.id === this.#currentUtteranceId) {
                     this.#scheduleRejectedClear(
-                        detail.id
+                        detail.id,
+                        detail?.fast
+                            ? 250
+                            : 2000
                     );
                 }
                 break;
@@ -1965,7 +1974,8 @@ class SpeechMicBar extends HTMLElement {
     }
 
     #scheduleRejectedClear(
-        utteranceId
+        utteranceId,
+        delay = 2000
     ) {
         clearTimeout(
             this.#rejectedClearTimer
@@ -1995,7 +2005,11 @@ class SpeechMicBar extends HTMLElement {
                     void this.clearResponse();
                     this.#showIdleText();
                 },
-                2000
+                Math.max(
+                    0,
+                    Number(delay) ||
+                    0
+                )
             );
     }
 
