@@ -36,6 +36,16 @@
 
     let saved = [];
     let draft = [];
+    let savedMacros = [];
+    let draftMacros = [];
+    let macrosLoaded = false;
+    let macroWorking = {
+        name: "",
+        parameters: [],
+        steps: []
+    };
+    let macroEditingName = "";
+    let macroRecorderEvents;
     let revision = "empty";
     let overlay = true;
     let frameDocument;
@@ -87,6 +97,12 @@
         () =>
             JSON.stringify(draft) !==
                 JSON.stringify(saved) ||
+            JSON.stringify(
+                draftMacros
+            ) !==
+                JSON.stringify(
+                    savedMacros
+                ) ||
             JSON.stringify(
                 draftFunctionRoles
             ) !==
@@ -5038,7 +5054,49 @@
             );
 
             functionNames = [];
+
+            if (macrosLoaded) {
+                syncMacrosToFrame();
+            }
+
+            const actionEvents =
+                macroApi()
+                    ?.events;
+
+            if (
+                actionEvents &&
+                actionEvents !==
+                    macroRecorderEvents
+            ) {
+                macroRecorderEvents =
+                    actionEvents;
+
+                actionEvents
+                    .addEventListener(
+                        "recorded",
+                        event => {
+                            const recording =
+                                event.detail
+                                    ?.recording;
+
+                            if (!recording) {
+                                return;
+                            }
+
+                            macroWorking.steps =
+                                cloneMacroValue(
+                                    recording.steps ||
+                                    []
+                                );
+
+                            renderMacroSteps();
+                            updateMacroControls();
+                        }
+                    );
+            }
+
             syncFunctionCatalog();
+            renderMacroBuilder();
 
             selectedElement =
                 undefined;
@@ -5632,212 +5690,2514 @@
             }
         );
 
-    const bindInspectorSplitter =
-        ({
-            splitterId,
-            paneSelector,
-            variable,
-            minHeight,
-            maxHeight
-        }) => {
-            const splitter =
-                $(splitterId);
+    const WORKSPACE_STORAGE =
+        "wmof.speechEditor.workspace";
 
-            let startY;
-            let startHeight;
+    const workspacePane =
+        id =>
+            document
+                .querySelector(
+                    `[data-pane-id="${id}"]`
+                );
 
-            const applyHeight =
-                next => {
-                    const inspector =
-                        document
-                            .querySelector(
-                                ".inspector"
+    const workspaceDock =
+        side =>
+            document
+                .querySelector(
+                    `[data-workspace-dock="${side}"]`
+                );
+
+    const workspacePaneIds =
+        () => [
+            "dom",
+            "phrases",
+            "attributes",
+            "regex",
+            "macro"
+        ];
+
+    const saveWorkspaceState =
+        () => {
+            const state = {
+                left:
+                    [
+                        ...workspaceDock(
+                            "left"
+                        )
+                            .querySelectorAll(
+                                ":scope > .workspace-pane"
+                            )
+                    ]
+                        .map(
+                            pane =>
+                                pane.dataset
+                                    .paneId
+                        ),
+                right:
+                    [
+                        ...workspaceDock(
+                            "right"
+                        )
+                            .querySelectorAll(
+                                ":scope > .workspace-pane"
+                            )
+                    ]
+                        .map(
+                            pane =>
+                                pane.dataset
+                                    .paneId
+                        ),
+                sizes:
+                    Object.fromEntries(
+                        workspacePaneIds()
+                            .map(
+                                id => [
+                                    id,
+                                    Math.round(
+                                        workspacePane(
+                                            id
+                                        )
+                                            ?.getBoundingClientRect()
+                                            .height ||
+                                        0
+                                    )
+                                ]
+                            )
+                    )
+            };
+
+            try {
+                localStorage
+                    .setItem(
+                        WORKSPACE_STORAGE,
+                        JSON.stringify(
+                            state
+                        )
+                    );
+            }
+            catch {}
+
+            $("workspacePreset")
+                .value =
+                "custom";
+        };
+
+    const rebuildWorkspaceSplitters =
+        dock => {
+            dock
+                .querySelectorAll(
+                    ":scope > .workspace-splitter"
+                )
+                .forEach(
+                    splitter =>
+                        splitter.remove()
+                );
+
+            const panes =
+                [
+                    ...dock
+                        .querySelectorAll(
+                            ":scope > .workspace-pane"
+                        )
+                ];
+
+            for (
+                let index = 1;
+                index < panes.length;
+                index += 1
+            ) {
+                const previous =
+                    panes[
+                        index -
+                        1
+                    ];
+
+                const next =
+                    panes[
+                        index
+                    ];
+
+                const splitter =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                splitter.className =
+                    "workspace-splitter";
+
+                splitter.tabIndex =
+                    0;
+
+                splitter.setAttribute(
+                    "role",
+                    "separator"
+                );
+
+                splitter.setAttribute(
+                    "aria-orientation",
+                    "horizontal"
+                );
+
+                splitter.setAttribute(
+                    "aria-label",
+                    "Resize " +
+                        previous.dataset
+                            .paneId +
+                        " and " +
+                        next.dataset
+                            .paneId
+                );
+
+                let startY;
+                let previousHeight;
+                let nextHeight;
+
+                const resize =
+                    delta => {
+                        const minimum =
+                            84;
+
+                        const first =
+                            Math.max(
+                                minimum,
+                                previousHeight +
+                                    delta
                             );
 
-                    const total =
-                        inspector
-                            .getBoundingClientRect()
-                            .height;
+                        const second =
+                            Math.max(
+                                minimum,
+                                nextHeight -
+                                    delta
+                            );
 
-                    const maximum =
-                        Math.max(
-                            minHeight,
-                            maxHeight(
-                                total
-                            )
-                        );
+                        if (
+                            first +
+                                second >
+                            previousHeight +
+                                nextHeight
+                        ) {
+                            return;
+                        }
 
-                    const height =
-                        Math.max(
-                            minHeight,
-                            Math.min(
-                                maximum,
+                        previous.style.flex =
+                            `0 0 ${first}px`;
+
+                        next.style.flex =
+                            `0 0 ${second}px`;
+                    };
+
+                splitter
+                    .addEventListener(
+                        "pointerdown",
+                        event => {
+                            startY =
+                                event.clientY;
+
+                            previousHeight =
+                                previous
+                                    .getBoundingClientRect()
+                                    .height;
+
+                            nextHeight =
                                 next
-                            )
-                        );
+                                    .getBoundingClientRect()
+                                    .height;
 
-                    document
-                        .documentElement
-                        .style
-                        .setProperty(
-                            variable,
-                            height +
-                                "px"
-                        );
-                };
+                            splitter
+                                .setPointerCapture?.(
+                                    event.pointerId
+                                );
 
-            splitter.addEventListener(
-                "pointerdown",
-                event => {
-                    startY =
-                        event.clientY;
+                            event.preventDefault();
+                        }
+                    );
 
-                    startHeight =
-                        document
-                            .querySelector(
-                                paneSelector
-                            )
-                            .getBoundingClientRect()
-                            .height;
+                splitter
+                    .addEventListener(
+                        "pointermove",
+                        event => {
+                            if (
+                                startY ===
+                                    undefined
+                            ) {
+                                return;
+                            }
 
+                            resize(
+                                event.clientY -
+                                    startY
+                            );
+                        }
+                    );
+
+                const finish =
+                    () => {
+                        if (
+                            startY !==
+                                undefined
+                        ) {
+                            saveWorkspaceState();
+                        }
+
+                        startY =
+                            undefined;
+                    };
+
+                splitter
+                    .addEventListener(
+                        "pointerup",
+                        finish
+                    );
+
+                splitter
+                    .addEventListener(
+                        "pointercancel",
+                        finish
+                    );
+
+                splitter
+                    .addEventListener(
+                        "keydown",
+                        event => {
+                            if (
+                                ![
+                                    "ArrowUp",
+                                    "ArrowDown"
+                                ].includes(
+                                    event.key
+                                )
+                            ) {
+                                return;
+                            }
+
+                            event.preventDefault();
+
+                            previousHeight =
+                                previous
+                                    .getBoundingClientRect()
+                                    .height;
+
+                            nextHeight =
+                                next
+                                    .getBoundingClientRect()
+                                    .height;
+
+                            resize(
+                                event.key ===
+                                    "ArrowDown"
+                                    ? 20
+                                    : -20
+                            );
+
+                            saveWorkspaceState();
+                        }
+                    );
+
+                next.before(
                     splitter
-                        .setPointerCapture?.(
-                            event.pointerId
-                        );
+                );
+            }
+        };
 
-                    event.preventDefault();
-                }
+    const refreshWorkspace =
+        () => {
+            rebuildWorkspaceSplitters(
+                workspaceDock(
+                    "left"
+                )
             );
 
-            splitter.addEventListener(
-                "pointermove",
-                event => {
-                    if (
-                        startY ===
-                        undefined
-                    ) {
-                        return;
-                    }
-
-                    applyHeight(
-                        startHeight +
-                        event.clientY -
-                        startY
-                    );
-                }
-            );
-
-            const endSplit =
-                () => {
-                    startY =
-                        undefined;
-
-                    startHeight =
-                        undefined;
-                };
-
-            splitter.addEventListener(
-                "pointerup",
-                endSplit
-            );
-
-            splitter.addEventListener(
-                "pointercancel",
-                endSplit
-            );
-
-            splitter.addEventListener(
-                "keydown",
-                event => {
-                    if (
-                        ![
-                            "ArrowUp",
-                            "ArrowDown"
-                        ].includes(
-                            event.key
-                        )
-                    ) {
-                        return;
-                    }
-
-                    event.preventDefault();
-
-                    const current =
-                        document
-                            .querySelector(
-                                paneSelector
-                            )
-                            .getBoundingClientRect()
-                            .height;
-
-                    applyHeight(
-                        current +
-                        (
-                            event.key ===
-                                "ArrowDown"
-                                ? 20
-                                : -20
-                        )
-                    );
-                }
+            rebuildWorkspaceSplitters(
+                workspaceDock(
+                    "right"
+                )
             );
         };
 
-    bindInspectorSplitter({
-        splitterId:
-            "inspectorSplitter",
-        paneSelector:
-            ".phrase-pane",
-        variable:
-            "--phrase-pane-height",
-        minHeight:
-            120,
-        maxHeight:
-            total => {
-                const attributeHeight =
-                    document
-                        .querySelector(
-                            ".attribute-pane"
-                        )
-                        .getBoundingClientRect()
-                        .height;
+    const moveWorkspacePane =
+        (
+            pane,
+            side,
+            {
+                save = true
+            } = {}
+        ) => {
+            const dock =
+                workspaceDock(
+                    side
+                );
 
-                return (
-                    total -
-                    24 -
-                    attributeHeight -
-                    150
+            if (
+                !pane ||
+                !dock
+            ) {
+                return;
+            }
+
+            pane.style.flex =
+                "";
+
+            dock.append(
+                pane
+            );
+
+            refreshWorkspace();
+
+            if (save) {
+                saveWorkspaceState();
+            }
+        };
+
+    const applyWorkspacePreset =
+        preset => {
+            const layouts = {
+                authoring: {
+                    left: [
+                        "dom",
+                        "macro"
+                    ],
+                    right: [
+                        "phrases",
+                        "attributes",
+                        "regex"
+                    ]
+                },
+                macro: {
+                    left: [
+                        "dom",
+                        "phrases",
+                        "regex"
+                    ],
+                    right: [
+                        "macro",
+                        "attributes"
+                    ]
+                },
+                regex: {
+                    left: [
+                        "dom",
+                        "phrases",
+                        "macro"
+                    ],
+                    right: [
+                        "regex",
+                        "attributes"
+                    ]
+                }
+            };
+
+            const layout =
+                layouts[
+                    preset
+                ];
+
+            if (!layout) {
+                return;
+            }
+
+            for (
+                const [
+                    side,
+                    ids
+                ] of Object.entries(
+                    layout
+                )
+            ) {
+                const dock =
+                    workspaceDock(
+                        side
+                    );
+
+                for (
+                    const id of
+                    ids
+                ) {
+                    const pane =
+                        workspacePane(
+                            id
+                        );
+
+                    pane.style.flex =
+                        "";
+
+                    dock.append(
+                        pane
+                    );
+                }
+            }
+
+            refreshWorkspace();
+
+            try {
+                localStorage
+                    .setItem(
+                        WORKSPACE_STORAGE,
+                        JSON.stringify({
+                            left:
+                                layout.left,
+                            right:
+                                layout.right,
+                            sizes: {}
+                        })
+                    );
+            }
+            catch {}
+
+            $("workspacePreset")
+                .value =
+                preset;
+        };
+
+    const restoreWorkspace =
+        () => {
+            let state;
+
+            try {
+                state =
+                    JSON.parse(
+                        localStorage
+                            .getItem(
+                                WORKSPACE_STORAGE
+                            ) ||
+                        "null"
+                    );
+            }
+            catch {}
+
+            if (
+                !state ||
+                !Array.isArray(
+                    state.left
+                ) ||
+                !Array.isArray(
+                    state.right
+                )
+            ) {
+                applyWorkspacePreset(
+                    "authoring"
+                );
+
+                return;
+            }
+
+            const seen =
+                new Set();
+
+            for (
+                const [
+                    side,
+                    ids
+                ] of [
+                    [
+                        "left",
+                        state.left
+                    ],
+                    [
+                        "right",
+                        state.right
+                    ]
+                ]
+            ) {
+                const dock =
+                    workspaceDock(
+                        side
+                    );
+
+                for (
+                    const id of
+                    ids
+                ) {
+                    const pane =
+                        workspacePane(
+                            id
+                        );
+
+                    if (
+                        !pane ||
+                        seen.has(
+                            id
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    seen.add(
+                        id
+                    );
+
+                    dock.append(
+                        pane
+                    );
+
+                    const size =
+                        Number(
+                            state.sizes?.[
+                                id
+                            ]
+                        );
+
+                    pane.style.flex =
+                        size >=
+                            84
+                            ? `0 0 ${size}px`
+                            : "";
+                }
+            }
+
+            for (
+                const id of
+                workspacePaneIds()
+            ) {
+                if (
+                    !seen.has(
+                        id
+                    )
+                ) {
+                    workspaceDock(
+                        id ===
+                            "dom"
+                            ? "left"
+                            : "right"
+                    )
+                        .append(
+                            workspacePane(
+                                id
+                            )
+                        );
+                }
+            }
+
+            refreshWorkspace();
+
+            $("workspacePreset")
+                .value =
+                "custom";
+        };
+
+    const installWorkspace =
+        () => {
+            for (
+                const pane of
+                document
+                    .querySelectorAll(
+                        ".workspace-pane[data-pane-id]"
+                    )
+            ) {
+                const heading =
+                    pane
+                        .querySelector(
+                            ".workspace-pane-heading"
+                        );
+
+                if (!heading) {
+                    continue;
+                }
+
+                heading.draggable =
+                    true;
+
+                heading
+                    .addEventListener(
+                        "dragstart",
+                        event => {
+                            if (
+                                event.target
+                                    .closest?.(
+                                        "button,input,select,textarea,a"
+                                    )
+                            ) {
+                                event.preventDefault();
+
+                                return;
+                            }
+
+                            pane.classList.add(
+                                "is-dragging"
+                            );
+
+                            event.dataTransfer
+                                ?.setData(
+                                    "text/x-wmof-pane",
+                                    pane.dataset
+                                        .paneId
+                                );
+                        }
+                    );
+
+                heading
+                    .addEventListener(
+                        "dragend",
+                        () =>
+                            pane.classList
+                                .remove(
+                                    "is-dragging"
+                                )
+                    );
+
+                const controls =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                controls.className =
+                    "workspace-pane-controls";
+
+                for (
+                    const [
+                        side,
+                        label
+                    ] of [
+                        [
+                            "left",
+                            "←"
+                        ],
+                        [
+                            "right",
+                            "→"
+                        ]
+                    ]
+                ) {
+                    const button =
+                        document
+                            .createElement(
+                                "button"
+                            );
+
+                    button.type =
+                        "button";
+
+                    button.textContent =
+                        label;
+
+                    button.title =
+                        "Snap " +
+                        pane.dataset
+                            .paneId +
+                        " " +
+                        side;
+
+                    button.setAttribute(
+                        "aria-label",
+                        button.title
+                    );
+
+                    button
+                        .addEventListener(
+                            "click",
+                            event => {
+                                event
+                                    .stopPropagation();
+
+                                moveWorkspacePane(
+                                    pane,
+                                    side
+                                );
+                            }
+                        );
+
+                    controls.append(
+                        button
+                    );
+                }
+
+                heading.append(
+                    controls
                 );
             }
-    });
 
-    bindInspectorSplitter({
-        splitterId:
-            "regexBuilderSplitter",
-        paneSelector:
-            ".attribute-pane",
-        variable:
-            "--attribute-pane-height",
-        minHeight:
-            150,
-        maxHeight:
-            total => {
-                const phraseHeight =
-                    document
-                        .querySelector(
-                            ".phrase-pane"
-                        )
-                        .getBoundingClientRect()
-                        .height;
+            for (
+                const dock of
+                document
+                    .querySelectorAll(
+                        "[data-workspace-dock]"
+                    )
+            ) {
+                dock
+                    .addEventListener(
+                        "dragover",
+                        event => {
+                            if (
+                                event.dataTransfer
+                                    ?.types
+                                    ?.includes(
+                                        "text/x-wmof-pane"
+                                    )
+                            ) {
+                                event.preventDefault();
 
-                return (
-                    total -
-                    24 -
-                    phraseHeight -
-                    150
+                                dock.classList.add(
+                                    "is-drop-target"
+                                );
+                            }
+                        }
+                    );
+
+                dock
+                    .addEventListener(
+                        "dragleave",
+                        event => {
+                            if (
+                                !dock.contains(
+                                    event.relatedTarget
+                                )
+                            ) {
+                                dock.classList
+                                    .remove(
+                                        "is-drop-target"
+                                    );
+                            }
+                        }
+                    );
+
+                dock
+                    .addEventListener(
+                        "drop",
+                        event => {
+                            const id =
+                                event.dataTransfer
+                                    ?.getData(
+                                        "text/x-wmof-pane"
+                                    );
+
+                            dock.classList
+                                .remove(
+                                    "is-drop-target"
+                                );
+
+                            if (!id) {
+                                return;
+                            }
+
+                            event.preventDefault();
+
+                            moveWorkspacePane(
+                                workspacePane(
+                                    id
+                                ),
+                                dock.dataset
+                                    .workspaceDock
+                            );
+                        }
+                    );
+            }
+
+            $("workspacePreset")
+                .addEventListener(
+                    "change",
+                    event => {
+                        if (
+                            event.target
+                                .value !==
+                            "custom"
+                        ) {
+                            applyWorkspacePreset(
+                                event.target
+                                    .value
+                            );
+                        }
+                    }
+                );
+
+            restoreWorkspace();
+        };
+
+    const macroApi =
+        () =>
+            frame.contentWindow
+                ?.WMOFActionFunctions;
+
+    const emptyMacro =
+        () => ({
+            name: "",
+            parameters: [],
+            steps: []
+        });
+
+    const cloneMacroValue =
+        value =>
+            structuredClone(
+                value
+            );
+
+    const macroLiteralText =
+        value => {
+            if (
+                value &&
+                typeof value ===
+                    "object" &&
+                value.__wmofMacroType ===
+                    "undefined"
+            ) {
+                return "undefined";
+            }
+
+            try {
+                return JSON.stringify(
+                    value
                 );
             }
-    });
+            catch {
+                return String(
+                    value
+                );
+            }
+        };
+
+    const parseMacroLiteral =
+        value => {
+            const text =
+                String(
+                    value
+                )
+                    .trim();
+
+            if (
+                text ===
+                "undefined"
+            ) {
+                return {
+                    __wmofMacroType:
+                        "undefined"
+                };
+            }
+
+            if (!text) {
+                return "";
+            }
+
+            try {
+                return JSON.parse(
+                    text
+                );
+            }
+            catch {
+                return text;
+            }
+        };
+
+    const actionNamesForMacro =
+        () => {
+            const api =
+                macroApi();
+
+            return (
+                api?.list?.() ||
+                []
+            )
+                .filter(
+                    name =>
+                        name !==
+                        macroWorking.name
+                );
+        };
+
+    const macroParameterMetadata =
+        (
+            action,
+            index
+        ) =>
+            macroApi()
+                ?.describe?.(
+                    action
+                )
+                ?.parameters?.[
+                    index
+                ] ||
+            {};
+
+    const uniqueMacroParameterName =
+        preferred => {
+            let base =
+                String(
+                    preferred ||
+                    "value"
+                )
+                    .replace(
+                        /[^A-Za-z0-9_$]/g,
+                        ""
+                    );
+
+            if (
+                !/^[A-Za-z_$]/
+                    .test(base)
+            ) {
+                base =
+                    "value" +
+                    base;
+            }
+
+            if (!base) {
+                base =
+                    "value";
+            }
+
+            let name =
+                base;
+
+            let suffix =
+                2;
+
+            while (
+                macroWorking
+                    .parameters
+                    .some(
+                        parameter =>
+                            parameter.name ===
+                            name
+                    )
+            ) {
+                name =
+                    base +
+                    suffix;
+
+                suffix += 1;
+            }
+
+            return name;
+        };
+
+    const ensureMacroParameter =
+        (
+            name,
+            {
+                type = "value",
+                defaultValue,
+                hasDefault = false
+            } = {}
+        ) => {
+            const existing =
+                macroWorking
+                    .parameters
+                    .find(
+                        parameter =>
+                            parameter.name ===
+                            name
+                    );
+
+            if (existing) {
+                return existing;
+            }
+
+            const parameter = {
+                name,
+                type:
+                    type ||
+                    "value"
+            };
+
+            if (hasDefault) {
+                parameter.default =
+                    cloneMacroValue(
+                        defaultValue
+                    );
+            }
+
+            macroWorking
+                .parameters
+                .push(
+                    parameter
+                );
+
+            return parameter;
+        };
+
+    const removeMacroRole =
+        name => {
+            const path =
+                "WMOFActions." +
+                name;
+
+            draftFunctionRoles
+                .action =
+                (
+                    draftFunctionRoles
+                        .action ||
+                    []
+                )
+                    .filter(
+                        value =>
+                            value !==
+                            path
+                    );
+        };
+
+    const ensureMacroRole =
+        name => {
+            const path =
+                "WMOFActions." +
+                name;
+
+            draftFunctionRoles
+                .action =
+                [
+                    ...new Set([
+                        ...(
+                            draftFunctionRoles
+                                .action ||
+                            []
+                        ),
+                        path
+                    ])
+                ]
+                    .sort(
+                        (a, b) =>
+                            a.localeCompare(
+                                b
+                            )
+                    );
+        };
+
+    const syncMacrosToFrame =
+        () => {
+            if (!macrosLoaded) {
+                return;
+            }
+
+            try {
+                macroApi()
+                    ?.registerMacros?.(
+                        draftMacros
+                    );
+            }
+            catch (
+                error
+            ) {
+                $("macroMessage")
+                    .textContent =
+                    error.message;
+            }
+        };
+
+    const updateMacroSelect =
+        () => {
+            const select =
+                $("macroSelect");
+
+            const selected =
+                macroEditingName;
+
+            select.replaceChildren(
+                new Option(
+                    "New macro…",
+                    ""
+                )
+            );
+
+            for (
+                const macro of
+                draftMacros
+                    .slice()
+                    .sort(
+                        (a, b) =>
+                            a.name
+                                .localeCompare(
+                                    b.name
+                                )
+                    )
+            ) {
+                select.append(
+                    new Option(
+                        macro.name,
+                        macro.name
+                    )
+                );
+            }
+
+            select.value =
+                draftMacros.some(
+                    macro =>
+                        macro.name ===
+                        selected
+                )
+                    ? selected
+                    : "";
+        };
+
+    const validateMacroWorking =
+        () => {
+            const api =
+                macroApi();
+
+            if (!api) {
+                return {
+                    valid: false,
+                    reason:
+                        "Preview action runtime is not ready."
+                };
+            }
+
+            const name =
+                String(
+                    $("macroName")
+                        .value ||
+                    ""
+                )
+                    .trim();
+
+            macroWorking.name =
+                name;
+
+            const nameResult =
+                api.validateName(
+                    name,
+                    {
+                        allowExistingMacro:
+                            true
+                    }
+                );
+
+            if (
+                !nameResult.valid
+            ) {
+                return nameResult;
+            }
+
+            if (
+                draftMacros.some(
+                    macro =>
+                        macro.name ===
+                            name &&
+                        macro.name !==
+                            macroEditingName
+                )
+            ) {
+                return {
+                    valid: false,
+                    reason:
+                        "Another macro already uses this name."
+                };
+            }
+
+            return api
+                .validateMacro(
+                    macroWorking,
+                    {
+                        allowExistingMacro:
+                            true,
+                        requireActions:
+                            true
+                    }
+                );
+        };
+
+    const updateMacroControls =
+        () => {
+            const result =
+                validateMacroWorking();
+
+            $("macroNameMessage")
+                .textContent =
+                result.reason ||
+                (
+                    macroWorking.name
+                        ? "Valid action function name."
+                        : ""
+                );
+
+            $("macroNameMessage")
+                .classList
+                .toggle(
+                    "error",
+                    !result.valid
+                );
+
+            $("macroStage")
+                .disabled =
+                !result.valid;
+
+            $("macroTest")
+                .disabled =
+                !result.valid;
+
+            $("macroDelete")
+                .disabled =
+                !macroEditingName;
+        };
+
+    const renderMacroParameters =
+        () => {
+            const host =
+                $("macroParameters");
+
+            host.replaceChildren();
+
+            if (
+                !macroWorking
+                    .parameters
+                    .length
+            ) {
+                const empty =
+                    document
+                        .createElement(
+                            "p"
+                        );
+
+                empty.className =
+                    "macro-empty";
+
+                empty.textContent =
+                    "No macro parameters. Promote a recorded argument to Parameter or add one.";
+
+                host.append(
+                    empty
+                );
+
+                return;
+            }
+
+            for (
+                const [
+                    index,
+                    parameter
+                ] of macroWorking
+                    .parameters
+                    .entries()
+            ) {
+                const card =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                card.className =
+                    "macro-parameter-card";
+
+                const nameLabel =
+                    document
+                        .createElement(
+                            "label"
+                        );
+
+                nameLabel.append(
+                    document
+                        .createTextNode(
+                            "Name"
+                        )
+                );
+
+                const nameInput =
+                    document
+                        .createElement(
+                            "input"
+                        );
+
+                nameInput.value =
+                    parameter.name;
+
+                nameInput.spellcheck =
+                    false;
+
+                nameInput
+                    .addEventListener(
+                        "change",
+                        () => {
+                            const previous =
+                                parameter.name;
+
+                            const next =
+                                String(
+                                    nameInput.value
+                                )
+                                    .trim();
+
+                            if (
+                                !/^[A-Za-z_$][\\w$]*$/
+                                    .test(
+                                        next
+                                    ) ||
+                                macroWorking
+                                    .parameters
+                                    .some(
+                                        (
+                                            item,
+                                            itemIndex
+                                        ) =>
+                                            itemIndex !==
+                                                index &&
+                                            item.name ===
+                                                next
+                                    )
+                            ) {
+                                nameInput.value =
+                                    previous;
+
+                                return;
+                            }
+
+                            parameter.name =
+                                next;
+
+                            for (
+                                const step of
+                                macroWorking
+                                    .steps
+                            ) {
+                                for (
+                                    const argument of
+                                    step.args
+                                ) {
+                                    if (
+                                        argument.source ===
+                                            "parameter" &&
+                                        argument.name ===
+                                            previous
+                                    ) {
+                                        argument.name =
+                                            next;
+                                    }
+                                }
+                            }
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                nameLabel.append(
+                    nameInput
+                );
+
+                const typeLabel =
+                    document
+                        .createElement(
+                            "label"
+                        );
+
+                typeLabel.append(
+                    document
+                        .createTextNode(
+                            "Type"
+                        )
+                );
+
+                const type =
+                    document
+                        .createElement(
+                            "select"
+                        );
+
+                for (
+                    const value of
+                    [
+                        "value",
+                        "text",
+                        "number",
+                        "boolean",
+                        "percent",
+                        "time",
+                        "duration",
+                        "choice"
+                    ]
+                ) {
+                    type.append(
+                        new Option(
+                            value,
+                            value
+                        )
+                    );
+                }
+
+                type.value =
+                    parameter.type ||
+                    "value";
+
+                type
+                    .addEventListener(
+                        "change",
+                        () => {
+                            parameter.type =
+                                type.value;
+
+                            updateMacroControls();
+                        }
+                    );
+
+                typeLabel.append(
+                    type
+                );
+
+                const defaultLabel =
+                    document
+                        .createElement(
+                            "label"
+                        );
+
+                defaultLabel.append(
+                    document
+                        .createTextNode(
+                            "Default"
+                        )
+                );
+
+                const defaultInput =
+                    document
+                        .createElement(
+                            "input"
+                        );
+
+                defaultInput.placeholder =
+                    "optional";
+
+                if (
+                    Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            parameter,
+                            "default"
+                        )
+                ) {
+                    defaultInput.value =
+                        macroLiteralText(
+                            parameter.default
+                        );
+                }
+
+                defaultInput
+                    .addEventListener(
+                        "change",
+                        () => {
+                            if (
+                                !defaultInput
+                                    .value
+                                    .trim()
+                            ) {
+                                delete parameter
+                                    .default;
+                            }
+                            else {
+                                parameter.default =
+                                    parseMacroLiteral(
+                                        defaultInput
+                                            .value
+                                    );
+                            }
+
+                            updateMacroControls();
+                        }
+                    );
+
+                defaultLabel.append(
+                    defaultInput
+                );
+
+                const remove =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                remove.type =
+                    "button";
+
+                remove.textContent =
+                    "×";
+
+                remove.setAttribute(
+                    "aria-label",
+                    "Remove parameter " +
+                        parameter.name
+                );
+
+                remove
+                    .addEventListener(
+                        "click",
+                        () => {
+                            const fallback =
+                                Object.prototype
+                                    .hasOwnProperty
+                                    .call(
+                                        parameter,
+                                        "default"
+                                    )
+                                    ? cloneMacroValue(
+                                        parameter
+                                            .default
+                                    )
+                                    : {
+                                        __wmofMacroType:
+                                            "undefined"
+                                    };
+
+                            for (
+                                const step of
+                                macroWorking
+                                    .steps
+                            ) {
+                                for (
+                                    const argument of
+                                    step.args
+                                ) {
+                                    if (
+                                        argument.source ===
+                                            "parameter" &&
+                                        argument.name ===
+                                            parameter.name
+                                    ) {
+                                        argument.source =
+                                            "literal";
+
+                                        delete argument
+                                            .name;
+
+                                        argument.value =
+                                            cloneMacroValue(
+                                                fallback
+                                            );
+                                    }
+                                }
+                            }
+
+                            macroWorking
+                                .parameters
+                                .splice(
+                                    index,
+                                    1
+                                );
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                card.append(
+                    nameLabel,
+                    typeLabel,
+                    defaultLabel,
+                    remove
+                );
+
+                host.append(
+                    card
+                );
+            }
+        };
+
+    const renderMacroSteps =
+        () => {
+            const host =
+                $("macroSteps");
+
+            host.replaceChildren();
+
+            if (
+                !macroWorking
+                    .steps
+                    .length
+            ) {
+                const empty =
+                    document
+                        .createElement(
+                            "p"
+                        );
+
+                empty.className =
+                    "macro-empty";
+
+                empty.textContent =
+                    "Press Record, then use the preview. Every WMOFActions call will appear here.";
+
+                host.append(
+                    empty
+                );
+
+                return;
+            }
+
+            const actionNames =
+                actionNamesForMacro();
+
+            for (
+                const [
+                    stepIndex,
+                    step
+                ] of macroWorking
+                    .steps
+                    .entries()
+            ) {
+                const card =
+                    document
+                        .createElement(
+                            "article"
+                        );
+
+                card.className =
+                    "macro-step-card";
+
+                const header =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                header.className =
+                    "macro-step-header";
+
+                const number =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                number.className =
+                    "macro-step-number";
+
+                number.textContent =
+                    String(
+                        stepIndex +
+                            1
+                    );
+
+                const action =
+                    document
+                        .createElement(
+                            "select"
+                        );
+
+                action.className =
+                    "macro-step-action";
+
+                const names =
+                    [
+                        ...new Set([
+                            step.action,
+                            ...actionNames
+                        ])
+                    ]
+                        .filter(
+                            Boolean
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.localeCompare(
+                                    b
+                                )
+                        );
+
+                for (
+                    const name of
+                    names
+                ) {
+                    action.append(
+                        new Option(
+                            name,
+                            name
+                        )
+                    );
+                }
+
+                action.value =
+                    step.action;
+
+                action
+                    .addEventListener(
+                        "change",
+                        () => {
+                            step.action =
+                                action.value;
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                const addArgument =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                addArgument.type =
+                    "button";
+
+                addArgument.textContent =
+                    "+ Arg";
+
+                addArgument
+                    .addEventListener(
+                        "click",
+                        () => {
+                            step.args.push({
+                                source:
+                                    "literal",
+                                value: {
+                                    __wmofMacroType:
+                                        "undefined"
+                                }
+                            });
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                const remove =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                remove.type =
+                    "button";
+
+                remove.textContent =
+                    "×";
+
+                remove.setAttribute(
+                    "aria-label",
+                    "Remove macro action"
+                );
+
+                remove
+                    .addEventListener(
+                        "click",
+                        () => {
+                            macroWorking
+                                .steps
+                                .splice(
+                                    stepIndex,
+                                    1
+                                );
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                header.append(
+                    number,
+                    action,
+                    addArgument,
+                    remove
+                );
+
+                const args =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                args.className =
+                    "macro-arguments";
+
+                for (
+                    const [
+                        argumentIndex,
+                        argument
+                    ] of step.args
+                        .entries()
+                ) {
+                    const metadata =
+                        macroParameterMetadata(
+                            step.action,
+                            argumentIndex
+                        );
+
+                    const row =
+                        document
+                            .createElement(
+                                "div"
+                            );
+
+                    row.className =
+                        "macro-argument-row";
+
+                    const label =
+                        document
+                            .createElement(
+                                "span"
+                            );
+
+                    label.className =
+                        "macro-argument-label";
+
+                    label.textContent =
+                        metadata.name ||
+                        "arg" +
+                            (
+                                argumentIndex +
+                                1
+                            );
+
+                    const source =
+                        document
+                            .createElement(
+                                "select"
+                            );
+
+                    for (
+                        const [
+                            value,
+                            text
+                        ] of [
+                            [
+                                "literal",
+                                "Fixed"
+                            ],
+                            [
+                                "parameter",
+                                "Parameter"
+                            ],
+                            [
+                                "context",
+                                "Context"
+                            ]
+                        ]
+                    ) {
+                        source.append(
+                            new Option(
+                                text,
+                                value
+                            )
+                        );
+                    }
+
+                    source.value =
+                        argument.source ||
+                        "literal";
+
+                    const value =
+                        document
+                            .createElement(
+                                "input"
+                            );
+
+                    value.spellcheck =
+                        false;
+
+                    const syncValueControl =
+                        () => {
+                            value.removeAttribute(
+                                "list"
+                            );
+
+                            if (
+                                argument.source ===
+                                    "parameter"
+                            ) {
+                                value.placeholder =
+                                    "parameter name";
+
+                                value.value =
+                                    argument.name ||
+                                    "";
+                            }
+                            else if (
+                                argument.source ===
+                                    "context"
+                            ) {
+                                value.placeholder =
+                                    "<context> or path";
+
+                                value.value =
+                                    argument.path ||
+                                    "";
+
+                                value.setAttribute(
+                                    "list",
+                                    "macroContextOptions"
+                                );
+                            }
+                            else {
+                                value.placeholder =
+                                    "JSON or text";
+
+                                value.value =
+                                    macroLiteralText(
+                                        argument.value
+                                    );
+                            }
+                        };
+
+                    source
+                        .addEventListener(
+                            "change",
+                            () => {
+                                const previous =
+                                    argument.source ||
+                                    "literal";
+
+                                const previousValue =
+                                    previous ===
+                                        "literal"
+                                        ? cloneMacroValue(
+                                            argument.value
+                                        )
+                                        : undefined;
+
+                                if (
+                                    source.value ===
+                                        "parameter"
+                                ) {
+                                    const name =
+                                        uniqueMacroParameterName(
+                                            metadata.name ||
+                                            "arg" +
+                                                (
+                                                    argumentIndex +
+                                                    1
+                                                )
+                                        );
+
+                                    argument.source =
+                                        "parameter";
+
+                                    argument.name =
+                                        name;
+
+                                    delete argument
+                                        .value;
+
+                                    delete argument
+                                        .path;
+
+                                    ensureMacroParameter(
+                                        name,
+                                        {
+                                            type:
+                                                metadata.type ||
+                                                "value",
+                                            defaultValue:
+                                                previousValue,
+                                            hasDefault:
+                                                previous ===
+                                                    "literal"
+                                        }
+                                    );
+                                }
+                                else if (
+                                    source.value ===
+                                        "context"
+                                ) {
+                                    argument.source =
+                                        "context";
+
+                                    argument.path =
+                                        "";
+
+                                    delete argument
+                                        .value;
+
+                                    delete argument
+                                        .name;
+                                }
+                                else {
+                                    argument.source =
+                                        "literal";
+
+                                    argument.value =
+                                        previous ===
+                                            "literal"
+                                            ? previousValue
+                                            : {
+                                                __wmofMacroType:
+                                                    "undefined"
+                                            };
+
+                                    delete argument
+                                        .name;
+
+                                    delete argument
+                                        .path;
+                                }
+
+                                renderMacroBuilder();
+                            }
+                        );
+
+                    value
+                        .addEventListener(
+                            "change",
+                            () => {
+                                if (
+                                    argument.source ===
+                                        "parameter"
+                                ) {
+                                    const name =
+                                        String(
+                                            value.value
+                                        )
+                                            .trim();
+
+                                    if (
+                                        /^[A-Za-z_$][\\w$]*$/
+                                            .test(
+                                                name
+                                            )
+                                    ) {
+                                        argument.name =
+                                            name;
+
+                                        ensureMacroParameter(
+                                            name,
+                                            {
+                                                type:
+                                                    metadata.type ||
+                                                    "value"
+                                            }
+                                        );
+                                    }
+                                }
+                                else if (
+                                    argument.source ===
+                                        "context"
+                                ) {
+                                    argument.path =
+                                        String(
+                                            value.value
+                                        )
+                                            .trim()
+                                            .replace(
+                                                /^<context(?::([^>]+))?>$/,
+                                                (
+                                                    _,
+                                                    path
+                                                ) =>
+                                                    path ||
+                                                    ""
+                                            );
+                                }
+                                else {
+                                    argument.value =
+                                        parseMacroLiteral(
+                                            value.value
+                                        );
+                                }
+
+                                renderMacroParameters();
+                                updateMacroControls();
+                            }
+                        );
+
+                    syncValueControl();
+
+                    row.append(
+                        label,
+                        source,
+                        value
+                    );
+
+                    args.append(
+                        row
+                    );
+                }
+
+                card.append(
+                    header,
+                    args
+                );
+
+                host.append(
+                    card
+                );
+            }
+        };
+
+    const renderMacroBuilder =
+        () => {
+            $("macroName").value =
+                macroWorking.name ||
+                "";
+
+            updateMacroSelect();
+            renderMacroSteps();
+            renderMacroParameters();
+            updateMacroControls();
+        };
+
+    const resetMacroBuilder =
+        () => {
+            macroWorking =
+                emptyMacro();
+
+            macroEditingName =
+                "";
+
+            $("macroMessage")
+                .textContent =
+                "";
+
+            renderMacroBuilder();
+        };
+
+    const loadMacroForEditing =
+        name => {
+            const macro =
+                draftMacros
+                    .find(
+                        value =>
+                            value.name ===
+                            name
+                    );
+
+            if (!macro) {
+                resetMacroBuilder();
+
+                return;
+            }
+
+            macroWorking =
+                cloneMacroValue(
+                    macro
+                );
+
+            macroEditingName =
+                macro.name;
+
+            $("macroMessage")
+                .textContent =
+                "";
+
+            renderMacroBuilder();
+        };
+
+    const stageMacro =
+        () => {
+            const validation =
+                validateMacroWorking();
+
+            if (
+                !validation.valid
+            ) {
+                $("macroMessage")
+                    .textContent =
+                    validation.reason;
+
+                $("macroMessage")
+                    .classList.add(
+                        "error"
+                    );
+
+                return false;
+            }
+
+            const macro =
+                validation.macro;
+
+            try {
+                if (
+                    macroEditingName &&
+                    macroEditingName !==
+                        macro.name
+                ) {
+                    draftMacros =
+                        draftMacros
+                            .filter(
+                                item =>
+                                    item.name !==
+                                    macroEditingName
+                            );
+
+                    macroApi()
+                        ?.removeMacro?.(
+                            macroEditingName
+                        );
+
+                    removeMacroRole(
+                        macroEditingName
+                    );
+                }
+
+                macroApi()
+                    ?.registerMacro?.(
+                        macro
+                    );
+            }
+            catch (
+                error
+            ) {
+                $("macroMessage")
+                    .textContent =
+                    error.message;
+
+                $("macroMessage")
+                    .classList.add(
+                        "error"
+                    );
+
+                return false;
+            }
+
+            const existing =
+                draftMacros
+                    .findIndex(
+                        item =>
+                            item.name ===
+                            macro.name
+                    );
+
+            if (
+                existing >=
+                    0
+            ) {
+                draftMacros[
+                    existing
+                ] =
+                    cloneMacroValue(
+                        macro
+                    );
+            }
+            else {
+                draftMacros.push(
+                    cloneMacroValue(
+                        macro
+                    )
+                );
+            }
+
+            macroWorking =
+                cloneMacroValue(
+                    macro
+                );
+
+            macroEditingName =
+                macro.name;
+
+            ensureMacroRole(
+                macro.name
+            );
+
+            syncFunctionCatalog();
+            updateButtons();
+            renderMacroBuilder();
+
+            $("macroMessage")
+                .classList
+                .remove(
+                    "error"
+                );
+
+            $("macroMessage")
+                .textContent =
+                "Macro staged. Save changes to persist it.";
+
+            return true;
+        };
+
+    const installMacroBuilder =
+        () => {
+            $("macroName")
+                .addEventListener(
+                    "input",
+                    event => {
+                        macroWorking.name =
+                            event.target
+                                .value
+                                .trim();
+
+                        updateMacroControls();
+                    }
+                );
+
+            $("macroSelect")
+                .addEventListener(
+                    "change",
+                    event =>
+                        loadMacroForEditing(
+                            event.target
+                                .value
+                        )
+                );
+
+            $("macroNew")
+                .addEventListener(
+                    "click",
+                    resetMacroBuilder
+                );
+
+            $("macroAddParameter")
+                .addEventListener(
+                    "click",
+                    () => {
+                        ensureMacroParameter(
+                            uniqueMacroParameterName(
+                                "value"
+                            )
+                        );
+
+                        renderMacroBuilder();
+                    }
+                );
+
+            $("macroRecord")
+                .addEventListener(
+                    "click",
+                    () => {
+                        const api =
+                            macroApi();
+
+                        if (!api) {
+                            return;
+                        }
+
+                        if (
+                            api.isRecording()
+                        ) {
+                            const recording =
+                                api.stopRecording();
+
+                            macroWorking.steps =
+                                cloneMacroValue(
+                                    recording.steps ||
+                                    []
+                                );
+
+                            $("macroRecord")
+                                .setAttribute(
+                                    "aria-pressed",
+                                    "false"
+                                );
+
+                            $("macroRecord")
+                                .textContent =
+                                "● Record";
+
+                            $("macroRecordingState")
+                                .textContent =
+                                "Not recording";
+
+                            renderMacroBuilder();
+
+                            return;
+                        }
+
+                        api.startRecording({
+                            name:
+                                macroWorking.name
+                        });
+
+                        macroWorking.steps =
+                            [];
+
+                        if (overlay) {
+                            $("overlayToggle")
+                                .click();
+                        }
+
+                        $("macroRecord")
+                            .setAttribute(
+                                "aria-pressed",
+                                "true"
+                            );
+
+                        $("macroRecord")
+                            .textContent =
+                            "■ Stop";
+
+                        $("macroRecordingState")
+                            .textContent =
+                            "Recording actions…";
+
+                        renderMacroSteps();
+                        updateMacroControls();
+                    }
+                );
+
+            $("macroStage")
+                .addEventListener(
+                    "click",
+                    stageMacro
+                );
+
+            $("macroTest")
+                .addEventListener(
+                    "click",
+                    async () => {
+                        if (
+                            !stageMacro()
+                        ) {
+                            return;
+                        }
+
+                        const supplied =
+                            Object.fromEntries(
+                                macroWorking
+                                    .parameters
+                                    .filter(
+                                        parameter =>
+                                            Object.prototype
+                                                .hasOwnProperty
+                                                .call(
+                                                    parameter,
+                                                    "default"
+                                                )
+                                    )
+                                    .map(
+                                        parameter => [
+                                            parameter.name,
+                                            parameter.default
+                                        ]
+                                    )
+                            );
+
+                        try {
+                            await macroApi()
+                                .runMacro(
+                                    macroWorking.name,
+                                    supplied
+                                );
+
+                            $("macroMessage")
+                                .textContent =
+                                "Macro test completed.";
+                        }
+                        catch (
+                            error
+                        ) {
+                            $("macroMessage")
+                                .classList.add(
+                                    "error"
+                                );
+
+                            $("macroMessage")
+                                .textContent =
+                                error.message;
+                        }
+                    }
+                );
+
+            $("macroDelete")
+                .addEventListener(
+                    "click",
+                    () => {
+                        if (
+                            !macroEditingName
+                        ) {
+                            return;
+                        }
+
+                        const name =
+                            macroEditingName;
+
+                        draftMacros =
+                            draftMacros
+                                .filter(
+                                    macro =>
+                                        macro.name !==
+                                        name
+                                );
+
+                        macroApi()
+                            ?.removeMacro?.(
+                                name
+                            );
+
+                        removeMacroRole(
+                            name
+                        );
+
+                        resetMacroBuilder();
+                        syncFunctionCatalog();
+                        updateButtons();
+
+                        $("macroMessage")
+                            .textContent =
+                            "Macro removed. Save changes to persist.";
+                    }
+                );
+
+            renderMacroBuilder();
+        };
+
+    installWorkspace();
+    installMacroBuilder();
 
     const resolvesFunction =
         path => {
@@ -5961,6 +8321,36 @@
             }
         }
 
+        const api =
+            macroApi();
+
+        if (api) {
+            for (
+                const macro of
+                draftMacros
+            ) {
+                const result =
+                    api.validateMacro(
+                        macro,
+                        {
+                            allowExistingMacro:
+                                true,
+                            requireActions:
+                                true
+                        }
+                    );
+
+                if (!result.valid) {
+                    return (
+                        "Macro " +
+                        macro.name +
+                        ": " +
+                        result.reason
+                    );
+                }
+            }
+        }
+
         return "";
     };
 
@@ -6004,6 +8394,8 @@
                                     JSON.stringify({
                                         entries:
                                             draft,
+                                        macros:
+                                            draftMacros,
                                         revision,
                                         functionRoles:
                                             draftFunctionRoles,
@@ -6032,6 +8424,21 @@
                             saved
                         );
 
+                    savedMacros =
+                        Array.isArray(
+                            data.macros
+                        )
+                            ? data.macros
+                            : [];
+
+                    draftMacros =
+                        structuredClone(
+                            savedMacros
+                        );
+
+                    macrosLoaded =
+                        true;
+
                     revision =
                         data.revision;
 
@@ -6053,7 +8460,7 @@
                         .reload();
 
                     status(
-                        "Speech commands saved."
+                        "Speech commands and macros saved."
                     );
                 }
                 catch (error) {
@@ -6079,6 +8486,13 @@
                     structuredClone(
                         saved
                     );
+
+                draftMacros =
+                    structuredClone(
+                        savedMacros
+                    );
+
+                resetMacroBuilder();
 
                 draftFunctionRoles =
                     structuredClone(
@@ -6145,6 +8559,21 @@
                         saved
                     );
 
+                savedMacros =
+                    Array.isArray(
+                        data.macros
+                    )
+                        ? data.macros
+                        : [];
+
+                draftMacros =
+                    structuredClone(
+                        savedMacros
+                    );
+
+                macrosLoaded =
+                    true;
+
                 revision =
                     data.revision;
 
@@ -6162,7 +8591,9 @@
                     data.registryRevision ||
                     "missing";
 
+                syncMacrosToFrame();
                 syncFunctionCatalog();
+                renderMacroBuilder();
                 renderAll();
             }
         )
