@@ -53,7 +53,16 @@ $readRegistry = static function () use ($registryPath, $defaultFunctionRoles, $n
         api_error('Speech function roles are invalid.', 500, 'invalid_registry');
     }
 
-    $decoded = json_decode($match[1], true);
+    $json = preg_replace(
+        '/([,{]\s*)([A-Za-z][A-Za-z0-9_-]*)(\s*:)/',
+        '$1"$2"$3',
+        $match[1]
+    );
+
+    $decoded = is_string($json)
+        ? json_decode($json, true)
+        : null;
+
     $roles = $normalizeRoles($decoded);
 
     return [
