@@ -614,3 +614,24 @@ assert.doesNotMatch(
     speechMenuSource,
     /silenceMilliseconds\s*>=\s*SpeechMenu[\s\S]{0,220}#candidateCommitTimeout/
 );
+
+const actionFunctionsSource = fs.readFileSync(
+    new URL(
+        "../ActionFunctions.js",
+        import.meta.url
+    ),
+    "utf8"
+);
+
+assert.match(
+    actionFunctionsSource,
+    /getImplementation\(name\)[\s\S]*implementations\.get/
+);
+assert.match(
+    speechMenuSource,
+    /speechParameterFunc[\s\S]*WMOFActionFunctions[\s\S]*getImplementation/
+);
+assert.match(
+    speechMenuSource,
+    /new ParameterParser\(\s*element\.speechParameterFunc\s*\|\|\s*element\.speechFunc\s*\)/
+);
