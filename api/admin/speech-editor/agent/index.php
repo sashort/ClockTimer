@@ -5,8 +5,7 @@ require_once dirname(__DIR__, 3) . '/_core/bootstrap.php';
 
 $method = require_method('GET', 'POST');
 
-authenticated_user_id();
-require_any_permission(
+$user = require_any_permission(
     PERMISSION_DEVELOPER_PREVIEW,
     PERMISSION_DEVELOPER
 );
@@ -18,26 +17,61 @@ const SPEECH_EDITOR_AGENT_MAX_REQUESTS = 50;
 const SPEECH_EDITOR_AGENT_TTL = 900;
 const SPEECH_EDITOR_AGENT_LEASE_SECONDS = 20;
 const SPEECH_EDITOR_AGENT_MAX_COMMAND_BYTES = 131072;
+const SPEECH_EDITOR_AGENT_CONNECTED_SECONDS = 10;
 
-$now = time();
+$actorId = (int) $user['id'];
+$root = dirname(__DIR__, 4);
+$storageDirectory = $root . '/database/speech-editor-agent';
 
-if (!isset($_SESSION['speech_editor_agent']) || !is_array($_SESSION['speech_editor_agent'])) {
-    $_SESSION['speech_editor_agent'] = [
-        'requests' => [],
-        'manifest' => null,
-        'state' => null,
-        'editorInstance' => null,
-        'registeredAt' => null,
-    ];
+if (
+    !is_dir($storageDirectory) &&
+    !mkdir($storageDirectory, 0700, true) &&
+    !is_dir($storageDirectory)
+) {
+    api_error('Speech Editor agent storage is unavailable.', 500, 'agent_storage_unavailable');
 }
 
-$agent =& $_SESSION['speech_editor_agent'];
+$storagePath = $storageDirectory . '/user-' . $actorId . '.json';
+$handle = fopen($storagePath, 'c+');
 
-if (!isset($agent['requests']) || !is_array($agent['requests'])) {
+if ($handle === false || !flock($handle, LOCK_EX)) {
+    if (is_resource($handle)) {
+        fclose($handle);
+    }
+
+    api_error('Speech Editor agent storage could not be locked.', 500, 'agent_storage_unavailable');
+}
+
+$raw = stream_get_contents($handle);
+
+$agent = [
+    'requests' => [],
+    'manifest' => null,
+    'state' => null,
+    'editorInstance' => null,
+    'registeredAt' => null,
+];
+
+if (is_string($raw) && trim($raw) !== '') {
+    $decoded = json_decode($raw, true);
+
+    if (is_array($decoded)) {
+        $agent = array_replace($agent, $decoded);
+    }
+}
+
+if (!is_array($agent['requests'] ?? null)) {
     $agent['requests'] = [];
 }
 
+$now = time();
+
 foreach ($agent['requests'] as $id => $request) {
+    if (!is_array($request)) {
+        unset($agent['requests'][$id]);
+        continue;
+    }
+
     $createdAt = (int) ($request['createdAt'] ?? 0);
 
     if ($createdAt < $now - SPEECH_EDITOR_AGENT_TTL) {
@@ -54,6 +88,36 @@ foreach ($agent['requests'] as $id => $request) {
         $agent['requests'][$id]['leasedAt'] = null;
     }
 }
+
+$saveAndRespond = static function (
+    array $payload,
+    int $status = 200
+) use (
+    &$agent,
+    $handle
+): never {
+    $encoded = json_encode(
+        $agent,
+        JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    );
+
+    rewind($handle);
+
+    if (
+        !ftruncate($handle, 0) ||
+        fwrite($handle, $encoded) === false ||
+        !fflush($handle)
+    ) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        api_error('Speech Editor agent storage could not be saved.', 500, 'agent_storage_unavailable');
+    }
+
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    json_response($payload, $status);
+};
 
 $publicRequest = static function (array $request): array {
     return [
@@ -83,10 +147,19 @@ if ($method === 'GET') {
         : 'status';
 
     if ($operation === 'manifest') {
-        json_response([
-            'connected' => is_array($agent['manifest'] ?? null),
+        $registeredAt = is_int($agent['registeredAt'] ?? null)
+            ? $agent['registeredAt']
+            : (is_numeric($agent['registeredAt'] ?? null) ? (int) $agent['registeredAt'] : null);
+
+        $connected =
+            is_array($agent['manifest'] ?? null) &&
+            $registeredAt !== null &&
+            $registeredAt >= $now - SPEECH_EDITOR_AGENT_CONNECTED_SECONDS;
+
+        $saveAndRespond([
+            'connected' => $connected,
             'editorInstance' => $agent['editorInstance'] ?? null,
-            'registeredAt' => $agent['registeredAt'] ?? null,
+            'registeredAt' => $registeredAt,
             'manifest' => $agent['manifest'] ?? null,
             'state' => $agent['state'] ?? null,
         ]);
@@ -94,6 +167,9 @@ if ($method === 'GET') {
 
     if ($operation === 'next') {
         $editorInstance = $validInstance($_GET['editorInstance'] ?? null);
+
+        $agent['editorInstance'] = $editorInstance;
+        $agent['registeredAt'] = $now;
 
         foreach ($agent['requests'] as $id => $request) {
             if (($request['status'] ?? '') !== 'pending') {
@@ -105,7 +181,7 @@ if ($method === 'GET') {
             $agent['requests'][$id]['leasedAt'] = $now;
             $agent['requests'][$id]['startedAt'] ??= $now;
 
-            json_response([
+            $saveAndRespond([
                 'request' => [
                     'requestId' => $id,
                     'command' => $request['command'],
@@ -113,28 +189,34 @@ if ($method === 'GET') {
             ]);
         }
 
-        json_response([
+        $saveAndRespond([
             'request' => null,
         ]);
     }
 
     if ($operation !== 'status') {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Unknown agent operation.', 422, 'invalid_operation');
     }
 
     $requestId = $_GET['requestId'] ?? null;
 
     if (!is_string($requestId) || !preg_match('/^[a-f0-9]{24}$/D', $requestId)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('A valid requestId is required.', 422, 'invalid_request_id');
     }
 
     $request = $agent['requests'][$requestId] ?? null;
 
     if (!is_array($request)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Agent request was not found.', 404, 'request_not_found');
     }
 
-    json_response([
+    $saveAndRespond([
         'request' => $publicRequest($request),
     ]);
 }
@@ -150,10 +232,14 @@ if ($operation === 'register') {
     $state = $input['state'] ?? null;
 
     if (!is_array($manifest) || !is_array($manifest['actions'] ?? null)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('A valid editor action manifest is required.', 422, 'invalid_manifest');
     }
 
     if (!is_array($state)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('A valid editor state snapshot is required.', 422, 'invalid_editor_state');
     }
 
@@ -162,7 +248,7 @@ if ($operation === 'register') {
     $agent['editorInstance'] = $editorInstance;
     $agent['registeredAt'] = $now;
 
-    json_response([
+    $saveAndRespond([
         'registered' => true,
         'editorInstance' => $editorInstance,
     ]);
@@ -173,12 +259,16 @@ if ($operation === 'complete') {
     $editorInstance = $validInstance($input['editorInstance'] ?? null);
 
     if (!is_string($requestId) || !preg_match('/^[a-f0-9]{24}$/D', $requestId)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('A valid requestId is required.', 422, 'invalid_request_id');
     }
 
     $request = $agent['requests'][$requestId] ?? null;
 
     if (!is_array($request)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Agent request was not found.', 404, 'request_not_found');
     }
 
@@ -186,6 +276,8 @@ if ($operation === 'complete') {
         ($request['status'] ?? '') !== 'running' ||
         ($request['editorInstance'] ?? null) !== $editorInstance
     ) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Agent request is not leased by this editor.', 409, 'request_lease_mismatch');
     }
 
@@ -193,6 +285,8 @@ if ($operation === 'complete') {
     $state = $input['state'] ?? null;
 
     if ($state !== null && !is_array($state)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Invalid editor state snapshot.', 422, 'invalid_editor_state');
     }
 
@@ -207,13 +301,16 @@ if ($operation === 'complete') {
         : (is_string($input['error'] ?? null) ? $input['error'] : 'Editor action failed.');
     $agent['requests'][$requestId]['state'] = $state;
     $agent['state'] = $state ?? $agent['state'];
+    $agent['registeredAt'] = $now;
 
-    json_response([
+    $saveAndRespond([
         'request' => $publicRequest($agent['requests'][$requestId]),
     ]);
 }
 
 if ($operation !== 'enqueue') {
+    flock($handle, LOCK_UN);
+    fclose($handle);
     api_error('Unknown agent operation.', 422, 'invalid_operation');
 }
 
@@ -225,15 +322,19 @@ if ($command === null && (isset($input['action']) || isset($input['actions']))) 
 }
 
 if (!is_array($command)) {
+    flock($handle, LOCK_UN);
+    fclose($handle);
     api_error('A JSON editor command or batch is required.', 422, 'invalid_command');
 }
 
-$encoded = json_encode(
+$encodedCommand = json_encode(
     $command,
     JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
 );
 
-if (strlen($encoded) > SPEECH_EDITOR_AGENT_MAX_COMMAND_BYTES) {
+if (strlen($encodedCommand) > SPEECH_EDITOR_AGENT_MAX_COMMAND_BYTES) {
+    flock($handle, LOCK_UN);
+    fclose($handle);
     api_error('Editor command is too large.', 413, 'command_too_large');
 }
 
@@ -241,11 +342,15 @@ if (
     !is_string($command['action'] ?? null) &&
     !is_array($command['actions'] ?? null)
 ) {
+    flock($handle, LOCK_UN);
+    fclose($handle);
     api_error('Editor command must contain action or actions.', 422, 'invalid_command');
 }
 
 if (is_array($command['actions'] ?? null)) {
     if (!array_is_list($command['actions']) || count($command['actions']) > 100) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
         api_error('Editor action batches are limited to 100 actions.', 422, 'invalid_command');
     }
 }
@@ -269,7 +374,7 @@ $agent['requests'][$requestId] = [
     'command' => $command,
 ];
 
-json_response([
+$saveAndRespond([
     'requestId' => $requestId,
     'status' => 'pending',
 ], 202);
