@@ -16,6 +16,20 @@ header('Cache-Control: no-store');
 <body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
+        <div class="viewport-controls" aria-label="Preview viewport controls">
+            <label>
+                <span>Screen Size</span>
+                <select id="screenSizeSelect">
+                    <option value="">Fill center</option>
+                </select>
+            </label>
+            <label>
+                <span>Compare To</span>
+                <select id="compareSizeSelect">
+                    <option value="">None</option>
+                </select>
+            </label>
+        </div>
         <button id="overlayToggle" type="button" aria-pressed="true">Overlay: On</button>
         <button id="discardButton" type="button" disabled>Discard</button>
         <button id="saveButton" class="primary" type="button" disabled>Save changes</button>
@@ -33,7 +47,26 @@ header('Cache-Control: no-store');
         </aside>
 
         <section class="preview" aria-label="WMOF preview">
-            <iframe id="appFrame" title="WMOF application" src="../../../index.html"></iframe>
+            <div id="previewScroller" class="preview-scroller">
+                <div id="previewStage" class="preview-stage">
+                    <div id="topRuler" class="ruler ruler-top" aria-hidden="true"></div>
+                    <div id="leftRuler" class="ruler ruler-left" aria-hidden="true"></div>
+
+                    <div id="screenFrame" class="screen-frame">
+                        <iframe id="appFrame" title="WMOF application" src="../../../index.html"></iframe>
+                        <div id="compareMaskTop" class="compare-mask" aria-hidden="true"></div>
+                        <div id="compareMaskRight" class="compare-mask" aria-hidden="true"></div>
+                        <div id="compareMaskBottom" class="compare-mask" aria-hidden="true"></div>
+                        <div id="compareMaskLeft" class="compare-mask" aria-hidden="true"></div>
+                    </div>
+
+                    <div id="compareFrame" class="compare-frame" aria-hidden="true"></div>
+                    <div id="compareDeltaLeft" class="compare-delta" aria-hidden="true"></div>
+                    <div id="compareDeltaRight" class="compare-delta" aria-hidden="true"></div>
+                    <div id="compareDeltaTop" class="compare-delta" aria-hidden="true"></div>
+                    <div id="compareDeltaBottom" class="compare-delta" aria-hidden="true"></div>
+                </div>
+            </div>
             <div id="previewHint">Click an element to select it. Turn off the overlay to interact with the app.</div>
         </section>
 
@@ -97,6 +130,12 @@ header('Cache-Control: no-store');
                             <datalist id="preprocFieldOptions"></datalist>
                         </label>
                     </div>
+
+                    <label class="field">
+                        <span>speech-index</span>
+                        <input id="speechIndexValue" name="speech-index" type="number" step="1" inputmode="numeric">
+                        <small class="field-hint">Higher values take precedence within the same effective scope. Blank is 0.</small>
+                    </label>
 
                     <label class="field">
                         <span>speech-modal</span>
