@@ -8,8 +8,11 @@ if (empty($_SERVER['HTTPS']) || strtolower((string) $_SERVER['HTTPS']) === 'off'
 }
 
 $method = require_method('GET', 'POST', 'PUT', 'DELETE');
-$actor = require_permission(PERMISSION_GRANT_TOKEN_ACCESS);
-$isSuperuser = has_permission($actor, PERMISSION_SUPERUSER);
+$consoleRequested = ($_GET['console'] ?? null) === '1';
+$accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+$browserRequested =
+    $consoleRequested ||
+    ($method === 'GET' && str_contains($accept, 'text/html'));
 $pdo = db();
 
 $requireAccessTokenSchema = static function () use ($pdo): void {
@@ -102,6 +105,79 @@ $requireAccessTokenSchema = static function () use ($pdo): void {
         );
     }
 };
+
+$tokenFormRedeemed = false;
+$authorization = null;
+
+if ($method === 'GET' && $browserRequested) {
+    $authorization =
+        existing_guarded_access(
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+        );
+
+    if ($authorization === null) {
+        render_access_token_prompt(
+            'Access Tokens',
+            'Sign in with Grant Token Access permission or enter an access token that grants it.',
+            $consoleRequested ? '?console=1' : ''
+        );
+    }
+} elseif (
+    $method === 'POST' &&
+    access_token_form_value() !== null
+) {
+    $requireAccessTokenSchema();
+
+    $authorization =
+        authorize_guarded_access(
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+            true
+        );
+
+    $tokenFormRedeemed = true;
+} else {
+    $authorization =
+        authorize_guarded_access(
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+        );
+}
+
+$effectivePermissions =
+    (int) (
+        $authorization[
+            'permissions'
+        ] ??
+        0
+    );
+
+if (($authorization['mode'] ?? '') === 'session') {
+    $actor = $authorization['user'];
+} else {
+    // A delegated token gets only the permission carried by the token.
+    // Do not inherit the token owner's complete account permission mask.
+    $actor = [
+        'id' =>
+            (int) (
+                $authorization[
+                    'owner_user_id'
+                ] ??
+                0
+            ),
+        'username' =>
+            'delegated-token',
+        'permissions' =>
+            $effectivePermissions,
+    ];
+}
+
+$isSuperuser =
+    permission_mask_allows(
+        $effectivePermissions,
+        PERMISSION_SUPERUSER
+    );
 
 $permissionRows = static function () use ($pdo, $actor): array {
     $rows = $pdo
@@ -454,7 +530,10 @@ load();
     exit;
 };
 
-if ($method === 'GET' && ($_GET['console'] ?? null) === '1') {
+if (
+    ($method === 'GET' && $browserRequested) ||
+    $tokenFormRedeemed
+) {
     $renderConsole();
 }
 
@@ -472,7 +551,9 @@ if ($method === 'GET') {
     ]);
 }
 
-require_csrf();
+if (guarded_access_requires_csrf($authorization)) {
+    require_csrf();
+}
 
 $input = json_input();
 
