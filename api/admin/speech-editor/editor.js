@@ -11383,7 +11383,15 @@
             credentials:
                 "same-origin",
             cache:
-                "no-store"
+                "no-store",
+            headers: {
+                "Accept":
+                    "application/json",
+                "X-CSRF-Token":
+                    document.body
+                        .dataset
+                        .csrf
+            }
         }
     )
         .then(
