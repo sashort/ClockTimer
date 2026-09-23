@@ -86,6 +86,17 @@
 
     const $ = selector => document.querySelector(selector);
 
+    const {
+        wait,
+        safeStorageGet,
+        safeStorageSet,
+        formatDuration,
+        formatDateInput,
+        parseDateInput
+    } =
+        globalThis
+            .WMOFUtilities;
+
     const speechRuntimeVersion = (() => {
         try {
             return new URL(
@@ -616,16 +627,6 @@
         if (!button) return;
         releaseButtonPressFeedback(button);
     }, true);
-
-    function safeStorageGet(key) {
-        try { return localStorage.getItem(key); }
-        catch { return null; }
-    }
-
-    function safeStorageSet(key, value) {
-        try { localStorage.setItem(key, value); }
-        catch {}
-    }
 
     function normalizeTripLogRange(value) {
         const normalized =
@@ -2239,14 +2240,6 @@
         return normalized;
     }
 
-    function formatDuration(milliseconds) {
-        const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
-    }
-
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
         const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
@@ -2254,10 +2247,6 @@
         if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
-    }
-
-    function wait(milliseconds) {
-        return new Promise(resolve => setTimeout(resolve, Math.max(0, milliseconds)));
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
@@ -6187,12 +6176,6 @@
         return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")}`;
     }
 
-    function formatDateInput(date) {
-        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-        const pad = value => String(value).padStart(2, "0");
-        return `${String(date.getFullYear()).padStart(4, "0")}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    }
-
     function getTripMomentDefaults(value = new Date()) {
         const date = value instanceof Date
             ? new Date(value.getTime())
@@ -6211,18 +6194,6 @@
             startTime: time,
             creationDate: formatDateInput(date)
         };
-    }
-
-    function parseDateInput(value) {
-        const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (!match) return undefined;
-        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-        if (
-            date.getFullYear() !== Number(match[1]) ||
-            date.getMonth() !== Number(match[2]) - 1 ||
-            date.getDate() !== Number(match[3])
-        ) return undefined;
-        return date;
     }
 
     function shiftDateInput(value, days) {
@@ -7766,7 +7737,7 @@
             const speechField = document.createElement("speech-command");
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
             speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
-            speechField.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
+            speechField.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
             ensureSpeechMenu(numberPadDialog).append(speechField);
@@ -8919,7 +8890,7 @@
     }
 
     globalThis
-        .WMOFProcessingFunctions
+        .WMOFSpeechProcessingFunctions
         .define(
             "normalizeSpeechValue",
             (
@@ -10124,7 +10095,7 @@
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
-                element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
+                element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
@@ -10137,7 +10108,7 @@
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
                 element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
-                element.setAttribute("speech-preproc", "WMOFProcessing.normalizeSpeechValue");
+                element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", "duration");
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
