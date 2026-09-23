@@ -21,6 +21,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/permissions.php';
+require_once __DIR__ . '/access_tokens.php';
 require_once __DIR__ . '/user_accounts.php';
 require_once __DIR__ . '/migrations.php';
 require_once __DIR__ . '/sql_console.php';
