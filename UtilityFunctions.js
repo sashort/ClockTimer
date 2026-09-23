@@ -237,9 +237,7 @@
     );
 
     globalThis.WMOFUtilities =
-        Object.freeze(
-            utilities
-        );
+        utilities;
 
     globalThis.WMOFUtilityFunctions =
         Object.freeze({
