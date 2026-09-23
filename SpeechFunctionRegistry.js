@@ -3,7 +3,7 @@
 
     const taggedFunctionRoles = {
         "speech-processing": [
-            "WMOFSpeechPreprocess.normalize"
+            "WMOFSpeechProcessing.normalizeSpeechValue"
         ],
         action: [],
         interaction: [],
@@ -179,11 +179,18 @@
             );
         },
 
-        isProcessing(name) {
+        isSpeechProcessing(name) {
             return (
                 api.roleOf(name) ===
                 "speech-processing"
             );
+        },
+
+        isProcessing(name) {
+            return api
+                .isSpeechProcessing(
+                    name
+                );
         },
 
         isAction(name) {
