@@ -254,16 +254,24 @@ if ($method === 'GET') {
         ($_GET['manage'] ?? null) ===
         '1';
 
-    $authorization =
-        $manage
-            ? authorize_guarded_access(
-                [
-                    PERMISSION_DEVELOPER_PREVIEW,
-                    PERMISSION_DEVELOPER
-                ],
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            )
-            : null;
+    $authorization = null;
+    $manageUser = null;
+
+    if ($manage) {
+        $manageUser =
+            optional_current_user();
+
+        if ($manageUser === null) {
+            $authorization =
+                authorize_guarded_access(
+                    [
+                        PERMISSION_DEVELOPER_PREVIEW,
+                        PERMISSION_DEVELOPER
+                    ],
+                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+                );
+        }
+    }
 
     $corrections =
         $correctionRows(
@@ -301,10 +309,15 @@ if ($method === 'GET') {
             SPEECH_TRAINING_TARGET_ACCURACY;
 
         $payload['canWrite'] =
-            guarded_access_has_permission(
-                $authorization,
-                PERMISSION_DEVELOPER
-            );
+            $manageUser !== null
+                ? permission_mask_allows(
+                    (int) $manageUser['permissions'],
+                    PERMISSION_DEVELOPER
+                )
+                : guarded_access_has_permission(
+                    $authorization,
+                    PERMISSION_DEVELOPER
+                );
 
         $payload['csrfToken'] =
             csrf_token();
@@ -335,25 +348,6 @@ if ($method === 'GET') {
     );
 }
 
-$authorization =
-    authorize_guarded_access(
-        [PERMISSION_DEVELOPER],
-        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-    );
-
-if (
-    guarded_access_requires_csrf(
-        $authorization
-    )
-) {
-    require_csrf();
-}
-
-$actorId =
-    guarded_access_audit_user_id(
-        $authorization
-    );
-
 $input =
     json_input();
 
@@ -379,6 +373,45 @@ if (
     ) ===
         'sample'
 ) {
+    $sampleUser =
+        optional_current_user();
+
+    $sampleAuthorization =
+        null;
+
+    if ($sampleUser !== null) {
+        require_csrf();
+        $actorId =
+            (int) $sampleUser['id'];
+    } else {
+        $sampleAuthorization =
+            authorize_guarded_access(
+                [
+                    PERMISSION_DEVELOPER_PREVIEW,
+                    PERMISSION_DEVELOPER
+                ],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            );
+
+        if (
+            guarded_access_requires_csrf(
+                $sampleAuthorization
+            )
+        ) {
+            require_csrf();
+        }
+
+        $tokenActorId =
+            guarded_access_audit_user_id(
+                $sampleAuthorization
+            );
+
+        $actorId =
+            $tokenActorId > 0
+                ? $tokenActorId
+                : null;
+    }
+
     $phraseKey =
         speech_training_phrase_key(
             $input['phraseKey'] ??
@@ -547,6 +580,29 @@ if (
                     : 0
             ),
     ], 201);
+}
+
+$authorization =
+    authorize_guarded_access(
+        [PERMISSION_DEVELOPER],
+        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+    );
+
+if (
+    guarded_access_requires_csrf(
+        $authorization
+    )
+) {
+    require_csrf();
+}
+
+$actorId =
+    guarded_access_audit_user_id(
+        $authorization
+    );
+
+if ($actorId <= 0) {
+    $actorId = null;
 }
 
 if ($method === 'DELETE') {
