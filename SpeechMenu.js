@@ -72,7 +72,10 @@ class SpeechMenu {
                             "speech-index",
                             "open",
                             "hidden",
-                            "disabled"
+                            "disabled",
+                            "inert",
+                            "aria-hidden",
+                            "speech-available"
                         ]
                     }
                 );
@@ -2854,6 +2857,132 @@ class SpeechMenu {
             );
     }
 
+    static #targetIsAvailable(
+        target
+    ) {
+        if (!(target instanceof Element)) {
+            return false;
+        }
+
+        if (
+            target.matches?.(
+                "[hidden], [inert], [aria-hidden='true'], :disabled"
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            target.closest?.(
+                "[hidden], [inert], [aria-hidden='true']"
+            )
+        ) {
+            return false;
+        }
+
+        for (
+            let current = target;
+            current &&
+                current !==
+                    document.documentElement;
+            current =
+                current.parentElement
+        ) {
+            const dialog =
+                current.matches?.("dialog")
+                    ? current
+                    : undefined;
+
+            if (
+                dialog &&
+                !dialog.open
+            ) {
+                return false;
+            }
+
+            try {
+                const style =
+                    getComputedStyle(
+                        current
+                    );
+
+                if (
+                    style.display ===
+                        "none" ||
+                    style.visibility ===
+                        "hidden" ||
+                    style.visibility ===
+                        "collapse"
+                ) {
+                    return false;
+                }
+            }
+            catch {}
+        }
+
+        return true;
+    }
+
+    static #candidateStateAvailable(
+        element
+    ) {
+        if (
+            !element ||
+            element.hasAttribute(
+                "hidden"
+            ) ||
+            element.hasAttribute(
+                "disabled"
+            ) ||
+            element.hasAttribute(
+                "inert"
+            ) ||
+            element.getAttribute(
+                "aria-hidden"
+            ) === "true"
+        ) {
+            return false;
+        }
+
+        const availability =
+            element.getAttribute(
+                "speech-available"
+            );
+
+        if (availability) {
+            const resolved =
+                SpeechMenu.#resolve(
+                    availability
+                );
+
+            if (
+                !resolved ||
+                resolved.fn.call(
+                    resolved.owner,
+                    element
+                ) !== true
+            ) {
+                return false;
+            }
+        }
+
+        const target =
+            SpeechMenu
+                .#resolveSpeechTarget(
+                    element
+                );
+
+        if (!target.selector) {
+            return true;
+        }
+
+        return target.elements
+            .some(
+                SpeechMenu
+                    .#targetIsAvailable
+            );
+    }
+
     static #availableCandidates() {
         const all =
             [
@@ -2868,6 +2997,15 @@ class SpeechMenu {
         const contextual = [];
 
         for (const element of all) {
+            if (
+                !SpeechMenu
+                    .#candidateStateAvailable(
+                        element
+                    )
+            ) {
+                continue;
+            }
+
             const modal =
                 SpeechMenu
                     .#effectiveModal(
