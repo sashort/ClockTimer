@@ -5026,6 +5026,140 @@
             }
         );
 
+    $("regexBuilderHelpButton")
+        .addEventListener(
+            "click",
+            () => {
+                const help =
+                    $("regexBuilderHelp");
+
+                help.hidden =
+                    !help.hidden;
+
+                $("regexBuilderHelpButton")
+                    .setAttribute(
+                        "aria-expanded",
+                        String(
+                            !help.hidden
+                        )
+                    );
+            }
+        );
+
+    $("regexBuilderInput")
+        .addEventListener(
+            "input",
+            handleRegexBuilderInput
+        );
+
+    $("regexBuilderInput")
+        .addEventListener(
+            "keydown",
+            event => {
+                if (
+                    event.key ===
+                    "Escape"
+                ) {
+                    hideRegexBuilderPicker();
+                }
+            }
+        );
+
+    $("regexBuilderCopy")
+        .addEventListener(
+            "click",
+            async () => {
+                if (
+                    !regexBuilderResult
+                        .valid
+                ) {
+                    return;
+                }
+
+                try {
+                    await navigator
+                        .clipboard
+                        .writeText(
+                            regexBuilderResult
+                                .pattern
+                        );
+
+                    setRegexBuilderMessage(
+                        "Regex copied."
+                    );
+                }
+                catch {
+                    const copy =
+                        document
+                            .createElement(
+                                "textarea"
+                            );
+
+                    copy.value =
+                        regexBuilderResult
+                            .pattern;
+
+                    copy.style.position =
+                        "fixed";
+                    copy.style.opacity =
+                        "0";
+
+                    document.body.append(
+                        copy
+                    );
+
+                    copy.select();
+
+                    const copied =
+                        document.execCommand(
+                            "copy"
+                        );
+
+                    copy.remove();
+
+                    setRegexBuilderMessage(
+                        copied
+                            ? "Regex copied."
+                            : "Copy failed.",
+                        !copied
+                    );
+                }
+            }
+        );
+
+    $("regexBuilderPaste")
+        .addEventListener(
+            "click",
+            () =>
+                applyRegexBuilderPattern(
+                    "paste"
+                )
+        );
+
+    $("regexBuilderLive")
+        .addEventListener(
+            "click",
+            () =>
+                setRegexBuilderLive(
+                    !regexBuilderIsLive()
+                )
+        );
+
+    document.addEventListener(
+        "pointerdown",
+        event => {
+            if (
+                !event.target.closest(
+                    ".regex-builder-field"
+                )
+            ) {
+                hideRegexBuilderPicker();
+            }
+        }
+    );
+
+    updateRegexBuilder();
+
     $("domSearch")
         .addEventListener(
             "input",
@@ -5783,6 +5917,10 @@
         .addEventListener(
             "click",
             () => {
+                setRegexBuilderLive(
+                    false
+                );
+
                 draft =
                     structuredClone(
                         saved
