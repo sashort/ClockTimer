@@ -731,3 +731,20 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 .speech-menu-group:not([open]) > :not(summary) {
     display: none !important;
 }
+
+
+.speech-menu-group > summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.speech-menu-label {
+    flex: 1;
+    min-width: 0;
+}
+.speech-menu-edit {
+    flex: 0 0 auto;
+    padding: 3px 7px !important;
+    border-radius: 5px !important;
+    font-size: 11px !important;
+}
