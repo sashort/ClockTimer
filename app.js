@@ -215,6 +215,13 @@
     const PERMISSION_DEVELOPER =
         16;
 
+    const PERMISSION_GRANT_TOKEN_ACCESS =
+        32;
+
+    const ACCESS_TOKEN_PERMISSION_MASK =
+        PERMISSION_SUPERUSER |
+        PERMISSION_GRANT_TOKEN_ACCESS;
+
     const SPEECH_EDITOR_PERMISSION_MASK =
         PERMISSION_SUPERUSER |
         PERMISSION_DEVELOPER_PREVIEW |
@@ -231,7 +238,7 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorButton").hidden=!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
+        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#accessTokensButton").hidden=!(permissions&ACCESS_TOKEN_PERMISSION_MASK);$("#speechEditorButton").hidden=!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -2257,7 +2264,7 @@
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
         const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorButton").hidden=!showAdmin||!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
+        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#accessTokensButton").hidden=!showAdmin||!(permissions&ACCESS_TOKEN_PERMISSION_MASK);$("#speechEditorButton").hidden=!showAdmin||!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
         if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
@@ -6104,6 +6111,21 @@
 
     $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
+
+    $("#accessTokensButton")
+        .addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    name:
+                        "openAccessTokensClick",
+                    action:
+                        "openAccessTokens",
+                    preventDefault:
+                        true
+                })
+        );
 
     $("#speechEditorButton")
         .addEventListener(
@@ -10684,6 +10706,44 @@
                     loginPending =
                         false;
                 }
+            },
+
+            openAccessTokens() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        ACCESS_TOKEN_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Grant Token Access permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/access-tokens/?console=1",
+                        "wmofAccessTokens"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Access Tokens window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
             },
 
             async openSpeechEditor() {
