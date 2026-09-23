@@ -656,3 +656,88 @@ assert.match(
     speechMicBarSource,
     /#scheduleRejectedClear\(\s*utteranceId,\s*delay = 2000\s*\)/
 );
+
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "muted",
+        {
+            detail: {
+                utteranceId: 20
+            }
+        }
+    )
+);
+assert.equal(
+    bar.getAttribute("state"),
+    "muted"
+);
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "utteranceStarted",
+        {
+            detail: {
+                id: 21
+            }
+        }
+    )
+);
+assert.equal(
+    bar.getAttribute("state"),
+    "muted"
+);
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "utteranceTranscriptChanged",
+        {
+            detail: {
+                id: 21,
+                transcript: "listen",
+                isFinal: false
+            }
+        }
+    )
+);
+assert.equal(
+    bar.getAttribute("state"),
+    "muted"
+);
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "unmuted",
+        {
+            detail: {
+                utteranceId: 21,
+                transcript: "listen"
+            }
+        }
+    )
+);
+assert.equal(
+    bar.getAttribute("state"),
+    "listening"
+);
+
+assert.match(
+    speechMicBarSource,
+    /:host\(\[state="muted"\]\)[\s\S]*#bar::after[\s\S]*opacity:\s*1/
+);
+assert.match(
+    speechMicBarSource,
+    /to bottom left[\s\S]*#e32636/
+);
+assert.match(
+    speechMicBarSource,
+    /case "utteranceStarted":[\s\S]*SpeechMenu[\s\S]*\.muted[\s\S]*"state",[\s\S]*"muted"/
+);
+assert.match(
+    speechMicBarSource,
+    /case "utteranceTranscriptChanged":[\s\S]*!globalThis\.SpeechMenu[\s\S]*\.muted[\s\S]*#showText/
+);
+assert.match(
+    speechMenuSource,
+    /exactCandidate\.kind ===\s*"wake"[\s\S]*return false/
+);
+assert.match(
+    speechMenuSource,
+    /#sleeping[\s\S]*#exactCandidate[\s\S]*kind === "wake"[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
+);
