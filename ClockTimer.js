@@ -31544,38 +31544,43 @@
                 renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
-                let intervalAdjustmentMilliseconds = 0;
-
-                const activeInterval =
-                    this.getActiveIntervalState(
-                        nowDate
-                    );
-
-                const activeIntervalType =
-                    String(
-                        activeInterval?.intervalType ?? ""
-                    ).trim().toLowerCase();
-
-                if (
-                    (
-                        activeIntervalType === "break" ||
-                        activeIntervalType === "lunch"
-                    ) &&
-                    Number.isFinite(
-                        activeInterval?.remainingMilliseconds
-                    )
-                ) {
-                    intervalAdjustmentMilliseconds =
-                        activeInterval.remainingMilliseconds;
+                if (!this.#hasStartProperties()) {
+                    renderedTime = undefined;
                 }
+                else {
+                    let intervalAdjustmentMilliseconds = 0;
 
-                renderedTime = this.#formatSummaryEndTime(
-                    new Date(
-                        nowDate.getTime() +
-                        remainingMilliseconds +
-                        intervalAdjustmentMilliseconds
-                    )
-                );
+                    const activeInterval =
+                        this.getActiveIntervalState(
+                            nowDate
+                        );
+
+                    const activeIntervalType =
+                        String(
+                            activeInterval?.intervalType ?? ""
+                        ).trim().toLowerCase();
+
+                    if (
+                        (
+                            activeIntervalType === "break" ||
+                            activeIntervalType === "lunch"
+                        ) &&
+                        Number.isFinite(
+                            activeInterval?.remainingMilliseconds
+                        )
+                    ) {
+                        intervalAdjustmentMilliseconds =
+                            activeInterval.remainingMilliseconds;
+                    }
+
+                    renderedTime = this.#formatSummaryEndTime(
+                        new Date(
+                            nowDate.getTime() +
+                            remainingMilliseconds +
+                            intervalAdjustmentMilliseconds
+                        )
+                    );
+                }
             }
             else {
                 renderedTime = this.#formatRemainingRenderedDuration(
