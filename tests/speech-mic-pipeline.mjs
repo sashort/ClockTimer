@@ -109,6 +109,16 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 assert.match(html, /<speech-mic-bar id="speechMicBar"/);
 assert.doesNotMatch(html, /<script src="SpeechMenu\.js"/);
 
+const recognitionIndex = html.indexOf('id="speechRecognitionButton"');
+const speechToolsIndex = html.indexOf('id="speechMenuButton"');
+const trainingIndex = html.indexOf('id="speechTrainingButton"');
+const editorIndex = html.indexOf('id="speechEditorButton"');
+
+assert.ok(recognitionIndex >= 0 && speechToolsIndex > recognitionIndex);
+assert.ok(trainingIndex > speechToolsIndex && editorIndex > trainingIndex);
+assert.match(html, /id="speechToolsGroup"/);
+assert.doesNotMatch(html, /id="speechAdminGroup"/);
+
 const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
 assert.match(css, /--speech-mic-row-height:\s*0px/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);
@@ -124,6 +134,9 @@ assert.match(app, /speechPipeline\s*=\s*[\s\S]*"silero"[\s\S]*"raw"/);
 assert.match(app, /loadClassicScript\(\s*"SileroVad\.js"\s*\)/s);
 assert.match(app, /loadClassicScript\(\s*"SpeechDiagnostics\.js"\s*\)/s);
 assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
+assert.match(app, /openSpeechTraining\(\)/);
+assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
+assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
@@ -156,6 +169,9 @@ assert.match(speechMenuSource, /new AudioWorkletNodeCtor\(\s*context,\s*"wmof-sp
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
 assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
 assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition|createScriptProcessor/);
+assert.match(speechMenuSource, /#compactTranscript/);
+assert.match(speechMenuSource, /speechCompactPattern/);
+assert.match(speechMenuSource, /speechCorrectionApplied/);
 
 assert.match(sherpaRecognizerSource, /static sampleRate = 16000;/);
 assert.match(sherpaRecognizerSource, /new Worker\(workerUrl\)/);
@@ -199,5 +215,28 @@ assert.match(diagnosticsSource, /Execute matched commands/);
 assert.match(diagnosticsSource, /SpeechMenu\.executionEnabled\s*=\s*false/);
 assert.match(diagnosticsSource, /Copy JSON/);
 assert.match(diagnosticsSource, /firstTranscriptMilliseconds/);
+
+const speechEditorHtml = fs.readFileSync(
+    new URL("../api/admin/speech-editor/index.php", import.meta.url),
+    "utf8"
+);
+const speechEditorJs = fs.readFileSync(
+    new URL("../api/admin/speech-editor/editor.js", import.meta.url),
+    "utf8"
+);
+const speechEditorCss = fs.readFileSync(
+    new URL("../api/admin/speech-editor/editor.css", import.meta.url),
+    "utf8"
+);
+
+assert.match(speechEditorHtml, /speechTrainingControlsPopup/);
+assert.match(speechEditorHtml, /Scratch That/);
+assert.match(speechEditorHtml, /Repeat prompt/);
+assert.match(speechEditorJs, /initialMobileTraining/);
+assert.match(speechEditorJs, /trainingOnly/);
+assert.match(speechEditorJs, /utteranceTranscriptChanged/);
+assert.match(speechEditorJs, /control ===\s*"scratch that"/s);
+assert.match(speechEditorCss, /body\.training-mode\.training-mobile/);
+assert.match(speechEditorCss, /speech-training-prompt\{text-align:right\}/);
 
 console.log("PASS Sherpa client ASR baseline architecture");
