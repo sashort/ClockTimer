@@ -87,7 +87,10 @@ if ($method === 'GET') {
 }
 
 authenticated_user_id();
-require_permission(PERMISSION_SUPERUSER);
+require_any_permission(
+    PERMISSION_DEVELOPER_PREVIEW,
+    PERMISSION_DEVELOPER
+);
 require_csrf();
 
 $input = json_input();
