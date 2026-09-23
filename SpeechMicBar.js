@@ -25,6 +25,7 @@ class SpeechMicBar extends HTMLElement {
 
     #shadow = this.attachShadow({mode: "closed"});
     #subscriptions = [];
+    #bar;
     #mic;
     #activity;
     #text;
@@ -34,6 +35,8 @@ class SpeechMicBar extends HTMLElement {
     #responseAnimation;
     #currentUtteranceId;
     #currentTranscript = "";
+    #currentTranscriptFinal = false;
+    #rejectedClearTimer;
 
     constructor() {
         super();
@@ -51,6 +54,9 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 #bar {
+                    --speech-load-progress: 0%;
+                    position: relative;
+                    isolation: isolate;
                     box-sizing: border-box;
                     width: 100%;
                     height: 74px;
@@ -65,6 +71,42 @@ class SpeechMicBar extends HTMLElement {
                     background: linear-gradient(180deg, rgb(47 57 67 / 92%), rgb(34 43 51 / 92%));
                     box-shadow: inset 0 1px 0 rgb(255 255 255 / 14%), 0 7px 16px rgb(0 0 0 / 24%);
                     backdrop-filter: blur(7px);
+                }
+
+                #bar::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0 auto 0 0;
+                    width: var(--speech-load-progress);
+                    z-index: 0;
+                    border-radius: inherit;
+                    background:
+                        linear-gradient(
+                            90deg,
+                            #003b73 0%,
+                            #0068c9 55%,
+                            #a9ddf7 100%
+                        );
+                    opacity: 0;
+                    transition:
+                        width 160ms linear,
+                        opacity 160ms linear;
+                    pointer-events: none;
+                }
+
+                :host([loading]) #bar::before {
+                    opacity: .86;
+                }
+
+                #bar > * {
+                    position: relative;
+                    z-index: 1;
+                }
+
+                :host([loading]) #text {
+                    text-shadow:
+                        0 1px 2px rgb(0 0 0 / 72%),
+                        0 0 8px rgb(0 30 96 / 52%);
                 }
 
                 #mic {
@@ -247,6 +289,7 @@ class SpeechMicBar extends HTMLElement {
                 </div>
             </div>
         `;
+        this.#bar = this.#shadow.querySelector("#bar");
         this.#mic = this.#shadow.querySelector("#mic");
         this.#activity = this.#shadow.querySelector("#activity");
         this.#codes = this.#shadow.querySelector("#codes");
@@ -356,8 +399,14 @@ class SpeechMicBar extends HTMLElement {
     }
 
     clear() {
+        clearTimeout(
+            this.#rejectedClearTimer
+        );
+        this.#rejectedClearTimer =
+            undefined;
         this.#currentUtteranceId = undefined;
         this.#currentTranscript = "";
+        this.#currentTranscriptFinal = false;
         this.removeAttribute("phase");
         this.#codes.replaceChildren();
         this.#showIdleText();
@@ -390,11 +439,13 @@ class SpeechMicBar extends HTMLElement {
     #handleSpeechEvent(type, detail) {
         switch (type) {
             case "started":
+                this.#clearLoadingProgress();
                 this.setAttribute("state", "listening");
                 this.clear();
                 break;
             case "stopped":
             case "speechCaptureEnded":
+                this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.clear();
                 break;
@@ -405,6 +456,7 @@ class SpeechMicBar extends HTMLElement {
                 this.setAttribute("state", "listening");
                 break;
             case "speechRecognitionFailed":
+                this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.#showStatus(
                     detail?.message ||
@@ -412,6 +464,18 @@ class SpeechMicBar extends HTMLElement {
                 );
                 break;
             case "speechRecognitionStatusChanged":
+                if (
+                    this.#showLoadingProgress(
+                        detail?.status
+                    )
+                ) {
+                    break;
+                }
+
+                if (this.hasAttribute("loading")) {
+                    this.#clearLoadingProgress();
+                }
+
                 if (detail?.status) {
                     this.#showStatus(
                         detail.status
@@ -422,7 +486,14 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "utteranceStarted":
+                clearTimeout(
+                    this.#rejectedClearTimer
+                );
+                this.#rejectedClearTimer =
+                    undefined;
                 this.#currentUtteranceId = detail?.id;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal = false;
                 this.setAttribute("state", "utterance");
                 this.removeAttribute("phase");
                 this.#codes.replaceChildren();
@@ -446,19 +517,48 @@ class SpeechMicBar extends HTMLElement {
                 if (detail?.id === this.#currentUtteranceId) {
                     this.#currentTranscript =
                         detail.transcript || "";
+                    this.#currentTranscriptFinal =
+                        Boolean(
+                            detail.isFinal
+                        );
+
+                    if (this.#currentTranscriptFinal) {
+                        this.#showText(
+                            this.#currentTranscript
+                        );
+                    }
+                }
+                break;
+            case "utteranceTranscribed":
+                if (detail?.id === this.#currentUtteranceId) {
+                    this.#currentTranscript =
+                        detail.transcript || "";
+                    this.#currentTranscriptFinal =
+                        true;
                     this.#showText(
                         this.#currentTranscript
                     );
                 }
                 break;
-            case "utteranceTranscribed":
-                if (detail?.id === this.#currentUtteranceId) {
-                    this.#currentTranscript = detail.transcript || "";
-                    this.#showText(this.#currentTranscript);
-                }
-                break;
             case "utteranceCommitted":
                 if (detail?.id === this.#currentUtteranceId) {
+                    this.#currentTranscript =
+                        detail.transcript ||
+                        this.#currentTranscript;
+                    this.#currentTranscriptFinal =
+                        true;
+
+                    if (
+                        this.getAttribute(
+                            "phase"
+                        ) !==
+                        "preprocessed"
+                    ) {
+                        this.#showText(
+                            this.#currentTranscript
+                        );
+                    }
+
                     this.setAttribute(
                         "state",
                         globalThis.SpeechMenu?.muted
@@ -468,7 +568,10 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechPreprocessed":
-                if (detail?.utteranceId === this.#currentUtteranceId) {
+                if (
+                    detail?.utteranceId === this.#currentUtteranceId &&
+                    !detail?.provisional
+                ) {
                     this.setAttribute("phase", "preprocessed");
                     this.#showPreprocessed(
                         detail.originalText || this.#currentTranscript,
@@ -481,15 +584,34 @@ class SpeechMicBar extends HTMLElement {
                 if (
                     detail?.utteranceId ===
                     this.#currentUtteranceId &&
+                    !detail?.provisional &&
                     this.getAttribute("phase") !== "preprocessed"
                 ) {
                     this.setAttribute("phase", "matched");
                 }
                 break;
             case "speechArgumentsPrepared":
-                if (detail?.utteranceId === this.#currentUtteranceId) {
-                    this.#showArguments(detail.arguments || []);
-                    if (detail.targetElement) this.setResponse(detail.targetElement);
+                if (
+                    detail?.utteranceId === this.#currentUtteranceId &&
+                    !detail?.provisional
+                ) {
+                    this.#showArguments(
+                        detail.arguments ||
+                        []
+                    );
+
+                    if (detail.targetElement) {
+                        this.setResponse(
+                            detail.targetElement
+                        );
+                    }
+                }
+                break;
+            case "utteranceUnrecognized":
+                if (detail?.id === this.#currentUtteranceId) {
+                    this.#scheduleRejectedClear(
+                        detail.id
+                    );
                 }
                 break;
             case "speechCommandExecuted":
@@ -519,6 +641,122 @@ class SpeechMicBar extends HTMLElement {
 
     #showIdleText() {
         this.#showStatus(this.state === "muted" ? "Muted" : this.state === "stopped" ? "" : "Listening…");
+    }
+
+    #showLoadingProgress(status) {
+        const match =
+            String(
+                status ||
+                ""
+            ).match(
+                /\(?\s*(\d+)\s*\/\s*(\d+)\s*\)?/
+            );
+
+        if (!match) {
+            return false;
+        }
+
+        const current =
+            Number(
+                match[1]
+            );
+        const total =
+            Number(
+                match[2]
+            );
+
+        if (
+            !Number.isFinite(
+                current
+            ) ||
+            !Number.isFinite(
+                total
+            ) ||
+            total <= 0
+        ) {
+            return false;
+        }
+
+        const progress =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    current /
+                    total *
+                    100
+                )
+            );
+
+        this.setAttribute(
+            "loading",
+            ""
+        );
+        this.setAttribute(
+            "aria-busy",
+            "true"
+        );
+        this.#bar.style
+            .setProperty(
+                "--speech-load-progress",
+                progress + "%"
+            );
+        this.#showStatus(
+            current +
+            " / " +
+            total
+        );
+
+        return true;
+    }
+
+    #clearLoadingProgress() {
+        this.removeAttribute(
+            "loading"
+        );
+        this.removeAttribute(
+            "aria-busy"
+        );
+        this.#bar.style
+            .setProperty(
+                "--speech-load-progress",
+                "0%"
+            );
+    }
+
+    #scheduleRejectedClear(
+        utteranceId
+    ) {
+        clearTimeout(
+            this.#rejectedClearTimer
+        );
+
+        this.#rejectedClearTimer =
+            setTimeout(
+                () => {
+                    this.#rejectedClearTimer =
+                        undefined;
+
+                    if (
+                        this.#currentUtteranceId !==
+                        utteranceId
+                    ) {
+                        return;
+                    }
+
+                    this.#currentTranscript = "";
+                    this.#currentTranscriptFinal =
+                        false;
+                    this.removeAttribute(
+                        "phase"
+                    );
+                    this.#codes
+                        .replaceChildren();
+                    void this.clearResponse();
+                    this.#showIdleText();
+                },
+                2000
+            );
     }
 
     #showWaveform() {
