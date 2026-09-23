@@ -23,7 +23,7 @@ $input = json_input();
 $entries = $input['entries'] ?? null;
 if (!is_array($entries) || !array_is_list($entries) || count($entries) > 250) api_error('Invalid speech entries.', 422, 'invalid_entries');
 if (!is_string($input['revision'] ?? null) || !hash_equals($read()['revision'], $input['revision'])) api_error('Speech commands changed since this editor opened. Reload before saving.', 409, 'stale_revision');
-$allowedAttributes = ['speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-modal'];
+$allowedAttributes = ['speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-modal', 'speech-index'];
 $seen = [];
 foreach ($entries as $entry) {
     if (!is_array($entry) || !is_string($entry['id'] ?? null) || !preg_match('/^[A-Za-z0-9:_-]{1,100}$/D', $entry['id']) || isset($seen[$entry['id']])) api_error('Each entry needs a unique ID.', 422, 'invalid_entry');
@@ -35,8 +35,10 @@ foreach ($entries as $entry) {
         if (!is_string($value) || strlen($value) > 500 || str_contains($value, "\0")) api_error('Invalid speech attribute value.', 422, 'invalid_entry');
         if ($name === 'speech-pattern' && $value !== '' && @preg_match('~' . str_replace('~', '\\~', $value) . '~i', '') === false) api_error('Invalid speech pattern.', 422, 'invalid_pattern');
         if (in_array($name, ['speech-function', 'speech-preproc'], true) && $value !== '' && !preg_match('/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/D', $value)) api_error('Invalid function name.', 422, 'invalid_function');
+        if ($name === 'speech-index' && $value !== '' && !preg_match('/^-?(?:\d+|\d*\.\d+)$/D', $value)) api_error('speech-index must be numeric.', 422, 'invalid_speech_index');
     }
     if (isset($entry['parentId']) && (!is_string($entry['parentId']) || strlen($entry['parentId']) > 100)) api_error('Invalid parent element.', 422, 'invalid_entry');
+    if (isset($entry['order']) && (!is_int($entry['order']) || $entry['order'] < 0 || $entry['order'] > 10000)) api_error('Invalid speech element order.', 422, 'invalid_entry');
 }
 $encoded = json_encode(['entries' => $entries], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
 $temporary = tempnam(dirname($path), '.speech-editor-');
