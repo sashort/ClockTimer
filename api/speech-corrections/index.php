@@ -18,51 +18,253 @@ ensure_speech_corrections_schema(
     $pdo
 );
 
+$language =
+    speech_correction_language(
+        $_GET['language'] ??
+        'en-US'
+    );
+
+$correctionRows =
+    static function (
+        bool $manage
+    ) use (
+        $pdo,
+        $language
+    ): array {
+        $sql =
+            'SELECT id, language, observed, observed_compact, canonical, '
+            . 'canonical_compact, match_type, enabled, occurrences, '
+            . 'created_by_user_id, created_at, updated_at '
+            . 'FROM speech_corrections '
+            . 'WHERE language = :language ';
+
+        if (!$manage) {
+            $sql .=
+                'AND enabled = 1 ';
+        }
+
+        $sql .=
+            'ORDER BY occurrences DESC, updated_at DESC, id DESC';
+
+        $statement =
+            $pdo->prepare(
+                $sql
+            );
+
+        $statement->execute([
+            ':language' =>
+                $language,
+        ]);
+
+        return array_map(
+            'speech_correction_row',
+            $statement->fetchAll()
+        );
+    };
+
+$trainingStats =
+    static function () use (
+        $pdo,
+        $language
+    ): array {
+        $statement =
+            $pdo->prepare(
+                'SELECT phrase_key, phrase, '
+                . 'COUNT(*) AS sample_count, '
+                . 'SUM(recognized_correct) AS correct_count '
+                . 'FROM speech_training_samples '
+                . 'WHERE language = :language '
+                . 'GROUP BY phrase_key_hash, phrase_key, phrase '
+                . 'ORDER BY phrase_key'
+            );
+
+        $statement->execute([
+            ':language' =>
+                $language,
+        ]);
+
+        $stats = [];
+
+        foreach (
+            $statement->fetchAll()
+            as $row
+        ) {
+            $payload =
+                speech_training_stats_payload(
+                    (string) $row['phrase_key'],
+                    (string) $row['phrase'],
+                    (int) $row['sample_count'],
+                    (int) $row['correct_count']
+                );
+
+            $stats[
+                $payload['phraseKey']
+            ] =
+                $payload;
+        }
+
+        return $stats;
+    };
+
+$phraseTraining =
+    static function (
+        string $phraseKey
+    ) use (
+        $pdo,
+        $language
+    ): array {
+        $hash =
+            hash(
+                'sha256',
+                $phraseKey
+            );
+
+        $statement =
+            $pdo->prepare(
+                'SELECT id, phrase, canonical, canonical_compact, '
+                . 'observed, observed_compact, recognized_correct, '
+                . 'created_by_user_id, created_at '
+                . 'FROM speech_training_samples '
+                . 'WHERE language = :language '
+                . 'AND phrase_key_hash = :phrase_key_hash '
+                . 'AND phrase_key = :phrase_key '
+                . 'ORDER BY id DESC '
+                . 'LIMIT 100'
+            );
+
+        $statement->execute([
+            ':language' =>
+                $language,
+            ':phrase_key_hash' =>
+                $hash,
+            ':phrase_key' =>
+                $phraseKey,
+        ]);
+
+        $samples = [];
+        $variants = [];
+
+        foreach (
+            $statement->fetchAll()
+            as $row
+        ) {
+            $sample = [
+                'id' =>
+                    (int) $row['id'],
+                'phrase' =>
+                    (string) $row['phrase'],
+                'canonical' =>
+                    (string) $row['canonical'],
+                'canonicalCompact' =>
+                    (string) $row['canonical_compact'],
+                'observed' =>
+                    (string) $row['observed'],
+                'observedCompact' =>
+                    (string) $row['observed_compact'],
+                'correct' =>
+                    (bool) $row['recognized_correct'],
+                'createdByUserId' =>
+                    $row['created_by_user_id'] ===
+                        null
+                        ? null
+                        : (int) $row['created_by_user_id'],
+                'createdAt' =>
+                    (int) $row['created_at'],
+            ];
+
+            $samples[] =
+                $sample;
+
+            $variantKey =
+                $sample[
+                    'observedCompact'
+                ];
+
+            if (
+                !isset(
+                    $variants[
+                        $variantKey
+                    ]
+                )
+            ) {
+                $variants[
+                    $variantKey
+                ] = [
+                    'observed' =>
+                        $sample['observed'],
+                    'observedCompact' =>
+                        $variantKey,
+                    'count' => 0,
+                    'correct' => 0,
+                    'incorrect' => 0,
+                    'lastSeenAt' =>
+                        $sample['createdAt'],
+                ];
+            }
+
+            $variants[
+                $variantKey
+            ]['count']++;
+
+            if ($sample['correct']) {
+                $variants[
+                    $variantKey
+                ]['correct']++;
+            } else {
+                $variants[
+                    $variantKey
+                ]['incorrect']++;
+            }
+
+            $variants[
+                $variantKey
+            ]['lastSeenAt'] =
+                max(
+                    $variants[
+                        $variantKey
+                    ]['lastSeenAt'],
+                    $sample['createdAt']
+                );
+        }
+
+        usort(
+            $variants,
+            static fn (
+                array $left,
+                array $right
+            ): int =>
+                $right['count'] <=>
+                    $left['count'] ||
+                $right['lastSeenAt'] <=>
+                    $left['lastSeenAt']
+        );
+
+        return [
+            'samples' =>
+                $samples,
+            'variants' =>
+                array_values(
+                    $variants
+                ),
+        ];
+    };
+
 if ($method === 'GET') {
     $manage =
         ($_GET['manage'] ?? null) ===
         '1';
 
-    if ($manage) {
-        require_any_permission(
-            PERMISSION_DEVELOPER_PREVIEW,
-            PERMISSION_DEVELOPER
-        );
-    }
-
-    $language =
-        speech_correction_language(
-            $_GET['language'] ?? 'en-US'
-        );
-
-    $sql =
-        'SELECT id, language, observed, observed_compact, canonical, '
-        . 'canonical_compact, match_type, enabled, occurrences, '
-        . 'created_by_user_id, created_at, updated_at '
-        . 'FROM speech_corrections '
-        . 'WHERE language = :language ';
-
-    if (!$manage) {
-        $sql .= 'AND enabled = 1 ';
-    }
-
-    $sql .=
-        'ORDER BY occurrences DESC, updated_at DESC, id DESC';
-
-    $statement =
-        $pdo->prepare(
-            $sql
-        );
-
-    $statement->execute([
-        ':language' =>
-            $language,
-    ]);
+    $actor =
+        $manage
+            ? require_any_permission(
+                PERMISSION_DEVELOPER_PREVIEW,
+                PERMISSION_DEVELOPER
+            )
+            : null;
 
     $corrections =
-        array_map(
-            'speech_correction_row',
-            $statement->fetchAll()
+        $correctionRows(
+            $manage
         );
 
     $revision =
@@ -76,22 +278,58 @@ if ($method === 'GET') {
             )
         );
 
-    json_response([
-        'language' => $language,
-        'corrections' => $corrections,
-        'revision' => $revision,
-        'canWrite' =>
-            $manage
-                ? has_permission(
-                    current_user(),
-                    PERMISSION_DEVELOPER
-                )
-                : false,
-        'csrfToken' =>
-            $manage
-                ? csrf_token()
-                : null,
-    ]);
+    $payload = [
+        'language' =>
+            $language,
+        'corrections' =>
+            $corrections,
+        'revision' =>
+            $revision,
+    ];
+
+    if ($manage) {
+        $payload['trainingStats'] =
+            $trainingStats();
+
+        $payload['minimumSamples'] =
+            SPEECH_TRAINING_MIN_SAMPLES;
+
+        $payload['targetAccuracy'] =
+            SPEECH_TRAINING_TARGET_ACCURACY;
+
+        $payload['canWrite'] =
+            has_permission(
+                $actor,
+                PERMISSION_DEVELOPER
+            );
+
+        $payload['csrfToken'] =
+            csrf_token();
+
+        if (
+            isset(
+                $_GET[
+                    'phraseKey'
+                ]
+            )
+        ) {
+            $phraseKey =
+                speech_training_phrase_key(
+                    $_GET[
+                        'phraseKey'
+                    ]
+                );
+
+            $payload['training'] =
+                $phraseTraining(
+                    $phraseKey
+                );
+        }
+    }
+
+    json_response(
+        $payload
+    );
 }
 
 $actor =
@@ -103,6 +341,198 @@ require_csrf();
 
 $input =
     json_input();
+
+$inputLanguage =
+    speech_correction_language(
+        $input['language'] ??
+        'en-US'
+    );
+
+if (
+    $inputLanguage !==
+    $language
+) {
+    $language =
+        $inputLanguage;
+}
+
+if (
+    $method === 'POST' &&
+    (
+        $input['action'] ??
+        'correction'
+    ) ===
+        'sample'
+) {
+    $phraseKey =
+        speech_training_phrase_key(
+            $input['phraseKey'] ??
+            null
+        );
+
+    $phrase =
+        speech_training_phrase(
+            $input['phrase'] ??
+            null
+        );
+
+    $canonicalRaw =
+        $input['canonical'] ??
+        null;
+
+    $observedRaw =
+        $input['observed'] ??
+        null;
+
+    if (
+        !is_string(
+            $canonicalRaw
+        ) ||
+        !is_string(
+            $observedRaw
+        )
+    ) {
+        api_error(
+            'canonical and observed must be strings.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $canonical =
+        normalize_speech_correction_text(
+            $canonicalRaw
+        );
+
+    $observed =
+        normalize_speech_correction_text(
+            $observedRaw
+        );
+
+    if (
+        $canonical === '' ||
+        $observed === ''
+    ) {
+        api_error(
+            'canonical and observed must not be empty.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    if (
+        strlen(
+            $canonical
+        ) > 500 ||
+        strlen(
+            $observed
+        ) > 500
+    ) {
+        api_error(
+            'Training samples are limited to 500 characters.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $canonicalCompact =
+        compact_speech_correction_text(
+            $canonical
+        );
+
+    $observedCompact =
+        compact_speech_correction_text(
+            $observed
+        );
+
+    $recognizedCorrect =
+        $canonicalCompact ===
+        $observedCompact;
+
+    $now =
+        time();
+
+    $statement =
+        $pdo->prepare(
+            'INSERT INTO speech_training_samples '
+            . '(language, phrase_key, phrase_key_hash, phrase, '
+            . 'canonical, canonical_compact, observed, observed_compact, '
+            . 'recognized_correct, created_by_user_id, created_at) '
+            . 'VALUES (:language, :phrase_key, :phrase_key_hash, :phrase, '
+            . ':canonical, :canonical_compact, :observed, :observed_compact, '
+            . ':recognized_correct, :created_by_user_id, :created_at)'
+        );
+
+    $statement->execute([
+        ':language' =>
+            $language,
+        ':phrase_key' =>
+            $phraseKey,
+        ':phrase_key_hash' =>
+            hash(
+                'sha256',
+                $phraseKey
+            ),
+        ':phrase' =>
+            $phrase,
+        ':canonical' =>
+            $canonical,
+        ':canonical_compact' =>
+            $canonicalCompact,
+        ':observed' =>
+            $observed,
+        ':observed_compact' =>
+            $observedCompact,
+        ':recognized_correct' =>
+            $recognizedCorrect
+                ? 1
+                : 0,
+        ':created_by_user_id' =>
+            (int) $actor['id'],
+        ':created_at' =>
+            $now,
+    ]);
+
+    $stats =
+        $trainingStats();
+
+    json_response([
+        'trained' => true,
+        'sample' => [
+            'id' =>
+                (int) $pdo
+                    ->lastInsertId(),
+            'phraseKey' =>
+                $phraseKey,
+            'phrase' =>
+                $phrase,
+            'canonical' =>
+                $canonical,
+            'canonicalCompact' =>
+                $canonicalCompact,
+            'observed' =>
+                $observed,
+            'observedCompact' =>
+                $observedCompact,
+            'correct' =>
+                $recognizedCorrect,
+            'createdAt' =>
+                $now,
+        ],
+        'stats' =>
+            $stats[
+                $phraseKey
+            ] ??
+            speech_training_stats_payload(
+                $phraseKey,
+                $phrase,
+                1,
+                $recognizedCorrect
+                    ? 1
+                    : 0
+            ),
+    ], 201);
+}
 
 if ($method === 'DELETE') {
     $id =
@@ -118,10 +548,14 @@ if ($method === 'DELETE') {
         );
 
     $delete->execute([
-        ':id' => $id,
+        ':id' =>
+            $id,
     ]);
 
-    if ($delete->rowCount() !== 1) {
+    if (
+        $delete->rowCount() !==
+        1
+    ) {
         api_error(
             'Speech correction was not found.',
             404,
@@ -130,25 +564,25 @@ if ($method === 'DELETE') {
     }
 
     json_response([
-        'deleted' => true,
-        'id' => $id,
+        'deleted' =>
+            true,
+        'id' =>
+            $id,
     ]);
 }
 
-$language =
-    speech_correction_language(
-        $input['language'] ?? 'en-US'
-    );
-
 $pair =
     validate_speech_correction_pair(
-        $input['observed'] ?? null,
-        $input['canonical'] ?? null
+        $input['observed'] ??
+        null,
+        $input['canonical'] ??
+        null
     );
 
 $matchType =
     speech_correction_match_type(
-        $input['matchType'] ?? 'exact'
+        $input['matchType'] ??
+        'exact'
     );
 
 $enabled =
@@ -162,7 +596,8 @@ $enabled =
         )
         : true;
 
-$now = time();
+$now =
+    time();
 
 if ($method === 'POST') {
     $statement =
@@ -187,11 +622,15 @@ if ($method === 'POST') {
         ':observed' =>
             $pair['observed'],
         ':observed_compact' =>
-            $pair['observedCompact'],
+            $pair[
+                'observedCompact'
+            ],
         ':canonical' =>
             $pair['canonical'],
         ':canonical_compact' =>
-            $pair['canonicalCompact'],
+            $pair[
+                'canonicalCompact'
+            ],
         ':match_type' =>
             $matchType,
         ':enabled' =>
@@ -220,15 +659,20 @@ if ($method === 'POST') {
         ':language' =>
             $language,
         ':observed_compact' =>
-            $pair['observedCompact'],
+            $pair[
+                'observedCompact'
+            ],
         ':canonical_compact' =>
-            $pair['canonicalCompact'],
+            $pair[
+                'canonicalCompact'
+            ],
         ':match_type' =>
             $matchType,
     ]);
 
     json_response([
-        'trained' => true,
+        'trained' =>
+            true,
         'correction' =>
             speech_correction_row(
                 $lookup->fetch()
@@ -263,11 +707,15 @@ try {
         ':observed' =>
             $pair['observed'],
         ':observed_compact' =>
-            $pair['observedCompact'],
+            $pair[
+                'observedCompact'
+            ],
         ':canonical' =>
             $pair['canonical'],
         ':canonical_compact' =>
-            $pair['canonicalCompact'],
+            $pair[
+                'canonicalCompact'
+            ],
         ':match_type' =>
             $matchType,
         ':enabled' =>
@@ -278,8 +726,14 @@ try {
             $id,
     ]);
 }
-catch (PDOException $error) {
-    if ((string) $error->getCode() === '23000') {
+catch (
+    PDOException $error
+) {
+    if (
+        (string) $error
+            ->getCode() ===
+            '23000'
+    ) {
         api_error(
             'An equivalent speech correction already exists.',
             409,
@@ -290,7 +744,10 @@ catch (PDOException $error) {
     throw $error;
 }
 
-if ($statement->rowCount() === 0) {
+if (
+    $statement->rowCount() ===
+    0
+) {
     $exists =
         $pdo->prepare(
             'SELECT id FROM speech_corrections '
@@ -298,10 +755,14 @@ if ($statement->rowCount() === 0) {
         );
 
     $exists->execute([
-        ':id' => $id,
+        ':id' =>
+            $id,
     ]);
 
-    if (!$exists->fetchColumn()) {
+    if (
+        !$exists
+            ->fetchColumn()
+    ) {
         api_error(
             'Speech correction was not found.',
             404,
@@ -311,6 +772,8 @@ if ($statement->rowCount() === 0) {
 }
 
 json_response([
-    'updated' => true,
-    'id' => $id,
+    'updated' =>
+        true,
+    'id' =>
+        $id,
 ]);
