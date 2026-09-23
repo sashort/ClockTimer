@@ -117,6 +117,30 @@ CREATE TABLE IF NOT EXISTS `speech_corrections` (
         CHECK (`occurrences` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `speech_training_samples` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `language` VARCHAR(32) NOT NULL DEFAULT 'en-US',
+    `phrase_key` VARCHAR(500) NOT NULL,
+    `phrase_key_hash` CHAR(64) NOT NULL,
+    `phrase` VARCHAR(500) NOT NULL,
+    `canonical` VARCHAR(500) NOT NULL,
+    `canonical_compact` VARCHAR(500) NOT NULL,
+    `observed` VARCHAR(500) NOT NULL,
+    `observed_compact` VARCHAR(500) NOT NULL,
+    `recognized_correct` TINYINT(1) NOT NULL,
+    `created_by_user_id` BIGINT UNSIGNED NULL,
+    `created_at` BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_speech_training_phrase`
+        (`language`, `phrase_key_hash`, `created_at`),
+    KEY `idx_speech_training_creator` (`created_by_user_id`),
+    CONSTRAINT `fk_speech_training_creator`
+        FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
+        ON UPDATE RESTRICT ON DELETE SET NULL,
+    CONSTRAINT `chk_speech_training_correct`
+        CHECK (`recognized_correct` IN (0, 1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `trips` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL,
