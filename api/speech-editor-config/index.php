@@ -121,7 +121,7 @@ if (
     api_error('Speech function roles changed since this editor opened. Reload before saving.', 409, 'stale_registry_revision');
 }
 
-$actionVerbPattern = '/^(?:add|apply|begin|cancel|change|choose|clear|close|confirm|connect|create|delete|defer|disable|disconnect|edit|enable|end|enter|hide|load|lock|move|open|prepare|release|remove|reorder|request|reset|resume|save|schedule|select|set|show|start|stop|submit|switch|toggle|unlock|update)/D';
+$actionVerbPattern = '/^(?:add|apply|begin|cancel|change|choose|clear|close|confirm|connect|continue|create|cycle|delete|defer|disable|disconnect|edit|enable|end|enter|hide|load|lock|move|open|prepare|release|remove|reorder|request|reset|resume|run|save|schedule|select|set|show|start|stop|submit|switch|toggle|unlock|update)/D';
 $identifierPattern = '/^[A-Za-z_$][\\w$]*$/D';
 $contextPattern = '/^(?:[A-Za-z_$][\\w$]*)(?:\\.[A-Za-z_$][\\w$]*)*$/D';
 
