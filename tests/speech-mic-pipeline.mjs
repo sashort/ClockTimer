@@ -742,3 +742,24 @@ assert.match(
     /#sleeping[\s\S]*#exactCandidate[\s\S]*kind === "wake"[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
 );
 
+
+assert.match(
+    speechMenuSource,
+    /#handleLiveTranscript\([\s\S]*utterance\.committed\s*\|\|[\s\S]*utterance\.committing\s*\|\|/
+);
+assert.match(
+    speechMenuSource,
+    /#commitUtterance\([\s\S]*#cancelCandidateWork\(\s*utterance\s*\)[\s\S]*let committed/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /#commitUtterance\([\s\S]{0,900}#clearCandidatePool\(\s*utterance\s*\)[\s\S]{0,250}let committed/
+);
+assert.match(
+    speechMenuSource,
+    /if \(committed\)[\s\S]*#clearCandidatePool\(\s*utterance\s*\)/
+);
+assert.match(
+    speechMenuSource,
+    /!pool\.length[\s\S]*!utterance\.committing[\s\S]*!SpeechMenu\.#sleeping/
+);
