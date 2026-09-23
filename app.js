@@ -329,7 +329,7 @@
                 ACCESS_TOKEN_PERMISSION_MASK
             );
 
-        const canUseSpeechTools =
+        const canUseSpeechEditor =
             Boolean(
                 permissions &
                 SPEECH_EDITOR_PERMISSION_MASK
@@ -347,11 +347,14 @@
         $("#accessTokensButton").hidden =
             !canManageTokens;
 
-        $("#speechAdminGroup").hidden =
-            !canUseSpeechTools;
+        $("#speechToolsGroup").hidden =
+            false;
+
+        $("#speechTrainingButton").hidden =
+            false;
 
         $("#speechEditorButton").hidden =
-            !canUseSpeechTools;
+            !canUseSpeechEditor;
 
         $("#sqlConsoleButton").hidden =
             !canUseSql;
@@ -360,7 +363,6 @@
             !(
                 canCreateUsers ||
                 canManageTokens ||
-                canUseSpeechTools ||
                 canUseSql
             );
     }
@@ -2409,12 +2411,15 @@
                 ACCESS_TOKEN_PERMISSION_MASK
             );
 
-        const canUseSpeechTools =
+        const canUseSpeechEditor =
             connected &&
             Boolean(
                 permissions &
                 SPEECH_EDITOR_PERMISSION_MASK
             );
+
+        const canUseSpeechTools =
+            connected;
 
         const canUseSql =
             connected &&
@@ -2426,7 +2431,6 @@
         const showAdmin =
             canCreateUsers ||
             canManageTokens ||
-            canUseSpeechTools ||
             canUseSql;
 
         $("#adminMenuGroup").hidden =
@@ -2438,11 +2442,14 @@
         $("#accessTokensButton").hidden =
             !canManageTokens;
 
-        $("#speechAdminGroup").hidden =
+        $("#speechToolsGroup").hidden =
+            !canUseSpeechTools;
+
+        $("#speechTrainingButton").hidden =
             !canUseSpeechTools;
 
         $("#speechEditorButton").hidden =
-            !canUseSpeechTools;
+            !canUseSpeechEditor;
 
         $("#sqlConsoleButton").hidden =
             !canUseSql;
@@ -6379,6 +6386,21 @@
                         "openSpeechEditorClick",
                     action:
                         "openSpeechEditor",
+                    preventDefault:
+                        true
+                })
+        );
+
+    $("#speechTrainingButton")
+        .addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    name:
+                        "openSpeechTrainingClick",
+                    action:
+                        "openSpeechTraining",
                     preventDefault:
                         true
                 })
@@ -10994,6 +11016,32 @@
                 if (!opened) {
                     throw new Error(
                         "The Access Tokens window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
+            },
+
+            openSpeechTraining() {
+                if (!signedInProfile) {
+                    throw new Error(
+                        "Sign in to use Speech Training."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/speech-editor/?training=1",
+                        "wmofSpeechEditor"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Speech Training window was blocked by the browser."
                     );
                 }
 
