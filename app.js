@@ -12383,6 +12383,11 @@
             SpeechMenu.refresh();
         }
 
+        if (speechRecognitionButton) {
+            speechRecognitionButton.disabled =
+                !englishSpeech;
+        }
+
         speechMicBar?.addEventListener("started", () => {
             setSpeechButtonState(true, false);
             setSpeechLayoutState(true);
