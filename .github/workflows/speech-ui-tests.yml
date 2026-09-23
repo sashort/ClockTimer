@@ -48,6 +48,9 @@ jobs:
           php -l api/admin/access-tokens/index.php
           php -l api/admin/sql/index.php
           php -l api/_core/access_tokens.php
+          php -l api/_core/new_user_invites.php
+          php -l api/admin/new-user/index.php
+          php -l api/new-user/index.php
           php -l api/_core/sql_console.php
           php -l api/admin/speech-editor/agent/index.php
           php -l api/_core/permissions.php
@@ -67,7 +70,9 @@ jobs:
           npm run test:editor-actions
           php admin_permissions.php
           php access_tokens.php
+          php new_user_invites.php
           php sql_batch.php
+          node new-user-qr.mjs
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
