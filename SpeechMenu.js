@@ -1102,6 +1102,28 @@ class SpeechMenu {
                 frameMilliseconds;
 
             if (
+                SpeechMenu.#sleeping &&
+                !SpeechMenu.#utterance
+                    .committed &&
+                !SpeechMenu.#utterance
+                    .committing &&
+                SpeechMenu
+                    .#exactCandidate(
+                        SpeechMenu.#utterance
+                    )
+                    ?.kind === "wake" &&
+                SpeechMenu.#utterance
+                    .silenceMilliseconds >=
+                    SpeechMenu
+                        .#commitSilenceTimeout
+            ) {
+                void SpeechMenu
+                    .#commitUtterance(
+                        SpeechMenu.#utterance
+                    );
+            }
+
+            if (
                 SpeechMenu.#utterance &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
@@ -2423,14 +2445,19 @@ class SpeechMenu {
         utterance,
         revision
     ) {
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
         if (
             !utterance ||
             utterance.committed ||
             utterance.committing ||
-            !SpeechMenu
-                .#exactCandidate(
-                    utterance
-                )
+            !exactCandidate ||
+            exactCandidate.kind ===
+                "wake"
         ) {
             return false;
         }
