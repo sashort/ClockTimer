@@ -43,14 +43,23 @@ jobs:
             "$LAMP_USER@$LAMP_HOST" \
             'set -euo pipefail
              DEPLOY_BRANCH=sherpa-client-asr
-             $HOME/deploy-clocktimer.sh
+
+             if ! sudo -n /opt/bitnami/ctlscript.sh status mariadb; then
+               echo "MariaDB is not running; starting it."
+               sudo -n /opt/bitnami/ctlscript.sh start mariadb
+             fi
+             sudo -n /opt/bitnami/ctlscript.sh status mariadb
+
              cd /opt/bitnami/apache2/htdocs
              git fetch origin "$DEPLOY_BRANCH:refs/remotes/origin/$DEPLOY_BRANCH"
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
              git reset --hard "origin/$DEPLOY_BRANCH"
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
+
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
+             echo "Database connectivity check passed."
+
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
              sed -i \
