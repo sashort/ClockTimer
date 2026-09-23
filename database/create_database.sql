@@ -50,13 +50,21 @@ CREATE TABLE IF NOT EXISTS `permissions` (
 
 CREATE TABLE IF NOT EXISTS `access_tokens` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `owner_user_id` BIGINT UNSIGNED NOT NULL,
+    -- NULL means the token was created by an anonymous delegated session.
+    -- These are system tokens and are manageable by superusers.
+    `owner_user_id` BIGINT UNSIGNED NULL,
     `name` VARCHAR(191) NOT NULL,
     `token_hash` CHAR(64) NOT NULL,
     `token_hint` VARCHAR(24) NOT NULL,
-    `permissions` BIGINT UNSIGNED NOT NULL,
-    `uses_remaining` INT UNSIGNED NOT NULL DEFAULT 1,
-    `delete_on_deplete` TINYINT(1) NOT NULL DEFAULT 1,
+    -- Bitmask assembled from rows in permissions. Combinations do not need
+    -- their own permissions-table row.
+    `permissions` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    -- New User is the special value-0 capability. When set, permissions is
+    -- the initial permission mask assigned to accounts created by the token.
+    `new_user` TINYINT(1) NOT NULL DEFAULT 0,
+    -- NULL means unlimited uses until expires_at.
+    `uses_remaining` INT UNSIGNED NULL DEFAULT NULL,
+    `delete_on_deplete` TINYINT(1) NOT NULL DEFAULT 0,
     `requires_authentication` TINYINT(1) NOT NULL DEFAULT 1,
     `expires_at` BIGINT UNSIGNED NOT NULL,
     `created_at` BIGINT UNSIGNED NOT NULL,
@@ -71,27 +79,14 @@ CREATE TABLE IF NOT EXISTS `access_tokens` (
         FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`)
         ON UPDATE RESTRICT
         ON DELETE CASCADE,
-    CONSTRAINT `fk_access_tokens_permission`
-        FOREIGN KEY (`permissions`) REFERENCES `permissions` (`value`)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT,
+    CONSTRAINT `chk_access_tokens_new_user`
+        CHECK (`new_user` IN (0, 1)),
     CONSTRAINT `chk_access_tokens_delete_on_deplete`
         CHECK (`delete_on_deplete` IN (0, 1)),
+    CONSTRAINT `chk_access_tokens_count_delete`
+        CHECK (`uses_remaining` IS NOT NULL OR `delete_on_deplete` = 0),
     CONSTRAINT `chk_access_tokens_requires_authentication`
         CHECK (`requires_authentication` IN (0, 1))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `new_tokens` (
-    `token_hash` CHAR(64) NOT NULL,
-    `admin_user_id` BIGINT UNSIGNED NOT NULL,
-    `created_at` BIGINT NOT NULL,
-    `expires_at` BIGINT NOT NULL,
-    PRIMARY KEY (`token_hash`),
-    KEY `idx_new_tokens_expiry` (`expires_at`),
-    CONSTRAINT `fk_new_tokens_admin`
-        FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`)
-        ON UPDATE RESTRICT
-        ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `trips` (
