@@ -2,17 +2,47 @@
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/_core/bootstrap.php';
 
-require_method('POST');
-authenticated_user_id();
-require_csrf_form();
+$method = require_method('GET', 'POST');
 
-$editorUser = require_any_permission(
-    PERMISSION_DEVELOPER_PREVIEW,
-    PERMISSION_DEVELOPER
+if ($method === 'GET') {
+    $grant = access_token_session_grant(
+        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+    );
+
+    if (
+        $grant === null ||
+        !permission_mask_allows_any(
+            (int) $grant['permissions'],
+            PERMISSION_DEVELOPER_PREVIEW,
+            PERMISSION_DEVELOPER
+        )
+    ) {
+        render_access_token_prompt(
+            'WMOF Speech Command Editor',
+            'Open the editor from WMOF or enter an access token that grants Developer Preview or Developer permission.',
+            ''
+        );
+    }
+}
+
+$authorization = authorize_guarded_access(
+    [
+        PERMISSION_DEVELOPER_PREVIEW,
+        PERMISSION_DEVELOPER
+    ],
+    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
+    true
 );
 
-$canWrite = has_permission(
-    $editorUser,
+if (
+    $method === 'POST' &&
+    ($authorization['mode'] ?? '') === 'session'
+) {
+    require_csrf_form();
+}
+
+$canWrite = guarded_access_has_permission(
+    $authorization,
     PERMISSION_DEVELOPER
 );
 
