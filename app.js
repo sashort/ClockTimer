@@ -2989,6 +2989,9 @@
             `${transitionDuration}ms`
         );
         dialog.showModal();
+        speechMicBar
+            ?.promoteTopLayer?.();
+
         setTimeout(() => {
             if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
             dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
@@ -3142,6 +3145,23 @@
         }
         return true;
     }
+
+    document.addEventListener(
+        "toggle",
+        event => {
+            if (
+                event.target !== speechMicBar &&
+                event.newState === "open"
+            ) {
+                queueMicrotask(
+                    () =>
+                        speechMicBar
+                            ?.promoteTopLayer?.()
+                );
+            }
+        },
+        true
+    );
 
     document.querySelectorAll("[popover]").forEach(popover => {
         popover.addEventListener("beforetoggle", event => {
@@ -9773,6 +9793,8 @@
         );
 
     let pendingSpeechReady;
+    const SPEECH_READY_CONTINUATION_WINDOW =
+        1800;
 
     const cancelPendingSpeechReady =
         () => {
@@ -9787,6 +9809,129 @@
 
             pendingSpeechReady =
                 undefined;
+        };
+
+    const armSpeechReadyContinuation =
+        () => {
+            cancelPendingSpeechReady();
+
+            pendingSpeechReady =
+                setTimeout(
+                    () => {
+                        pendingSpeechReady =
+                            undefined;
+                    },
+                    SPEECH_READY_CONTINUATION_WINDOW
+                );
+        };
+
+    const openStartMenuWorkflow =
+        ({
+            preserveSpeechContinuation =
+                false
+        } = {}) => {
+            if (
+                tripIsLive() ||
+                $("#newTripButton")
+                    ?.disabled
+            ) {
+                return false;
+            }
+
+            if (
+                !preserveSpeechContinuation
+            ) {
+                cancelPendingSpeechReady();
+            }
+
+            void beginNewTripWorkflow({
+                tripMoment:
+                    new Date()
+            }).catch(
+                () => {}
+            );
+
+            return true;
+        };
+
+    const closeActiveSpeechSurface =
+        async () => {
+            if (
+                speechMicBar
+                    ?.optionsOpen
+            ) {
+                await speechMicBar
+                    .hideOptions?.();
+
+                return true;
+            }
+
+            const popover =
+                [
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ]
+                    .filter(
+                        element =>
+                            element !==
+                                speechMicBar &&
+                            popoverIsOpen(
+                                element
+                            )
+                    )
+                    .at(-1);
+
+            if (popover) {
+                if (
+                    popover.id ===
+                    "graphicalHelpPopover"
+                ) {
+                    await closeSettingsHelpPopover();
+                }
+                else {
+                    popover.hidePopover?.();
+                }
+
+                return true;
+            }
+
+            const dialog =
+                [
+                    ...document
+                        .querySelectorAll(
+                            "dialog[open]"
+                        )
+                ].at(-1);
+
+            if (!dialog) {
+                return false;
+            }
+
+            if (
+                dialog ===
+                numberPadDialog
+            ) {
+                return cancelNumberPad();
+            }
+
+            if (
+                dialog ===
+                tripSettingsDialog
+            ) {
+                return cancelTripSettingsDialog(
+                    "speech-close"
+                );
+            }
+
+            return closeDialogWithReturn(
+                dialog,
+                {
+                    reason:
+                        "speech-close"
+                }
+            );
         };
 
     const actions =
@@ -10034,50 +10179,36 @@
             },
 
             openStartMenu() {
-                if (
-                    tripIsLive() ||
-                    $("#newTripButton")
-                        ?.disabled
-                ) {
-                    return false;
-                }
-
-                cancelPendingSpeechReady();
-
-                void beginNewTripWorkflow({
-                    tripMoment:
-                        new Date()
-                }).catch(
-                    () => {}
-                );
-
-                return true;
+                return openStartMenuWorkflow();
             },
 
             prepareStartMenu() {
-                if (
-                    tripIsLive() ||
-                    $("#newTripButton")
-                        ?.disabled
-                ) {
-                    return false;
-                }
+                armSpeechReadyContinuation();
 
-                cancelPendingSpeechReady();
+                return openStartMenuWorkflow({
+                    preserveSpeechContinuation:
+                        true
+                });
+            },
 
-                pendingSpeechReady =
-                    setTimeout(
-                        () => {
-                            pendingSpeechReady =
-                                undefined;
+            showSpeechOptions() {
+                globalThis
+                    .SpeechMenu
+                    ?.extrapolatePhrases?.();
 
-                            actions
-                                .openStartMenu();
-                        },
-                        1100
-                    );
+                return Boolean(
+                    speechMicBar
+                        ?.showOptions?.(
+                            globalThis
+                                .SpeechMenu
+                                ?.phraseGroups ||
+                            []
+                        )
+                );
+            },
 
-                return true;
+            closeActiveSurface() {
+                return closeActiveSpeechSurface();
             },
 
             async scheduleStartAt(
