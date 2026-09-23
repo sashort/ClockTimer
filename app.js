@@ -217,31 +217,63 @@
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
 
-    const setSpeechButtonState = (enabled, muted = false) => {
-        speechRecognitionButton?.setAttribute(
-            "aria-pressed",
-            String(enabled)
-        );
-        speechRecognitionButton?.classList.toggle(
-            "is-sleeping",
-            enabled && muted
-        );
-        if (speechRecognitionButton) {
-            speechRecognitionButton.title =
-                enabled
-                    ? "Disable Speech Recognition"
-                    : "Enable Speech Recognition";
-            speechRecognitionButton.setAttribute(
-                "aria-label",
-                speechRecognitionButton.title
-            );
-        }
-    };
+    const setSpeechButtonState =
+        globalThis
+            .WMOFPresentationSetters
+            .define(
+                "setSpeechButtonState",
+                (
+                    enabled,
+                    muted = false
+                ) => {
+                    speechRecognitionButton
+                        ?.setAttribute(
+                            "aria-pressed",
+                            String(enabled)
+                        );
 
-    const setSpeechLayoutState = enabled => {
-        app.dataset.speechActive =
-            String(Boolean(enabled));
-    };
+                    speechRecognitionButton
+                        ?.classList
+                        .toggle(
+                            "is-sleeping",
+                            enabled &&
+                                muted
+                        );
+
+                    if (
+                        speechRecognitionButton
+                    ) {
+                        speechRecognitionButton
+                            .title =
+                            enabled
+                                ? "Disable Speech Recognition"
+                                : "Enable Speech Recognition";
+
+                        speechRecognitionButton
+                            .setAttribute(
+                                "aria-label",
+                                speechRecognitionButton
+                                    .title
+                            );
+                    }
+                }
+            );
+
+    const setSpeechLayoutState =
+        globalThis
+            .WMOFPresentationSetters
+            .define(
+                "setSpeechLayoutState",
+                enabled => {
+                    app.dataset
+                        .speechActive =
+                        String(
+                            Boolean(
+                                enabled
+                            )
+                        );
+                }
+            );
 
     let speechActivationPending = false;
 
