@@ -741,3 +741,8 @@ assert.match(
     speechMenuSource,
     /#sleeping[\s\S]*#exactCandidate[\s\S]*kind === "wake"[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
 );
+
+assert.match(
+    app,
+    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*hideOptions[\s\S]*showOptions/
+);
