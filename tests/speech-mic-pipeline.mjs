@@ -226,8 +226,12 @@ assert.match(speechMenuSource, /speechRecognitionTiming/);
 assert.match(speechMenuSource, /captureSettings:/);
 assert.match(speechMenuSource, /context\.audioWorklet\.addModule/);
 assert.match(speechMenuSource, /new AudioWorkletNodeCtor\(\s*context,\s*"wmof-speech-capture"/s);
-assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
-assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
+assert.match(speechMenuSource, /#refreshCandidatePool\(\s*utterance,\s*transcript,\s*controller\.signal\s*\)/s);
+assert.match(speechMenuSource, /candidatePool:\s*\[\]/);
+assert.match(speechMenuSource, /new AbortController\(\)/);
+assert.match(speechMenuSource, /#cancelCandidateWork[\s\S]*controller\.abort\(\)/);
+assert.match(speechMenuSource, /while\s*\([\s\S]*next\.shift\(\)/);
+assert.match(speechMenuSource, /await Promise\.resolve\([\s\S]*speechPreprocFunc[\s\S]*signal/s);
 assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition|createScriptProcessor/);
 assert.match(speechMenuSource, /#compactTranscript/);
 assert.match(speechMenuSource, /speechCompactPattern/);
@@ -407,9 +411,13 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /#hasPhraseContinuation[\s\S]*#phraseCanContinue/
+    /#elementContinuationDepth[\s\S]*#phraseCanContinue/
 );
 assert.match(
     speechMenuSource,
-    /#candidateCommitSilenceTimeout[\s\S]*\.continuation/
+    /#candidateCommitSilenceTimeout[\s\S]*candidatePool[\s\S]*continuation/
+);
+assert.match(
+    speechMenuSource,
+    /#clearCandidatePool\([\s\S]*candidatePool\s*=\s*\[\]/
 );
