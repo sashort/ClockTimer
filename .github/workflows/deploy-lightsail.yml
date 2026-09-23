@@ -73,4 +73,14 @@ jobs:
                -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
                index.html
              echo "Asset version: $VERSION"
-             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html'
+             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html
+
+             USERS_STATUS=$(curl -sS -o /tmp/clocktimer-users-health.json -w "%{http_code}" https://wmof.sashort-apps.com/api/users/)
+             echo "Users API status: $USERS_STATUS"
+             cat /tmp/clocktimer-users-health.json
+             echo
+             if [ "$USERS_STATUS" != "401" ]; then
+               echo "Recent Apache/PHP errors:"
+               sudo -n tail -n 80 /opt/bitnami/apache2/logs/error_log || true
+               exit 1
+             fi'
