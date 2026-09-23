@@ -7400,6 +7400,122 @@
                         }
                     );
 
+                const moveUp =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                moveUp.type =
+                    "button";
+
+                moveUp.textContent =
+                    "↑";
+
+                moveUp.disabled =
+                    stepIndex ===
+                    0;
+
+                moveUp.setAttribute(
+                    "aria-label",
+                    "Move action up"
+                );
+
+                moveUp
+                    .addEventListener(
+                        "click",
+                        () => {
+                            if (
+                                stepIndex ===
+                                    0
+                            ) {
+                                return;
+                            }
+
+                            const [
+                                moved
+                            ] =
+                                macroWorking
+                                    .steps
+                                    .splice(
+                                        stepIndex,
+                                        1
+                                    );
+
+                            macroWorking
+                                .steps
+                                .splice(
+                                    stepIndex -
+                                        1,
+                                    0,
+                                    moved
+                                );
+
+                            renderMacroBuilder();
+                        }
+                    );
+
+                const moveDown =
+                    document
+                        .createElement(
+                            "button"
+                        );
+
+                moveDown.type =
+                    "button";
+
+                moveDown.textContent =
+                    "↓";
+
+                moveDown.disabled =
+                    stepIndex ===
+                    macroWorking
+                        .steps
+                        .length -
+                        1;
+
+                moveDown.setAttribute(
+                    "aria-label",
+                    "Move action down"
+                );
+
+                moveDown
+                    .addEventListener(
+                        "click",
+                        () => {
+                            if (
+                                stepIndex >=
+                                macroWorking
+                                    .steps
+                                    .length -
+                                    1
+                            ) {
+                                return;
+                            }
+
+                            const [
+                                moved
+                            ] =
+                                macroWorking
+                                    .steps
+                                    .splice(
+                                        stepIndex,
+                                        1
+                                    );
+
+                            macroWorking
+                                .steps
+                                .splice(
+                                    stepIndex +
+                                        1,
+                                    0,
+                                    moved
+                                );
+
+                            renderMacroBuilder();
+                        }
+                    );
+
                 const addArgument =
                     document
                         .createElement(
@@ -7464,6 +7580,8 @@
                 header.append(
                     number,
                     action,
+                    moveUp,
+                    moveDown,
                     addArgument,
                     remove
                 );
