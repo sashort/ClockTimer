@@ -8,6 +8,7 @@ window.document.body.innerHTML = [
     '<button id="breakButton">Break</button>',
     '<speech-menu id="topMenu" speech-modal="top-level">',
     '<speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFSpeechCommands.breakStart"></speech-command>',
+    '<speech-command data-speech-editor-id="builtin:breakStop:page" data-speech-target="#breakButton" speech-pattern="^break stop$" speech-function="WMOFSpeechCommands.breakStart"></speech-command>',
     '</speech-menu>'
 ].join("");
 
@@ -61,9 +62,22 @@ const entries = [
         id:"builtin:breakStart:page",
         kind:"existing",
         target:"#breakButton",
+        order:1,
         attrs:{
             "speech-pattern":"^take a break$",
-            "speech-function":"WMOFSpeechCommands.breakStart"
+            "speech-function":"WMOFSpeechCommands.breakStart",
+            "speech-index":"2"
+        }
+    },
+    {
+        id:"builtin:breakStop:page",
+        kind:"existing",
+        target:"#topMenu > speech-command:nth-of-type(2)",
+        order:0,
+        attrs:{
+            "speech-pattern":"^stop break$",
+            "speech-function":"WMOFSpeechCommands.breakStart",
+            "speech-index":"5"
         }
     },
     {
@@ -109,6 +123,38 @@ assert.equal(
             "speech-pattern"
         ),
     "^take a break$"
+);
+
+
+assert.equal(
+    window.document
+        .querySelector(
+            '[data-speech-editor-id="builtin:breakStart:page"]'
+        )
+        .getAttribute(
+            "speech-index"
+        ),
+    "2"
+);
+
+assert.deepEqual(
+    [
+        ...window.document
+            .querySelectorAll(
+                "#topMenu > speech-command"
+            )
+    ]
+        .map(
+            element =>
+                element.dataset
+                    .speechEditorId
+        )
+        .slice(0, 2),
+    [
+        "builtin:breakStop:page",
+        "builtin:breakStart:page"
+    ],
+    "persisted editor order should reorder speech-command siblings"
 );
 
 assert.equal(
