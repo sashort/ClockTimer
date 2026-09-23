@@ -635,3 +635,24 @@ assert.match(
     speechMenuSource,
     /new ParameterParser\(\s*element\.speechParameterFunc\s*\|\|\s*element\.speechFunc\s*\)/
 );
+
+assert.match(
+    speechMenuSource,
+    /!pool\.length[\s\S]*"no-candidates"[\s\S]*#finishUtterance\([\s\S]*false[\s\S]*"utteranceUnrecognized"/
+);
+assert.match(
+    speechMenuSource,
+    /reason:\s*"no-candidates"[\s\S]*fast:\s*true/
+);
+assert.match(
+    speechMicBarSource,
+    /detail\?\.reason !==\s*"no-candidates"/
+);
+assert.match(
+    speechMicBarSource,
+    /detail\?\.fast[\s\S]*250[\s\S]*2000/
+);
+assert.match(
+    speechMicBarSource,
+    /#scheduleRejectedClear\(\s*utteranceId,\s*delay = 2000\s*\)/
+);
