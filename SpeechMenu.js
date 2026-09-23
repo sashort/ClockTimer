@@ -1063,24 +1063,6 @@ class SpeechMenu {
                 frameMilliseconds;
 
             if (
-                !SpeechMenu.#utterance.committed &&
-                !SpeechMenu.#utterance.committing &&
-                SpeechMenu
-                    .#exactCandidate(
-                        SpeechMenu.#utterance
-                    ) &&
-                SpeechMenu.#utterance.silenceMilliseconds >=
-                    SpeechMenu
-                        .#candidateCommitSilenceTimeout(
-                            SpeechMenu.#utterance
-                        )
-            ) {
-                void SpeechMenu.#commitUtterance(
-                    SpeechMenu.#utterance
-                );
-            }
-
-            if (
                 SpeechMenu.#utterance &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
@@ -1263,6 +1245,8 @@ class SpeechMenu {
                 undefined,
             candidatePool: [],
             candidatePoolController:
+                undefined,
+            candidateCommitTimer:
                 undefined,
             committed: false,
             committing: false,
@@ -1730,21 +1714,11 @@ class SpeechMenu {
         utterance.candidatePool =
             pool;
 
-        if (
-            SpeechMenu
-                .#exactCandidate(
-                    utterance
-                ) &&
-            utterance.silenceMilliseconds >=
-                SpeechMenu
-                    .#candidateCommitSilenceTimeout(
-                        utterance
-                    )
-        ) {
-            await SpeechMenu.#commitUtterance(
-                utterance
+        SpeechMenu
+            .#scheduleCandidateCommit(
+                utterance,
+                revision
             );
-        }
     }
 
     static async #commitUtterance(
@@ -2303,6 +2277,20 @@ class SpeechMenu {
     static #cancelCandidateWork(
         utterance
     ) {
+        if (
+            utterance
+                ?.candidateCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateCommitTimer
+            );
+
+            utterance.candidateCommitTimer =
+                undefined;
+        }
+
         const controller =
             utterance
                 ?.candidatePoolController;
@@ -2344,7 +2332,7 @@ class SpeechMenu {
             );
     }
 
-    static #candidateCommitSilenceTimeout(
+    static #candidateCommitTimeout(
         utterance
     ) {
         return utterance
@@ -2361,6 +2349,73 @@ class SpeechMenu {
                     SpeechMenu
                         .#terminalCommitSilenceTimeout
                 );
+    }
+
+    static #scheduleCandidateCommit(
+        utterance,
+        revision
+    ) {
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing ||
+            !SpeechMenu
+                .#exactCandidate(
+                    utterance
+                )
+        ) {
+            return false;
+        }
+
+        if (
+            utterance
+                .candidateCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateCommitTimer
+            );
+        }
+
+        const delay =
+            SpeechMenu
+                .#candidateCommitTimeout(
+                    utterance
+                );
+
+        utterance.candidateCommitTimer =
+            setTimeout(
+                () => {
+                    utterance
+                        .candidateCommitTimer =
+                        undefined;
+
+                    if (
+                        SpeechMenu.#stopped ||
+                        SpeechMenu.#utterance !==
+                            utterance ||
+                        utterance.committed ||
+                        utterance.committing ||
+                        utterance.transcriptRevision !==
+                            revision ||
+                        !SpeechMenu
+                            .#exactCandidate(
+                                utterance
+                            )
+                    ) {
+                        return;
+                    }
+
+                    void SpeechMenu
+                        .#commitUtterance(
+                            utterance
+                        );
+                },
+                delay
+            );
+
+        return true;
     }
 
     static #phraseCanContinue(
