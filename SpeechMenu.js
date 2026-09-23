@@ -236,6 +236,11 @@ class SpeechMenu {
                     SpeechMenu.#onSherpaStatus
                 );
 
+                recognizer.addEventListener(
+                    "utteranceEnded",
+                    SpeechMenu.#onSherpaUtteranceEnded
+                );
+
                 await recognizer.ready;
 
                 SpeechMenu.#stream =
@@ -1054,6 +1059,43 @@ class SpeechMenu {
                     ""
             }
         );
+    };
+
+    static #onSherpaUtteranceEnded = event => {
+        const id =
+            event.detail?.utteranceId;
+
+        if (
+            SpeechMenu.#utterance?.id === id
+        ) {
+            return;
+        }
+
+        const utterance =
+            SpeechMenu.#finishedUtterances
+                .get(id);
+
+        if (!utterance) {
+            return;
+        }
+
+        SpeechMenu.#finishedUtterances
+            .delete(id);
+
+        if (
+            !utterance.transcript &&
+            !String(
+                event.detail?.transcript ||
+                ""
+            ).trim()
+        ) {
+            SpeechMenu.#emit(
+                "utteranceUnrecognized",
+                {
+                    id
+                }
+            );
+        }
     };
 
     static #stopLiveRecognition(
@@ -2854,6 +2896,10 @@ class SpeechMenu {
                 recognizer.removeEventListener(
                     "status",
                     SpeechMenu.#onSherpaStatus
+                );
+                recognizer.removeEventListener(
+                    "utteranceEnded",
+                    SpeechMenu.#onSherpaUtteranceEnded
                 );
                 recognizer.close();
             }
