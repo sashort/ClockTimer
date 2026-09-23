@@ -25,29 +25,82 @@ header('Cache-Control: no-store');
             <iframe id="appFrame" title="WMOF application" src="../../../index.html"></iframe>
             <div id="previewHint">Click a control to inspect its speech elements. Turn off the overlay to use the page.</div>
         </section>
-        <aside class="inspector" aria-label="Speech element editor">
-            <h2 id="selectedTitle">Select a control</h2>
-            <p id="selectedPath" class="subtle">Click a control in the preview.</p>
-            <label class="field">Element type
-                <select id="elementType"><option value="attribute">Selected control</option><option value="command" selected>&lt;speech-command&gt;</option><option value="modal">&lt;speech-modal&gt;</option></select>
-            </label>
-            <div class="section-title"><strong>SpeechMenu elements</strong><button id="addButton" class="small primary" type="button" disabled>+ Add</button></div>
-            <div id="elementList" class="element-list" role="list"></div>
-            <form id="attributeForm" autocomplete="off" hidden>
-                <label class="field" data-for="command attribute">speech-pattern<input name="speech-pattern" spellcheck="false"></label>
-                <label class="field" data-for="command attribute">speech-function<input name="speech-function" spellcheck="false"></label>
-                <label class="field" data-for="command attribute">speech-preproc<input name="speech-preproc" spellcheck="false"></label>
-                <details id="moreAttributes"><summary>More attributes</summary>
-                    <label class="field" data-for="command attribute">speech-preproc-context<input name="speech-preproc-context" spellcheck="false"></label>
-                    <label class="field" data-for="command attribute">speech-preproc-field<input name="speech-preproc-field" spellcheck="false"></label>
-                </details>
-                <label class="field">speech-modal<select id="modalValue"><option value="__absent__">Absent</option><option value="__empty__">Present, empty</option><option value="top-level">top-level</option><option value="__custom__">Other…</option></select><input id="modalCustom" spellcheck="false" placeholder="Custom value" hidden></label>
-                <label class="field" id="parentField" hidden>Parent &lt;speech-modal&gt;
-                    <select id="parentSelect"><option value="">None</option></select>
+        <aside class="inspector" aria-label="Speech command editor">
+            <section class="phrase-pane" aria-label="Speech phrases">
+                <div class="pane-heading">
+                    <div>
+                        <h2>Speech Phrases</h2>
+                        <p class="subtle">Candidates are grouped by source element. Speech menus expand to show their child commands.</p>
+                    </div>
+                </div>
+                <div id="phraseList" class="phrase-list" role="tree" aria-label="Configured speech phrases"></div>
+            </section>
+
+            <div id="inspectorSplitter" class="inspector-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize phrase list and attribute editor" tabindex="0">
+                <span aria-hidden="true"></span>
+            </div>
+
+            <section class="attribute-pane" aria-label="Speech attributes">
+                <div class="selection-heading">
+                    <h2 id="selectedTitle">Select a phrase or control</h2>
+                    <p id="selectedPath" class="subtle">Choose a phrase group, a speech menu, or click a control in the preview.</p>
+                </div>
+
+                <label id="speechMenuToggleField" class="speech-menu-toggle" hidden>
+                    <input id="speechMenuToggle" type="checkbox">
+                    <span>Speech Menu</span>
                 </label>
-                <button id="removeButton" class="remove" type="button">Remove selected element</button>
-            </form>
-            <p id="status" role="status" aria-live="polite"></p>
+
+                <div id="menuActions" class="menu-actions" hidden>
+                    <button id="addCommandButton" class="primary" type="button">+ Add Speech Command</button>
+                </div>
+
+                <form id="attributeForm" autocomplete="off" hidden>
+                    <label class="field" data-candidate-field>
+                        <span>speech-pattern</span>
+                        <input name="speech-pattern" spellcheck="false">
+                    </label>
+
+                    <label class="field combo-field" data-candidate-field>
+                        <span>speech-function</span>
+                        <input id="functionInput" name="speech-function" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" spellcheck="false">
+                        <div id="functionOptions" class="combo-options" role="listbox" hidden></div>
+                    </label>
+
+                    <label class="field combo-field" data-candidate-field>
+                        <span>speech-preproc</span>
+                        <input id="preprocInput" name="speech-preproc" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" spellcheck="false">
+                        <div id="preprocOptions" class="combo-options" role="listbox" hidden></div>
+                    </label>
+
+                    <div id="preprocSettings" class="preproc-settings" hidden>
+                        <label class="field">
+                            <span>speech-preproc-context</span>
+                            <input name="speech-preproc-context" list="preprocContextOptions" spellcheck="false">
+                            <datalist id="preprocContextOptions"></datalist>
+                        </label>
+                        <label class="field">
+                            <span>speech-preproc-field</span>
+                            <input name="speech-preproc-field" list="preprocFieldOptions" spellcheck="false">
+                            <datalist id="preprocFieldOptions"></datalist>
+                        </label>
+                    </div>
+
+                    <label class="field">
+                        <span>speech-modal</span>
+                        <select id="modalValue" name="speech-modal">
+                            <option value="">Blank — inherit structural scope</option>
+                            <option value="top-level">top-level</option>
+                            <option value="default">default</option>
+                        </select>
+                        <small id="modalHint" class="field-hint"></small>
+                    </label>
+
+                    <button id="removeButton" class="remove" type="button">Remove speech configuration</button>
+                </form>
+
+                <p id="status" role="status" aria-live="polite"></p>
+            </section>
         </aside>
     </main>
     <script src="editor.js"></script>
