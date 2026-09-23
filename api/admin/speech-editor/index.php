@@ -40,6 +40,7 @@ header('Cache-Control: no-store');
             </select>
         </label>
         <button id="overlayToggle" type="button" aria-pressed="true">Overlay: On</button>
+        <button id="jsonActionsButton" type="button">JSON</button>
         <button id="discardButton" type="button" disabled>Discard</button>
         <button id="saveButton" class="primary" type="button" disabled>Save changes</button>
     </header>
@@ -255,6 +256,36 @@ header('Cache-Control: no-store');
             </section>
         </aside>
     </main>
+    <dialog id="jsonActionsDialog" class="json-actions-dialog">
+        <form method="dialog" class="json-actions-shell">
+            <header class="json-actions-header">
+                <div>
+                    <h2>Speech Editor JSON</h2>
+                    <p>Execute semantic editor actions without using the GUI. Commands can be single actions or atomic batches.</p>
+                </div>
+                <button id="jsonActionsClose" class="dialog-close" type="button" aria-label="Close">×</button>
+            </header>
+
+            <div class="json-actions-toolbar">
+                <button id="jsonActionsExample" type="button">Example</button>
+                <button id="jsonActionsManifest" type="button">Manifest</button>
+                <button id="jsonActionsState" type="button">State</button>
+                <button id="jsonActionsExecute" class="primary" type="button">Execute JSON</button>
+            </div>
+
+            <label class="json-actions-field">
+                <span>Command JSON</span>
+                <textarea id="jsonActionsInput" rows="16" spellcheck="false" autocomplete="off" placeholder='{"action":"addSpeechCommand","input":{"parentId":"edit:menu:example","attrs":{"speech-pattern":"^example$","speech-function":"WMOFActions.openTripLog"}}}'></textarea>
+            </label>
+
+            <label class="json-actions-field">
+                <span>Result</span>
+                <textarea id="jsonActionsOutput" rows="12" spellcheck="false" readonly></textarea>
+            </label>
+        </form>
+    </dialog>
+
+    <script src="EditorActionFunctions.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/EditorActionFunctions.js'), ENT_QUOTES)?>"></script>
     <script src="RegexBuilder.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/RegexBuilder.js'), ENT_QUOTES)?>"></script>
     <script src="editor.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.js'), ENT_QUOTES)?>"></script>
 </body>
