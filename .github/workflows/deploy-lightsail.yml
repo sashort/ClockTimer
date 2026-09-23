@@ -96,7 +96,6 @@ jobs:
 
              if [ "$SHERPA_MISSING" = true ]; then
                SHERPA_TMP=$(mktemp -d)
-               trap 'rm -rf "$SHERPA_TMP"' EXIT
                echo "Installing Sherpa ${SHERPA_VERSION} English streaming WASM runtime."
                curl -fL \
                  --retry 5 \
@@ -118,7 +117,6 @@ jobs:
                done
 
                rm -rf "$SHERPA_TMP"
-               trap - EXIT
              fi
 
              echo "Sherpa runtime assets:"
