@@ -188,8 +188,9 @@ const canManageAll=<?=$superuserJson?>;
 const $=id=>document.getElementById(id);
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
 const toLocalInput=seconds=>{
-    const d=new Date(seconds*1000-d.getTimezoneOffset()*60000);
-    return d.toISOString().slice(0,16);
+    const d=new Date(seconds*1000);
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
 };
 const fromLocalInput=value=>Math.floor(new Date(value).getTime()/1000);
 const formatTime=seconds=>seconds?new Date(seconds*1000).toLocaleString():'Never';
@@ -199,7 +200,7 @@ const setDefaultExpiry=()=>{
 };
 function permissionOptions(selected){
     return initialPermissions.map(item=>
-        `<option value="${item.value}" ${Number(selected)===item.value?'selected':''}>${item.name}</option>`
+        `<option value="${item.value}" ${Number(selected)===item.value?'selected':''}>${escapeHtml(item.name)}</option>`
     ).join('');
 }
 $('permission').innerHTML=permissionOptions();
