@@ -46,7 +46,25 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "$LAMP_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$LAMP_HOST" >> ~/.ssh/known_hosts
+          : > ~/.ssh/known_hosts
+
+          connected=0
+          for attempt in $(seq 1 30); do
+            if ssh-keyscan -T 10 -H "$LAMP_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            then
+              connected=1
+              break
+            fi
+
+            echo "SSH host scan failed (attempt $attempt); retrying."
+            sleep 10
+          done
+
+          if [ "$connected" -ne 1 ]; then
+            echo "Unable to reach Lightsail SSH endpoint." >&2
+            exit 1
+          fi
+
           chmod 600 ~/.ssh/known_hosts
 
       - name: Package speech runtime
@@ -69,13 +87,30 @@ jobs:
           LAMP_USER: ${{ secrets.LAMP_USER }}
         run: |
           set -euo pipefail
-          scp \
-            -i ~/.ssh/id_ed25519 \
-            /tmp/clocktimer-speech-deploy.tgz \
-            speech/provision-lightsail.sh \
-            speech/verify-local.mjs \
-            speech/configure-apache.sh \
-            "$LAMP_USER@$LAMP_HOST:/tmp/"
+          uploaded=0
+
+          for attempt in $(seq 1 20); do
+            if scp \
+              -o ConnectTimeout=15 \
+              -i ~/.ssh/id_ed25519 \
+              /tmp/clocktimer-speech-deploy.tgz \
+              speech/provision-lightsail.sh \
+              speech/verify-local.mjs \
+              speech/configure-apache.sh \
+              "$LAMP_USER@$LAMP_HOST:/tmp/"
+            then
+              uploaded=1
+              break
+            fi
+
+            echo "Speech upload failed (attempt $attempt); retrying."
+            sleep 10
+          done
+
+          if [ "$uploaded" -ne 1 ]; then
+            echo "Unable to upload speech runtime." >&2
+            exit 1
+          fi
 
       - name: Launch detached speech provisioning
         shell: bash
@@ -85,38 +120,55 @@ jobs:
         run: |
           set -euo pipefail
 
-          ssh \
-            -o ConnectTimeout=15 \
-            -i ~/.ssh/id_ed25519 \
-            "$LAMP_USER@$LAMP_HOST" \
-            "set -euo pipefail
-             STATUS=/tmp/clocktimer-speech-provision.status
-             PIDFILE=/tmp/clocktimer-speech-provision.pid
-             LOG=/tmp/clocktimer-speech-provision.log
+          launched=0
 
-             if [ -f \"\$PIDFILE\" ]; then
-               OLD_PID=\$(cat \"\$PIDFILE\" 2>/dev/null || true)
-               if [ -n \"\$OLD_PID\" ] && kill -0 \"\$OLD_PID\" 2>/dev/null; then
-                 echo \"Provisioning already running as PID \$OLD_PID\"
-                 exit 0
+          for attempt in $(seq 1 20); do
+            if
+            ssh \
+              -o ConnectTimeout=15 \
+              -i ~/.ssh/id_ed25519 \
+              "$LAMP_USER@$LAMP_HOST" \
+              "set -euo pipefail
+               STATUS=/tmp/clocktimer-speech-provision.status
+               PIDFILE=/tmp/clocktimer-speech-provision.pid
+               LOG=/tmp/clocktimer-speech-provision.log
+  
+               if [ -f \"\$PIDFILE\" ]; then
+                 OLD_PID=\$(cat \"\$PIDFILE\" 2>/dev/null || true)
+                 if [ -n \"\$OLD_PID\" ] && kill -0 \"\$OLD_PID\" 2>/dev/null; then
+                   echo \"Provisioning already running as PID \$OLD_PID\"
+                   exit 0
+                 fi
                fi
-             fi
+  
+               rm -f \"\$STATUS\" \"\$PIDFILE\"
+               : > \"\$LOG\"
+  
+               cp /tmp/provision-lightsail.sh /tmp/clocktimer-speech-provision.sh
+               cp /tmp/verify-local.mjs /tmp/verify-speech-local.mjs
+               chmod 755 /tmp/clocktimer-speech-provision.sh
+  
+               nohup env \
+                 WHISPER_CPP_REF='$WHISPER_CPP_REF' \
+                 bash /tmp/clocktimer-speech-provision.sh \
+                 >\"\$LOG\" 2>&1 </dev/null &
+  
+               NEW_PID=\$!
+               echo \"\$NEW_PID\" > \"\$PIDFILE\"
+               echo \"Started detached provisioning as PID \$NEW_PID\""
+            then
+              launched=1
+              break
+            fi
 
-             rm -f \"\$STATUS\" \"\$PIDFILE\"
-             : > \"\$LOG\"
+            echo "Detached provisioning launch failed (attempt $attempt); retrying."
+            sleep 10
+          done
 
-             cp /tmp/provision-lightsail.sh /tmp/clocktimer-speech-provision.sh
-             cp /tmp/verify-local.mjs /tmp/verify-speech-local.mjs
-             chmod 755 /tmp/clocktimer-speech-provision.sh
-
-             nohup env \
-               WHISPER_CPP_REF='$WHISPER_CPP_REF' \
-               bash /tmp/clocktimer-speech-provision.sh \
-               >\"\$LOG\" 2>&1 </dev/null &
-
-             NEW_PID=\$!
-             echo \"\$NEW_PID\" > \"\$PIDFILE\"
-             echo \"Started detached provisioning as PID \$NEW_PID\""
+          if [ "$launched" -ne 1 ]; then
+            echo "Unable to launch detached speech provisioning." >&2
+            exit 1
+          fi
 
       - name: Wait for detached speech provisioning
         shell: bash
