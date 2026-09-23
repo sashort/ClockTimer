@@ -109,12 +109,22 @@
         }
     })();
 
-    const speechDiagnosticsEnabled =
+    const speechSearchParams =
         new URLSearchParams(
             location.search
-        ).has(
+        );
+
+    const speechDiagnosticsEnabled =
+        speechSearchParams.has(
             "speech-diagnostics"
         );
+
+    const speechPipeline =
+        speechSearchParams.get(
+            "speech-pipeline"
+        ) === "silero"
+            ? "silero"
+            : "raw";
 
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
@@ -186,10 +196,28 @@
                             );
                         }
 
+                        if (
+                            speechPipeline === "silero" &&
+                            !globalThis.SileroVad
+                        ) {
+                            await loadClassicScript(
+                                "SileroVad.js"
+                            );
+                        }
+
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
                                 "SpeechMenu.js"
                             );
+                        }
+
+                        if (
+                            !globalThis.SpeechMenu.started &&
+                            globalThis.SpeechMenu.pipeline !==
+                                speechPipeline
+                        ) {
+                            globalThis.SpeechMenu.pipeline =
+                                speechPipeline;
                         }
 
                         if (
