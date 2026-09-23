@@ -236,7 +236,19 @@ assert.match(speechMenuSource, /provisional:\s*!execute/);
 assert.match(speechMenuSource, /"utteranceUnrecognized"[\s\S]*transcript/);
 assert.match(
     speechMicBarSource,
-    /--speech-load-progress[\s\S]*#003b73[\s\S]*#a9ddf7/
+    /--speech-load-clip-right[\s\S]*#003b73[\s\S]*#a9ddf7/
+);
+assert.match(
+    speechMicBarSource,
+    /clip-path:[\s\S]*var\(--speech-load-clip-right\)/
+);
+assert.match(
+    speechMicBarSource,
+    /@keyframes speech-load-wave[\s\S]*background-position/
+);
+assert.match(
+    speechMicBarSource,
+    /background-size:[\s\S]*300% 100%/
 );
 assert.match(
     speechMicBarSource,
