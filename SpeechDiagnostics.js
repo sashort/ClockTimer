@@ -11,7 +11,9 @@
             deviceMemory: navigator.deviceMemory || null,
             captureSettings: null,
             recognizer: null,
-            sampleRate: null
+            pipeline: null,
+            sampleRate: null,
+            vadMaxProcessMilliseconds: 0
         };
 
         constructor() {
@@ -78,7 +80,7 @@
                     input { accent-color: #ffc220; }
                     .summary {
                         display: grid;
-                        grid-template-columns: repeat(5, minmax(70px, 1fr));
+                        grid-template-columns: repeat(6, minmax(70px, 1fr));
                         gap: 6px;
                         padding: 8px 12px;
                         border-bottom: 1px solid rgb(169 221 247 / 18%);
@@ -169,6 +171,7 @@
                         <div class="metric"><b id="first">—</b><small>median first</small></div>
                         <div class="metric"><b id="final">—</b><small>median final</small></div>
                         <div class="metric"><b id="decode">—</b><small>max decode</small></div>
+                        <div class="metric"><b id="vad">—</b><small>max VAD</small></div>
                     </div>
                     <div class="table-wrap">
                         <table>
@@ -229,6 +232,7 @@
                 "utteranceTranscriptChanged",
                 "utteranceFinished",
                 "speechRecognitionTiming",
+                "speechVadChanged",
                 "speechCommandMatched",
                 "speechCommandExecuted",
                 "utteranceUnrecognized",
@@ -301,9 +305,30 @@
                     detail.captureSettings || {};
                 this.#session.recognizer =
                     detail.recognizer || null;
+                this.#session.pipeline =
+                    detail.pipeline || "raw";
                 this.#session.sampleRate =
                     detail.sampleRate || null;
                 this.#renderCapture();
+                return;
+            }
+
+            if (
+                type === "speechVadChanged"
+            ) {
+                this.#session
+                    .vadMaxProcessMilliseconds =
+                    Math.max(
+                        this.#session
+                            .vadMaxProcessMilliseconds ||
+                            0,
+                        Number(
+                            detail
+                                .maxProcessMilliseconds
+                        ) || 0
+                    );
+
+                this.#render();
                 return;
             }
 
@@ -386,7 +411,7 @@
 
             this.#shadow.getElementById("device")
                 .textContent =
-                    `${short} · ${navigator.hardwareConcurrency || "?"} cores`;
+                    `${this.#session.pipeline || "raw"} · ${short} · ${navigator.hardwareConcurrency || "?"} cores`;
         }
 
         #renderCapture() {
@@ -494,6 +519,15 @@
             this.#shadow.getElementById("decode")
                 .textContent =
                     this.#milliseconds(maxDecode);
+
+            this.#shadow.getElementById("vad")
+                .textContent =
+                    this.#session.pipeline === "silero"
+                        ? this.#milliseconds(
+                            this.#session
+                                .vadMaxProcessMilliseconds
+                        )
+                        : "—";
 
             const body =
                 this.#shadow.getElementById("body");
