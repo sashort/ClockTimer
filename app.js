@@ -12670,8 +12670,38 @@
                     container,
                     modalMode
                 );
-            const element = document.createElement("speech-command");
-            element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
+
+            const editorId =
+                `builtin:${key}:${container.id || "page"}`;
+
+            let element =
+                [
+                    ...speechMenu
+                        .querySelectorAll(
+                            ":scope > speech-command[data-speech-editor-id]"
+                        )
+                ]
+                    .find(
+                        candidate =>
+                            candidate.dataset
+                                .speechEditorId ===
+                            editorId
+                    );
+
+            if (!element) {
+                element =
+                    document.createElement(
+                        "speech-command"
+                    );
+
+                element.dataset
+                    .speechEditorId =
+                    editorId;
+
+                speechMenu.append(
+                    element
+                );
+            }
             const speechTargets = {
                 readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
@@ -12688,7 +12718,6 @@
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
-            speechMenu.append(element);
         };
         if (englishSpeech) {
             for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
