@@ -87,7 +87,6 @@ if ($sessionUser !== null) {
 }
 
 $trainingOnly =
-    $trainingRequested ||
     !$canPreview;
 
 $accessMode =
@@ -110,7 +109,7 @@ header('Referrer-Policy: no-referrer');
     <title>WMOF Speech Command Editor</title>
     <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
-<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
+<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-training-requested="<?=$trainingRequested ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
         <div class="viewport-controls" aria-label="Preview viewport controls">
@@ -134,6 +133,7 @@ header('Referrer-Policy: no-referrer');
                 <option value="authoring">Authoring</option>
                 <option value="macro">Macro</option>
                 <option value="regex">Regex</option>
+                <option value="training">Training</option>
             </select>
         </label>
         <button id="trainingModeButton" type="button" aria-pressed="false">Training Mode</button>
