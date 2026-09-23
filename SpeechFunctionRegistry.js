@@ -104,6 +104,28 @@
 
         setRole,
 
+        ensureRole(
+            name,
+            role
+        ) {
+            const normalizedName =
+                normalizeName(name);
+
+            if (
+                normalizedName &&
+                !roles.has(
+                    normalizedName
+                )
+            ) {
+                setRole(
+                    normalizedName,
+                    role
+                );
+            }
+
+            return api;
+        },
+
         clearRole(name) {
             return setRole(
                 name,
