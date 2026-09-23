@@ -1,4 +1,5 @@
 name: Remove speech backend
+# one-time teardown workflow
 
 on:
   push:
