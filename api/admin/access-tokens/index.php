@@ -16,42 +16,20 @@ $browserRequested =
 $pdo = db();
 
 $requireAccessTokenSchema = static function () use ($pdo): void {
-    $databaseName =
-        (string) (
-            api_config()[
-                'database'
-            ][
-                'name'
-            ] ??
-            ''
-        );
-
-    $statement =
-        $pdo->prepare(
-            'SELECT COLUMN_NAME '
-            . 'FROM information_schema.COLUMNS '
-            . 'WHERE TABLE_SCHEMA = :schema_name '
-            . 'AND TABLE_NAME = :table_name'
-        );
-
+    $databaseName = (string) (api_config()['database']['name'] ?? '');
+    $statement = $pdo->prepare(
+        'SELECT COLUMN_NAME FROM information_schema.COLUMNS '
+        . 'WHERE TABLE_SCHEMA = :schema_name AND TABLE_NAME = :table_name'
+    );
     $statement->execute([
-        ':schema_name' =>
-            $databaseName,
-        ':table_name' =>
-            'access_tokens',
+        ':schema_name' => $databaseName,
+        ':table_name' => 'access_tokens',
     ]);
 
-    $actual =
-        array_fill_keys(
-            array_map(
-                'strval',
-                $statement
-                    ->fetchAll(
-                        PDO::FETCH_COLUMN
-                    )
-            ),
-            true
-        );
+    $actual = array_fill_keys(
+        array_map('strval', $statement->fetchAll(PDO::FETCH_COLUMN)),
+        true
+    );
 
     $required = [
         'id',
@@ -60,6 +38,7 @@ $requireAccessTokenSchema = static function () use ($pdo): void {
         'token_hash',
         'token_hint',
         'permissions',
+        'new_user',
         'uses_remaining',
         'delete_on_deplete',
         'requires_authentication',
@@ -69,21 +48,6 @@ $requireAccessTokenSchema = static function () use ($pdo): void {
         'last_used_at',
     ];
 
-    $missing =
-        array_values(
-            array_filter(
-                $required,
-                static fn (
-                    string $column
-                ): bool =>
-                    !isset(
-                        $actual[
-                            $column
-                        ]
-                    )
-            )
-        );
-
     if ($actual === []) {
         api_error(
             'The access_tokens table is not installed in the configured WMOF database.',
@@ -92,13 +56,15 @@ $requireAccessTokenSchema = static function () use ($pdo): void {
         );
     }
 
+    $missing = array_values(array_filter(
+        $required,
+        static fn(string $column): bool => !isset($actual[$column])
+    ));
+
     if ($missing !== []) {
         api_error(
             'The access_tokens table is missing required columns: '
-            . implode(
-                ', ',
-                $missing
-            )
+            . implode(', ', $missing)
             . '.',
             503,
             'access_token_schema'
@@ -107,14 +73,12 @@ $requireAccessTokenSchema = static function () use ($pdo): void {
 };
 
 $tokenFormRedeemed = false;
-$authorization = null;
 
 if ($method === 'GET' && $browserRequested) {
-    $authorization =
-        existing_guarded_access(
-            [PERMISSION_GRANT_TOKEN_ACCESS],
-            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
-        );
+    $authorization = existing_guarded_access(
+        [PERMISSION_GRANT_TOKEN_ACCESS],
+        ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+    );
 
     if ($authorization === null) {
         render_access_token_prompt(
@@ -123,102 +87,275 @@ if ($method === 'GET' && $browserRequested) {
             $consoleRequested ? '?console=1' : ''
         );
     }
-} elseif (
-    $method === 'POST' &&
-    access_token_form_value() !== null
-) {
+} elseif ($method === 'POST' && access_token_form_value() !== null) {
     $requireAccessTokenSchema();
-
-    $authorization =
-        authorize_guarded_access(
-            [PERMISSION_GRANT_TOKEN_ACCESS],
-            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
-            true
-        );
-
+    $authorization = authorize_guarded_access(
+        [PERMISSION_GRANT_TOKEN_ACCESS],
+        ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+        true
+    );
     $tokenFormRedeemed = true;
 } else {
-    $authorization =
-        authorize_guarded_access(
-            [PERMISSION_GRANT_TOKEN_ACCESS],
-            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
-        );
+    $authorization = authorize_guarded_access(
+        [PERMISSION_GRANT_TOKEN_ACCESS],
+        ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+    );
 }
 
-$effectivePermissions =
-    (int) (
-        $authorization[
-            'permissions'
-        ] ??
-        0
-    );
+$effectivePermissions = (int) ($authorization['permissions'] ?? 0);
+$isSessionAuthorization = ($authorization['mode'] ?? '') === 'session';
+$ownerUserId = $isSessionAuthorization
+    ? (int) $authorization['user']['id']
+    : null;
+$isSuperuser = permission_mask_allows(
+    $effectivePermissions,
+    PERMISSION_SUPERUSER
+);
+$canGrantNewUser = permission_mask_allows(
+    $effectivePermissions,
+    PERMISSION_CREATE_USERS
+);
 
-if (($authorization['mode'] ?? '') === 'session') {
-    $actor = $authorization['user'];
-} else {
-    // A delegated token gets only the permission carried by the token.
-    // Do not inherit the token owner's complete account permission mask.
-    $actor = [
-        'id' =>
-            (int) (
-                $authorization[
-                    'owner_user_id'
-                ] ??
-                0
-            ),
-        'username' =>
-            'delegated-token',
-        'permissions' =>
-            $effectivePermissions,
+$allPermissionRows = $pdo
+    ->query('SELECT value, name, description FROM permissions ORDER BY value')
+    ->fetchAll();
+
+$grantablePermissions = [];
+if ($canGrantNewUser) {
+    $grantablePermissions[0] = [
+        'value' => 0,
+        'name' => 'New User',
+        'description' => 'Allow this token to create a new account. Other selected permissions become that account\'s initial permissions.',
     ];
 }
 
-$isSuperuser =
-    permission_mask_allows(
-        $effectivePermissions,
-        PERMISSION_SUPERUSER
-    );
+foreach ($allPermissionRows as $row) {
+    $value = (int) $row['value'];
 
-$permissionRows = static function () use ($pdo, $actor): array {
-    $rows = $pdo
-        ->query('SELECT value, name, description FROM permissions ORDER BY value')
-        ->fetchAll();
+    if (!permission_mask_allows($effectivePermissions, $value)) {
+        continue;
+    }
 
-    $result = [];
+    $grantablePermissions[$value] = [
+        'value' => $value,
+        'name' => ucwords(str_replace('_', ' ', (string) $row['name'])),
+        'description' => (string) $row['description'],
+    ];
+}
 
-    foreach ($rows as $row) {
-        $value = (int) $row['value'];
+$knownPermissionRows = [];
+foreach ($allPermissionRows as $row) {
+    $knownPermissionRows[(int) $row['value']] = [
+        'name' => ucwords(str_replace('_', ' ', (string) $row['name'])),
+        'description' => (string) $row['description'],
+    ];
+}
 
-        if (!has_permission($actor, $value)) {
-            continue;
+$parsePermissionSelection = static function (mixed $value) use (
+    $grantablePermissions,
+    $effectivePermissions,
+    $canGrantNewUser
+): array {
+    if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+        $mask = (int) $value;
+
+        if (
+            $mask < 0 ||
+            ($mask & ~PERMISSION_ALL) !== 0 ||
+            ($mask !== 0 && !permission_mask_allows($effectivePermissions, $mask))
+        ) {
+            api_error(
+                'The selected permissions are not grantable by this user.',
+                403,
+                'permission_required'
+            );
         }
 
-        $result[] = [
-            'value' => $value,
-            'name' => (string) $row['name'],
-            'description' => (string) $row['description'],
+        return [
+            'mask' => $mask,
+            'newUser' => false,
         ];
     }
 
-    return $result;
+    if (!is_array($value)) {
+        api_error('permissions must be a list.', 422, 'invalid_argument');
+    }
+
+    $mask = 0;
+    $newUser = false;
+
+    foreach ($value as $rawPermission) {
+        if (
+            !is_int($rawPermission) &&
+            !(is_string($rawPermission) && ctype_digit($rawPermission))
+        ) {
+            api_error('A selected permission is invalid.', 422, 'invalid_argument');
+        }
+
+        $permission = (int) $rawPermission;
+
+        if ($permission === 0) {
+            if (!$canGrantNewUser) {
+                api_error(
+                    'New User permission is not grantable by this user.',
+                    403,
+                    'permission_required'
+                );
+            }
+
+            $newUser = true;
+            continue;
+        }
+
+        if (!isset($grantablePermissions[$permission])) {
+            api_error(
+                'The selected permissions are not grantable by this user.',
+                403,
+                'permission_required'
+            );
+        }
+
+        $mask |= $permission;
+    }
+
+    return [
+        'mask' => $mask,
+        'newUser' => $newUser,
+    ];
 };
 
-$tokenRows = static function () use ($pdo, $actor, $isSuperuser): array {
+$optionalCounter = static function (mixed $value, string $name): ?int {
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    if (is_string($value) && ctype_digit($value)) {
+        $value = (int) $value;
+    }
+
+    if (!is_int($value) || $value < 0 || $value > 2147483647) {
+        api_error(
+            "$name must be blank or an integer between 0 and 2147483647.",
+            422,
+            'invalid_argument'
+        );
+    }
+
+    return $value;
+};
+
+$positiveId = static function (mixed $value): int {
+    if (is_string($value) && ctype_digit($value)) {
+        $value = (int) $value;
+    }
+
+    if (!is_int($value) || $value < 1) {
+        api_error('id must be a positive integer.', 422, 'invalid_argument');
+    }
+
+    return $value;
+};
+
+$boolean = static function (mixed $value, string $name): bool {
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    if ($value === 0 || $value === 1 || $value === '0' || $value === '1') {
+        return (bool) $value;
+    }
+
+    api_error("$name must be a boolean.", 422, 'invalid_argument');
+};
+
+$expiration = static function (mixed $value, bool $defaultOneHour = false): int {
+    if (($value === null || $value === '') && $defaultOneHour) {
+        return time() + 3600;
+    }
+
+    if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+        $seconds = (int) $value;
+    } elseif (is_string($value)) {
+        try {
+            $seconds = (new DateTimeImmutable($value))->getTimestamp();
+        } catch (Throwable) {
+            api_error(
+                'expiresAt must be a valid date/time.',
+                422,
+                'invalid_argument'
+            );
+        }
+    } else {
+        api_error(
+            'expiresAt must be a Unix timestamp or date/time string.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    if ($seconds < 1) {
+        api_error(
+            'expiresAt must be greater than zero.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    return $seconds;
+};
+
+$tokenForEdit = static function (int $id) use (
+    $pdo,
+    $isSuperuser,
+    $isSessionAuthorization,
+    $ownerUserId
+): array {
+    $sql = 'SELECT * FROM access_tokens WHERE id = :id';
+    $params = [':id' => $id];
+
+    if (!$isSuperuser) {
+        if ($isSessionAuthorization) {
+            $sql .= ' AND owner_user_id = :owner_user_id';
+            $params[':owner_user_id'] = $ownerUserId;
+        } else {
+            $sql .= ' AND owner_user_id IS NULL';
+        }
+    }
+
+    $statement = $pdo->prepare($sql);
+    $statement->execute($params);
+    $row = $statement->fetch();
+
+    if (!$row) {
+        api_error('Access token was not found.', 404, 'token_not_found');
+    }
+
+    return $row;
+};
+
+$tokenRows = static function () use (
+    $pdo,
+    $isSuperuser,
+    $isSessionAuthorization,
+    $ownerUserId,
+    $knownPermissionRows
+): array {
     $sql =
         'SELECT t.id, t.owner_user_id, t.name, t.token_hint, t.permissions, '
-        . 'p.name AS permission_name, p.description AS permission_description, '
-        . 't.uses_remaining, t.delete_on_deplete, t.requires_authentication, '
-        . 't.expires_at, t.created_at, t.updated_at, t.last_used_at, '
-        . 'u.username AS owner_username '
+        . 't.new_user, t.uses_remaining, t.delete_on_deplete, '
+        . 't.requires_authentication, t.expires_at, t.created_at, '
+        . 't.updated_at, t.last_used_at, u.username AS owner_username '
         . 'FROM access_tokens t '
-        . 'INNER JOIN permissions p ON p.value = t.permissions '
-        . 'INNER JOIN users u ON u.id = t.owner_user_id ';
-
+        . 'LEFT JOIN users u ON u.id = t.owner_user_id ';
     $params = [];
 
     if (!$isSuperuser) {
-        $sql .= 'WHERE t.owner_user_id = :owner_user_id ';
-        $params[':owner_user_id'] = (int) $actor['id'];
+        if ($isSessionAuthorization) {
+            $sql .= 'WHERE t.owner_user_id = :owner_user_id ';
+            $params[':owner_user_id'] = $ownerUserId;
+        } else {
+            $sql .= 'WHERE t.owner_user_id IS NULL ';
+        }
     }
 
     $sql .= 'ORDER BY t.created_at DESC, t.id DESC';
@@ -227,35 +364,71 @@ $tokenRows = static function () use ($pdo, $actor, $isSuperuser): array {
     $statement->execute($params);
     $rows = $statement->fetchAll();
     $now = time();
+    $result = [];
 
-    return array_map(
-        static fn(array $row): array => [
+    foreach ($rows as $row) {
+        $mask = (int) $row['permissions'];
+        $permissionValues = [];
+        $permissionNames = [];
+
+        if ((bool) $row['new_user']) {
+            $permissionValues[] = 0;
+            $permissionNames[] = 'New User';
+        }
+
+        foreach ($knownPermissionRows as $value => $definition) {
+            if (($mask & $value) === $value) {
+                $permissionValues[] = $value;
+                $permissionNames[] = $definition['name'];
+            }
+        }
+
+        if ($permissionNames === []) {
+            $permissionNames[] = 'None';
+        }
+
+        $usesRemaining = $row['uses_remaining'] === null
+            ? null
+            : (int) $row['uses_remaining'];
+
+        $status = (int) $row['expires_at'] <= $now
+            ? 'expired'
+            : (($usesRemaining !== null && $usesRemaining <= 0)
+                ? 'depleted'
+                : 'active');
+
+        $result[] = [
             'id' => (int) $row['id'],
-            'ownerUserId' => (int) $row['owner_user_id'],
-            'ownerUsername' => (string) $row['owner_username'],
+            'ownerUserId' => $row['owner_user_id'] === null
+                ? null
+                : (int) $row['owner_user_id'],
+            'ownerUsername' => $row['owner_user_id'] === null
+                ? 'System'
+                : (string) ($row['owner_username'] ?? 'Unknown'),
             'name' => (string) $row['name'],
             'tokenHint' => (string) $row['token_hint'],
-            'permissions' => (int) $row['permissions'],
-            'permissionName' => (string) $row['permission_name'],
-            'permissionDescription' => (string) $row['permission_description'],
-            'counter' => (int) $row['uses_remaining'],
+            'permissions' => $permissionValues,
+            'permissionMask' => $mask,
+            'permissionNames' => $permissionNames,
+            'newUser' => (bool) $row['new_user'],
+            'counter' => $usesRemaining,
             'deleteOnDeplete' => (bool) $row['delete_on_deplete'],
             'requiresAuthentication' => (bool) $row['requires_authentication'],
             'expiresAt' => (int) $row['expires_at'],
             'createdAt' => (int) $row['created_at'],
             'updatedAt' => (int) $row['updated_at'],
-            'lastUsedAt' => $row['last_used_at'] === null ? null : (int) $row['last_used_at'],
-            'status' =>
-                (int) $row['expires_at'] <= $now
-                    ? 'expired'
-                    : ((int) $row['uses_remaining'] <= 0 ? 'depleted' : 'active'),
-        ],
-        $rows
-    );
+            'lastUsedAt' => $row['last_used_at'] === null
+                ? null
+                : (int) $row['last_used_at'],
+            'status' => $status,
+        ];
+    }
+
+    return $result;
 };
 
 $renderConsole = static function () use (
-    $permissionRows,
+    $grantablePermissions,
     $isSuperuser,
     $requireAccessTokenSchema
 ): never {
@@ -266,7 +439,7 @@ $renderConsole = static function () use (
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
     );
     $permissionsJson = json_encode(
-        $permissionRows(),
+        array_values($grantablePermissions),
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
     );
     $superuserJson = $isSuperuser ? 'true' : 'false';
@@ -292,30 +465,47 @@ $renderConsole = static function () use (
 body{margin:0;background:#081d40;color:#fff;font:14px/1.45 system-ui,sans-serif}
 main{max-width:1180px;margin:auto;padding:28px}
 header{display:flex;align-items:flex-start;gap:18px;margin-bottom:20px}
-header>div{flex:1}h1{margin:0 0 5px;font-size:28px}h2{margin:0;font-size:18px}
+header>div{flex:1}
+h1{margin:0 0 5px;font-size:28px}
+h2{margin:0;font-size:18px}
 p{margin:4px 0;color:#bcd7e9}
 .panel{background:#0d2d58;border:1px solid #6f96b8;border-radius:12px;padding:18px;margin-bottom:18px}
-.grid{display:grid;grid-template-columns:1.3fr 1.1fr .6fr 1.15fr;gap:12px}
+.grid{display:grid;grid-template-columns:1.3fr .6fr 1.15fr;gap:12px}
 .field{display:grid;gap:5px;color:#c6dfef;font-weight:700;font-size:12px}
-.field input,.field select{width:100%;min-width:0;padding:9px 10px;color:#fff;background:#173a61;border:1px solid #789fbe;border-radius:7px;font:inherit}
+.field input{width:100%;min-width:0;padding:9px 10px;color:#fff;background:#173a61;border:1px solid #789fbe;border-radius:7px;font:inherit}
+.permission-field{margin-top:14px;padding:11px;border:1px solid #587fa2;border-radius:8px}
+.permission-field legend{padding:0 6px;color:#c6dfef;font-size:12px;font-weight:800}
+.permission-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px 12px}
+.permission-list label{display:flex;align-items:flex-start;gap:7px;color:#d9ebf6}
+.permission-list small{display:block;color:#91b6d5;font-size:10px;font-weight:400}
 .checks{display:flex;align-items:center;gap:22px;margin-top:14px;flex-wrap:wrap}
 .checks label{display:flex;align-items:center;gap:7px;color:#d9ebf6}
+input[type=checkbox]{accent-color:#ffc220}
 button{padding:9px 13px;border:1px solid #91b6d5;border-radius:7px;background:#354657;color:#fff;font:inherit;font-weight:700;cursor:pointer}
-button.primary{background:#0053e2}button.danger{background:#6c2730;border-color:#d26b76}
-button:disabled{opacity:.5;cursor:default}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
-#message{min-height:1.4em;margin-top:8px;color:#a9ddf7}#message.error{color:#ff9c9c}
+button.primary{background:#0053e2}
+button.danger{background:#6c2730;border-color:#d26b76}
+button:disabled{opacity:.5;cursor:default}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+#message{min-height:1.4em;margin-top:8px;color:#a9ddf7}
+#message.error{color:#ff9c9c}
 [hidden]{display:none!important}
 .token-reveal{display:grid;gap:8px;margin-top:15px;padding:12px;border:1px solid #ffc220;border-radius:8px;background:#2c2b22}
 .token-reveal code{display:block;padding:9px;background:#061b3d;border-radius:6px;overflow-wrap:anywhere;user-select:all}
-.tokens{display:grid;gap:10px}.token-card{padding:14px;border:1px solid #587fa2;border-radius:9px;background:#102e53}
-.token-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}.token-head strong{font-size:15px}.hint{font:12px/1.2 ui-monospace,monospace;color:#9fc9e8}
+.tokens{display:grid;gap:10px}
+.token-card{padding:14px;border:1px solid #587fa2;border-radius:9px;background:#102e53}
+.token-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.token-head strong{font-size:15px}
+.hint{font:12px/1.2 ui-monospace,monospace;color:#9fc9e8}
 .badge{margin-left:auto;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase}
-.badge.active{background:#1d6d4d}.badge.depleted{background:#735e20}.badge.expired{background:#6b3138}
-.owner{font-size:11px;color:#9fc9e8}.token-card .grid{grid-template-columns:1.2fr 1fr .55fr 1.05fr}
+.badge.active{background:#1d6d4d}
+.badge.depleted{background:#735e20}
+.badge.expired{background:#6b3138}
+.owner{font-size:11px;color:#9fc9e8}
+.token-card .grid{grid-template-columns:1.2fr .55fr 1.05fr}
 .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;color:#9fc9e8;font-size:11px}
 .empty{padding:22px;text-align:center;color:#9fc9e8;border:1px dashed #587fa2;border-radius:8px}
 @media(max-width:850px){.grid,.token-card .grid{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){main{padding:14px}.grid,.token-card .grid{grid-template-columns:1fr}}
+@media(max-width:560px){main{padding:14px}.grid,.token-card .grid{grid-template-columns:1fr}.permission-list{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -331,12 +521,15 @@ button:disabled{opacity:.5;cursor:default}.actions{display:flex;gap:8px;flex-wra
 <h2 id="create-title">Create token</h2>
 <div class="grid">
 <label class="field"><span>Name</span><input id="name" maxlength="191" required placeholder="Speech editor handoff"></label>
-<label class="field"><span>Permission</span><select id="permission"></select></label>
-<label class="field"><span>Counter</span><input id="counter" type="number" min="0" step="1" value="1"></label>
+<label class="field"><span>Count <small>(optional)</small></span><input id="counter" type="number" min="0" step="1" placeholder="Unlimited"></label>
 <label class="field"><span>Expires</span><input id="expires" type="datetime-local"></label>
 </div>
+<fieldset id="createPermissions" class="permission-field">
+<legend>Permissions</legend>
+<div class="permission-list"></div>
+</fieldset>
 <div class="checks">
-<label><input id="deleteOnDeplete" type="checkbox" checked> Delete on deplete</label>
+<label><input id="deleteOnDeplete" type="checkbox" disabled> Delete on deplete</label>
 <label><input id="requiresAuthentication" type="checkbox" checked> Requires authentication</label>
 </div>
 <div class="actions"><button id="create" class="primary" type="button">Create token</button></div>
@@ -359,7 +552,14 @@ let csrfToken=<?=$csrfJson?>;
 const initialPermissions=<?=$permissionsJson?>;
 const canManageAll=<?=$superuserJson?>;
 const $=id=>document.getElementById(id);
-const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
+const message=(text,error=false)=>{
+    $('message').textContent=text;
+    $('message').classList.toggle('error',error);
+};
+const escapeHtml=value=>String(value??'').replace(
+    /[&<>"']/g,
+    ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch])
+);
 const toLocalInput=seconds=>{
     const d=new Date(seconds*1000);
     const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
@@ -368,16 +568,30 @@ const toLocalInput=seconds=>{
 const fromLocalInput=value=>Math.floor(new Date(value).getTime()/1000);
 const formatTime=seconds=>seconds?new Date(seconds*1000).toLocaleString():'Never';
 const setDefaultExpiry=()=>{
-    const next=Math.floor(Date.now()/1000)+86400;
-    $('expires').value=toLocalInput(next);
+    $('expires').value=toLocalInput(Math.floor(Date.now()/1000)+3600);
 };
-function permissionOptions(selected){
-    return initialPermissions.map(item=>
-        `<option value="${item.value}" ${Number(selected)===item.value?'selected':''}>${escapeHtml(item.name)}</option>`
+const permissionMarkup=selected=>{
+    const selectedSet=new Set((selected||[]).map(Number));
+    if(!initialPermissions.length){
+        return '<span>No grantable permissions.</span>';
+    }
+    return initialPermissions.map(item=>`
+        <label>
+            <input type="checkbox" data-permission value="${item.value}" ${selectedSet.has(Number(item.value))?'checked':''}>
+            <span>${escapeHtml(item.name)}<small>${escapeHtml(item.description)}</small></span>
+        </label>`
     ).join('');
-}
-$('permission').innerHTML=permissionOptions();
+};
+const selectedPermissions=root=>[...root.querySelectorAll('[data-permission]:checked')].map(input=>Number(input.value));
+const syncCountControls=(counter,deleteOnDeplete)=>{
+    const hasCount=counter.value.trim()!=='';
+    deleteOnDeplete.disabled=!hasCount;
+    if(!hasCount)deleteOnDeplete.checked=false;
+};
+$('createPermissions').querySelector('.permission-list').innerHTML=permissionMarkup([]);
 setDefaultExpiry();
+syncCountControls($('counter'),$('deleteOnDeplete'));
+$('counter').addEventListener('input',()=>syncCountControls($('counter'),$('deleteOnDeplete')));
 
 async function api(method='GET',body,retry=true){
     const headers={
@@ -385,9 +599,7 @@ async function api(method='GET',body,retry=true){
         ...(body?{'Content-Type':'application/json'}:{})
     };
 
-    if(method!=='GET'){
-        headers['X-CSRF-Token']=csrfToken;
-    }
+    if(method!=='GET')headers['X-CSRF-Token']=csrfToken;
 
     const response=await fetch(location.pathname,{
         method,
@@ -396,7 +608,6 @@ async function api(method='GET',body,retry=true){
         headers,
         ...(body?{body:JSON.stringify(body)}:{})
     });
-
     const data=await response.json();
 
     if(
@@ -423,11 +634,13 @@ async function api(method='GET',body,retry=true){
 
     return data;
 }
-function escapeHtml(value){
-    return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
-}
+
 function card(token){
-    const owner=canManageAll?`<span class="owner">Owner: ${escapeHtml(token.ownerUsername)}</span>`:'';
+    const owner=canManageAll
+        ? `<span class="owner">Owner: ${escapeHtml(token.ownerUsername)}</span>`
+        : '';
+    const counterValue=token.counter===null?'':String(token.counter);
+    const countDisabled=token.counter===null?'disabled':'';
     return `<article class="token-card" data-id="${token.id}">
         <div class="token-head">
             <strong>${escapeHtml(token.name)}</strong>
@@ -437,16 +650,20 @@ function card(token){
         </div>
         <div class="grid">
             <label class="field"><span>Name</span><input data-field="name" maxlength="191" value="${escapeHtml(token.name)}"></label>
-            <label class="field"><span>Permission</span><select data-field="permissions">${permissionOptions(token.permissions)}</select></label>
-            <label class="field"><span>Counter</span><input data-field="counter" type="number" min="0" step="1" value="${token.counter}"></label>
+            <label class="field"><span>Count <small>(optional)</small></span><input data-field="counter" type="number" min="0" step="1" placeholder="Unlimited" value="${counterValue}"></label>
             <label class="field"><span>Expires</span><input data-field="expiresAt" type="datetime-local" value="${toLocalInput(token.expiresAt)}"></label>
         </div>
+        <fieldset class="permission-field">
+            <legend>Permissions</legend>
+            <div class="permission-list">${permissionMarkup(token.permissions)}</div>
+        </fieldset>
         <div class="checks">
-            <label><input data-field="deleteOnDeplete" type="checkbox" ${token.deleteOnDeplete?'checked':''}> Delete on deplete</label>
+            <label><input data-field="deleteOnDeplete" type="checkbox" ${token.deleteOnDeplete?'checked':''} ${countDisabled}> Delete on deplete</label>
             <label><input data-field="requiresAuthentication" type="checkbox" ${token.requiresAuthentication?'checked':''}> Requires authentication</label>
         </div>
         <div class="meta">
-            <span>Permission: ${escapeHtml(token.permissionName)}</span>
+            <span>Permissions: ${escapeHtml(token.permissionNames.join(', '))}</span>
+            <span>Uses: ${token.counter===null?'Unlimited':token.counter}</span>
             <span>Created: ${formatTime(token.createdAt)}</span>
             <span>Last used: ${formatTime(token.lastUsedAt)}</span>
         </div>
@@ -456,12 +673,24 @@ function card(token){
         </div>
     </article>`;
 }
+
 async function load(){
     try{
         const data=await api();
-        $('tokens').innerHTML=data.tokens.length?data.tokens.map(card).join(''):'<div class="empty">No access tokens.</div>';
-    }catch(error){message(error.message,true)}
+        $('tokens').innerHTML=data.tokens.length
+            ? data.tokens.map(card).join('')
+            : '<div class="empty">No access tokens.</div>';
+
+        for(const cardElement of $('tokens').querySelectorAll('.token-card')){
+            const counter=cardElement.querySelector('[data-field="counter"]');
+            const deleteOnDeplete=cardElement.querySelector('[data-field="deleteOnDeplete"]');
+            counter.addEventListener('input',()=>syncCountControls(counter,deleteOnDeplete));
+        }
+    }catch(error){
+        message(error.message,true);
+    }
 }
+
 $('create').addEventListener('click',async()=>{
     $('reveal').hidden=true;
 
@@ -472,56 +701,83 @@ $('create').addEventListener('click',async()=>{
     }
 
     try{
+        const counterText=$('counter').value.trim();
         const data=await api('POST',{
             name:$('name').value,
-            permissions:Number($('permission').value),
-            counter:Number($('counter').value),
+            permissions:selectedPermissions($('createPermissions')),
+            counter:counterText===''?null:Number(counterText),
             expiresAt:fromLocalInput($('expires').value),
-            deleteOnDeplete:$('deleteOnDeplete').checked,
+            deleteOnDeplete:counterText!==''&&$('deleteOnDeplete').checked,
             requiresAuthentication:$('requiresAuthentication').checked
         });
         $('rawToken').textContent=data.token;
         $('reveal').hidden=false;
         message('Token created.');
         $('name').value='';
-        $('counter').value='1';
-        $('deleteOnDeplete').checked=true;
+        $('counter').value='';
+        $('deleteOnDeplete').checked=false;
         $('requiresAuthentication').checked=true;
+        $('createPermissions').querySelector('.permission-list').innerHTML=permissionMarkup([]);
+        syncCountControls($('counter'),$('deleteOnDeplete'));
         setDefaultExpiry();
         await load();
-    }catch(error){message(error.message,true)}
+    }catch(error){
+        message(error.message,true);
+    }
 });
+
 $('copy').addEventListener('click',async()=>{
-    try{await navigator.clipboard.writeText($('rawToken').textContent);message('Token copied.')}
-    catch{message('Copy failed. Select the token and copy it manually.',true)}
+    try{
+        await navigator.clipboard.writeText($('rawToken').textContent);
+        message('Token copied.');
+    }catch{
+        message('Copy failed. Select the token and copy it manually.',true);
+    }
 });
+
 $('refresh').addEventListener('click',load);
+
 $('tokens').addEventListener('click',async event=>{
-    const card=event.target.closest('.token-card');
-    if(!card)return;
-    const id=Number(card.dataset.id);
+    const cardElement=event.target.closest('.token-card');
+    if(!cardElement)return;
+    const id=Number(cardElement.dataset.id);
+
     if(event.target.classList.contains('delete')){
         if(!confirm('Delete this access token?'))return;
-        try{await api('DELETE',{id});message('Token deleted.');await load();}
-        catch(error){message(error.message,true)}
+        try{
+            await api('DELETE',{id});
+            message('Token deleted.');
+            await load();
+        }catch(error){
+            message(error.message,true);
+        }
         return;
     }
+
     if(!event.target.classList.contains('save'))return;
-    const field=name=>card.querySelector(`[data-field="${name}"]`);
+
+    const field=name=>cardElement.querySelector(`[data-field="${name}"]`);
+    const counterText=field('counter').value.trim();
+
     try{
         const data=await api('PUT',{
             id,
             name:field('name').value,
-            permissions:Number(field('permissions').value),
-            counter:Number(field('counter').value),
+            permissions:selectedPermissions(cardElement),
+            counter:counterText===''?null:Number(counterText),
             expiresAt:fromLocalInput(field('expiresAt').value),
-            deleteOnDeplete:field('deleteOnDeplete').checked,
+            deleteOnDeplete:counterText!==''&&field('deleteOnDeplete').checked,
             requiresAuthentication:field('requiresAuthentication').checked
         });
-        message(data.deleted?'Token deleted because its counter is depleted.':'Token updated.');
+        message(data.deleted
+            ? 'Token deleted because its counter is depleted.'
+            : 'Token updated.');
         await load();
-    }catch(error){message(error.message,true)}
+    }catch(error){
+        message(error.message,true);
+    }
 });
+
 load();
 </script>
 </body>
@@ -530,22 +786,16 @@ load();
     exit;
 };
 
-if (
-    ($method === 'GET' && $browserRequested) ||
-    $tokenFormRedeemed
-) {
+if (($method === 'GET' && $browserRequested) || $tokenFormRedeemed) {
     $renderConsole();
 }
 
 $requireAccessTokenSchema();
 
-$permissions = $permissionRows();
-$grantable = array_column($permissions, null, 'value');
-
 if ($method === 'GET') {
     json_response([
         'tokens' => $tokenRows(),
-        'permissions' => $permissions,
+        'permissions' => array_values($grantablePermissions),
         'canManageAll' => $isSuperuser,
         'csrfToken' => csrf_token(),
     ]);
@@ -557,90 +807,6 @@ if (guarded_access_requires_csrf($authorization)) {
 
 $input = json_input();
 
-$nonNegativeInt = static function (mixed $value, string $name): int {
-    if (is_string($value) && ctype_digit($value)) {
-        $value = (int) $value;
-    }
-
-    if (!is_int($value) || $value < 0 || $value > 2147483647) {
-        api_error("$name must be an integer between 0 and 2147483647.", 422, 'invalid_argument');
-    }
-
-    return $value;
-};
-
-$boolean = static function (mixed $value, string $name): bool {
-    if (is_bool($value)) {
-        return $value;
-    }
-
-    if ($value === 0 || $value === 1 || $value === '0' || $value === '1') {
-        return (bool) $value;
-    }
-
-    api_error("$name must be a boolean.", 422, 'invalid_argument');
-};
-
-$expiration = static function (mixed $value): int {
-    if (is_int($value) || (is_string($value) && ctype_digit($value))) {
-        $seconds = (int) $value;
-    } elseif (is_string($value)) {
-        try {
-            $seconds = (new DateTimeImmutable($value))->getTimestamp();
-        } catch (Throwable) {
-            api_error('expiresAt must be a valid date/time.', 422, 'invalid_argument');
-        }
-    } else {
-        api_error('expiresAt must be a Unix timestamp or date/time string.', 422, 'invalid_argument');
-    }
-
-    if ($seconds < 1) {
-        api_error('expiresAt must be greater than zero.', 422, 'invalid_argument');
-    }
-
-    return $seconds;
-};
-
-$permission = static function (mixed $value) use ($grantable): int {
-    if (is_string($value) && ctype_digit($value)) {
-        $value = (int) $value;
-    }
-
-    if (!is_int($value) || !isset($grantable[$value])) {
-        api_error('The selected permission is not grantable by this user.', 403, 'permission_required');
-    }
-
-    return $value;
-};
-
-$tokenForEdit = static function (int $id, bool $forUpdate = false) use ($pdo, $actor, $isSuperuser): array {
-    $sql = 'SELECT * FROM access_tokens WHERE id = :id';
-
-    if (!$isSuperuser) {
-        $sql .= ' AND owner_user_id = :owner_user_id';
-    }
-
-    if ($forUpdate) {
-        $sql .= ' FOR UPDATE';
-    }
-
-    $statement = $pdo->prepare($sql);
-    $params = [':id' => $id];
-
-    if (!$isSuperuser) {
-        $params[':owner_user_id'] = (int) $actor['id'];
-    }
-
-    $statement->execute($params);
-    $row = $statement->fetch();
-
-    if (!$row) {
-        api_error('Access token was not found.', 404, 'token_not_found');
-    }
-
-    return $row;
-};
-
 if ($method === 'POST') {
     $name = require_string($input, 'name');
 
@@ -648,22 +814,34 @@ if ($method === 'POST') {
         api_error('name is too long.', 422, 'invalid_argument');
     }
 
-    $grantedPermission = $permission($input['permissions'] ?? null);
-    $counter = array_key_exists('counter', $input) ? $nonNegativeInt($input['counter'], 'counter') : 1;
-    $deleteOnDeplete = array_key_exists('deleteOnDeplete', $input)
-        ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
-        : true;
+    $selection = $parsePermissionSelection($input['permissions'] ?? []);
+    $counter = $optionalCounter($input['counter'] ?? null, 'counter');
+    $deleteOnDeplete = $counter === null
+        ? false
+        : (
+            array_key_exists('deleteOnDeplete', $input)
+                ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
+                : false
+        );
     $requiresAuthentication = array_key_exists('requiresAuthentication', $input)
         ? $boolean($input['requiresAuthentication'], 'requiresAuthentication')
         : true;
-    $expiresAt = $expiration($input['expiresAt'] ?? null);
+    $expiresAt = $expiration($input['expiresAt'] ?? null, true);
 
     if ($expiresAt <= time()) {
-        api_error('expiresAt must be in the future when creating a token.', 422, 'invalid_argument');
+        api_error(
+            'expiresAt must be in the future when creating a token.',
+            422,
+            'invalid_argument'
+        );
     }
 
     if ($counter === 0 && $deleteOnDeplete) {
-        api_error('A token created with delete on deplete must start with a counter above zero.', 422, 'invalid_argument');
+        api_error(
+            'A token created with delete on deplete must start with a counter above zero.',
+            422,
+            'invalid_argument'
+        );
     }
 
     $rawToken = access_token_generate();
@@ -672,17 +850,20 @@ if ($method === 'POST') {
 
     $statement = $pdo->prepare(
         'INSERT INTO access_tokens '
-        . '(owner_user_id, name, token_hash, token_hint, permissions, uses_remaining, '
-        . 'delete_on_deplete, requires_authentication, expires_at, created_at, updated_at) '
-        . 'VALUES (:owner_user_id, :name, :token_hash, :token_hint, :permissions, :uses_remaining, '
-        . ':delete_on_deplete, :requires_authentication, :expires_at, :created_at, :updated_at)'
+        . '(owner_user_id, name, token_hash, token_hint, permissions, new_user, '
+        . 'uses_remaining, delete_on_deplete, requires_authentication, '
+        . 'expires_at, created_at, updated_at) '
+        . 'VALUES (:owner_user_id, :name, :token_hash, :token_hint, :permissions, :new_user, '
+        . ':uses_remaining, :delete_on_deplete, :requires_authentication, '
+        . ':expires_at, :created_at, :updated_at)'
     );
     $statement->execute([
-        ':owner_user_id' => (int) $actor['id'],
+        ':owner_user_id' => $ownerUserId,
         ':name' => $name,
         ':token_hash' => access_token_hash($rawToken),
         ':token_hint' => $hint,
-        ':permissions' => $grantedPermission,
+        ':permissions' => $selection['mask'],
+        ':new_user' => $selection['newUser'] ? 1 : 0,
         ':uses_remaining' => $counter,
         ':delete_on_deplete' => $deleteOnDeplete ? 1 : 0,
         ':requires_authentication' => $requiresAuthentication ? 1 : 0,
@@ -699,27 +880,24 @@ if ($method === 'POST') {
     ], 201);
 }
 
-$id = $nonNegativeInt($input['id'] ?? null, 'id');
-
-if ($id < 1) {
-    api_error('id must be a positive integer.', 422, 'invalid_argument');
-}
+$id = $positiveId($input['id'] ?? null);
 
 if ($method === 'DELETE') {
     $tokenForEdit($id);
 
-    $statement = $pdo->prepare(
-        'DELETE FROM access_tokens WHERE id = :id'
-        . ($isSuperuser ? '' : ' AND owner_user_id = :owner_user_id')
-    );
-
+    $sql = 'DELETE FROM access_tokens WHERE id = :id';
     $params = [':id' => $id];
 
     if (!$isSuperuser) {
-        $params[':owner_user_id'] = (int) $actor['id'];
+        if ($isSessionAuthorization) {
+            $sql .= ' AND owner_user_id = :owner_user_id';
+            $params[':owner_user_id'] = $ownerUserId;
+        } else {
+            $sql .= ' AND owner_user_id IS NULL';
+        }
     }
 
-    $statement->execute($params);
+    $pdo->prepare($sql)->execute($params);
 
     json_response([
         'deleted' => true,
@@ -728,7 +906,6 @@ if ($method === 'DELETE') {
 }
 
 $row = $tokenForEdit($id);
-
 $name = array_key_exists('name', $input)
     ? require_string($input, 'name')
     : (string) $row['name'];
@@ -737,17 +914,28 @@ if (strlen($name) > 191) {
     api_error('name is too long.', 422, 'invalid_argument');
 }
 
-$grantedPermission = array_key_exists('permissions', $input)
-    ? $permission($input['permissions'])
-    : (int) $row['permissions'];
+$selection = array_key_exists('permissions', $input)
+    ? $parsePermissionSelection($input['permissions'])
+    : [
+        'mask' => (int) $row['permissions'],
+        'newUser' => (bool) $row['new_user'],
+    ];
 
 $counter = array_key_exists('counter', $input)
-    ? $nonNegativeInt($input['counter'], 'counter')
-    : (int) $row['uses_remaining'];
+    ? $optionalCounter($input['counter'], 'counter')
+    : (
+        $row['uses_remaining'] === null
+            ? null
+            : (int) $row['uses_remaining']
+    );
 
-$deleteOnDeplete = array_key_exists('deleteOnDeplete', $input)
-    ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
-    : (bool) $row['delete_on_deplete'];
+$deleteOnDeplete = $counter === null
+    ? false
+    : (
+        array_key_exists('deleteOnDeplete', $input)
+            ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
+            : (bool) $row['delete_on_deplete']
+    );
 
 $requiresAuthentication = array_key_exists('requiresAuthentication', $input)
     ? $boolean($input['requiresAuthentication'], 'requiresAuthentication')
@@ -758,23 +946,19 @@ $expiresAt = array_key_exists('expiresAt', $input)
     : (int) $row['expires_at'];
 
 if ($counter === 0 && $deleteOnDeplete) {
-    $delete = $pdo->prepare(
-        'DELETE FROM access_tokens WHERE id = :id'
-        . ($isSuperuser ? '' : ' AND owner_user_id = :owner_user_id')
-    );
-
-    $deleteParams = [
-        ':id' => $id,
-    ];
+    $sql = 'DELETE FROM access_tokens WHERE id = :id';
+    $params = [':id' => $id];
 
     if (!$isSuperuser) {
-        $deleteParams[':owner_user_id'] =
-            (int) $actor['id'];
+        if ($isSessionAuthorization) {
+            $sql .= ' AND owner_user_id = :owner_user_id';
+            $params[':owner_user_id'] = $ownerUserId;
+        } else {
+            $sql .= ' AND owner_user_id IS NULL';
+        }
     }
 
-    $delete->execute(
-        $deleteParams
-    );
+    $pdo->prepare($sql)->execute($params);
 
     json_response([
         'deleted' => true,
@@ -783,18 +967,17 @@ if ($counter === 0 && $deleteOnDeplete) {
     ]);
 }
 
-$update = $pdo->prepare(
+$sql =
     'UPDATE access_tokens SET '
-    . 'name = :name, permissions = :permissions, uses_remaining = :uses_remaining, '
-    . 'delete_on_deplete = :delete_on_deplete, requires_authentication = :requires_authentication, '
+    . 'name = :name, permissions = :permissions, new_user = :new_user, '
+    . 'uses_remaining = :uses_remaining, delete_on_deplete = :delete_on_deplete, '
+    . 'requires_authentication = :requires_authentication, '
     . 'expires_at = :expires_at, updated_at = :updated_at '
-    . 'WHERE id = :id'
-    . ($isSuperuser ? '' : ' AND owner_user_id = :owner_user_id')
-);
-
-$updateParams = [
+    . 'WHERE id = :id';
+$params = [
     ':name' => $name,
-    ':permissions' => $grantedPermission,
+    ':permissions' => $selection['mask'],
+    ':new_user' => $selection['newUser'] ? 1 : 0,
     ':uses_remaining' => $counter,
     ':delete_on_deplete' => $deleteOnDeplete ? 1 : 0,
     ':requires_authentication' => $requiresAuthentication ? 1 : 0,
@@ -804,13 +987,15 @@ $updateParams = [
 ];
 
 if (!$isSuperuser) {
-    $updateParams[':owner_user_id'] =
-        (int) $actor['id'];
+    if ($isSessionAuthorization) {
+        $sql .= ' AND owner_user_id = :owner_user_id';
+        $params[':owner_user_id'] = $ownerUserId;
+    } else {
+        $sql .= ' AND owner_user_id IS NULL';
+    }
 }
 
-$update->execute(
-    $updateParams
-);
+$pdo->prepare($sql)->execute($params);
 
 json_response([
     'updated' => true,
