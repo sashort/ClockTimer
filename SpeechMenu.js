@@ -27,6 +27,7 @@ class SpeechMenu {
     static #lastLevelEventAt = 0;
     static #debug = false;
     static #debugFunction = data => console.log(data);
+    static #executionEnabled = true;
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
@@ -80,6 +81,7 @@ class SpeechMenu {
     static get sleepPhrase() { return SpeechMenu.#sleepPhrase; }
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
+    static get executionEnabled() { return SpeechMenu.#executionEnabled; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
@@ -125,6 +127,29 @@ class SpeechMenu {
         });
     }
 
+    static set executionEnabled(value) {
+        const next =
+            Boolean(value);
+
+        if (
+            next ===
+            SpeechMenu.#executionEnabled
+        ) {
+            return;
+        }
+
+        SpeechMenu.#executionEnabled =
+            next;
+
+        SpeechMenu.#emit(
+            "speechExecutionChanged",
+            {
+                enabled:
+                    next
+            }
+        );
+    }
+
     static async start(language = "en-US", listSeparator = ",") {
         if (!navigator.mediaDevices?.getUserMedia) {
             SpeechMenu.#emit("speechRecognitionFailed", {
@@ -158,9 +183,9 @@ class SpeechMenu {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
                     }
                 });
 
@@ -315,6 +340,10 @@ class SpeechMenu {
                     sampleRate:
                         globalThis.SherpaRecognizer
                             .sampleRate,
+                    captureSettings:
+                        SpeechMenu.#micTrack
+                            .getSettings?.() ||
+                        {},
                     silenceTimeout:
                         SpeechMenu.#silenceTimeout,
                     commitSilenceTimeout:
@@ -1034,6 +1063,9 @@ class SpeechMenu {
                 firstTranscriptMilliseconds:
                     utterance.firstTranscriptAt -
                     utterance.startedAt,
+                transcriptMilliseconds:
+                    receivedAt -
+                    utterance.startedAt,
                 decodeMilliseconds:
                     Number(
                         detail.decodeMilliseconds
@@ -1343,7 +1375,8 @@ class SpeechMenu {
                             .#processTranscript(
                                 transcript,
                                 utterance.id,
-                                true
+                                SpeechMenu
+                                    .#executionEnabled
                             )
                     );
             }
@@ -1448,7 +1481,7 @@ class SpeechMenu {
         await SpeechMenu.#processTranscript(
             transcript,
             utterance.id,
-            true
+            SpeechMenu.#executionEnabled
         );
     }
 
