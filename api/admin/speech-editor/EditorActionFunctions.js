@@ -19,6 +19,9 @@
     let stateProvider =
         () => ({});
 
+    let mutationAllowedProvider =
+        () => true;
+
     let transactionProvider;
 
     const normalizeName =
@@ -283,6 +286,22 @@
                 throw new Error(
                     "Unknown Speech Editor action: " +
                     normalized.action
+                );
+            }
+
+            const definition =
+                metadata.get(
+                    normalized.action
+                );
+
+            if (
+                definition
+                    ?.mutates !==
+                    false &&
+                !mutationAllowedProvider()
+            ) {
+                throw new Error(
+                    "Developer permission is required for Speech Editor changes."
                 );
             }
 
@@ -688,6 +707,24 @@
                 }
 
                 stateProvider =
+                    provider;
+
+                return this;
+            },
+
+            setMutationAllowedProvider(
+                provider
+            ) {
+                if (
+                    typeof provider !==
+                        "function"
+                ) {
+                    throw new TypeError(
+                        "Speech Editor mutation permission provider must be a function."
+                    );
+                }
+
+                mutationAllowedProvider =
                     provider;
 
                 return this;
