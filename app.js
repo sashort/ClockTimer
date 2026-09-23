@@ -9992,6 +9992,647 @@
                 );
 
                 return true;
+            },
+
+            updateGraphicalSettings(
+                settings
+            ) {
+                const normalized =
+                    saveGraphicalSettings(
+                        settings
+                    );
+
+                applyGraphicalSettings(
+                    normalized
+                );
+
+                return normalized;
+            },
+
+            changeLateBreakBehavior(
+                value
+            ) {
+                const preferences = {
+                    ...getTripPreferences(),
+                    lateBreakBehavior:
+                        value ===
+                            "autoRestartTrip"
+                            ? "autoRestartTrip"
+                            : "showLateWindow"
+                };
+
+                saveTripPreferences(
+                    preferences
+                );
+
+                if (
+                    !tripIsLive() &&
+                    !tripDraft
+                ) {
+                    clockTimer
+                        .intervalElapsedBehavior =
+                        "startLatency";
+
+                    clockTimer
+                        .autoRestartTripAfterLateBreak =
+                        preferences
+                            .lateBreakBehavior ===
+                        "autoRestartTrip";
+                }
+
+                return preferences;
+            },
+
+            async connectUser(
+                username,
+                password
+            ) {
+                if (
+                    normalizedConnectionStatus() ===
+                        "offline"
+                ) {
+                    animateOfflineClouds();
+                }
+
+                loginPending = true;
+
+                try {
+                    const result =
+                        await clockTimer
+                            .connect(
+                                String(
+                                    username ||
+                                    ""
+                                )
+                                    .trim(),
+                                String(
+                                    password ||
+                                    ""
+                                )
+                            );
+
+                    if (
+                        !result
+                            ?.connected
+                    ) {
+                        throw new Error(
+                            "Login failed."
+                        );
+                    }
+
+                    deliberatelyLoggedOut =
+                        false;
+
+                    safeStorageSet(
+                        "wmof.deliberatelyLoggedOut",
+                        "false"
+                    );
+
+                    populateProfile(
+                        result.user
+                    );
+
+                    for (
+                        let index =
+                            uiReturnStack
+                                .length -
+                            1;
+                        index >= 0;
+                        index -= 1
+                    ) {
+                        if (
+                            uiReturnStack[
+                                index
+                            ]?.type ===
+                                "popover" &&
+                            uiReturnStack[
+                                index
+                            ]?.element ===
+                                mainMenu
+                        ) {
+                            uiReturnStack
+                                .splice(
+                                    index,
+                                    1
+                                );
+                        }
+                    }
+
+                    hidePopoverForHandoff(
+                        mainMenu
+                    );
+
+                    syncNetworkStatusUI({
+                        login:
+                            true
+                    });
+
+                    return result;
+                }
+                finally {
+                    loginPending =
+                        false;
+                }
+            },
+
+            async disconnectUser() {
+                mainMenu
+                    ?.hidePopover?.();
+
+                deliberatelyLoggedOut =
+                    true;
+
+                safeStorageSet(
+                    "wmof.deliberatelyLoggedOut",
+                    "true"
+                );
+
+                clearTimeout(
+                    loginPromptTimeout
+                );
+
+                try {
+                    await clockTimer
+                        .disconnect();
+                }
+                finally {
+                    syncNetworkStatusUI();
+                }
+
+                return true;
+            },
+
+            saveProfileData(
+                values
+            ) {
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "wmof:profile-save",
+                        {
+                            detail:
+                                values &&
+                                typeof values ===
+                                    "object"
+                                    ? values
+                                    : {}
+                        }
+                    )
+                );
+
+                return true;
+            },
+
+            requestPasswordReset() {
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "wmof:reset-password-request",
+                        {
+                            detail: {
+                                apiBase:
+                                    API_BASE
+                            }
+                        }
+                    )
+                );
+
+                return true;
+            },
+
+            changeScheduledStartAuto(
+                enabled
+            ) {
+                scheduledStartAutoArmed =
+                    Boolean(enabled);
+
+                scheduledStartAuto.checked =
+                    scheduledStartAutoArmed;
+
+                updateScheduledStartDialog();
+
+                return scheduledStartAutoArmed;
+            },
+
+            async startScheduledTrip(
+                mode = "scheduled"
+            ) {
+                return beginScheduledTrip(
+                    mode === "now"
+                        ? "now"
+                        : "scheduled"
+                );
+            },
+
+            cancelScheduledStart() {
+                cancelScheduledStartPrompt();
+
+                return true;
+            },
+
+            openScheduledStandardTimeEditor() {
+                if (
+                    scheduledStartDialog
+                        .open
+                ) {
+                    closeDialog(
+                        scheduledStartDialog,
+                        {
+                            reason:
+                                "scheduled-standard-edit",
+                            immediate:
+                                true
+                        }
+                    );
+                }
+
+                void openNumberPad({
+                    mode:
+                        "time",
+                    source:
+                        "standard-time",
+                    initialValue:
+                        tripDraft
+                            ?.standardTime ||
+                        "",
+                    role:
+                        "trip-settings-field",
+                    workflow:
+                        "new-trip",
+                    cancelTarget:
+                        "scheduled-start",
+                    confirmTarget:
+                        "scheduled-start",
+                    backTarget:
+                        "scheduled-start",
+                    duration:
+                        0,
+                    allowEmpty:
+                        true,
+                    onConfirm:
+                        value => {
+                            if (
+                                !tripDraft
+                            ) {
+                                return false;
+                            }
+
+                            tripDraft
+                                .standardTime =
+                                value ||
+                                "";
+
+                            return true;
+                        }
+                }).catch(
+                    () =>
+                        showScheduledStartDialog({
+                            resolution:
+                                scheduledStartNeedsResolution
+                        })
+                );
+
+                return true;
+            },
+
+            clearNumberPadValue() {
+                eraseNumberPadPendingValue();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            resetNumberPadValue() {
+                resetNumberPadPendingValue();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            enterNumberPadDigit(
+                digit
+            ) {
+                if (!numberPadState) {
+                    return false;
+                }
+
+                const value =
+                    String(
+                        digit ||
+                        ""
+                    );
+
+                if (
+                    !/^\d$/.test(
+                        value
+                    )
+                ) {
+                    return false;
+                }
+
+                const previousPending =
+                    numberPadState
+                        .pending;
+
+                if (
+                    numberPadState
+                        .replaceOnNextDigit
+                ) {
+                    numberPadState.pending =
+                        "";
+
+                    numberPadState
+                        .replaceOnNextDigit =
+                        false;
+                }
+
+                const candidate =
+                    numberPadState
+                        .pending +
+                    value;
+
+                if (
+                    numberPadState
+                        .mode ===
+                        "absolute" &&
+                    candidate.length >
+                        6
+                ) {
+                    return false;
+                }
+
+                numberPadState.pending =
+                    candidate;
+
+                if (
+                    candidate !==
+                    previousPending
+                ) {
+                    numberPadState
+                        .everEdited =
+                        true;
+                }
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            setNumberPadMeridiem(
+                value
+            ) {
+                changeNumberPadMeridiem(
+                    value
+                );
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            changeNumberPadDate(
+                value
+            ) {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode !==
+                        "absolute"
+                ) {
+                    return false;
+                }
+
+                const next =
+                    String(
+                        value ||
+                        ""
+                    );
+
+                if (
+                    numberPadState
+                        .pendingDate !==
+                    next
+                ) {
+                    numberPadState
+                        .everEdited =
+                        true;
+                }
+
+                numberPadState
+                    .pendingDate =
+                    next;
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            async confirmNumberPad() {
+                if (
+                    !numberPadState ||
+                    numberPadConfirm
+                        .disabled
+                ) {
+                    return false;
+                }
+
+                if (
+                    numberPadConfirm
+                        .dataset
+                        .action ===
+                        "autocorrect"
+                ) {
+                    if (
+                        numberPadState
+                            .mode ===
+                            "absolute"
+                    ) {
+                        autocorrectAbsoluteState(
+                            numberPadState
+                        );
+                    }
+                    else {
+                        numberPadState
+                            .pending =
+                            autocorrectTimeDigits(
+                                numberPadState
+                                    .pending
+                            );
+                    }
+
+                    numberPadState
+                        .replaceOnNextDigit =
+                        false;
+
+                    refreshNumberPad();
+
+                    return true;
+                }
+
+                try {
+                    if (
+                        await commitNumberPad()
+                    ) {
+                        const destination =
+                            numberPadState
+                                ?.confirmTarget ||
+                            "home";
+
+                        await closeNumberPad({
+                            discardPrepared:
+                                false,
+                            allowChanged:
+                                true,
+                            destination
+                        });
+
+                        return true;
+                    }
+                }
+                catch {
+                    if (numberPadState) {
+                        numberPadState
+                            .persistence =
+                            "offline";
+
+                        refreshNumberPad();
+                    }
+                }
+
+                return false;
+            },
+
+            runNumberPadClear() {
+                runNumberPadClearShortAction();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            async resumeNumberPadConnection(
+                source = "number-pad"
+            ) {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode ===
+                        "percent" ||
+                    numberPadSettingsArea
+                        .dataset
+                        .persistence !==
+                        "offline"
+                ) {
+                    return false;
+                }
+
+                await resumeConnectionFromCloud({
+                    source
+                });
+
+                return true;
+            },
+
+            openNumberPadSettings() {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode ===
+                        "percent" ||
+                    numberPadState
+                        .role ===
+                        "trip-settings-field"
+                ) {
+                    return false;
+                }
+
+                if (
+                    tripDraft &&
+                    numberPadState
+                        .source ===
+                        "new-trip" &&
+                    numberPadValueValid()
+                ) {
+                    const formatted =
+                        renderTimeDigits(
+                            numberPadState
+                                .pending
+                        );
+
+                    if (formatted) {
+                        tripDraft
+                            .standardTime =
+                            formatted;
+                    }
+                }
+
+                const returnState = {
+                    ...numberPadState
+                };
+
+                setTripSettingsReturnToNumberPad(
+                    returnState
+                );
+
+                if (
+                    !openTripSettingsDialog(
+                        "number-pad-settings",
+                        {
+                            duration:
+                                0
+                        }
+                    )
+                ) {
+                    resetTripSettingsNavigation();
+
+                    return false;
+                }
+
+                void closeNumberPad({
+                    discardPrepared:
+                        false,
+                    allowChanged:
+                        true,
+                    immediate:
+                        true,
+                    destination:
+                        "none"
+                })
+                    .then(
+                        closed => {
+                            if (closed) {
+                                return;
+                            }
+
+                            resetTripSettingsNavigation();
+
+                            closeDialog(
+                                tripSettingsDialog,
+                                {
+                                    reason:
+                                        "number-pad-settings:rollback",
+                                    immediate:
+                                        true
+                                }
+                            );
+                        }
+                    )
+                    .catch(
+                        () => {
+                            resetTripSettingsNavigation();
+                        }
+                    );
+
+                return true;
+            },
+
+            cancelNumberPadEdit() {
+                void cancelNumberPad()
+                    .catch(
+                        () => {}
+                    );
+
+                return true;
             }
         });
 
