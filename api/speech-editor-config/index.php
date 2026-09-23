@@ -7,7 +7,13 @@ $method = require_method('GET', 'PUT');
 $root = dirname(__DIR__, 2);
 $path = $root . '/database/speech-editor.json';
 $registryPath = $root . '/SpeechFunctionRegistry.js';
-$defaultPreprocFunctions = ['WMOFSpeechPreprocess.normalize'];
+$roleNames = ['processing', 'action', 'interaction', 'presentation'];
+$defaultFunctionRoles = [
+    'processing' => ['WMOFSpeechPreprocess.normalize'],
+    'action' => [],
+    'interaction' => [],
+    'presentation' => []
+];
 
 $read = static function () use ($path): array {
     if (!is_file($path)) return ['entries' => [], 'revision' => 'empty'];
@@ -18,122 +24,75 @@ $read = static function () use ($path): array {
     return ['entries' => $data['entries'], 'revision' => hash('sha256', $raw)];
 };
 
-$readRegistry = static function () use ($registryPath, $defaultPreprocFunctions): array {
+$normalizeRoles = static function (mixed $value) use ($roleNames): array {
+    if (!is_array($value)) api_error('Speech function registry is invalid.', 500, 'invalid_registry');
+
+    $roles = [];
+    foreach ($roleNames as $role) {
+        $names = $value[$role] ?? [];
+        if (!is_array($names) || !array_is_list($names)) api_error('Speech function registry is invalid.', 500, 'invalid_registry');
+        $roles[$role] = array_values($names);
+    }
+
+    return $roles;
+};
+
+$readRegistry = static function () use ($registryPath, $defaultFunctionRoles, $normalizeRoles): array {
     if (!is_file($registryPath)) {
         return [
-            'preprocFunctions' => $defaultPreprocFunctions,
-            'registryRevision' => 'missing'
+            'functionRoles' => $defaultFunctionRoles,
+            'registryRevision' => 'missing',
+            'registrySource' => ''
         ];
     }
 
     $raw = file_get_contents($registryPath);
     if ($raw === false) api_error('Speech function registry could not be read.', 500, 'registry_read_failed');
 
-    if (!preg_match('/const\s+taggedPreprocFunctions\s*=\s*(\[[\s\S]*?\])\s*;/D', $raw, $match)) {
+    if (!preg_match('/const\s+taggedFunctionRoles\s*=\s*(\{[\s\S]*?\})\s*;/D', $raw, $match)) {
         api_error('Speech function registry is invalid.', 500, 'invalid_registry');
     }
 
-    $names = json_decode($match[1], true);
-    if (!is_array($names) || !array_is_list($names)) {
-        api_error('Speech function registry is invalid.', 500, 'invalid_registry');
-    }
+    $decoded = json_decode($match[1], true);
+    $roles = $normalizeRoles($decoded);
 
     return [
-        'preprocFunctions' => $names,
-        'registryRevision' => hash('sha256', $raw)
+        'functionRoles' => $roles,
+        'registryRevision' => hash('sha256', $raw),
+        'registrySource' => $raw
     ];
 };
 
-$renderRegistry = static function (array $names): string {
+$renderRegistry = static function (array $roles, string $source): string {
     $encoded = json_encode(
-        array_values($names),
+        $roles,
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
     );
 
-    $encoded = preg_replace('/^/m', '        ', $encoded);
+    if ($source === '') {
+        api_error('Speech function registry source is unavailable.', 500, 'registry_source_missing');
+    }
 
-    return <<<JS
-(() => {
-    "use strict";
-
-    const taggedPreprocFunctions =
-$encoded;
-
-    const preproc =
-        new Set();
-
-    const normalize =
-        value => {
-            const name =
-                String(value || "")
-                    .trim();
-
-            return /^[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*$/
-                .test(name)
-                    ? name
-                    : "";
-        };
-
-    const tagPreproc =
-        (...names) => {
-            for (const value of names.flat()) {
-                const name =
-                    normalize(value);
-
-                if (name) {
-                    preproc.add(name);
-                }
-            }
-
-            return api;
-        };
-
-    const untagPreproc =
-        (...names) => {
-            for (const value of names.flat()) {
-                const name =
-                    normalize(value);
-
-                if (name) {
-                    preproc.delete(name);
-                }
-            }
-
-            return api;
-        };
-
-    const api = {
-        tagPreproc,
-        untagPreproc,
-
-        isPreproc(name) {
-            return preproc.has(
-                normalize(name)
-            );
-        },
-
-        listPreproc() {
-            return [
-                ...preproc
-            ].sort(
-                (a, b) =>
-                    a.localeCompare(b)
-            );
-        }
-    };
-
-    tagPreproc(
-        taggedPreprocFunctions
+    $replacement = 'const taggedFunctionRoles = ' . $encoded . ';';
+    $updated = preg_replace(
+        '/const\s+taggedFunctionRoles\s*=\s*\{[\s\S]*?\}\s*;/D',
+        $replacement,
+        $source,
+        1,
+        $count
     );
 
-    globalThis.WMOFSpeechFunctionRegistry =
-        Object.freeze(api);
-})();
-JS;
+    if (!is_string($updated) || $count !== 1) {
+        api_error('Speech function registry could not be updated.', 500, 'registry_write_failed');
+    }
+
+    return rtrim($updated) . "\n";
 };
 
 if ($method === 'GET') {
-    json_response(array_merge($read(), $readRegistry()));
+    $registry = $readRegistry();
+    unset($registry['registrySource']);
+    json_response(array_merge($read(), $registry));
 }
 
 authenticated_user_id();
@@ -142,14 +101,14 @@ require_csrf();
 
 $input = json_input();
 $entries = $input['entries'] ?? null;
-$preprocFunctions = $input['preprocFunctions'] ?? null;
+$functionRoles = $input['functionRoles'] ?? null;
 
 if (!is_array($entries) || !array_is_list($entries) || count($entries) > 250) {
     api_error('Invalid speech entries.', 422, 'invalid_entries');
 }
 
-if (!is_array($preprocFunctions) || !array_is_list($preprocFunctions) || count($preprocFunctions) > 500) {
-    api_error('Invalid preprocessor function list.', 422, 'invalid_preproc_functions');
+if (!is_array($functionRoles)) {
+    api_error('Invalid speech function roles.', 422, 'invalid_function_roles');
 }
 
 $current = $read();
@@ -187,22 +146,45 @@ foreach ($entries as $entry) {
     if (isset($entry['order']) && (!is_int($entry['order']) || $entry['order'] < 0 || $entry['order'] > 10000)) api_error('Invalid speech element order.', 422, 'invalid_entry');
 }
 
-$uniquePreproc = [];
-foreach ($preprocFunctions as $name) {
-    if (!is_string($name) || !preg_match('/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/D', $name)) {
-        api_error('Invalid preprocessor function name.', 422, 'invalid_preproc_function');
+
+$normalizedRoles = [];
+$assigned = [];
+
+foreach ($roleNames as $role) {
+    $names = $functionRoles[$role] ?? null;
+
+    if (!is_array($names) || !array_is_list($names) || count($names) > 500) {
+        api_error('Invalid speech function role list.', 422, 'invalid_function_roles');
     }
-    $uniquePreproc[$name] = true;
+
+    $unique = [];
+
+    foreach ($names as $name) {
+        if (!is_string($name) || !preg_match('/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/D', $name)) {
+            api_error('Invalid speech function name.', 422, 'invalid_function_role');
+        }
+
+        if (isset($assigned[$name]) && $assigned[$name] !== $role) {
+            api_error('A function can only have one speech-editor role.', 422, 'duplicate_function_role');
+        }
+
+        $assigned[$name] = $role;
+        $unique[$name] = true;
+    }
+
+    $names = array_keys($unique);
+    natcasesort($names);
+    $normalizedRoles[$role] = array_values($names);
 }
 
-$preprocFunctions = array_keys($uniquePreproc);
-natcasesort($preprocFunctions);
-$preprocFunctions = array_values($preprocFunctions);
-
 $encoded = json_encode(['entries' => $entries], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
-$registryEncoded = $renderRegistry($preprocFunctions) . "\n";
+$registryEncoded = $renderRegistry(
+    $normalizedRoles,
+    $currentRegistry['registrySource']
+);
 
 $configTemporary = tempnam(dirname($path), '.speech-editor-');
+
 if (
     $configTemporary === false ||
     file_put_contents($configTemporary, $encoded, LOCK_EX) === false
@@ -223,6 +205,6 @@ if (!rename($configTemporary, $path)) {
 json_response([
     'entries' => $entries,
     'revision' => hash('sha256', $encoded),
-    'preprocFunctions' => $preprocFunctions,
+    'functionRoles' => $normalizedRoles,
     'registryRevision' => hash('sha256', $registryEncoded)
 ]);
