@@ -56,10 +56,23 @@ jobs:
              sudo -n chmod 640 /etc/clocktimer/config.php
 
              cd /opt/bitnami/apache2/htdocs
+
+             REGISTRY_BACKUP=/tmp/clocktimer-SpeechFunctionRegistry.js
+             rm -f "$REGISTRY_BACKUP"
+             if [ -f SpeechFunctionRegistry.js ]; then
+               cp SpeechFunctionRegistry.js "$REGISTRY_BACKUP"
+             fi
+
              git reset --hard HEAD
              git fetch origin "$DEPLOY_BRANCH:refs/remotes/origin/$DEPLOY_BRANCH"
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
              git reset --hard "origin/$DEPLOY_BRANCH"
+
+             if [ -s "$REGISTRY_BACKUP" ]; then
+               cp "$REGISTRY_BACKUP" SpeechFunctionRegistry.js
+               rm -f "$REGISTRY_BACKUP"
+             fi
+
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
 
