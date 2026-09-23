@@ -3775,16 +3775,25 @@
         () => {
             const choices = [];
 
-            for (
-                const template of
+            const templates =
                 globalThis
                     .WMOFRegexBuilder
                     ?.templates ||
-                []
+                [];
+
+            for (
+                const template of
+                templates.filter(
+                    item =>
+                        item.group ===
+                        "app"
+                )
             ) {
                 choices.push({
                     kind:
-                        "Templates",
+                        "App templates",
+                    appSpecific:
+                        true,
                     canonical:
                         template.token
                             .slice(
@@ -3832,9 +3841,25 @@
                     [...contexts]
                         .sort()
                 ) {
+                    if (
+                        templates.some(
+                            template =>
+                                template.group ===
+                                    "app" &&
+                                template.token ===
+                                    "<" +
+                                    context +
+                                    ">"
+                        )
+                    ) {
+                        continue;
+                    }
+
                     choices.push({
                         kind:
-                            "Existing contexts",
+                            "App templates",
+                        appSpecific:
+                            true,
                         canonical:
                             context,
                         label:
@@ -3842,10 +3867,38 @@
                             context +
                             ">",
                         description:
-                            "Existing speech preprocessing context."
+                            "WMOF speech preprocessing context used by the app."
                     });
                 }
+            }
 
+            for (
+                const template of
+                templates.filter(
+                    item =>
+                        item.group !==
+                        "app"
+                )
+            ) {
+                choices.push({
+                    kind:
+                        "Generic templates",
+                    appSpecific:
+                        false,
+                    canonical:
+                        template.token
+                            .slice(
+                                1,
+                                -1
+                            ),
+                    label:
+                        template.token,
+                    description:
+                        template.description
+                });
+            }
+
+            if (frameDocument) {
                 const fields =
                     new Set();
 
@@ -3905,6 +3958,8 @@
                     choices.push({
                         kind:
                             "Existing fields",
+                        appSpecific:
+                            false,
                         canonical:
                             field,
                         label:
@@ -3946,6 +4001,15 @@
                     heading.className =
                         "regex-picker-heading";
 
+                    if (
+                        choice.appSpecific
+                    ) {
+                        heading.classList
+                            .add(
+                                "app-specific"
+                            );
+                    }
+
                     heading.textContent =
                         choice.kind;
 
@@ -3967,6 +4031,16 @@
                     "button";
                 button.className =
                     "regex-picker-option";
+
+                if (
+                    choice.appSpecific
+                ) {
+                    button.classList
+                        .add(
+                            "app-specific"
+                        );
+                }
+
                 button.setAttribute(
                     "role",
                     "option"
@@ -4111,21 +4185,40 @@
 
             if (inferred.length) {
                 return inferred.map(
-                    canonical => ({
-                        kind:
-                            inferred.length > 1
-                                ? "Matching wildcard templates"
-                                : "Template",
-                        canonical,
-                        label:
-                            "<" +
-                            canonical +
-                            ">",
-                        description:
-                            "Inferred from <" +
-                            source +
-                            ">."
-                    })
+                    canonical => {
+                        const appSpecific =
+                            /(?:^|:)(?:time|duration|percent|date)$/
+                                .test(
+                                    canonical
+                                );
+
+                        return {
+                            kind:
+                                appSpecific
+                                    ? (
+                                        inferred.length >
+                                            1
+                                            ? "Matching app templates"
+                                            : "App template"
+                                    )
+                                    : (
+                                        inferred.length >
+                                            1
+                                            ? "Matching wildcard templates"
+                                            : "Template"
+                                    ),
+                            appSpecific,
+                            canonical,
+                            label:
+                                "<" +
+                                canonical +
+                                ">",
+                            description:
+                                "Inferred from <" +
+                                source +
+                                ">."
+                        };
+                    }
                 );
             }
 
