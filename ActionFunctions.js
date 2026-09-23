@@ -36,7 +36,15 @@
             Boolean(
                 value &&
                 typeof value === "object" &&
-                Object.getPrototypeOf(value) === Object.prototype
+                !Array.isArray(
+                    value
+                ) &&
+                Object.prototype
+                    .toString
+                    .call(
+                        value
+                    ) ===
+                    "[object Object]"
             );
 
     const cloneLiteral =
