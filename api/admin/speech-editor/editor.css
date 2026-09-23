@@ -723,3 +723,11 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
         width: 100%;
     }
 }
+
+
+/* Explicitly honor collapsed phrase-list groups. Author display rules above
+   otherwise override the browser's built-in <details> hiding behavior. */
+.tier:not([open]) > :not(summary),
+.speech-menu-group:not([open]) > :not(summary) {
+    display: none !important;
+}
