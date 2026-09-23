@@ -151,37 +151,42 @@ header('Cache-Control: no-store');
                 </form>
 
                 <p id="status" role="status" aria-live="polite"></p>
+            </section>
 
-                <section id="regexBuilderPanel" class="regex-builder" aria-label="Speech pattern regex builder">
-                    <div class="regex-builder-heading">
-                        <div>
-                            <h3>Regex Builder</h3>
-                            <p>Write the phrase you want recognized; the builder handles regex syntax and recognizer-safe normalization.</p>
-                        </div>
-                        <button id="regexBuilderHelpButton" class="regex-help-button" type="button" aria-expanded="false" aria-controls="regexBuilderHelp" title="Regex Builder help">?</button>
+            <div id="regexBuilderSplitter" class="inspector-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize attribute editor and regex builder" tabindex="0">
+                <span aria-hidden="true"></span>
+            </div>
+
+            <section id="regexBuilderPanel" class="regex-builder regex-builder-pane" aria-label="Speech pattern regex builder">
+                <div class="regex-builder-heading">
+                    <div>
+                        <h3>Regex Builder</h3>
+                        <p>Write the phrase you want recognized; the builder handles regex syntax and recognizer-safe normalization.</p>
                     </div>
+                    <button id="regexBuilderHelpButton" class="regex-help-button" type="button" aria-expanded="false" aria-controls="regexBuilderHelp" title="Regex Builder help">?</button>
+                </div>
 
-                    <div id="regexBuilderHelp" class="regex-builder-help" hidden>
-                        <p><strong>Templates:</strong> type <code>&lt;</code> to open the inline picker. You can also type wildcards directly; closing <code>&gt;</code> will infer the template.</p>
-                        <p><code>&lt;AAA&gt;</code> → <code>&lt;letters:3&gt;</code>, <code>&lt;###&gt;</code> → <code>&lt;digits:3&gt;</code>, <code>&lt;##.##&gt;</code> → <code>&lt;decimal:2.2&gt;</code>, and <code>&lt;code:AAA&gt;</code> → a named <code>code</code> capture.</p>
-                        <p><code>[please]</code> makes content optional. <code>{start|begin|go}</code> creates alternatives. Lengths may be exact, ranged (<code>2..5</code>), open-ended (<code>2..</code>), one-or-more (<code>+</code>), or zero-or-more (<code>*</code>).</p>
-                        <p>Literal text is lowercased, punctuation is scrubbed, spaces are normalized, and the final pattern is anchored automatically.</p>
-                    </div>
+                <div id="regexBuilderHelp" class="regex-builder-help" hidden>
+                    <p><strong>Templates:</strong> type <code>&lt;</code> to open the inline picker. App-specific templates appear first. You can also type wildcards directly; closing <code>&gt;</code> will infer the template.</p>
+                    <p><code>&lt;AAA&gt;</code> → <code>&lt;letters:3&gt;</code>, <code>&lt;###&gt;</code> → <code>&lt;digits:3&gt;</code>, <code>&lt;##.##&gt;</code> → <code>&lt;decimal:2.2&gt;</code>, and <code>&lt;code:AAA&gt;</code> → a named <code>code</code> capture.</p>
+                    <p>Semantic values can also be inferred. For example, <code>&lt;12:30 pm&gt;</code> resolves to Time; ambiguous values such as <code>&lt;12:30&gt;</code> open the matching app-template choices instead of guessing.</p>
+                    <p><code>[please]</code> makes content optional. <code>{start|begin|go}</code> creates alternatives. Lengths may be exact, ranged (<code>2..5</code>), open-ended (<code>2..</code>), one-or-more (<code>+</code>), or zero-or-more (<code>*</code>).</p>
+                    <p>Literal text is lowercased, punctuation is scrubbed, spaces are normalized, and the final pattern is anchored automatically.</p>
+                </div>
 
-                    <label class="regex-builder-field">
-                        <span>Phrase template</span>
-                        <textarea id="regexBuilderInput" rows="3" spellcheck="false" autocomplete="off" placeholder="set [the] {trip|total} goal to <percent>"></textarea>
-                        <div id="regexBuilderPicker" class="regex-builder-picker" role="listbox" hidden></div>
-                    </label>
+                <label class="regex-builder-field">
+                    <span>Phrase template</span>
+                    <textarea id="regexBuilderInput" rows="3" spellcheck="false" autocomplete="off" placeholder="set [the] {trip|total} goal to <percent>"></textarea>
+                    <div id="regexBuilderPicker" class="regex-builder-picker" role="listbox" hidden></div>
+                </label>
 
-                    <div id="regexBuilderRegexRow" class="regex-builder-regex-row" data-valid="false">
-                        <code id="regexBuilderOutput">Enter a phrase template.</code>
-                        <button id="regexBuilderCopy" type="button" disabled>Copy</button>
-                        <button id="regexBuilderPaste" type="button" disabled>Paste into speech-pattern</button>
-                        <button id="regexBuilderLive" type="button" aria-pressed="false" disabled>Live</button>
-                    </div>
-                    <p id="regexBuilderMessage" class="regex-builder-message" role="status" aria-live="polite"></p>
-                </section>
+                <div id="regexBuilderRegexRow" class="regex-builder-regex-row" data-valid="false">
+                    <code id="regexBuilderOutput">Enter a phrase template.</code>
+                    <button id="regexBuilderCopy" type="button" disabled>Copy</button>
+                    <button id="regexBuilderPaste" type="button" disabled>Paste into speech-pattern</button>
+                    <button id="regexBuilderLive" type="button" aria-pressed="false" disabled>Live</button>
+                </div>
+                <p id="regexBuilderMessage" class="regex-builder-message" role="status" aria-live="polite"></p>
             </section>
         </aside>
     </main>
