@@ -250,11 +250,15 @@ function consume_access_token(
             }
 
             $ownerCanIssue =
-                !$isNewUserToken ||
-                permission_mask_allows(
-                    $ownerPermissions,
-                    PERMISSION_CREATE_USERS
-                );
+                $isNewUserToken
+                    ? permission_mask_allows(
+                        $ownerPermissions,
+                        PERMISSION_CREATE_USERS
+                    )
+                    : permission_mask_allows(
+                        $ownerPermissions,
+                        PERMISSION_GRANT_TOKEN_ACCESS
+                    );
 
             $ownerCanGrantMask =
                 $tokenPermissions === 0 ||
@@ -275,6 +279,15 @@ function consume_access_token(
                 api_error('This token cannot create a new user.', 403, 'token_scope_denied');
             }
         } else {
+            if ($isNewUserToken) {
+                $pdo->rollBack();
+                api_error(
+                    'A New User token can only be used to create a new account.',
+                    403,
+                    'token_scope_denied'
+                );
+            }
+
             if (
                 $requiredPermissions !== [] &&
                 !permission_mask_allows_any(
