@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 const ACCESS_TOKEN_SCOPE_SQL = 'sql';
 const ACCESS_TOKEN_SCOPE_SPEECH_EDITOR = 'speech_editor';
+const ACCESS_TOKEN_SCOPE_ACCESS_TOKENS = 'access_tokens';
 
 function optional_current_user(): ?array
 {
@@ -168,7 +169,17 @@ function consume_access_token(
     string $scope,
     bool $establishSessionGrant = false
 ): array {
-    if (!in_array($scope, [ACCESS_TOKEN_SCOPE_SQL, ACCESS_TOKEN_SCOPE_SPEECH_EDITOR], true)) {
+    if (
+        !in_array(
+            $scope,
+            [
+                ACCESS_TOKEN_SCOPE_SQL,
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
+                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+            ],
+            true
+        )
+    ) {
         api_error('This token cannot be used for that resource.', 403, 'token_scope_denied');
     }
 
