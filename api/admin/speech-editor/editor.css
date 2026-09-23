@@ -388,6 +388,7 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 #speechMenuToggleField[hidden],
 #preprocSettings[hidden],
 #attributeForm[hidden],
+#attributeForm [hidden],
 .combo-options[hidden] {
     display: none !important;
 }
