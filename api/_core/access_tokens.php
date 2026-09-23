@@ -250,21 +250,11 @@ function consume_access_token(
             }
 
             $ownerCanIssue =
-                $isNewUserToken
-                    ? (
-                        permission_mask_allows(
-                            $ownerPermissions,
-                            PERMISSION_CREATE_USERS
-                        ) ||
-                        permission_mask_allows(
-                            $ownerPermissions,
-                            PERMISSION_GRANT_TOKEN_ACCESS
-                        )
-                    )
-                    : permission_mask_allows(
-                        $ownerPermissions,
-                        PERMISSION_GRANT_TOKEN_ACCESS
-                    );
+                !$isNewUserToken ||
+                permission_mask_allows(
+                    $ownerPermissions,
+                    PERMISSION_CREATE_USERS
+                );
 
             $ownerCanGrantMask =
                 $tokenPermissions === 0 ||
@@ -285,11 +275,6 @@ function consume_access_token(
                 api_error('This token cannot create a new user.', 403, 'token_scope_denied');
             }
         } else {
-            if ($isNewUserToken) {
-                $pdo->rollBack();
-                api_error('A New User token cannot authorize this resource.', 403, 'token_scope_denied');
-            }
-
             if (
                 $requiredPermissions !== [] &&
                 !permission_mask_allows_any(
@@ -349,6 +334,7 @@ function consume_access_token(
             'expires_at' => $expiresAt,
             'requires_authentication' => $requiresAuthentication,
             'uses_remaining' => $nextCount,
+            'single_use' => $usesRemaining === 1,
             'user' => $user,
             'principal_key' => 'token-' . (int) $row['id'],
         ];
