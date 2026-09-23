@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-class ApiFailure extends RuntimeException {
+class ApiFailure extends RuntimeException
+{
     public function __construct(
         public int $status,
         public string $apiCode
@@ -18,17 +19,14 @@ function api_error(
     throw new ApiFailure($status, $code);
 }
 
-class FixturePDO extends PDO {
+class FixturePDO extends PDO
+{
     public function prepare(
         string $query,
         array $options = []
     ): PDOStatement|false {
         return parent::prepare(
-            str_replace(
-                ' FOR UPDATE',
-                '',
-                $query
-            ),
+            str_replace(' FOR UPDATE', '', $query),
             $options
         );
     }
@@ -38,7 +36,8 @@ $pdo = new FixturePDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-function db(): PDO {
+function db(): PDO
+{
     return $GLOBALS['pdo'];
 }
 
@@ -55,12 +54,12 @@ $pdo->exec(
 
 $pdo->exec(
     'CREATE TABLE access_tokens ('
-    . 'id INTEGER PRIMARY KEY AUTOINCREMENT, owner_user_id INTEGER NOT NULL, '
+    . 'id INTEGER PRIMARY KEY AUTOINCREMENT, owner_user_id INTEGER NULL, '
     . 'name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, token_hint TEXT NOT NULL, '
-    . 'permissions INTEGER NOT NULL, uses_remaining INTEGER NOT NULL, '
-    . 'delete_on_deplete INTEGER NOT NULL, requires_authentication INTEGER NOT NULL, '
-    . 'expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, '
-    . 'last_used_at INTEGER)'
+    . 'permissions INTEGER NOT NULL DEFAULT 0, new_user INTEGER NOT NULL DEFAULT 0, '
+    . 'uses_remaining INTEGER NULL, delete_on_deplete INTEGER NOT NULL, '
+    . 'requires_authentication INTEGER NOT NULL, expires_at INTEGER NOT NULL, '
+    . 'created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, last_used_at INTEGER)'
 );
 
 $insertUser = $pdo->prepare(
@@ -74,7 +73,9 @@ $insertUser->execute([
     'owner',
     'Token',
     'Owner',
-    PERMISSION_GRANT_TOKEN_ACCESS | PERMISSION_DEVELOPER
+    PERMISSION_CREATE_USERS |
+        PERMISSION_GRANT_TOKEN_ACCESS |
+        PERMISSION_DEVELOPER,
 ]);
 
 $insertUser->execute([
@@ -82,7 +83,7 @@ $insertUser->execute([
     'recipient',
     'Token',
     'Recipient',
-    0
+    0,
 ]);
 
 $insertUser->execute([
@@ -90,25 +91,22 @@ $insertUser->execute([
     'grant-only',
     'Grant',
     'Only',
-    PERMISSION_GRANT_TOKEN_ACCESS
+    PERMISSION_GRANT_TOKEN_ACCESS,
 ]);
 
 $passed = 0;
 
-function test(
-    string $name,
-    callable $callback
-): void {
+function test(string $name, callable $callback): void
+{
     $callback();
     $GLOBALS['passed']++;
     echo "PASS $name" . PHP_EOL;
 }
 
-function expect(bool $condition): void {
+function expect(bool $condition): void
+{
     if (!$condition) {
-        throw new RuntimeException(
-            'Assertion failed'
-        );
+        throw new RuntimeException('Assertion failed');
     }
 }
 
@@ -127,35 +125,34 @@ function rejects(
         return;
     }
 
-    throw new RuntimeException(
-        'Expected API rejection'
-    );
+    throw new RuntimeException('Expected API rejection');
 }
 
 function seed_token(
     string $raw,
-    int $owner,
-    int $permission,
-    int $counter,
+    ?int $owner,
+    int $permissions,
+    ?int $counter,
     bool $deleteOnDeplete,
     bool $requiresAuthentication,
+    bool $newUser = false,
     ?int $expiresAt = null
 ): int {
     $statement = db()->prepare(
         'INSERT INTO access_tokens '
-        . '(owner_user_id, name, token_hash, token_hint, permissions, uses_remaining, '
-        . 'delete_on_deplete, requires_authentication, expires_at, created_at, updated_at) '
-        . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        . '(owner_user_id, name, token_hash, token_hint, permissions, new_user, '
+        . 'uses_remaining, delete_on_deplete, requires_authentication, '
+        . 'expires_at, created_at, updated_at) '
+        . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
-
     $now = time();
-
     $statement->execute([
         $owner,
         'Test token',
         access_token_hash($raw),
         'hint',
-        $permission,
+        $permissions,
+        $newUser ? 1 : 0,
         $counter,
         $deleteOnDeplete ? 1 : 0,
         $requiresAuthentication ? 1 : 0,
@@ -167,27 +164,20 @@ function seed_token(
     return (int) db()->lastInsertId();
 }
 
-function token_counter(int $id): ?int {
+function token_row(int $id): ?array
+{
     $statement = db()->prepare(
-        'SELECT uses_remaining FROM access_tokens WHERE id = ?'
+        'SELECT * FROM access_tokens WHERE id = ?'
     );
     $statement->execute([$id]);
-    $value = $statement->fetchColumn();
+    $row = $statement->fetch();
 
-    return $value === false
-        ? null
-        : (int) $value;
+    return $row ?: null;
 }
 
 test(
     'generated token has WMOF prefix',
-    fn() =>
-        expect(
-            str_starts_with(
-                access_token_generate(),
-                'wmof_'
-            )
-        )
+    fn() => expect(str_starts_with(access_token_generate(), 'wmof_'))
 );
 
 $id = seed_token(
@@ -200,49 +190,70 @@ $id = seed_token(
 );
 
 test(
-    'first use decrements counter',
+    'counted token decrements and reports single final use',
     function () use ($id): void {
-        $authorization =
-            consume_access_token(
+        $first = consume_access_token(
+            'two-use',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        );
+        expect(
+            $first['uses_remaining'] === 1 &&
+            $first['single_use'] === false &&
+            (int) token_row($id)['uses_remaining'] === 1
+        );
+
+        $second = consume_access_token(
+            'two-use',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        );
+        expect(
+            $second['uses_remaining'] === 0 &&
+            $second['single_use'] === true &&
+            (int) token_row($id)['uses_remaining'] === 0
+        );
+
+        rejects(
+            fn() => consume_access_token(
                 'two-use',
                 [PERMISSION_DEVELOPER],
                 ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            );
-
-        expect(
-            $authorization['uses_remaining'] === 1 &&
-            token_counter($id) === 1
+            ),
+            401,
+            'depleted_access_token'
         );
     }
 );
 
+$unlimitedId = seed_token(
+    'unlimited',
+    1,
+    PERMISSION_DEVELOPER,
+    null,
+    false,
+    false
+);
+
 test(
-    'counter reaches zero without going below zero',
-    function () use ($id): void {
-        $authorization =
-            consume_access_token(
-                'two-use',
-                [PERMISSION_DEVELOPER],
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            );
+    'unlimited token remains unlimited until expiration',
+    function () use ($unlimitedId): void {
+        $first = consume_access_token(
+            'unlimited',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        );
+        $second = consume_access_token(
+            'unlimited',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        );
 
         expect(
-            $authorization['uses_remaining'] === 0 &&
-            token_counter($id) === 0
+            $first['uses_remaining'] === null &&
+            $second['uses_remaining'] === null &&
+            token_row($unlimitedId)['uses_remaining'] === null
         );
-
-        rejects(
-            fn() =>
-                consume_access_token(
-                    'two-use',
-                    [PERMISSION_DEVELOPER],
-                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-                ),
-            401,
-            'depleted_access_token'
-        );
-
-        expect(token_counter($id) === 0);
     }
 );
 
@@ -256,16 +267,17 @@ $deleteId = seed_token(
 );
 
 test(
-    'delete on deplete removes last-use token',
+    'delete on deplete removes one-use token',
     function () use ($deleteId): void {
-        consume_access_token(
+        $authorization = consume_access_token(
             'delete-last',
             [PERMISSION_DEVELOPER],
             ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
         );
 
         expect(
-            token_counter($deleteId) === null
+            $authorization['single_use'] === true &&
+            token_row($deleteId) === null
         );
     }
 );
@@ -285,17 +297,16 @@ test(
         $_SESSION = [];
 
         rejects(
-            fn() =>
-                consume_access_token(
-                    'needs-login',
-                    [PERMISSION_DEVELOPER],
-                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-                ),
+            fn() => consume_access_token(
+                'needs-login',
+                [PERMISSION_DEVELOPER],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            ),
             401,
             'authentication_required'
         );
 
-        expect(token_counter($authId) === 1);
+        expect((int) token_row($authId)['uses_remaining'] === 1);
     }
 );
 
@@ -304,18 +315,13 @@ test(
     function () use ($authId): void {
         $_SESSION['user_id'] = 2;
 
-        $authorization =
-            consume_access_token(
-                'needs-login',
-                [PERMISSION_DEVELOPER],
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            );
-
-        expect(
-            (int) $authorization['user']['id'] === 2 &&
-            token_counter($authId) === 0
+        consume_access_token(
+            'needs-login',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
         );
 
+        expect((int) token_row($authId)['uses_remaining'] === 0);
         $_SESSION = [];
     }
 );
@@ -330,18 +336,136 @@ seed_token(
 );
 
 test(
-    'owner cannot delegate permission they no longer hold',
-    fn() =>
-        rejects(
-            fn() =>
-                consume_access_token(
-                    'bad-escalation',
-                    [PERMISSION_DEVELOPER],
-                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-                ),
-            403,
-            'revoked_access_token'
-        )
+    'owner cannot delegate a permission they do not hold',
+    fn() => rejects(
+        fn() => consume_access_token(
+            'bad-escalation',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        ),
+        403,
+        'revoked_access_token'
+    )
+);
+
+$combinedId = seed_token(
+    'combined',
+    1,
+    PERMISSION_DEVELOPER | PERMISSION_GRANT_TOKEN_ACCESS,
+    null,
+    false,
+    false
+);
+
+test(
+    'combined permissions authorize more than one guarded scope',
+    function () use ($combinedId): void {
+        $speech = consume_access_token(
+            'combined',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        );
+        $tokens = consume_access_token(
+            'combined',
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+        );
+
+        expect(
+            $speech['uses_remaining'] === null &&
+            $tokens['uses_remaining'] === null &&
+            token_row($combinedId) !== null
+        );
+    }
+);
+
+$newUserCombinedId = seed_token(
+    'new-user-combined',
+    1,
+    PERMISSION_DEVELOPER | PERMISSION_GRANT_TOKEN_ACCESS,
+    null,
+    false,
+    false,
+    true
+);
+
+test(
+    'New User capability combines with ordinary permissions',
+    function () use ($newUserCombinedId): void {
+        $newUser = consume_access_token(
+            'new-user-combined',
+            [],
+            ACCESS_TOKEN_SCOPE_NEW_USER
+        );
+        $tokenManager = consume_access_token(
+            'new-user-combined',
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+        );
+
+        expect(
+            $newUser['new_user'] === true &&
+            $tokenManager['new_user'] === true &&
+            token_row($newUserCombinedId) !== null
+        );
+    }
+);
+
+seed_token(
+    'unauthorized-new-user',
+    3,
+    PERMISSION_GRANT_TOKEN_ACCESS,
+    1,
+    false,
+    false,
+    true
+);
+
+test(
+    'New User capability requires owner to retain Create Users',
+    fn() => rejects(
+        fn() => consume_access_token(
+            'unauthorized-new-user',
+            [],
+            ACCESS_TOKEN_SCOPE_NEW_USER
+        ),
+        403,
+        'revoked_access_token'
+    )
+);
+
+$systemId = seed_token(
+    'system-token',
+    null,
+    PERMISSION_GRANT_TOKEN_ACCESS,
+    null,
+    false,
+    false
+);
+
+test(
+    'ownerless system token can authorize delegated access',
+    function () use ($systemId): void {
+        $_SESSION = [];
+
+        $authorization = consume_access_token(
+            'system-token',
+            [PERMISSION_GRANT_TOKEN_ACCESS],
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+            true
+        );
+
+        $grant = access_token_session_grant(
+            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+        );
+
+        expect(
+            $authorization['owner_user_id'] === null &&
+            $grant['owner_user_id'] === null &&
+            $grant['permissions'] === PERMISSION_GRANT_TOKEN_ACCESS &&
+            token_row($systemId) !== null
+        );
+    }
 );
 
 seed_token(
@@ -355,17 +479,15 @@ seed_token(
 
 test(
     'token must grant permission required by guarded endpoint',
-    fn() =>
-        rejects(
-            fn() =>
-                consume_access_token(
-                    'wrong-scope-permission',
-                    [PERMISSION_SUPERUSER],
-                    ACCESS_TOKEN_SCOPE_SQL
-                ),
-            403,
-            'permission_required'
-        )
+    fn() => rejects(
+        fn() => consume_access_token(
+            'wrong-scope-permission',
+            [PERMISSION_SUPERUSER],
+            ACCESS_TOKEN_SCOPE_SQL
+        ),
+        403,
+        'permission_required'
+    )
 );
 
 seed_token(
@@ -375,131 +497,21 @@ seed_token(
     1,
     false,
     false,
+    false,
     time() - 1
 );
 
 test(
     'expired token is rejected without consumption',
-    fn() =>
-        rejects(
-            fn() =>
-                consume_access_token(
-                    'expired',
-                    [PERMISSION_DEVELOPER],
-                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-                ),
-            401,
-            'expired_access_token'
-        )
-);
-
-$sessionId = seed_token(
-    'session-token',
-    1,
-    PERMISSION_DEVELOPER,
-    1,
-    true,
-    false
-);
-
-test(
-    'form redemption can establish scoped grant after token row is deleted',
-    function () use ($sessionId): void {
-        $_SESSION = [];
-
-        $authorization =
-            consume_access_token(
-                'session-token',
-                [PERMISSION_DEVELOPER],
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
-                true
-            );
-
-        expect(
-            token_counter($sessionId) === null &&
-            $authorization['mode'] === 'token_form'
-        );
-
-        $grant =
-            access_token_session_grant(
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            );
-
-        expect(
-            is_array($grant) &&
-            (int) $grant['permissions'] ===
-                PERMISSION_DEVELOPER
-        );
-    }
-);
-
-$managerId = seed_token(
-    'manager-token',
-    3,
-    PERMISSION_GRANT_TOKEN_ACCESS,
-    1,
-    true,
-    false
-);
-
-test(
-    'grant-token-access token can establish token-manager session grant',
-    function () use ($managerId): void {
-        $_SESSION = [];
-
-        $authorization =
-            consume_access_token(
-                'manager-token',
-                [PERMISSION_GRANT_TOKEN_ACCESS],
-                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
-                true
-            );
-
-        expect(
-            token_counter($managerId) === null &&
-            $authorization['mode'] === 'token_form' &&
-            (int) $authorization['permissions'] ===
-                PERMISSION_GRANT_TOKEN_ACCESS
-        );
-
-        $grant =
-            access_token_session_grant(
-                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
-            );
-
-        expect(
-            is_array($grant) &&
-            (int) $grant['permissions'] ===
-                PERMISSION_GRANT_TOKEN_ACCESS
-        );
-    }
-);
-
-seed_token(
-    'developer-cannot-manage-tokens',
-    1,
-    PERMISSION_DEVELOPER,
-    1,
-    false,
-    false
-);
-
-test(
-    'developer token cannot enter token manager',
-    function (): void {
-        $_SESSION = [];
-
-        rejects(
-            fn() =>
-                consume_access_token(
-                    'developer-cannot-manage-tokens',
-                    [PERMISSION_GRANT_TOKEN_ACCESS],
-                    ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
-                ),
-            403,
-            'permission_required'
-        );
-    }
+    fn() => rejects(
+        fn() => consume_access_token(
+            'expired',
+            [PERMISSION_DEVELOPER],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+        ),
+        401,
+        'expired_access_token'
+    )
 );
 
 echo $passed . " tests passed." . PHP_EOL;
