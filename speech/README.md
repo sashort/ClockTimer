@@ -13,6 +13,7 @@ Production should keep the service outside Apache's document root:
 ├── src/
 │   ├── server.js
 │   ├── protocol.js
+│   ├── grammar.js
 │   └── whisper-service.js
 ├── package.json
 └── node_modules/
@@ -56,6 +57,7 @@ Control messages currently include:
 
 ```text
 session-start
+context-update
 session-end
 utterance-start
 utterance-end
@@ -80,21 +82,30 @@ For each utterance, the Node service:
 1. collects binary PCM packets by `utteranceId`;
 2. periodically transcribes a new cumulative audio snapshot;
 3. emits changed partial transcripts;
-4. emits one final transcript on `utterance-end`;
-5. rejects stale/duplicate packet sequence numbers and caps utterance size.
+4. generates a GBNF grammar from the active recognition context;
+5. uses a moderate grammar penalty for partials and a strict penalty for the final pass;
+6. emits one final transcript on `utterance-end`;
+7. rejects stale/duplicate packet sequence numbers and caps utterance size.
 
 The internal Whisper HTTP server is never exposed publicly.
 
 ## One-time Lightsail setup
 
-Install build dependencies appropriate for the Lightsail image, then build current whisper.cpp:
+Install build dependencies appropriate for the Lightsail image, then build the pinned whisper.cpp revision with ClockTimer's small HTTP grammar patch. The pin keeps the patch reproducible; update the pin and re-run CI whenever whisper.cpp is intentionally upgraded.
 
 ```bash
+CLOCKTIMER_CHECKOUT="$(pwd)"
+WHISPER_CPP_REF="a44e07845931421bb6f3447ce0010ed9dc76a118"
+
 cd /opt
 sudo git clone https://github.com/ggml-org/whisper.cpp.git
-cd /opt/whisper.cpp
-sudo cmake -B build
-sudo cmake --build build -j --config Release
+sudo git -C /opt/whisper.cpp checkout "$WHISPER_CPP_REF"
+sudo git -C /opt/whisper.cpp apply \
+  "$CLOCKTIMER_CHECKOUT/speech/whisper-server-grammar.patch"
+
+sudo cmake -S /opt/whisper.cpp -B /opt/whisper.cpp/build
+sudo cmake --build /opt/whisper.cpp/build \
+  --target whisper-server -j --config Release
 ```
 
 Create the runtime directories:
@@ -128,6 +139,7 @@ Deploy the authored Node files from the ClockTimer checkout:
 ```bash
 sudo install -m 644 speech/server.js /opt/clocktimer-speech/src/server.js
 sudo install -m 644 speech/protocol.js /opt/clocktimer-speech/src/protocol.js
+sudo install -m 644 speech/grammar.js /opt/clocktimer-speech/src/grammar.js
 sudo install -m 644 speech/whisper-service.js /opt/clocktimer-speech/src/whisper-service.js
 sudo install -m 644 speech/package.json /opt/clocktimer-speech/package.json
 
@@ -195,4 +207,4 @@ From `tests/`:
 npm run test:speech-pipeline
 ```
 
-That covers the existing mic-bar pipeline, provider boundary, WebSocket binary framing, transcript message routing, and syntax checks for the speech client/server files.
+That covers the mic-bar pipeline, provider boundary, WebSocket framing, transcript routing, spoken number/time normalization, GBNF generation, and syntax checks. The GitHub Actions speech workflow additionally checks that the generated WMOF grammar parses with whisper.cpp's own grammar parser, applies `whisper-server-grammar.patch` to the pinned upstream revision, and builds the patched `whisper-server`.
