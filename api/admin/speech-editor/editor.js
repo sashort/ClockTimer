@@ -9892,7 +9892,7 @@
 
                 const phrases =
                     speechMenu
-                        ?.phrasesFromPattern?.(
+                        ?.extrapolatePattern?.(
                             pattern
                         ) ||
                     [];
