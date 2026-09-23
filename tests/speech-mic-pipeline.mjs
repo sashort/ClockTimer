@@ -240,7 +240,15 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /current\s*\+\s*" \/ "\s*\+\s*total/
+    /#animateLoadingProgress[\s\S]*requestAnimationFrame/
+);
+assert.match(
+    speechMicBarSource,
+    /displayed\s*\+\s*" \/ "\s*\+\s*total/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /width 160ms linear/
 );
 assert.match(
     speechMicBarSource,
