@@ -3493,10 +3493,54 @@
             scheduleApply();
         };
 
+    const isPreprocFunction =
+        name =>
+            draftPreprocFunctions
+                .includes(name);
+
+    const setPreprocStatus =
+        (
+            name,
+            enabled
+        ) => {
+            const values =
+                new Set(
+                    draftPreprocFunctions
+                );
+
+            if (enabled) {
+                values.add(name);
+            }
+            else {
+                values.delete(name);
+            }
+
+            draftPreprocFunctions =
+                [
+                    ...values
+                ].sort(
+                    (a, b) =>
+                        a.localeCompare(b)
+                );
+
+            functionCombo.refresh();
+            preprocCombo.refresh();
+            updateButtons();
+
+            status(
+                enabled
+                    ? name +
+                        " marked as preproc."
+                    : name +
+                        " moved to speech-function."
+            );
+        };
+
     const attachCombobox =
         (
             input,
-            optionsNode
+            optionsNode,
+            role
         ) => {
             let active = -1;
 
@@ -3509,6 +3553,20 @@
                             )
                     ];
 
+            const roleNames =
+                () =>
+                    functionNames.filter(
+                        name =>
+                            role ===
+                                "preproc"
+                                ? isPreprocFunction(
+                                    name
+                                )
+                                : !isPreprocFunction(
+                                    name
+                                )
+                    );
+
             const renderOptions =
                 () => {
                     optionsNode
@@ -3516,8 +3574,16 @@
 
                     for (
                         const name of
-                        functionNames
+                        roleNames()
                     ) {
+                        const row =
+                            document.createElement(
+                                "div"
+                            );
+
+                        row.className =
+                            "combo-option-row";
+
                         const button =
                             document.createElement(
                                 "button"
@@ -3560,8 +3626,68 @@
                             }
                         );
 
+                        const toggle =
+                            document.createElement(
+                                "button"
+                            );
+
+                        toggle.type =
+                            "button";
+                        toggle.className =
+                            "combo-role-toggle";
+
+                        toggle.textContent =
+                            role ===
+                                "preproc"
+                                ? "Use as function"
+                                : "Mark preproc";
+
+                        toggle.title =
+                            role ===
+                                "preproc"
+                                ? "Remove preproc tag"
+                                : "Tag as preproc";
+
+                        toggle.addEventListener(
+                            "pointerdown",
+                            event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                        );
+
+                        toggle.addEventListener(
+                            "click",
+                            event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                setPreprocStatus(
+                                    name,
+                                    role !==
+                                        "preproc"
+                                );
+
+                                requestAnimationFrame(
+                                    () => {
+                                        optionsNode.hidden =
+                                            false;
+                                        input.setAttribute(
+                                            "aria-expanded",
+                                            "true"
+                                        );
+                                    }
+                                );
+                            }
+                        );
+
+                        row.append(
+                            button,
+                            toggle
+                        );
+
                         optionsNode.append(
-                            button
+                            row
                         );
                     }
 
@@ -3570,12 +3696,7 @@
                 };
 
             const show = () => {
-                if (
-                    !optionsNode
-                        .childElementCount
-                ) {
-                    renderOptions();
-                }
+                renderOptions();
 
                 optionsNode.hidden =
                     false;
@@ -3753,7 +3874,7 @@
                 () =>
                     setTimeout(
                         hide,
-                        120
+                        160
                     )
             );
 
@@ -3766,13 +3887,15 @@
     const functionCombo =
         attachCombobox(
             $("functionInput"),
-            $("functionOptions")
+            $("functionOptions"),
+            "function"
         );
 
     const preprocCombo =
         attachCombobox(
             $("preprocInput"),
-            $("preprocOptions")
+            $("preprocOptions"),
+            "preproc"
         );
 
     const renderAll = () => {
