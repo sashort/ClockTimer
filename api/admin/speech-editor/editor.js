@@ -9063,6 +9063,8 @@
                     snapshot.workspace
                 );
 
+                saveWorkspaceState();
+
                 syncMacrosToFrame();
                 functionCombo.refresh();
                 preprocCombo.refresh();
@@ -9099,17 +9101,22 @@
                 const error =
                     validate();
 
+                if (error) {
+                    throw new Error(
+                        error
+                    );
+                }
+
                 return {
                     valid:
-                        !error,
+                        true,
                     error:
-                        error ||
                         ""
                 };
             },
             {
                 description:
-                    "Validate the current editor draft without saving it.",
+                    "Validate the current editor draft without saving it. Validation failures are action errors so atomic batches roll back.",
                 mutates:
                     false
             }
