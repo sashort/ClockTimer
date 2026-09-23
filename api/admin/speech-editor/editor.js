@@ -5632,132 +5632,145 @@
             }
         );
 
-    const splitter =
-        $("inspectorSplitter");
+    const bindInspectorSplitter =
+        ({
+            splitterId,
+            paneSelector,
+            variable,
+            minHeight,
+            maxHeight
+        }) => {
+            const splitter =
+                $(splitterId);
 
-    let splitStartY;
-    let splitStartHeight;
+            let startY;
+            let startHeight;
 
-    splitter.addEventListener(
-        "pointerdown",
-        event => {
-            splitStartY =
-                event.clientY;
+            const applyHeight =
+                next => {
+                    const inspector =
+                        document
+                            .querySelector(
+                                ".inspector"
+                            );
 
-            splitStartHeight =
-                document
-                    .querySelector(
-                        ".phrase-pane"
-                    )
-                    .getBoundingClientRect()
-                    .height;
+                    const total =
+                        inspector
+                            .getBoundingClientRect()
+                            .height;
 
-            splitter
-                .setPointerCapture?.(
-                    event.pointerId
-                );
+                    const maximum =
+                        Math.max(
+                            minHeight,
+                            maxHeight(
+                                total
+                            )
+                        );
 
-            event.preventDefault();
-        }
-    );
+                    const height =
+                        Math.max(
+                            minHeight,
+                            Math.min(
+                                maximum,
+                                next
+                            )
+                        );
 
-    splitter.addEventListener(
-        "pointermove",
-        event => {
-            if (
-                splitStartY ===
-                undefined
-            ) {
-                return;
-            }
+                    document
+                        .documentElement
+                        .style
+                        .setProperty(
+                            variable,
+                            height +
+                                "px"
+                        );
+                };
 
-            const inspector =
-                document
-                    .querySelector(
-                        ".inspector"
-                    );
+            splitter.addEventListener(
+                "pointerdown",
+                event => {
+                    startY =
+                        event.clientY;
 
-            const total =
-                inspector
-                    .getBoundingClientRect()
-                    .height;
+                    startHeight =
+                        document
+                            .querySelector(
+                                paneSelector
+                            )
+                            .getBoundingClientRect()
+                            .height;
 
-            const next =
-                Math.max(
-                    150,
-                    Math.min(
-                        total - 210,
-                        splitStartHeight +
+                    splitter
+                        .setPointerCapture?.(
+                            event.pointerId
+                        );
+
+                    event.preventDefault();
+                }
+            );
+
+            splitter.addEventListener(
+                "pointermove",
+                event => {
+                    if (
+                        startY ===
+                        undefined
+                    ) {
+                        return;
+                    }
+
+                    applyHeight(
+                        startHeight +
                         event.clientY -
-                        splitStartY
-                    )
-                );
+                        startY
+                    );
+                }
+            );
 
-            document
-                .documentElement
-                .style
-                .setProperty(
-                    "--phrase-pane-height",
-                    next + "px"
-                );
-        }
-    );
+            const endSplit =
+                () => {
+                    startY =
+                        undefined;
 
-    const endSplit = () => {
-        splitStartY =
-            undefined;
-        splitStartHeight =
-            undefined;
-    };
+                    startHeight =
+                        undefined;
+                };
 
-    splitter.addEventListener(
-        "pointerup",
-        endSplit
-    );
+            splitter.addEventListener(
+                "pointerup",
+                endSplit
+            );
 
-    splitter.addEventListener(
-        "pointercancel",
-        endSplit
-    );
+            splitter.addEventListener(
+                "pointercancel",
+                endSplit
+            );
 
-    splitter.addEventListener(
-        "keydown",
-        event => {
-            if (
-                ![
-                    "ArrowUp",
-                    "ArrowDown"
-                ].includes(
-                    event.key
-                )
-            ) {
-                return;
-            }
+            splitter.addEventListener(
+                "keydown",
+                event => {
+                    if (
+                        ![
+                            "ArrowUp",
+                            "ArrowDown"
+                        ].includes(
+                            event.key
+                        )
+                    ) {
+                        return;
+                    }
 
-            event.preventDefault();
+                    event.preventDefault();
 
-            const current =
-                document
-                    .querySelector(
-                        ".phrase-pane"
-                    )
-                    .getBoundingClientRect()
-                    .height;
+                    const current =
+                        document
+                            .querySelector(
+                                paneSelector
+                            )
+                            .getBoundingClientRect()
+                            .height;
 
-            const inspectorHeight =
-                document
-                    .querySelector(
-                        ".inspector"
-                    )
-                    .getBoundingClientRect()
-                    .height;
-
-            const next =
-                Math.max(
-                    150,
-                    Math.min(
-                        inspectorHeight -
-                            210,
+                    applyHeight(
                         current +
                         (
                             event.key ===
@@ -5765,18 +5778,66 @@
                                 ? 20
                                 : -20
                         )
-                    )
-                );
+                    );
+                }
+            );
+        };
 
-            document
-                .documentElement
-                .style
-                .setProperty(
-                    "--phrase-pane-height",
-                    next + "px"
+    bindInspectorSplitter({
+        splitterId:
+            "inspectorSplitter",
+        paneSelector:
+            ".phrase-pane",
+        variable:
+            "--phrase-pane-height",
+        minHeight:
+            120,
+        maxHeight:
+            total => {
+                const attributeHeight =
+                    document
+                        .querySelector(
+                            ".attribute-pane"
+                        )
+                        .getBoundingClientRect()
+                        .height;
+
+                return (
+                    total -
+                    24 -
+                    attributeHeight -
+                    150
                 );
-        }
-    );
+            }
+    });
+
+    bindInspectorSplitter({
+        splitterId:
+            "regexBuilderSplitter",
+        paneSelector:
+            ".attribute-pane",
+        variable:
+            "--attribute-pane-height",
+        minHeight:
+            150,
+        maxHeight:
+            total => {
+                const phraseHeight =
+                    document
+                        .querySelector(
+                            ".phrase-pane"
+                        )
+                        .getBoundingClientRect()
+                        .height;
+
+                return (
+                    total -
+                    24 -
+                    phraseHeight -
+                    150
+                );
+            }
+    });
 
     const resolvesFunction =
         path => {
