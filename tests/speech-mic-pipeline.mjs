@@ -400,3 +400,16 @@ assert.match(
     presentationSource,
     /speech-response-button-facsimile[\s\S]*background[\s\S]*color[\s\S]*border/
 );
+
+assert.match(
+    speechMenuSource,
+    /#terminalCommitSilenceTimeout\s*=\s*120/
+);
+assert.match(
+    speechMenuSource,
+    /#hasPhraseContinuation[\s\S]*#phraseCanContinue/
+);
+assert.match(
+    speechMenuSource,
+    /#candidateCommitSilenceTimeout[\s\S]*\.continuation/
+);
