@@ -166,6 +166,10 @@
                     mutates:
                         definition
                             ?.mutates !==
+                        false,
+                    transactional:
+                        definition
+                            ?.transactional !==
                         false
                 }
             );
@@ -342,6 +346,34 @@
                 throw new TypeError(
                     "Editor action batches require an actions array."
                 );
+            }
+
+            if (atomic) {
+                for (
+                    const command of
+                    commands
+                ) {
+                    const normalized =
+                        normalizeCommand(
+                            command
+                        );
+
+                    const definition =
+                        metadata.get(
+                            normalized.action
+                        );
+
+                    if (
+                        definition &&
+                        definition.transactional ===
+                            false
+                    ) {
+                        throw new Error(
+                            "Action cannot run inside an atomic batch: " +
+                            normalized.action
+                        );
+                    }
+                }
             }
 
             let snapshot;
