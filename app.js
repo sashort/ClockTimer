@@ -8301,118 +8301,148 @@
         refreshTripSettingsValues();
     });
 
-    tripSettingsCloud.addEventListener("click", () => {
-        if (
-            tripSettingsCloud.dataset.networkStatus !== "offline" ||
-            connectionCloudPhase !== "settled"
-        ) return;
-        void resumeConnectionFromCloud({
-            source: "trip-settings"
-        }).catch(() => {});
-    });
-
-    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (button.disabled) return;
-            const field = button.dataset.tripTimeField;
-
-            void (async () => {
-                try {
-                    await openTripFieldNumberPad(field);
-                    if (!numberPadDialog?.open) return;
-                    if (!closeDialog(tripSettingsDialog, {
-                        reason: `trip-settings:${field}`,
-                        immediate: true
-                    })) {
-                        await closeNumberPad({
-                            discardPrepared: false,
-                            allowChanged: true,
-                            immediate: true,
-                            destination: "none"
-                        });
+    tripSettingsCloud.addEventListener(
+        "click",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "resumeTripSettingsConnectionClick",
+                () => {
+                    if (
+                        tripSettingsCloud
+                            .dataset
+                            .networkStatus !==
+                                "offline" ||
+                        connectionCloudPhase !==
+                            "settled"
+                    ) {
+                        return false;
                     }
+
+                    return globalThis
+                        .WMOFActions
+                        .resumeConnection(
+                            "trip-settings"
+                        );
                 }
-                catch {}
-            })();
+            )
+    );
+
+    tripSettingsDialog
+        .querySelectorAll(
+            "[data-trip-time-field]"
+        )
+        .forEach(
+            button => {
+                globalThis
+                    .WMOFInteractionFunctions
+                    .bindAction({
+                        element:
+                            button,
+                        event:
+                            "pointerup",
+                        name:
+                            "openTrip" +
+                            String(
+                                button.dataset
+                                    .tripTimeField ||
+                                "Time"
+                            )
+                                .replace(
+                                    /[^A-Za-z0-9]+(.)/g,
+                                    (
+                                        match,
+                                        character
+                                    ) =>
+                                        character
+                                            ?.toUpperCase() ||
+                                        ""
+                                ) +
+                            "EditorPointerUp",
+                        action:
+                            "openTripTimeEditor",
+                        args:
+                            () => [
+                                button.dataset
+                                    .tripTimeField
+                            ]
+                    });
+            }
+        );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripSetStartsNow,
+            event:
+                "pointerup",
+            name:
+                "toggleTripStartsNowPointerUp",
+            action:
+                "toggleTripStartsNow"
         });
-    });
 
-    tripSetStartsNow.addEventListener("pointerup", () => {
-        if (!tripDraft || tripIsLive()) return;
-        if (!tripSettingsSession) beginTripSettingsSession();
-        const values = tripSettingsSession?.values;
-        if (!values) return;
-
-        if (!tripStartsNowState) {
-            const now = new Date();
-            const value = formatTimelineDateTime(now, values.creationDate);
-            if (!value) return;
-            const label = formatTripTimeOnly(value, values.creationDate);
-            if (!label || label === "---") return;
-            tripStartsNowState = {
-                value,
-                label,
-                snapshot: {
-                    scheduledStart: values.scheduledStart,
-                    startTime: values.startTime
-                },
-                scheduled: false,
-                actual: false
-            };
-            syncTripStartsNowUI();
-            return;
-        }
-
-        beginTripStartsNowExit();
-    });
-
-    tripSetStartsNowCancel.addEventListener("pointerup", () => {
-        if (!tripStartsNowState) return;
-        const values = tripSettingsSession?.values;
-        const snapshot = tripStartsNowState.snapshot;
-        if (values && snapshot) {
-            if (tripStartsNowState.scheduled) {
-                values.scheduledStart = snapshot.scheduledStart;
-            }
-            if (tripStartsNowState.actual) {
-                values.startTime = snapshot.startTime;
-            }
-        }
-        beginTripStartsNowExit();
-    });
-
-    tripStartNowToggles.forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (!tripStartsNowState) return;
-            const values = tripSettingsSession?.values;
-            const snapshot = tripStartsNowState.snapshot;
-            if (!values || !snapshot) return;
-
-            const scheduled =
-                button.dataset.tripStartNowTarget === "scheduled-start";
-            const key = scheduled ? "scheduled" : "actual";
-            const selected = !tripStartsNowState[key];
-            tripStartsNowState[key] = selected;
-
-            if (scheduled) {
-                values.scheduledStart = selected
-                    ? tripStartsNowState.value
-                    : snapshot.scheduledStart;
-            }
-            else {
-                values.startTime = selected
-                    ? tripStartsNowState.value
-                    : snapshot.startTime;
-            }
-
-            refreshTripSettingsValues();
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripSetStartsNowCancel,
+            event:
+                "pointerup",
+            name:
+                "cancelTripStartsNowPointerUp",
+            action:
+                "cancelTripStartsNow"
         });
-    });
 
-    $("#tripProductive").addEventListener("change", event => {
-        const session = tripSettingsSession || beginTripSettingsSession();
-        if (session) session.values.nonProduction = !event.target.checked;
-    });
+    tripStartNowToggles.forEach(
+        button => {
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    element:
+                        button,
+                    event:
+                        "pointerup",
+                    name:
+                        "toggleTripStartsNow" +
+                        (
+                            button.dataset
+                                .tripStartNowTarget ===
+                                "scheduled-start"
+                                ? "Scheduled"
+                                : "Actual"
+                        ) +
+                        "PointerUp",
+                    action:
+                        "toggleTripStartsNowTarget",
+                    args:
+                        () => [
+                            button.dataset
+                                .tripStartNowTarget
+                        ]
+                });
+        }
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#tripProductive"),
+            event:
+                "change",
+            name:
+                "changeTripProductiveInput",
+            action:
+                "changeTripProductive",
+            args:
+                event => [
+                    event.target
+                        .checked
+                ]
+        });
 
     function renderDeferredTrip() {
         const button = $("#newTripButton");
@@ -8420,83 +8450,47 @@
         button.title = tripDraft?.deferred ? "Resume deferred trip" : "New Trip";
     }
 
-    $("#tripDefer").addEventListener("change", event => {
-        const session = tripSettingsSession || beginTripSettingsSession();
-        if (!session || session.live) return;
-        const values = session.values;
-        if (event.target.checked) {
-            session.preDeferredValues = cloneTripSettingsValues(values);
-            values.scheduledStart = values.creationTime;
-            values.startTime = undefined;
-            tripStartsNowState = undefined;
-            tripStartsNowExiting = false;
-        } else {
-            if (session.preDeferredValues) {
-                Object.assign(values, cloneTripSettingsValues(session.preDeferredValues));
-            }
-            session.preDeferredValues = undefined;
-        }
-        values.deferred = event.target.checked;
-        tripStartsNowState = undefined;
-        refreshTripSettingsValues();
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#tripDefer"),
+            event:
+                "change",
+            name:
+                "changeTripDeferredInput",
+            action:
+                "changeTripDeferred",
+            args:
+                event => [
+                    event.target
+                        .checked
+                ]
+        });
 
-    tripSettingsForm.addEventListener("submit", event => {
-        event.preventDefault();
-        if (!tripSettingsSession) beginTripSettingsSession();
+    tripSettingsForm.addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveTripSettingsSubmit",
+                event => {
+                    event.preventDefault();
 
-        void (async () => {
-            const startingDraft = Boolean(tripDraft && !tripIsLive());
-            if (!applyTripSettingsSession()) {
-                refreshTripSettingsValues();
-                return;
-            }
+                    const result =
+                        globalThis
+                            .WMOFActions
+                            .saveTripSettings();
 
-            if (startingDraft) {
-                if (tripDraft.deferred) {
-                    tripStartsNowState = undefined;
-                    tripSettingsSession = undefined;
-                    if (numberPadDialog?.open) await closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
-                    uiReturnStack.length = 0;
-                    resetTripSettingsNavigation();
-                    closeDialog(tripSettingsDialog, { reason: "trip-settings-defer" });
-                    renderDeferredTrip();
-                    return;
-                }
-                if (tripDraftHasFutureStart(tripDraft)) {
-                    tripStartsNowState = undefined;
-                    tripSettingsSession = undefined;
-                    resetTripSettingsNavigation();
-                    closeDialog(tripSettingsDialog, { reason: "trip-settings-scheduled", immediate: true });
-                    showScheduledStartDialog();
-                    return;
-                }
-                try {
-                    if (!await startTripDraft()) {
-                        restoreDraftFromTripSettingsOriginal();
-                        refreshTripSettingsValues();
-                        return;
-                    }
-                }
-                catch {
-                    restoreDraftFromTripSettingsOriginal();
-                    refreshTripSettingsValues();
-                    return;
-                }
-                tripStartsNowState = undefined;
-                tripSettingsSession = undefined;
-                resetTripSettingsNavigation();
-                closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
-                return;
-            }
+                    result
+                        ?.catch?.(
+                            () => {}
+                        );
 
-            syncTripSettingsCallerAfterSave();
-            await clockTimer.persistCurrentTrip();
-            tripStartsNowState = undefined;
-            tripSettingsSession = undefined;
-            await closeTripSettingsToNavigation("trip-settings-save");
-        })().catch(() => {});
-    });
+                    return result;
+                }
+            )
+    );
 
     function resumedTripStarts(draft, moment) {
         const base = parseDateInput(draft.creationDate);
@@ -8773,27 +8767,44 @@
         $("#independentTimerValue").value = formatDuration(timerAccumulated + active);
     }
 
-    $("#independentStart").addEventListener("click", () => {
-        if (timerStartedAt) return;
-        timerStartedAt = Date.now();
-        timerInterval = setInterval(renderIndependentTimer, 250);
-        renderIndependentTimer();
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#independentStart"),
+            event:
+                "click",
+            name:
+                "startIndependentTimerClick",
+            action:
+                "startIndependentTimer"
+        });
 
-    $("#independentStop").addEventListener("click", () => {
-        if (!timerStartedAt) return;
-        timerAccumulated += Date.now() - timerStartedAt;
-        timerStartedAt = 0;
-        clearInterval(timerInterval);
-        renderIndependentTimer();
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#independentStop"),
+            event:
+                "click",
+            name:
+                "stopIndependentTimerClick",
+            action:
+                "stopIndependentTimer"
+        });
 
-    $("#independentReset").addEventListener("click", () => {
-        timerStartedAt = 0;
-        timerAccumulated = 0;
-        clearInterval(timerInterval);
-        $("#independentTimerValue").value = "---";
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#independentReset"),
+            event:
+                "click",
+            name:
+                "resetIndependentTimerClick",
+            action:
+                "resetIndependentTimer"
+        });
 
     function formatIntervalClock(milliseconds) {
         const numeric = Number(milliseconds);
