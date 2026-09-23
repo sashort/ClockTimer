@@ -1619,138 +1619,11 @@ class SpeechMenu {
         utteranceId,
         execute = true
     ) {
-        const first =
-            async elements => {
-                for (
-                    const element of
-                        elements
-                ) {
-                    const result =
-                        await SpeechMenu
-                            .#processElement(
-                                element,
-                                text,
-                                utteranceId,
-                                undefined,
-                                execute
-                            );
+        SpeechMenu.extrapolatePhrases();
 
-                    if (result) {
-                        return result;
-                    }
-                }
-
-                return false;
-            };
-
-        const firstMenu =
-            async elements => {
-                for (
-                    const element of
-                        elements
-                ) {
-                    const result =
-                        await SpeechMenu
-                            .#processMenu(
-                                element,
-                                text,
-                                utteranceId,
-                                execute
-                            );
-
-                    if (result) {
-                        return result;
-                    }
-                }
-
-                return false;
-            };
-
-        let result =
-            await firstMenu(
-                document.querySelectorAll(
-                    'speech-modal[speech-modal="top-level"]'
-                )
-            );
-
-        if (result) return result;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    'speech-command[speech-modal="top-level"]'
-                )
-            );
-
-        if (result) return result;
-
-        const modal =
-            [
-                ...document
-                    .querySelectorAll(
-                        "dialog:modal, dialog[open]"
-                    )
-            ].at(-1);
-
-        if (modal) {
-            result =
-                await SpeechMenu.#processMenu(
-                    modal,
-                    text,
-                    utteranceId,
-                    execute
-                );
-
-            if (result) return result;
-        }
-
-        result =
-            await firstMenu(
-                document.querySelectorAll(
-                    'speech-modal:not([speech-modal="top-level"])'
-                )
-            );
-
-        if (result) return result;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    'speech-command[speech-modal=""]'
-                )
-            );
-
-        if (result) return result;
-
-        if (modal) return false;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    "details[open], [popover]:popover-open"
-                )
-            );
-
-        if (result) return result;
-
-        return await first(
-            document.querySelectorAll(
-                ":not(details):not(dialog):not(speech-modal)[speech-pattern]"
-            )
-        );
-    }
-
-    static async #processMenu(
-        menu,
-        text,
-        utteranceId,
-        execute = true
-    ) {
         for (
             const element of
-                menu.querySelectorAll(
-                    "[speech-pattern]:not([speech-modal])"
-                )
+            SpeechMenu.#availableCandidates()
         ) {
             const result =
                 await SpeechMenu
@@ -1758,7 +1631,10 @@ class SpeechMenu {
                         element,
                         text,
                         utteranceId,
-                        menu,
+                        SpeechMenu
+                            .#candidateMenu(
+                                element
+                            ),
                         execute
                     );
 
@@ -1768,6 +1644,495 @@ class SpeechMenu {
         }
 
         return false;
+    }
+
+    static #candidateMenu(element) {
+        return (
+            element.closest(
+                "speech-menu"
+            ) ||
+            element.closest(
+                "dialog, details, [popover]"
+            ) ||
+            undefined
+        );
+    }
+
+    static #normalizeModal(value) {
+        if (value === "top-level") {
+            return "top-level";
+        }
+
+        if (
+            value === "default" ||
+            value === ""
+        ) {
+            return "default";
+        }
+
+        return undefined;
+    }
+
+    static #effectiveModal(element) {
+        if (
+            element.hasAttribute(
+                "speech-modal"
+            )
+        ) {
+            return SpeechMenu
+                .#normalizeModal(
+                    element.getAttribute(
+                        "speech-modal"
+                    )
+                );
+        }
+
+        const menu =
+            element.closest(
+                "speech-menu"
+            );
+
+        if (
+            menu?.hasAttribute(
+                "speech-modal"
+            )
+        ) {
+            return SpeechMenu
+                .#normalizeModal(
+                    menu.getAttribute(
+                        "speech-modal"
+                    )
+                );
+        }
+
+        return undefined;
+    }
+
+    static #openPopover(element) {
+        try {
+            return element.matches(
+                ":popover-open"
+            );
+        }
+        catch {
+            return false;
+        }
+    }
+
+    static #availableCandidates() {
+        const all =
+            [
+                ...document
+                    .querySelectorAll(
+                        "[speech-pattern]"
+                    )
+            ];
+
+        const topLevel = [];
+        const defaults = [];
+        const contextual = [];
+
+        for (const element of all) {
+            const modal =
+                SpeechMenu
+                    .#effectiveModal(
+                        element
+                    );
+
+            if (modal === "top-level") {
+                topLevel.push(element);
+            }
+            else if (modal === "default") {
+                defaults.push(element);
+            }
+            else {
+                contextual.push(element);
+            }
+        }
+
+        const result = [];
+        const seen = new Set();
+        const append =
+            elements => {
+                for (const element of elements) {
+                    if (seen.has(element)) {
+                        continue;
+                    }
+
+                    seen.add(element);
+                    result.push(element);
+                }
+            };
+
+        append(topLevel);
+
+        const dialog =
+            [
+                ...document
+                    .querySelectorAll(
+                        "dialog[open]"
+                    )
+            ].at(-1);
+
+        if (dialog) {
+            append(
+                contextual.filter(
+                    element =>
+                        dialog.contains(
+                            element
+                        )
+                )
+            );
+
+            append(defaults);
+            return result;
+        }
+
+        append(defaults);
+
+        const openContainers =
+            [
+                ...document
+                    .querySelectorAll(
+                        "details[open]"
+                    ),
+                ...document
+                    .querySelectorAll(
+                        "[popover]"
+                    )
+                    .filter(
+                        SpeechMenu
+                            .#openPopover
+                    )
+            ];
+
+        for (const container of openContainers) {
+            append(
+                contextual.filter(
+                    element =>
+                        container.contains(
+                            element
+                        )
+                )
+            );
+        }
+
+        append(
+            contextual.filter(
+                element => {
+                    if (
+                        element.closest(
+                            "dialog"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        element.closest(
+                            "details"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        element.closest(
+                            "[popover]"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            )
+        );
+
+        return result;
+    }
+
+    static #expandRegexSource(
+        source,
+        limit = 128
+    ) {
+        if (typeof source !== "string") {
+            return [];
+        }
+
+        let text = source.trim();
+
+        if (text.startsWith("^")) {
+            text = text.slice(1);
+        }
+
+        if (
+            text.endsWith("$") &&
+            !text.endsWith("\\$")
+        ) {
+            text = text.slice(0, -1);
+        }
+
+        let index = 0;
+
+        const combine =
+            (left, right) => {
+                const output = [];
+
+                for (const a of left) {
+                    for (const b of right) {
+                        output.push(a + b);
+
+                        if (
+                            output.length >=
+                            limit
+                        ) {
+                            return output;
+                        }
+                    }
+                }
+
+                return output;
+            };
+
+        const placeholder =
+            slotName =>
+                "<" +
+                (slotName || "value") +
+                ">";
+
+        const parseExpression =
+            (
+                stopCharacter,
+                slotName
+            ) => {
+                const alternatives = [];
+                let sequence = [""];
+
+                while (index < text.length) {
+                    const character =
+                        text[index];
+
+                    if (
+                        stopCharacter &&
+                        character ===
+                            stopCharacter
+                    ) {
+                        break;
+                    }
+
+                    if (character === "|") {
+                        alternatives.push(
+                            ...sequence
+                        );
+                        sequence = [""];
+                        index++;
+                        continue;
+                    }
+
+                    let atom;
+
+                    if (character === "(") {
+                        index++;
+
+                        let name;
+
+                        if (
+                            text.slice(
+                                index,
+                                index + 2
+                            ) === "?:"
+                        ) {
+                            index += 2;
+                        }
+                        else if (
+                            text.slice(
+                                index,
+                                index + 2
+                            ) === "?<"
+                        ) {
+                            const close =
+                                text.indexOf(
+                                    ">",
+                                    index + 2
+                                );
+
+                            if (close > index) {
+                                name =
+                                    text.slice(
+                                        index + 2,
+                                        close
+                                    );
+                                index =
+                                    close + 1;
+                            }
+                        }
+
+                        atom =
+                            parseExpression(
+                                ")",
+                                name ||
+                                    slotName
+                            );
+
+                        if (
+                            text[index] ===
+                            ")"
+                        ) {
+                            index++;
+                        }
+                    }
+                    else if (
+                        character === "["
+                    ) {
+                        const close =
+                            text.indexOf(
+                                "]",
+                                index + 1
+                            );
+
+                        if (close < 0) {
+                            atom = [
+                                placeholder(
+                                    slotName
+                                )
+                            ];
+                            index++;
+                        }
+                        else {
+                            const body =
+                                text.slice(
+                                    index + 1,
+                                    close
+                                );
+
+                            atom =
+                                /^[A-Za-z0-9]+$/
+                                    .test(body)
+                                    ? [...body]
+                                    : [
+                                        placeholder(
+                                            slotName
+                                        )
+                                    ];
+
+                            index =
+                                close + 1;
+                        }
+                    }
+                    else if (
+                        character === "\\"
+                    ) {
+                        const escaped =
+                            text[index + 1];
+
+                        if (!escaped) {
+                            atom = ["\\"];
+                            index++;
+                        }
+                        else {
+                            atom = [
+                                escaped === "s"
+                                    ? " "
+                                    : escaped
+                            ];
+                            index += 2;
+                        }
+                    }
+                    else if (
+                        character === "."
+                    ) {
+                        atom = [
+                            placeholder(
+                                slotName
+                            )
+                        ];
+                        index++;
+                    }
+                    else {
+                        atom = [character];
+                        index++;
+                    }
+
+                    const quantifier =
+                        text[index];
+
+                    if (quantifier === "?") {
+                        atom = [
+                            "",
+                            ...atom
+                        ];
+                        index++;
+                    }
+                    else if (
+                        quantifier === "+" ||
+                        quantifier === "*"
+                    ) {
+                        index++;
+                    }
+                    else if (
+                        quantifier === "{"
+                    ) {
+                        const close =
+                            text.indexOf(
+                                "}",
+                                index + 1
+                            );
+
+                        if (close >= 0) {
+                            index =
+                                close + 1;
+                        }
+                    }
+
+                    sequence =
+                        combine(
+                            sequence,
+                            atom
+                        );
+
+                    if (
+                        sequence.length >=
+                        limit
+                    ) {
+                        break;
+                    }
+                }
+
+                alternatives.push(
+                    ...sequence
+                );
+
+                return [
+                    ...new Set(
+                        alternatives
+                    )
+                ].slice(0, limit);
+            };
+
+        return parseExpression()
+            .map(
+                phrase =>
+                    phrase
+                        .replace(
+                            /\s+/g,
+                            " "
+                        )
+                        .trim()
+            )
+            .filter(Boolean)
+            .filter(
+                (
+                    phrase,
+                    phraseIndex,
+                    phrases
+                ) =>
+                    phrases.indexOf(
+                        phrase
+                    ) ===
+                    phraseIndex
+            )
+            .slice(0, limit);
     }
 
     static #prepare(
