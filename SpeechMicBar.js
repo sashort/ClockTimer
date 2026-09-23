@@ -20,7 +20,8 @@ class SpeechMicBar extends HTMLElement {
         "speechRecognitionStatusChanged",
         "speechCaptureEnded",
         "utteranceUnrecognized",
-        "audioLevelChanged"
+        "audioLevelChanged",
+        "phrasesChanged"
     ];
 
     #shadow = this.attachShadow({mode: "closed"});
@@ -41,6 +42,9 @@ class SpeechMicBar extends HTMLElement {
     #loadingDisplayed = 0;
     #loadingTarget = 0;
     #loadingTotal = 0;
+    #optionsPanel;
+    #optionsGrid;
+    #optionsAnimation;
 
     constructor() {
         super();
@@ -52,9 +56,169 @@ class SpeechMicBar extends HTMLElement {
                     height: 74px;
                     min-width: 0;
                     display: block;
+                    position: relative;
                     color: white;
                     font: inherit;
+                    overflow: visible;
+                }
+
+                #optionsPanel {
+                    --speech-option-row-height: 78px;
+                    --speech-options-max-height:
+                        calc(100dvh - 90px);
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: 100%;
+                    box-sizing: border-box;
+                    max-height:
+                        var(
+                            --speech-options-max-height
+                        );
+                    padding: 10px 8px 8px;
+                    overflow: auto;
+                    overscroll-behavior: contain;
+                    display: grid;
+                    grid-template-columns:
+                        minmax(8px, 1fr)
+                        max-content
+                        minmax(8px, 1fr);
+                    gap: 7px 0;
+                    border: 3px solid
+                        rgb(255 255 255 / 38%);
+                    border-bottom: 0;
+                    border-radius:
+                        14px 14px 0 0;
+                    background:
+                        linear-gradient(
+                            180deg,
+                            rgb(34 43 51 / 98%),
+                            rgb(47 57 67 / 96%)
+                        );
+                    box-shadow:
+                        0 -10px 26px
+                        rgb(0 0 0 / 30%);
+                    backdrop-filter: blur(9px);
+                    clip-path:
+                        inset(
+                            100% 0 0 0
+                            round 14px 14px 0 0
+                        );
+                    opacity: 0;
+                    pointer-events: none;
+                    transform-origin:
+                        bottom center;
+                    scrollbar-gutter: stable;
+                    z-index: 3;
+                }
+
+                :host([options-open])
+                #optionsPanel {
+                    clip-path:
+                        inset(
+                            0
+                            round 14px 14px 0 0
+                        );
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                #optionsGrid {
+                    grid-column: 1 / -1;
+                    display: grid;
+                    grid-template-columns:
+                        subgrid;
+                    gap: 7px 0;
+                    min-width: 0;
+                }
+
+                .option-card {
+                    grid-column: 1 / -1;
+                    display: grid;
+                    grid-template-columns:
+                        subgrid;
+                    min-height:
+                        var(
+                            --speech-option-row-height
+                        );
+                    align-content: center;
+                    gap: 4px 0;
+                    padding: 7px 0;
+                    border: 1px solid
+                        rgb(169 221 247 / 24%);
+                    border-radius: 11px;
+                    background:
+                        linear-gradient(
+                            180deg,
+                            rgb(0 63 128 / 34%),
+                            rgb(0 30 96 / 30%)
+                        );
+                    box-shadow:
+                        inset 0 1px 0
+                        rgb(255 255 255 / 7%);
+                }
+
+                .option-phrase {
+                    grid-column: 2;
+                    justify-self: start;
+                    display: inline-flex;
+                    align-items: baseline;
+                    min-width: max-content;
+                    max-width: min(
+                        82vw,
+                        calc(100vw - 36px)
+                    );
                     overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size:
+                        clamp(
+                            15px,
+                            2.6vw,
+                            20px
+                        );
+                    font-weight: 700;
+                    line-height: 1.18;
+                    letter-spacing: .01em;
+                }
+
+                .option-phrase code {
+                    margin: 0 .12em;
+                    padding: .08em .34em;
+                    border: 1px solid
+                        rgb(169 221 247 / 42%);
+                    border-radius: .34em;
+                    color: #a9ddf7;
+                    background:
+                        rgb(0 30 96 / 58%);
+                    font:
+                        700 .86em/1.2
+                        ui-monospace,
+                        SFMono-Regular,
+                        Consolas,
+                        monospace;
+                }
+
+                .option-empty {
+                    grid-column: 2;
+                    justify-self: start;
+                    padding: 16px 0;
+                    color:
+                        rgb(255 255 255 / 72%);
+                }
+
+                @supports not (
+                    grid-template-columns:
+                        subgrid
+                ) {
+                    #optionsPanel,
+                    #optionsGrid,
+                    .option-card {
+                        grid-template-columns:
+                            minmax(12px, 1fr)
+                            max-content
+                            minmax(12px, 1fr);
+                    }
                 }
 
                 #bar {
@@ -368,6 +532,13 @@ class SpeechMicBar extends HTMLElement {
                     }
                 }
             </style>
+            <section
+                id="optionsPanel"
+                aria-label="Voice options"
+                aria-hidden="true"
+            >
+                <div id="optionsGrid"></div>
+            </section>
             <div id="bar">
                 <div id="mic" aria-hidden="true"></div>
                 <div id="main">
@@ -379,6 +550,14 @@ class SpeechMicBar extends HTMLElement {
                 </div>
             </div>
         `;
+        this.#optionsPanel =
+            this.#shadow.querySelector(
+                "#optionsPanel"
+            );
+        this.#optionsGrid =
+            this.#shadow.querySelector(
+                "#optionsGrid"
+            );
         this.#bar = this.#shadow.querySelector("#bar");
         this.#mic = this.#shadow.querySelector("#mic");
         this.#activity = this.#shadow.querySelector("#activity");
@@ -390,14 +569,611 @@ class SpeechMicBar extends HTMLElement {
 
     connectedCallback() {
         this.#subscribe();
+        this.promoteTopLayer();
     }
 
     disconnectedCallback() {
         this.#unsubscribe();
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
     }
 
     get state() {
         return this.getAttribute("state") || "stopped";
+    }
+
+    get optionsOpen() {
+        return this.hasAttribute(
+            "options-open"
+        );
+    }
+
+    promoteTopLayer() {
+        if (
+            typeof this.showPopover !==
+            "function"
+        ) {
+            return false;
+        }
+
+        if (!this.hasAttribute("popover")) {
+            this.setAttribute(
+                "popover",
+                "manual"
+            );
+        }
+
+        try {
+            const open =
+                this.matches(
+                    ":popover-open"
+                );
+
+            if (open) {
+                this.hidePopover();
+            }
+
+            this.showPopover();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
+    showOptions(
+        phraseGroups =
+            globalThis.SpeechMenu
+                ?.phraseGroups ||
+            []
+    ) {
+        this.promoteTopLayer();
+        this.#renderOptions(
+            phraseGroups
+        );
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        this.setAttribute(
+            "options-open",
+            ""
+        );
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        if (
+            typeof this.#optionsPanel
+                .animate ===
+            "function"
+        ) {
+            const animation =
+                this.#optionsPanel
+                    .animate(
+                        [
+                            {
+                                clipPath:
+                                    "inset(100% 0 0 0 round 14px 14px 0 0)",
+                                opacity: 0
+                            },
+                            {
+                                clipPath:
+                                    "inset(0 round 14px 14px 0 0)",
+                                opacity: 1
+                            }
+                        ],
+                        {
+                            duration: 750,
+                            easing:
+                                "cubic-bezier(.2,.8,.2,1)",
+                            fill: "both"
+                        }
+                    );
+
+            this.#optionsAnimation =
+                animation;
+
+            animation.finished
+                .catch(() => {})
+                .finally(
+                    () => {
+                        if (
+                            this
+                                .#optionsAnimation ===
+                            animation
+                        ) {
+                            animation.cancel();
+                            this
+                                .#optionsAnimation =
+                                undefined;
+                        }
+                    }
+                );
+        }
+
+        return true;
+    }
+
+    async hideOptions(
+        {
+            duration = 180
+        } = {}
+    ) {
+        if (!this.optionsOpen) {
+            return false;
+        }
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        if (
+            duration > 0 &&
+            typeof this.#optionsPanel
+                .animate ===
+            "function"
+        ) {
+            const animation =
+                this.#optionsPanel
+                    .animate(
+                        [
+                            {
+                                clipPath:
+                                    "inset(0 round 14px 14px 0 0)",
+                                opacity: 1
+                            },
+                            {
+                                clipPath:
+                                    "inset(100% 0 0 0 round 14px 14px 0 0)",
+                                opacity: 0
+                            }
+                        ],
+                        {
+                            duration:
+                                Math.max(
+                                    0,
+                                    Number(
+                                        duration
+                                    ) || 0
+                                ),
+                            easing:
+                                "ease-in",
+                            fill: "both"
+                        }
+                    );
+
+            this.#optionsAnimation =
+                animation;
+
+            try {
+                await animation.finished;
+            }
+            catch {}
+
+            if (
+                this.#optionsAnimation ===
+                animation
+            ) {
+                animation.cancel();
+                this.#optionsAnimation =
+                    undefined;
+            }
+        }
+
+        this.removeAttribute(
+            "options-open"
+        );
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+        return true;
+    }
+
+    #optionsGroupKey(
+        group,
+        index
+    ) {
+        const element =
+            group?.element;
+
+        return (
+            element
+                ?.getAttribute?.(
+                    "data-speech-options-group"
+                )
+                ?.trim() ||
+            element
+                ?.getAttribute?.(
+                    "data-speech-target"
+                )
+                ?.trim() ||
+            (
+                "element:" +
+                index
+            )
+        );
+    }
+
+    #contextLabel(
+        element,
+        name
+    ) {
+        const field =
+            element
+                ?.getAttribute?.(
+                    "speech-preproc-field"
+                );
+
+        if (field === name) {
+            const context =
+                element
+                    ?.getAttribute?.(
+                        "speech-preproc-context"
+                    )
+                    ?.trim()
+                    ?.toLowerCase();
+
+            if (context === "clock") {
+                return "time";
+            }
+
+            if (context === "duration") {
+                return "duration";
+            }
+
+            if (context === "percent") {
+                return "percent";
+            }
+        }
+
+        return String(name || "")
+            .replace(
+                /([a-z0-9])([A-Z])/g,
+                "$1 $2"
+            )
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+    }
+
+    #displayPhrase(
+        phrase,
+        element
+    ) {
+        return String(phrase || "")
+            .replace(
+                /<([^>]+)>/g,
+                (
+                    _,
+                    name
+                ) =>
+                    "<" +
+                    this.#contextLabel(
+                        element,
+                        name
+                    ) +
+                    ">"
+            );
+    }
+
+    #phraseNode(
+        phrase,
+        element
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "option-phrase";
+
+        const text =
+            this.#displayPhrase(
+                phrase,
+                element
+            );
+
+        const pattern =
+            /<([^>]+)>/g;
+
+        let offset = 0;
+        let match;
+
+        while (
+            (
+                match =
+                    pattern.exec(
+                        text
+                    )
+            )
+        ) {
+            if (
+                match.index >
+                offset
+            ) {
+                row.append(
+                    document
+                        .createTextNode(
+                            text.slice(
+                                offset,
+                                match.index
+                            )
+                        )
+                );
+            }
+
+            const code =
+                document.createElement(
+                    "code"
+                );
+
+            code.textContent =
+                match[0];
+
+            row.append(code);
+
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        if (
+            offset <
+            text.length
+        ) {
+            row.append(
+                document
+                    .createTextNode(
+                        text.slice(
+                            offset
+                        )
+                    )
+            );
+        }
+
+        return row;
+    }
+
+    #renderOptions(
+        phraseGroups
+    ) {
+        const cards = new Map();
+
+        (
+            Array.isArray(
+                phraseGroups
+            )
+                ? phraseGroups
+                : []
+        ).forEach(
+            (
+                group,
+                index
+            ) => {
+                const key =
+                    this.#optionsGroupKey(
+                        group,
+                        index
+                    );
+
+                let card =
+                    cards.get(
+                        key
+                    );
+
+                if (!card) {
+                    card = {
+                        element:
+                            group?.element,
+                        phrases: [],
+                        seen:
+                            new Set()
+                    };
+
+                    cards.set(
+                        key,
+                        card
+                    );
+                }
+
+                for (
+                    const phrase of
+                    group?.phrases ||
+                    []
+                ) {
+                    const display =
+                        this
+                            .#displayPhrase(
+                                phrase,
+                                group
+                                    ?.element
+                            );
+
+                    if (
+                        card.seen.has(
+                            display
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    card.seen.add(
+                        display
+                    );
+                    card.phrases.push({
+                        phrase,
+                        element:
+                            group?.element
+                    });
+                }
+            }
+        );
+
+        this.#optionsGrid
+            .replaceChildren();
+
+        let count = 0;
+
+        for (
+            const card of
+            cards.values()
+        ) {
+            if (
+                !card.phrases
+                    .length
+            ) {
+                continue;
+            }
+
+            card.phrases.sort(
+                (
+                    left,
+                    right
+                ) =>
+                    this
+                        .#displayPhrase(
+                            left.phrase,
+                            left.element
+                        )
+                        .length -
+                    this
+                        .#displayPhrase(
+                            right.phrase,
+                            right.element
+                        )
+                        .length
+            );
+
+            const box =
+                document.createElement(
+                    "div"
+                );
+
+            box.className =
+                "option-card";
+
+            for (
+                const item of
+                card.phrases
+            ) {
+                box.append(
+                    this.#phraseNode(
+                        item.phrase,
+                        item.element
+                    )
+                );
+            }
+
+            this.#optionsGrid
+                .append(box);
+
+            count += 1;
+        }
+
+        if (!count) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "option-empty";
+            empty.textContent =
+                "No voice options available.";
+
+            this.#optionsGrid
+                .append(empty);
+
+            count = 1;
+        }
+
+        this.#fitOptions(
+            count
+        );
+    }
+
+    #fitOptions(
+        cardCount
+    ) {
+        const rect =
+            this.getBoundingClientRect();
+
+        const viewportHeight =
+            window.innerHeight ||
+            document.documentElement
+                ?.clientHeight ||
+            0;
+
+        const available =
+            Math.max(
+                120,
+                Math.min(
+                    rect.top - 8,
+                    viewportHeight -
+                        86
+                )
+            );
+
+        const gap = 7;
+        const padding = 18;
+        const usable =
+            Math.max(
+                0,
+                available -
+                    padding -
+                    Math.max(
+                        0,
+                        cardCount - 1
+                    ) *
+                    gap
+            );
+
+        const perCard =
+            cardCount
+                ? usable /
+                    cardCount
+                : 78;
+
+        let rowHeight = 78;
+
+        if (perCard >= 72) {
+            rowHeight =
+                Math.min(
+                    96,
+                    Math.max(
+                        72,
+                        perCard
+                    )
+                );
+        }
+        else {
+            rowHeight =
+                Math.max(
+                    42,
+                    perCard
+                );
+        }
+
+        this.#optionsPanel.style
+            .setProperty(
+                "--speech-option-row-height",
+                rowHeight + "px"
+            );
+
+        this.#optionsPanel.style
+            .setProperty(
+                "--speech-options-max-height",
+                available + "px"
+            );
     }
 
     #responseVisual(value) {
@@ -787,6 +1563,9 @@ class SpeechMicBar extends HTMLElement {
                 break;
             case "stopped":
             case "speechCaptureEnded":
+                void this.hideOptions({
+                    duration: 0
+                });
                 this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.clear();
@@ -940,6 +1719,17 @@ class SpeechMicBar extends HTMLElement {
                 if (detail?.id === this.#currentUtteranceId) {
                     this.#scheduleRejectedClear(
                         detail.id
+                    );
+                }
+                break;
+            case "phrasesChanged":
+                if (this.optionsOpen) {
+                    this.#renderOptions(
+                        detail?.phraseGroups ||
+                        globalThis
+                            .SpeechMenu
+                            ?.phraseGroups ||
+                        []
                     );
                 }
                 break;
