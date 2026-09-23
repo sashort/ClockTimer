@@ -5584,7 +5584,10 @@
     $("#endTimeGoalLock")?.addEventListener("click", event => {
         event.stopPropagation();
         if (clockTimer.percentMode !== "auto") {
-            releaseEndTimeGoalOverride();
+            globalThis
+                .WMOFActions
+                .releaseEndTimeGoal();
+
             return;
         }
         refreshEndTimeLockDialog();
@@ -5598,14 +5601,57 @@
         checkbox?.addEventListener("change", updateEndTimeLockReleaseMessage);
     }
 
-    $("#endTimeLockForm")?.addEventListener("submit", event => {
-        event.preventDefault();
-        const scopes = selectedEndTimeLockScopes().sort();
-        const unchanged = scopes.length === endTimeLockDialogInitialScopes.length &&
-            scopes.every((scope, index) => scope === endTimeLockDialogInitialScopes[index]);
-        if (!unchanged && !setEndTimeGoalScopes(scopes)) return;
-        closeDialog($("#endTimeLockDialog"), { reason: "end-time-lock-scopes-saved" });
-    });
+    $("#endTimeLockForm")?.addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "changeEndTimeGoalScopesSubmit",
+                event => {
+                    event.preventDefault();
+
+                    const scopes =
+                        selectedEndTimeLockScopes()
+                            .sort();
+
+                    const unchanged =
+                        scopes.length ===
+                            endTimeLockDialogInitialScopes
+                                .length &&
+                        scopes.every(
+                            (
+                                scope,
+                                index
+                            ) =>
+                                scope ===
+                                endTimeLockDialogInitialScopes[
+                                    index
+                                ]
+                        );
+
+                    if (
+                        !unchanged &&
+                        !globalThis
+                            .WMOFActions
+                            .changeEndTimeGoalScopes(
+                                scopes
+                            )
+                    ) {
+                        return false;
+                    }
+
+                    closeDialog(
+                        $("#endTimeLockDialog"),
+                        {
+                            reason:
+                                "end-time-lock-scopes-saved"
+                        }
+                    );
+
+                    return true;
+                }
+            )
+    );
 
     function toggleClockTimerTypeFromTap() {
         if (!tripIsLive()) return false;
@@ -5668,7 +5714,10 @@
             clearTimeout(clockTimerTapTimer);
             clockTimerTapTimer = undefined;
             clockTimerLastTapAt = -Infinity;
-            toggleClockTimerElapsedRemaining();
+            globalThis
+                .WMOFActions
+                .toggleTimerMode();
+
             return;
         }
 
@@ -5681,7 +5730,9 @@
             () => {
                 clockTimerTapTimer = undefined;
                 clockTimerLastTapAt = -Infinity;
-                toggleClockTimerTypeFromTap();
+                globalThis
+                    .WMOFActions
+                    .toggleTimerType();
             },
             CLOCK_TIMER_DOUBLE_PRESS
         );
