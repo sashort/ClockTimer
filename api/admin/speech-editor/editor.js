@@ -4801,7 +4801,10 @@
                                     JSON.stringify({
                                         entries:
                                             draft,
-                                        revision
+                                        revision,
+                                        preprocFunctions:
+                                            draftPreprocFunctions,
+                                        registryRevision
                                     })
                             }
                         );
@@ -4828,6 +4831,22 @@
 
                     revision =
                         data.revision;
+
+                    savedPreprocFunctions =
+                        [
+                            ...(
+                                data.preprocFunctions ||
+                                []
+                            )
+                        ];
+
+                    draftPreprocFunctions =
+                        [
+                            ...savedPreprocFunctions
+                        ];
+
+                    registryRevision =
+                        data.registryRevision;
 
                     frame.contentWindow
                         .location
@@ -4856,6 +4875,14 @@
                     structuredClone(
                         saved
                     );
+
+                draftPreprocFunctions =
+                    [
+                        ...savedPreprocFunctions
+                    ];
+
+                functionCombo.refresh();
+                preprocCombo.refresh();
 
                 frame.contentWindow
                     .location
@@ -4917,6 +4944,28 @@
                 revision =
                     data.revision;
 
+                savedPreprocFunctions =
+                    [
+                        ...(
+                            data.preprocFunctions ||
+                            []
+                        )
+                    ].sort(
+                        (a, b) =>
+                            a.localeCompare(b)
+                    );
+
+                draftPreprocFunctions =
+                    [
+                        ...savedPreprocFunctions
+                    ];
+
+                registryRevision =
+                    data.registryRevision ||
+                    "missing";
+
+                functionCombo.refresh();
+                preprocCombo.refresh();
                 renderAll();
             }
         )
