@@ -203,20 +203,15 @@ $encoded = json_encode(['entries' => $entries], JSON_PRETTY_PRINT | JSON_UNESCAP
 $registryEncoded = $renderRegistry($preprocFunctions) . "\n";
 
 $configTemporary = tempnam(dirname($path), '.speech-editor-');
-$registryTemporary = tempnam(dirname($registryPath), '.speech-functions-');
-
 if (
     $configTemporary === false ||
-    $registryTemporary === false ||
-    file_put_contents($configTemporary, $encoded, LOCK_EX) === false ||
-    file_put_contents($registryTemporary, $registryEncoded, LOCK_EX) === false
+    file_put_contents($configTemporary, $encoded, LOCK_EX) === false
 ) {
     api_error('Speech configuration could not be saved.', 500, 'write_failed');
 }
 
-if (!rename($registryTemporary, $registryPath)) {
+if (file_put_contents($registryPath, $registryEncoded, LOCK_EX) === false) {
     @unlink($configTemporary);
-    @unlink($registryTemporary);
     api_error('Speech function registry could not be saved.', 500, 'registry_write_failed');
 }
 
