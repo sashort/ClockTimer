@@ -270,35 +270,10 @@ function consume_access_token(
     }
 }
 
-function authorize_guarded_access(
+function existing_guarded_access(
     array $requiredPermissions,
-    string $scope,
-    bool $allowFormToken = false
-): array {
-    $bearer = access_token_bearer();
-
-    if ($bearer !== null) {
-        return consume_access_token(
-            $bearer,
-            $requiredPermissions,
-            $scope,
-            false
-        );
-    }
-
-    if ($allowFormToken) {
-        $formToken = access_token_form_value();
-
-        if ($formToken !== null) {
-            return consume_access_token(
-                $formToken,
-                $requiredPermissions,
-                $scope,
-                true
-            );
-        }
-    }
-
+    string $scope
+): ?array {
     $user = optional_current_user();
 
     if ($user !== null && has_any_permission($user, ...$requiredPermissions)) {
@@ -334,11 +309,102 @@ function authorize_guarded_access(
         ];
     }
 
-    if ($user === null) {
+    return null;
+}
+
+function authorize_guarded_access(
+    array $requiredPermissions,
+    string $scope,
+    bool $allowFormToken = false
+): array {
+    $bearer = access_token_bearer();
+
+    if ($bearer !== null) {
+        return consume_access_token(
+            $bearer,
+            $requiredPermissions,
+            $scope,
+            false
+        );
+    }
+
+    if ($allowFormToken) {
+        $formToken = access_token_form_value();
+
+        if ($formToken !== null) {
+            return consume_access_token(
+                $formToken,
+                $requiredPermissions,
+                $scope,
+                true
+            );
+        }
+    }
+
+    $existing = existing_guarded_access(
+        $requiredPermissions,
+        $scope
+    );
+
+    if ($existing !== null) {
+        return $existing;
+    }
+
+    if (optional_current_user() === null) {
         api_error('Authentication or a valid access token is required.', 401, 'unauthorized');
     }
 
     api_error('This operation requires an administrative permission.', 403, 'permission_required');
+}
+
+function render_access_token_prompt(
+    string $title,
+    string $description,
+    string $action
+): never {
+    $nonce = base64_encode(random_bytes(18));
+
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store, private');
+    header('Referrer-Policy: no-referrer');
+    header('X-Content-Type-Options: nosniff');
+    header(
+        "Content-Security-Policy: default-src 'none'; "
+        . "style-src 'nonce-$nonce'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+    );
+    ?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title><?=htmlspecialchars($title, ENT_QUOTES, 'UTF-8')?></title>
+<style nonce="<?=htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8')?>">
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#081d40;color:#fff;font:15px/1.5 system-ui,sans-serif}
+main{width:min(560px,100%);padding:24px;background:#0d2d58;border:1px solid #789fbe;border-radius:12px}
+h1{margin:0 0 8px;font-size:24px}p{color:#bcd7e9}
+label{display:grid;gap:6px;margin-top:18px;font-weight:700}
+input{width:100%;padding:11px;color:#fff;background:#173a61;border:1px solid #91b6d5;border-radius:7px;font:13px ui-monospace,monospace}
+button{margin-top:16px;padding:10px 16px;color:#fff;background:#0053e2;border:1px solid #4285ee;border-radius:7px;font:inherit;font-weight:800;cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+<h1><?=htmlspecialchars($title, ENT_QUOTES, 'UTF-8')?></h1>
+<p><?=htmlspecialchars($description, ENT_QUOTES, 'UTF-8')?></p>
+<form method="post" action="<?=htmlspecialchars($action, ENT_QUOTES, 'UTF-8')?>">
+<label>
+<span>Access token</span>
+<input name="access_token" type="password" autocomplete="off" spellcheck="false" required autofocus>
+</label>
+<button type="submit">Continue</button>
+</form>
+</main>
+</body>
+</html>
+<?php
+    exit;
 }
 
 function guarded_access_has_permission(array $authorization, int $permission): bool
