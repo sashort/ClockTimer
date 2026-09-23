@@ -1,0 +1,117 @@
+name: Speech streaming tests
+
+on:
+  pull_request:
+    paths:
+      - "SpeechMenu.js"
+      - "SpeechRecognitionProviders.js"
+      - "SpeechAudioWorklet.js"
+      - "SpeechMicBar.js"
+      - "app.js"
+      - "lang/en-US.js"
+      - "lang/en-US/**"
+      - "speech/**"
+      - "tests/speech-*.mjs"
+      - "tests/package.json"
+      - ".github/workflows/speech-streaming-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  speech:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm install
+
+      - run: npm run test:speech-pipeline
+
+
+      - name: Verify whisper.cpp grammar integration
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WHISPER_CPP_REF="a44e07845931421bb6f3447ce0010ed9dc76a118"
+
+          git clone \
+            --filter=blob:none \
+            --no-checkout \
+            https://github.com/ggml-org/whisper.cpp.git \
+            /tmp/whisper.cpp
+
+          git -C /tmp/whisper.cpp checkout "$WHISPER_CPP_REF"
+
+          git -C /tmp/whisper.cpp apply \
+            "$GITHUB_WORKSPACE/speech/whisper-server-grammar.patch"
+
+          node tests/export-speech-grammar.mjs \
+            > /tmp/wmof-speech.gbnf
+
+          cat > /tmp/validate-grammar.cpp <<'CPP'
+          #include "grammar-parser.h"
+
+          #include <fstream>
+          #include <iostream>
+          #include <iterator>
+          #include <string>
+
+          int main(int argc, char ** argv) {
+              if (argc != 2) return 2;
+
+              std::ifstream input(argv[1]);
+              const std::string grammar(
+                  (std::istreambuf_iterator<char>(input)),
+                  std::istreambuf_iterator<char>()
+              );
+
+              const auto parsed =
+                  grammar_parser::parse(
+                      grammar.c_str()
+                  );
+
+              if (
+                  parsed.rules.empty() ||
+                  parsed.symbol_ids.find("root") ==
+                      parsed.symbol_ids.end()
+              ) {
+                  std::cerr
+                      << "Generated WMOF grammar is invalid."
+                      << std::endl;
+                  return 1;
+              }
+
+              return 0;
+          }
+          CPP
+
+          c++ \
+            -std=c++17 \
+            -I/tmp/whisper.cpp/include \
+            -I/tmp/whisper.cpp/ggml/include \
+            -I/tmp/whisper.cpp/examples \
+            /tmp/validate-grammar.cpp \
+            /tmp/whisper.cpp/examples/grammar-parser.cpp \
+            -o /tmp/validate-grammar
+
+          /tmp/validate-grammar \
+            /tmp/wmof-speech.gbnf
+
+          cmake \
+            -S /tmp/whisper.cpp \
+            -B /tmp/whisper-build \
+            -DWHISPER_BUILD_TESTS=OFF
+
+          cmake \
+            --build /tmp/whisper-build \
+            --target whisper-server \
+            -j 2

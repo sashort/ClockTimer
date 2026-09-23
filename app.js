@@ -153,6 +153,8 @@
     const ensureSpeechRuntime = () => {
         if (
             globalThis.SpeechMenu &&
+            globalThis.BrowserSpeechProvider &&
+            globalThis.StreamingSpeechProvider &&
             customElements.get("speech-mic-bar")
         ) {
             return Promise.resolve();
@@ -162,6 +164,15 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
+                        if (
+                            !globalThis.BrowserSpeechProvider ||
+                            !globalThis.StreamingSpeechProvider
+                        ) {
+                            await loadClassicScript(
+                                "SpeechRecognitionProviders.js"
+                            );
+                        }
+
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
                                 "SpeechMenu.js"
@@ -216,6 +227,22 @@
     const mainMenu = $("#mainMenu");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
+    const speechTestParams =
+        new URLSearchParams(
+            globalThis.location?.search || ""
+        );
+    const speechTestEnabled =
+        speechTestParams.get("speech-test") === "1";
+    const speechTestProvider =
+        speechTestParams.get("speech-provider");
+
+    if (
+        speechTestEnabled &&
+        speechRecognitionButton
+    ) {
+        speechRecognitionButton.disabled = false;
+        speechRecognitionButton.dataset.testMode = "true";
+    }
 
     const setSpeechButtonState = (enabled, muted = false) => {
         speechRecognitionButton?.setAttribute(
@@ -242,6 +269,95 @@
         app.dataset.speechActive =
             String(Boolean(enabled));
     };
+
+    const preferredSpeechProvider = () => {
+        if (
+            speechTestEnabled &&
+            (
+                speechTestProvider === "streaming" ||
+                speechTestProvider === "browser"
+            )
+        ) {
+            return speechTestProvider;
+        }
+
+        const userAgent =
+            navigator.userAgent || "";
+
+        return /Android|iPhone|iPad|iPod/i
+            .test(userAgent)
+                ? "streaming"
+                : "browser";
+    };
+
+    const runSpeechBackendSelfTest = async () => {
+        if (
+            !speechTestEnabled ||
+            speechTestParams.get(
+                "speech-self-test"
+            ) !== "1"
+        ) {
+            return;
+        }
+
+        const root =
+            document.documentElement;
+
+        root.dataset.speechSelfTest =
+            "running";
+
+        let provider;
+
+        try {
+            await ensureSpeechRuntime();
+
+            provider =
+                new globalThis
+                    .StreamingSpeechProvider();
+
+            await provider.start({
+                language: "en-US",
+                sessionId:
+                    `browser-self-test-${Date.now()}`,
+                recognitionContext: {
+                    vocabulary: [
+                        "start",
+                        "stop"
+                    ],
+                    numbers: {
+                        output:
+                            "digits"
+                    }
+                }
+            });
+
+            root.dataset.speechSelfTest =
+                "passed";
+            delete root.dataset
+                .speechSelfTestError;
+        }
+        catch (error) {
+            console.error(error);
+
+            root.dataset.speechSelfTest =
+                "failed";
+            root.dataset
+                .speechSelfTestError =
+                    String(
+                        error?.message ||
+                        error ||
+                        "unknown error"
+                    ).slice(0, 200);
+        }
+        finally {
+            try {
+                await provider?.stop?.();
+            }
+            catch {}
+        }
+    };
+
+    void runSpeechBackendSelfTest();
 
     let speechActivationPending = false;
 
@@ -283,6 +399,15 @@
 
                 const englishLanguage =
                     globalThis.WMOFLanguages?.["en-US"];
+
+                if (
+                    globalThis.SpeechMenu &&
+                    !globalThis.SpeechMenu.started
+                ) {
+                    globalThis.SpeechMenu
+                        .recognitionProvider =
+                            preferredSpeechProvider();
+                }
 
                 const started =
                     await globalThis.SpeechMenu?.start?.(
@@ -9033,6 +9158,9 @@
             installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
             SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
             SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            SpeechMenu.setRecognitionContext(
+                englishSpeech.recognition || {}
+            );
             SpeechMenu.refresh();
         }
 

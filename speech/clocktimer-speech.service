@@ -1,0 +1,25 @@
+[Unit]
+Description=ClockTimer streaming speech recognition
+After=network.target
+
+[Service]
+Type=simple
+User=daemon
+Group=daemon
+WorkingDirectory=/opt/clocktimer-speech
+Environment=NODE_ENV=production
+Environment=SPEECH_HOST=127.0.0.1
+Environment=SPEECH_PORT=8765
+Environment=SPEECH_WEBSOCKET_PATH=/api/speech/stream
+Environment=SPEECH_ALLOWED_ORIGIN=https://wmof.sashort-apps.com
+Environment=WHISPER_SERVER_BIN=/opt/clocktimer-speech/bin/whisper-server
+Environment=WHISPER_MODEL=/var/lib/clocktimer/speech/models/ggml-base.en.bin
+Environment=WHISPER_TMP_DIR=/var/lib/clocktimer/speech/tmp
+ExecStart=/usr/bin/env node /opt/clocktimer-speech/src/server.js
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

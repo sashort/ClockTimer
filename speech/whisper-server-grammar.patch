@@ -1,0 +1,74 @@
+diff --git a/examples/server/server.cpp b/examples/server/server.cpp
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -3,4 +3,5 @@
+ 
+ #include "whisper.h"
++#include "grammar-parser.h"
+ #include "httplib.h"
+ #include "json.hpp"
+@@ -89,4 +90,5 @@
+     float temperature_inc =  0.20f;
+     float no_speech_thold =  0.6f;
++    float grammar_penalty = 100.0f;
+ 
+     bool debug_mode                = false;
+@@ -113,4 +115,6 @@
+     std::string language               = "en";
+     std::string prompt                 = "";
++    std::string grammar                = "";
++    std::string grammar_rule           = "root";
+     std::string font_path              = "/System/Library/Fonts/Supplemental/Courier New Bold.ttf";
+     std::string model                  = "models/ggml-base.en.bin";
+@@ -568,4 +572,16 @@
+         params.prompt = req.get_file_value("prompt").content;
+     }
++    if (req.has_file("grammar"))
++    {
++        params.grammar = req.get_file_value("grammar").content;
++    }
++    if (req.has_file("grammar_rule"))
++    {
++        params.grammar_rule = req.get_file_value("grammar_rule").content;
++    }
++    if (req.has_file("grammar_penalty"))
++    {
++        params.grammar_penalty = std::stof(req.get_file_value("grammar_penalty").content);
++    }
+     if (req.has_file("carry_initial_prompt"))
+     {
+@@ -965,4 +981,34 @@
+ 
+             wparams.suppress_nst     = params.suppress_nst;
++
++            grammar_parser::parse_state grammar_parsed;
++            std::vector<const whisper_grammar_element *> grammar_rules;
++
++            if (!params.grammar.empty()) {
++                grammar_parsed = grammar_parser::parse(params.grammar.c_str());
++
++                if (grammar_parsed.rules.empty()) {
++                    fprintf(stderr, "error: invalid request grammar\n");
++                    res.status = 400;
++                    res.set_content("{\"error\":\"invalid grammar\"}", "application/json");
++                    return;
++                }
++
++                const std::string grammar_rule = params.grammar_rule.empty() ? "root" : params.grammar_rule;
++                const auto grammar_symbol = grammar_parsed.symbol_ids.find(grammar_rule);
++
++                if (grammar_symbol == grammar_parsed.symbol_ids.end()) {
++                    fprintf(stderr, "error: request grammar rule not found: %s\n", grammar_rule.c_str());
++                    res.status = 400;
++                    res.set_content("{\"error\":\"grammar rule not found\"}", "application/json");
++                    return;
++                }
++
++                grammar_rules = grammar_parsed.c_rules();
++                wparams.grammar_rules   = grammar_rules.data();
++                wparams.n_grammar_rules = grammar_rules.size();
++                wparams.i_start_rule    = grammar_symbol->second;
++                wparams.grammar_penalty = params.grammar_penalty;
++            }
+ 
+             wparams.vad              = params.vad;

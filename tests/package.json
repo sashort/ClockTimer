@@ -13,7 +13,8 @@
     "test:deferred-trip": "node deferred-trip.mjs",
     "test:ui-state": "node clock-timer-ui-state.mjs",
     "test:active-restore": "node active-trip-restore.mjs",
-    "test:speech-editor": "node speech-editor.mjs"
+    "test:speech-editor": "node speech-editor.mjs",
+    "test:speech-pipeline": "node speech-mic-pipeline.mjs && node speech-browser-provider.mjs && node speech-streaming-protocol.mjs && node speech-audio-worklet.mjs && node speech-value-preprocessor.mjs && node speech-grammar.mjs && node whisper-service-startup.mjs && node --check ../SpeechMenu.js && node --check ../SpeechRecognitionProviders.js && node --check ../SpeechAudioWorklet.js && node --check ../speech/server.js && node --check ../speech/grammar.js && node --check ../speech/protocol.js && node --check ../speech/whisper-service.js"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

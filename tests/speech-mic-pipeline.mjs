@@ -27,6 +27,27 @@ window.SpeechRecognition = class {
     stop() { this.onend?.(); }
     abort() { this.onend?.(); }
 };
+globalThis.SpeechRecognition =
+    window.SpeechRecognition;
+
+Function(
+    fs.readFileSync(
+        new URL(
+            "../SpeechRecognitionProviders.js",
+            import.meta.url
+        ),
+        "utf8"
+    )
+)();
+
+assert.equal(
+    typeof globalThis.BrowserSpeechProvider,
+    "function"
+);
+assert.equal(
+    typeof globalThis.StreamingSpeechProvider,
+    "function"
+);
 
 const ParameterParser = Function(
     fs.readFileSync(new URL("../ParameterParser.js", import.meta.url), "utf8") +
@@ -64,6 +85,47 @@ window.SpeechMenu.silenceTimeout = 6000;
 assert.equal(window.SpeechMenu.silenceTimeout, 6000);
 
 assert.equal(window.SpeechMenu.commitSilenceTimeout, 350);
+assert.deepEqual(
+    window.SpeechMenu.recognitionContext,
+    {
+        vocabulary: [],
+        options: {},
+        phrases: [],
+        numbers: {output: "digits"}
+    }
+);
+window.SpeechMenu.setRecognitionContext({
+    vocabulary: ["start", "stop"],
+    options: {
+        mode: ["elapsed", "remaining"]
+    },
+    phrases: ["start at <time>"],
+    numbers: {output: "digits"}
+});
+assert.deepEqual(
+    window.SpeechMenu.recognitionContext,
+    {
+        vocabulary: ["start", "stop"],
+        options: {
+            mode: ["elapsed", "remaining"]
+        },
+        phrases: ["start at <time>"],
+        numbers: {output: "digits"}
+    }
+);
+assert.throws(
+    () =>
+        window.SpeechMenu.setRecognitionContext({
+            numbers: {output: "roman"}
+        }),
+    TypeError
+);
+window.SpeechMenu.clearRecognitionContext();
+
+assert.equal(window.SpeechMenu.recognitionProvider, "browser");
+window.SpeechMenu.recognitionProvider = "streaming";
+assert.equal(window.SpeechMenu.recognitionProvider, "streaming");
+window.SpeechMenu.recognitionProvider = "browser";
 window.SpeechMenu.commitSilenceTimeout = 425;
 assert.equal(window.SpeechMenu.commitSilenceTimeout, 425);
 assert.throws(
@@ -123,6 +185,12 @@ const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
+assert.match(app, /preferredSpeechProvider/);
+assert.match(app, /Android\|iPhone\|iPad\|iPod/);
+assert.match(
+    app,
+    /recognitionProvider\s*=\s*preferredSpeechProvider\(\)/
+);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
@@ -131,9 +199,18 @@ assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+const providerSource = fs.readFileSync(new URL("../SpeechRecognitionProviders.js", import.meta.url), "utf8");
+const workletSource = fs.readFileSync(new URL("../SpeechAudioWorklet.js", import.meta.url), "utf8");
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
-assert.match(speechMenuSource, /interimResults\s*=\s*true/);
-assert.match(speechMenuSource, /recognition\.start\(\s*SpeechMenu\.#micTrack\s*\)/s);
+assert.match(speechMenuSource, /#createRecognitionProvider/);
+assert.match(speechMenuSource, /provider\.startUtterance/);
+assert.match(speechMenuSource, /SpeechAudioWorklet\.js/);
+assert.match(providerSource, /interimResults\s*=\s*true/);
+assert.match(providerSource, /recognition\.start\(this\.#micTrack\)/);
+assert.match(providerSource, /class StreamingSpeechProvider/);
+assert.match(providerSource, /\/api\/speech\/stream/);
+assert.match(workletSource, /#targetRate = 16000/);
+assert.match(workletSource, /pcm:\s*packet\.buffer/);
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
 assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
