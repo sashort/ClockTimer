@@ -63,6 +63,12 @@
     const menuOpenState = new Map();
     let draggedPhraseItem;
     let viewportResizeObserver;
+    let regexBuilderResult = {
+        valid: false,
+        pattern: "",
+        error: "Enter a phrase template."
+    };
+    let regexBuilderPickerRange;
 
     const status =
         (message, error = false) => {
@@ -1531,6 +1537,16 @@
             options = {}
         ) => {
             if (!element) return;
+
+            if (
+                selectedElement &&
+                selectedElement !==
+                    element
+            ) {
+                setRegexBuilderLive(
+                    false
+                );
+            }
 
             selectedElement =
                 element;
@@ -3427,6 +3443,7 @@
                 true;
 
             if (!edit) {
+                refreshRegexBuilderControls();
                 return;
             }
 
@@ -3549,6 +3566,8 @@
                     .textContent =
                     "Remove speech attributes";
             }
+
+            refreshRegexBuilderControls();
         };
 
     const updateEntryField =
