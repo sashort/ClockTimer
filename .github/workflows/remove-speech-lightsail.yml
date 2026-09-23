@@ -1,0 +1,177 @@
+name: Remove speech backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/remove-speech-lightsail.yml"
+  workflow_dispatch:
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_SSH_KEY: ${{ secrets.LAMP_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$LAMP_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          : > ~/.ssh/known_hosts
+
+          for attempt in $(seq 1 30); do
+            if ssh-keyscan -T 10 -H "$LAMP_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            then
+              chmod 600 ~/.ssh/known_hosts
+              exit 0
+            fi
+
+            echo "SSH host scan failed (attempt $attempt); retrying."
+            sleep 10
+          done
+
+          echo "Unable to reach Lightsail SSH endpoint." >&2
+          exit 1
+
+      - name: Remove speech service and Apache proxy
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_USER: ${{ secrets.LAMP_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -o ConnectTimeout=15 \
+            -i ~/.ssh/id_ed25519 \
+            "$LAMP_USER@$LAMP_HOST" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          APACHE_ROOT=/opt/bitnami/apache2
+          APACHECTL="$APACHE_ROOT/bin/apachectl"
+          HTTPD_CONF="$APACHE_ROOT/conf/httpd.conf"
+
+          sudo -n systemctl stop clocktimer-speech.service 2>/dev/null || true
+          sudo -n systemctl disable clocktimer-speech.service 2>/dev/null || true
+          sudo -n rm -f /etc/systemd/system/clocktimer-speech.service
+          sudo -n systemctl daemon-reload
+          sudo -n systemctl reset-failed clocktimer-speech.service 2>/dev/null || true
+
+          sudo -n python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("/opt/bitnami/apache2/conf/httpd.conf")
+          text = path.read_text()
+
+          begin = "# BEGIN CLOCKTIMER SPEECH PROXY"
+          end = "# END CLOCKTIMER SPEECH PROXY"
+
+          pattern = re.compile(
+              r"\n?"
+              + re.escape(begin)
+              + r".*?"
+              + re.escape(end)
+              + r"\n?",
+              re.DOTALL,
+          )
+
+          text = pattern.sub("\n", text)
+          path.write_text(text)
+          PY
+
+          sudo -n "$APACHECTL" -t
+          sudo -n /opt/bitnami/ctlscript.sh restart apache
+
+          if sudo -n systemctl is-active --quiet clocktimer-speech.service 2>/dev/null; then
+            echo "Speech service is still active." >&2
+            exit 1
+          fi
+
+          if grep -q "CLOCKTIMER SPEECH PROXY" "$HTTPD_CONF"; then
+            echo "Speech proxy block is still present." >&2
+            exit 1
+          fi
+
+          echo "ClockTimer speech backend removed."
+          REMOTE
+
+      - name: Verify public WSS is closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install ws@8 --no-save
+
+          node --input-type=module <<'NODE'
+          import WebSocket from "ws";
+
+          const result =
+              await new Promise(resolve => {
+                  const socket =
+                      new WebSocket(
+                          "wss://wmof.sashort-apps.com/api/speech/stream",
+                          {
+                              headers: {
+                                  Origin:
+                                      "https://wmof.sashort-apps.com"
+                              }
+                          }
+                      );
+
+                  const timer =
+                      setTimeout(
+                          () => {
+                              try {
+                                  socket.terminate();
+                              }
+                              catch {}
+                              resolve("closed");
+                          },
+                          10000
+                      );
+
+                  socket.on(
+                      "open",
+                      () => {
+                          clearTimeout(timer);
+                          resolve("open");
+                      }
+                  );
+
+                  socket.on(
+                      "unexpected-response",
+                      () => {
+                          clearTimeout(timer);
+                          resolve("closed");
+                      }
+                  );
+
+                  socket.on(
+                      "error",
+                      () => {
+                          clearTimeout(timer);
+                          resolve("closed");
+                      }
+                  );
+              });
+
+          if (result !== "closed") {
+              throw new Error(
+                  "Speech WebSocket is still publicly reachable."
+              );
+          }
+
+          console.log(
+              "Public speech WebSocket is closed."
+          );
+          NODE
