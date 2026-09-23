@@ -44,21 +44,6 @@
             this.#recognitionContext = context;
         }
 
-        setRecognitionContext(context = {}) {
-            this.#recognitionContext = context;
-
-            if (
-                this.#socket?.readyState ===
-                WebSocket.OPEN
-            ) {
-                this.#sendControl({
-                    type: "context-update",
-                    sessionId: this.#sessionId,
-                    context
-                });
-            }
-        }
-
         async stop() {
             for (const id of [...this.#utterances.keys()]) {
                 this.cancelUtterance(id);
@@ -400,6 +385,21 @@
             });
 
             return true;
+        }
+
+        setRecognitionContext(context = {}) {
+            this.#recognitionContext = context;
+
+            if (
+                this.#socket?.readyState ===
+                WebSocket.OPEN
+            ) {
+                this.#sendControl({
+                    type: "context-update",
+                    sessionId: this.#sessionId,
+                    context
+                });
+            }
         }
 
         async stop() {
