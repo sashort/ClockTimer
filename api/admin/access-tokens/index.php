@@ -182,7 +182,7 @@ button:disabled{opacity:.5;cursor:default}.actions{display:flex;gap:8px;flex-wra
 </main>
 <script nonce="<?=htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8')?>">
 'use strict';
-const csrfToken=<?=$csrfJson?>;
+let csrfToken=<?=$csrfJson?>;
 const initialPermissions=<?=$permissionsJson?>;
 const canManageAll=<?=$superuserJson?>;
 const $=id=>document.getElementById(id);
@@ -206,20 +206,48 @@ function permissionOptions(selected){
 $('permission').innerHTML=permissionOptions();
 setDefaultExpiry();
 
-async function api(method='GET',body){
+async function api(method='GET',body,retry=true){
+    const headers={
+        'Accept':'application/json',
+        ...(body?{'Content-Type':'application/json'}:{})
+    };
+
+    if(method!=='GET'){
+        headers['X-CSRF-Token']=csrfToken;
+    }
+
     const response=await fetch(location.pathname,{
         method,
         credentials:'same-origin',
         cache:'no-store',
-        headers:{
-            'Accept':'application/json',
-            'X-CSRF-Token':csrfToken,
-            ...(body?{'Content-Type':'application/json'}:{})
-        },
+        headers,
         ...(body?{body:JSON.stringify(body)}:{})
     });
+
     const data=await response.json();
-    if(!response.ok)throw new Error(data.message||data.error||'Request failed.');
+
+    if(
+        method==='GET' &&
+        typeof data.csrfToken==='string' &&
+        data.csrfToken.length>=32
+    ){
+        csrfToken=data.csrfToken;
+    }
+
+    if(
+        !response.ok &&
+        retry &&
+        method!=='GET' &&
+        data.error==='invalid_csrf'
+    ){
+        await api('GET',undefined,false);
+        return api(method,body,false);
+    }
+
+    if(!response.ok){
+        throw new Error(data.message||data.error||'Request failed.');
+    }
+
     return data;
 }
 function escapeHtml(value){
