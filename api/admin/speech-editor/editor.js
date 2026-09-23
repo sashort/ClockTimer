@@ -3502,46 +3502,115 @@
             scheduleApply();
         };
 
-    const isPreprocFunction =
-        name =>
-            draftPreprocFunctions
-                .includes(name);
+    const normalizeFunctionRoles =
+        value => {
+            const source =
+                value &&
+                typeof value ===
+                    "object"
+                    ? value
+                    : {};
 
-    const setPreprocStatus =
+            const result =
+                emptyFunctionRoles();
+
+            for (
+                const role of
+                Object.keys(result)
+            ) {
+                result[role] =
+                    [
+                        ...new Set(
+                            Array.isArray(
+                                source[role]
+                            )
+                                ? source[role]
+                                : []
+                        )
+                    ].sort(
+                        (a, b) =>
+                            a.localeCompare(b)
+                    );
+            }
+
+            return result;
+        };
+
+    const roleOfFunction =
+        name => {
+            for (
+                const role of
+                Object.keys(
+                    draftFunctionRoles
+                )
+            ) {
+                if (
+                    draftFunctionRoles[
+                        role
+                    ].includes(
+                        name
+                    )
+                ) {
+                    return role;
+                }
+            }
+
+            return "";
+        };
+
+    const setFunctionRole =
         (
             name,
-            enabled
+            nextRole
         ) => {
-            const values =
-                new Set(
-                    draftPreprocFunctions
+            const roles =
+                normalizeFunctionRoles(
+                    draftFunctionRoles
                 );
 
-            if (enabled) {
-                values.add(name);
-            }
-            else {
-                values.delete(name);
+            for (
+                const role of
+                Object.keys(roles)
+            ) {
+                roles[role] =
+                    roles[role]
+                        .filter(
+                            value =>
+                                value !==
+                                name
+                        );
             }
 
-            draftPreprocFunctions =
-                [
-                    ...values
-                ].sort(
-                    (a, b) =>
-                        a.localeCompare(b)
-                );
+            if (
+                Object.prototype
+                    .hasOwnProperty
+                    .call(
+                        roles,
+                        nextRole
+                    )
+            ) {
+                roles[nextRole]
+                    .push(name);
+
+                roles[nextRole]
+                    .sort(
+                        (a, b) =>
+                            a.localeCompare(b)
+                    );
+            }
+
+            draftFunctionRoles =
+                roles;
 
             functionCombo.refresh();
             preprocCombo.refresh();
             updateButtons();
 
             status(
-                enabled
-                    ? name +
-                        " marked as preproc."
-                    : name +
-                        " moved to speech-function."
+                name +
+                " marked as " +
+                nextRole +
+                "."
             );
         };
 
@@ -3566,14 +3635,10 @@
                 () =>
                     functionNames.filter(
                         name =>
-                            role ===
-                                "preproc"
-                                ? isPreprocFunction(
-                                    name
-                                )
-                                : !isPreprocFunction(
-                                    name
-                                )
+                            roleOfFunction(
+                                name
+                            ) ===
+                                role
                     );
 
             const renderOptions =
@@ -3645,17 +3710,21 @@
                         toggle.className =
                             "combo-role-toggle";
 
+                        const alternateRole =
+                            role ===
+                                "processing"
+                                ? "action"
+                                : "processing";
+
                         toggle.textContent =
                             role ===
-                                "preproc"
-                                ? "Use as function"
-                                : "Mark preproc";
+                                "processing"
+                                ? "Mark action"
+                                : "Mark processing";
 
                         toggle.title =
-                            role ===
-                                "preproc"
-                                ? "Remove preproc tag"
-                                : "Tag as preproc";
+                            "Change function role to " +
+                            alternateRole;
 
                         toggle.addEventListener(
                             "pointerdown",
@@ -3671,10 +3740,9 @@
                                 event.preventDefault();
                                 event.stopPropagation();
 
-                                setPreprocStatus(
+                                setFunctionRole(
                                     name,
-                                    role !==
-                                        "preproc"
+                                    alternateRole
                                 );
 
                                 requestAnimationFrame(
@@ -3897,14 +3965,14 @@
         attachCombobox(
             $("functionInput"),
             $("functionOptions"),
-            "function"
+            "action"
         );
 
     const preprocCombo =
         attachCombobox(
             $("preprocInput"),
             $("preprocOptions"),
-            "preproc"
+            "processing"
         );
 
     const renderAll = () => {
