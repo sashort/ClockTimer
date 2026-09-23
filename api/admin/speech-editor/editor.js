@@ -80,6 +80,773 @@
             clean;
     };
 
+    const devicePresets = [
+        {brand:"Apple", model:"iPad", generation:"10th generation", width:820, height:1180},
+        {brand:"Apple", model:"iPad Air", generation:"11-inch (M2)", width:820, height:1180},
+        {brand:"Apple", model:"iPad mini", generation:"A17 Pro", width:744, height:1133},
+        {brand:"Apple", model:"iPad Pro", generation:"11-inch (M4)", width:834, height:1210},
+        {brand:"Apple", model:"iPad Pro", generation:"13-inch (M4)", width:1032, height:1376},
+        {brand:"Apple", model:"iPhone", generation:"13", width:390, height:844},
+        {brand:"Apple", model:"iPhone", generation:"13 mini", width:375, height:812},
+        {brand:"Apple", model:"iPhone", generation:"13 Pro Max", width:428, height:926},
+        {brand:"Apple", model:"iPhone", generation:"14", width:390, height:844},
+        {brand:"Apple", model:"iPhone", generation:"14 Plus", width:428, height:926},
+        {brand:"Apple", model:"iPhone", generation:"14 Pro", width:393, height:852},
+        {brand:"Apple", model:"iPhone", generation:"14 Pro Max", width:430, height:932},
+        {brand:"Apple", model:"iPhone", generation:"15", width:393, height:852},
+        {brand:"Apple", model:"iPhone", generation:"15 Plus", width:430, height:932},
+        {brand:"Apple", model:"iPhone", generation:"15 Pro", width:393, height:852},
+        {brand:"Apple", model:"iPhone", generation:"15 Pro Max", width:430, height:932},
+        {brand:"Apple", model:"iPhone", generation:"16", width:393, height:852},
+        {brand:"Apple", model:"iPhone", generation:"16 Plus", width:430, height:932},
+        {brand:"Apple", model:"iPhone", generation:"16 Pro", width:402, height:874},
+        {brand:"Apple", model:"iPhone", generation:"16 Pro Max", width:440, height:956},
+        {brand:"Apple", model:"iPhone", generation:"16e", width:390, height:844},
+        {brand:"Apple", model:"iPhone", generation:"17", width:402, height:874},
+        {brand:"Apple", model:"iPhone", generation:"Air", width:420, height:912},
+        {brand:"Apple", model:"iPhone", generation:"17 Pro", width:402, height:874},
+        {brand:"Apple", model:"iPhone", generation:"17 Pro Max", width:440, height:956},
+        {brand:"Apple", model:"iPhone", generation:"18 Pro", width:402, height:874},
+        {brand:"Apple", model:"iPhone", generation:"18 Pro Max", width:440, height:956},
+        {brand:"ASUS", model:"Zenbook 14 OLED", generation:"2024", width:1280, height:800},
+        {brand:"Dell", model:"XPS 13", generation:"9350", width:1280, height:800},
+        {brand:"Dell", model:"XPS 14", generation:"9440", width:1600, height:1000},
+        {brand:"Dell", model:"XPS 16", generation:"9640", width:1728, height:1080},
+        {brand:"Framework", model:"Laptop 13", generation:"2024", width:1504, height:1003},
+        {brand:"Framework", model:"Laptop 16", generation:"2024", width:1707, height:1067},
+        {brand:"Google", model:"Pixel", generation:"8", width:412, height:915},
+        {brand:"Google", model:"Pixel", generation:"8 Pro", width:448, height:998},
+        {brand:"Google", model:"Pixel", generation:"8a", width:412, height:915},
+        {brand:"Google", model:"Pixel", generation:"9", width:412, height:923},
+        {brand:"Google", model:"Pixel", generation:"9 Pro", width:427, height:952},
+        {brand:"Google", model:"Pixel", generation:"9 Pro XL", width:448, height:998},
+        {brand:"Google", model:"Pixel", generation:"10", width:412, height:923},
+        {brand:"Google", model:"Pixel", generation:"10 Pro", width:427, height:952},
+        {brand:"Google", model:"Pixel", generation:"10 Pro XL", width:448, height:998},
+        {brand:"HP", model:"Spectre x360 14", generation:"2024", width:1280, height:853},
+        {brand:"Lenovo", model:"ThinkPad X1 Carbon", generation:"Gen 12", width:1280, height:800},
+        {brand:"Microsoft", model:"Surface Laptop 7", generation:"13.8-inch", width:1280, height:853},
+        {brand:"Microsoft", model:"Surface Laptop 7", generation:"15-inch", width:1440, height:960},
+        {brand:"Microsoft", model:"Surface Pro", generation:"9", width:1440, height:960},
+        {brand:"Microsoft", model:"Surface Pro", generation:"11", width:1440, height:960},
+        {brand:"Samsung", model:"Galaxy S", generation:"23", width:360, height:780},
+        {brand:"Samsung", model:"Galaxy S", generation:"23 Ultra", width:384, height:824},
+        {brand:"Samsung", model:"Galaxy S", generation:"24", width:360, height:780},
+        {brand:"Samsung", model:"Galaxy S", generation:"24 Ultra", width:384, height:824},
+        {brand:"Samsung", model:"Galaxy S", generation:"25", width:360, height:780},
+        {brand:"Samsung", model:"Galaxy S", generation:"25 Ultra", width:384, height:824},
+        {brand:"Samsung", model:"Galaxy S", generation:"26", width:360, height:780},
+        {brand:"Samsung", model:"Galaxy S", generation:"26 Ultra", width:384, height:832}
+    ]
+        .sort(
+            (a, b) =>
+                a.brand.localeCompare(
+                    b.brand,
+                    undefined,
+                    {numeric:true}
+                ) ||
+                a.model.localeCompare(
+                    b.model,
+                    undefined,
+                    {numeric:true}
+                ) ||
+                a.generation.localeCompare(
+                    b.generation,
+                    undefined,
+                    {numeric:true}
+                )
+        )
+        .map(
+            (
+                device,
+                index
+            ) => ({
+                ...device,
+                id:
+                    "device-" +
+                    index
+            })
+        );
+
+    const deviceById =
+        new Map(
+            devicePresets.map(
+                device => [
+                    device.id,
+                    device
+                ]
+            )
+        );
+
+    const populateDeviceSelects =
+        () => {
+            for (
+                const select of
+                [
+                    $("screenSizeSelect"),
+                    $("compareSizeSelect")
+                ]
+            ) {
+                for (
+                    const device of
+                    devicePresets
+                ) {
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        device.id;
+
+                    option.textContent =
+                        device.brand +
+                        " " +
+                        device.model +
+                        " " +
+                        device.generation;
+
+                    select.append(
+                        option
+                    );
+                }
+            }
+        };
+
+    const rulerTicks =
+        (
+            element,
+            length,
+            vertical = false
+        ) => {
+            const fragment =
+                document
+                    .createDocumentFragment();
+
+            for (
+                let value = 0;
+                value <= length;
+                value += 10
+            ) {
+                const tick =
+                    document.createElement(
+                        "span"
+                    );
+
+                tick.className =
+                    "ruler-tick";
+
+                if (vertical) {
+                    tick.style.top =
+                        value + "px";
+                    tick.style.width =
+                        (
+                            value % 100 === 0
+                                ? 12
+                                : value % 50 === 0
+                                    ? 8
+                                    : 4
+                        ) +
+                        "px";
+                }
+                else {
+                    tick.style.left =
+                        value + "px";
+                    tick.style.height =
+                        (
+                            value % 100 === 0
+                                ? 12
+                                : value % 50 === 0
+                                    ? 8
+                                    : 4
+                        ) +
+                        "px";
+                }
+
+                fragment.append(
+                    tick
+                );
+
+                if (
+                    value % 100 === 0
+                ) {
+                    const label =
+                        document
+                            .createElement(
+                                "span"
+                            );
+
+                    label.className =
+                        "ruler-label";
+                    label.textContent =
+                        String(value);
+
+                    if (vertical) {
+                        label.style.top =
+                            (
+                                value +
+                                3
+                            ) +
+                            "px";
+                    }
+                    else {
+                        label.style.left =
+                            value + "px";
+                    }
+
+                    fragment.append(
+                        label
+                    );
+                }
+            }
+
+            element.replaceChildren(
+                fragment
+            );
+        };
+
+    const setRect =
+        (
+            element,
+            {
+                left,
+                top,
+                width,
+                height
+            }
+        ) => {
+            element.style.left =
+                left + "px";
+            element.style.top =
+                top + "px";
+            element.style.width =
+                Math.max(
+                    0,
+                    width
+                ) +
+                "px";
+            element.style.height =
+                Math.max(
+                    0,
+                    height
+                ) +
+                "px";
+        };
+
+    const hideCompareMasks =
+        () => {
+            for (
+                const id of
+                [
+                    "compareMaskTop",
+                    "compareMaskRight",
+                    "compareMaskBottom",
+                    "compareMaskLeft"
+                ]
+            ) {
+                $(id).style.display =
+                    "none";
+            }
+        };
+
+    const hideCompareDeltas =
+        () => {
+            for (
+                const id of
+                [
+                    "compareDeltaLeft",
+                    "compareDeltaRight",
+                    "compareDeltaTop",
+                    "compareDeltaBottom"
+                ]
+            ) {
+                $(id).style.display =
+                    "none";
+            }
+        };
+
+    const showDelta =
+        (
+            id,
+            text,
+            left,
+            top
+        ) => {
+            const element =
+                $(id);
+
+            element.textContent =
+                text;
+            element.style.display =
+                "block";
+            element.style.left =
+                left + "px";
+            element.style.top =
+                top + "px";
+        };
+
+    const applyViewport =
+        () => {
+            const scroller =
+                $("previewScroller");
+
+            if (
+                !scroller ||
+                !scroller.clientWidth ||
+                !scroller.clientHeight
+            ) {
+                return;
+            }
+
+            const ruler = 28;
+            const padding = 24;
+            const selectedPreset =
+                deviceById.get(
+                    $("screenSizeSelect")
+                        .value
+                );
+
+            const fillWidth =
+                Math.max(
+                    280,
+                    scroller.clientWidth -
+                        ruler -
+                        padding * 2
+                );
+
+            const fillHeight =
+                Math.max(
+                    360,
+                    scroller.clientHeight -
+                        ruler -
+                        padding * 2
+                );
+
+            const screen = {
+                width:
+                    selectedPreset
+                        ?.width ||
+                    fillWidth,
+                height:
+                    selectedPreset
+                        ?.height ||
+                    fillHeight
+            };
+
+            const compare =
+                deviceById.get(
+                    $("compareSizeSelect")
+                        .value
+                );
+
+            const extentWidth =
+                Math.max(
+                    screen.width,
+                    compare?.width ||
+                        0
+                );
+
+            const extentHeight =
+                Math.max(
+                    screen.height,
+                    compare?.height ||
+                        0
+                );
+
+            const stageWidth =
+                Math.max(
+                    scroller.clientWidth,
+                    ruler +
+                        padding * 2 +
+                        extentWidth
+                );
+
+            const stageHeight =
+                Math.max(
+                    scroller.clientHeight,
+                    ruler +
+                        padding * 2 +
+                        extentHeight
+                );
+
+            const stage =
+                $("previewStage");
+
+            stage.style.width =
+                stageWidth + "px";
+            stage.style.height =
+                stageHeight + "px";
+
+            const extentLeft =
+                ruler +
+                padding +
+                Math.max(
+                    0,
+                    (
+                        stageWidth -
+                        (
+                            ruler +
+                            padding * 2 +
+                            extentWidth
+                        )
+                    ) / 2
+                );
+
+            const extentTop =
+                ruler +
+                padding +
+                Math.max(
+                    0,
+                    (
+                        stageHeight -
+                        (
+                            ruler +
+                            padding * 2 +
+                            extentHeight
+                        )
+                    ) / 2
+                );
+
+            const screenLeft =
+                extentLeft +
+                (
+                    extentWidth -
+                    screen.width
+                ) / 2;
+
+            const screenTop =
+                extentTop +
+                (
+                    extentHeight -
+                    screen.height
+                ) / 2;
+
+            setRect(
+                $("screenFrame"),
+                {
+                    left:
+                        screenLeft,
+                    top:
+                        screenTop,
+                    width:
+                        screen.width,
+                    height:
+                        screen.height
+                }
+            );
+
+            const topRuler =
+                $("topRuler");
+
+            setRect(
+                topRuler,
+                {
+                    left:
+                        screenLeft,
+                    top:
+                        screenTop -
+                        ruler,
+                    width:
+                        screen.width,
+                    height:
+                        ruler
+                }
+            );
+
+            const leftRuler =
+                $("leftRuler");
+
+            setRect(
+                leftRuler,
+                {
+                    left:
+                        screenLeft -
+                        ruler,
+                    top:
+                        screenTop,
+                    width:
+                        ruler,
+                    height:
+                        screen.height
+                }
+            );
+
+            rulerTicks(
+                topRuler,
+                screen.width
+            );
+
+            rulerTicks(
+                leftRuler,
+                screen.height,
+                true
+            );
+
+            hideCompareMasks();
+            hideCompareDeltas();
+
+            const compareFrame =
+                $("compareFrame");
+
+            if (!compare) {
+                compareFrame.style
+                    .display =
+                    "none";
+                return;
+            }
+
+            const compareLeft =
+                screenLeft +
+                (
+                    screen.width -
+                    compare.width
+                ) / 2;
+
+            const compareTop =
+                screenTop +
+                (
+                    screen.height -
+                    compare.height
+                ) / 2;
+
+            compareFrame.style
+                .display =
+                "block";
+
+            setRect(
+                compareFrame,
+                {
+                    left:
+                        compareLeft,
+                    top:
+                        compareTop,
+                    width:
+                        compare.width,
+                    height:
+                        compare.height
+                }
+            );
+
+            const x1 =
+                Math.max(
+                    0,
+                    (
+                        screen.width -
+                        compare.width
+                    ) / 2
+                );
+
+            const x2 =
+                Math.min(
+                    screen.width,
+                    (
+                        screen.width +
+                        compare.width
+                    ) / 2
+                );
+
+            const y1 =
+                Math.max(
+                    0,
+                    (
+                        screen.height -
+                        compare.height
+                    ) / 2
+                );
+
+            const y2 =
+                Math.min(
+                    screen.height,
+                    (
+                        screen.height +
+                        compare.height
+                    ) / 2
+                );
+
+            const masks = [
+                [
+                    "compareMaskTop",
+                    0,
+                    0,
+                    screen.width,
+                    y1
+                ],
+                [
+                    "compareMaskBottom",
+                    0,
+                    y2,
+                    screen.width,
+                    screen.height -
+                        y2
+                ],
+                [
+                    "compareMaskLeft",
+                    0,
+                    y1,
+                    x1,
+                    y2 - y1
+                ],
+                [
+                    "compareMaskRight",
+                    x2,
+                    y1,
+                    screen.width -
+                        x2,
+                    y2 - y1
+                ]
+            ];
+
+            for (
+                const [
+                    id,
+                    left,
+                    top,
+                    width,
+                    height
+                ] of masks
+            ) {
+                const mask =
+                    $(id);
+
+                if (
+                    width <= 0 ||
+                    height <= 0
+                ) {
+                    mask.style.display =
+                        "none";
+                    continue;
+                }
+
+                mask.style.display =
+                    "block";
+
+                setRect(
+                    mask,
+                    {
+                        left,
+                        top,
+                        width,
+                        height
+                    }
+                );
+            }
+
+            if (
+                compare.width >
+                    screen.width
+            ) {
+                const half =
+                    (
+                        compare.width -
+                        screen.width
+                    ) / 2;
+
+                const label =
+                    "+" +
+                    half +
+                    " px";
+
+                showDelta(
+                    "compareDeltaLeft",
+                    label,
+                    compareLeft +
+                        Math.max(
+                            2,
+                            half / 2 -
+                                20
+                        ),
+                    screenTop +
+                        screen.height / 2
+                );
+
+                showDelta(
+                    "compareDeltaRight",
+                    label,
+                    screenLeft +
+                        screen.width +
+                        Math.max(
+                            2,
+                            half / 2 -
+                                20
+                        ),
+                    screenTop +
+                        screen.height / 2
+                );
+            }
+
+            if (
+                compare.height >
+                    screen.height
+            ) {
+                const half =
+                    (
+                        compare.height -
+                        screen.height
+                    ) / 2;
+
+                const label =
+                    "+" +
+                    half +
+                    " px";
+
+                showDelta(
+                    "compareDeltaTop",
+                    label,
+                    screenLeft +
+                        screen.width / 2 -
+                        25,
+                    compareTop +
+                        Math.max(
+                            2,
+                            half / 2 -
+                                8
+                        )
+                );
+
+                showDelta(
+                    "compareDeltaBottom",
+                    label,
+                    screenLeft +
+                        screen.width / 2 -
+                        25,
+                    screenTop +
+                        screen.height +
+                        Math.max(
+                            2,
+                            half / 2 -
+                                8
+                        )
+                );
+            }
+        };
+
+    populateDeviceSelects();
+
+    $("screenSizeSelect")
+        .addEventListener(
+            "change",
+            applyViewport
+        );
+
+    $("compareSizeSelect")
+        .addEventListener(
+            "change",
+            applyViewport
+        );
+
+    viewportResizeObserver =
+        new ResizeObserver(
+            applyViewport
+        );
+
+    viewportResizeObserver.observe(
+        $("previewScroller")
+    );
+
+    requestAnimationFrame(
+        applyViewport
+    );
+
     const normalizeKind =
         kind =>
             kind === "modal"
