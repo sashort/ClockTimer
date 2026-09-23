@@ -1638,6 +1638,95 @@
                 null;
         };
 
+    const syncFunctionCatalog =
+        () => {
+            const runtime =
+                frame.contentWindow
+                    ?.WMOFSpeechEditorRuntime;
+
+            functionNames =
+                runtime
+                    ?.listFunctions
+                    ?.() ||
+                functionNames;
+
+            const runtimeRoles =
+                normalizeFunctionRoles(
+                    runtime
+                        ?.listFunctionRoles
+                        ?.()
+                        ?.functionRoles
+                );
+
+            const savedRoles =
+                normalizeFunctionRoles(
+                    savedFunctionRoles
+                );
+
+            const draftRoles =
+                normalizeFunctionRoles(
+                    draftFunctionRoles
+                );
+
+            const assignedDraft =
+                new Set(
+                    Object.values(
+                        draftRoles
+                    )
+                        .flat()
+                );
+
+            for (
+                const role of
+                Object.keys(
+                    runtimeRoles
+                )
+            ) {
+                for (
+                    const name of
+                    runtimeRoles[role]
+                ) {
+                    if (
+                        assignedDraft.has(
+                            name
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    draftRoles[role]
+                        .push(
+                            name
+                        );
+
+                    savedRoles[role]
+                        .push(
+                            name
+                        );
+
+                    assignedDraft.add(
+                        name
+                    );
+                }
+            }
+
+            savedFunctionRoles =
+                normalizeFunctionRoles(
+                    savedRoles
+                );
+
+            draftFunctionRoles =
+                normalizeFunctionRoles(
+                    draftRoles
+                );
+
+            functionCombo
+                ?.refresh?.();
+
+            preprocCombo
+                ?.refresh?.();
+        };
+
     const scheduleApply =
         () => {
             clearTimeout(
@@ -1658,11 +1747,7 @@
                         setTimeout(
                             () => {
                                 restoreSelection();
-                                functionNames =
-                                    runtime
-                                        ?.listFunctions
-                                        ?.() ||
-                                    functionNames;
+                                syncFunctionCatalog();
                                 renderAll();
                             },
                             0
@@ -4099,15 +4184,8 @@
                 }
             );
 
-            functionNames =
-                frame.contentWindow
-                    ?.WMOFSpeechEditorRuntime
-                    ?.listFunctions
-                    ?.() ||
-                [];
-
-            functionCombo.refresh();
-            preprocCombo.refresh();
+            functionNames = [];
+            syncFunctionCatalog();
 
             selectedElement =
                 undefined;
@@ -5032,8 +5110,7 @@
                     data.registryRevision ||
                     "missing";
 
-                functionCombo.refresh();
-                preprocCombo.refresh();
+                syncFunctionCatalog();
                 renderAll();
             }
         )
