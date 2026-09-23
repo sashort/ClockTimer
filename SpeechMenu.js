@@ -767,8 +767,10 @@ class SpeechMenu {
             }
         }
 
-        const previous =
+        const previousPhrases =
             SpeechMenu.#phrases;
+        const previousGroups =
+            SpeechMenu.#phraseGroups;
 
         SpeechMenu.#phraseGroups =
             Object.freeze(groups);
@@ -776,13 +778,48 @@ class SpeechMenu {
         SpeechMenu.#phrases =
             Object.freeze(phrases);
 
-        if (
-            previous.length !== phrases.length ||
-            previous.some(
+        const phrasesChanged =
+            previousPhrases.length !==
+                phrases.length ||
+            previousPhrases.some(
                 (phrase, index) =>
                     phrase !==
                     phrases[index]
-            )
+            );
+
+        const groupsChanged =
+            previousGroups.length !==
+                groups.length ||
+            previousGroups.some(
+                (group, index) => {
+                    const next =
+                        groups[index];
+
+                    return (
+                        !next ||
+                        group.element !==
+                            next.element ||
+                        group.pattern !==
+                            next.pattern ||
+                        group.phrases.length !==
+                            next.phrases.length ||
+                        group.phrases.some(
+                            (
+                                phrase,
+                                phraseIndex
+                            ) =>
+                                phrase !==
+                                next.phrases[
+                                    phraseIndex
+                                ]
+                        )
+                    );
+                }
+            );
+
+        if (
+            phrasesChanged ||
+            groupsChanged
         ) {
             SpeechMenu.#emit(
                 "phrasesChanged",
@@ -794,8 +831,10 @@ class SpeechMenu {
                 }
             );
 
-            SpeechMenu
-                .#refreshRecognizerHotwords();
+            if (phrasesChanged) {
+                SpeechMenu
+                    .#refreshRecognizerHotwords();
+            }
         }
 
         return SpeechMenu.#phrases;
@@ -2935,6 +2974,33 @@ class SpeechMenu {
             return false;
         }
 
+        const details =
+            target.closest?.(
+                "details"
+            );
+
+        if (
+            details &&
+            !details.open
+        ) {
+            return false;
+        }
+
+        const popover =
+            target.closest?.(
+                "[popover]"
+            );
+
+        if (
+            popover &&
+            !SpeechMenu
+                .#openPopover(
+                    popover
+                )
+        ) {
+            return false;
+        }
+
         for (
             let current = target;
             current &&
@@ -3010,13 +3076,21 @@ class SpeechMenu {
                     availability
                 );
 
-            if (
-                !resolved ||
-                resolved.fn.call(
-                    resolved.owner,
-                    element
-                ) !== true
-            ) {
+            if (!resolved) {
+                return false;
+            }
+
+            try {
+                if (
+                    resolved.fn.call(
+                        resolved.owner,
+                        element
+                    ) !== true
+                ) {
+                    return false;
+                }
+            }
+            catch {
                 return false;
             }
         }
