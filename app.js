@@ -5555,7 +5555,7 @@
         globalThis
             .WMOFInteractionFunctions
             .define(
-                "cycleRenderedTimeModePointerUp",
+                "toggleRenderedTimePointerUp",
                 () => {
                     cancelRenderedTimeLongPress();
 
@@ -5776,7 +5776,7 @@
             event:
                 "click",
             name:
-                "changeMenuSyncStateClick",
+                "toggleMenuSyncClick",
             action:
                 "toggleSync",
             preventDefault:
@@ -5791,7 +5791,7 @@
             event:
                 "click",
             name:
-                "changeGoalSyncStateClick",
+                "toggleGoalSyncClick",
             action:
                 "toggleSync",
             preventDefault:
