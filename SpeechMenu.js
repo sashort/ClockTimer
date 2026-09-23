@@ -1030,6 +1030,11 @@ class SpeechMenu {
             SpeechMenu.#utterance.committed &&
             level >= SpeechMenu.#speechThreshold
         ) {
+            SpeechMenu
+                .#clearCandidatePool(
+                    SpeechMenu.#utterance
+                );
+
             SpeechMenu.#finishUtterance(
                 "committed",
                 false
@@ -1226,6 +1231,9 @@ class SpeechMenu {
     }
 
     static #beginUtterance(now) {
+        SpeechMenu
+            .#cancelPendingRecognitionForBargeIn();
+
         const id =
             ++SpeechMenu.#utteranceSequence;
 
@@ -1278,6 +1286,31 @@ class SpeechMenu {
                     id,
                     frame.samples
                 );
+        }
+    }
+
+    static #cancelPendingRecognitionForBargeIn() {
+        for (
+            const [
+                id,
+                utterance
+            ] of SpeechMenu
+                .#finishedUtterances
+        ) {
+            SpeechMenu
+                .#clearCandidatePool(
+                    utterance
+                );
+
+            SpeechMenu
+                .#stopLiveRecognition(
+                    utterance,
+                    false
+                );
+
+            SpeechMenu
+                .#finishedUtterances
+                .delete(id);
         }
     }
 
