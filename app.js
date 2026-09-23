@@ -5570,7 +5570,7 @@
 
                     return globalThis
                         .WMOFActions
-                        .cycleRenderedTimeMode();
+                        .toggleRenderedTime();
                 }
             )
     );
@@ -5778,7 +5778,7 @@
             name:
                 "changeMenuSyncStateClick",
             action:
-                "changeSyncState",
+                "toggleSync",
             preventDefault:
                 true
         });
@@ -5793,7 +5793,7 @@
             name:
                 "changeGoalSyncStateClick",
             action:
-                "changeSyncState",
+                "toggleSync",
             preventDefault:
                 true
         });
@@ -10172,8 +10172,8 @@
                 return true;
             },
 
-            changeSyncState(
-                syncAction
+            toggleSync(
+                syncState
             ) {
                 if (
                     normalizedConnectionStatus() ===
@@ -10185,26 +10185,76 @@
                 const current =
                     getSyncGoalsState();
 
-                const action =
-                    String(
-                        syncAction ||
-                        ""
-                    )
-                        .toLowerCase();
+                let enabled;
 
-                const enabled =
+                if (
+                    syncState ===
+                        undefined ||
+                    syncState ===
+                        null ||
+                    String(
+                        syncState
+                    )
+                        .trim() ===
+                        ""
+                ) {
+                    enabled =
+                        !current;
+                }
+                else if (
+                    typeof syncState ===
+                        "boolean"
+                ) {
+                    enabled =
+                        syncState;
+                }
+                else {
+                    const requested =
+                        String(
+                            syncState
+                        )
+                            .trim()
+                            .toLowerCase();
+
+                    if (
+                        [
+                            "on",
+                            "true",
+                            "enabled",
+                            "enable"
+                        ].includes(
+                            requested
+                        )
+                    ) {
+                        enabled =
+                            true;
+                    }
+                    else if (
+                        [
+                            "off",
+                            "false",
+                            "disabled",
+                            "disable"
+                        ].includes(
+                            requested
+                        )
+                    ) {
+                        enabled =
+                            false;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+
+                const result =
                     setSyncGoals(
-                        action === "on"
-                            ? true
-                            : action ===
-                                "off"
-                                ? false
-                                : !current
+                        enabled
                     );
 
                 animateSyncGoalsIcons();
 
-                return enabled;
+                return result;
             },
 
             lockEndTime(
@@ -10298,43 +10348,66 @@
                 return true;
             },
 
-            changeRenderedTimeMode(
+            toggleRenderedTime(
                 timeMode
             ) {
-                const value =
+                let next;
+
+                if (
+                    timeMode ===
+                        undefined ||
+                    timeMode ===
+                        null ||
                     String(
                         timeMode
                     )
-                        .toLowerCase();
-
-                applyRenderedTimeMode(
-                    value.startsWith(
-                        "end"
-                    )
-                        ? "calculated-end"
-                        : value
-                );
-
-                return true;
-            },
-
-            cycleRenderedTimeMode() {
-                const index =
-                    RENDERED_TIME_MODES
-                        .indexOf(
-                            clockTimer
-                                .renderedTimeMode
-                        );
-
-                applyRenderedTimeMode(
-                    RENDERED_TIME_MODES[
-                        (
-                            index +
-                            1
-                        ) %
+                        .trim() ===
+                        ""
+                ) {
+                    const index =
                         RENDERED_TIME_MODES
-                            .length
-                    ]
+                            .indexOf(
+                                clockTimer
+                                    .renderedTimeMode
+                            );
+
+                    next =
+                        RENDERED_TIME_MODES[
+                            (
+                                index +
+                                1
+                            ) %
+                            RENDERED_TIME_MODES
+                                .length
+                        ];
+                }
+                else {
+                    const value =
+                        String(
+                            timeMode
+                        )
+                            .trim()
+                            .toLowerCase();
+
+                    next =
+                        value.startsWith(
+                            "end"
+                        )
+                            ? "calculated-end"
+                            : value;
+
+                    if (
+                        !RENDERED_TIME_MODES
+                            .includes(
+                                next
+                            )
+                    ) {
+                        return false;
+                    }
+                }
+
+                applyRenderedTimeMode(
+                    next
                 );
 
                 return true;
@@ -11739,6 +11812,106 @@
             }
         });
 
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
+            "toggleSync",
+            {
+                parameters: [
+                    {
+                        name: "syncState",
+                        type: "choice",
+                        optional: true,
+                        values: [
+                            "on",
+                            "off"
+                        ]
+                    }
+                ]
+            }
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
+            "toggleRenderedTime",
+            {
+                parameters: [
+                    {
+                        name: "timeMode",
+                        type: "choice",
+                        optional: true,
+                        values:
+                            RENDERED_TIME_MODES
+                                .slice()
+                    }
+                ]
+            }
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setContextProvider(
+            () => {
+                let summary;
+                let activeInterval;
+
+                try {
+                    summary =
+                        clockTimer
+                            .getSummarySnapshot
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                try {
+                    activeInterval =
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                return {
+                    currentTrip: {
+                        id:
+                            clockTimer
+                                .currentTripId,
+                        status:
+                            clockTimer
+                                .status,
+                        summary:
+                            summary?.trip
+                    },
+                    activeInterval:
+                        activeInterval ||
+                        null,
+                    renderedTime: {
+                        mode:
+                            clockTimer
+                                .renderedTimeMode
+                    },
+                    sync: {
+                        enabled:
+                            getSyncGoalsState(),
+                        connection:
+                            normalizedConnectionStatus()
+                    },
+                    goal: {
+                        mode:
+                            normalizePercentMode(
+                                clockTimer
+                                    .percentMode
+                            )
+                    }
+                };
+            }
+        );
+
 
     function ensureSpeechMenu(
         container = document.body,
@@ -11859,8 +12032,8 @@
             for (const [key, fn] of [
                 ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
                 ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"], ["goal","changeGoal"], ["goalMode","changeGoalMode"],
-                ["sync","changeSyncState"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
-                ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","changeRenderedTimeMode"]
+                ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
