@@ -3,48 +3,101 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/_core/bootstrap.php';
 
 $method = require_method('GET', 'POST');
+$trainingRequested =
+    ($_GET['training'] ?? null) === '1' ||
+    ($_POST['training'] ?? null) === '1';
 
-if ($method === 'GET') {
-    $grant = access_token_session_grant(
-        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-    );
+$sessionUser =
+    optional_current_user();
 
-    if (
-        $grant === null ||
-        !permission_mask_allows_any(
-            (int) $grant['permissions'],
+$authorization = null;
+$canWrite = false;
+$canPreview = false;
+
+if ($sessionUser !== null) {
+    if ($method === 'POST') {
+        require_csrf_form();
+    }
+
+    $permissions =
+        (int) $sessionUser['permissions'];
+
+    $canPreview =
+        permission_mask_allows_any(
+            $permissions,
             PERMISSION_DEVELOPER_PREVIEW,
             PERMISSION_DEVELOPER
-        )
-    ) {
-        render_access_token_prompt(
-            'WMOF Speech Command Editor',
-            'Open the editor from WMOF or enter an access token that grants Developer Preview or Developer permission.',
-            ''
         );
+
+    $canWrite =
+        permission_mask_allows(
+            $permissions,
+            PERMISSION_DEVELOPER
+        );
+} else {
+    if ($method === 'GET') {
+        $grant =
+            access_token_session_grant(
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            );
+
+        if (
+            $grant === null ||
+            !permission_mask_allows_any(
+                (int) $grant['permissions'],
+                PERMISSION_DEVELOPER_PREVIEW,
+                PERMISSION_DEVELOPER
+            )
+        ) {
+            render_access_token_prompt(
+                'WMOF Speech Command Editor',
+                'Sign in to use Speech Training, or enter a Developer Preview / Developer access token for the full Speech Editor.',
+                $trainingRequested
+                    ? '?training=1'
+                    : ''
+            );
+        }
     }
+
+    $authorization =
+        authorize_guarded_access(
+            [
+                PERMISSION_DEVELOPER_PREVIEW,
+                PERMISSION_DEVELOPER
+            ],
+            ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
+            true
+        );
+
+    if (
+        $method === 'POST' &&
+        ($authorization['mode'] ?? '') === 'session'
+    ) {
+        require_csrf_form();
+    }
+
+    $canPreview =
+        true;
+
+    $canWrite =
+        guarded_access_has_permission(
+            $authorization,
+            PERMISSION_DEVELOPER
+        );
 }
 
-$authorization = authorize_guarded_access(
-    [
-        PERMISSION_DEVELOPER_PREVIEW,
-        PERMISSION_DEVELOPER
-    ],
-    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
-    true
-);
+$trainingOnly =
+    $trainingRequested ||
+    !$canPreview;
 
-if (
-    $method === 'POST' &&
-    ($authorization['mode'] ?? '') === 'session'
-) {
-    require_csrf_form();
-}
-
-$canWrite = guarded_access_has_permission(
-    $authorization,
-    PERMISSION_DEVELOPER
-);
+$accessMode =
+    $trainingOnly
+        ? 'training'
+        : (
+            $canWrite
+                ? 'developer'
+                : 'developer-preview'
+        );
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, private');
@@ -57,7 +110,7 @@ header('Referrer-Policy: no-referrer');
     <title>WMOF Speech Command Editor</title>
     <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
-<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-access-mode="<?=$canWrite ? 'developer' : 'developer-preview'?>">
+<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
         <div class="viewport-controls" aria-label="Preview viewport controls">
