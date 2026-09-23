@@ -674,6 +674,7 @@
 
             renderSelection();
             renderDomTree();
+            renderPhraseList();
 
             if (
                 options.scrollPhrase !==
