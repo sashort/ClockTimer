@@ -17,6 +17,7 @@ class SpeechMicBar extends HTMLElement {
         "speechRecognitionError",
         "speechRecognitionFailed",
         "speechRecognitionStreamingFailed",
+        "speechRecognitionStatusChanged",
         "speechCaptureEnded",
         "utteranceUnrecognized",
         "audioLevelChanged"
@@ -409,6 +410,16 @@ class SpeechMicBar extends HTMLElement {
                     detail?.message ||
                     "Speech recognition unavailable"
                 );
+                break;
+            case "speechRecognitionStatusChanged":
+                if (detail?.status) {
+                    this.#showStatus(
+                        detail.status
+                    );
+                }
+                else {
+                    this.#showIdleText();
+                }
                 break;
             case "utteranceStarted":
                 this.#currentUtteranceId = detail?.id;
