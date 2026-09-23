@@ -77,9 +77,12 @@ jobs:
              echo "Deploy commit: $(git rev-parse HEAD)"
 
              SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
-             SHERPA_BASE=https://huggingface.co/spaces/k2-fsa/web-assembly-asr-sherpa-onnx-en/resolve/main
+             SHERPA_VERSION=v1.13.7
+             SHERPA_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-en-asr-zipformer
+             SHERPA_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${SHERPA_PACKAGE}.tar.bz2
              mkdir -p "$SHERPA_DIR"
 
+             SHERPA_MISSING=false
              for SHERPA_FILE in \
                sherpa-onnx-asr.js \
                sherpa-onnx-wasm-main-asr.js \
@@ -87,23 +90,36 @@ jobs:
                sherpa-onnx-wasm-main-asr.data
              do
                if [ ! -s "$SHERPA_DIR/$SHERPA_FILE" ]; then
-                 echo "Installing Sherpa runtime asset: $SHERPA_FILE"
-                 rm -f "$SHERPA_DIR/$SHERPA_FILE.tmp"
-                 curl -fL \
-                   --retry 5 \
-                   --retry-delay 2 \
-                   --connect-timeout 20 \
-                   -o "$SHERPA_DIR/$SHERPA_FILE.tmp" \
-                   "$SHERPA_BASE/$SHERPA_FILE?download=true"
-                 mv "$SHERPA_DIR/$SHERPA_FILE.tmp" "$SHERPA_DIR/$SHERPA_FILE"
+                 SHERPA_MISSING=true
                fi
              done
 
-             chmod 644 \
-               "$SHERPA_DIR/sherpa-onnx-asr.js" \
-               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.js" \
-               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.wasm" \
-               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.data"
+             if [ "$SHERPA_MISSING" = true ]; then
+               SHERPA_TMP=$(mktemp -d)
+               trap 'rm -rf "$SHERPA_TMP"' EXIT
+               echo "Installing Sherpa ${SHERPA_VERSION} English streaming WASM runtime."
+               curl -fL \
+                 --retry 5 \
+                 --retry-delay 2 \
+                 --connect-timeout 20 \
+                 -o "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" \
+                 "$SHERPA_RELEASE"
+               tar -xjf "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" -C "$SHERPA_TMP"
+
+               for SHERPA_FILE in \
+                 sherpa-onnx-asr.js \
+                 sherpa-onnx-wasm-main-asr.js \
+                 sherpa-onnx-wasm-main-asr.wasm \
+                 sherpa-onnx-wasm-main-asr.data
+               do
+                 install -m 644 \
+                   "$SHERPA_TMP/$SHERPA_PACKAGE/$SHERPA_FILE" \
+                   "$SHERPA_DIR/$SHERPA_FILE"
+               done
+
+               rm -rf "$SHERPA_TMP"
+               trap - EXIT
+             fi
 
              echo "Sherpa runtime assets:"
              ls -lh "$SHERPA_DIR"/sherpa-onnx-*
