@@ -34,9 +34,36 @@ const ALLOWED_ORIGIN =
 
 const PARTIAL_INTERVAL_MS =
     Math.max(
-        250,
+        100,
         Number(process.env.SPEECH_PARTIAL_MS) ||
-        700
+        250
+    );
+
+const PARTIAL_MIN_AUDIO_MS =
+    Math.max(
+        1000,
+        Number(
+            process.env
+                .SPEECH_PARTIAL_MIN_AUDIO_MS
+        ) || 2200
+    );
+
+const MAX_PARTIAL_PASSES =
+    Math.max(
+        0,
+        Number(
+            process.env
+                .SPEECH_MAX_PARTIAL_PASSES
+        ) || 1
+    );
+
+const PARTIAL_MIN_AUDIO_BYTES =
+    Math.round(
+        AUDIO_SAMPLE_RATE *
+        AUDIO_CHANNELS *
+        2 *
+        PARTIAL_MIN_AUDIO_MS /
+        1000
     );
 
 const MAX_UTTERANCE_SECONDS =
@@ -188,6 +215,7 @@ function makeUtterance(id) {
         partialTimer: undefined,
         recognitionRunning: false,
         partialDirty: false,
+        partialPasses: 0,
         lastTranscript: "",
         lastRecognizedBytes: 0,
         ended: false,
@@ -210,6 +238,10 @@ function schedulePartial(
         utterance.ended ||
         utterance.cancelled ||
         utterance.partialTimer ||
+        utterance.partialPasses >=
+            MAX_PARTIAL_PASSES ||
+        utterance.byteLength <
+            PARTIAL_MIN_AUDIO_BYTES ||
         utterance.byteLength <=
             utterance.lastRecognizedBytes
     ) {
@@ -298,6 +330,10 @@ async function recognize(
 
     utterance.recognitionRunning = true;
     utterance.partialDirty = false;
+
+    if (!final) {
+        utterance.partialPasses++;
+    }
 
     const snapshot =
         Buffer.concat(

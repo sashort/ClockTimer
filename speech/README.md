@@ -20,7 +20,7 @@ Production should keep the service outside Apache's document root:
 
 /var/lib/clocktimer/speech/
 └── models/
-    └── ggml-base.en.bin
+    └── ggml-tiny.en.bin
 ```
 
 Do not put Whisper model files, compiled Whisper binaries, `node_modules`, or runtime audio in Git.
@@ -128,10 +128,10 @@ Download the English base model once, then keep it outside deployments:
 
 ```bash
 cd /opt/whisper.cpp
-sudo sh ./models/download-ggml-model.sh base.en
+sudo sh ./models/download-ggml-model.sh tiny.en
 sudo install -o daemon -g daemon -m 640 \
-  ./models/ggml-base.en.bin \
-  /var/lib/clocktimer/speech/models/ggml-base.en.bin
+  ./models/ggml-tiny.en.bin \
+  /var/lib/clocktimer/speech/models/ggml-tiny.en.bin
 ```
 
 Deploy the authored Node files from the ClockTimer checkout:

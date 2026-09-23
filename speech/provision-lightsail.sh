@@ -4,7 +4,7 @@ set -euo pipefail
 STATUS=/tmp/clocktimer-speech-provision.status
 STAGE=/tmp/clocktimer-speech-release
 WHISPER_SRC="$HOME/.cache/clocktimer-whisper"
-MODEL=/var/lib/clocktimer/speech/models/ggml-base.en.bin
+MODEL=/var/lib/clocktimer/speech/models/ggml-tiny.en.bin
 VERIFY_SCRIPT=/tmp/verify-speech-local.mjs
 
 finish() {
@@ -133,12 +133,12 @@ sudo -n install -m 755 \
 if [ ! -s "$MODEL" ]; then
   (
     cd "$WHISPER_SRC"
-    sh ./models/download-ggml-model.sh base.en
+    sh ./models/download-ggml-model.sh tiny.en
   )
 
   sudo -n install \
     -o daemon -g daemon -m 640 \
-    "$WHISPER_SRC/models/ggml-base.en.bin" \
+    "$WHISPER_SRC/models/ggml-tiny.en.bin" \
     "$MODEL"
 fi
 
