@@ -1977,47 +1977,19 @@
                     element
                 );
 
-            if (!entry) return;
+            if (!entry) {
+                return;
+            }
 
-            if (
-                element.matches(
-                    "speech-command"
-                ) &&
-                entry.id.startsWith(
-                    "edit:"
-                )
-            ) {
-                const menu =
-                    element.closest(
-                        "speech-menu"
-                    );
-
-                draft =
-                    draft.filter(
-                        item =>
-                            item.id !==
-                            entry.id
-                    );
-
-                selectedLocator =
-                    menu
-                        ? locatorFor(
-                            menu
+            editorActions
+                .removeSpeechConfiguration({
+                    id:
+                        entry.id,
+                    selector:
+                        selectorFor(
+                            element
                         )
-                        : undefined;
-            }
-            else {
-                const writable =
-                    writableEntry(
-                        element
-                    );
-
-                if (!writable) return;
-
-                writable.attrs = {};
-            }
-
-            scheduleApply();
+                });
         };
 
     const deletePhrase =
@@ -2064,11 +2036,21 @@
                 return;
             }
 
-            updateEntryField(
-                element,
-                "speech-pattern",
-                nextPattern
-            );
+            editorActions
+                .setSpeechAttributes({
+                    id:
+                        entryForElement(
+                            element
+                        )?.id,
+                    selector:
+                        selectorFor(
+                            element
+                        ),
+                    attrs: {
+                        "speech-pattern":
+                            nextPattern
+                    }
+                });
 
             status(
                 "Phrase removed and speech-pattern updated."
@@ -4733,10 +4715,12 @@
                                 event.preventDefault();
                                 event.stopPropagation();
 
-                                setFunctionRole(
-                                    name,
-                                    alternateRole
-                                );
+                                editorActions
+                                    .setFunctionRole({
+                                        name,
+                                        role:
+                                            alternateRole
+                                    });
 
                                 requestAnimationFrame(
                                     () => {
@@ -9890,6 +9874,116 @@
             {
                 description:
                     "Remove a Speech Command/attribute entry or clear configuration on a built-in element."
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "removeSpeechPhrase",
+            input => {
+                const entry =
+                    editorEntryReference(
+                        input
+                    );
+
+                if (!entry) {
+                    throw new Error(
+                        "Speech configuration was not found."
+                    );
+                }
+
+                const phrase =
+                    String(
+                        input?.phrase ||
+                        ""
+                    );
+
+                if (!phrase) {
+                    throw new Error(
+                        "phrase is required."
+                    );
+                }
+
+                const element =
+                    editorElementReference(
+                        input
+                    );
+
+                const pattern =
+                    entry.attrs?.[
+                        "speech-pattern"
+                    ] ||
+                    element
+                        ?.getAttribute(
+                            "speech-pattern"
+                        ) ||
+                    "";
+
+                const speechMenu =
+                    frame.contentWindow
+                        ?.SpeechMenu;
+
+                const phrases =
+                    speechMenu
+                        ?.phrasesFromPattern?.(
+                            pattern
+                        ) ||
+                    [];
+
+                if (
+                    phrases.length <=
+                    1
+                ) {
+                    editorActions
+                        .removeSpeechConfiguration(
+                            input
+                        );
+
+                    return {
+                        removed:
+                            phrase,
+                        pattern:
+                            ""
+                    };
+                }
+
+                const nextPattern =
+                    speechMenu
+                        ?.withoutPhrase?.(
+                            pattern,
+                            phrase
+                        );
+
+                if (
+                    !nextPattern ||
+                    nextPattern ===
+                        pattern
+                ) {
+                    throw new Error(
+                        "That phrase could not be removed from the pattern."
+                    );
+                }
+
+                applyEditorAttributes(
+                    entry,
+                    {
+                        "speech-pattern":
+                            nextPattern
+                    }
+                );
+
+                scheduleApply();
+
+                return {
+                    removed:
+                        phrase,
+                    pattern:
+                        nextPattern
+                };
+            },
+            {
+                description:
+                    "Remove one spoken phrase from a speech-pattern; clearing the configuration when it was the last phrase."
             }
         );
 
