@@ -5,8 +5,14 @@ require_once dirname(__DIR__, 2) . '/_core/bootstrap.php';
 require_method('POST');
 authenticated_user_id();
 require_csrf_form();
-require_any_permission(
+
+$editorUser = require_any_permission(
     PERMISSION_DEVELOPER_PREVIEW,
+    PERMISSION_DEVELOPER
+);
+
+$canWrite = has_permission(
+    $editorUser,
     PERMISSION_DEVELOPER
 );
 
@@ -21,7 +27,7 @@ header('Referrer-Policy: no-referrer');
     <title>WMOF Speech Command Editor</title>
     <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
-<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>">
+<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-access-mode="<?=$canWrite ? 'developer' : 'developer-preview'?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
         <div class="viewport-controls" aria-label="Preview viewport controls">
