@@ -943,13 +943,25 @@
     $("screenSizeSelect")
         .addEventListener(
             "change",
-            applyViewport
+            event =>
+                editorActions
+                    .setViewport({
+                        screenSize:
+                            event.target
+                                .value
+                    })
         );
 
     $("compareSizeSelect")
         .addEventListener(
             "change",
-            applyViewport
+            event =>
+                editorActions
+                    .setViewport({
+                        compareSize:
+                            event.target
+                                .value
+                    })
         );
 
     viewportResizeObserver =
@@ -2177,6 +2189,8 @@
 
     const persistSiblingOrder =
         elements => {
+            const entries = [];
+
             elements.forEach(
                 (
                     element,
@@ -2188,13 +2202,21 @@
                         );
 
                     if (entry) {
-                        entry.order =
-                            order;
+                        entries.push({
+                            id:
+                                entry.id,
+                            order
+                        });
                     }
                 }
             );
 
-            scheduleApply();
+            if (entries.length) {
+                editorActions
+                    .reorderSpeechEntries({
+                        entries
+                    });
+            }
         };
 
     const reorderDraggedElement =
@@ -5159,39 +5181,9 @@
     $("overlayToggle")
         .addEventListener(
             "click",
-            () => {
-                overlay =
-                    !overlay;
-
-                $("overlayToggle")
-                    .textContent =
-                    "Overlay: " +
-                    (
-                        overlay
-                            ? "On"
-                            : "Off"
-                    );
-
-                $("overlayToggle")
-                    .setAttribute(
-                        "aria-pressed",
-                        String(
-                            overlay
-                        )
-                    );
-
-                frame.classList
-                    .toggle(
-                        "editor-overlay-on",
-                        overlay
-                    );
-
-                frame.classList
-                    .toggle(
-                        "editor-overlay-off",
-                        !overlay
-                    );
-            }
+            () =>
+                editorActions
+                    .setOverlay({})
         );
 
     $("regexBuilderHelpButton")
@@ -5353,11 +5345,21 @@
 
             if (!edit) return;
 
-            updateEntryField(
-                edit,
-                target.name,
-                target.value
-            );
+            editorActions
+                .setSpeechAttributes({
+                    id:
+                        entryForElement(
+                            edit
+                        )?.id,
+                    selector:
+                        selectorFor(
+                            edit
+                        ),
+                    attrs: {
+                        [target.name]:
+                            target.value
+                    }
+                });
 
             if (
                 target.name ===
@@ -5391,11 +5393,22 @@
 
                 if (!edit) return;
 
-                updateEntryField(
-                    edit,
-                    "speech-modal",
-                    event.target.value
-                );
+                editorActions
+                    .setSpeechAttributes({
+                        id:
+                            entryForElement(
+                                edit
+                            )?.id,
+                        selector:
+                            selectorFor(
+                                edit
+                            ),
+                        attrs: {
+                            "speech-modal":
+                                event.target
+                                    .value
+                        }
+                    });
             }
         );
 
@@ -5423,39 +5436,20 @@
                 if (
                     event.target.checked
                 ) {
-                    if (existing) {
-                        return;
+                    if (!existing) {
+                        editorActions
+                            .addSpeechMenu({
+                                target:
+                                    selectorFor(
+                                        host
+                                    )
+                            });
+
+                        status(
+                            "Speech Menu added."
+                        );
                     }
 
-                    const target =
-                        selectorFor(
-                            host
-                        );
-
-                    const id =
-                        "edit:menu:" +
-                        Date.now()
-                            .toString(36);
-
-                    draft.push({
-                        id,
-                        kind:
-                            "menu",
-                        target,
-                        attrs: {}
-                    });
-
-                    selectedLocator = {
-                        type:
-                            "editor-id",
-                        value:
-                            id
-                    };
-
-                    scheduleApply();
-                    status(
-                        "Speech Menu added."
-                    );
                     return;
                 }
 
@@ -5471,25 +5465,25 @@
                 if (!menuEntry) {
                     event.target.checked =
                         true;
+
                     return;
                 }
 
-                const children =
-                    [
-                        ...existing
-                            .querySelectorAll(
-                                ":scope > speech-command"
-                            )
-                    ];
+                const childCount =
+                    existing
+                        .querySelectorAll(
+                            ":scope > speech-command"
+                        )
+                        .length;
 
                 if (
-                    children.length &&
+                    childCount &&
                     !confirm(
                         "This Speech Menu contains " +
-                        children.length +
+                        childCount +
                         " speech command" +
                         (
-                            children.length ===
+                            childCount ===
                                 1
                                 ? ""
                                 : "s"
@@ -5499,27 +5493,18 @@
                 ) {
                     event.target.checked =
                         true;
+
                     return;
                 }
 
-                const id =
-                    menuEntry.id;
+                editorActions
+                    .removeSpeechMenu({
+                        id:
+                            menuEntry.id,
+                        target:
+                            menuEntry.target
+                    });
 
-                draft =
-                    draft.filter(
-                        entry =>
-                            entry.id !== id &&
-                            entry.parentId !== id
-                    );
-
-                selectedLocator = {
-                    type:
-                        "selector",
-                    value:
-                        menuEntry.target
-                };
-
-                scheduleApply();
                 status(
                     "Speech Menu removed."
                 );
@@ -5533,7 +5518,9 @@
                 const menu =
                     currentMenu();
 
-                if (!menu) return;
+                if (!menu) {
+                    return;
+                }
 
                 const menuEntry =
                     writableEntry(
@@ -5544,34 +5531,12 @@
                     return;
                 }
 
-                const id =
-                    "edit:command:" +
-                    Date.now()
-                        .toString(36) +
-                    Math.random()
-                        .toString(36)
-                        .slice(2, 6);
+                editorActions
+                    .addSpeechCommand({
+                        parentId:
+                            menuEntry.id
+                    });
 
-                draft.push({
-                    id,
-                    kind:
-                        "command",
-                    target:
-                        menuEntry.target ||
-                        "body",
-                    parentId:
-                        menuEntry.id,
-                    attrs: {}
-                });
-
-                selectedLocator = {
-                    type:
-                        "editor-id",
-                    value:
-                        id
-                };
-
-                scheduleApply();
                 status(
                     "Speech Command added."
                 );
@@ -5585,7 +5550,9 @@
                 const edit =
                     candidateEditElement();
 
-                if (!edit) return;
+                if (!edit) {
+                    return;
+                }
 
                 const entry =
                     entryForElement(
@@ -5601,22 +5568,20 @@
                         "speech-menu"
                     )
                 ) {
-                    const children =
-                        [
-                            ...edit
-                                .querySelectorAll(
-                                    ":scope > speech-command"
-                                )
-                        ];
+                    const childCount =
+                        edit.querySelectorAll(
+                            ":scope > speech-command"
+                        )
+                            .length;
 
                     if (
-                        children.length &&
+                        childCount &&
                         !confirm(
                             "Removing this Speech Menu will also remove " +
-                            children.length +
+                            childCount +
                             " child speech command" +
                             (
-                                children.length ===
+                                childCount ===
                                     1
                                     ? ""
                                     : "s"
@@ -5626,84 +5591,17 @@
                     ) {
                         return;
                     }
+                }
 
-                    if (
-                        entry.id
-                            .startsWith(
-                                "edit:"
-                            )
-                    ) {
-                        draft =
-                            draft.filter(
-                                item =>
-                                    item.id !==
-                                        entry.id &&
-                                    item.parentId !==
-                                        entry.id
-                            );
-
-                        const host =
-                            hostElementForMenu(
+                editorActions
+                    .removeSpeechConfiguration({
+                        id:
+                            entry.id,
+                        selector:
+                            selectorFor(
                                 edit
-                            );
-
-                        selectedLocator =
-                            host
-                                ? locatorFor(
-                                    host
-                                )
-                                : undefined;
-                    }
-                    else {
-                        const writable =
-                            writableEntry(
-                                edit
-                            );
-
-                        writable.attrs =
-                            {};
-                    }
-
-                    scheduleApply();
-                    return;
-                }
-
-                if (
-                    entry.id
-                        .startsWith(
-                            "edit:"
-                        )
-                ) {
-                    draft =
-                        draft.filter(
-                            item =>
-                                item.id !==
-                                entry.id
-                        );
-
-                    const menu =
-                        edit.closest(
-                            "speech-menu"
-                        );
-
-                    selectedLocator =
-                        menu
-                            ? locatorFor(
-                                menu
                             )
-                            : undefined;
-                }
-                else {
-                    const writable =
-                        writableEntry(
-                            edit
-                        );
-
-                    writable.attrs =
-                        {};
-                }
-
-                scheduleApply();
+                    });
             }
         );
 
@@ -6408,10 +6306,13 @@
                                 event
                                     .stopPropagation();
 
-                                moveWorkspacePane(
-                                    pane,
-                                    side
-                                );
+                                editorActions
+                                    .moveWorkspacePane({
+                                        pane:
+                                            pane.dataset
+                                                .paneId,
+                                        side
+                                    });
                             }
                         );
 
@@ -6510,10 +6411,12 @@
                                 .value !==
                             "custom"
                         ) {
-                            applyWorkspacePreset(
-                                event.target
-                                    .value
-                            );
+                            editorActions
+                                .applyWorkspacePreset({
+                                    preset:
+                                        event.target
+                                            .value
+                                });
                         }
                     }
                 );
@@ -10514,6 +10417,138 @@
             () => {
                 editorActions
                     .discardChanges();
+            }
+        );
+
+    const writeJSONActionOutput =
+        value => {
+            $("jsonActionsOutput")
+                .value =
+                typeof value ===
+                    "string"
+                    ? value
+                    : JSON.stringify(
+                        value,
+                        null,
+                        2
+                    );
+        };
+
+    $("jsonActionsButton")
+        .addEventListener(
+            "click",
+            () => {
+                $("jsonActionsDialog")
+                    .showModal();
+            }
+        );
+
+    $("jsonActionsClose")
+        .addEventListener(
+            "click",
+            () => {
+                $("jsonActionsDialog")
+                    .close();
+            }
+        );
+
+    $("jsonActionsExample")
+        .addEventListener(
+            "click",
+            () => {
+                $("jsonActionsInput")
+                    .value =
+                    JSON.stringify(
+                        {
+                            atomic:
+                                true,
+                            actions: [
+                                {
+                                    action:
+                                        "addSpeechMenu",
+                                    input: {
+                                        target:
+                                            "#tripActionControls"
+                                    }
+                                },
+                                {
+                                    action:
+                                        "addSpeechCommand",
+                                    input: {
+                                        menuTarget:
+                                            "#tripActionControls",
+                                        attrs: {
+                                            "speech-pattern":
+                                                "^open trip log$",
+                                            "speech-function":
+                                                "WMOFActions.openTripLog"
+                                        }
+                                    }
+                                },
+                                {
+                                    action:
+                                        "validateChanges",
+                                    input: {}
+                                }
+                            ]
+                        },
+                        null,
+                        2
+                    );
+            }
+        );
+
+    $("jsonActionsManifest")
+        .addEventListener(
+            "click",
+            () =>
+                writeJSONActionOutput(
+                    editorActionFunctions
+                        .getManifest()
+                )
+        );
+
+    $("jsonActionsState")
+        .addEventListener(
+            "click",
+            () =>
+                writeJSONActionOutput(
+                    editorActionFunctions
+                        .getState()
+                )
+        );
+
+    $("jsonActionsExecute")
+        .addEventListener(
+            "click",
+            async () => {
+                try {
+                    const result =
+                        await editorActionFunctions
+                            .executeJSON(
+                                $("jsonActionsInput")
+                                    .value
+                            );
+
+                    writeJSONActionOutput({
+                        ok:
+                            true,
+                        result,
+                        state:
+                            editorActionFunctions
+                                .getState()
+                    });
+                }
+                catch (
+                    error
+                ) {
+                    writeJSONActionOutput({
+                        ok:
+                            false,
+                        error:
+                            error.message
+                    });
+                }
             }
         );
 
