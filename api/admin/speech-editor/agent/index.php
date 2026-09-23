@@ -28,6 +28,8 @@ const SPEECH_EDITOR_AGENT_CONNECTED_SECONDS = 10;
 
 $previewAllowedActions = [
     'getEditorState',
+    'getPreviewElements',
+    'getSpeechCatalog',
     'validateChanges',
     'selectElement',
     'setOverlay',
