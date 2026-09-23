@@ -47,6 +47,47 @@ fi
 
 mkdir -p "$HOME/.cache"
 
+echo "Memory before whisper.cpp build:"
+free -h || true
+echo "Disk before whisper.cpp build:"
+df -h / || true
+
+SWAP_FILE=/swapfile-clocktimer-speech
+SWAP_KB=$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo)
+
+if [ "${SWAP_KB:-0}" -lt 1048576 ]; then
+  AVAILABLE_KB=$(df -Pk / | awk 'NR == 2 {print $4}')
+
+  if [ "${AVAILABLE_KB:-0}" -ge 3145728 ]; then
+    SWAP_MB=2048
+  elif [ "${AVAILABLE_KB:-0}" -ge 2097152 ]; then
+    SWAP_MB=1024
+  else
+    echo "Not enough free disk to create safe build swap." >&2
+    exit 1
+  fi
+
+  if [ ! -f "$SWAP_FILE" ]; then
+    echo "Creating ${SWAP_MB} MiB ClockTimer speech swap file."
+    sudo -n fallocate -l "${SWAP_MB}M" "$SWAP_FILE"
+    sudo -n chmod 600 "$SWAP_FILE"
+    sudo -n mkswap "$SWAP_FILE"
+  fi
+
+  if ! grep -qF "$SWAP_FILE" /proc/swaps; then
+    sudo -n swapon "$SWAP_FILE"
+  fi
+
+  if ! grep -qE '^/swapfile-clocktimer-speech[[:space:]]' /etc/fstab; then
+    printf '%s\n' \
+      '/swapfile-clocktimer-speech none swap sw 0 0' |
+      sudo -n tee -a /etc/fstab >/dev/null
+  fi
+fi
+
+echo "Memory after swap check:"
+free -h || true
+
 if [ ! -d "$WHISPER_SRC/.git" ]; then
   rm -rf "$WHISPER_SRC"
   git clone \
