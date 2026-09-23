@@ -9965,6 +9965,129 @@
             );
         };
 
+    globalThis
+        .WMOFSpeechAvailability =
+        Object.freeze({
+            canStartTrip() {
+                return (
+                    !tripIsLive() &&
+                    !$("#newTripButton")
+                        ?.disabled
+                );
+            },
+
+            canContinueStartAt() {
+                return (
+                    pendingSpeechReady !==
+                        undefined &&
+                    !tripIsLive() &&
+                    !$("#newTripButton")
+                        ?.disabled
+                );
+            },
+
+            canOpenBreakMenu() {
+                return !breakButton?.disabled;
+            },
+
+            canStartDownTime() {
+                return !downButton?.disabled;
+            },
+
+            canOpenBreakEndMenu() {
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return (
+                    type === "break" ||
+                    type === "lunch"
+                );
+            },
+
+            canResumeTrip() {
+                return Boolean(
+                    downResumeButton &&
+                    !downResumeButton.hidden &&
+                    !downResumeButton.disabled
+                );
+            },
+
+            canLockEndTime() {
+                return tripIsLive();
+            },
+
+            canOpenTripLog() {
+                return (
+                    getTripListState() !==
+                    "open"
+                );
+            },
+
+            canCloseTripLog() {
+                return (
+                    getTripListState() ===
+                    "open"
+                );
+            },
+
+            canDeferTrip() {
+                return Boolean(
+                    numberPadDialog?.open &&
+                    numberPadState
+                        ?.workflow ===
+                        "new-trip" &&
+                    tripDraft
+                );
+            },
+
+            canToggleRenderedTime() {
+                return tripIsLive();
+            },
+
+            canCloseSurface() {
+                if (
+                    speechMicBar
+                        ?.optionsOpen
+                ) {
+                    return true;
+                }
+
+                if (
+                    [
+                        ...document
+                            .querySelectorAll(
+                                "dialog[open]"
+                            )
+                    ].length
+                ) {
+                    return true;
+                }
+
+                return [
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ].some(
+                    element =>
+                        element !==
+                            speechMicBar &&
+                        popoverIsOpen(
+                            element
+                        )
+                );
+            }
+        });
+
     const actions =
         globalThis.WMOFActions;
 
