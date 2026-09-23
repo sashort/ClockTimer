@@ -3,7 +3,7 @@ name: Deploy to Lightsail
 on:
   push:
     branches:
-      - main
+      - sherpa-client-asr
   workflow_dispatch:
 
 concurrency:
@@ -42,11 +42,12 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             "$LAMP_USER@$LAMP_HOST" \
             'set -euo pipefail
+             DEPLOY_BRANCH=sherpa-client-asr
              $HOME/deploy-clocktimer.sh
              cd /opt/bitnami/apache2/htdocs
-             git fetch origin main:refs/remotes/origin/main
-             git checkout -B main origin/main
-             git reset --hard origin/main
+             git fetch origin "$DEPLOY_BRANCH:refs/remotes/origin/$DEPLOY_BRANCH"
+             git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
+             git reset --hard "origin/$DEPLOY_BRANCH"
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
