@@ -8,6 +8,19 @@ class EnglishDurationParser {
         const clock = text.match(/^(\d+):([0-5]?\d)(?::([0-5]?\d))?$/);
         if (clock) return ((Number(clock[1])*60+Number(clock[2]))*60+Number(clock[3]||0))*1000;
 
+        // Bare digit runs greater than 59 are interpreted as HHMM rather than
+        // as a single oversized minute value. This keeps each spoken numeric
+        // component in the recognizer's 0-59 range: 159 -> 1:59, 530 -> 5:30.
+        if (/^\d{3,4}$/.test(text)) {
+            const digits = text.padStart(4, "0");
+            const hours = Number(digits.slice(0, 2));
+            const minutes = Number(digits.slice(2));
+
+            if (minutes <= 59) {
+                return (hours * 3600 + minutes * 60) * 1000;
+            }
+        }
+
         let seconds = 0, matched = false;
         const units = /(.+?)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)(?=\s|$)/g;
         let match;
