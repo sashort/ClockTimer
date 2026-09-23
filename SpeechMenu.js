@@ -3824,6 +3824,33 @@ class SpeechMenu {
         element.speechFuncThis =
             target.owner;
 
+        element.speechParameterFunc =
+            target.fn;
+
+        const actionName =
+            source
+                .match(
+                    /^WMOFActions\.([A-Za-z_$][\w$]*)$/
+                )
+                ?.[1];
+
+        if (actionName) {
+            const implementation =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.getImplementation?.(
+                        actionName
+                    );
+
+            if (
+                typeof implementation ===
+                    "function"
+            ) {
+                element.speechParameterFunc =
+                    implementation;
+            }
+        }
+
         const preprocName =
             element.getAttribute(
                 "speech-preproc"
@@ -4090,6 +4117,7 @@ class SpeechMenu {
 
         const args =
             new ParameterParser(
+                element.speechParameterFunc ||
                 element.speechFunc
             );
 
