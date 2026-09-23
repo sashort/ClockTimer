@@ -2098,6 +2098,13 @@ class SpeechMenu {
 
         if (!text) return "";
 
+        const escape =
+            value =>
+                value.replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&"
+                );
+
         let result = "";
         let offset = 0;
         const slots =
@@ -2111,14 +2118,30 @@ class SpeechMenu {
             );
         ) {
             result +=
-                text
-                    .slice(
+                escape(
+                    text.slice(
                         offset,
                         match.index
                     )
-                    .replace(
-                        /[.*+?^${}()|[\]\\]/g,
-                        "\\    static #expandRegexSource(
+                );
+
+            result += ".+";
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        result +=
+            escape(
+                text.slice(
+                    offset
+                )
+            );
+
+        return result;
+    }
+
+    static #expandRegexSource(
         source,
         limit = 128
     ) {
