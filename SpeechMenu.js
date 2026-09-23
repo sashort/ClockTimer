@@ -33,6 +33,8 @@ class SpeechMenu {
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
+    static #corrections = Object.freeze([]);
+    static #correctionsRevision = "empty";
 
     static {
         document.addEventListener("visibilitychange", () => {
@@ -91,6 +93,8 @@ class SpeechMenu {
     static get muted() { return SpeechMenu.#sleeping; }
     static get phrases() { return SpeechMenu.#phrases; }
     static get phraseGroups() { return SpeechMenu.#phraseGroups; }
+    static get corrections() { return SpeechMenu.#corrections; }
+    static get correctionsRevision() { return SpeechMenu.#correctionsRevision; }
 
     static set wakePhrase(value) { SpeechMenu.#setPhrase("wake", value); }
     static set sleepPhrase(value) { SpeechMenu.#setPhrase("sleep", value); }
@@ -186,6 +190,131 @@ class SpeechMenu {
                     next
             }
         );
+    }
+
+    static async loadCorrections(
+        url = "api/speech-corrections/?language=en-US"
+    ) {
+        try {
+            const response =
+                await fetch(
+                    url,
+                    {
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        }
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !Array.isArray(
+                    data.corrections
+                )
+            ) {
+                throw new Error(
+                    data.message ||
+                    "Speech corrections could not be loaded."
+                );
+            }
+
+            SpeechMenu.#corrections =
+                Object.freeze(
+                    data.corrections
+                        .filter(
+                            correction =>
+                                correction &&
+                                correction.enabled !== false &&
+                                typeof correction.observed ===
+                                    "string" &&
+                                typeof correction.canonical ===
+                                    "string"
+                        )
+                        .map(
+                            correction =>
+                                Object.freeze({
+                                    id:
+                                        Number(
+                                            correction.id
+                                        ) || 0,
+                                    observed:
+                                        SpeechMenu
+                                            .#normalizeTranscript(
+                                                correction.observed
+                                            ),
+                                    observedCompact:
+                                        String(
+                                            correction.observedCompact ||
+                                            SpeechMenu
+                                                .#compactTranscript(
+                                                    correction.observed
+                                                )
+                                        ),
+                                    canonical:
+                                        SpeechMenu
+                                            .#normalizeTranscript(
+                                                correction.canonical
+                                            ),
+                                    canonicalCompact:
+                                        String(
+                                            correction.canonicalCompact ||
+                                            SpeechMenu
+                                                .#compactTranscript(
+                                                    correction.canonical
+                                                )
+                                        ),
+                                    matchType:
+                                        correction.matchType ===
+                                            "prefix"
+                                            ? "prefix"
+                                            : "exact",
+                                    occurrences:
+                                        Number(
+                                            correction.occurrences
+                                        ) || 1
+                                })
+                        )
+                );
+
+            SpeechMenu.#correctionsRevision =
+                String(
+                    data.revision ||
+                    "unknown"
+                );
+
+            SpeechMenu.#emit(
+                "speechCorrectionsChanged",
+                {
+                    corrections:
+                        SpeechMenu.#corrections,
+                    revision:
+                        SpeechMenu.#correctionsRevision
+                }
+            );
+
+            return true;
+        }
+        catch (error) {
+            SpeechMenu.#emit(
+                "speechCorrectionsFailed",
+                {
+                    error,
+                    message:
+                        error?.message ||
+                        "Speech corrections could not be loaded."
+                }
+            );
+
+            return false;
+        }
     }
 
     static async start(language = "en-US", listSeparator = ",") {
@@ -1728,6 +1857,317 @@ class SpeechMenu {
             .trim();
     }
 
+    static #compactTranscript(value) {
+        return SpeechMenu
+            .#normalizeTranscript(
+                value
+            )
+            .replace(
+                /\s+/g,
+                ""
+            );
+    }
+
+    static #whitespaceTolerantSource(
+        source
+    ) {
+        const text =
+            String(source || "");
+
+        let result = "";
+        let escaped = false;
+        let characterClass = false;
+
+        for (
+            let index = 0;
+            index < text.length;
+            index++
+        ) {
+            const character =
+                text[index];
+
+            if (escaped) {
+                result +=
+                    character;
+                escaped = false;
+                continue;
+            }
+
+            if (character === "\\") {
+                result +=
+                    character;
+                escaped = true;
+                continue;
+            }
+
+            if (character === "[") {
+                characterClass =
+                    true;
+                result +=
+                    character;
+                continue;
+            }
+
+            if (
+                character === "]" &&
+                characterClass
+            ) {
+                characterClass =
+                    false;
+                result +=
+                    character;
+                continue;
+            }
+
+            if (
+                !characterClass &&
+                /\s/.test(
+                    character
+                )
+            ) {
+                result +=
+                    "\\s*";
+
+                while (
+                    index + 1 <
+                        text.length &&
+                    /\s/.test(
+                        text[
+                            index + 1
+                        ]
+                    )
+                ) {
+                    index++;
+                }
+
+                continue;
+            }
+
+            result +=
+                character;
+        }
+
+        return result;
+    }
+
+    static #compactPrefixRemainder(
+        text,
+        compactPrefix
+    ) {
+        const normalized =
+            SpeechMenu
+                .#normalizeTranscript(
+                    text
+                );
+
+        const target =
+            String(
+                compactPrefix ||
+                ""
+            );
+
+        if (!target) {
+            return undefined;
+        }
+
+        let compactIndex = 0;
+
+        for (
+            let index = 0;
+            index < normalized.length;
+            index++
+        ) {
+            const character =
+                normalized[index];
+
+            if (/\s/.test(character)) {
+                continue;
+            }
+
+            if (
+                character !==
+                target[
+                    compactIndex
+                ]
+            ) {
+                return undefined;
+            }
+
+            compactIndex++;
+
+            if (
+                compactIndex ===
+                target.length
+            ) {
+                return normalized
+                    .slice(
+                        index + 1
+                    )
+                    .trim();
+            }
+        }
+
+        return undefined;
+    }
+
+    static #candidateAllowsCorrection(
+        element,
+        correction
+    ) {
+        const normal =
+            element.speechPattern;
+
+        const compact =
+            element.speechCompactPattern;
+
+        const test =
+            value => {
+                for (
+                    const regex of
+                    [normal, compact]
+                ) {
+                    if (!regex) continue;
+                    regex.lastIndex = 0;
+
+                    if (
+                        regex.test(
+                            value
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+        if (
+            correction.matchType ===
+                "exact"
+        ) {
+            return test(
+                correction.canonical
+            );
+        }
+
+        return (
+            test(
+                correction.canonical +
+                " value"
+            ) ||
+            SpeechMenu
+                .#expandRegexSource(
+                    element.getAttribute(
+                        "speech-pattern"
+                    ) ||
+                    ""
+                )
+                .some(
+                    phrase =>
+                        SpeechMenu
+                            .#compactTranscript(
+                                phrase.replace(
+                                    /<[^>]+>/g,
+                                    ""
+                                )
+                            )
+                            .startsWith(
+                                correction
+                                    .canonicalCompact
+                            )
+                )
+        );
+    }
+
+    static #applyCorrection(
+        element,
+        text
+    ) {
+        const transcript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    text
+                );
+
+        const compact =
+            SpeechMenu
+                .#compactTranscript(
+                    transcript
+                );
+
+        for (
+            const correction of
+            SpeechMenu.#corrections
+        ) {
+            if (
+                !SpeechMenu
+                    .#candidateAllowsCorrection(
+                        element,
+                        correction
+                    )
+            ) {
+                continue;
+            }
+
+            if (
+                correction.matchType ===
+                    "exact"
+            ) {
+                if (
+                    compact !==
+                    correction
+                        .observedCompact
+                ) {
+                    continue;
+                }
+
+                return {
+                    correction,
+                    original:
+                        transcript,
+                    corrected:
+                        correction
+                            .canonical
+                };
+            }
+
+            const remainder =
+                SpeechMenu
+                    .#compactPrefixRemainder(
+                        transcript,
+                        correction
+                            .observedCompact
+                    );
+
+            if (
+                remainder ===
+                    undefined
+            ) {
+                continue;
+            }
+
+            return {
+                correction,
+                original:
+                    transcript,
+                corrected:
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            correction
+                                .canonical +
+                            (
+                                remainder
+                                    ? " " +
+                                        remainder
+                                    : ""
+                            )
+                        )
+            };
+        }
+
+        return undefined;
+    }
+
     static #test(regex, text) {
         regex.lastIndex = 0;
         return regex.test(text);
@@ -2545,6 +2985,15 @@ class SpeechMenu {
                         "gi"
                     );
 
+                element.speechCompactPattern =
+                    new RegExp(
+                        SpeechMenu
+                            .#whitespaceTolerantSource(
+                                source
+                            ),
+                        "gi"
+                    );
+
                 element.speechPatternSource =
                     source;
             }
@@ -2753,6 +3202,18 @@ class SpeechMenu {
         let text =
             transcript;
 
+        const correction =
+            SpeechMenu
+                .#applyCorrection(
+                    element,
+                    text
+                );
+
+        if (correction) {
+            text =
+                correction.corrected;
+        }
+
         let preprocessing;
 
         try {
@@ -2818,11 +3279,6 @@ class SpeechMenu {
             return false;
         }
 
-        const regex =
-            element.speechPattern;
-
-        regex.lastIndex = 0;
-
         const args =
             new ParameterParser(
                 element.speechFunc
@@ -2831,106 +3287,141 @@ class SpeechMenu {
         let matched =
             false;
 
-        let result;
+        let matchingMode =
+            "normal";
 
-        while (
-            (
-                result =
-                    regex.exec(text)
-            ) !== null
+        for (
+            const candidate of
+            [
+                {
+                    regex:
+                        element.speechPattern,
+                    mode:
+                        "normal"
+                },
+                {
+                    regex:
+                        element
+                            .speechCompactPattern,
+                    mode:
+                        "compact"
+                }
+            ]
         ) {
-            matched = true;
+            const regex =
+                candidate.regex;
 
-            const values =
-                result.groups ||
-                {};
+            if (!regex) continue;
 
-            const named =
-                new Set(
-                    Object
-                        .values(
-                            result.groups ||
-                            {}
-                        )
-                        .filter(
-                            value =>
-                                value !==
-                                undefined
-                        )
-                );
+            regex.lastIndex = 0;
 
-            for (
-                const [name, value] of
-                    Object.entries(
-                        values
-                    )
+            let result;
+
+            while (
+                (
+                    result =
+                        regex.exec(text)
+                ) !== null
             ) {
-                if (!value) continue;
+                matched = true;
+                matchingMode =
+                    candidate.mode;
 
-                if (name === "_") {
-                    args.restArguments
-                        ?.push(
-                            ...SpeechMenu
-                                .#list(
-                                    value
-                                )
-                        );
-                }
-                else if (
-                    name.startsWith(
-                        "_"
-                    )
-                ) {
-                    args.setArgument(
-                        name.slice(1),
-                        SpeechMenu.#list(
-                            value
-                        )
-                    );
-                }
-                else {
-                    args.setArgument(
-                        name,
-                        value
-                    );
-                }
-            }
+                const values =
+                    result.groups ||
+                    {};
 
-            if (
-                args.restArguments
-            ) {
+                const named =
+                    new Set(
+                        Object
+                            .values(
+                                result.groups ||
+                                {}
+                            )
+                            .filter(
+                                value =>
+                                    value !==
+                                    undefined
+                            )
+                    );
+
                 for (
-                    let index = 1;
-                    index <
-                        result.length;
-                    index++
-                ) {
-                    const value =
-                        result[
-                            index
-                        ];
-
-                    if (
-                        value &&
-                        !named.has(
-                            value
+                    const [name, value] of
+                        Object.entries(
+                            values
                         )
-                    ) {
+                ) {
+                    if (!value) continue;
+
+                    if (name === "_") {
                         args.restArguments
-                            .push(
-                                SpeechMenu
-                                    .#scalar(
+                            ?.push(
+                                ...SpeechMenu
+                                    .#list(
                                         value
                                     )
                             );
                     }
+                    else if (
+                        name.startsWith(
+                            "_"
+                        )
+                    ) {
+                        args.setArgument(
+                            name.slice(1),
+                            SpeechMenu.#list(
+                                value
+                            )
+                        );
+                    }
+                    else {
+                        args.setArgument(
+                            name,
+                            value
+                        );
+                    }
+                }
+
+                if (
+                    args.restArguments
+                ) {
+                    for (
+                        let index = 1;
+                        index <
+                            result.length;
+                        index++
+                    ) {
+                        const value =
+                            result[
+                                index
+                            ];
+
+                        if (
+                            value &&
+                            !named.has(
+                                value
+                            )
+                        ) {
+                            args.restArguments
+                                .push(
+                                    SpeechMenu
+                                        .#scalar(
+                                            value
+                                        )
+                                );
+                        }
+                    }
+                }
+
+                if (
+                    !result[0].length
+                ) {
+                    regex.lastIndex++;
                 }
             }
 
-            if (
-                !result[0].length
-            ) {
-                regex.lastIndex++;
+            if (matched) {
+                break;
             }
         }
 
@@ -2946,8 +3437,37 @@ class SpeechMenu {
             originalTranscript:
                 transcript,
             transcript:
-                text
+                text,
+            matchingMode,
+            correctionId:
+                correction?.correction
+                    ?.id ||
+                null
         };
+
+        if (correction) {
+            SpeechMenu.#emit(
+                "speechCorrectionApplied",
+                {
+                    utteranceId,
+                    commandElement:
+                        element,
+                    speechMenuElement,
+                    correctionId:
+                        correction
+                            .correction
+                            .id,
+                    matchType:
+                        correction
+                            .correction
+                            .matchType,
+                    observed:
+                        correction.original,
+                    canonical:
+                        correction.corrected
+                }
+            );
+        }
 
         SpeechMenu.#emit(
             "speechCommandMatched",
