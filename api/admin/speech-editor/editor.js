@@ -300,6 +300,44 @@
                 }
             }
 
+            if (
+                length % 100 !== 0
+            ) {
+                const endLabel =
+                    document.createElement(
+                        "span"
+                    );
+
+                endLabel.className =
+                    "ruler-label ruler-end-label";
+                endLabel.textContent =
+                    Math.round(
+                        length
+                    ) +
+                    " px";
+
+                if (vertical) {
+                    endLabel.style.top =
+                        Math.max(
+                            0,
+                            length - 34
+                        ) +
+                        "px";
+                }
+                else {
+                    endLabel.style.left =
+                        Math.max(
+                            0,
+                            length - 44
+                        ) +
+                        "px";
+                }
+
+                fragment.append(
+                    endLabel
+                );
+            }
+
             element.replaceChildren(
                 fragment
             );
@@ -2279,13 +2317,17 @@
 
             const button =
                 document.createElement(
-                    "button"
+                    "div"
                 );
 
-            button.type =
-                "button";
             button.className =
                 "phrase-group-button";
+            button.setAttribute(
+                "role",
+                "button"
+            );
+            button.tabIndex =
+                0;
 
             const source =
                 document.createElement(
@@ -2364,6 +2406,30 @@
                                 false
                         }
                     )
+            );
+
+            button.addEventListener(
+                "keydown",
+                event => {
+                    if (
+                        event.key !==
+                            "Enter" &&
+                        event.key !==
+                            " "
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    selectElement(
+                        group.element,
+                        {
+                            scrollPhrase:
+                                false
+                        }
+                    );
+                }
             );
 
             wrapper.append(
