@@ -320,10 +320,11 @@
                     .WMOFSpeechFunctionRegistry;
 
             const roles = {
-                processing: [],
+                "speech-processing": [],
                 action: [],
                 interaction: [],
                 presentation: [],
+                helper: [],
                 unclassified: []
             };
 
@@ -360,20 +361,24 @@
             return {
                 functionRoles:
                     roles,
-                processingFunctions:
-                    roles.processing,
+                speechProcessingFunctions:
+                    roles["speech-processing"],
                 actionFunctions:
                     roles.action,
                 interactionFunctions:
                     roles.interaction,
                 presentationFunctions:
                     roles.presentation,
+                helperFunctions:
+                    roles.helper,
                 unclassifiedFunctions:
                     roles.unclassified,
 
                 // Compatibility aliases while saved editor data migrates.
+                processingFunctions:
+                    roles["speech-processing"],
                 preprocFunctions:
-                    roles.processing,
+                    roles["speech-processing"],
                 speechFunctions:
                     roles.action
             };
