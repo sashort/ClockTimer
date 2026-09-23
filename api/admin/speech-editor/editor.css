@@ -1372,6 +1372,57 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 }
 
 
+/* Editor Training Mode ------------------------------------------------ */
+body.training-mode{min-width:0}
+body.training-mode .layout{grid-template-columns:minmax(300px,.8fr) minmax(520px,1.4fr);grid-template-areas:"phrases preview"}
+body.training-mode #leftDock{display:none!important}
+body.training-mode #rightDock{grid-area:phrases;display:block!important;overflow:auto}
+body.training-mode #rightDock>.workspace-pane:not(.phrase-pane),
+body.training-mode #rightDock>.workspace-splitter{display:none!important}
+body.training-mode .phrase-pane{display:block;min-height:100%;overflow:visible;padding:14px}
+body.training-mode .preview{grid-area:preview}
+body.training-mode #previewHint{display:none}
+body.training-mode .toolbar .viewport-controls,
+body.training-mode .toolbar .workspace-layout-control,
+body.training-mode #overlayToggle,
+body.training-mode #jsonActionsButton,
+body.training-mode #discardButton,
+body.training-mode #saveButton{display:none}
+body.training-mode #trainingModeButton{margin-left:auto;background:#ffc220;border-color:#ffc220;color:#071d3b}
+body.training-mode .phrase-delete{display:none}
+body.training-mode .phrase-chip{padding:6px 8px;gap:7px;font-size:14px}
+body.training-mode .phrase-training-button{width:28px;height:28px;flex:0 0 28px}
+body.training-mode .phrase-source{display:none}
+
+body.training-mode.training-mobile{min-width:0;overflow-x:hidden}
+body.training-mode.training-mobile .toolbar{position:sticky;top:0;z-index:20;gap:8px;padding:9px 10px}
+body.training-mode.training-mobile .toolbar h1{font-size:17px;margin-right:auto}
+body.training-mode.training-mobile #trainingModeButton{display:none}
+body.training-mode.training-mobile .layout{display:block;height:auto;min-height:calc(100dvh - 54px);padding:8px}
+body.training-mode.training-mobile #rightDock{width:100%;min-height:calc(100dvh - 70px);border-radius:10px}
+body.training-mode.training-mobile .phrase-pane{padding:10px}
+body.training-mode.training-mobile .pane-heading{position:sticky;top:54px;z-index:4;margin:-10px -10px 8px;padding:10px;background:#0b2656;border-bottom:1px solid #567c9d}
+body.training-mode.training-mobile .pane-heading h2{font-size:18px}
+body.training-mode.training-mobile .pane-heading .subtle{margin-bottom:0;font-size:11px}
+body.training-mode.training-mobile .preview{display:none}
+body.training-mode.training-mobile .phrases{display:grid;gap:7px}
+body.training-mode.training-mobile .phrase-chip{width:100%;justify-content:space-between;min-height:46px;padding:8px 10px;border-radius:9px;background:rgb(169 221 247 / 10%)}
+body.training-mode.training-mobile .phrase-chip>span:first-child{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+body.training-mode.training-mobile .phrase-training-button{width:34px;height:34px;flex:0 0 34px}
+body.training-mode.training-mobile .speech-training-dialog{inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0}
+body.training-mode.training-mobile .speech-training-shell{min-height:100dvh;max-height:100dvh;padding:10px;gap:10px}
+body.training-mode.training-mobile .speech-training-header{position:sticky;top:0;z-index:12;margin:-10px -10px 0;padding:10px;background:#0b2656;border-bottom:1px solid #567c9d}
+body.training-mode.training-mobile .speech-training-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+body.training-mode.training-mobile .speech-training-session{padding:12px}
+body.training-mode.training-mobile .speech-training-prompt{text-align:right}
+body.training-mode.training-mobile #speechTrainingPrompt{font-size:clamp(24px,8vw,38px)}
+body.training-mode.training-mobile .speech-training-actions{display:grid;grid-template-columns:1fr}
+body.training-mode.training-mobile .speech-training-actions button{min-height:46px;padding:10px 8px;touch-action:manipulation}
+body.training-mode.training-mobile .speech-training-controls-popup{position:sticky;top:58px;width:100%;justify-self:stretch;padding:10px 12px}
+body.training-mode.training-mobile .speech-training-controls-popup dl>div{grid-template-columns:108px minmax(0,1fr);gap:7px}
+body.training-mode.training-mobile .speech-training-grid,
+body.training-mode.training-mobile .speech-training-grid.correction-grid{grid-template-columns:1fr}
+
 /* Phrase training ------------------------------------------------------ */
 .phrase-training-button{
     --training-color:#899aaa;
