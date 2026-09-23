@@ -326,8 +326,6 @@ if ($method === 'GET' && ($_GET['console'] ?? null) === '1') {
     $renderConsole();
 }
 
-require_csrf();
-
 $permissions = $permissionRows();
 $grantable = array_column($permissions, null, 'value');
 
@@ -336,8 +334,11 @@ if ($method === 'GET') {
         'tokens' => $tokenRows(),
         'permissions' => $permissions,
         'canManageAll' => $isSuperuser,
+        'csrfToken' => csrf_token(),
     ]);
 }
+
+require_csrf();
 
 $input = json_input();
 
