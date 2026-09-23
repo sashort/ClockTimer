@@ -173,6 +173,12 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
+                        if (!globalThis.SherpaRecognizer) {
+                            await loadClassicScript(
+                                "SherpaRecognizer.js"
+                            );
+                        }
+
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
                                 "SpeechMenu.js"
