@@ -12,6 +12,97 @@ $actor = require_permission(PERMISSION_GRANT_TOKEN_ACCESS);
 $isSuperuser = has_permission($actor, PERMISSION_SUPERUSER);
 $pdo = db();
 
+$requireAccessTokenSchema = static function () use ($pdo): void {
+    $databaseName =
+        (string) (
+            api_config()[
+                'database'
+            ][
+                'name'
+            ] ??
+            ''
+        );
+
+    $statement =
+        $pdo->prepare(
+            'SELECT COLUMN_NAME '
+            . 'FROM information_schema.COLUMNS '
+            . 'WHERE TABLE_SCHEMA = :schema_name '
+            . 'AND TABLE_NAME = :table_name'
+        );
+
+    $statement->execute([
+        ':schema_name' =>
+            $databaseName,
+        ':table_name' =>
+            'access_tokens',
+    ]);
+
+    $actual =
+        array_fill_keys(
+            array_map(
+                'strval',
+                $statement
+                    ->fetchAll(
+                        PDO::FETCH_COLUMN
+                    )
+            ),
+            true
+        );
+
+    $required = [
+        'id',
+        'owner_user_id',
+        'name',
+        'token_hash',
+        'token_hint',
+        'permissions',
+        'uses_remaining',
+        'delete_on_deplete',
+        'requires_authentication',
+        'expires_at',
+        'created_at',
+        'updated_at',
+        'last_used_at',
+    ];
+
+    $missing =
+        array_values(
+            array_filter(
+                $required,
+                static fn (
+                    string $column
+                ): bool =>
+                    !isset(
+                        $actual[
+                            $column
+                        ]
+                    )
+            )
+        );
+
+    if ($actual === []) {
+        api_error(
+            'The access_tokens table is not installed in the configured WMOF database.',
+            503,
+            'access_token_schema'
+        );
+    }
+
+    if ($missing !== []) {
+        api_error(
+            'The access_tokens table is missing required columns: '
+            . implode(
+                ', ',
+                $missing
+            )
+            . '.',
+            503,
+            'access_token_schema'
+        );
+    }
+};
+
 $permissionRows = static function () use ($pdo, $actor): array {
     $rows = $pdo
         ->query('SELECT value, name, description FROM permissions ORDER BY value')
@@ -87,7 +178,12 @@ $tokenRows = static function () use ($pdo, $actor, $isSuperuser): array {
     );
 };
 
-$renderConsole = static function () use ($permissionRows, $isSuperuser): never {
+$renderConsole = static function () use (
+    $permissionRows,
+    $isSuperuser,
+    $requireAccessTokenSchema
+): never {
+    $requireAccessTokenSchema();
     $nonce = base64_encode(random_bytes(18));
     $csrfJson = json_encode(
         csrf_token(),
@@ -132,6 +228,7 @@ button{padding:9px 13px;border:1px solid #91b6d5;border-radius:7px;background:#3
 button.primary{background:#0053e2}button.danger{background:#6c2730;border-color:#d26b76}
 button:disabled{opacity:.5;cursor:default}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
 #message{min-height:1.4em;margin-top:8px;color:#a9ddf7}#message.error{color:#ff9c9c}
+[hidden]{display:none!important}
 .token-reveal{display:grid;gap:8px;margin-top:15px;padding:12px;border:1px solid #ffc220;border-radius:8px;background:#2c2b22}
 .token-reveal code{display:block;padding:9px;background:#061b3d;border-radius:6px;overflow-wrap:anywhere;user-select:all}
 .tokens{display:grid;gap:10px}.token-card{padding:14px;border:1px solid #587fa2;border-radius:9px;background:#102e53}
@@ -157,7 +254,7 @@ button:disabled{opacity:.5;cursor:default}.actions{display:flex;gap:8px;flex-wra
 <section class="panel" aria-labelledby="create-title">
 <h2 id="create-title">Create token</h2>
 <div class="grid">
-<label class="field"><span>Name</span><input id="name" maxlength="191" placeholder="Speech editor handoff"></label>
+<label class="field"><span>Name</span><input id="name" maxlength="191" required placeholder="Speech editor handoff"></label>
 <label class="field"><span>Permission</span><select id="permission"></select></label>
 <label class="field"><span>Counter</span><input id="counter" type="number" min="0" step="1" value="1"></label>
 <label class="field"><span>Expires</span><input id="expires" type="datetime-local"></label>
@@ -291,6 +388,13 @@ async function load(){
 }
 $('create').addEventListener('click',async()=>{
     $('reveal').hidden=true;
+
+    if(!$('name').value.trim()){
+        message('Name is required.',true);
+        $('name').focus();
+        return;
+    }
+
     try{
         const data=await api('POST',{
             name:$('name').value,
@@ -353,6 +457,8 @@ load();
 if ($method === 'GET' && ($_GET['console'] ?? null) === '1') {
     $renderConsole();
 }
+
+$requireAccessTokenSchema();
 
 $permissions = $permissionRows();
 $grantable = array_column($permissions, null, 'value');
