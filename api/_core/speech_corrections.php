@@ -41,7 +41,89 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         . 'COLLATE=utf8mb4_unicode_ci'
     );
 
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS speech_training_samples ('
+        . 'id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, '
+        . 'language VARCHAR(32) NOT NULL DEFAULT "en-US", '
+        . 'phrase_key VARCHAR(500) NOT NULL, '
+        . 'phrase_key_hash CHAR(64) NOT NULL, '
+        . 'phrase VARCHAR(500) NOT NULL, '
+        . 'canonical VARCHAR(500) NOT NULL, '
+        . 'canonical_compact VARCHAR(500) NOT NULL, '
+        . 'observed VARCHAR(500) NOT NULL, '
+        . 'observed_compact VARCHAR(500) NOT NULL, '
+        . 'recognized_correct TINYINT(1) NOT NULL, '
+        . 'created_by_user_id BIGINT UNSIGNED NULL, '
+        . 'created_at BIGINT UNSIGNED NOT NULL, '
+        . 'PRIMARY KEY (id), '
+        . 'KEY idx_speech_training_phrase '
+        . '(language, phrase_key_hash, created_at), '
+        . 'KEY idx_speech_training_creator '
+        . '(created_by_user_id), '
+        . 'CONSTRAINT fk_speech_training_creator '
+        . 'FOREIGN KEY (created_by_user_id) REFERENCES users(id) '
+        . 'ON UPDATE RESTRICT ON DELETE SET NULL, '
+        . 'CONSTRAINT chk_speech_training_correct '
+        . 'CHECK (recognized_correct IN (0,1))'
+        . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 '
+        . 'COLLATE=utf8mb4_unicode_ci'
+    );
+
     $ready = true;
+}
+
+const SPEECH_TRAINING_MIN_SAMPLES = 10;
+const SPEECH_TRAINING_TARGET_ACCURACY = 0.85;
+
+function speech_training_state(int $samples, int $correct): string
+{
+    if ($samples <= 0) {
+        return 'untrained';
+    }
+
+    $accuracy =
+        $samples > 0
+            ? $correct / $samples
+            : 0.0;
+
+    if (
+        $samples >=
+            SPEECH_TRAINING_MIN_SAMPLES &&
+        $accuracy >=
+            SPEECH_TRAINING_TARGET_ACCURACY
+    ) {
+        return 'well-trained';
+    }
+
+    return 'needs-samples';
+}
+
+function speech_training_stats_payload(
+    string $phraseKey,
+    string $phrase,
+    int $samples,
+    int $correct
+): array {
+    $accuracy =
+        $samples > 0
+            ? $correct / $samples
+            : null;
+
+    return [
+        'phraseKey' => $phraseKey,
+        'phrase' => $phrase,
+        'samples' => $samples,
+        'correct' => $correct,
+        'incorrect' => max(0, $samples - $correct),
+        'accuracy' => $accuracy,
+        'minimumSamples' => SPEECH_TRAINING_MIN_SAMPLES,
+        'targetAccuracy' => SPEECH_TRAINING_TARGET_ACCURACY,
+        'state' =>
+            speech_training_state(
+                $samples,
+                $correct
+            ),
+    ];
 }
 
 function normalize_speech_correction_text(string $value): string
@@ -195,4 +277,35 @@ function speech_correction_row(array $row): array
         'createdAt' => (int) $row['created_at'],
         'updatedAt' => (int) $row['updated_at'],
     ];
+}
+
+
+function speech_training_phrase_key(mixed $value): string
+{
+    if (!is_string($value)) {
+        api_error('phraseKey must be a string.', 422, 'invalid_argument');
+    }
+
+    $value = trim($value);
+
+    if ($value === '' || strlen($value) > 500 || str_contains($value, "\0")) {
+        api_error('phraseKey is invalid.', 422, 'invalid_argument');
+    }
+
+    return $value;
+}
+
+function speech_training_phrase(mixed $value): string
+{
+    if (!is_string($value)) {
+        api_error('phrase must be a string.', 422, 'invalid_argument');
+    }
+
+    $value = trim($value);
+
+    if ($value === '' || strlen($value) > 500 || str_contains($value, "\0")) {
+        api_error('phrase is invalid.', 422, 'invalid_argument');
+    }
+
+    return $value;
 }
