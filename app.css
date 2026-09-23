@@ -4867,3 +4867,9 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
         transition-duration: 0ms;
     }
 }
+
+
+speech-menu,
+speech-command {
+    display: none !important;
+}
