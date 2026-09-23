@@ -268,6 +268,23 @@ class SpeechMicBar extends HTMLElement {
                     transform-origin: center;
                 }
 
+                .response-transition-stage {
+                    width: 100%;
+                    height: 50px;
+                    display: grid !important;
+                    place-items: center;
+                    overflow: hidden;
+                }
+
+                .response-transition-stage > * {
+                    grid-area: 1 / 1;
+                    max-width: 100% !important;
+                    max-height: 50px !important;
+                    min-width: 0 !important;
+                    pointer-events: none !important;
+                    transform-origin: center;
+                }
+
                 .response-button-facsimile {
                     width: max-content;
                     max-width: min(100%, 240px) !important;
@@ -327,72 +344,298 @@ class SpeechMicBar extends HTMLElement {
         return this.getAttribute("state") || "stopped";
     }
 
-    setResponse(value) {
-        this.#responseAnimation?.cancel();
-        this.#responseAnimation = undefined;
-        this.#responseContent.replaceChildren();
-
-        if (value === undefined || value === null || value === "") {
-            return this.clearResponse();
+    #responseVisual(value) {
+        if (
+            value === undefined ||
+            value === null ||
+            value === ""
+        ) {
+            return undefined;
         }
 
         if (value instanceof Node) {
-            const visual =
-                value instanceof Element
-                    ? (
-                        this.#shouldUseButtonFacsimile(
-                            value
-                        )
-                            ? this.#createButtonFacsimile(
-                                value
-                            )
-                            : this.#cloneVisualElement(
-                                value
-                            )
-                    )
-                    : value.cloneNode(true);
+            return value instanceof Element
+                ? this.#cloneVisualElement(
+                    value
+                )
+                : value.cloneNode(true);
+        }
 
-            this.#responseContent.append(
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.textContent =
+            String(value);
+
+        return span;
+    }
+
+    #showResponseLane() {
+        const wasVisible =
+            this.hasAttribute(
+                "has-response"
+            );
+
+        this.setAttribute(
+            "has-response",
+            ""
+        );
+
+        if (
+            !wasVisible &&
+            typeof this.#responseLane
+                .animate ===
+                "function"
+        ) {
+            this.#responseAnimation =
+                this.#responseLane
+                    .animate(
+                        [
+                            {
+                                width: "0px",
+                                opacity: 0,
+                                transform:
+                                    "translateX(16px)"
+                            },
+                            {
+                                width:
+                                    "min(42vw, 360px)",
+                                opacity: 1,
+                                transform:
+                                    "translateX(0)"
+                            }
+                        ],
+                        {
+                            duration: 220,
+                            easing:
+                                "cubic-bezier(.2,.8,.2,1)",
+                            fill: "both"
+                        }
+                    );
+
+            this.#responseAnimation
+                .finished
+                .catch(
+                    () => {}
+                )
+                .finally(
+                    () => {
+                        this.#responseAnimation
+                            ?.cancel();
+                        this.#responseAnimation =
+                            undefined;
+                    }
+                );
+        }
+
+        return wasVisible;
+    }
+
+    setResponse(value) {
+        this.#responseAnimation?.cancel();
+        this.#responseAnimation = undefined;
+
+        const visual =
+            this.#responseVisual(
+                value
+            );
+
+        if (!visual) {
+            return this.clearResponse();
+        }
+
+        const wasVisible =
+            this.#showResponseLane();
+
+        this.#responseContent
+            .replaceChildren(
                 visual
             );
-        }
-        else {
-            const span = document.createElement("span");
-            span.textContent = String(value);
-            this.#responseContent.append(span);
-        }
 
-        const wasVisible = this.hasAttribute("has-response");
-        this.setAttribute("has-response", "");
-
-        if (!wasVisible && typeof this.#responseLane.animate === "function") {
-            this.#responseAnimation = this.#responseLane.animate(
-                [
-                    {width: "0px", opacity: 0, transform: "translateX(16px)"},
-                    {width: "min(42vw, 360px)", opacity: 1, transform: "translateX(0)"}
-                ],
-                {
-                    duration: 220,
-                    easing: "cubic-bezier(.2,.8,.2,1)",
-                    fill: "both"
-                }
-            );
-            this.#responseAnimation.finished
-                .catch(() => {})
-                .finally(() => {
-                    this.#responseAnimation?.cancel();
-                    this.#responseAnimation = undefined;
-                });
-        }
-        else {
-            this.#responseContent.animate?.(
-                [{opacity: .35, transform: "scale(.96)"}, {opacity: 1, transform: "scale(1)"}],
-                {duration: 160, easing: "ease-out"}
-            );
+        if (wasVisible) {
+            this.#responseContent
+                .animate?.(
+                    [
+                        {
+                            opacity: .35,
+                            transform:
+                                "scale(.96)"
+                        },
+                        {
+                            opacity: 1,
+                            transform:
+                                "scale(1)"
+                        }
+                    ],
+                    {
+                        duration: 160,
+                        easing:
+                            "ease-out"
+                    }
+                );
         }
     }
 
-    async clearResponse() {
+    presentResponseTransition(
+        fromValue,
+        toValue,
+        {
+            duration = 320
+        } = {}
+    ) {
+        this.#responseAnimation?.cancel();
+        this.#responseAnimation = undefined;
+
+        const from =
+            this.#responseVisual(
+                fromValue
+            );
+        const to =
+            this.#responseVisual(
+                toValue
+            );
+
+        if (!from && !to) {
+            return this.clearResponse();
+        }
+
+        if (!from || !to) {
+            return this.setResponse(
+                to ||
+                from
+            );
+        }
+
+        this.#showResponseLane();
+
+        const stage =
+            document.createElement(
+                "div"
+            );
+
+        stage.className =
+            "response-transition-stage";
+
+        stage.append(
+            from,
+            to
+        );
+
+        this.#responseContent
+            .replaceChildren(
+                stage
+            );
+
+        to.style.opacity = "0";
+
+        if (
+            typeof from.animate !==
+                "function" ||
+            typeof to.animate !==
+                "function"
+        ) {
+            this.#responseContent
+                .replaceChildren(
+                    to
+                );
+            to.style.opacity = "";
+            return;
+        }
+
+        const options = {
+            duration:
+                Math.max(
+                    0,
+                    Number(duration) ||
+                    0
+                ),
+            easing:
+                "cubic-bezier(.2,.8,.2,1)",
+            fill:
+                "both"
+        };
+
+        const fromAnimation =
+            from.animate(
+                [
+                    {
+                        opacity: 1,
+                        transform:
+                            "scale(1)"
+                    },
+                    {
+                        opacity: 0,
+                        transform:
+                            "scale(.94)"
+                    }
+                ],
+                options
+            );
+
+        const toAnimation =
+            to.animate(
+                [
+                    {
+                        opacity: 0,
+                        transform:
+                            "scale(1.06)"
+                    },
+                    {
+                        opacity: 1,
+                        transform:
+                            "scale(1)"
+                    }
+                ],
+                options
+            );
+
+        const sharedStart =
+            document.timeline
+                ?.currentTime;
+
+        if (
+            sharedStart !==
+            null &&
+            sharedStart !==
+            undefined
+        ) {
+            try {
+                fromAnimation.startTime =
+                    sharedStart;
+                toAnimation.startTime =
+                    sharedStart;
+            }
+            catch {}
+        }
+
+        Promise
+            .allSettled([
+                fromAnimation.finished,
+                toAnimation.finished
+            ])
+            .then(
+                () => {
+                    if (
+                        stage.isConnected
+                    ) {
+                        this.#responseContent
+                            .replaceChildren(
+                                to
+                            );
+                        to.style.opacity =
+                            "";
+                    }
+                }
+            );
+    }
+
+    async clearResponse(
+        {
+            duration = 190
+        } = {}
+    ) {
         this.#responseAnimation?.cancel();
         this.#responseAnimation = undefined;
         if (!this.hasAttribute("has-response")) {
@@ -408,7 +651,12 @@ class SpeechMicBar extends HTMLElement {
                     {width: "0px", opacity: 0, transform: "translateX(16px)"}
                 ],
                 {
-                    duration: 190,
+                    duration:
+                        Math.max(
+                            0,
+                            Number(duration) ||
+                            0
+                        ),
                     easing: "cubic-bezier(.4,0,.8,.2)",
                     fill: "both"
                 }
@@ -626,12 +874,6 @@ class SpeechMicBar extends HTMLElement {
                         detail.arguments ||
                         []
                     );
-
-                    if (detail.targetElement) {
-                        this.setResponse(
-                            detail.targetElement
-                        );
-                    }
                 }
                 break;
             case "utteranceUnrecognized":
@@ -642,15 +884,6 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechCommandExecuted":
-                if (
-                    detail?.utteranceId ===
-                    this.#currentUtteranceId &&
-                    detail.targetElement
-                ) {
-                    this.setResponse(
-                        detail.targetElement
-                    );
-                }
                 break;
         }
 
