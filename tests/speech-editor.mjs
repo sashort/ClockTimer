@@ -7,20 +7,10 @@ const window = new Window({url:"https://wmof.example/"});
 window.document.body.innerHTML = [
     '<button id="breakButton">Break</button>',
     '<speech-menu id="topMenu" speech-modal="top-level">',
-    '<speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFSpeechCommands.breakStart"></speech-command>',
-    '<speech-command data-speech-editor-id="builtin:breakStop:page" data-speech-target="#breakButton" speech-pattern="^break stop$" speech-function="WMOFSpeechCommands.breakStart"></speech-command>',
+    '<speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFActions.openBreakMenu"></speech-command>',
+    '<speech-command data-speech-editor-id="builtin:breakStop:page" data-speech-target="#breakButton" speech-pattern="^break stop$" speech-function="WMOFActions.openBreakMenu"></speech-command>',
     '</speech-menu>'
 ].join("");
-
-window.WMOFSpeechCommands = {
-    breakStart() {}
-};
-
-window.WMOFSpeechPreprocess = {
-    normalize(value) {
-        return value;
-    }
-};
 
 let refreshes = 0;
 
@@ -39,25 +29,58 @@ window.fetch =
             })
     });
 
-window.eval(
-    fs.readFileSync(
-        new URL(
-            "../SpeechFunctionRegistry.js",
-            import.meta.url
-        ),
-        "utf8"
-    )
-);
+for (
+    const source of [
+        "../SpeechFunctionRoles.js",
+        "../SpeechFunctionRegistry.js",
+        "../UtilityFunctions.js",
+        "../SpeechProcessingFunctions.js",
+        "../ActionFunctions.js",
+        "../InteractionFunctions.js",
+        "../PresentationSetters.js",
+        "../SpeechEditorRuntime.js"
+    ]
+) {
+    window.eval(
+        fs.readFileSync(
+            new URL(
+                source,
+                import.meta.url
+            ),
+            "utf8"
+        )
+    );
+}
 
-window.eval(
-    fs.readFileSync(
-        new URL(
-            "../SpeechEditorRuntime.js",
-            import.meta.url
-        ),
-        "utf8"
-    )
-);
+window.WMOFActionFunctions
+    .define(
+        "openBreakMenu",
+        () => true
+    );
+
+window.WMOFSpeechProcessingFunctions
+    .define(
+        "normalizeSpeechValue",
+        value => value
+    );
+
+window.WMOFInteractionFunctions
+    .define(
+        "openBreakMenuClick",
+        () => true
+    );
+
+window.WMOFPresentationSetters
+    .define(
+        "setBreakPresentation",
+        () => true
+    );
+
+window.WMOFUtilityFunctions
+    .define(
+        "formatBreakValue",
+        value => String(value)
+    );
 
 await new Promise(
     resolve =>
@@ -75,7 +98,7 @@ const entries = [
         order:1,
         attrs:{
             "speech-pattern":"^take a break$",
-            "speech-function":"WMOFSpeechCommands.breakStart",
+            "speech-function":"WMOFActions.openBreakMenu",
             "speech-index":"2"
         }
     },
@@ -86,7 +109,7 @@ const entries = [
         order:0,
         attrs:{
             "speech-pattern":"^stop break$",
-            "speech-function":"WMOFSpeechCommands.breakStart",
+            "speech-function":"WMOFActions.openBreakMenu",
             "speech-index":"5"
         }
     },
@@ -105,7 +128,7 @@ const entries = [
         parentId:"edit:group:1",
         attrs:{
             "speech-pattern":"^pause$",
-            "speech-function":"WMOFSpeechCommands.breakStart"
+            "speech-function":"WMOFActions.openBreakMenu"
         }
     },
     {
@@ -114,7 +137,7 @@ const entries = [
         target:"#breakButton",
         attrs:{
             "speech-pattern":"^break$",
-            "speech-function":"WMOFSpeechCommands.breakStart",
+            "speech-function":"WMOFActions.openBreakMenu",
             "speech-modal":""
         }
     }
@@ -235,13 +258,13 @@ const functions =
 
 assert.ok(
     functions.includes(
-        "WMOFSpeechCommands.breakStart"
+        "WMOFActions.openBreakMenu"
     )
 );
 
 assert.ok(
     functions.includes(
-        "WMOFSpeechPreprocess.normalize"
+        "WMOFSpeechProcessing.normalizeSpeechValue"
     )
 );
 
@@ -251,24 +274,72 @@ const roles =
         .listFunctionRoles();
 
 assert.ok(
-    roles.preprocFunctions.includes(
-        "WMOFSpeechPreprocess.normalize"
+    roles.speechProcessingFunctions.includes(
+        "WMOFSpeechProcessing.normalizeSpeechValue"
     ),
-    "tagged preprocessors should populate only the preproc role"
+    "speech-processing functions should populate speech-preproc choices"
 );
 
 assert.ok(
-    !roles.speechFunctions.includes(
-        "WMOFSpeechPreprocess.normalize"
+    !roles.actionFunctions.includes(
+        "WMOFSpeechProcessing.normalizeSpeechValue"
     ),
-    "tagged preprocessors should be excluded from speech-function choices"
+    "speech-processing functions should be excluded from speech-function choices"
 );
 
 assert.ok(
-    roles.speechFunctions.includes(
-        "WMOFSpeechCommands.breakStart"
+    roles.actionFunctions.includes(
+        "WMOFActions.openBreakMenu"
     ),
-    "untagged functions should remain speech-function choices"
+    "action functions should populate speech-function choices"
+);
+
+assert.ok(
+    roles.interactionFunctions.includes(
+        "WMOFInteractions.openBreakMenuClick"
+    )
+);
+
+assert.ok(
+    roles.presentationFunctions.includes(
+        "WMOFPresentation.setBreakPresentation"
+    )
+);
+
+assert.ok(
+    roles.helperFunctions.includes(
+        "WMOFUtilities.formatBreakValue"
+    )
+);
+
+for (
+    const hiddenName of [
+        "WMOFInteractions.openBreakMenuClick",
+        "WMOFPresentation.setBreakPresentation",
+        "WMOFUtilities.formatBreakValue"
+    ]
+) {
+    assert.ok(
+        !roles.actionFunctions.includes(
+            hiddenName
+        ) &&
+        !roles.speechProcessingFunctions.includes(
+            hiddenName
+        ),
+        hiddenName +
+            " should be excluded from both speech dropdown roles"
+    );
+}
+
+assert.throws(
+    () =>
+        window.WMOFActionFunctions
+            .define(
+                "breakMenu",
+                () => true
+            ),
+    /start with a verb/,
+    "action function names should start with a verb"
 );
 
 assert.ok(
