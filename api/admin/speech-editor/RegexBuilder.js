@@ -497,6 +497,7 @@
         if (!input) {
             return {
                 valid:false,
+                template:input,
                 pattern:"",
                 error:"Enter a phrase template."
             };
@@ -515,6 +516,7 @@
 
             return {
                 valid:true,
+                template:input,
                 pattern,
                 error:""
             };
@@ -522,6 +524,7 @@
         catch (error) {
             return {
                 valid:false,
+                template:input,
                 pattern:"",
                 error:error instanceof Error
                     ? error.message
