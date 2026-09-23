@@ -586,7 +586,19 @@
     let numberPadLongPressTimer;
     let numberPadLongPressed = false;
     let numberPadLastClearPointerDown = 0;
-    let initialLoginSuppressed = false;
+    const speechEditorPreview =
+        new URLSearchParams(
+            globalThis.location
+                ?.search ||
+            ""
+        )
+            .get(
+                "speech-editor-preview"
+            ) ===
+        "1";
+
+    let initialLoginSuppressed =
+        speechEditorPreview;
     let deliberatelyLoggedOut = safeStorageGet("wmof.deliberatelyLoggedOut") === "true";
     let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
@@ -3211,6 +3223,13 @@
     }
 
     function showInitialLoginDialog() {
+        if (speechEditorPreview) {
+            initialLoginAttemptPending =
+                false;
+
+            return false;
+        }
+
         if (deliberatelyLoggedOut) return;
         if (loginDialog.open) return;
         const opened = openDialogElement(loginDialog, {
