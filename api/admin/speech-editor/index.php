@@ -306,6 +306,99 @@ header('Referrer-Policy: no-referrer');
             </section>
         </aside>
     </main>
+    <dialog id="speechTrainingDialog" class="speech-training-dialog">
+        <form method="dialog" class="speech-training-shell">
+            <header class="speech-training-header">
+                <div>
+                    <h2>Phrase Training</h2>
+                    <p id="speechTrainingPhrase" class="speech-training-phrase"></p>
+                </div>
+                <button id="speechTrainingClose" class="dialog-close" type="button" aria-label="Close">×</button>
+            </header>
+
+            <section class="speech-training-summary" aria-label="Training summary">
+                <div class="speech-training-stat">
+                    <strong id="speechTrainingSamples">0</strong>
+                    <span>Samples</span>
+                </div>
+                <div class="speech-training-stat">
+                    <strong id="speechTrainingCorrect">0</strong>
+                    <span>Correct</span>
+                </div>
+                <div class="speech-training-stat">
+                    <strong id="speechTrainingAccuracy">—</strong>
+                    <span>Accuracy</span>
+                </div>
+                <div class="speech-training-stat">
+                    <strong id="speechTrainingState">Untrained</strong>
+                    <span>Status</span>
+                </div>
+            </section>
+
+            <section class="speech-training-section">
+                <div class="speech-training-section-heading">
+                    <div>
+                        <h3>Record sample</h3>
+                        <p>Enter what was intended and what Sherpa actually produced.</p>
+                    </div>
+                </div>
+                <div class="speech-training-grid">
+                    <label>
+                        <span>Expected utterance</span>
+                        <input id="speechTrainingCanonical" maxlength="500" spellcheck="false" autocomplete="off">
+                    </label>
+                    <label>
+                        <span>Observed transcript</span>
+                        <input id="speechTrainingObserved" maxlength="500" spellcheck="false" autocomplete="off">
+                    </label>
+                </div>
+                <div class="speech-training-actions">
+                    <button id="speechTrainingRecord" class="primary" type="button">Record sample</button>
+                    <span id="speechTrainingMessage" role="status" aria-live="polite"></span>
+                </div>
+            </section>
+
+            <section class="speech-training-section">
+                <div class="speech-training-section-heading">
+                    <div>
+                        <h3>Observed variants</h3>
+                        <p>Most common recognizer outputs for this phrase.</p>
+                    </div>
+                </div>
+                <div id="speechTrainingVariants" class="speech-training-variants"></div>
+            </section>
+
+            <section class="speech-training-section">
+                <div class="speech-training-section-heading">
+                    <div>
+                        <h3>Correction mapping</h3>
+                        <p>Create a reusable exact or prefix correction for a recurring homonym.</p>
+                    </div>
+                </div>
+                <div class="speech-training-grid correction-grid">
+                    <label>
+                        <span>Observed</span>
+                        <input id="speechCorrectionObserved" maxlength="500" spellcheck="false" autocomplete="off">
+                    </label>
+                    <label>
+                        <span>Canonical</span>
+                        <input id="speechCorrectionCanonical" maxlength="500" spellcheck="false" autocomplete="off">
+                    </label>
+                    <label>
+                        <span>Match</span>
+                        <select id="speechCorrectionMatchType">
+                            <option value="exact">Exact</option>
+                            <option value="prefix">Prefix</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="speech-training-actions">
+                    <button id="speechCorrectionSave" class="primary" type="button">Save correction</button>
+                </div>
+            </section>
+        </form>
+    </dialog>
+
     <dialog id="jsonActionsDialog" class="json-actions-dialog">
         <form method="dialog" class="json-actions-shell">
             <header class="json-actions-header">
