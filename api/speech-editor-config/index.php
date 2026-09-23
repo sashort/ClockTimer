@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/_core/bootstrap.php';
 $method = require_method('GET', 'PUT');
 $root = dirname(__DIR__, 2);
 $path = $root . '/database/speech-editor.json';
-$registryPath = $root . '/SpeechFunctionRegistry.js';
+$registryPath = $root . '/SpeechFunctionRoles.js';
 $roleNames = ['speech-processing', 'action', 'interaction', 'presentation', 'helper'];
 $defaultFunctionRoles = [
     'speech-processing' => ['WMOFSpeechProcessing.normalizeSpeechValue'],
@@ -42,16 +42,15 @@ $readRegistry = static function () use ($registryPath, $defaultFunctionRoles, $n
     if (!is_file($registryPath)) {
         return [
             'functionRoles' => $defaultFunctionRoles,
-            'registryRevision' => 'missing',
-            'registrySource' => ''
+            'registryRevision' => 'missing'
         ];
     }
 
     $raw = file_get_contents($registryPath);
-    if ($raw === false) api_error('Speech function registry could not be read.', 500, 'registry_read_failed');
+    if ($raw === false) api_error('Speech function roles could not be read.', 500, 'registry_read_failed');
 
-    if (!preg_match('/const\s+taggedFunctionRoles\s*=\s*(\{[\s\S]*?\})\s*;/D', $raw, $match)) {
-        api_error('Speech function registry is invalid.', 500, 'invalid_registry');
+    if (!preg_match('/globalThis\.WMOFSpeechFunctionRoles\s*=\s*(\{[\s\S]*?\})\s*;/D', $raw, $match)) {
+        api_error('Speech function roles are invalid.', 500, 'invalid_registry');
     }
 
     $decoded = json_decode($match[1], true);
@@ -59,41 +58,21 @@ $readRegistry = static function () use ($registryPath, $defaultFunctionRoles, $n
 
     return [
         'functionRoles' => $roles,
-        'registryRevision' => hash('sha256', $raw),
-        'registrySource' => $raw
+        'registryRevision' => hash('sha256', $raw)
     ];
 };
 
-$renderRegistry = static function (array $roles, string $source): string {
+$renderRegistry = static function (array $roles): string {
     $encoded = json_encode(
         $roles,
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
     );
 
-    if ($source === '') {
-        api_error('Speech function registry source is unavailable.', 500, 'registry_source_missing');
-    }
-
-    $replacement = 'const taggedFunctionRoles = ' . $encoded . ';';
-    $updated = preg_replace(
-        '/const\s+taggedFunctionRoles\s*=\s*\{[\s\S]*?\}\s*;/D',
-        $replacement,
-        $source,
-        1,
-        $count
-    );
-
-    if (!is_string($updated) || $count !== 1) {
-        api_error('Speech function registry could not be updated.', 500, 'registry_write_failed');
-    }
-
-    return rtrim($updated) . "\n";
+    return "globalThis.WMOFSpeechFunctionRoles = " . $encoded . ";\n";
 };
 
 if ($method === 'GET') {
-    $registry = $readRegistry();
-    unset($registry['registrySource']);
-    json_response(array_merge($read(), $registry));
+    json_response(array_merge($read(), $readRegistry()));
 }
 
 authenticated_user_id();
@@ -180,8 +159,7 @@ foreach ($roleNames as $role) {
 
 $encoded = json_encode(['entries' => $entries], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
 $registryEncoded = $renderRegistry(
-    $normalizedRoles,
-    $currentRegistry['registrySource']
+    $normalizedRoles
 );
 
 $configTemporary = tempnam(dirname($path), '.speech-editor-');
@@ -195,7 +173,7 @@ if (
 
 if (file_put_contents($registryPath, $registryEncoded, LOCK_EX) === false) {
     @unlink($configTemporary);
-    api_error('Speech function registry could not be saved.', 500, 'registry_write_failed');
+    api_error('Speech function roles could not be saved.', 500, 'registry_write_failed');
 }
 
 if (!rename($configTemporary, $path)) {
