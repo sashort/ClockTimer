@@ -259,12 +259,29 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 #responseContent > * {
+                    box-sizing: border-box !important;
                     max-width: 100% !important;
                     max-height: 50px !important;
                     min-width: 0 !important;
                     overflow: hidden !important;
                     pointer-events: none !important;
                     transform-origin: center;
+                }
+
+                .response-button-facsimile {
+                    width: max-content;
+                    max-width: min(100%, 240px) !important;
+                    height: auto !important;
+                    min-height: 24px;
+                    padding: 4px 10px !important;
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    line-height: 1.15 !important;
+                    font-size: 12px !important;
                 }
 
                 #responseContent button,
@@ -322,7 +339,17 @@ class SpeechMicBar extends HTMLElement {
         if (value instanceof Node) {
             const visual =
                 value instanceof Element
-                    ? this.#cloneVisualElement(value)
+                    ? (
+                        this.#shouldUseButtonFacsimile(
+                            value
+                        )
+                            ? this.#createButtonFacsimile(
+                                value
+                            )
+                            : this.#cloneVisualElement(
+                                value
+                            )
+                    )
                     : value.cloneNode(true);
 
             this.#responseContent.append(
@@ -813,6 +840,165 @@ class SpeechMicBar extends HTMLElement {
                             : JSON.stringify(value);
             this.#codes.append(code);
         }
+    }
+
+    #shouldUseButtonFacsimile(
+        source
+    ) {
+        if (
+            !source.matches?.(
+                "button, [role='button'], input[type='button'], input[type='submit'], input[type='reset']"
+            )
+        ) {
+            return false;
+        }
+
+        let width = 0;
+        let height = 0;
+
+        try {
+            const rect =
+                source.getBoundingClientRect();
+
+            width =
+                Number(
+                    rect?.width
+                ) ||
+                0;
+            height =
+                Number(
+                    rect?.height
+                ) ||
+                0;
+        }
+        catch {}
+
+        try {
+            const style =
+                getComputedStyle(
+                    source
+                );
+
+            width =
+                Math.max(
+                    width,
+                    parseFloat(
+                        style.width
+                    ) ||
+                    0
+                );
+            height =
+                Math.max(
+                    height,
+                    parseFloat(
+                        style.height
+                    ) ||
+                    0
+                );
+        }
+        catch {}
+
+        width =
+            Math.max(
+                width,
+                Number(
+                    source.scrollWidth
+                ) ||
+                0
+            );
+        height =
+            Math.max(
+                height,
+                Number(
+                    source.scrollHeight
+                ) ||
+                0
+            );
+
+        return (
+            width > 280 ||
+            height > 48
+        );
+    }
+
+    #createButtonFacsimile(
+        source
+    ) {
+        const visual =
+            document.createElement(
+                "div"
+            );
+
+        visual.className =
+            "response-button-facsimile";
+
+        let style;
+
+        try {
+            style =
+                getComputedStyle(
+                    source
+                );
+        }
+        catch {}
+
+        for (
+            const property of
+            [
+                "background",
+                "background-color",
+                "color",
+                "border",
+                "border-color",
+                "border-style",
+                "border-width",
+                "border-radius",
+                "box-shadow",
+                "font-family",
+                "font-weight",
+                "text-transform",
+                "letter-spacing"
+            ]
+        ) {
+            const value =
+                style?.getPropertyValue(
+                    property
+                );
+
+            if (value) {
+                visual.style
+                    .setProperty(
+                        property,
+                        value
+                    );
+            }
+        }
+
+        visual.textContent =
+            (
+                source.getAttribute(
+                    "aria-label"
+                ) ||
+                (
+                    "value" in source
+                        ? source.value
+                        : ""
+                ) ||
+                source.textContent ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        visual.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        return visual;
     }
 
     #cloneVisualElement(source) {
