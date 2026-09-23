@@ -9062,6 +9062,9 @@
             installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
             SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
             SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            SpeechMenu.setRecognitionContext(
+                englishSpeech.recognition || {}
+            );
             SpeechMenu.refresh();
         }
 

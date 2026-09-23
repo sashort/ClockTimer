@@ -194,7 +194,10 @@ export class WhisperService {
         pcm,
         {
             language = "en-US",
-            prompt = ""
+            prompt = "",
+            grammar = "",
+            grammarRule = "root",
+            grammarPenalty
         } = {}
     ) {
         if (!pcm?.length) return "";
@@ -238,6 +241,36 @@ export class WhisperService {
                             boundary,
                             "prompt",
                             String(prompt).trim()
+                        )
+                    ]
+                    : []),
+                ...(String(grammar || "").trim()
+                    ? [
+                        multipartPart(
+                            boundary,
+                            "grammar",
+                            String(grammar).trim()
+                        ),
+                        multipartPart(
+                            boundary,
+                            "grammar_rule",
+                            String(
+                                grammarRule ||
+                                "root"
+                            ).trim()
+                        ),
+                        multipartPart(
+                            boundary,
+                            "grammar_penalty",
+                            Number.isFinite(
+                                Number(
+                                    grammarPenalty
+                                )
+                            )
+                                ? Number(
+                                    grammarPenalty
+                                )
+                                : 100
                         )
                     ]
                     : []),

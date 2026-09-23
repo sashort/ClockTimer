@@ -11,6 +11,10 @@ import {
     transcriptMessage
 } from "./protocol.js";
 import {WhisperService} from "./whisper-service.js";
+import {
+    buildRecognitionGrammar,
+    buildRecognitionPrompt
+} from "./grammar.js";
 
 const HOST =
     process.env.SPEECH_HOST ||
@@ -43,35 +47,23 @@ const MAX_UTTERANCE_BYTES =
 const whisper =
     new WhisperService();
 
-function recognitionPrompt(context) {
-    if (!context || typeof context !== "object") return "";
+const PARTIAL_GRAMMAR_PENALTY =
+    Math.max(
+        0,
+        Number(
+            process.env
+                .SPEECH_PARTIAL_GRAMMAR_PENALTY
+        ) || 10
+    );
 
-    const values = [];
-
-    const append = input => {
-        for (const value of Array.isArray(input) ? input : []) {
-            const text = String(value ?? "").trim();
-            if (text && !values.includes(text)) values.push(text);
-        }
-    };
-
-    append(context.phrases);
-    append(context.vocabulary);
-
-    if (
-        context.options &&
-        typeof context.options === "object" &&
-        !Array.isArray(context.options)
-    ) {
-        for (const options of Object.values(context.options)) {
-            append(options);
-        }
-    }
-
-    return values
-        .join(". ")
-        .slice(0, 1000);
-}
+const FINAL_GRAMMAR_PENALTY =
+    Math.max(
+        PARTIAL_GRAMMAR_PENALTY,
+        Number(
+            process.env
+                .SPEECH_FINAL_GRAMMAR_PENALTY
+        ) || 100
+    );
 
 const server =
     http.createServer(
@@ -186,6 +178,10 @@ async function recognize(
     utterance,
     final
 ) {
+    const recognitionGrammar =
+        buildRecognitionGrammar(
+            state.recognitionContext
+        );
     if (
         utterance.cancelled ||
         !state.utterances.has(
@@ -221,7 +217,8 @@ async function recognize(
         final &&
         utterance.lastTranscript &&
         utterance.byteLength ===
-            utterance.lastRecognizedBytes
+            utterance.lastRecognizedBytes &&
+        !recognitionGrammar
     ) {
         send(
             socket,
@@ -258,9 +255,23 @@ async function recognize(
                     language:
                         state.language,
                     prompt:
-                        recognitionPrompt(
+                        buildRecognitionPrompt(
                             state.recognitionContext
-                        )
+                        ),
+                    grammar:
+                        recognitionGrammar
+                            ?.grammar,
+                    grammarRule:
+                        recognitionGrammar
+                            ?.rule,
+                    grammarPenalty:
+                        recognitionGrammar
+                            ? (
+                                final
+                                    ? FINAL_GRAMMAR_PENALTY
+                                    : PARTIAL_GRAMMAR_PENALTY
+                            )
+                            : undefined
                 }
             );
 
@@ -290,8 +301,12 @@ async function recognize(
                 transcriptMessage(
                     "final",
                     utterance.id,
-                    text ||
-                    utterance.lastTranscript
+                    recognitionGrammar
+                        ? text
+                        : (
+                            text ||
+                            utterance.lastTranscript
+                        )
                 )
             );
 
