@@ -170,7 +170,7 @@
             ></clock-timer>
         </section>
 
-        <speech-mic-bar id="speechMicBar" aria-label="Speech recognition"></speech-mic-bar>
+        <speech-mic-bar id="speechMicBar" popover="manual" aria-label="Speech recognition"></speech-mic-bar>
         <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">
             <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-target="#newTripButton" speech-pattern="^ready at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.scheduleStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-target="#newTripButton" speech-pattern="^at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.continueStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
@@ -187,6 +187,10 @@
             <speech-command data-speech-editor-id="builtin:hideTripLog:page" data-speech-target="#tripListMenuButton" speech-pattern="^(?:hide|close) trip log$" speech-function="WMOFActions.closeTripLog"></speech-command>
             <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-target="#tripDefer" speech-pattern="^defer trip$" speech-function="WMOFActions.deferTrip"></speech-command>
             <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^(?:time )?(?&lt;timeMode&gt;elapsed|remaining|end(?: time)?)$" speech-function="WMOFActions.toggleRenderedTime"></speech-command>
+        </speech-menu>
+        <speech-menu id="speechDefaultMenu" speech-modal="default" data-speech-editor-id="builtin:menu:default">
+            <speech-command data-speech-editor-id="builtin:voiceOptions:default" speech-pattern="^(?:voice )?options$" speech-function="WMOFActions.showSpeechOptions"></speech-command>
+            <speech-command data-speech-editor-id="builtin:closeSurface:default" speech-pattern="^(?:cancel|close)$" speech-function="WMOFActions.closeActiveSurface"></speech-command>
         </speech-menu>
         <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody">Trip Log</button>
         <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="Close Trip Log" hidden></button>
