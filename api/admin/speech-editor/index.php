@@ -11,7 +11,7 @@ header('Cache-Control: no-store');
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>WMOF Speech Command Editor</title>
-    <link rel="stylesheet" href="editor.css">
+    <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
 <body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>">
     <header class="toolbar">
@@ -154,6 +154,6 @@ header('Cache-Control: no-store');
             </section>
         </aside>
     </main>
-    <script src="editor.js"></script>
+    <script src="editor.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.js'), ENT_QUOTES)?>"></script>
 </body>
 </html>
