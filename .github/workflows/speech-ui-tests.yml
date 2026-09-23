@@ -12,6 +12,10 @@ on:
       - "index.html"
       - "app.css"
       - "api/admin/speech-editor/**"
+      - "api/admin/access-tokens/**"
+      - "api/admin/sql/**"
+      - "api/_core/access_tokens.php"
+      - "api/_core/sql_console.php"
       - "api/speech-editor-config/**"
       - "tests/speech-*.mjs"
       - "tests/package.json"
@@ -41,6 +45,10 @@ jobs:
       - name: Check PHP syntax
         run: |
           php -l api/admin/speech-editor/index.php
+          php -l api/admin/access-tokens/index.php
+          php -l api/admin/sql/index.php
+          php -l api/_core/access_tokens.php
+          php -l api/_core/sql_console.php
           php -l api/admin/speech-editor/agent/index.php
           php -l api/_core/permissions.php
           php -l api/_core/csrf.php
@@ -58,6 +66,8 @@ jobs:
           npm run test:action-macros
           npm run test:editor-actions
           php admin_permissions.php
+          php access_tokens.php
+          php sql_batch.php
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
