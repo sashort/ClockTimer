@@ -447,7 +447,7 @@ header('Referrer-Policy: no-referrer');
                 <div id="speechTrainingVariants" class="speech-training-variants"></div>
             </section>
 
-            <section class="speech-training-section">
+            <section id="speechCorrectionSection" class="speech-training-section">
                 <div class="speech-training-section-heading">
                     <div>
                         <h3>Correction mapping</h3>
