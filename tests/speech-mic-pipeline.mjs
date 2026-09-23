@@ -568,3 +568,32 @@ assert.match(
     speechMenuSource,
     /if \(committed\)[\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)/
 );
+
+assert.match(
+    speechMenuSource,
+    /#candidateStateAvailable[\s\S]*speech-available/
+);
+assert.match(
+    speechMenuSource,
+    /#targetIsAvailable[\s\S]*getComputedStyle/
+);
+assert.match(
+    speechMenuSource,
+    /#availableCandidates\(\)[\s\S]*#candidateStateAvailable/
+);
+assert.match(
+    app,
+    /WMOFSpeechAvailability[\s\S]*canOpenTripLog[\s\S]*canCloseTripLog[\s\S]*canCloseSurface/
+);
+assert.match(
+    html,
+    /builtin:ready:page" speech-available="WMOFSpeechAvailability\.canStartTrip"/
+);
+assert.match(
+    html,
+    /builtin:hideTripLog:page" speech-available="WMOFSpeechAvailability\.canCloseTripLog"/
+);
+assert.match(
+    html,
+    /builtin:closeSurface:default" speech-available="WMOFSpeechAvailability\.canCloseSurface"/
+);
