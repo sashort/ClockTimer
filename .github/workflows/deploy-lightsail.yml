@@ -122,6 +122,51 @@ jobs:
              echo "Sherpa runtime assets:"
              ls -lh "$SHERPA_DIR"/sherpa-onnx-*
 
+             VAD_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/vad
+             VAD_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-vad
+             VAD_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${VAD_PACKAGE}.tar.bz2
+             mkdir -p "$VAD_DIR"
+
+             VAD_MISSING=false
+             for VAD_FILE in \
+               sherpa-onnx-vad.js \
+               sherpa-onnx-wasm-main-vad.js \
+               sherpa-onnx-wasm-main-vad.wasm \
+               sherpa-onnx-wasm-main-vad.data
+             do
+               if [ ! -s "$VAD_DIR/$VAD_FILE" ]; then
+                 VAD_MISSING=true
+               fi
+             done
+
+             if [ "$VAD_MISSING" = true ]; then
+               VAD_TMP=$(mktemp -d)
+               echo "Installing Sherpa ${SHERPA_VERSION} Silero VAD WASM runtime."
+               curl -fL \
+                 --retry 5 \
+                 --retry-delay 2 \
+                 --connect-timeout 20 \
+                 -o "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" \
+                 "$VAD_RELEASE"
+               tar -xjf "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" -C "$VAD_TMP"
+
+               for VAD_FILE in \
+                 sherpa-onnx-vad.js \
+                 sherpa-onnx-wasm-main-vad.js \
+                 sherpa-onnx-wasm-main-vad.wasm \
+                 sherpa-onnx-wasm-main-vad.data
+               do
+                 install -m 644 \
+                   "$VAD_TMP/$VAD_PACKAGE/$VAD_FILE" \
+                   "$VAD_DIR/$VAD_FILE"
+               done
+
+               rm -rf "$VAD_TMP"
+             fi
+
+             echo "Silero VAD runtime assets:"
+             ls -lh "$VAD_DIR"/sherpa-onnx-*
+
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database connectivity check passed."
 
@@ -169,6 +214,19 @@ jobs:
                SHERPA_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -I "https://wmof.sashort-apps.com/speech/sherpa/runtime/$SHERPA_FILE")
                echo "Sherpa asset $SHERPA_FILE status: $SHERPA_STATUS"
                if [ "$SHERPA_STATUS" != "200" ]; then
+                 exit 1
+               fi
+             done
+
+             for VAD_FILE in \
+               sherpa-onnx-vad.js \
+               sherpa-onnx-wasm-main-vad.js \
+               sherpa-onnx-wasm-main-vad.wasm \
+               sherpa-onnx-wasm-main-vad.data
+             do
+               VAD_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -I "https://wmof.sashort-apps.com/speech/sherpa/vad/$VAD_FILE")
+               echo "Silero VAD asset $VAD_FILE status: $VAD_STATUS"
+               if [ "$VAD_STATUS" != "200" ]; then
                  exit 1
                fi
              done'
