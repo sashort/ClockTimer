@@ -2608,15 +2608,7 @@
                         ? menuOpenState.get(
                             key
                         )
-                        : (
-                            menu ===
-                                selectedElement ||
-                            menuGroups.some(
-                                group =>
-                                    group.element ===
-                                    selectedElement
-                            )
-                        );
+                        : true;
 
                 details.addEventListener(
                     "toggle",
