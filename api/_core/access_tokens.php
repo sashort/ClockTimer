@@ -55,7 +55,10 @@ function permission_mask_allows_any(int $mask, int ...$permissions): bool
 
 function access_token_bearer(): ?string
 {
-    $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    $authorization =
+        $_SERVER['HTTP_AUTHORIZATION'] ??
+        $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ??
+        '';
 
     if (!is_string($authorization) || $authorization === '') {
         return null;
@@ -116,12 +119,25 @@ function access_token_session_grant(string $scope): ?array
         return null;
     }
 
-    if (
-        !empty($grant['requires_authentication']) &&
-        optional_current_user() === null
-    ) {
-        unset($_SESSION['access_token_grants'][$scope]);
-        return null;
+    if (!empty($grant['requires_authentication'])) {
+        $user =
+            optional_current_user();
+
+        if (
+            $user === null ||
+            (int) ($grant['authenticated_user_id'] ?? 0) !==
+                (int) $user['id']
+        ) {
+            unset(
+                $_SESSION[
+                    'access_token_grants'
+                ][
+                    $scope
+                ]
+            );
+
+            return null;
+        }
     }
 
     return $grant;
