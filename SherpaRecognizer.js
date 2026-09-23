@@ -20,6 +20,7 @@
         #resolveReady;
         #rejectReady;
         #activeUtteranceId;
+        #isReady = false;
         #closed = false;
 
         constructor({
@@ -157,12 +158,13 @@
             return this.#activeUtteranceId;
         }
 
-        async beginUtterance(
+        beginUtterance(
             utteranceId
         ) {
-            await this.#readyPromise;
-
-            if (this.#closed) {
+            if (
+                this.#closed ||
+                !this.#isReady
+            ) {
                 return false;
             }
 
@@ -291,6 +293,7 @@
             }
 
             if (message.type === "ready") {
+                this.#isReady = true;
                 this.#resolveReady?.(
                     true
                 );
