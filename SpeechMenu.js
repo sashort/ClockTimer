@@ -310,6 +310,11 @@ class SpeechMenu {
                 SpeechMenu.#emit("started", {
                     language:
                         SpeechMenu.#language,
+                    recognizer:
+                        "sherpa",
+                    sampleRate:
+                        globalThis.SherpaRecognizer
+                            .sampleRate,
                     silenceTimeout:
                         SpeechMenu.#silenceTimeout,
                     commitSilenceTimeout:
@@ -857,6 +862,8 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            firstTranscriptAt:
+                undefined,
             candidate: undefined,
             committed: false,
             committing: false,
@@ -1000,6 +1007,39 @@ class SpeechMenu {
         if (!transcript) {
             return;
         }
+
+        const receivedAt =
+            performance.now();
+        const isFirstTranscript =
+            utterance.firstTranscriptAt ===
+                undefined;
+
+        if (isFirstTranscript) {
+            utterance.firstTranscriptAt =
+                receivedAt;
+        }
+
+        SpeechMenu.#emit(
+            "speechRecognitionTiming",
+            {
+                backend:
+                    "sherpa",
+                utteranceId:
+                    id,
+                isFinal:
+                    Boolean(
+                        detail.isFinal
+                    ),
+                isFirstTranscript,
+                firstTranscriptMilliseconds:
+                    utterance.firstTranscriptAt -
+                    utterance.startedAt,
+                decodeMilliseconds:
+                    Number(
+                        detail.decodeMilliseconds
+                    ) || 0
+            }
+        );
 
         if (
             active === utterance
