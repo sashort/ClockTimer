@@ -354,6 +354,17 @@ class SpeechMicBar extends HTMLElement {
         }
 
         if (value instanceof Node) {
+            if (
+                value instanceof Element &&
+                value.hasAttribute(
+                    "data-speech-response-snapshot"
+                )
+            ) {
+                return value.cloneNode(
+                    true
+                );
+            }
+
             return value instanceof Element
                 ? this.#cloneVisualElement(
                     value
