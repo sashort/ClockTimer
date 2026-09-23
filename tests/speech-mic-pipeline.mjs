@@ -429,3 +429,20 @@ assert.match(
     speechMenuSource,
     /#clearCandidatePool\([\s\S]*candidatePool\s*=\s*\[\]/
 );
+
+assert.match(
+    speechMicBarSource,
+    /case "utteranceTranscriptChanged":[\s\S]*#showText\(\s*this\.#currentTranscript\s*\)/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /case "utteranceTranscriptChanged":[\s\S]{0,500}if \(this\.#currentTranscriptFinal\)/
+);
+assert.match(
+    speechMicBarSource,
+    /case "speechPreprocessed":[\s\S]*Keep the raw recognizer transcript[\s\S]*break;/
+);
+assert.match(
+    speechMicBarSource,
+    /case "speechCommandExecuted":[\s\S]*#showPreprocessed\(\s*this\.#currentTranscript,\s*formatted\s*\)/
+);
