@@ -76,6 +76,38 @@ jobs:
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
 
+             SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
+             SHERPA_BASE=https://huggingface.co/spaces/k2-fsa/web-assembly-asr-sherpa-onnx-en/resolve/main
+             mkdir -p "$SHERPA_DIR"
+
+             for SHERPA_FILE in \
+               sherpa-onnx-asr.js \
+               sherpa-onnx-wasm-main-asr.js \
+               sherpa-onnx-wasm-main-asr.wasm \
+               sherpa-onnx-wasm-main-asr.data
+             do
+               if [ ! -s "$SHERPA_DIR/$SHERPA_FILE" ]; then
+                 echo "Installing Sherpa runtime asset: $SHERPA_FILE"
+                 rm -f "$SHERPA_DIR/$SHERPA_FILE.tmp"
+                 curl -fL \
+                   --retry 5 \
+                   --retry-delay 2 \
+                   --connect-timeout 20 \
+                   -o "$SHERPA_DIR/$SHERPA_FILE.tmp" \
+                   "$SHERPA_BASE/$SHERPA_FILE?download=true"
+                 mv "$SHERPA_DIR/$SHERPA_FILE.tmp" "$SHERPA_DIR/$SHERPA_FILE"
+               fi
+             done
+
+             chmod 644 \
+               "$SHERPA_DIR/sherpa-onnx-asr.js" \
+               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.js" \
+               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.wasm" \
+               "$SHERPA_DIR/sherpa-onnx-wasm-main-asr.data"
+
+             echo "Sherpa runtime assets:"
+             ls -lh "$SHERPA_DIR"/sherpa-onnx-*
+
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database connectivity check passed."
 
