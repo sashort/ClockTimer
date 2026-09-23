@@ -2,20 +2,22 @@
     "use strict";
 
     const taggedFunctionRoles = {
-        processing: [
+        "speech-processing": [
             "WMOFSpeechPreprocess.normalize"
         ],
         action: [],
         interaction: [],
-        presentation: []
+        presentation: [],
+        helper: []
     };
 
     const validRoles =
         new Set([
-            "processing",
+            "speech-processing",
             "action",
             "interaction",
-            "presentation"
+            "presentation",
+            "helper"
         ]);
 
     const roles =
@@ -133,9 +135,9 @@
             );
         },
 
-        tagProcessing(...names) {
+        tagSpeechProcessing(...names) {
             return setMany(
-                "processing",
+                "speech-processing",
                 names
             );
         },
@@ -161,6 +163,13 @@
             );
         },
 
+        tagHelper(...names) {
+            return setMany(
+                "helper",
+                names
+            );
+        },
+
         roleOf(name) {
             return (
                 roles.get(
@@ -173,7 +182,7 @@
         isProcessing(name) {
             return (
                 api.roleOf(name) ===
-                "processing"
+                "speech-processing"
             );
         },
 
@@ -212,10 +221,11 @@
 
         snapshot() {
             const result = {
-                processing: [],
+                "speech-processing": [],
                 action: [],
                 interaction: [],
-                presentation: []
+                presentation: [],
+                helper: []
             };
 
             for (
