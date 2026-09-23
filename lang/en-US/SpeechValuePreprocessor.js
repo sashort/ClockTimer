@@ -1,6 +1,30 @@
 class EnglishSpeechValuePreprocessor {
+    static #normalizeTimeArticles(value) {
+        return String(value ?? "")
+            .trim()
+            .replace(
+                /\b(?:a|an)\b(?=\s+(?:hours?|hrs?|minutes?|mins?|seconds?|secs?)\b)/gi,
+                "one"
+            )
+            .replace(
+                /\b(?:a|an)\b(?=\s+(?:quarter|half)\b)/gi,
+                ""
+            )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
     static normalize(value, kind) {
-        const phrase = String(value ?? "").trim();
+        const raw = String(value ?? "").trim();
+        const phrase =
+            kind === "duration" ||
+            kind === "clock" ||
+            kind === "clock-parts"
+                ? EnglishSpeechValuePreprocessor.#normalizeTimeArticles(raw)
+                : raw;
         switch (kind) {
             case "duration": {
                 const duration = EnglishDurationParser.parse(phrase);
@@ -24,8 +48,14 @@ class EnglishSpeechValuePreprocessor {
     }
 
     static parse(value, kind, options = {}) {
-        const phrase = String(value ?? "").trim();
-        if (!phrase) return undefined;
+        const raw = String(value ?? "").trim();
+        if (!raw) return undefined;
+        const phrase =
+            kind === "duration" ||
+            kind === "clock" ||
+            kind === "clock-parts"
+                ? EnglishSpeechValuePreprocessor.#normalizeTimeArticles(raw)
+                : raw;
         switch (kind) {
             case "duration":
                 return EnglishDurationParser.parse(phrase);
