@@ -170,7 +170,15 @@
                     transactional:
                         definition
                             ?.transactional !==
-                        false
+                        false,
+                    examples:
+                        clone(
+                            Array.isArray(
+                                definition?.examples
+                            )
+                                ? definition.examples
+                                : []
+                        )
                 }
             );
 
@@ -502,6 +510,16 @@
         () => ({
             version:
                 1,
+            capabilities: {
+                atomicBatches:
+                    true,
+                rollbackOnError:
+                    true,
+                nonTransactionalActionsRejectedFromAtomicBatches:
+                    true,
+                stateSnapshots:
+                    true
+            },
             commandShape: {
                 action:
                     "actionName",
@@ -608,6 +626,44 @@
                         )
                     )
                 };
+            },
+
+            setMetadata(
+                name,
+                value
+            ) {
+                const normalized =
+                    normalizeName(
+                        name
+                    );
+
+                if (
+                    !metadata.has(
+                        normalized
+                    )
+                ) {
+                    throw new Error(
+                        "Speech Editor action was not found: " +
+                        normalized
+                    );
+                }
+
+                metadata.set(
+                    normalized,
+                    {
+                        ...metadata.get(
+                            normalized
+                        ),
+                        ...clone(
+                            value ||
+                            {}
+                        )
+                    }
+                );
+
+                return this.describe(
+                    normalized
+                );
             },
 
             getManifest,
