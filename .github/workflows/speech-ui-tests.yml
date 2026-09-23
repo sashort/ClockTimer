@@ -52,6 +52,7 @@ jobs:
           npm run test:speech-editor
           npm run test:speech-phrases
           npm run test:action-macros
+          npm run test:editor-actions
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
