@@ -37,6 +37,10 @@ class SpeechMicBar extends HTMLElement {
     #currentTranscript = "";
     #currentTranscriptFinal = false;
     #rejectedClearTimer;
+    #loadingAnimationFrame;
+    #loadingDisplayed = 0;
+    #loadingTarget = 0;
+    #loadingTotal = 0;
 
     constructor() {
         super();
@@ -89,7 +93,6 @@ class SpeechMicBar extends HTMLElement {
                         );
                     opacity: 0;
                     transition:
-                        width 160ms linear,
                         opacity 160ms linear;
                     pointer-events: none;
                 }
@@ -948,17 +951,6 @@ class SpeechMicBar extends HTMLElement {
             return false;
         }
 
-        const progress =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    current /
-                    total *
-                    100
-                )
-            );
-
         this.setAttribute(
             "loading",
             ""
@@ -967,21 +959,139 @@ class SpeechMicBar extends HTMLElement {
             "aria-busy",
             "true"
         );
-        this.#bar.style
-            .setProperty(
-                "--speech-load-progress",
-                progress + "%"
-            );
-        this.#showStatus(
-            current +
-            " / " +
+
+        this.#animateLoadingProgress(
+            current,
             total
         );
 
         return true;
     }
 
+    #animateLoadingProgress(
+        current,
+        total
+    ) {
+        const samePacket =
+            this.#loadingTotal ===
+            total;
+
+        const from =
+            samePacket
+                ? this.#loadingDisplayed
+                : 0;
+
+        this.#loadingTarget =
+            current;
+        this.#loadingTotal =
+            total;
+
+        if (
+            this.#loadingAnimationFrame !==
+            undefined
+        ) {
+            cancelAnimationFrame(
+                this.#loadingAnimationFrame
+            );
+            this.#loadingAnimationFrame =
+                undefined;
+        }
+
+        const startedAt =
+            performance.now();
+        const duration = 160;
+
+        const render =
+            now => {
+                const elapsed =
+                    Math.max(
+                        0,
+                        now -
+                        startedAt
+                    );
+
+                const ratio =
+                    Math.min(
+                        1,
+                        elapsed /
+                        duration
+                    );
+
+                const displayed =
+                    ratio >= 1
+                        ? current
+                        : Math.min(
+                            current,
+                            Math.round(
+                                from +
+                                (
+                                    current -
+                                    from
+                                ) *
+                                ratio
+                            )
+                        );
+
+                this.#loadingDisplayed =
+                    displayed;
+
+                const progress =
+                    Math.max(
+                        0,
+                        Math.min(
+                            100,
+                            displayed /
+                            total *
+                            100
+                        )
+                    );
+
+                this.#bar.style
+                    .setProperty(
+                        "--speech-load-progress",
+                        progress + "%"
+                    );
+
+                this.#showStatus(
+                    displayed +
+                    " / " +
+                    total
+                );
+
+                if (ratio < 1) {
+                    this.#loadingAnimationFrame =
+                        requestAnimationFrame(
+                            render
+                        );
+                    return;
+                }
+
+                this.#loadingAnimationFrame =
+                    undefined;
+            };
+
+        this.#loadingAnimationFrame =
+            requestAnimationFrame(
+                render
+            );
+    }
+
     #clearLoadingProgress() {
+        if (
+            this.#loadingAnimationFrame !==
+            undefined
+        ) {
+            cancelAnimationFrame(
+                this.#loadingAnimationFrame
+            );
+            this.#loadingAnimationFrame =
+                undefined;
+        }
+
+        this.#loadingDisplayed = 0;
+        this.#loadingTarget = 0;
+        this.#loadingTotal = 0;
+
         this.removeAttribute(
             "loading"
         );
