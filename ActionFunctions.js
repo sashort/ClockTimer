@@ -1195,15 +1195,100 @@
                     ? values
                     : [];
 
+            const normalized = [];
             const names =
-                new Set(
-                    incoming.map(
-                        value =>
-                            normalizeName(
-                                value?.name
-                            )
+                new Set();
+
+            for (
+                const value of
+                incoming
+            ) {
+                const validation =
+                    validateMacro(
+                        value,
+                        {
+                            allowExistingMacro:
+                                true,
+                            requireActions:
+                                false
+                        }
+                    );
+
+                if (!validation.valid) {
+                    throw new TypeError(
+                        validation.reason
+                    );
+                }
+
+                if (
+                    names.has(
+                        validation
+                            .macro
+                            .name
                     )
+                ) {
+                    throw new TypeError(
+                        "Macro names must be unique."
+                    );
+                }
+
+                names.add(
+                    validation
+                        .macro
+                        .name
                 );
+
+                normalized.push(
+                    validation
+                        .macro
+                );
+            }
+
+            const availableActions =
+                new Set(
+                    [
+                        ...implementations
+                            .keys()
+                    ]
+                        .filter(
+                            name =>
+                                sources.get(
+                                    name
+                                ) !==
+                                    "macro"
+                        )
+                );
+
+            for (
+                const name of
+                names
+            ) {
+                availableActions.add(
+                    name
+                );
+            }
+
+            for (
+                const macro of
+                normalized
+            ) {
+                for (
+                    const step of
+                    macro.steps
+                ) {
+                    if (
+                        !availableActions
+                            .has(
+                                step.action
+                            )
+                    ) {
+                        throw new TypeError(
+                            "Macro action was not found: " +
+                            step.action
+                        );
+                    }
+                }
+            }
 
             for (
                 const name of
@@ -1221,13 +1306,39 @@
             }
 
             for (
-                const value of
-                incoming
+                const macro of
+                normalized
             ) {
-                registerMacro(
-                    value
+                macros.set(
+                    macro.name,
+                    macro
+                );
+
+                defineInternal(
+                    macro.name,
+                    (
+                        ...args
+                    ) =>
+                        invokeMacro(
+                            macro.name,
+                            args
+                        ),
+                    {
+                        macro: true,
+                        parameters:
+                            macro.parameters
+                    },
+                    "macro"
                 );
             }
+
+            emit(
+                "macroschanged",
+                {
+                    macros:
+                        [...macros.values()]
+                }
+            );
 
             return [
                 ...macros.values()
