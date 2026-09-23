@@ -10836,6 +10836,255 @@
             );
     }
 
+    const editorAgentSchemas = {
+        addSpeechMenu: {
+            input: {
+                type: "object",
+                required: ["target"],
+                properties: {
+                    id: {type: "string"},
+                    target: {type: "string"},
+                    attrs: {type: "object"},
+                    order: {type: "integer", minimum: 0}
+                },
+                additionalProperties: false
+            },
+            examples: [
+                {
+                    action: "addSpeechMenu",
+                    input: {target: "#tripActionControls"}
+                }
+            ]
+        },
+
+        addSpeechCommand: {
+            input: {
+                type: "object",
+                properties: {
+                    id: {type: "string"},
+                    parentId: {type: "string"},
+                    menuTarget: {type: "string"},
+                    menuSelector: {type: "string"},
+                    target: {type: "string"},
+                    attrs: {type: "object"},
+                    order: {type: "integer", minimum: 0}
+                },
+                additionalProperties: false
+            },
+            examples: [
+                {
+                    action: "addSpeechCommand",
+                    input: {
+                        menuTarget: "#tripActionControls",
+                        attrs: {
+                            "speech-pattern": "^open trip log$",
+                            "speech-function": "WMOFActions.openTripLog"
+                        }
+                    }
+                }
+            ]
+        },
+
+        removeSpeechMenu: {
+            input: {
+                type: "object",
+                properties: {
+                    id: {type: "string"},
+                    target: {type: "string"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        removeSpeechConfiguration: {
+            input: {
+                type: "object",
+                properties: {
+                    id: {type: "string"},
+                    selector: {type: "string"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        removeSpeechPhrase: {
+            input: {
+                type: "object",
+                required: ["phrase"],
+                properties: {
+                    id: {type: "string"},
+                    selector: {type: "string"},
+                    phrase: {type: "string", minLength: 1}
+                },
+                additionalProperties: false
+            }
+        },
+
+        reorderSpeechEntries: {
+            input: {
+                type: "object",
+                required: ["entries"],
+                properties: {
+                    entries: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            required: ["id", "order"],
+                            properties: {
+                                id: {type: "string"},
+                                order: {type: "integer", minimum: 0}
+                            },
+                            additionalProperties: false
+                        }
+                    }
+                },
+                additionalProperties: false
+            }
+        },
+
+        setFunctionRole: {
+            input: {
+                type: "object",
+                required: ["name", "role"],
+                properties: {
+                    name: {type: "string"},
+                    role: {
+                        type: "string",
+                        enum: [
+                            "",
+                            "speech-processing",
+                            "action",
+                            "interaction",
+                            "presentation",
+                            "helper"
+                        ]
+                    }
+                },
+                additionalProperties: false
+            }
+        },
+
+        compileSpeechPattern: {
+            input: {
+                type: "object",
+                required: ["template"],
+                properties: {
+                    template: {type: "string"}
+                },
+                additionalProperties: false
+            },
+            examples: [
+                {
+                    action: "compileSpeechPattern",
+                    input: {template: "set my trip goal to <percent>"}
+                }
+            ]
+        },
+
+        setRegexTemplate: {
+            input: {
+                type: "object",
+                required: ["template"],
+                properties: {
+                    template: {type: "string"},
+                    apply: {type: "boolean"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        stageMacro: {
+            input: {
+                type: "object",
+                required: ["macro"],
+                properties: {
+                    macro: {
+                        type: "object",
+                        required: ["name", "parameters", "steps"]
+                    }
+                },
+                additionalProperties: false
+            }
+        },
+
+        deleteMacro: {
+            input: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                    name: {type: "string"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        runMacro: {
+            input: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                    name: {type: "string"},
+                    parameters: {type: "object"},
+                    context: {type: "object"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        startMacroRecording: {
+            input: {
+                type: "object",
+                properties: {
+                    name: {type: "string"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        stopMacroRecording: {
+            input: {
+                type: "object",
+                additionalProperties: false
+            }
+        },
+
+        saveChanges: {
+            input: {
+                type: "object",
+                additionalProperties: false
+            }
+        },
+
+        discardChanges: {
+            input: {
+                type: "object",
+                additionalProperties: false
+            }
+        },
+
+        reloadPreview: {
+            input: {
+                type: "object",
+                additionalProperties: false
+            }
+        }
+    };
+
+    for (
+        const [
+            name,
+            metadata
+        ] of Object.entries(
+            editorAgentSchemas
+        )
+    ) {
+        editorActionFunctions
+            .setMetadata(
+                name,
+                metadata
+            );
+    }
+
     const enforceAccessMode =
         () => {
             if (canWrite) {
