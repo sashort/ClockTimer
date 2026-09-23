@@ -17,7 +17,16 @@ const SPEECH_EDITOR_AGENT_MAX_REQUESTS = 50;
 const SPEECH_EDITOR_AGENT_TTL = 900;
 const SPEECH_EDITOR_AGENT_LEASE_SECONDS = 20;
 const SPEECH_EDITOR_AGENT_MAX_COMMAND_BYTES = 131072;
+const SPEECH_EDITOR_AGENT_MAX_BODY_BYTES = 1048576;
 const SPEECH_EDITOR_AGENT_CONNECTED_SECONDS = 10;
+
+if ($method === 'POST') {
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+
+    if ($contentLength > SPEECH_EDITOR_AGENT_MAX_BODY_BYTES) {
+        api_error('Speech Editor agent request is too large.', 413, 'request_too_large');
+    }
+}
 
 $actorId = (int) $user['id'];
 $root = dirname(__DIR__, 4);
@@ -65,6 +74,17 @@ if (!is_array($agent['requests'] ?? null)) {
 }
 
 $now = time();
+
+$isConnected = static function () use (&$agent, $now): bool {
+    $registeredAt = is_int($agent['registeredAt'] ?? null)
+        ? $agent['registeredAt']
+        : (is_numeric($agent['registeredAt'] ?? null) ? (int) $agent['registeredAt'] : null);
+
+    return
+        is_array($agent['manifest'] ?? null) &&
+        $registeredAt !== null &&
+        $registeredAt >= $now - SPEECH_EDITOR_AGENT_CONNECTED_SECONDS;
+};
 
 foreach ($agent['requests'] as $id => $request) {
     if (!is_array($request)) {
@@ -151,13 +171,8 @@ if ($method === 'GET') {
             ? $agent['registeredAt']
             : (is_numeric($agent['registeredAt'] ?? null) ? (int) $agent['registeredAt'] : null);
 
-        $connected =
-            is_array($agent['manifest'] ?? null) &&
-            $registeredAt !== null &&
-            $registeredAt >= $now - SPEECH_EDITOR_AGENT_CONNECTED_SECONDS;
-
         $saveAndRespond([
-            'connected' => $connected,
+            'connected' => $isConnected(),
             'editorInstance' => $agent['editorInstance'] ?? null,
             'registeredAt' => $registeredAt,
             'manifest' => $agent['manifest'] ?? null,
@@ -217,6 +232,7 @@ if ($method === 'GET') {
     }
 
     $saveAndRespond([
+        'connected' => $isConnected(),
         'request' => $publicRequest($request),
     ]);
 }
@@ -377,4 +393,5 @@ $agent['requests'][$requestId] = [
 $saveAndRespond([
     'requestId' => $requestId,
     'status' => 'pending',
+    'connected' => $isConnected(),
 ], 202);
