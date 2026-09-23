@@ -83,6 +83,7 @@ header('Referrer-Policy: no-referrer');
                 <option value="regex">Regex</option>
             </select>
         </label>
+        <button id="trainingModeButton" type="button" aria-pressed="false">Training Mode</button>
         <button id="overlayToggle" type="button" aria-pressed="true">Overlay: On</button>
         <button id="jsonActionsButton" type="button">JSON</button>
         <button id="discardButton" type="button" disabled>Discard</button>
