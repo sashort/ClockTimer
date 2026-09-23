@@ -28,7 +28,7 @@ $seen = [];
 foreach ($entries as $entry) {
     if (!is_array($entry) || !is_string($entry['id'] ?? null) || !preg_match('/^[A-Za-z0-9:_-]{1,100}$/D', $entry['id']) || isset($seen[$entry['id']])) api_error('Each entry needs a unique ID.', 422, 'invalid_entry');
     $seen[$entry['id']] = true;
-    if (!in_array($entry['kind'] ?? null, ['attribute', 'command', 'modal', 'existing'], true)) api_error('Invalid element type.', 422, 'invalid_entry');
+    if (!in_array($entry['kind'] ?? null, ['attribute', 'command', 'menu', 'modal', 'existing'], true)) api_error('Invalid element type.', 422, 'invalid_entry');
     if (!is_string($entry['target'] ?? null) || strlen($entry['target']) > 250 || $entry['target'] === '') api_error('Invalid target selector.', 422, 'invalid_entry');
     if (!is_array($entry['attrs'] ?? null) || array_diff(array_keys($entry['attrs']), $allowedAttributes)) api_error('Invalid speech attributes.', 422, 'invalid_entry');
     foreach ($entry['attrs'] as $name => $value) {
