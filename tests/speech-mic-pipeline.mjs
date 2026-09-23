@@ -156,7 +156,7 @@ assert.match(
 );
 assert.match(
     html,
-    /speech-modal="default"[\s\S]*\^\(\?:voice \)\?options\$[\s\S]*WMOFActions\.showSpeechOptions/
+    /speech-modal="default"[\s\S]*\^\(\?:speech \)\?options\$[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
     html,
@@ -263,7 +263,7 @@ assert.match(
 );
 assert.match(
     app,
-    /showSpeechOptions\(\)[\s\S]*showOptions/
+    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*hideOptions[\s\S]*showOptions/
 );
 assert.match(
     app,
@@ -742,7 +742,3 @@ assert.match(
     /#sleeping[\s\S]*#exactCandidate[\s\S]*kind === "wake"[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
 );
 
-assert.match(
-    app,
-    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*hideOptions[\s\S]*showOptions/
-);
