@@ -92,6 +92,11 @@ jobs:
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
                -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
+               -e "s#src=\"UtilityFunctions.js\"#src=\"UtilityFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechProcessingFunctions.js\"#src=\"SpeechProcessingFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"ActionFunctions.js\"#src=\"ActionFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"InteractionFunctions.js\"#src=\"InteractionFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"PresentationSetters.js\"#src=\"PresentationSetters.js?v=$VERSION\"#" \
                -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
                -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
                index.html
