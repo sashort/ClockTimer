@@ -1,14 +1,27 @@
 (() => {
     "use strict";
 
-    const taggedPreprocFunctions = [
-        "WMOFSpeechPreprocess.normalize"
-    ];
+    const taggedFunctionRoles = {
+        processing: [
+            "WMOFSpeechPreprocess.normalize"
+        ],
+        action: [],
+        interaction: [],
+        presentation: []
+    };
 
-    const preproc =
-        new Set();
+    const validRoles =
+        new Set([
+            "processing",
+            "action",
+            "interaction",
+            "presentation"
+        ]);
 
-    const normalize =
+    const roles =
+        new Map();
+
+    const normalizeName =
         value => {
             const name =
                 String(value || "")
@@ -20,57 +33,209 @@
                     : "";
         };
 
-    const tagPreproc =
-        (...names) => {
-            for (const value of names.flat()) {
-                const name =
-                    normalize(value);
+    const normalizeRole =
+        value => {
+            const role =
+                String(value || "")
+                    .trim()
+                    .toLowerCase();
 
-                if (name) {
-                    preproc.add(name);
-                }
+            return validRoles.has(role)
+                ? role
+                : "";
+        };
+
+    const setRole =
+        (
+            name,
+            role
+        ) => {
+            const normalizedName =
+                normalizeName(name);
+
+            const normalizedRole =
+                normalizeRole(role);
+
+            if (!normalizedName) {
+                return api;
             }
+
+            if (!normalizedRole) {
+                roles.delete(
+                    normalizedName
+                );
+
+                return api;
+            }
+
+            roles.set(
+                normalizedName,
+                normalizedRole
+            );
 
             return api;
         };
 
-    const untagPreproc =
-        (...names) => {
-            for (const value of names.flat()) {
-                const name =
-                    normalize(value);
-
-                if (name) {
-                    preproc.delete(name);
-                }
+    const setMany =
+        (
+            role,
+            names
+        ) => {
+            for (
+                const name of
+                names.flat()
+            ) {
+                setRole(
+                    name,
+                    role
+                );
             }
 
             return api;
         };
 
     const api = {
-        tagPreproc,
-        untagPreproc,
+        roles:
+            Object.freeze(
+                [
+                    ...validRoles
+                ]
+            ),
 
-        isPreproc(name) {
-            return preproc.has(
-                normalize(name)
+        setRole,
+
+        clearRole(name) {
+            return setRole(
+                name,
+                ""
             );
         },
 
-        listPreproc() {
-            return [
-                ...preproc
-            ].sort(
-                (a, b) =>
-                    a.localeCompare(b)
+        tagProcessing(...names) {
+            return setMany(
+                "processing",
+                names
             );
+        },
+
+        tagAction(...names) {
+            return setMany(
+                "action",
+                names
+            );
+        },
+
+        tagInteraction(...names) {
+            return setMany(
+                "interaction",
+                names
+            );
+        },
+
+        tagPresentation(...names) {
+            return setMany(
+                "presentation",
+                names
+            );
+        },
+
+        roleOf(name) {
+            return (
+                roles.get(
+                    normalizeName(name)
+                ) ||
+                ""
+            );
+        },
+
+        isProcessing(name) {
+            return (
+                api.roleOf(name) ===
+                "processing"
+            );
+        },
+
+        isAction(name) {
+            return (
+                api.roleOf(name) ===
+                "action"
+            );
+        },
+
+        list(role) {
+            const normalizedRole =
+                normalizeRole(role);
+
+            if (!normalizedRole) {
+                return [];
+            }
+
+            return [
+                ...roles
+            ]
+                .filter(
+                    ([, value]) =>
+                        value ===
+                        normalizedRole
+                )
+                .map(
+                    ([name]) =>
+                        name
+                )
+                .sort(
+                    (a, b) =>
+                        a.localeCompare(b)
+                );
+        },
+
+        snapshot() {
+            const result = {
+                processing: [],
+                action: [],
+                interaction: [],
+                presentation: []
+            };
+
+            for (
+                const [
+                    name,
+                    role
+                ] of roles
+            ) {
+                result[role].push(
+                    name
+                );
+            }
+
+            for (
+                const names of
+                Object.values(
+                    result
+                )
+            ) {
+                names.sort(
+                    (a, b) =>
+                        a.localeCompare(b)
+                );
+            }
+
+            return result;
         }
     };
 
-    tagPreproc(
-        taggedPreprocFunctions
-    );
+    for (
+        const [
+            role,
+            names
+        ] of Object.entries(
+            taggedFunctionRoles
+        )
+    ) {
+        setMany(
+            role,
+            names
+        );
+    }
 
     globalThis.WMOFSpeechFunctionRegistry =
         Object.freeze(api);
