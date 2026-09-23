@@ -7736,7 +7736,7 @@
         if (keypadSpeechPattern) {
             const speechField = document.createElement("speech-command");
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
-            speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
+            speechField.setAttribute("speech-function", "WMOFActions.enterKeypadValue");
             speechField.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
