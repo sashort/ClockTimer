@@ -8,6 +8,7 @@ class SpeechMenu {
     static #language = "en-US";
     static #silenceTimeout = 5000;
     static #commitSilenceTimeout = 350;
+    static #terminalCommitSilenceTimeout = 120;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
@@ -1058,7 +1059,10 @@ class SpeechMenu {
                 !SpeechMenu.#utterance.committing &&
                 SpeechMenu.#utterance.candidate &&
                 SpeechMenu.#utterance.silenceMilliseconds >=
-                    SpeechMenu.#commitSilenceTimeout
+                    SpeechMenu
+                        .#candidateCommitSilenceTimeout(
+                            SpeechMenu.#utterance
+                        )
             ) {
                 void SpeechMenu.#commitUtterance(
                     SpeechMenu.#utterance
@@ -1654,10 +1658,23 @@ class SpeechMenu {
         utterance.candidate =
             candidate || undefined;
 
+        if (utterance.candidate) {
+            utterance.candidate.continuation =
+                utterance.candidate.kind ===
+                    "command" &&
+                SpeechMenu
+                    .#hasPhraseContinuation(
+                        transcript
+                    );
+        }
+
         if (
             utterance.candidate &&
             utterance.silenceMilliseconds >=
-                SpeechMenu.#commitSilenceTimeout
+                SpeechMenu
+                    .#candidateCommitSilenceTimeout(
+                        utterance
+                    )
         ) {
             await SpeechMenu.#commitUtterance(
                 utterance
@@ -2189,6 +2206,163 @@ class SpeechMenu {
     static #test(regex, text) {
         regex.lastIndex = 0;
         return regex.test(text);
+    }
+
+    static #candidateCommitSilenceTimeout(
+        utterance
+    ) {
+        return utterance?.candidate
+            ?.continuation
+            ? SpeechMenu
+                .#commitSilenceTimeout
+            : Math.min(
+                SpeechMenu
+                    .#commitSilenceTimeout,
+                SpeechMenu
+                    .#terminalCommitSilenceTimeout
+            );
+    }
+
+    static #phraseCanContinue(
+        transcript,
+        phrase
+    ) {
+        const spoken =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                )
+                .split(" ")
+                .filter(Boolean);
+
+        const template =
+            String(
+                phrase ||
+                ""
+            )
+                .toLocaleLowerCase()
+                .trim()
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .split(" ")
+                .filter(Boolean);
+
+        if (
+            !spoken.length ||
+            !template.length
+        ) {
+            return false;
+        }
+
+        const placeholder =
+            token =>
+                /^<[A-Za-z_$][\w$]*>$/
+                    .test(token);
+
+        const visit =
+            (
+                templateIndex,
+                spokenIndex
+            ) => {
+                if (
+                    spokenIndex >=
+                    spoken.length
+                ) {
+                    return (
+                        templateIndex <
+                        template.length
+                    );
+                }
+
+                if (
+                    templateIndex >=
+                    template.length
+                ) {
+                    return false;
+                }
+
+                const token =
+                    template[
+                        templateIndex
+                    ];
+
+                if (
+                    !placeholder(token)
+                ) {
+                    if (
+                        token !==
+                        spoken[
+                            spokenIndex
+                        ]
+                    ) {
+                        return false;
+                    }
+
+                    return visit(
+                        templateIndex + 1,
+                        spokenIndex + 1
+                    );
+                }
+
+                for (
+                    let next =
+                        spokenIndex + 1;
+                    next <=
+                        spoken.length;
+                    next++
+                ) {
+                    if (
+                        next ===
+                        spoken.length
+                    ) {
+                        return true;
+                    }
+
+                    if (
+                        visit(
+                            templateIndex + 1,
+                            next
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+        return visit(
+            0,
+            0
+        );
+    }
+
+    static #hasPhraseContinuation(
+        transcript
+    ) {
+        for (
+            const group of
+            SpeechMenu.#phraseGroups
+        ) {
+            for (
+                const phrase of
+                group.phrases
+            ) {
+                if (
+                    SpeechMenu
+                        .#phraseCanContinue(
+                            transcript,
+                            phrase
+                        )
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     static async #processTranscript(
