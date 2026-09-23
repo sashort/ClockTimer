@@ -269,7 +269,17 @@ form.addEventListener('submit', async (event) => {
             show('Failed: ' + (data.message || data.error || 'HTTP ' + response.status), 'error');
             return;
         }
-        show('Success.' + (data.truncated ? ' Showing the first 1,000 rows.' : ''), 'success');
+        const statementCount = Number(data.statementCount) || 1;
+        const truncated = Boolean(data.truncated) || (data.results || []).some(item => item.truncated);
+        show(
+            'Success. ' +
+            statementCount +
+            ' statement' +
+            (statementCount === 1 ? '' : 's') +
+            ' completed.' +
+            (truncated ? ' One or more result sets were truncated to 1,000 rows.' : ''),
+            'success'
+        );
         result.textContent = JSON.stringify(data, null, 2);
         result.hidden = false;
     } catch (error) {
