@@ -125,6 +125,7 @@
         "speech-preproc",
         "speech-preproc-context",
         "speech-preproc-field",
+        "speech-response-timeout",
         "speech-modal",
         "speech-index"
     ];
@@ -4925,6 +4926,7 @@
                     "speech-preproc",
                     "speech-preproc-context",
                     "speech-preproc-field",
+                    "speech-response-timeout",
                     "speech-index"
                 ]
             ) {
