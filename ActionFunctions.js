@@ -10,9 +10,9 @@
 
     const actionVerbs = Object.freeze([
         "add","apply","begin","cancel","change","choose","clear","close",
-        "confirm","connect","create","delete","defer","disable","disconnect",
+        "confirm","connect","continue","create","cycle","delete","defer","disable","disconnect",
         "edit","enable","end","enter","hide","load","lock","move","open",
-        "prepare","release","remove","reorder","request","reset","resume",
+        "prepare","release","remove","reorder","request","reset","resume","run",
         "save","schedule","select","set","show","start","stop","submit",
         "switch","toggle","unlock","update"
     ]);
