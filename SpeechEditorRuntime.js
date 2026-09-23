@@ -2,6 +2,7 @@
     "use strict";
 
     const names = [
+        "speech-template",
         "speech-pattern",
         "speech-function",
         "speech-preproc",
