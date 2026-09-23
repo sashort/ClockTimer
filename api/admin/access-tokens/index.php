@@ -511,79 +511,93 @@ if ($method === 'DELETE') {
     ]);
 }
 
-try {
-    $pdo->beginTransaction();
-    $row = $tokenForEdit($id, true);
+$row = $tokenForEdit($id);
 
-    $name = array_key_exists('name', $input)
-        ? require_string($input, 'name')
-        : (string) $row['name'];
+$name = array_key_exists('name', $input)
+    ? require_string($input, 'name')
+    : (string) $row['name'];
 
-    if (strlen($name) > 191) {
-        api_error('name is too long.', 422, 'invalid_argument');
-    }
+if (strlen($name) > 191) {
+    api_error('name is too long.', 422, 'invalid_argument');
+}
 
-    $grantedPermission = array_key_exists('permissions', $input)
-        ? $permission($input['permissions'])
-        : (int) $row['permissions'];
+$grantedPermission = array_key_exists('permissions', $input)
+    ? $permission($input['permissions'])
+    : (int) $row['permissions'];
 
-    $counter = array_key_exists('counter', $input)
-        ? $nonNegativeInt($input['counter'], 'counter')
-        : (int) $row['uses_remaining'];
+$counter = array_key_exists('counter', $input)
+    ? $nonNegativeInt($input['counter'], 'counter')
+    : (int) $row['uses_remaining'];
 
-    $deleteOnDeplete = array_key_exists('deleteOnDeplete', $input)
-        ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
-        : (bool) $row['delete_on_deplete'];
+$deleteOnDeplete = array_key_exists('deleteOnDeplete', $input)
+    ? $boolean($input['deleteOnDeplete'], 'deleteOnDeplete')
+    : (bool) $row['delete_on_deplete'];
 
-    $requiresAuthentication = array_key_exists('requiresAuthentication', $input)
-        ? $boolean($input['requiresAuthentication'], 'requiresAuthentication')
-        : (bool) $row['requires_authentication'];
+$requiresAuthentication = array_key_exists('requiresAuthentication', $input)
+    ? $boolean($input['requiresAuthentication'], 'requiresAuthentication')
+    : (bool) $row['requires_authentication'];
 
-    $expiresAt = array_key_exists('expiresAt', $input)
-        ? $expiration($input['expiresAt'])
-        : (int) $row['expires_at'];
+$expiresAt = array_key_exists('expiresAt', $input)
+    ? $expiration($input['expiresAt'])
+    : (int) $row['expires_at'];
 
-    if ($counter === 0 && $deleteOnDeplete) {
-        $delete = $pdo->prepare('DELETE FROM access_tokens WHERE id = :id');
-        $delete->execute([':id' => $id]);
-        $pdo->commit();
-
-        json_response([
-            'deleted' => true,
-            'id' => $id,
-            'reason' => 'depleted',
-        ]);
-    }
-
-    $update = $pdo->prepare(
-        'UPDATE access_tokens SET '
-        . 'name = :name, permissions = :permissions, uses_remaining = :uses_remaining, '
-        . 'delete_on_deplete = :delete_on_deplete, requires_authentication = :requires_authentication, '
-        . 'expires_at = :expires_at, updated_at = :updated_at '
-        . 'WHERE id = :id'
+if ($counter === 0 && $deleteOnDeplete) {
+    $delete = $pdo->prepare(
+        'DELETE FROM access_tokens WHERE id = :id'
+        . ($isSuperuser ? '' : ' AND owner_user_id = :owner_user_id')
     );
-    $update->execute([
-        ':name' => $name,
-        ':permissions' => $grantedPermission,
-        ':uses_remaining' => $counter,
-        ':delete_on_deplete' => $deleteOnDeplete ? 1 : 0,
-        ':requires_authentication' => $requiresAuthentication ? 1 : 0,
-        ':expires_at' => $expiresAt,
-        ':updated_at' => time(),
-        ':id' => $id,
-    ]);
 
-    $pdo->commit();
+    $deleteParams = [
+        ':id' => $id,
+    ];
+
+    if (!$isSuperuser) {
+        $deleteParams[':owner_user_id'] =
+            (int) $actor['id'];
+    }
+
+    $delete->execute(
+        $deleteParams
+    );
 
     json_response([
-        'updated' => true,
-        'deleted' => false,
+        'deleted' => true,
         'id' => $id,
+        'reason' => 'depleted',
     ]);
-} catch (Throwable $error) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-
-    throw $error;
 }
+
+$update = $pdo->prepare(
+    'UPDATE access_tokens SET '
+    . 'name = :name, permissions = :permissions, uses_remaining = :uses_remaining, '
+    . 'delete_on_deplete = :delete_on_deplete, requires_authentication = :requires_authentication, '
+    . 'expires_at = :expires_at, updated_at = :updated_at '
+    . 'WHERE id = :id'
+    . ($isSuperuser ? '' : ' AND owner_user_id = :owner_user_id')
+);
+
+$updateParams = [
+    ':name' => $name,
+    ':permissions' => $grantedPermission,
+    ':uses_remaining' => $counter,
+    ':delete_on_deplete' => $deleteOnDeplete ? 1 : 0,
+    ':requires_authentication' => $requiresAuthentication ? 1 : 0,
+    ':expires_at' => $expiresAt,
+    ':updated_at' => time(),
+    ':id' => $id,
+];
+
+if (!$isSuperuser) {
+    $updateParams[':owner_user_id'] =
+        (int) $actor['id'];
+}
+
+$update->execute(
+    $updateParams
+);
+
+json_response([
+    'updated' => true,
+    'deleted' => false,
+    'id' => $id,
+]);
