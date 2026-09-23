@@ -166,6 +166,7 @@ assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S
 assert.match(app, /ensureSpeechRuntime/);
 assert.match(app, /speech-editor-preview/);
 assert.match(app, /function showInitialLoginDialog\(\)[\s\S]*if \(speechEditorPreview\)[\s\S]*return false;/);
+assert.match(app, /function showConnectionRetryLoginDialog\(\)[\s\S]*if \(speechEditorPreview\)[\s\S]*return false;/);
 assert.doesNotMatch(app, /startIndependentTimer|stopIndependentTimer|resetIndependentTimer|renderIndependentTimer|timerAccumulated|timerStartedAt/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 assert.match(app, /speechDiagnosticsEnabled/);
