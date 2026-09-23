@@ -43,8 +43,17 @@
     let selectedLocator;
     let highlighted;
     let functionNames = [];
-    let savedPreprocFunctions = [];
-    let draftPreprocFunctions = [];
+    const emptyFunctionRoles =
+        () => ({
+            processing: [],
+            action: [],
+            interaction: [],
+            presentation: []
+        });
+    let savedFunctionRoles =
+        emptyFunctionRoles();
+    let draftFunctionRoles =
+        emptyFunctionRoles();
     let registryRevision = "missing";
     let applyTimer;
     let refreshTimer;
@@ -72,10 +81,10 @@
             JSON.stringify(draft) !==
                 JSON.stringify(saved) ||
             JSON.stringify(
-                draftPreprocFunctions
+                draftFunctionRoles
             ) !==
                 JSON.stringify(
-                    savedPreprocFunctions
+                    savedFunctionRoles
                 );
 
     const updateButtons = () => {
