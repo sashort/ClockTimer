@@ -1664,6 +1664,7 @@ class SpeechMenu {
         if (
             !utterance ||
             utterance.committed ||
+            utterance.committing ||
             SpeechMenu.#stopped ||
             SpeechMenu.#utterance !==
                 utterance ||
@@ -1777,6 +1778,7 @@ class SpeechMenu {
 
         if (
             !pool.length &&
+            !utterance.committing &&
             !SpeechMenu.#sleeping
         ) {
             const id =
@@ -1836,7 +1838,7 @@ class SpeechMenu {
             utterance.transcript;
 
         SpeechMenu
-            .#clearCandidatePool(
+            .#cancelCandidateWork(
                 utterance
             );
 
@@ -1900,6 +1902,11 @@ class SpeechMenu {
             if (committed) {
                 utterance.committed =
                     true;
+
+                SpeechMenu
+                    .#clearCandidatePool(
+                        utterance
+                    );
 
                 /*
                  * A successful interim match is already authoritative.
