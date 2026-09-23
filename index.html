@@ -44,7 +44,10 @@
             </div>
             <hr>
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
-            <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition"><span>Speech Recognition</span></button>
+            <div class="main-menu-row speech-recognition-menu-row">
+                <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled><span>Speech Recognition</span></button>
+                <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition">?</button>
+            </div>
             <div class="main-menu-row sync-goals-menu-row">
                 <button id="syncGoalsMenuButton" class="sync-goals-menu-button" type="button" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                 <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
@@ -453,6 +456,10 @@
         </div>
     </dialog>
 
+    <template id="settingsHelpSpeechRecognition" data-help-title="Speech Recognition">
+        <p><strong>Speech Recognition is in development.</strong></p>
+        <p>We’re building our own speech recognition system to provide reliable voice commands on mobile devices without repeatedly stopping and restarting the microphone. This feature will be available here when it’s ready.</p>
+    </template>
     <template id="settingsHelpSyncGoals" data-help-title="Sync Goals">
         <p><strong>Sync Goals helps your current trip compensate for earlier trips so you reach your overall percent target.</strong></p>
         <p>For example, if previous trips took <strong><span class="settings-help-time-difference">10</span> minutes longer</strong> than their standard time, and your overall target is <strong class="settings-help-goal-value">100%</strong>, Sync Goals aims to finish the current trip <strong><span class="settings-help-time-difference">10</span> minutes faster</strong> than its standard time.</p>
