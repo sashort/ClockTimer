@@ -6336,6 +6336,8 @@
             }
         );
 
+    let speechBuildTimer;
+
     $("#speechMenuButton")
         .addEventListener(
             "click",
@@ -6343,17 +6345,52 @@
                 const submenu =
                     $("#speechSubmenu");
 
+                const button =
+                    $("#speechMenuButton");
+
                 const open =
                     submenu.hidden;
 
                 submenu.hidden =
                     !open;
 
-                $("#speechMenuButton")
+                button
                     .setAttribute(
                         "aria-expanded",
                         String(open)
                     );
+
+                clearTimeout(
+                    speechBuildTimer
+                );
+
+                button
+                    .classList
+                    .remove(
+                        "speech-build-active"
+                    );
+
+                if (open) {
+                    void button.offsetWidth;
+
+                    button
+                        .classList
+                        .add(
+                            "speech-build-active"
+                        );
+
+                    speechBuildTimer =
+                        setTimeout(
+                            () => {
+                                button
+                                    .classList
+                                    .remove(
+                                        "speech-build-active"
+                                    );
+                            },
+                            1050
+                        );
+                }
             }
         );
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
