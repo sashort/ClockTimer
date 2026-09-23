@@ -296,6 +296,40 @@ class SpeechMicBar extends HTMLElement {
                         infinite;
                 }
 
+                #bar::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 4;
+                    border-radius: inherit;
+                    background:
+                        linear-gradient(
+                            to bottom left,
+                            transparent
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% + 3px),
+                            transparent
+                                calc(50% + 3px)
+                        );
+                    filter:
+                        drop-shadow(
+                            0 1px 1px
+                            rgb(0 0 0 / 48%)
+                        );
+                    opacity: 0;
+                    pointer-events: none;
+                    transition:
+                        opacity 120ms linear;
+                }
+
+                :host([state="muted"])
+                #bar::after {
+                    opacity: 1;
+                }
+
                 @keyframes speech-load-wave {
                     from {
                         background-position:
@@ -1571,10 +1605,35 @@ class SpeechMicBar extends HTMLElement {
                 this.clear();
                 break;
             case "muted":
-                this.setAttribute("state", "muted");
+                void this.hideOptions({
+                    duration: 0
+                });
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    "muted"
+                );
+                this.#showIdleText();
                 break;
             case "unmuted":
-                this.setAttribute("state", "listening");
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    "listening"
+                );
+                this.#showIdleText();
                 break;
             case "speechRecognitionFailed":
                 this.#clearLoadingProgress();
@@ -1597,7 +1656,13 @@ class SpeechMicBar extends HTMLElement {
                     this.#clearLoadingProgress();
                 }
 
-                if (detail?.status) {
+                if (
+                    globalThis.SpeechMenu
+                        ?.muted
+                ) {
+                    this.#showIdleText();
+                }
+                else if (detail?.status) {
                     this.#showStatus(
                         detail.status
                     );
@@ -1615,10 +1680,26 @@ class SpeechMicBar extends HTMLElement {
                 this.#currentUtteranceId = detail?.id;
                 this.#currentTranscript = "";
                 this.#currentTranscriptFinal = false;
-                this.setAttribute("state", "utterance");
                 this.removeAttribute("phase");
                 this.#codes.replaceChildren();
-                this.#showWaveform();
+
+                if (
+                    globalThis.SpeechMenu
+                        ?.muted
+                ) {
+                    this.setAttribute(
+                        "state",
+                        "muted"
+                    );
+                    this.#showIdleText();
+                }
+                else {
+                    this.setAttribute(
+                        "state",
+                        "utterance"
+                    );
+                    this.#showWaveform();
+                }
                 break;
             case "utteranceFinished":
                 if (detail?.id === this.#currentUtteranceId) {
@@ -1630,6 +1711,8 @@ class SpeechMicBar extends HTMLElement {
                     );
 
                     if (
+                        !globalThis.SpeechMenu
+                            ?.muted &&
                         !detail?.committed &&
                         detail?.reason !==
                             "no-candidates"
@@ -1649,9 +1732,14 @@ class SpeechMicBar extends HTMLElement {
                             detail.isFinal
                         );
 
-                    this.#showText(
-                        this.#currentTranscript
-                    );
+                    if (
+                        !globalThis.SpeechMenu
+                            ?.muted
+                    ) {
+                        this.#showText(
+                            this.#currentTranscript
+                        );
+                    }
                 }
                 break;
             case "utteranceTranscribed":
@@ -1660,9 +1748,14 @@ class SpeechMicBar extends HTMLElement {
                         detail.transcript || "";
                     this.#currentTranscriptFinal =
                         true;
-                    this.#showText(
-                        this.#currentTranscript
-                    );
+                    if (
+                        !globalThis.SpeechMenu
+                            ?.muted
+                    ) {
+                        this.#showText(
+                            this.#currentTranscript
+                        );
+                    }
                 }
                 break;
             case "utteranceCommitted":
