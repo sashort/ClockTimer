@@ -4,6 +4,7 @@ declare(strict_types=1);
 const ACCESS_TOKEN_SCOPE_SQL = 'sql';
 const ACCESS_TOKEN_SCOPE_SPEECH_EDITOR = 'speech_editor';
 const ACCESS_TOKEN_SCOPE_ACCESS_TOKENS = 'access_tokens';
+const ACCESS_TOKEN_SCOPE_NEW_USER = 'new_user';
 
 function optional_current_user(): ?array
 {
@@ -152,8 +153,11 @@ function access_token_store_session_grant(string $scope, array $authorization): 
 
     $_SESSION['access_token_grants'][$scope] = [
         'token_id' => (int) $authorization['token_id'],
-        'owner_user_id' => (int) $authorization['owner_user_id'],
+        'owner_user_id' => $authorization['owner_user_id'] === null
+            ? null
+            : (int) $authorization['owner_user_id'],
         'permissions' => (int) $authorization['permissions'],
+        'new_user' => (bool) ($authorization['new_user'] ?? false),
         'expires_at' => (int) $authorization['expires_at'],
         'requires_authentication' => (bool) $authorization['requires_authentication'],
         'authenticated_user_id' => isset($authorization['user']['id'])
@@ -176,6 +180,7 @@ function consume_access_token(
                 ACCESS_TOKEN_SCOPE_SQL,
                 ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
                 ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+                ACCESS_TOKEN_SCOPE_NEW_USER,
             ],
             true
         )
@@ -194,11 +199,11 @@ function consume_access_token(
         $pdo->beginTransaction();
 
         $statement = $pdo->prepare(
-            'SELECT t.id, t.owner_user_id, t.name, t.permissions, t.uses_remaining, '
-            . 't.delete_on_deplete, t.requires_authentication, t.expires_at, '
-            . 'u.permissions AS owner_permissions '
+            'SELECT t.id, t.owner_user_id, t.name, t.permissions, t.new_user, '
+            . 't.uses_remaining, t.delete_on_deplete, t.requires_authentication, '
+            . 't.expires_at, u.permissions AS owner_permissions '
             . 'FROM access_tokens t '
-            . 'INNER JOIN users u ON u.id = t.owner_user_id '
+            . 'LEFT JOIN users u ON u.id = t.owner_user_id '
             . 'WHERE t.token_hash = :token_hash LIMIT 1 FOR UPDATE'
         );
         $statement->execute([
@@ -212,9 +217,20 @@ function consume_access_token(
         }
 
         $tokenPermissions = (int) $row['permissions'];
-        $ownerPermissions = (int) $row['owner_permissions'];
+        $isNewUserToken = (bool) $row['new_user'];
+        $ownerUserId =
+            $row['owner_user_id'] === null
+                ? null
+                : (int) $row['owner_user_id'];
+        $ownerPermissions =
+            $row['owner_permissions'] === null
+                ? null
+                : (int) $row['owner_permissions'];
         $expiresAt = (int) $row['expires_at'];
-        $usesRemaining = (int) $row['uses_remaining'];
+        $usesRemaining =
+            $row['uses_remaining'] === null
+                ? null
+                : (int) $row['uses_remaining'];
         $requiresAuthentication = (bool) $row['requires_authentication'];
 
         if ($expiresAt <= time()) {
@@ -222,22 +238,68 @@ function consume_access_token(
             api_error('The access token has expired.', 401, 'expired_access_token');
         }
 
-        if ($usesRemaining <= 0) {
+        if ($usesRemaining !== null && $usesRemaining <= 0) {
             $pdo->rollBack();
             api_error('The access token has no uses remaining.', 401, 'depleted_access_token');
         }
 
-        if (
-            !permission_mask_allows($ownerPermissions, PERMISSION_GRANT_TOKEN_ACCESS) ||
-            !permission_mask_allows_any($ownerPermissions, $tokenPermissions)
-        ) {
-            $pdo->rollBack();
-            api_error('The access token grant is no longer authorized by its owner.', 403, 'revoked_access_token');
+        if ($ownerUserId !== null) {
+            if ($ownerPermissions === null) {
+                $pdo->rollBack();
+                api_error('The access token owner no longer exists.', 403, 'revoked_access_token');
+            }
+
+            $ownerCanIssue =
+                $isNewUserToken
+                    ? (
+                        permission_mask_allows(
+                            $ownerPermissions,
+                            PERMISSION_CREATE_USERS
+                        ) ||
+                        permission_mask_allows(
+                            $ownerPermissions,
+                            PERMISSION_GRANT_TOKEN_ACCESS
+                        )
+                    )
+                    : permission_mask_allows(
+                        $ownerPermissions,
+                        PERMISSION_GRANT_TOKEN_ACCESS
+                    );
+
+            $ownerCanGrantMask =
+                $tokenPermissions === 0 ||
+                permission_mask_allows(
+                    $ownerPermissions,
+                    $tokenPermissions
+                );
+
+            if (!$ownerCanIssue || !$ownerCanGrantMask) {
+                $pdo->rollBack();
+                api_error('The access token grant is no longer authorized by its owner.', 403, 'revoked_access_token');
+            }
         }
 
-        if (!permission_mask_allows_any($tokenPermissions, ...$requiredPermissions)) {
-            $pdo->rollBack();
-            api_error('The access token does not grant the required permission.', 403, 'permission_required');
+        if ($scope === ACCESS_TOKEN_SCOPE_NEW_USER) {
+            if (!$isNewUserToken) {
+                $pdo->rollBack();
+                api_error('This token cannot create a new user.', 403, 'token_scope_denied');
+            }
+        } else {
+            if ($isNewUserToken) {
+                $pdo->rollBack();
+                api_error('A New User token cannot authorize this resource.', 403, 'token_scope_denied');
+            }
+
+            if (
+                $requiredPermissions !== [] &&
+                !permission_mask_allows_any(
+                    $tokenPermissions,
+                    ...$requiredPermissions
+                )
+            ) {
+                $pdo->rollBack();
+                api_error('The access token does not grant the required permission.', 403, 'permission_required');
+            }
         }
 
         if ($requiresAuthentication && $user === null) {
@@ -245,9 +307,16 @@ function consume_access_token(
             api_error('This access token requires an authenticated WMOF session.', 401, 'authentication_required');
         }
 
-        $nextCount = max(0, $usesRemaining - 1);
+        $nextCount =
+            $usesRemaining === null
+                ? null
+                : max(0, $usesRemaining - 1);
 
-        if ($nextCount === 0 && (bool) $row['delete_on_deplete']) {
+        if (
+            $nextCount !== null &&
+            $nextCount === 0 &&
+            (bool) $row['delete_on_deplete']
+        ) {
             $delete = $pdo->prepare(
                 'DELETE FROM access_tokens WHERE id = :id'
             );
@@ -274,8 +343,9 @@ function consume_access_token(
             'scope' => $scope,
             'token_id' => (int) $row['id'],
             'token_name' => (string) $row['name'],
-            'owner_user_id' => (int) $row['owner_user_id'],
+            'owner_user_id' => $ownerUserId,
             'permissions' => $tokenPermissions,
+            'new_user' => $isNewUserToken,
             'expires_at' => $expiresAt,
             'requires_authentication' => $requiresAuthentication,
             'uses_remaining' => $nextCount,
@@ -327,8 +397,11 @@ function existing_guarded_access(
             'mode' => 'token_session',
             'scope' => $scope,
             'token_id' => (int) $grant['token_id'],
-            'owner_user_id' => (int) $grant['owner_user_id'],
+            'owner_user_id' => $grant['owner_user_id'] === null
+                ? null
+                : (int) $grant['owner_user_id'],
             'permissions' => (int) $grant['permissions'],
+            'new_user' => (bool) ($grant['new_user'] ?? false),
             'expires_at' => (int) $grant['expires_at'],
             'requires_authentication' => (bool) $grant['requires_authentication'],
             'user' => $user,
