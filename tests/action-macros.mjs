@@ -83,6 +83,52 @@ assert.equal(
     "macro names that start with an action verb should be accepted"
 );
 
+for (
+    const name of [
+        "continueMacroProbe",
+        "cycleMacroProbe",
+        "runMacroProbe",
+        "connectMacroProbe"
+    ]
+) {
+    assert.equal(
+        window.WMOFActionFunctions
+            .validateName(
+                name
+            )
+            .valid,
+        true,
+        name +
+            " should be accepted by the action verb registry"
+    );
+}
+
+window.WMOFActionFunctions
+    .defineAll({
+        continueRegistrationProbe() {
+            return true;
+        },
+
+        cycleRegistrationProbe() {
+            return true;
+        },
+
+        runRegistrationProbe() {
+            return true;
+        },
+
+        connectRegistrationProbe() {
+            return true;
+        }
+    });
+
+assert.equal(
+    typeof window.WMOFActions
+        .connectRegistrationProbe,
+    "function",
+    "defineAll should continue registering actions after continue/cycle/run verbs"
+);
+
 window.WMOFActionFunctions
     .startRecording();
 
