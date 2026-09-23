@@ -856,6 +856,28 @@
                         )
                 );
             }
+
+            requestAnimationFrame(
+                () => {
+                    scroller.scrollLeft =
+                        Math.max(
+                            0,
+                            (
+                                stageWidth -
+                                scroller.clientWidth
+                            ) / 2
+                        );
+
+                    scroller.scrollTop =
+                        Math.max(
+                            0,
+                            (
+                                stageHeight -
+                                scroller.clientHeight
+                            ) / 2
+                        );
+                }
+            );
         };
 
     populateDeviceSelects();
@@ -2441,8 +2463,9 @@
 
     const menuStateKey =
         menu =>
-            menu.dataset
-                .speechEditorId ||
+            entryForElement(
+                menu
+            )?.id ||
             selectorFor(
                 menu
             );
