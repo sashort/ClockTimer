@@ -4879,8 +4879,8 @@
                                         entries:
                                             draft,
                                         revision,
-                                        preprocFunctions:
-                                            draftPreprocFunctions,
+                                        functionRoles:
+                                            draftFunctionRoles,
                                         registryRevision
                                     })
                             }
@@ -4909,18 +4909,15 @@
                     revision =
                         data.revision;
 
-                    savedPreprocFunctions =
-                        [
-                            ...(
-                                data.preprocFunctions ||
-                                []
-                            )
-                        ];
+                    savedFunctionRoles =
+                        normalizeFunctionRoles(
+                            data.functionRoles
+                        );
 
-                    draftPreprocFunctions =
-                        [
-                            ...savedPreprocFunctions
-                        ];
+                    draftFunctionRoles =
+                        structuredClone(
+                            savedFunctionRoles
+                        );
 
                     registryRevision =
                         data.registryRevision;
@@ -4953,10 +4950,10 @@
                         saved
                     );
 
-                draftPreprocFunctions =
-                    [
-                        ...savedPreprocFunctions
-                    ];
+                draftFunctionRoles =
+                    structuredClone(
+                        savedFunctionRoles
+                    );
 
                 functionCombo.refresh();
                 preprocCombo.refresh();
@@ -5021,21 +5018,15 @@
                 revision =
                     data.revision;
 
-                savedPreprocFunctions =
-                    [
-                        ...(
-                            data.preprocFunctions ||
-                            []
-                        )
-                    ].sort(
-                        (a, b) =>
-                            a.localeCompare(b)
+                savedFunctionRoles =
+                    normalizeFunctionRoles(
+                        data.functionRoles
                     );
 
-                draftPreprocFunctions =
-                    [
-                        ...savedPreprocFunctions
-                    ];
+                draftFunctionRoles =
+                    structuredClone(
+                        savedFunctionRoles
+                    );
 
                 registryRevision =
                     data.registryRevision ||
