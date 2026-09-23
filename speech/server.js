@@ -24,6 +24,14 @@ const PORT =
     Number(process.env.SPEECH_PORT) ||
     8765;
 
+const WEBSOCKET_PATH =
+    process.env.SPEECH_WEBSOCKET_PATH ||
+    "/api/speech/stream";
+
+const ALLOWED_ORIGIN =
+    process.env.SPEECH_ALLOWED_ORIGIN ||
+    "https://wmof.sashort-apps.com";
+
 const PARTIAL_INTERVAL_MS =
     Math.max(
         250,
@@ -92,11 +100,64 @@ const server =
 
 const sockets =
     new WebSocketServer({
-        server,
+        noServer: true,
         maxPayload:
             MAX_UTTERANCE_BYTES +
             8
     });
+
+server.on(
+    "upgrade",
+    (request, socket, head) => {
+        let pathname;
+
+        try {
+            pathname =
+                new URL(
+                    request.url || "/",
+                    "http://localhost"
+                ).pathname;
+        }
+        catch {
+            socket.destroy();
+            return;
+        }
+
+        const origin =
+            String(
+                request.headers.origin ||
+                ""
+            );
+
+        if (
+            pathname !==
+                WEBSOCKET_PATH ||
+            origin !==
+                ALLOWED_ORIGIN
+        ) {
+            socket.write(
+                "HTTP/1.1 403 Forbidden\r\n" +
+                "Connection: close\r\n" +
+                "\r\n"
+            );
+            socket.destroy();
+            return;
+        }
+
+        sockets.handleUpgrade(
+            request,
+            socket,
+            head,
+            webSocket => {
+                sockets.emit(
+                    "connection",
+                    webSocket,
+                    request
+                );
+            }
+        );
+    }
+);
 
 const send =
     (socket, message) => {
@@ -424,9 +485,34 @@ sockets.on(
             alive: true
         };
 
+        socket.__clockTimerSpeechState =
+            state;
+
         socket.on(
             "message",
             (data, isBinary) => {
+                state.alive = true;
+
+                if (
+                    isBinary &&
+                    !state.sessionId
+                ) {
+                    fail(
+                        socket,
+                        {
+                            error:
+                                "SessionNotStarted",
+                            message:
+                                "session-start is required before audio."
+                        }
+                    );
+                    socket.close(
+                        1008,
+                        "session not started"
+                    );
+                    return;
+                }
+
                 if (isBinary) {
                     let packet;
 
@@ -536,6 +622,31 @@ sockets.on(
                 }
 
                 if (
+                    message.type !==
+                        "session-start" &&
+                    message.type !==
+                        "ping" &&
+                    message.type !==
+                        "pong" &&
+                    !state.sessionId
+                ) {
+                    fail(
+                        socket,
+                        {
+                            error:
+                                "SessionNotStarted",
+                            message:
+                                "session-start is required before speech control messages."
+                        }
+                    );
+                    socket.close(
+                        1008,
+                        "session not started"
+                    );
+                    return;
+                }
+
+                if (
                     message.type ===
                     "session-start"
                 ) {
@@ -570,7 +681,24 @@ sockets.on(
                         String(
                             message.sessionId ||
                             ""
+                        ).trim();
+
+                    if (!state.sessionId) {
+                        fail(
+                            socket,
+                            {
+                                error:
+                                    "InvalidSessionId",
+                                message:
+                                    "sessionId is required."
+                            }
                         );
+                        socket.close(
+                            1008,
+                            "invalid session id"
+                        );
+                        return;
+                    }
 
                     state.language =
                         String(
@@ -615,6 +743,7 @@ sockets.on(
                     }
 
                     state.utterances.clear();
+                    state.sessionId = undefined;
                     return;
                 }
 
@@ -761,6 +890,24 @@ const heartbeat =
                     WebSocket.OPEN
                 ) {
                     continue;
+                }
+
+                const state =
+                    socket.__clockTimerSpeechState;
+
+                if (
+                    state &&
+                    state.alive === false
+                ) {
+                    try {
+                        socket.terminate();
+                    }
+                    catch {}
+                    continue;
+                }
+
+                if (state) {
+                    state.alive = false;
                 }
 
                 send(
