@@ -55,6 +55,12 @@
     const trainingEndpoint =
         "../../speech-corrections/";
 
+    const trainingRequested =
+        document.body
+            .dataset
+            .trainingRequested ===
+        "true";
+
     const trainingOnly =
         document.body
             .dataset
@@ -77,7 +83,10 @@
 
     let trainingMode =
         trainingOnly ||
+        trainingRequested ||
         initialMobileTraining;
+
+    let trainingWorkspaceRestore;
 
     let trainingStats =
         new Map();
@@ -220,13 +229,64 @@
                 mobile =
                     matchMedia(
                         "(max-width: 760px)"
-                    ).matches
+                    ).matches,
+                restoreWorkspace =
+                    true
             } = {}
         ) => {
-            trainingMode =
+            const next =
                 Boolean(
                     enabled
                 );
+
+            if (
+                next &&
+                !trainingWorkspaceRestore
+            ) {
+                trainingWorkspaceRestore = {
+                    snapshot:
+                        workspaceSnapshot(),
+                    preset:
+                        $("workspacePreset")
+                            ?.value ||
+                        "custom"
+                };
+
+                applyWorkspacePreset(
+                    "training",
+                    {
+                        persist:
+                            false
+                    }
+                );
+            }
+            else if (
+                !next &&
+                trainingWorkspaceRestore
+            ) {
+                const previous =
+                    trainingWorkspaceRestore;
+
+                trainingWorkspaceRestore =
+                    undefined;
+
+                if (restoreWorkspace) {
+                    restoreWorkspaceSnapshot(
+                        previous.snapshot
+                    );
+
+                    if (
+                        $("workspacePreset")
+                    ) {
+                        $("workspacePreset")
+                            .value =
+                            previous.preset;
+                    }
+                }
+            }
+
+            trainingMode =
+                next;
 
             document.body
                 .classList
@@ -7322,7 +7382,12 @@
         };
 
     const applyWorkspacePreset =
-        preset => {
+        (
+            preset,
+            {
+                persist = true
+            } = {}
+        ) => {
             const layouts = {
                 authoring: {
                     left: [
@@ -7355,6 +7420,17 @@
                     right: [
                         "regex",
                         "attributes"
+                    ]
+                },
+                training: {
+                    left: [
+                        "dom",
+                        "attributes",
+                        "regex",
+                        "macro"
+                    ],
+                    right: [
+                        "phrases"
                     ]
                 }
             };
@@ -7401,20 +7477,22 @@
 
             refreshWorkspace();
 
-            try {
-                localStorage
-                    .setItem(
-                        WORKSPACE_STORAGE,
-                        JSON.stringify({
-                            left:
-                                layout.left,
-                            right:
-                                layout.right,
-                            sizes: {}
-                        })
-                    );
+            if (persist) {
+                try {
+                    localStorage
+                        .setItem(
+                            WORKSPACE_STORAGE,
+                            JSON.stringify({
+                                left:
+                                    layout.left,
+                                right:
+                                    layout.right,
+                                sizes: {}
+                            })
+                        );
+                }
+                catch {}
             }
-            catch {}
 
             $("workspacePreset")
                 .value =
@@ -7762,16 +7840,41 @@
                 .addEventListener(
                     "change",
                     event => {
-                        if (
+                        const preset =
                             event.target
-                                .value !==
+                                .value;
+
+                        if (
+                            preset ===
+                            "training"
+                        ) {
+                            setTrainingMode(
+                                true
+                            );
+
+                            return;
+                        }
+
+                        if (
+                            preset !==
                             "custom"
                         ) {
+                            if (trainingMode) {
+                                setTrainingMode(
+                                    false,
+                                    {
+                                        restoreWorkspace:
+                                            false
+                                    }
+                                );
+
+                                trainingWorkspaceRestore =
+                                    undefined;
+                            }
+
                             editorActions
                                 .applyWorkspacePreset({
-                                    preset:
-                                        event.target
-                                            .value
+                                    preset
                                 });
                         }
                     }
@@ -11066,7 +11169,8 @@
                     ![
                         "authoring",
                         "macro",
-                        "regex"
+                        "regex",
+                        "training"
                     ].includes(
                         preset
                     )
@@ -11077,9 +11181,32 @@
                     );
                 }
 
-                applyWorkspacePreset(
-                    preset
-                );
+                if (
+                    preset ===
+                    "training"
+                ) {
+                    setTrainingMode(
+                        true
+                    );
+                }
+                else {
+                    if (trainingMode) {
+                        setTrainingMode(
+                            false,
+                            {
+                                restoreWorkspace:
+                                    false
+                            }
+                        );
+
+                        trainingWorkspaceRestore =
+                            undefined;
+                    }
+
+                    applyWorkspacePreset(
+                        preset
+                    );
+                }
 
                 return {
                     preset
@@ -12924,6 +13051,14 @@
         $(
             "trainingModeButton"
         );
+
+    if (
+        trainingOnly &&
+        $("workspacePreset")
+    ) {
+        $("workspacePreset").disabled =
+            true;
+    }
 
     if (trainingModeButton) {
         trainingModeButton.hidden =
