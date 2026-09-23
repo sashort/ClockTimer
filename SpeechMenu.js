@@ -1834,8 +1834,15 @@ class SpeechMenu {
                 utterance.committed =
                     true;
 
+                /*
+                 * A successful interim match is already authoritative.
+                 * Do not ask Sherpa for another blocking final decode;
+                 * release its stream immediately so barge-in / the next
+                 * utterance can begin without waiting behind finalization.
+                 */
                 SpeechMenu.#stopLiveRecognition(
-                    utterance
+                    utterance,
+                    false
                 );
 
                 SpeechMenu.#emit(
