@@ -172,6 +172,12 @@ assert.equal(
     phrase.error
 );
 
+assert.equal(
+    phrase.template,
+    "Set [the] {Trip|TOTAL} goal to <percent>",
+    "compiler should return the natural template source"
+);
+
 const phraseRegex =
     new RegExp(
         phrase.pattern,
