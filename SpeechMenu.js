@@ -3,7 +3,6 @@ class SpeechMenu {
     static #sleepPhrase = /^mute$/i;
     static #stopped = true;
     static #sleeping = false;
-    static #Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     static #events = new EventTarget();
     static #separator = ",";
     static #language = "en-US";
@@ -15,13 +14,14 @@ class SpeechMenu {
     static #micTrack;
     static #audioContext;
     static #sourceNode;
-    static #processorNode;
+    static #captureNode;
+    static #recognizer;
+    static #finishedUtterances = new Map();
     static #silentGain;
     static #utterance;
     static #utteranceSequence = 0;
     static #preRollFrames = [];
     static #preRollSamples = 0;
-    static #recognitionQueue = Promise.resolve();
     static #startPromise;
     static #sessionGeneration = 0;
     static #lastLevelEventAt = 0;
@@ -126,14 +126,6 @@ class SpeechMenu {
     }
 
     static async start(language = "en-US", listSeparator = ",") {
-        if (!SpeechMenu.#Recognition) {
-            SpeechMenu.#emit("speechRecognitionFailed", {
-                error: "NotSupportedError",
-                message: "Speech recognition is not supported by this browser."
-            });
-            return false;
-        }
-
         if (!navigator.mediaDevices?.getUserMedia) {
             SpeechMenu.#emit("speechRecognitionFailed", {
                 error: "NotSupportedError",
@@ -199,14 +191,52 @@ class SpeechMenu {
                     await context.resume();
                 }
 
+                const AudioWorkletNodeCtor =
+                    window.AudioWorkletNode ||
+                    globalThis.AudioWorkletNode;
+
                 if (
-                    typeof context.createScriptProcessor !== "function"
+                    !context.audioWorklet ||
+                    typeof AudioWorkletNodeCtor !== "function" ||
+                    typeof globalThis.SherpaRecognizer !== "function"
                 ) {
                     try { await context.close(); } catch {}
                     throw new Error(
-                        "This browser cannot segment microphone audio without restarting capture."
+                        "This browser does not support the WMOF client speech runtime."
                     );
                 }
+
+                await context.audioWorklet.addModule(
+                    globalThis.SherpaRecognizer.assetUrl(
+                        "speech/SpeechAudioWorklet.js"
+                    )
+                );
+
+                const recognizer =
+                    new globalThis.SherpaRecognizer({
+                        hotwords:
+                            SpeechMenu.#hotwords()
+                    });
+
+                SpeechMenu.#recognizer =
+                    recognizer;
+
+                recognizer.addEventListener(
+                    "transcript",
+                    SpeechMenu.#onSherpaTranscript
+                );
+
+                recognizer.addEventListener(
+                    "error",
+                    SpeechMenu.#onSherpaError
+                );
+
+                recognizer.addEventListener(
+                    "status",
+                    SpeechMenu.#onSherpaStatus
+                );
+
+                await recognizer.ready;
 
                 SpeechMenu.#stream =
                     stream;
@@ -228,15 +258,15 @@ class SpeechMenu {
                         stream
                     );
 
-                SpeechMenu.#processorNode =
-                    context.createScriptProcessor(
-                        2048,
-                        Math.max(
-                            1,
-                            SpeechMenu.#sourceNode
-                                .channelCount || 1
-                        ),
-                        1
+                SpeechMenu.#captureNode =
+                    new AudioWorkletNodeCtor(
+                        context,
+                        "wmof-speech-capture",
+                        {
+                            numberOfInputs: 1,
+                            numberOfOutputs: 1,
+                            outputChannelCount: [1]
+                        }
                     );
 
                 SpeechMenu.#silentGain =
@@ -245,17 +275,20 @@ class SpeechMenu {
                 SpeechMenu.#silentGain.gain.value =
                     0;
 
-                SpeechMenu.#processorNode
+                SpeechMenu.#captureNode.port
                     .addEventListener(
-                        "audioprocess",
-                        SpeechMenu.#onAudioProcess
+                        "message",
+                        SpeechMenu.#onAudioWorkletMessage
                     );
 
+                SpeechMenu.#captureNode.port
+                    .start?.();
+
                 SpeechMenu.#sourceNode.connect(
-                    SpeechMenu.#processorNode
+                    SpeechMenu.#captureNode
                 );
 
-                SpeechMenu.#processorNode.connect(
+                SpeechMenu.#captureNode.connect(
                     SpeechMenu.#silentGain
                 );
 
@@ -498,9 +531,48 @@ class SpeechMenu {
                         SpeechMenu.#phraseGroups
                 }
             );
+
+            SpeechMenu
+                .#refreshRecognizerHotwords();
         }
 
         return SpeechMenu.#phrases;
+    }
+
+    static #hotwords() {
+        const values = [
+            ...SpeechMenu.#phrases
+        ];
+
+        for (
+            const regex of
+            [
+                SpeechMenu.#wakePhrase,
+                SpeechMenu.#sleepPhrase
+            ]
+        ) {
+            const source =
+                regex?.source
+                    ?.replace(/^\^/, "")
+                    .replace(/\$$/, "");
+
+            if (
+                source &&
+                /^[\p{L}\p{N}' ]+$/u
+                    .test(source)
+            ) {
+                values.push(source);
+            }
+        }
+
+        return values;
+    }
+
+    static #refreshRecognizerHotwords() {
+        SpeechMenu.#recognizer
+            ?.setHotwords(
+                SpeechMenu.#hotwords()
+            );
     }
 
     static #schedulePhraseRefresh() {
@@ -554,6 +626,9 @@ class SpeechMenu {
                         regex
                 }
             );
+
+            SpeechMenu
+                .#refreshRecognizerHotwords();
         }
         catch {
             SpeechMenu.#emit(
@@ -582,7 +657,7 @@ class SpeechMenu {
         void SpeechMenu.#releaseCapture();
     };
 
-    static #onAudioProcess = event => {
+    static #onAudioWorkletMessage = event => {
         if (
             SpeechMenu.#stopped ||
             !SpeechMenu.#audioContext
@@ -590,58 +665,42 @@ class SpeechMenu {
             return;
         }
 
-        const input =
-            event.inputBuffer;
+        const data =
+            event.data;
 
-        if (!input?.length) return;
-
-        const channels = [];
-
-        for (
-            let index = 0;
-            index < input.numberOfChannels;
-            index++
+        if (
+            data?.type !== "audio" ||
+            !(data.samples instanceof Float32Array) ||
+            data.samples.length === 0
         ) {
-            channels.push(
-                new Float32Array(
-                    input.getChannelData(
-                        index
-                    )
-                )
-            );
+            return;
         }
 
-        if (channels.length === 0) return;
-
-        let squareTotal = 0;
-        let sampleTotal = 0;
-
-        for (const channel of channels) {
-            for (const sample of channel) {
-                squareTotal +=
-                    sample * sample;
-            }
-            sampleTotal +=
-                channel.length;
-        }
+        const samples =
+            data.samples;
 
         const level =
-            sampleTotal > 0
-                ? Math.sqrt(
-                    squareTotal /
-                    sampleTotal
-                )
+            Number.isFinite(
+                Number(data.level)
+            )
+                ? Number(data.level)
                 : 0;
 
+        const sampleRate =
+            Number(data.sampleRate) ||
+            globalThis.SherpaRecognizer
+                ?.sampleRate ||
+            16000;
+
         const frame = {
-            channels,
+            samples,
             length:
-                channels[0].length
+                samples.length
         };
 
         const frameMilliseconds =
             frame.length /
-            input.sampleRate *
+            sampleRate *
             1000;
 
         const now =
@@ -677,7 +736,7 @@ class SpeechMenu {
             else {
                 SpeechMenu.#appendPreRollFrame(
                     frame,
-                    input.sampleRate
+                    sampleRate
                 );
             }
 
@@ -774,7 +833,7 @@ class SpeechMenu {
         const id =
             ++SpeechMenu.#utteranceSequence;
 
-        const frames =
+        const preRollFrames =
             SpeechMenu.#preRollFrames
                 .splice(0);
 
@@ -790,16 +849,13 @@ class SpeechMenu {
                 SpeechMenu.#sessionGeneration,
             startedAt: now,
             silenceMilliseconds: 0,
-            frames,
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
             candidate: undefined,
             committed: false,
             committing: false,
-            liveRecognition: undefined,
-            liveRecognitionStopped: false,
-            recognitionPrefix: ""
+            recognitionStopped: false
         };
 
         SpeechMenu.#emit(
@@ -810,24 +866,39 @@ class SpeechMenu {
             }
         );
 
-        SpeechMenu.#startLiveRecognition(
-            SpeechMenu.#utterance
-        );
+        SpeechMenu.#recognizer
+            ?.beginUtterance(id);
+
+        for (
+            const frame of
+            preRollFrames
+        ) {
+            SpeechMenu.#recognizer
+                ?.accept(
+                    id,
+                    frame.samples
+                );
+        }
     }
 
     static #appendUtteranceFrame(
         frame
     ) {
-        if (!SpeechMenu.#utterance) {
+        const utterance =
+            SpeechMenu.#utterance;
+
+        if (!utterance) {
             return;
         }
 
-        SpeechMenu.#utterance.frames.push(
-            frame
-        );
-
-        SpeechMenu.#utterance.sampleCount +=
+        utterance.sampleCount +=
             frame.length;
+
+        SpeechMenu.#recognizer
+            ?.accept(
+                utterance.id,
+                frame.samples
+            );
     }
 
     static #finishUtterance(
@@ -839,18 +910,30 @@ class SpeechMenu {
 
         if (!utterance) return;
 
+        if (
+            recognize &&
+            !utterance.candidate &&
+            !utterance.committed
+        ) {
+            SpeechMenu.#finishedUtterances
+                .set(
+                    utterance.id,
+                    utterance
+                );
+        }
+
         SpeechMenu.#stopLiveRecognition(
-            utterance
+            utterance,
+            recognize
         );
 
         SpeechMenu.#utterance =
             undefined;
 
-        const context =
-            SpeechMenu.#audioContext;
-
         const sampleRate =
-            context?.sampleRate || 48000;
+            globalThis.SherpaRecognizer
+                ?.sampleRate ||
+            16000;
 
         const durationMilliseconds =
             utterance.sampleCount /
@@ -882,254 +965,123 @@ class SpeechMenu {
             void SpeechMenu.#commitUtterance(
                 utterance
             );
+        }
+    }
+
+    static #onSherpaTranscript = event => {
+        const detail =
+            event.detail || {};
+        const id =
+            detail.utteranceId;
+        const active =
+            SpeechMenu.#utterance;
+        const utterance =
+            active?.id === id
+                ? active
+                : SpeechMenu
+                    .#finishedUtterances
+                    .get(id);
+
+        if (!utterance) {
+            return;
+        }
+
+        const transcript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    detail.transcript
+                );
+
+        if (!transcript) {
             return;
         }
 
         if (
-            !recognize ||
-            utterance.committed ||
-            !context ||
-            utterance.sampleCount <= 0
+            active === utterance
         ) {
+            void SpeechMenu
+                .#handleLiveTranscript(
+                    utterance,
+                    transcript,
+                    Boolean(
+                        detail.isFinal
+                    )
+                );
             return;
         }
 
-        const channelCount =
-            Math.max(
-                1,
-                utterance.frames[0]
-                    ?.channels.length || 1
-            );
-
-        const audioBuffer =
-            context.createBuffer(
-                channelCount,
-                utterance.sampleCount,
-                sampleRate
-            );
-
-        let offset = 0;
-
-        for (
-            const frame of
-                utterance.frames
-        ) {
-            for (
-                let channelIndex = 0;
-                channelIndex < channelCount;
-                channelIndex++
-            ) {
-                const samples =
-                    frame.channels[
-                        Math.min(
-                            channelIndex,
-                            frame.channels
-                                .length - 1
-                        )
-                    ];
-
-                if (!samples) continue;
-
-                audioBuffer.copyToChannel(
-                    samples,
-                    channelIndex,
-                    offset
-                );
-            }
-
-            offset +=
-                frame.length;
+        if (!detail.isFinal) {
+            return;
         }
 
-        const recognitionInput = {
-            id: utterance.id,
-            sessionGeneration:
-                utterance.sessionGeneration,
-            audioBuffer
-        };
+        SpeechMenu.#finishedUtterances
+            .delete(id);
 
-        SpeechMenu.#recognitionQueue =
-            SpeechMenu.#recognitionQueue
-                .catch(() => {})
-                .then(
-                    () =>
-                        SpeechMenu
-                            .#recognizeUtterance(
-                                recognitionInput
-                            )
-                );
-    }
+        void SpeechMenu
+            .#handleCompletedTranscript(
+                utterance,
+                transcript
+            );
+    };
 
-    static #startLiveRecognition(
-        utterance
+    static #onSherpaError = event => {
+        const detail =
+            event.detail || {};
+
+        SpeechMenu.#emit(
+            detail.fatal
+                ? "speechRecognitionFailed"
+                : "speechRecognitionStreamingFailed",
+            {
+                utteranceId:
+                    detail.utteranceId,
+                error:
+                    detail.error ||
+                    "SherpaError",
+                message:
+                    detail.message ||
+                    "Sherpa recognition failed."
+            }
+        );
+    };
+
+    static #onSherpaStatus = event => {
+        SpeechMenu.#emit(
+            "speechRecognitionStatusChanged",
+            {
+                status:
+                    event.detail?.status ||
+                    ""
+            }
+        );
+    };
+
+    static #stopLiveRecognition(
+        utterance,
+        finalize = true
     ) {
         if (
             !utterance ||
-            utterance.liveRecognitionStopped ||
-            utterance.committed ||
-            SpeechMenu.#stopped ||
-            utterance.sessionGeneration !==
-                SpeechMenu.#sessionGeneration ||
-            !SpeechMenu.#micTrack
+            utterance.recognitionStopped
         ) {
-            return false;
+            return;
         }
 
-        const recognition =
-            new SpeechMenu.#Recognition();
-
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang =
-            SpeechMenu.#language;
-
-        utterance.liveRecognition =
-            recognition;
-
-        recognition.onresult =
-            event => {
-                let sessionText = "";
-                let allFinal = true;
-
-                for (
-                    let index = 0;
-                    index < event.results.length;
-                    index++
-                ) {
-                    const result =
-                        event.results[index];
-
-                    const value =
-                        result?.[0]?.transcript;
-
-                    if (value) {
-                        sessionText +=
-                            `${sessionText ? " " : ""}${value}`;
-                    }
-
-                    if (!result?.isFinal) {
-                        allFinal = false;
-                    }
-                }
-
-                const transcript =
-                    SpeechMenu.#normalizeTranscript(
-                        `${utterance.recognitionPrefix || ""} ${sessionText}`
-                    );
-
-                if (transcript) {
-                    void SpeechMenu.#handleLiveTranscript(
-                        utterance,
-                        transcript,
-                        allFinal
-                    );
-                }
-            };
-
-        recognition.onerror =
-            event => {
-                if (
-                    event.error === "aborted" ||
-                    event.error === "no-speech"
-                ) {
-                    return;
-                }
-
-                SpeechMenu.#emit(
-                    "speechRecognitionStreamingFailed",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        error:
-                            event.error,
-                        message:
-                            event.message
-                    }
-                );
-            };
-
-        recognition.onend =
-            () => {
-                if (
-                    utterance.liveRecognition !==
-                        recognition
-                ) {
-                    return;
-                }
-
-                utterance.liveRecognition =
-                    undefined;
-
-                if (
-                    utterance.liveRecognitionStopped ||
-                    utterance.committed ||
-                    SpeechMenu.#stopped ||
-                    SpeechMenu.#utterance !==
-                        utterance
-                ) {
-                    return;
-                }
-
-                utterance.recognitionPrefix =
-                    utterance.transcript || "";
-
-                queueMicrotask(
-                    () =>
-                        SpeechMenu.#startLiveRecognition(
-                            utterance
-                        )
-                );
-            };
-
-        try {
-            recognition.start(
-                SpeechMenu.#micTrack
-            );
-            return true;
-        }
-        catch (error) {
-            utterance.liveRecognition =
-                undefined;
-            utterance.liveRecognitionStopped =
-                true;
-
-            SpeechMenu.#emit(
-                "speechRecognitionStreamingFailed",
-                {
-                    utteranceId:
-                        utterance.id,
-                    error:
-                        error?.name ||
-                        "TrackInputUnsupported",
-                    message:
-                        error?.message ||
-                        "Live speech recognition could not start from the persistent microphone track."
-                }
-            );
-            return false;
-        }
-    }
-
-    static #stopLiveRecognition(
-        utterance
-    ) {
-        if (!utterance) return;
-
-        utterance.liveRecognitionStopped =
+        utterance.recognitionStopped =
             true;
 
-        const recognition =
-            utterance.liveRecognition;
-
-        utterance.liveRecognition =
-            undefined;
-
-        if (!recognition) return;
-
-        try {
-            recognition.abort();
+        if (finalize) {
+            SpeechMenu.#recognizer
+                ?.finishUtterance(
+                    utterance.id
+                );
         }
-        catch {}
+        else {
+            SpeechMenu.#recognizer
+                ?.abortUtterance(
+                    utterance.id
+                );
+        }
     }
 
     static async #handleLiveTranscript(
@@ -1340,251 +1292,38 @@ class SpeechMenu {
         }
     }
 
-    static async #recognizeUtterance(
-        utterance
+    static async #handleCompletedTranscript(
+        utterance,
+        transcript
     ) {
-        if (
-            utterance.sessionGeneration !==
-                SpeechMenu.#sessionGeneration ||
-            SpeechMenu.#stopped ||
-            !SpeechMenu.#audioContext
-        ) {
-            return;
-        }
+        utterance.transcript =
+            transcript;
 
-        const context =
-            SpeechMenu.#audioContext;
-
-        const destination =
-            context.createMediaStreamDestination();
-
-        const bufferSource =
-            context.createBufferSource();
-
-        bufferSource.buffer =
-            utterance.audioBuffer;
-
-        bufferSource.connect(
-            destination
+        SpeechMenu.#emit(
+            "utteranceTranscriptChanged",
+            {
+                id:
+                    utterance.id,
+                transcript,
+                isFinal: true
+            }
         );
-
-        const replayTrack =
-            destination.stream
-                .getAudioTracks()[0];
-
-        if (!replayTrack) {
-            SpeechMenu.#emit(
-                "speechRecognitionFailed",
-                {
-                    utteranceId:
-                        utterance.id,
-                    error:
-                        "AudioTrackError",
-                    message:
-                        "Unable to create an in-memory recognition audio track."
-                }
-            );
-            return;
-        }
-
-        const recognition =
-            new SpeechMenu.#Recognition();
-
-        recognition.continuous =
-            false;
-
-        recognition.interimResults =
-            false;
-
-        recognition.lang =
-            SpeechMenu.#language;
-
-        let finalText = "";
-
-        await new Promise(resolve => {
-            let settled = false;
-            let safetyTimer;
-
-            const finish = () => {
-                if (settled) return;
-                settled = true;
-
-                clearTimeout(
-                    safetyTimer
-                );
-
-                try {
-                    replayTrack.stop();
-                }
-                catch {}
-
-                try {
-                    bufferSource.disconnect();
-                }
-                catch {}
-
-                resolve();
-            };
-
-            recognition.onresult =
-                event => {
-                    for (
-                        let index =
-                            event.resultIndex;
-                        index <
-                            event.results.length;
-                        index++
-                    ) {
-                        const result =
-                            event.results[
-                                index
-                            ];
-
-                        if (!result.isFinal) {
-                            continue;
-                        }
-
-                        const text =
-                            SpeechMenu
-                                .#normalizeTranscript(
-                                    result[0]
-                                        ?.transcript
-                                );
-
-                        if (text) {
-                            finalText +=
-                                `${finalText ? " " : ""}${text}`;
-                        }
-                    }
-                };
-
-            recognition.onerror =
-                event => {
-                    if (
-                        event.error !==
-                        "aborted"
-                    ) {
-                        SpeechMenu.#emit(
-                            "speechRecognitionFailed",
-                            {
-                                utteranceId:
-                                    utterance.id,
-                                error:
-                                    event.error,
-                                message:
-                                    event.message
-                            }
-                        );
-                    }
-                };
-
-            recognition.onend =
-                finish;
-
-            try {
-                recognition.start(
-                    replayTrack
-                );
-            }
-            catch (error) {
-                SpeechMenu.#emit(
-                    "speechRecognitionFailed",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        error:
-                            error?.name ||
-                            "TrackInputUnsupported",
-                        message:
-                            error?.message ||
-                            "This browser does not accept a supplied audio track for speech recognition."
-                    }
-                );
-
-                finish();
-                return;
-            }
-
-            bufferSource.addEventListener(
-                "ended",
-                () => {
-                    setTimeout(
-                        () => {
-                            try {
-                                recognition.stop();
-                            }
-                            catch {}
-                        },
-                        250
-                    );
-                },
-                {once: true}
-            );
-
-            bufferSource.start();
-
-            safetyTimer =
-                setTimeout(
-                    () => {
-                        try {
-                            recognition.abort();
-                        }
-                        catch {}
-
-                        finish();
-                    },
-                    Math.max(
-                        3500,
-                        utterance.audioBuffer
-                            .duration *
-                            1000 +
-                            3000
-                    )
-                );
-        });
-
-        if (!finalText) {
-            SpeechMenu.#emit(
-                "utteranceUnrecognized",
-                {
-                    id: utterance.id
-                }
-            );
-            return;
-        }
 
         SpeechMenu.#emit(
             "utteranceTranscribed",
             {
-                id: utterance.id,
-                transcript: finalText
+                id:
+                    utterance.id,
+                transcript,
+                live: false
             }
         );
-
-        if (
-            SpeechMenu.#debug &&
-            finalText
-        ) {
-            const words =
-                finalText.split(/\s+/);
-
-            SpeechMenu.#debugFunction({
-                state:
-                    SpeechMenu.#sleeping
-                        ? "muted"
-                        : "listening",
-                isFinal: true,
-                fullText: finalText,
-                lastWord:
-                    words.at(-1)
-            });
-        }
 
         if (SpeechMenu.#sleeping) {
             if (
                 SpeechMenu.#test(
                     SpeechMenu.#wakePhrase,
-                    finalText
+                    transcript
                 )
             ) {
                 SpeechMenu.#sleeping =
@@ -1595,8 +1334,7 @@ class SpeechMenu {
                     {
                         utteranceId:
                             utterance.id,
-                        transcript:
-                            finalText
+                        transcript
                     }
                 );
             }
@@ -1607,7 +1345,7 @@ class SpeechMenu {
         if (
             SpeechMenu.#test(
                 SpeechMenu.#sleepPhrase,
-                finalText
+                transcript
             )
         ) {
             SpeechMenu.#sleeping =
@@ -1618,8 +1356,7 @@ class SpeechMenu {
                 {
                     utteranceId:
                         utterance.id,
-                    transcript:
-                        finalText
+                    transcript
                 }
             );
 
@@ -1627,8 +1364,9 @@ class SpeechMenu {
         }
 
         await SpeechMenu.#processTranscript(
-            finalText,
-            utterance.id
+            transcript,
+            utterance.id,
+            true
         );
     }
 
@@ -3057,23 +2795,24 @@ class SpeechMenu {
     }
 
     static async #releaseCapture() {
-        const processor =
-            SpeechMenu.#processorNode;
+        const captureNode =
+            SpeechMenu.#captureNode;
 
-        SpeechMenu.#processorNode =
+        SpeechMenu.#captureNode =
             undefined;
 
-        if (processor) {
+        if (captureNode) {
             try {
-                processor.removeEventListener(
-                    "audioprocess",
-                    SpeechMenu.#onAudioProcess
-                );
+                captureNode.port
+                    .removeEventListener(
+                        "message",
+                        SpeechMenu.#onAudioWorkletMessage
+                    );
             }
             catch {}
 
             try {
-                processor.disconnect();
+                captureNode.disconnect();
             }
             catch {}
         }
@@ -3095,6 +2834,31 @@ class SpeechMenu {
 
         SpeechMenu.#silentGain =
             undefined;
+
+        const recognizer =
+            SpeechMenu.#recognizer;
+
+        SpeechMenu.#recognizer =
+            undefined;
+
+        if (recognizer) {
+            try {
+                recognizer.removeEventListener(
+                    "transcript",
+                    SpeechMenu.#onSherpaTranscript
+                );
+                recognizer.removeEventListener(
+                    "error",
+                    SpeechMenu.#onSherpaError
+                );
+                recognizer.removeEventListener(
+                    "status",
+                    SpeechMenu.#onSherpaStatus
+                );
+                recognizer.close();
+            }
+            catch {}
+        }
 
         const stream =
             SpeechMenu.#stream;
@@ -3138,6 +2902,9 @@ class SpeechMenu {
 
         SpeechMenu.#preRollSamples =
             0;
+
+        SpeechMenu.#finishedUtterances
+            .clear();
 
         SpeechMenu.#utterance =
             undefined;
