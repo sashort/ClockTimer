@@ -7,12 +7,13 @@ $method = require_method('GET', 'PUT');
 $root = dirname(__DIR__, 2);
 $path = $root . '/database/speech-editor.json';
 $registryPath = $root . '/SpeechFunctionRegistry.js';
-$roleNames = ['processing', 'action', 'interaction', 'presentation'];
+$roleNames = ['speech-processing', 'action', 'interaction', 'presentation', 'helper'];
 $defaultFunctionRoles = [
-    'processing' => ['WMOFSpeechPreprocess.normalize'],
+    'speech-processing' => ['WMOFSpeechProcessing.normalizeSpeechValue'],
     'action' => [],
     'interaction' => [],
-    'presentation' => []
+    'presentation' => [],
+    'helper' => []
 ];
 
 $read = static function () use ($path): array {
