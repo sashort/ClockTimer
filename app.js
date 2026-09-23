@@ -5513,21 +5513,18 @@
         return true;
     }
 
-    scopeToggle.addEventListener("pointerup", () => {
-        const current =
-            PERCENT_MODES.indexOf(
-                normalizePercentMode(
-                    clockTimer.percentMode
-                )
-            );
-
-        applyScope(
-            PERCENT_MODES[
-                (current + 1) %
-                PERCENT_MODES.length
-            ]
-        );
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scopeToggle,
+            event:
+                "pointerup",
+            name:
+                "cycleGoalModePointerUp",
+            action:
+                "cycleGoalMode"
+        });
 
     scopeConnectionButton?.addEventListener(
         "click",
@@ -5564,15 +5561,30 @@
         }, 650);
     });
 
-    renderedTimeButton.addEventListener("pointerup", () => {
-        cancelRenderedTimeLongPress();
-        if (renderedTimeLongPressed) {
-            renderedTimeLongPressed = false;
-            return;
-        }
-        const index = RENDERED_TIME_MODES.indexOf(clockTimer.renderedTimeMode);
-        applyRenderedTimeMode(RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length]);
-    });
+    renderedTimeButton.addEventListener(
+        "pointerup",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "cycleRenderedTimeModePointerUp",
+                () => {
+                    cancelRenderedTimeLongPress();
+
+                    if (
+                        renderedTimeLongPressed
+                    ) {
+                        renderedTimeLongPressed =
+                            false;
+
+                        return false;
+                    }
+
+                    return globalThis
+                        .WMOFActions
+                        .cycleRenderedTimeMode();
+                }
+            )
+    );
 
     for (const type of ["pointercancel", "pointerleave"]) {
         renderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
@@ -5716,43 +5728,71 @@
         }
     );
 
-    syncGoalsMenuButton?.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            toggleSyncGoals();
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                syncGoalsMenuButton,
+            event:
+                "click",
+            name:
+                "changeMenuSyncStateClick",
+            action:
+                "changeSyncState",
+            preventDefault:
+                true
+        });
 
-    goalSyncButton?.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            toggleSyncGoals();
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                goalSyncButton,
+            event:
+                "click",
+            name:
+                "changeGoalSyncStateClick",
+            action:
+                "changeSyncState",
+            preventDefault:
+                true
+        });
 
     tripListMenuButton?.addEventListener(
         "click",
-        () => {
-            mainMenu?.hidePopover?.();
-            void openTripList("menu");
-        }
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "openTripLogMenuClick",
+                () => {
+                    mainMenu
+                        ?.hidePopover?.();
+
+                    return globalThis
+                        .WMOFActions
+                        .openTripLog(
+                            "menu"
+                        );
+                }
+            )
     );
 
-    tripLogButton?.addEventListener(
-        "click",
-        () => {
-            if (
-                getTripListState() ===
-                    "closed"
-            ) {
-                void openTripList(
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripLogButton,
+            event:
+                "click",
+            name:
+                "openTripLogButtonClick",
+            action:
+                "openTripLog",
+            args:
+                () => [
                     "button"
-                );
-            }
-        }
-    );
+                ]
+        });
 
     tripLogSettingsButton?.addEventListener("click", () => {
         tripLogSettingsVisible = !tripLogSettingsVisible;
@@ -5760,14 +5800,22 @@
         tripLogSettingsButton.setAttribute("aria-label", tripLogSettingsVisible ? "Hide Trip Log settings" : "Show Trip Log settings");
         tripLogView?.setSettingsVisible(tripLogSettingsVisible);
     });
-    tripLogCloseButton?.addEventListener(
-        "click",
-        () => {
-            void closeTripList(
-                "close"
-            );
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripLogCloseButton,
+            event:
+                "click",
+            name:
+                "closeTripLogClick",
+            action:
+                "closeTripLog",
+            args:
+                () => [
+                    "close"
+                ]
+        });
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
@@ -8162,108 +8210,175 @@
         });
     }
 
-    $("#newTripButton").addEventListener("pointerup", () => {
-        void beginNewTripWorkflow({ tripMoment: new Date() }).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#newTripButton"),
+            event:
+                "pointerup",
+            name:
+                "openStartMenuPointerUp",
+            action:
+                "openStartMenu"
+        });
 
-    endTripButton.addEventListener("pointerup", () => {
-        void endCurrentIntervalOrTrip().catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                endTripButton,
+            event:
+                "pointerup",
+            name:
+                "endTripPointerUp",
+            action:
+                "endTrip"
+        });
 
-    breakButton.addEventListener("pointerup", () => {
-        openDialog("breakDialog", { reason: "break" });
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                breakButton,
+            event:
+                "pointerup",
+            name:
+                "openBreakMenuPointerUp",
+            action:
+                "openBreakMenu"
+        });
 
-    downButton.addEventListener("pointerup", () => {
-        void clockTimer.startInterval("down").then(result => {
-            if (result) renderTripActionState();
-        }).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downButton,
+            event:
+                "pointerup",
+            name:
+                "startDownTimePointerUp",
+            action:
+                "startDownTime"
+        });
 
     downDetailsButton.addEventListener("pointerup", () => {
         const reference=activeDownReference();
         if(reference?.tripId&&reference.intervalKey)void openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});
     });
 
-    downBreakButton.addEventListener("pointerup", () => {
-        openDialog("breakDialog", { reason: "down-break" });
-    });
-
-    downResumeButton.addEventListener("pointerup", () => {
-        void clockTimer.endInterval().then(() => renderTripActionState()).catch(() => {});
-    });
-
-    downCancelButton.addEventListener("pointerup", () => {
-        void (async () => {
-            await clockTimer.endInterval();
-            await endCurrentIntervalOrTrip();
-        })().catch(() => {});
-    });
-
-    breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
-        button.addEventListener("click", async event => {
-            event.preventDefault();
-
-            const breakType =
-                button.dataset.breakType;
-
-            closeDialog(
-                breakDialog,
-                { reason: "break-type-selected" }
-            );
-
-            try {
-                await startBreakInterval(
-                    breakType
-                );
-            }
-            catch {
-                updateSummaryValues();
-                renderTripActionState();
-            }
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downBreakButton,
+            event:
+                "pointerup",
+            name:
+                "openDownBreakMenuPointerUp",
+            action:
+                "openBreakMenu",
+            args:
+                () => [
+                    "down-break"
+                ]
         });
-    });
 
-    $("#standardTimeButton").addEventListener("pointerup", () => {
-        let summary;
-        try {
-            summary =
-                clockTimer.getSummarySnapshot?.(
-                    new Date()
-                );
-        }
-        catch {}
-
-        if (
-            !tripIsLive() ||
-            summary?.scope === "total"
-        ) {
-            return;
-        }
-
-        resetTripSettingsNavigation();
-        openTripSettingsDialog("summary-standard-time", {
-            focusField: "standard-time"
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downResumeButton,
+            event:
+                "pointerup",
+            name:
+                "resumeTripPointerUp",
+            action:
+                "resumeTrip"
         });
-    });
 
-    $("#goalPercentValue").addEventListener("pointerup", () => {
-        if (clockTimer.percentMode === "auto") {
-            openAutoGoalDialog();
-            return;
-        }
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downCancelButton,
+            event:
+                "pointerup",
+            name:
+                "cancelDownTimePointerUp",
+            action:
+                "cancelDownTime"
+        });
 
-        if (endTimeGoalLockedForMode()) {
-            flashEndTimeGoalLock();
-            return;
-        }
+    breakDialog
+        .querySelectorAll(
+            "[data-break-type]"
+        )
+        .forEach(
+            button => {
+                globalThis
+                    .WMOFInteractionFunctions
+                    .bindAction({
+                        element:
+                            button,
+                        event:
+                            "click",
+                        name:
+                            "startBreak" +
+                            String(
+                                button.dataset
+                                    .breakType ||
+                                "Type"
+                            )
+                                .replace(
+                                    /[^A-Za-z0-9]+(.)/g,
+                                    (
+                                        match,
+                                        character
+                                    ) =>
+                                        character
+                                            ?.toUpperCase() ||
+                                        ""
+                                ) +
+                            "Click",
+                        action:
+                            "startBreak",
+                        args:
+                            () => [
+                                button.dataset
+                                    .breakType
+                            ],
+                        preventDefault:
+                            true
+                    });
+            }
+        );
 
-        void openPercentGoalNumberPad(
-            clockTimer.percentMode === "total"
-                ? "total"
-                : "trip"
-        ).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#standardTimeButton"),
+            event:
+                "pointerup",
+            name:
+                "openStandardTimeSettingsPointerUp",
+            action:
+                "openStandardTimeSettings"
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#goalPercentValue"),
+            event:
+                "pointerup",
+            name:
+                "openGoalEditorPointerUp",
+            action:
+                "openGoalEditor"
+        });
 
     autoGoalDialog
         ?.querySelectorAll(
