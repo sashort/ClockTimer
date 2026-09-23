@@ -36,6 +36,7 @@ jobs:
         run: |
           node --check SpeechMenu.js
           node --check SherpaRecognizer.js
+          node --check SpeechDiagnostics.js
           node --check speech/SherpaWorker.js
           node --check speech/SpeechAudioWorklet.js
           node --check SpeechEditorRuntime.js
