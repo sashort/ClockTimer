@@ -291,3 +291,32 @@ assert.equal(
 console.log(
     "PASS SpeechMenu extrapolates available phrases using live precedence"
 );
+
+const speechMenuSource = fs.readFileSync(
+    new URL(
+        "../SpeechMenu.js",
+        import.meta.url
+    ),
+    "utf8"
+);
+
+assert.match(
+    speechMenuSource,
+    /extrapolatePhrases\(\)[\s\S]*#availableCandidates\(\)/
+);
+assert.match(
+    speechMenuSource,
+    /const groupsChanged[\s\S]*group\.element !==[\s\S]*next\.element/
+);
+assert.match(
+    speechMenuSource,
+    /if \(\s*phrasesChanged\s*\|\|\s*groupsChanged\s*\)/
+);
+assert.match(
+    speechMenuSource,
+    /target\.closest\?\.\(\s*"details"\s*\)[\s\S]*!details\.open/
+);
+assert.match(
+    speechMenuSource,
+    /target\.closest\?\.\(\s*"\[popover\]"\s*\)[\s\S]*#openPopover/
+);
