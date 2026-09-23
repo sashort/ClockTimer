@@ -102,7 +102,7 @@ if ! sudo -n /opt/bitnami/ctlscript.sh restart apache; then
   exit 1
 fi
 
-rm -f "$TX_BACKUP"
+sudo -n rm -f "$TX_BACKUP"
 
 curl \
   --fail \
