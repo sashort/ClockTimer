@@ -298,6 +298,12 @@
 
         return [...result]
             .filter(Boolean)
+            .filter(
+                name =>
+                    !name.startsWith(
+                        "WMOFSpeechFunctionRegistry."
+                    )
+            )
             .sort(
                 (a, b) =>
                     a.localeCompare(b)
