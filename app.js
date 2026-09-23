@@ -11020,6 +11020,607 @@
                     );
 
                 return true;
+            },
+
+            resumeConnection(
+                source = "app"
+            ) {
+                void resumeConnectionFromCloud({
+                    source:
+                        String(
+                            source ||
+                            "app"
+                        )
+                }).catch(
+                    () => {}
+                );
+
+                return true;
+            },
+
+            changeEndTimeGoalScopes(
+                scopes
+            ) {
+                const normalized =
+                    Array.isArray(
+                        scopes
+                    )
+                        ? [
+                            ...new Set(
+                                scopes.filter(
+                                    scope =>
+                                        scope ===
+                                            "trip" ||
+                                        scope ===
+                                            "total"
+                                )
+                            )
+                        ].sort()
+                        : [];
+
+                return setEndTimeGoalScopes(
+                    normalized
+                );
+            },
+
+            releaseEndTimeGoal() {
+                releaseEndTimeGoalOverride();
+
+                return true;
+            },
+
+            toggleTimerType() {
+                return toggleClockTimerTypeFromTap();
+            },
+
+            toggleTimerMode() {
+                return toggleClockTimerElapsedRemaining();
+            },
+
+            async openTripTimeEditor(
+                field
+            ) {
+                const button =
+                    tripSettingsDialog
+                        .querySelector(
+                            `[data-trip-time-field="${field}"]`
+                        );
+
+                if (
+                    !button ||
+                    button.disabled
+                ) {
+                    return false;
+                }
+
+                try {
+                    await openTripFieldNumberPad(
+                        field
+                    );
+
+                    if (
+                        !numberPadDialog
+                            ?.open
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        !closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    `trip-settings:${field}`,
+                                immediate:
+                                    true
+                            }
+                        )
+                    ) {
+                        await closeNumberPad({
+                            discardPrepared:
+                                false,
+                            allowChanged:
+                                true,
+                            immediate:
+                                true,
+                            destination:
+                                "none"
+                        });
+                    }
+
+                    return true;
+                }
+                catch {
+                    return false;
+                }
+            },
+
+            toggleTripStartsNow() {
+                if (
+                    !tripDraft ||
+                    tripIsLive()
+                ) {
+                    return false;
+                }
+
+                if (
+                    !tripSettingsSession
+                ) {
+                    beginTripSettingsSession();
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                if (!values) {
+                    return false;
+                }
+
+                if (
+                    !tripStartsNowState
+                ) {
+                    const now =
+                        new Date();
+
+                    const value =
+                        formatTimelineDateTime(
+                            now,
+                            values
+                                .creationDate
+                        );
+
+                    if (!value) {
+                        return false;
+                    }
+
+                    const label =
+                        formatTripTimeOnly(
+                            value,
+                            values
+                                .creationDate
+                        );
+
+                    if (
+                        !label ||
+                        label === "---"
+                    ) {
+                        return false;
+                    }
+
+                    tripStartsNowState = {
+                        value,
+                        label,
+                        snapshot: {
+                            scheduledStart:
+                                values
+                                    .scheduledStart,
+                            startTime:
+                                values
+                                    .startTime
+                        },
+                        scheduled:
+                            false,
+                        actual:
+                            false
+                    };
+
+                    syncTripStartsNowUI();
+
+                    return true;
+                }
+
+                beginTripStartsNowExit();
+
+                return true;
+            },
+
+            cancelTripStartsNow() {
+                if (
+                    !tripStartsNowState
+                ) {
+                    return false;
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                const snapshot =
+                    tripStartsNowState
+                        .snapshot;
+
+                if (
+                    values &&
+                    snapshot
+                ) {
+                    if (
+                        tripStartsNowState
+                            .scheduled
+                    ) {
+                        values
+                            .scheduledStart =
+                            snapshot
+                                .scheduledStart;
+                    }
+
+                    if (
+                        tripStartsNowState
+                            .actual
+                    ) {
+                        values
+                            .startTime =
+                            snapshot
+                                .startTime;
+                    }
+                }
+
+                beginTripStartsNowExit();
+
+                return true;
+            },
+
+            toggleTripStartsNowTarget(
+                target
+            ) {
+                if (
+                    !tripStartsNowState
+                ) {
+                    return false;
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                const snapshot =
+                    tripStartsNowState
+                        .snapshot;
+
+                if (
+                    !values ||
+                    !snapshot
+                ) {
+                    return false;
+                }
+
+                const scheduled =
+                    target ===
+                    "scheduled-start";
+
+                const key =
+                    scheduled
+                        ? "scheduled"
+                        : "actual";
+
+                const selected =
+                    !tripStartsNowState[
+                        key
+                    ];
+
+                tripStartsNowState[
+                    key
+                ] =
+                    selected;
+
+                if (scheduled) {
+                    values.scheduledStart =
+                        selected
+                            ? tripStartsNowState
+                                .value
+                            : snapshot
+                                .scheduledStart;
+                }
+                else {
+                    values.startTime =
+                        selected
+                            ? tripStartsNowState
+                                .value
+                            : snapshot
+                                .startTime;
+                }
+
+                refreshTripSettingsValues();
+
+                return selected;
+            },
+
+            changeTripProductive(
+                productive
+            ) {
+                const session =
+                    tripSettingsSession ||
+                    beginTripSettingsSession();
+
+                if (!session) {
+                    return false;
+                }
+
+                session.values
+                    .nonProduction =
+                    !Boolean(
+                        productive
+                    );
+
+                return true;
+            },
+
+            changeTripDeferred(
+                deferred
+            ) {
+                const session =
+                    tripSettingsSession ||
+                    beginTripSettingsSession();
+
+                if (
+                    !session ||
+                    session.live
+                ) {
+                    return false;
+                }
+
+                const values =
+                    session.values;
+
+                const enabled =
+                    Boolean(
+                        deferred
+                    );
+
+                if (enabled) {
+                    session
+                        .preDeferredValues =
+                        cloneTripSettingsValues(
+                            values
+                        );
+
+                    values.scheduledStart =
+                        values.creationTime;
+
+                    values.startTime =
+                        undefined;
+
+                    tripStartsNowState =
+                        undefined;
+
+                    tripStartsNowExiting =
+                        false;
+                }
+                else {
+                    if (
+                        session
+                            .preDeferredValues
+                    ) {
+                        Object.assign(
+                            values,
+                            cloneTripSettingsValues(
+                                session
+                                    .preDeferredValues
+                            )
+                        );
+                    }
+
+                    session
+                        .preDeferredValues =
+                        undefined;
+                }
+
+                values.deferred =
+                    enabled;
+
+                tripStartsNowState =
+                    undefined;
+
+                refreshTripSettingsValues();
+
+                return true;
+            },
+
+            async saveTripSettings() {
+                if (
+                    !tripSettingsSession
+                ) {
+                    beginTripSettingsSession();
+                }
+
+                const startingDraft =
+                    Boolean(
+                        tripDraft &&
+                        !tripIsLive()
+                    );
+
+                if (
+                    !applyTripSettingsSession()
+                ) {
+                    refreshTripSettingsValues();
+
+                    return false;
+                }
+
+                if (startingDraft) {
+                    if (
+                        tripDraft.deferred
+                    ) {
+                        tripStartsNowState =
+                            undefined;
+
+                        tripSettingsSession =
+                            undefined;
+
+                        if (
+                            numberPadDialog
+                                ?.open
+                        ) {
+                            await closeNumberPad({
+                                discardPrepared:
+                                    false,
+                                allowChanged:
+                                    true,
+                                immediate:
+                                    true,
+                                destination:
+                                    "home"
+                            });
+                        }
+
+                        uiReturnStack.length =
+                            0;
+
+                        resetTripSettingsNavigation();
+
+                        closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    "trip-settings-defer"
+                            }
+                        );
+
+                        renderDeferredTrip();
+
+                        return true;
+                    }
+
+                    if (
+                        tripDraftHasFutureStart(
+                            tripDraft
+                        )
+                    ) {
+                        tripStartsNowState =
+                            undefined;
+
+                        tripSettingsSession =
+                            undefined;
+
+                        resetTripSettingsNavigation();
+
+                        closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    "trip-settings-scheduled",
+                                immediate:
+                                    true
+                            }
+                        );
+
+                        showScheduledStartDialog();
+
+                        return true;
+                    }
+
+                    try {
+                        if (
+                            !await startTripDraft()
+                        ) {
+                            restoreDraftFromTripSettingsOriginal();
+
+                            refreshTripSettingsValues();
+
+                            return false;
+                        }
+                    }
+                    catch {
+                        restoreDraftFromTripSettingsOriginal();
+
+                        refreshTripSettingsValues();
+
+                        return false;
+                    }
+
+                    tripStartsNowState =
+                        undefined;
+
+                    tripSettingsSession =
+                        undefined;
+
+                    resetTripSettingsNavigation();
+
+                    closeDialog(
+                        tripSettingsDialog,
+                        {
+                            reason:
+                                "trip-settings-start"
+                        }
+                    );
+
+                    return true;
+                }
+
+                syncTripSettingsCallerAfterSave();
+
+                await clockTimer
+                    .persistCurrentTrip();
+
+                tripStartsNowState =
+                    undefined;
+
+                tripSettingsSession =
+                    undefined;
+
+                await closeTripSettingsToNavigation(
+                    "trip-settings-save"
+                );
+
+                return true;
+            },
+
+            startIndependentTimer() {
+                if (timerStartedAt) {
+                    return false;
+                }
+
+                timerStartedAt =
+                    Date.now();
+
+                timerInterval =
+                    setInterval(
+                        renderIndependentTimer,
+                        250
+                    );
+
+                renderIndependentTimer();
+
+                return true;
+            },
+
+            stopIndependentTimer() {
+                if (!timerStartedAt) {
+                    return false;
+                }
+
+                timerAccumulated +=
+                    Date.now() -
+                    timerStartedAt;
+
+                timerStartedAt =
+                    0;
+
+                clearInterval(
+                    timerInterval
+                );
+
+                renderIndependentTimer();
+
+                return true;
+            },
+
+            resetIndependentTimer() {
+                timerStartedAt =
+                    0;
+
+                timerAccumulated =
+                    0;
+
+                clearInterval(
+                    timerInterval
+                );
+
+                $("#independentTimerValue")
+                    .value =
+                    "---";
+
+                return true;
             }
         });
 
