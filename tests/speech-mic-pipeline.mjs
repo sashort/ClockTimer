@@ -177,6 +177,8 @@ assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
 assert.match(app, /element:\s*\$\("#speechTrainingButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechTraining"/);
 assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
+assert.match(app, /speech-build-active/);
+assert.match(app, /1050/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
@@ -186,6 +188,9 @@ assert.match(css, /speech-mic-bar:not\(:defined\)/);
 assert.match(css, /#speechTrainingButton::before/);
 assert.match(css, /#speechEditorButton::before/);
 assert.match(css, /stroke-dasharray:100;stroke-dashoffset:100/);
+assert.match(css, /@keyframes speech-mic-build/);
+assert.match(css, /from\{clip-path:inset\(100% 0 0 0\);\}/);
+assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-mic/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
