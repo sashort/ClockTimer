@@ -864,11 +864,9 @@ class SpeechMicBar extends HTMLElement {
                             detail.isFinal
                         );
 
-                    if (this.#currentTranscriptFinal) {
-                        this.#showText(
-                            this.#currentTranscript
-                        );
-                    }
+                    this.#showText(
+                        this.#currentTranscript
+                    );
                 }
                 break;
             case "utteranceTranscribed":
@@ -910,16 +908,11 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechPreprocessed":
-                if (
-                    detail?.utteranceId === this.#currentUtteranceId &&
-                    !detail?.provisional
-                ) {
-                    this.setAttribute("phase", "preprocessed");
-                    this.#showPreprocessed(
-                        detail.originalText || this.#currentTranscript,
-                        detail.processedText || ""
-                    );
-                }
+                /*
+                 * Preprocessing may run while recognition is still
+                 * provisional.  Keep the raw recognizer transcript
+                 * visible until the command has actually succeeded.
+                 */
                 break;
             case "speechCommandMatched":
             case "speechMenuMatched":
@@ -951,6 +944,25 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechCommandExecuted":
+                if (
+                    detail?.utteranceId ===
+                    this.#currentUtteranceId
+                ) {
+                    const formatted =
+                        detail.transcript ||
+                        this.#currentTranscript;
+
+                    this.#currentTranscriptFinal =
+                        true;
+                    this.setAttribute(
+                        "phase",
+                        "preprocessed"
+                    );
+                    this.#showPreprocessed(
+                        this.#currentTranscript,
+                        formatted
+                    );
+                }
                 break;
         }
 
