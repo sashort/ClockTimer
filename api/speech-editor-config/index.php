@@ -87,8 +87,7 @@ if ($method === 'GET') {
 }
 
 authenticated_user_id();
-require_any_permission(
-    PERMISSION_DEVELOPER_PREVIEW,
+require_permission(
     PERMISSION_DEVELOPER
 );
 require_csrf();
