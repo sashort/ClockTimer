@@ -202,6 +202,9 @@ assert.match(css, /stroke:#003b73/);
 assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{opacity:1/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
+const presentationSource = fs.readFileSync(new URL("../PresentationSetters.js", import.meta.url), "utf8");
+const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-config/index.php", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
 const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
 const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
@@ -232,16 +235,60 @@ assert.match(speechMenuSource, /speechCorrectionApplied/);
 assert.match(speechMenuSource, /provisional:\s*!execute/);
 assert.match(speechMenuSource, /"utteranceUnrecognized"[\s\S]*transcript/);
 assert.match(
-    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    speechMicBarSource,
     /--speech-load-progress[\s\S]*#003b73[\s\S]*#a9ddf7/
 );
 assert.match(
-    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    speechMicBarSource,
     /current\s*\+\s*" \/ "\s*\+\s*total/
 );
 assert.match(
-    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    speechMicBarSource,
     /#scheduleRejectedClear[\s\S]*2000/
+);
+assert.match(
+    speechMicBarSource,
+    /presentResponseTransition[\s\S]*sharedStart/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /case "speechArgumentsPrepared"[\s\S]{0,500}setResponse\(/
+);
+assert.match(
+    speechMenuSource,
+    /beginSpeechResponse[\s\S]*finishSpeechResponse/
+);
+assert.match(
+    speechMenuSource,
+    /targetElements:\s*target\.elements\.slice\(\)/
+);
+assert.match(
+    presentationSource,
+    /chooseRepresentative[\s\S]*beginSpeechResponse[\s\S]*finishSpeechResponse/
+);
+assert.match(
+    presentationSource,
+    /speech-response-timeout/
+);
+assert.match(
+    presentationSource,
+    /return 2000;/
+);
+assert.match(
+    presentationSource,
+    /"persistent"[\s\S]*"none"[\s\S]*"manual"/
+);
+assert.match(
+    presentationSource,
+    /speech-response-button-facsimile/
+);
+assert.match(
+    presentationSource,
+    /data-speech-response-snapshot/
+);
+assert.match(
+    app,
+    /"utteranceStarted"[\s\S]*dismissSpeechResponse[\s\S]*fast:\s*true/
 );
 
 assert.match(sherpaRecognizerSource, /static sampleRate = 16000;/);
@@ -306,6 +353,10 @@ assert.match(speechEditorHtml, /data-training-requested=/);
 assert.match(speechEditorHtml, /<option value="training">Training<\/option>/);
 assert.match(speechEditorHtml, /Scratch That/);
 assert.match(speechEditorHtml, /Repeat prompt/);
+assert.match(speechEditorHtml, /name="speech-response-timeout"/);
+assert.match(speechEditorJs, /"speech-response-timeout"/);
+assert.match(speechEditorConfigSource, /speech-response-timeout/);
+assert.match(speechEditorConfigSource, /invalid_speech_response_timeout/);
 assert.match(speechEditorJs, /initialMobileTraining/);
 assert.match(speechEditorJs, /trainingRequested/);
 assert.match(speechEditorJs, /training:\s*\{[\s\S]*right:\s*\[[\s\S]*"phrases"/);
@@ -322,10 +373,10 @@ assert.match(speechEditorCss, /speech-training-prompt\{text-align:right\}/);
 console.log("PASS Sherpa client ASR baseline architecture");
 
 assert.match(
-    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
-    /#shouldUseButtonFacsimile[\s\S]*width > 280[\s\S]*height > 48/
+    presentationSource,
+    /shouldCompactButton[\s\S]*width > 280[\s\S]*height > 48/
 );
 assert.match(
-    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
-    /response-button-facsimile[\s\S]*background[\s\S]*color[\s\S]*border/
+    presentationSource,
+    /speech-response-button-facsimile[\s\S]*background[\s\S]*color[\s\S]*border/
 );
