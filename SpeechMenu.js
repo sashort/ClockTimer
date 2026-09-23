@@ -1796,10 +1796,12 @@ class SpeechMenu {
                     .querySelectorAll(
                         "details[open]"
                     ),
-                ...document
-                    .querySelectorAll(
-                        "[popover]"
-                    )
+                ...[
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ]
                     .filter(
                         SpeechMenu
                             .#openPopover
