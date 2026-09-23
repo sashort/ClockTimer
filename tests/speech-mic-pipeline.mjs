@@ -178,8 +178,8 @@ assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEdito
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
-assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*7;[^}]*display:\s*block;/s);
-assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*8;/s);
+assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*6;[^}]*display:\s*block;/s);
+assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*7;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
