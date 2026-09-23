@@ -43,6 +43,9 @@
     let selectedLocator;
     let highlighted;
     let functionNames = [];
+    let savedPreprocFunctions = [];
+    let draftPreprocFunctions = [];
+    let registryRevision = "missing";
     let applyTimer;
     let refreshTimer;
     let frameObserver;
@@ -67,7 +70,13 @@
     const dirty =
         () =>
             JSON.stringify(draft) !==
-            JSON.stringify(saved);
+                JSON.stringify(saved) ||
+            JSON.stringify(
+                draftPreprocFunctions
+            ) !==
+                JSON.stringify(
+                    savedPreprocFunctions
+                );
 
     const updateButtons = () => {
         const clean =
