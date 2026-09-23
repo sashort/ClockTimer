@@ -109,6 +109,13 @@
         }
     })();
 
+    const speechDiagnosticsEnabled =
+        new URLSearchParams(
+            location.search
+        ).has(
+            "speech-diagnostics"
+        );
+
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
             const existing = document.querySelector(
@@ -192,6 +199,30 @@
                         ) {
                             await loadClassicScript(
                                 "SpeechMicBar.js"
+                            );
+                        }
+
+                        if (
+                            speechDiagnosticsEnabled &&
+                            !customElements.get(
+                                "speech-diagnostics"
+                            )
+                        ) {
+                            await loadClassicScript(
+                                "SpeechDiagnostics.js"
+                            );
+                        }
+
+                        if (
+                            speechDiagnosticsEnabled &&
+                            !document.querySelector(
+                                "speech-diagnostics"
+                            )
+                        ) {
+                            document.body.append(
+                                document.createElement(
+                                    "speech-diagnostics"
+                                )
                             );
                         }
 
