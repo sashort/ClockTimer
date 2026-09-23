@@ -53,6 +53,7 @@
         "../../speech-editor-config/";
 
     const attributeNames = [
+        "speech-template",
         "speech-pattern",
         "speech-function",
         "speech-preproc",
@@ -3543,6 +3544,7 @@
             for (
                 const name of
                 [
+                    "speech-template",
                     "speech-pattern",
                     "speech-function",
                     "speech-preproc",
@@ -3754,42 +3756,68 @@
                 return false;
             }
 
-            const input =
+            const edit =
+                candidateEditElement();
+
+            if (!edit) {
+                return false;
+            }
+
+            const template =
+                regexBuilderResult
+                    .template ??
+                $("regexBuilderInput")
+                    .value
+                    .trim();
+
+            editorActions
+                .setSpeechTemplate({
+                    id:
+                        entryForElement(
+                            edit
+                        )?.id,
+                    selector:
+                        selectorFor(
+                            edit
+                        ),
+                    template
+                });
+
+            const templateInput =
+                form.elements
+                    .namedItem(
+                        "speech-template"
+                    );
+
+            const patternInput =
                 form.elements
                     .namedItem(
                         "speech-pattern"
                     );
 
-            if (!input) {
-                return false;
+            if (templateInput) {
+                templateInput.value =
+                    template;
             }
 
-            if (
-                input.value ===
-                regexBuilderResult
-                    .pattern
-            ) {
-                return true;
+            if (patternInput) {
+                patternInput.value =
+                    regexBuilderResult
+                        .pattern;
             }
 
-            input.value =
-                regexBuilderResult
-                    .pattern;
-
-            input.dispatchEvent(
-                new Event(
-                    "input",
-                    {
-                        bubbles:
-                            true
-                    }
+            fillDatalist(
+                $("preprocFieldOptions"),
+                namedFields(
+                    regexBuilderResult
+                        .pattern
                 )
             );
 
             setRegexBuilderMessage(
                 source === "live"
-                    ? "Live pattern updated in the editor draft."
-                    : "Regex pasted into speech-pattern. Save changes to commit it."
+                    ? "Live template and pattern updated in the editor draft."
+                    : "Natural template compiled into speech-pattern. Save changes to commit it."
             );
 
             return true;
@@ -4306,7 +4334,9 @@
         };
 
     const updateRegexBuilder =
-        () => {
+        (
+            applyLive = true
+        ) => {
             regexBuilderResult =
                 globalThis
                     .WMOFRegexBuilder
@@ -4348,6 +4378,7 @@
             if (
                 regexBuilderResult
                     .valid &&
+                applyLive &&
                 regexBuilderIsLive()
             ) {
                 applyRegexBuilderPattern(
@@ -8601,14 +8632,57 @@
                 entry.attrs ||
                 {};
 
+            const normalized =
+                normalizeEditorAttributes(
+                    attrs
+                );
+
+            if (
+                Object.prototype
+                    .hasOwnProperty
+                    .call(
+                        normalized,
+                        "speech-pattern"
+                    ) &&
+                !Object.prototype
+                    .hasOwnProperty
+                    .call(
+                        normalized,
+                        "speech-template"
+                    ) &&
+                entry.attrs[
+                    "speech-template"
+                ]
+            ) {
+                const compiled =
+                    globalThis
+                        .WMOFRegexBuilder
+                        ?.compile(
+                            entry.attrs[
+                                "speech-template"
+                            ]
+                        );
+
+                if (
+                    !compiled
+                        ?.valid ||
+                    compiled.pattern !==
+                        normalized[
+                            "speech-pattern"
+                        ]
+                ) {
+                    delete entry.attrs[
+                        "speech-template"
+                    ];
+                }
+            }
+
             for (
                 const [
                     name,
                     value
                 ] of Object.entries(
-                    normalizeEditorAttributes(
-                        attrs
-                    )
+                    normalized
                 )
             ) {
                 if (
@@ -9386,6 +9460,12 @@
                                 ),
                             modal:
                                 group.modal,
+                            template:
+                                group.element
+                                    ?.getAttribute(
+                                        "speech-template"
+                                    ) ||
+                                "",
                             pattern:
                                 group.pattern,
                             phrases: [
@@ -10450,6 +10530,7 @@
                     {
                         valid:
                             false,
+                        template,
                         pattern:
                             "",
                         error:
@@ -10462,6 +10543,274 @@
                     "Compile a human-readable speech phrase template into a speech-pattern regex.",
                 mutates:
                     false
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "getSpeechTemplateSyntax",
+            () => ({
+                sourceAttribute:
+                    "speech-template",
+                compiledAttribute:
+                    "speech-pattern",
+                operators: {
+                    optional:
+                        "[text]",
+                    alternatives:
+                        "{one|two|three}",
+                    wildcard:
+                        "<template>",
+                    namedWildcard:
+                        "<name:template>"
+                },
+                templates:
+                    (
+                        globalThis
+                            .WMOFRegexBuilder
+                            ?.templates ||
+                        []
+                    )
+                        .map(
+                            item => ({
+                                ...item
+                            })
+                        ),
+                examples: [
+                    {
+                        template:
+                            "set [the] {trip|total} goal to <percent>"
+                    },
+                    {
+                        template:
+                            "start at <time>"
+                    },
+                    {
+                        template:
+                            "enter <code:AAA>"
+                    }
+                ]
+            }),
+            {
+                description:
+                    "Return the natural Speech Editor template syntax, operators and wildcard catalog.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    additionalProperties:
+                        false
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "getSpeechTemplate",
+            input => {
+                const entry =
+                    editorEntryReference(
+                        input
+                    );
+
+                const element =
+                    editorElementReference(
+                        input
+                    );
+
+                if (
+                    !entry &&
+                    !element
+                ) {
+                    throw new Error(
+                        "Speech target was not found."
+                    );
+                }
+
+                const template =
+                    entry?.attrs?.[
+                        "speech-template"
+                    ] ??
+                    element
+                        ?.getAttribute(
+                            "speech-template"
+                        ) ??
+                    "";
+
+                const pattern =
+                    entry?.attrs?.[
+                        "speech-pattern"
+                    ] ??
+                    element
+                        ?.getAttribute(
+                            "speech-pattern"
+                        ) ??
+                    "";
+
+                return {
+                    template,
+                    pattern,
+                    compiled:
+                        template
+                            ? globalThis
+                                .WMOFRegexBuilder
+                                ?.compile(
+                                    template
+                                )
+                            : null
+                };
+            },
+            {
+                description:
+                    "Return the persisted natural template and compiled regex for a speech target.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    properties: {
+                        id: {
+                            type:
+                                "string"
+                        },
+                        selector: {
+                            type:
+                                "string"
+                        }
+                    },
+                    additionalProperties:
+                        false
+                }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "setSpeechTemplate",
+            input => {
+                const template =
+                    String(
+                        input?.template ??
+                        ""
+                    )
+                        .trim();
+
+                const entry =
+                    editorEntryReference(
+                        input,
+                        {
+                            createAttribute:
+                                true
+                        }
+                    );
+
+                if (!entry) {
+                    throw new Error(
+                        "Speech target was not found."
+                    );
+                }
+
+                if (!template) {
+                    applyEditorAttributes(
+                        entry,
+                        {
+                            "speech-template":
+                                undefined
+                        }
+                    );
+
+                    scheduleApply();
+
+                    return {
+                        template:
+                            "",
+                        pattern:
+                            entry.attrs?.[
+                                "speech-pattern"
+                            ] ||
+                            ""
+                    };
+                }
+
+                const compiled =
+                    globalThis
+                        .WMOFRegexBuilder
+                        ?.compile(
+                            template
+                        );
+
+                if (
+                    !compiled
+                        ?.valid
+                ) {
+                    throw new Error(
+                        compiled?.error ||
+                        "Speech template could not be compiled."
+                    );
+                }
+
+                applyEditorAttributes(
+                    entry,
+                    {
+                        "speech-template":
+                            compiled.template,
+                        "speech-pattern":
+                            compiled.pattern
+                    }
+                );
+
+                scheduleApply();
+
+                return {
+                    template:
+                        compiled.template,
+                    pattern:
+                        compiled.pattern
+                };
+            },
+            {
+                description:
+                    "Set the natural speech template for a target and compile it into speech-pattern.",
+                input: {
+                    type:
+                        "object",
+                    required: [
+                        "template"
+                    ],
+                    properties: {
+                        id: {
+                            type:
+                                "string"
+                        },
+                        selector: {
+                            type:
+                                "string"
+                        },
+                        target: {
+                            type:
+                                "string"
+                        },
+                        template: {
+                            type:
+                                "string"
+                        }
+                    },
+                    additionalProperties:
+                        false
+                },
+                examples: [
+                    {
+                        action:
+                            "setSpeechTemplate",
+                        input: {
+                            selector:
+                                "#tripActionControls",
+                            template:
+                                "set [the] {trip|total} goal to <percent>"
+                        }
+                    }
+                ]
             }
         );
 
@@ -10816,6 +11165,8 @@
             "getEditorState",
             "getPreviewElements",
             "getSpeechCatalog",
+            "getSpeechTemplateSyntax",
+            "getSpeechTemplate",
             "validateChanges",
             "selectElement",
             "setOverlay",
@@ -10962,6 +11313,47 @@
                 },
                 additionalProperties: false
             }
+        },
+
+        getSpeechTemplateSyntax: {
+            input: {
+                type: "object",
+                additionalProperties: false
+            }
+        },
+
+        getSpeechTemplate: {
+            input: {
+                type: "object",
+                properties: {
+                    id: {type: "string"},
+                    selector: {type: "string"}
+                },
+                additionalProperties: false
+            }
+        },
+
+        setSpeechTemplate: {
+            input: {
+                type: "object",
+                required: ["template"],
+                properties: {
+                    id: {type: "string"},
+                    selector: {type: "string"},
+                    target: {type: "string"},
+                    template: {type: "string"}
+                },
+                additionalProperties: false
+            },
+            examples: [
+                {
+                    action: "setSpeechTemplate",
+                    input: {
+                        selector: "#tripActionControls",
+                        template: "set [the] {trip|total} goal to <percent>"
+                    }
+                }
+            ]
         },
 
         compileSpeechPattern: {
