@@ -52,6 +52,63 @@
     const endpoint =
         "../../speech-editor-config/";
 
+    const trainingEndpoint =
+        "../../speech-corrections/";
+
+    const trainingOnly =
+        document.body
+            .dataset
+            .trainingOnly ===
+        "true";
+
+    const initialMobileTraining =
+        matchMedia(
+            "(max-width: 760px)"
+        ).matches &&
+        (
+            matchMedia(
+                "(pointer: coarse)"
+            ).matches ||
+            /Android|iPhone|iPod|Mobile/i
+                .test(
+                    navigator.userAgent
+                )
+        );
+
+    let trainingMode =
+        trainingOnly ||
+        initialMobileTraining;
+
+    let trainingStats =
+        new Map();
+
+    let trainingCanWriteCorrections =
+        canWrite;
+
+    let trainingCurrent;
+    let trainingSession;
+    let trainingSpeechMenu;
+    let trainingSpeechStartedByEditor =
+        false;
+    let trainingPreviousExecutionEnabled =
+        true;
+    let trainingPendingTimer;
+    let trainingPendingAttempt;
+    const trainingSeenUtterances =
+        new Set();
+
+    const TRAINING_PROMPT_COUNT =
+        10;
+
+    const TRAINING_STYLES =
+        Object.freeze([
+            "Normal pace",
+            "Fast",
+            "Very fast",
+            "Natural work pace",
+            "Quiet voice"
+        ]);
+
     const attributeNames = [
         "speech-template",
         "speech-pattern",
@@ -119,6 +176,1165 @@
         error: "Enter a phrase template."
     };
     let regexBuilderPickerRange;
+
+    const normalizeTrainingText =
+        value =>
+            String(value || "")
+                .toLocaleLowerCase(
+                    "en-US"
+                )
+                .replace(
+                    /[^\p{L}\p{N}\s:.]+/gu,
+                    " "
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+    const trainingGroupId =
+        group =>
+            group.element
+                ?.dataset
+                ?.speechEditorId ||
+            selectorFor(
+                group.element
+            );
+
+    const trainingPhraseKey =
+        (
+            group,
+            phrase
+        ) =>
+            trainingGroupId(
+                group
+            ) +
+            "::" +
+            String(phrase);
+
+    const setTrainingMode =
+        (
+            enabled,
+            {
+                mobile =
+                    matchMedia(
+                        "(max-width: 760px)"
+                    ).matches
+            } = {}
+        ) => {
+            trainingMode =
+                Boolean(
+                    enabled
+                );
+
+            document.body
+                .classList
+                .toggle(
+                    "training-mode",
+                    trainingMode
+                );
+
+            document.body
+                .classList
+                .toggle(
+                    "training-mobile",
+                    trainingMode &&
+                    Boolean(
+                        mobile
+                    )
+                );
+
+            const button =
+                $(
+                    "trainingModeButton"
+                );
+
+            if (button) {
+                button.setAttribute(
+                    "aria-pressed",
+                    String(
+                        trainingMode
+                    )
+                );
+
+                button.textContent =
+                    trainingMode
+                        ? "Training Mode: On"
+                        : "Training Mode";
+            }
+        };
+
+    const trainingSlotValue =
+        (
+            name,
+            index
+        ) => {
+            const values = {
+                spokenTime: [
+                    "five thirty",
+                    "ten fifteen",
+                    "twelve forty five",
+                    "six fifteen pm",
+                    "eight oh five"
+                ],
+                timeValue: [
+                    "one hour",
+                    "fifty nine minutes",
+                    "one hour thirty minutes",
+                    "forty five minutes",
+                    "two hours"
+                ],
+                percent: [
+                    "one hundred percent",
+                    "ninety five percent",
+                    "eighty five percent",
+                    "fifty percent",
+                    "one hundred ten percent"
+                ],
+                spokenValue: [
+                    "five thirty",
+                    "fifty nine",
+                    "ten fifteen",
+                    "forty five",
+                    "one"
+                ],
+                value: [
+                    "one",
+                    "fifteen",
+                    "thirty",
+                    "fifty nine",
+                    "five"
+                ]
+            };
+
+            const list =
+                values[name] ||
+                values.value;
+
+            return list[
+                index %
+                list.length
+            ];
+        };
+
+    const trainingPromptFor =
+        (
+            phrase,
+            index
+        ) =>
+            String(
+                phrase || ""
+            )
+                .replace(
+                    /<([^>]+)>/g,
+                    (
+                        _,
+                        slot
+                    ) =>
+                        trainingSlotValue(
+                            slot,
+                            index
+                        )
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+    const trainingApi =
+        async (
+            method = "GET",
+            body,
+            phraseKey
+        ) => {
+            const url =
+                new URL(
+                    trainingEndpoint,
+                    location.href
+                );
+
+            url.searchParams.set(
+                "language",
+                "en-US"
+            );
+
+            if (
+                method ===
+                "GET"
+            ) {
+                url.searchParams.set(
+                    "manage",
+                    "1"
+                );
+
+                if (phraseKey) {
+                    url.searchParams.set(
+                        "phraseKey",
+                        phraseKey
+                    );
+                }
+            }
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method,
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json",
+                            ...(
+                                body
+                                    ? {
+                                        "Content-Type":
+                                            "application/json",
+                                        "X-CSRF-Token":
+                                            document.body
+                                                .dataset
+                                                .csrf
+                                    }
+                                    : {}
+                            )
+                        },
+                        ...(
+                            body
+                                ? {
+                                    body:
+                                        JSON.stringify(
+                                            body
+                                        )
+                                }
+                                : {}
+                        )
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (
+                typeof data
+                    .csrfToken ===
+                "string"
+            ) {
+                document.body
+                    .dataset
+                    .csrf =
+                    data.csrfToken;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    data.error ||
+                    "Speech training request failed."
+                );
+            }
+
+            return data;
+        };
+
+    const updateTrainingStats =
+        stats => {
+            if (
+                !stats ||
+                typeof stats !==
+                    "object"
+            ) {
+                return;
+            }
+
+            for (
+                const [
+                    key,
+                    value
+                ] of
+                Object.entries(
+                    stats
+                )
+            ) {
+                if (
+                    value &&
+                    typeof value ===
+                        "object"
+                ) {
+                    trainingStats
+                        .set(
+                            key,
+                            value
+                        );
+                }
+            }
+        };
+
+    const loadTrainingStats =
+        async () => {
+            try {
+                const data =
+                    await trainingApi();
+
+                trainingCanWriteCorrections =
+                    Boolean(
+                        data.canWrite
+                    );
+
+                updateTrainingStats(
+                    data.trainingStats
+                );
+
+                renderPhraseList();
+
+                return data;
+            }
+            catch (
+                error
+            ) {
+                console.warn(
+                    "Speech training stats unavailable.",
+                    error
+                );
+
+                return undefined;
+            }
+        };
+
+    const trainingStateLabel =
+        state =>
+            state ===
+                "well-trained"
+                ? "Well trained"
+                : state ===
+                    "needs-samples"
+                    ? "Needs more samples"
+                    : "Untrained";
+
+    const setTrainingMessage =
+        (
+            message,
+            error = false
+        ) => {
+            const element =
+                $(
+                    "speechTrainingMessage"
+                );
+
+            if (!element) {
+                return;
+            }
+
+            element.textContent =
+                message || "";
+
+            element.classList
+                .toggle(
+                    "error",
+                    error
+                );
+        };
+
+    const renderTrainingSummary =
+        stats => {
+            const value =
+                stats || {
+                    samples: 0,
+                    correct: 0,
+                    accuracy: null,
+                    state:
+                        "untrained"
+                };
+
+            $(
+                "speechTrainingSamples"
+            ).textContent =
+                String(
+                    value.samples ||
+                    0
+                );
+
+            $(
+                "speechTrainingCorrect"
+            ).textContent =
+                String(
+                    value.correct ||
+                    0
+                );
+
+            $(
+                "speechTrainingAccuracy"
+            ).textContent =
+                Number.isFinite(
+                    value.accuracy
+                )
+                    ? Math.round(
+                        value.accuracy *
+                        100
+                    ) + "%"
+                    : "—";
+
+            $(
+                "speechTrainingState"
+            ).textContent =
+                trainingStateLabel(
+                    value.state
+                );
+        };
+
+    const renderTrainingVariants =
+        variants => {
+            const container =
+                $(
+                    "speechTrainingVariants"
+                );
+
+            container
+                .replaceChildren();
+
+            if (
+                !Array.isArray(
+                    variants
+                ) ||
+                !variants.length
+            ) {
+                const empty =
+                    document.createElement(
+                        "div"
+                    );
+
+                empty.className =
+                    "empty-list";
+
+                empty.textContent =
+                    "No samples recorded for this phrase yet.";
+
+                container.append(
+                    empty
+                );
+
+                return;
+            }
+
+            for (
+                const variant of
+                variants
+            ) {
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "speech-training-variant";
+
+                const phrase =
+                    document.createElement(
+                        "strong"
+                    );
+
+                phrase.textContent =
+                    variant.observed;
+
+                const count =
+                    document.createElement(
+                        "span"
+                    );
+
+                count.textContent =
+                    "×" +
+                    variant.count +
+                    (
+                        variant.incorrect
+                            ? " · " +
+                                variant.incorrect +
+                                " missed"
+                            : " · correct"
+                    );
+
+                row.append(
+                    phrase,
+                    count
+                );
+
+                if (
+                    trainingCanWriteCorrections &&
+                    variant.incorrect
+                ) {
+                    const use =
+                        document.createElement(
+                            "button"
+                        );
+
+                    use.type =
+                        "button";
+
+                    use.textContent =
+                        "Use correction";
+
+                    use.addEventListener(
+                        "click",
+                        () => {
+                            $(
+                                "speechCorrectionObserved"
+                            ).value =
+                                variant.observed;
+
+                            $(
+                                "speechCorrectionCanonical"
+                            ).value =
+                                trainingCurrent
+                                    ?.prompt ||
+                                "";
+                        }
+                    );
+
+                    row.append(
+                        use
+                    );
+                }
+
+                container.append(
+                    row
+                );
+            }
+        };
+
+    const refreshTrainingDialog =
+        async () => {
+            if (!trainingCurrent) {
+                return;
+            }
+
+            const data =
+                await trainingApi(
+                    "GET",
+                    undefined,
+                    trainingCurrent
+                        .key
+                );
+
+            trainingCanWriteCorrections =
+                Boolean(
+                    data.canWrite
+                );
+
+            updateTrainingStats(
+                data.trainingStats
+            );
+
+            renderTrainingSummary(
+                trainingStats.get(
+                    trainingCurrent
+                        .key
+                )
+            );
+
+            renderTrainingVariants(
+                data.training
+                    ?.variants ||
+                []
+            );
+
+            const correctionSection =
+                $(
+                    "speechCorrectionSection"
+                );
+
+            if (
+                correctionSection
+            ) {
+                correctionSection.hidden =
+                    !trainingCanWriteCorrections;
+            }
+
+            renderPhraseList();
+        };
+
+    const openPhraseTraining =
+        async (
+            group,
+            phrase
+        ) => {
+            const key =
+                trainingPhraseKey(
+                    group,
+                    phrase
+                );
+
+            trainingCurrent = {
+                group,
+                phrase,
+                key,
+                prompt:
+                    trainingPromptFor(
+                        phrase,
+                        0
+                    )
+            };
+
+            $(
+                "speechTrainingPhrase"
+            ).textContent =
+                phrase;
+
+            $(
+                "speechTrainingCanonical"
+            ).value =
+                trainingCurrent
+                    .prompt;
+
+            $(
+                "speechTrainingObserved"
+            ).value =
+                "";
+
+            $(
+                "speechCorrectionObserved"
+            ).value =
+                "";
+
+            $(
+                "speechCorrectionCanonical"
+            ).value =
+                trainingCurrent
+                    .prompt;
+
+            $(
+                "speechTrainingStyle"
+            ).textContent =
+                "Ready to train";
+
+            $(
+                "speechTrainingPrompt"
+            ).textContent =
+                trainingCurrent
+                    .prompt;
+
+            $(
+                "speechTrainingHeard"
+            ).textContent =
+                "";
+
+            setTrainingMessage(
+                ""
+            );
+
+            renderTrainingSummary(
+                trainingStats.get(
+                    key
+                )
+            );
+
+            try {
+                await refreshTrainingDialog();
+            }
+            catch (
+                error
+            ) {
+                setTrainingMessage(
+                    error.message,
+                    true
+                );
+            }
+
+            const dialog =
+                $(
+                    "speechTrainingDialog"
+                );
+
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        };
+
+    const setTrainingSessionControls =
+        active => {
+            $(
+                "speechTrainingStart"
+            ).disabled =
+                active;
+
+            for (
+                const id of [
+                    "speechTrainingScratch",
+                    "speechTrainingSkip",
+                    "speechTrainingRepeat",
+                    "speechTrainingStop"
+                ]
+            ) {
+                $(id).disabled =
+                    !active;
+            }
+
+            const popup =
+                $(
+                    "speechTrainingControlsPopup"
+                );
+
+            popup.hidden =
+                !active;
+
+            document
+                .querySelector(
+                    ".speech-training-session"
+                )
+                ?.setAttribute(
+                    "data-active",
+                    String(active)
+                );
+        };
+
+    const renderTrainingPrompt =
+        () => {
+            if (
+                !trainingSession ||
+                !trainingCurrent
+            ) {
+                return;
+            }
+
+            const index =
+                trainingSession
+                    .index;
+
+            const prompt =
+                trainingPromptFor(
+                    trainingCurrent
+                        .phrase,
+                    index
+                );
+
+            trainingCurrent.prompt =
+                prompt;
+
+            $(
+                "speechTrainingStyle"
+            ).textContent =
+                TRAINING_STYLES[
+                    index %
+                    TRAINING_STYLES
+                        .length
+                ] +
+                " · " +
+                (
+                    index + 1
+                ) +
+                "/" +
+                TRAINING_PROMPT_COUNT;
+
+            $(
+                "speechTrainingPrompt"
+            ).textContent =
+                prompt;
+
+            $(
+                "speechTrainingCanonical"
+            ).value =
+                prompt;
+
+            $(
+                "speechCorrectionCanonical"
+            ).value =
+                prompt;
+
+            $(
+                "speechTrainingHeard"
+            ).textContent =
+                "Listening…";
+        };
+
+    const cancelPendingTrainingAttempt =
+        () => {
+            clearTimeout(
+                trainingPendingTimer
+            );
+
+            trainingPendingTimer =
+                undefined;
+
+            trainingPendingAttempt =
+                undefined;
+        };
+
+    const advanceTrainingPrompt =
+        () => {
+            if (!trainingSession) {
+                return;
+            }
+
+            trainingSession
+                .index++;
+
+            if (
+                trainingSession.index >=
+                TRAINING_PROMPT_COUNT
+            ) {
+                void stopTrainingSession(
+                    "Training set complete."
+                );
+
+                return;
+            }
+
+            renderTrainingPrompt();
+        };
+
+    const recordTrainingSample =
+        async (
+            canonical,
+            observed
+        ) => {
+            if (!trainingCurrent) {
+                return;
+            }
+
+            const data =
+                await trainingApi(
+                    "POST",
+                    {
+                        action:
+                            "sample",
+                        language:
+                            "en-US",
+                        phraseKey:
+                            trainingCurrent
+                                .key,
+                        phrase:
+                            trainingCurrent
+                                .phrase,
+                        canonical,
+                        observed
+                    }
+                );
+
+            if (data.stats) {
+                trainingStats
+                    .set(
+                        trainingCurrent
+                            .key,
+                        data.stats
+                    );
+
+                renderTrainingSummary(
+                    data.stats
+                );
+            }
+
+            return data;
+        };
+
+    const commitPendingTrainingAttempt =
+        async () => {
+            const pending =
+                trainingPendingAttempt;
+
+            if (
+                !pending ||
+                !trainingSession
+            ) {
+                return;
+            }
+
+            trainingPendingAttempt =
+                undefined;
+            trainingPendingTimer =
+                undefined;
+
+            try {
+                const data =
+                    await recordTrainingSample(
+                        pending.canonical,
+                        pending.observed
+                    );
+
+                $(
+                    "speechTrainingHeard"
+                ).textContent =
+                    "Heard: “" +
+                    pending.observed +
+                    "” — " +
+                    (
+                        data?.sample
+                            ?.correct
+                            ? "correct"
+                            : "needs correction"
+                    );
+
+                await refreshTrainingDialog();
+                advanceTrainingPrompt();
+            }
+            catch (
+                error
+            ) {
+                setTrainingMessage(
+                    error.message,
+                    true
+                );
+            }
+        };
+
+    const scratchTrainingAttempt =
+        () => {
+            cancelPendingTrainingAttempt();
+
+            $(
+                "speechTrainingHeard"
+            ).textContent =
+                "Attempt discarded. Try the same prompt again.";
+
+            renderTrainingPrompt();
+        };
+
+    const stopTrainingSession =
+        async (
+            message =
+                "Training stopped."
+        ) => {
+            cancelPendingTrainingAttempt();
+
+            if (
+                trainingSpeechMenu
+            ) {
+                trainingSpeechMenu
+                    .events
+                    ?.removeEventListener(
+                        "utteranceTranscriptChanged",
+                        handleTrainingTranscript
+                    );
+
+                trainingSpeechMenu
+                    .executionEnabled =
+                    trainingPreviousExecutionEnabled;
+
+                if (
+                    trainingSpeechStartedByEditor
+                ) {
+                    try {
+                        await trainingSpeechMenu
+                            .stop();
+                    }
+                    catch {}
+                }
+            }
+
+            trainingSpeechMenu =
+                undefined;
+            trainingSpeechStartedByEditor =
+                false;
+            trainingSession =
+                undefined;
+
+            trainingSeenUtterances
+                .clear();
+
+            setTrainingSessionControls(
+                false
+            );
+
+            $(
+                "speechTrainingStyle"
+            ).textContent =
+                "Training idle";
+
+            $(
+                "speechTrainingHeard"
+            ).textContent =
+                message;
+
+            try {
+                await refreshTrainingDialog();
+            }
+            catch {}
+        };
+
+    const handleTrainingTranscript =
+        event => {
+            if (
+                !trainingSession ||
+                !event.detail
+                    ?.isFinal
+            ) {
+                return;
+            }
+
+            const id =
+                event.detail.id;
+
+            if (
+                trainingSeenUtterances
+                    .has(id)
+            ) {
+                return;
+            }
+
+            trainingSeenUtterances
+                .add(id);
+
+            const observed =
+                normalizeTrainingText(
+                    event.detail
+                        .transcript
+                );
+
+            if (!observed) {
+                return;
+            }
+
+            const control =
+                observed
+                    .replace(
+                        /\s+/g,
+                        " "
+                    );
+
+            if (
+                control ===
+                    "scratch that"
+            ) {
+                scratchTrainingAttempt();
+                return;
+            }
+
+            if (
+                control ===
+                    "skip"
+            ) {
+                cancelPendingTrainingAttempt();
+                advanceTrainingPrompt();
+                return;
+            }
+
+            if (
+                control ===
+                    "repeat prompt"
+            ) {
+                cancelPendingTrainingAttempt();
+                renderTrainingPrompt();
+                return;
+            }
+
+            if (
+                control ===
+                    "stop training"
+            ) {
+                void stopTrainingSession();
+                return;
+            }
+
+            cancelPendingTrainingAttempt();
+
+            const canonical =
+                trainingCurrent
+                    ?.prompt ||
+                "";
+
+            trainingPendingAttempt = {
+                canonical,
+                observed
+            };
+
+            $(
+                "speechTrainingObserved"
+            ).value =
+                observed;
+
+            $(
+                "speechTrainingHeard"
+            ).textContent =
+                "Heard: “" +
+                observed +
+                "”";
+
+            trainingPendingTimer =
+                setTimeout(
+                    () =>
+                        void commitPendingTrainingAttempt(),
+                    1800
+                );
+        };
+
+    const startTrainingSession =
+        async () => {
+            if (
+                !trainingCurrent ||
+                trainingSession
+            ) {
+                return;
+            }
+
+            const speechMenu =
+                frame.contentWindow
+                    ?.SpeechMenu;
+
+            if (!speechMenu) {
+                throw new Error(
+                    "The speech recognizer is still loading in the preview."
+                );
+            }
+
+            trainingSpeechMenu =
+                speechMenu;
+
+            trainingPreviousExecutionEnabled =
+                speechMenu
+                    .executionEnabled;
+
+            speechMenu.executionEnabled =
+                false;
+
+            trainingSpeechStartedByEditor =
+                !speechMenu.started;
+
+            speechMenu.events
+                .addEventListener(
+                    "utteranceTranscriptChanged",
+                    handleTrainingTranscript
+                );
+
+            if (
+                trainingSpeechStartedByEditor
+            ) {
+                const started =
+                    await speechMenu.start(
+                        "en-US"
+                    );
+
+                if (!started) {
+                    speechMenu.events
+                        .removeEventListener(
+                            "utteranceTranscriptChanged",
+                            handleTrainingTranscript
+                        );
+
+                    speechMenu.executionEnabled =
+                        trainingPreviousExecutionEnabled;
+
+                    trainingSpeechMenu =
+                        undefined;
+
+                    throw new Error(
+                        "Speech recognition could not start."
+                    );
+                }
+            }
+
+            trainingSession = {
+                index: 0
+            };
+
+            trainingSeenUtterances
+                .clear();
+
+            setTrainingSessionControls(
+                true
+            );
+
+            renderTrainingPrompt();
+        };
 
     const status =
         (message, error = false) => {
@@ -2165,8 +3381,107 @@
                     }
                 );
 
+                const training =
+                    document.createElement(
+                        "button"
+                    );
+
+                training.type =
+                    "button";
+
+                training.className =
+                    "phrase-training-button";
+
+                const phraseKey =
+                    trainingPhraseKey(
+                        group,
+                        phrase
+                    );
+
+                const stats =
+                    trainingStats.get(
+                        phraseKey
+                    );
+
+                const state =
+                    stats?.state ||
+                    "untrained";
+
+                training.dataset
+                    .trainingState =
+                    state;
+
+                training.title =
+                    trainingStateLabel(
+                        state
+                    ) +
+                    (
+                        stats
+                            ? " — " +
+                                stats.samples +
+                                " samples" +
+                                (
+                                    Number.isFinite(
+                                        stats.accuracy
+                                    )
+                                        ? ", " +
+                                            Math.round(
+                                                stats.accuracy *
+                                                100
+                                            ) +
+                                            "% correct"
+                                        : ""
+                                )
+                            : ""
+                    );
+
+                training.setAttribute(
+                    "aria-label",
+                    "Training stats for " +
+                        phrase +
+                        ": " +
+                        training.title
+                );
+
+                const glyph =
+                    document.createElement(
+                        "span"
+                    );
+
+                glyph.className =
+                    "training-glyph";
+
+                glyph.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+
+                training.append(
+                    glyph
+                );
+
+                training.addEventListener(
+                    "pointerdown",
+                    event =>
+                        event.stopPropagation()
+                );
+
+                training.addEventListener(
+                    "click",
+                    event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        void openPhraseTraining(
+                            group,
+                            phrase
+                        );
+                    }
+                );
+
                 chip.append(
                     text,
+                    training,
                     remove
                 );
 
@@ -5105,6 +6420,8 @@
                     "phrasesChanged",
                     scheduleLiveRefresh
                 );
+
+            void loadTrainingStats();
 
             frameObserver
                 ?.disconnect();
@@ -11568,10 +12885,14 @@
             "access-mode-badge";
 
         accessNotice.textContent =
-            "Developer Preview — read only";
+            trainingOnly
+                ? "Training Mode"
+                : "Developer Preview — read only";
 
         accessNotice.title =
-            "Developer Preview can inspect the Speech Editor but cannot change speech configuration.";
+            trainingOnly
+                ? "Training Mode can submit recognition samples but cannot change speech configuration."
+                : "Developer Preview can inspect the Speech Editor but cannot change speech configuration.";
 
         document
             .querySelector(
@@ -11598,6 +12919,216 @@
 
         enforceAccessMode();
     }
+
+    const trainingModeButton =
+        $(
+            "trainingModeButton"
+        );
+
+    if (trainingModeButton) {
+        trainingModeButton.hidden =
+            trainingOnly;
+
+        trainingModeButton
+            .addEventListener(
+                "click",
+                () =>
+                    setTrainingMode(
+                        !trainingMode
+                    )
+            );
+    }
+
+    setTrainingMode(
+        trainingMode,
+        {
+            mobile:
+                initialMobileTraining
+        }
+    );
+
+    addEventListener(
+        "resize",
+        () => {
+            if (!trainingMode) {
+                return;
+            }
+
+            document.body
+                .classList
+                .toggle(
+                    "training-mobile",
+                    matchMedia(
+                        "(max-width: 760px)"
+                    ).matches
+                );
+        }
+    );
+
+    $("speechTrainingClose")
+        ?.addEventListener(
+            "click",
+            async () => {
+                await stopTrainingSession(
+                    "Training closed."
+                );
+
+                $(
+                    "speechTrainingDialog"
+                ).close();
+            }
+        );
+
+    $("speechTrainingStart")
+        ?.addEventListener(
+            "click",
+            () => {
+                void startTrainingSession()
+                    .catch(
+                        error =>
+                            setTrainingMessage(
+                                error.message,
+                                true
+                            )
+                    );
+            }
+        );
+
+    $("speechTrainingScratch")
+        ?.addEventListener(
+            "click",
+            scratchTrainingAttempt
+        );
+
+    $("speechTrainingSkip")
+        ?.addEventListener(
+            "click",
+            () => {
+                cancelPendingTrainingAttempt();
+                advanceTrainingPrompt();
+            }
+        );
+
+    $("speechTrainingRepeat")
+        ?.addEventListener(
+            "click",
+            () => {
+                cancelPendingTrainingAttempt();
+                renderTrainingPrompt();
+            }
+        );
+
+    $("speechTrainingStop")
+        ?.addEventListener(
+            "click",
+            () =>
+                void stopTrainingSession()
+        );
+
+    $("speechTrainingRecord")
+        ?.addEventListener(
+            "click",
+            async () => {
+                if (!trainingCurrent) {
+                    return;
+                }
+
+                try {
+                    await recordTrainingSample(
+                        $(
+                            "speechTrainingCanonical"
+                        ).value,
+                        $(
+                            "speechTrainingObserved"
+                        ).value
+                    );
+
+                    setTrainingMessage(
+                        "Training sample recorded."
+                    );
+
+                    await refreshTrainingDialog();
+                }
+                catch (
+                    error
+                ) {
+                    setTrainingMessage(
+                        error.message,
+                        true
+                    );
+                }
+            }
+        );
+
+    $("speechCorrectionSave")
+        ?.addEventListener(
+            "click",
+            async () => {
+                if (
+                    !trainingCanWriteCorrections
+                ) {
+                    return;
+                }
+
+                try {
+                    await trainingApi(
+                        "POST",
+                        {
+                            action:
+                                "correction",
+                            language:
+                                "en-US",
+                            observed:
+                                $(
+                                    "speechCorrectionObserved"
+                                ).value,
+                            canonical:
+                                $(
+                                    "speechCorrectionCanonical"
+                                ).value,
+                            matchType:
+                                $(
+                                    "speechCorrectionMatchType"
+                                ).value
+                        }
+                    );
+
+                    setTrainingMessage(
+                        "Correction saved."
+                    );
+
+                    await refreshTrainingDialog();
+                }
+                catch (
+                    error
+                ) {
+                    setTrainingMessage(
+                        error.message,
+                        true
+                    );
+                }
+            }
+        );
+
+    $("speechTrainingDialog")
+        ?.addEventListener(
+            "cancel",
+            event => {
+                event.preventDefault();
+
+                void stopTrainingSession(
+                    "Training closed."
+                )
+                    .finally(
+                        () =>
+                            $(
+                                "speechTrainingDialog"
+                            ).close()
+                    );
+            }
+        );
+
+    void loadTrainingStats();
 
     $("saveButton")
         .addEventListener(
