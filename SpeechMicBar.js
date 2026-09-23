@@ -58,7 +58,7 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 #bar {
-                    --speech-load-progress: 0%;
+                    --speech-load-clip-right: 100%;
                     position: relative;
                     isolation: isolate;
                     box-sizing: border-box;
@@ -80,25 +80,69 @@ class SpeechMicBar extends HTMLElement {
                 #bar::before {
                     content: "";
                     position: absolute;
-                    inset: 0 auto 0 0;
-                    width: var(--speech-load-progress);
+                    inset: 0;
                     z-index: 0;
                     border-radius: inherit;
-                    background:
+                    background-image:
                         linear-gradient(
                             90deg,
                             #003b73 0%,
                             #0068c9 55%,
                             #a9ddf7 100%
+                        ),
+                        linear-gradient(
+                            105deg,
+                            transparent 0%,
+                            transparent 32%,
+                            rgb(169 221 247 / 10%) 42%,
+                            rgb(169 221 247 / 58%) 50%,
+                            rgb(169 221 247 / 10%) 58%,
+                            transparent 68%,
+                            transparent 100%
+                        );
+                    background-size:
+                        100% 100%,
+                        300% 100%;
+                    background-position:
+                        0 0,
+                        100% 0;
+                    clip-path:
+                        inset(
+                            0
+                            var(--speech-load-clip-right)
+                            0
+                            0
+                            round 11px
                         );
                     opacity: 0;
                     transition:
                         opacity 160ms linear;
                     pointer-events: none;
+                    will-change:
+                        clip-path,
+                        background-position;
                 }
 
                 :host([loading]) #bar::before {
-                    opacity: .86;
+                    opacity: .9;
+                    animation:
+                        speech-load-wave
+                        1.35s
+                        linear
+                        infinite;
+                }
+
+                @keyframes speech-load-wave {
+                    from {
+                        background-position:
+                            0 0,
+                            100% 0;
+                    }
+                    to {
+                        background-position:
+                            0 0,
+                            0% 0;
+                    }
                 }
 
                 #bar > * {
@@ -312,7 +356,16 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 @media (prefers-reduced-motion: reduce) {
-                    .wave { animation: none !important; }
+                    .wave,
+                    :host([loading]) #bar::before {
+                        animation: none !important;
+                    }
+
+                    :host([loading]) #bar::before {
+                        background-position:
+                            0 0,
+                            50% 0;
+                    }
                 }
             </style>
             <div id="bar">
@@ -1048,8 +1101,12 @@ class SpeechMicBar extends HTMLElement {
 
                 this.#bar.style
                     .setProperty(
-                        "--speech-load-progress",
-                        progress + "%"
+                        "--speech-load-clip-right",
+                        (
+                            100 -
+                            progress
+                        ) +
+                        "%"
                     );
 
                 this.#showStatus(
@@ -1100,8 +1157,8 @@ class SpeechMicBar extends HTMLElement {
         );
         this.#bar.style
             .setProperty(
-                "--speech-load-progress",
-                "0%"
+                "--speech-load-clip-right",
+                "100%"
             );
     }
 
