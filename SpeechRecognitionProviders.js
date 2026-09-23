@@ -4,6 +4,7 @@
     class BrowserSpeechProvider {
         #Recognition;
         #language = "en-US";
+        #recognitionContext = {};
         #micTrack;
         #utterances = new Map();
 
@@ -18,7 +19,7 @@
         get kind() { return "browser"; }
         get supported() { return typeof this.#Recognition === "function"; }
 
-        async start({language = "en-US", micTrack} = {}) {
+        async start({language = "en-US", micTrack, recognitionContext = {}} = {}) {
             if (!this.supported) {
                 throw new DOMException(
                     "Speech recognition is not supported by this browser.",
@@ -34,8 +35,28 @@
             }
 
             this.#language = language;
+            this.#recognitionContext = recognitionContext;
             this.#micTrack = micTrack;
             return true;
+        }
+
+        setRecognitionContext(context = {}) {
+            this.#recognitionContext = context;
+        }
+
+        setRecognitionContext(context = {}) {
+            this.#recognitionContext = context;
+
+            if (
+                this.#socket?.readyState ===
+                WebSocket.OPEN
+            ) {
+                this.#sendControl({
+                    type: "context-update",
+                    sessionId: this.#sessionId,
+                    context
+                });
+            }
         }
 
         async stop() {
@@ -330,6 +351,7 @@
         #url;
         #socket;
         #language = "en-US";
+        #recognitionContext = {};
         #sessionId;
         #openPromise;
         #utterances = new Map();
@@ -350,7 +372,7 @@
         get kind() { return "streaming"; }
         get supported() { return typeof WebSocket === "function"; }
 
-        async start({language = "en-US", sessionId} = {}) {
+        async start({language = "en-US", sessionId, recognitionContext = {}} = {}) {
             if (!this.supported) {
                 throw new DOMException(
                     "WebSocket speech streaming is not supported.",
@@ -359,6 +381,7 @@
             }
 
             this.#language = language;
+            this.#recognitionContext = recognitionContext;
             this.#sessionId =
                 sessionId ||
                 `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -368,6 +391,7 @@
                 type: "session-start",
                 sessionId: this.#sessionId,
                 language: this.#language,
+                context: this.#recognitionContext,
                 audio: {
                     encoding: "pcm_s16le",
                     sampleRate: 16000,

@@ -98,7 +98,15 @@ assert.equal(provider.supported, true);
 
 await provider.start({
     language: "en-US",
-    sessionId: "session-test"
+    sessionId: "session-test",
+    recognitionContext: {
+        vocabulary: ["start", "stop"],
+        options: {
+            mode: ["elapsed", "remaining"]
+        },
+        phrases: ["start at <time>"],
+        numbers: {output: "digits"}
+    }
 });
 
 const socket =
@@ -118,12 +126,41 @@ assert.deepEqual(
         type: "session-start",
         sessionId: "session-test",
         language: "en-US",
+        context: {
+            vocabulary: ["start", "stop"],
+            options: {
+                mode: ["elapsed", "remaining"]
+            },
+            phrases: ["start at <time>"],
+            numbers: {output: "digits"}
+        },
         audio: {
             encoding: "pcm_s16le",
             sampleRate: 16000,
             channels: 1
         }
     }
+);
+
+provider.setRecognitionContext({
+    vocabulary: ["start", "stop", "pause"],
+    options: {
+        mode: ["elapsed", "remaining"]
+    },
+    phrases: ["start at <time>"],
+    numbers: {output: "digits"}
+});
+
+const contextUpdate =
+    JSON.parse(socket.sent.at(-1));
+
+assert.equal(
+    contextUpdate.type,
+    "context-update"
+);
+assert.deepEqual(
+    contextUpdate.context.vocabulary,
+    ["start", "stop", "pause"]
 );
 
 const transcripts = [];

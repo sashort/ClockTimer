@@ -5,6 +5,12 @@ class SpeechMenu {
     static #sleeping = false;
     static #recognitionProviderMode = "browser";
     static #recognitionProvider;
+    static #recognitionContext = Object.freeze({
+        vocabulary: Object.freeze([]),
+        options: Object.freeze({}),
+        phrases: Object.freeze([]),
+        numbers: Object.freeze({output: "digits"})
+    });
     static #events = new EventTarget();
     static #separator = ",";
     static #language = "en-US";
@@ -50,6 +56,69 @@ class SpeechMenu {
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
     static get recognitionProvider() { return SpeechMenu.#recognitionProviderMode; }
+    static get recognitionContext() {
+        return SpeechMenu.#copyRecognitionContext();
+    }
+
+    static set recognitionContext(value) {
+        SpeechMenu.setRecognitionContext(value);
+    }
+
+    static setRecognitionContext(value = {}) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+            throw new TypeError("SpeechMenu recognition context must be an object.");
+        }
+
+        const list = input =>
+            [...new Set(
+                (Array.isArray(input) ? input : [])
+                    .map(item => String(item ?? "").trim())
+                    .filter(Boolean)
+            )];
+
+        const options = Object.create(null);
+        if (value.options && typeof value.options === "object" && !Array.isArray(value.options)) {
+            for (const [name, entries] of Object.entries(value.options)) {
+                const normalized = list(entries);
+                if (normalized.length) options[String(name)] = Object.freeze(normalized);
+            }
+        }
+
+        const output =
+            String(value.numbers?.output || "digits")
+                .trim()
+                .toLowerCase();
+
+        if (output !== "digits" && output !== "words") {
+            throw new TypeError('SpeechMenu recognitionContext.numbers.output must be "digits" or "words".');
+        }
+
+        SpeechMenu.#recognitionContext = Object.freeze({
+            vocabulary: Object.freeze(list(value.vocabulary)),
+            options: Object.freeze(options),
+            phrases: Object.freeze(list(value.phrases)),
+            numbers: Object.freeze({output})
+        });
+
+        SpeechMenu.#recognitionProvider
+            ?.setRecognitionContext?.(
+                SpeechMenu.#copyRecognitionContext()
+            );
+
+        const context =
+            SpeechMenu.#copyRecognitionContext();
+
+        SpeechMenu.#emit(
+            "recognitionContextChanged",
+            {context}
+        );
+
+        return context;
+    }
+
+    static clearRecognitionContext() {
+        return SpeechMenu.setRecognitionContext();
+    }
 
     static set recognitionProvider(value) {
         const mode =
@@ -263,7 +332,9 @@ class SpeechMenu {
                     micTrack:
                         SpeechMenu.#micTrack,
                     sessionId:
-                        generation
+                        generation,
+                    recognitionContext:
+                        SpeechMenu.#copyRecognitionContext()
                 });
 
                 SpeechMenu.#sourceNode =
@@ -778,6 +849,7 @@ class SpeechMenu {
             frames,
             sampleCount,
             transcript: "",
+            rawTranscript: "",
             transcriptRevision: 0,
             candidate: undefined,
             committed: false,
@@ -1024,9 +1096,12 @@ class SpeechMenu {
                     text,
                     isFinal
                 }) => {
+                    const rawTranscript =
+                        String(text ?? "").trim();
+
                     const transcript =
                         SpeechMenu.#normalizeTranscript(
-                            text
+                            rawTranscript
                         );
 
                     if (!transcript) return;
@@ -1034,7 +1109,8 @@ class SpeechMenu {
                     void SpeechMenu.#handleLiveTranscript(
                         utterance,
                         transcript,
-                        isFinal
+                        isFinal,
+                        rawTranscript
                     );
                 },
                 onError: ({
@@ -1087,7 +1163,8 @@ class SpeechMenu {
     static async #handleLiveTranscript(
         utterance,
         transcript,
-        isFinal
+        isFinal,
+        rawTranscript = transcript
     ) {
         if (
             !utterance ||
@@ -1113,6 +1190,8 @@ class SpeechMenu {
 
         utterance.transcript =
             transcript;
+        utterance.rawTranscript =
+            String(rawTranscript ?? transcript);
 
         const revision =
             ++utterance.transcriptRevision;
@@ -1122,6 +1201,10 @@ class SpeechMenu {
             {
                 id: utterance.id,
                 transcript,
+                normalizedTranscript:
+                    transcript,
+                rawTranscript:
+                    utterance.rawTranscript,
                 isFinal:
                     Boolean(isFinal)
             }
@@ -1133,6 +1216,10 @@ class SpeechMenu {
                 {
                     id: utterance.id,
                     transcript,
+                    normalizedTranscript:
+                        transcript,
+                    rawTranscript:
+                        utterance.rawTranscript,
                     live: true
                 }
             );
@@ -1311,34 +1398,37 @@ class SpeechMenu {
             return;
         }
 
+        const rawFinalText =
+            await SpeechMenu
+                .#recognitionProvider
+                .recognizeBuffer?.({
+                    id:
+                        utterance.id,
+                    audioBuffer:
+                        utterance.audioBuffer,
+                    audioContext:
+                        SpeechMenu.#audioContext,
+                    onError: ({
+                        error,
+                        message
+                    }) => {
+                        SpeechMenu.#emit(
+                            "speechRecognitionFailed",
+                            {
+                                utteranceId:
+                                    utterance.id,
+                                error:
+                                    error ||
+                                    "SpeechRecognitionError",
+                                message
+                            }
+                        );
+                    }
+                }) || "";
+
         const finalText =
             SpeechMenu.#normalizeTranscript(
-                await SpeechMenu
-                    .#recognitionProvider
-                    .recognizeBuffer?.({
-                        id:
-                            utterance.id,
-                        audioBuffer:
-                            utterance.audioBuffer,
-                        audioContext:
-                            SpeechMenu.#audioContext,
-                        onError: ({
-                            error,
-                            message
-                        }) => {
-                            SpeechMenu.#emit(
-                                "speechRecognitionFailed",
-                                {
-                                    utteranceId:
-                                        utterance.id,
-                                    error:
-                                        error ||
-                                        "SpeechRecognitionError",
-                                    message
-                                }
-                            );
-                        }
-                    }) || ""
+                rawFinalText
             );
 
         if (!finalText) {
@@ -1355,7 +1445,10 @@ class SpeechMenu {
             "utteranceTranscribed",
             {
                 id: utterance.id,
-                transcript: finalText
+                transcript: finalText,
+                normalizedTranscript: finalText,
+                rawTranscript:
+                    String(rawFinalText).trim()
             }
         );
 
@@ -1431,26 +1524,66 @@ class SpeechMenu {
     }
 
     static #normalizeTranscript(value) {
-        return String(value || "")
-            .toLocaleLowerCase()
-            .trim()
-            .replace(
-                /(\d)\.(?=\d)/g,
-                "$1\uFFFF"
-            )
-            .replace(
-                /[^\p{L}\p{N}\s:\uFFFF]/gu,
-                " "
-            )
-            .replace(
-                /\uFFFF/g,
-                "."
-            )
-            .replace(
-                /\s+/g,
-                " "
-            )
-            .trim();
+        let text =
+            String(value || "")
+                .toLocaleLowerCase()
+                .trim()
+                .replace(
+                    /(\d)\.(?=\d)/g,
+                    "$1\uFFFF"
+                )
+                .replace(
+                    /[^\p{L}\p{N}\s:\uFFFF-]/gu,
+                    " "
+                )
+                .replace(
+                    /\uFFFF/g,
+                    "."
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        if (
+            SpeechMenu.#recognitionContext
+                .numbers.output === "digits" &&
+            /^en(?:-|$)/i.test(
+                SpeechMenu.#language
+            ) &&
+            globalThis
+                .EnglishSpokenNumberParser
+                ?.normalizeText
+        ) {
+            text =
+                globalThis
+                    .EnglishSpokenNumberParser
+                    .normalizeText(text);
+        }
+
+        return text;
+    }
+
+    static #copyRecognitionContext() {
+        return {
+            vocabulary:
+                [...SpeechMenu.#recognitionContext.vocabulary],
+            options:
+                Object.fromEntries(
+                    Object.entries(
+                        SpeechMenu.#recognitionContext.options
+                    ).map(
+                        ([name, values]) =>
+                            [name, [...values]]
+                    )
+                ),
+            phrases:
+                [...SpeechMenu.#recognitionContext.phrases],
+            numbers: {
+                ...SpeechMenu.#recognitionContext.numbers
+            }
+        };
     }
 
     static #test(regex, text) {

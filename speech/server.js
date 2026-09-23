@@ -370,6 +370,7 @@ sockets.on(
         const state = {
             sessionId: undefined,
             language: "en-US",
+            recognitionContext: {},
             utterances: new Map(),
             alive: true
         };
@@ -528,6 +529,24 @@ sockets.on(
                             "en-US"
                         );
 
+                    state.recognitionContext =
+                        message.context &&
+                        typeof message.context === "object"
+                            ? message.context
+                            : {};
+
+                    return;
+                }
+
+                if (
+                    message.type ===
+                    "context-update"
+                ) {
+                    state.recognitionContext =
+                        message.context &&
+                        typeof message.context === "object"
+                            ? message.context
+                            : {};
                     return;
                 }
 

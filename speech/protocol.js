@@ -6,6 +6,7 @@ export const AUDIO_HEADER_BYTES = 8;
 const CONTROL_TYPES = new Set([
     "session-start",
     "session-end",
+    "context-update",
     "utterance-start",
     "utterance-end",
     "utterance-cancel",
