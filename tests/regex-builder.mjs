@@ -60,6 +60,107 @@ assert.deepEqual(
     ]
 );
 
+assert.deepEqual(
+    builder.templates
+        .slice(
+            0,
+            4
+        )
+        .map(
+            template =>
+                template.group
+        ),
+    [
+        "app",
+        "app",
+        "app",
+        "app"
+    ],
+    "app templates should be grouped first"
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "12:30"
+    ),
+    [
+        "time",
+        "duration"
+    ],
+    "a bare two-part time is intentionally ambiguous"
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "12:30 pm"
+    ),
+    [
+        "time"
+    ]
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "1:02:03"
+    ),
+    [
+        "duration"
+    ]
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "50%"
+    ),
+    [
+        "percent"
+    ]
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "2026-09-23"
+    ),
+    [
+        "date"
+    ]
+);
+
+assert.deepEqual(
+    builder.inferWildcard(
+        "spokenTime:12:30 pm"
+    ),
+    [
+        "spokenTime:time"
+    ]
+);
+
+const ambiguousTime =
+    builder.compile(
+        "ready [at] <12:30>"
+    );
+
+assert.equal(
+    ambiguousTime.valid,
+    false
+);
+
+assert.match(
+    ambiguousTime.error,
+    /more than one template/i
+);
+
+const explicitTimeShape =
+    builder.compile(
+        "ready [at] <12:30 pm>"
+    );
+
+assert.equal(
+    explicitTimeShape.valid,
+    true,
+    explicitTimeShape.error
+);
+
 const phrase =
     builder.compile(
         "Set [the] {Trip|TOTAL} goal to <percent>"
