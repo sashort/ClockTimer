@@ -1753,6 +1753,35 @@ class SpeechMenu {
         utterance.candidatePool =
             pool;
 
+        if (
+            !pool.length &&
+            !SpeechMenu.#sleeping
+        ) {
+            const id =
+                utterance.id;
+            const failedTranscript =
+                utterance.transcript;
+
+            SpeechMenu.#finishUtterance(
+                "no-candidates",
+                false
+            );
+
+            SpeechMenu.#emit(
+                "utteranceUnrecognized",
+                {
+                    id,
+                    transcript:
+                        failedTranscript,
+                    reason:
+                        "no-candidates",
+                    fast: true
+                }
+            );
+
+            return;
+        }
+
         SpeechMenu
             .#scheduleCandidateCommit(
                 utterance,
