@@ -1827,11 +1827,23 @@ class SpeechMenu {
             return;
         }
 
-        await SpeechMenu.#processTranscript(
-            transcript,
-            utterance.id,
-            SpeechMenu.#executionEnabled
-        );
+        const matched =
+            await SpeechMenu.#processTranscript(
+                transcript,
+                utterance.id,
+                SpeechMenu.#executionEnabled
+            );
+
+        if (!matched) {
+            SpeechMenu.#emit(
+                "utteranceUnrecognized",
+                {
+                    id:
+                        utterance.id,
+                    transcript
+                }
+            );
+        }
     }
 
     static #normalizeTranscript(value) {
@@ -3257,7 +3269,9 @@ class SpeechMenu {
                         originalText:
                             text,
                         processedText:
-                            processed
+                            processed,
+                        provisional:
+                            !execute
                     };
                 }
 
@@ -3442,7 +3456,9 @@ class SpeechMenu {
             correctionId:
                 correction?.correction
                     ?.id ||
-                null
+                null,
+            provisional:
+                !execute
         };
 
         if (correction) {
