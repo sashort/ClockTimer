@@ -3331,10 +3331,11 @@
                     "speech-menu"
                 );
 
-            if (!isMenu) {
-                $("removeButton").hidden =
-                    false;
-            }
+            $("menuActions").hidden =
+                !isMenu;
+
+            $("removeButton").hidden =
+                false;
 
             for (
                 const label of
@@ -3414,11 +3415,12 @@
                 )
             );
 
-            $("removeButton").hidden =
-                isMenu;
-
-            if (
-                !isMenu &&
+            if (isMenu) {
+                $("removeButton")
+                    .textContent =
+                    "Remove Speech Menu";
+            }
+            else if (
                 edit.dataset
                     .speechEditorId
                     ?.startsWith(
