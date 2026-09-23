@@ -10,6 +10,23 @@
     const form =
         $("attributeForm");
 
+    const editorActionFunctions =
+        globalThis
+            .WMOFSpeechEditorActionFunctions;
+
+    const editorActions =
+        globalThis
+            .WMOFSpeechEditorActions;
+
+    if (
+        !editorActionFunctions ||
+        !editorActions
+    ) {
+        throw new Error(
+            "Speech Editor action registry was not loaded."
+        );
+    }
+
     const endpoint =
         "../../speech-editor-config/";
 
