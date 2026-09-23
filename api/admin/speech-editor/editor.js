@@ -2100,53 +2100,29 @@
                 return false;
             }
 
+            if (after) {
+                parent.insertBefore(
+                    dragged,
+                    target.nextSibling
+                );
+            }
+            else {
+                parent.insertBefore(
+                    dragged,
+                    target
+                );
+            }
+
             const selector =
                 isCommand
                     ? "speech-command"
                     : "speech-menu";
 
-            const siblings =
+            persistSiblingOrder(
                 directSpeechChildren(
                     parent,
                     selector
-                );
-
-            const sourceIndex =
-                siblings.indexOf(
-                    dragged
-                );
-
-            let targetIndex =
-                siblings.indexOf(
-                    target
-                );
-
-            if (
-                sourceIndex < 0 ||
-                targetIndex < 0
-            ) {
-                return false;
-            }
-
-            siblings.splice(
-                sourceIndex,
-                1
-            );
-
-            targetIndex =
-                siblings.indexOf(
-                    target
-                );
-
-            siblings.splice(
-                targetIndex +
-                    (after ? 1 : 0),
-                0,
-                dragged
-            );
-
-            persistSiblingOrder(
-                siblings
+                )
             );
 
             status(
@@ -2155,28 +2131,54 @@
                     : "Speech Menu order changed."
             );
 
+            scheduleLiveRefresh();
+
             return true;
         };
 
     const attachDragBehavior =
         (
             wrapper,
+            handle,
             element,
             kind
         ) => {
-            wrapper.draggable =
-                true;
-
             wrapper.dataset
                 .dragKind =
                 kind;
 
-            wrapper.addEventListener(
+            handle.draggable =
+                true;
+
+            handle.setAttribute(
+                "role",
+                "button"
+            );
+
+            handle.tabIndex =
+                0;
+
+            handle.addEventListener(
+                "pointerdown",
+                event =>
+                    event.stopPropagation()
+            );
+
+            handle.addEventListener(
+                "click",
+                event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            );
+
+            handle.addEventListener(
                 "dragstart",
                 event => {
                     draggedPhraseItem = {
                         element,
-                        kind
+                        kind,
+                        wrapper
                     };
 
                     wrapper.classList
@@ -2202,7 +2204,7 @@
                 }
             );
 
-            wrapper.addEventListener(
+            handle.addEventListener(
                 "dragend",
                 () => {
                     draggedPhraseItem =
@@ -2256,6 +2258,14 @@
 
                     event.preventDefault();
 
+                    if (
+                        event.dataTransfer
+                    ) {
+                        event.dataTransfer
+                            .dropEffect =
+                            "move";
+                    }
+
                     const rect =
                         wrapper
                             .getBoundingClientRect();
@@ -2281,12 +2291,21 @@
 
             wrapper.addEventListener(
                 "dragleave",
-                () =>
+                event => {
+                    if (
+                        wrapper.contains(
+                            event.relatedTarget
+                        )
+                    ) {
+                        return;
+                    }
+
                     wrapper.classList
                         .remove(
                             "drop-before",
                             "drop-after"
-                        )
+                        );
+                }
             );
 
             wrapper.addEventListener(
@@ -2298,12 +2317,17 @@
                     if (
                         !dragged ||
                         dragged.kind !==
-                            kind
+                            kind ||
+                        dragged.element
+                            .parentElement !==
+                            element
+                                .parentElement
                     ) {
                         return;
                     }
 
                     event.preventDefault();
+                    event.stopPropagation();
 
                     const rect =
                         wrapper
@@ -2404,6 +2428,7 @@
 
                 attachDragBehavior(
                     wrapper,
+                    handle,
                     group.element,
                     "command"
                 );
@@ -2701,6 +2726,7 @@
 
                 attachDragBehavior(
                     details,
+                    handle,
                     menu,
                     "menu"
                 );
