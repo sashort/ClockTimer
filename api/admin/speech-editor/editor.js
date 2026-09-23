@@ -3320,11 +3320,7 @@
                 !edit;
 
             $("menuActions").hidden =
-                !(
-                    edit?.matches(
-                        "speech-menu"
-                    )
-                );
+                true;
 
             if (!edit) {
                 return;
@@ -3334,6 +3330,11 @@
                 edit.matches(
                     "speech-menu"
                 );
+
+            if (!isMenu) {
+                $("removeButton").hidden =
+                    false;
+            }
 
             for (
                 const label of
@@ -3413,18 +3414,11 @@
                 )
             );
 
-            if (isMenu) {
-                $("removeButton")
-                    .textContent =
-                    edit.dataset
-                        .speechEditorId
-                        ?.startsWith(
-                            "edit:"
-                        )
-                        ? "Remove Speech Menu"
-                        : "Reset menu override";
-            }
-            else if (
+            $("removeButton").hidden =
+                isMenu;
+
+            if (
+                !isMenu &&
                 edit.dataset
                     .speechEditorId
                     ?.startsWith(
