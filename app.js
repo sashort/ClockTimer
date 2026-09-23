@@ -206,6 +206,20 @@
         clockPreview.keepAspectRatio =
             true;
     }
+    const PERMISSION_SUPERUSER =
+        4;
+
+    const PERMISSION_DEVELOPER_PREVIEW =
+        8;
+
+    const PERMISSION_DEVELOPER =
+        16;
+
+    const SPEECH_EDITOR_PERMISSION_MASK =
+        PERMISSION_SUPERUSER |
+        PERMISSION_DEVELOPER_PREVIEW |
+        PERMISSION_DEVELOPER;
+
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
@@ -217,7 +231,7 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorButton").hidden=!(permissions&28);
+        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorButton").hidden=!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -2243,7 +2257,7 @@
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
         const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorButton").hidden=!showAdmin||!(permissions&28);
+        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorButton").hidden=!showAdmin||!(permissions&SPEECH_EDITOR_PERMISSION_MASK);
         if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
@@ -10683,7 +10697,7 @@
                 if (
                     !(
                         permissions &
-                        28
+                        SPEECH_EDITOR_PERMISSION_MASK
                     )
                 ) {
                     throw new Error(
