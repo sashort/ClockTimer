@@ -175,12 +175,17 @@ assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
 assert.match(app, /openSpeechTraining\(\)/);
 assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
+assert.match(app, /element:\s*\$\("#speechTrainingButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechTraining"/);
+assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
 assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*6;[^}]*display:\s*block;/s);
 assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*7;/s);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
+assert.match(css, /#speechTrainingButton::before/);
+assert.match(css, /#speechEditorButton::before/);
+assert.match(css, /stroke-dasharray:100;stroke-dashoffset:100/);
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
