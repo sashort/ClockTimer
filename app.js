@@ -3208,6 +3208,10 @@
         loginPromptTimeout = undefined;
         initialLoginAttemptPending = false;
 
+        if (speechEditorPreview) {
+            return false;
+        }
+
         if (loginDialog.open) return true;
 
         const opened = openDialogElement(loginDialog, {
