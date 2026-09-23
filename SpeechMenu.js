@@ -16,6 +16,8 @@ class SpeechMenu {
     static #sourceNode;
     static #captureNode;
     static #recognizer;
+    static #vad;
+    static #pipeline = "raw";
     static #finishedUtterances = new Map();
     static #silentGain;
     static #utterance;
@@ -82,6 +84,7 @@ class SpeechMenu {
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
+    static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
@@ -145,6 +148,41 @@ class SpeechMenu {
             "speechExecutionChanged",
             {
                 enabled:
+                    next
+            }
+        );
+    }
+
+    static set pipeline(value) {
+        const next =
+            String(value || "raw")
+                .toLocaleLowerCase();
+
+        if (
+            next !== "raw" &&
+            next !== "silero"
+        ) {
+            throw new RangeError(
+                'SpeechMenu.pipeline must be "raw" or "silero".'
+            );
+        }
+
+        if (
+            SpeechMenu.started ||
+            SpeechMenu.#startPromise
+        ) {
+            throw new Error(
+                "SpeechMenu.pipeline cannot change while speech recognition is running."
+            );
+        }
+
+        SpeechMenu.#pipeline =
+            next;
+
+        SpeechMenu.#emit(
+            "speechPipelineChanged",
+            {
+                pipeline:
                     next
             }
         );
@@ -223,7 +261,11 @@ class SpeechMenu {
                 if (
                     !context.audioWorklet ||
                     typeof AudioWorkletNodeCtor !== "function" ||
-                    typeof globalThis.SherpaRecognizer !== "function"
+                    typeof globalThis.SherpaRecognizer !== "function" ||
+                    (
+                        SpeechMenu.#pipeline === "silero" &&
+                        typeof globalThis.SileroVad !== "function"
+                    )
                 ) {
                     try { await context.close(); } catch {}
                     throw new Error(
@@ -267,6 +309,46 @@ class SpeechMenu {
                 );
 
                 await recognizer.ready;
+
+                if (
+                    SpeechMenu.#pipeline === "silero"
+                ) {
+                    const vad =
+                        new globalThis.SileroVad({
+                            threshold: 0.5,
+                            minSilenceDuration:
+                                SpeechMenu
+                                    .#commitSilenceTimeout /
+                                1000,
+                            minSpeechDuration: 0.15,
+                            maxSpeechDuration: 20
+                        });
+
+                    SpeechMenu.#vad =
+                        vad;
+
+                    vad.addEventListener(
+                        "speechStart",
+                        SpeechMenu.#onVadSpeechStart
+                    );
+
+                    vad.addEventListener(
+                        "speechEnd",
+                        SpeechMenu.#onVadSpeechEnd
+                    );
+
+                    vad.addEventListener(
+                        "error",
+                        SpeechMenu.#onVadError
+                    );
+
+                    vad.addEventListener(
+                        "status",
+                        SpeechMenu.#onVadStatus
+                    );
+
+                    await vad.ready;
+                }
 
                 SpeechMenu.#stream =
                     stream;
@@ -337,6 +419,8 @@ class SpeechMenu {
                         SpeechMenu.#language,
                     recognizer:
                         "sherpa",
+                    pipeline:
+                        SpeechMenu.#pipeline,
                     sampleRate:
                         globalThis.SherpaRecognizer
                             .sampleRate,
@@ -759,6 +843,30 @@ class SpeechMenu {
             );
         }
 
+        if (
+            SpeechMenu.#pipeline ===
+                "silero"
+        ) {
+            SpeechMenu.#vad
+                ?.accept(
+                    samples
+                );
+
+            if (!SpeechMenu.#utterance) {
+                SpeechMenu.#appendPreRollFrame(
+                    frame,
+                    sampleRate
+                );
+            }
+            else {
+                SpeechMenu.#appendUtteranceFrame(
+                    frame
+                );
+            }
+
+            return;
+        }
+
         if (!SpeechMenu.#utterance) {
             if (
                 level >=
@@ -834,6 +942,113 @@ class SpeechMenu {
                 );
             }
         }
+    };
+
+    static #onVadSpeechStart = event => {
+        if (
+            SpeechMenu.#stopped ||
+            SpeechMenu.#pipeline !==
+                "silero" ||
+            SpeechMenu.#utterance
+        ) {
+            return;
+        }
+
+        const now =
+            performance.now();
+
+        SpeechMenu.#emit(
+            "speechVadChanged",
+            {
+                pipeline: "silero",
+                detected: true,
+                processMilliseconds:
+                    Number(
+                        event.detail
+                            ?.processMilliseconds
+                    ) || 0,
+                maxProcessMilliseconds:
+                    Number(
+                        event.detail
+                            ?.maxProcessingMilliseconds
+                    ) || 0
+            }
+        );
+
+        SpeechMenu.#beginUtterance(
+            now
+        );
+    };
+
+    static #onVadSpeechEnd = event => {
+        if (
+            SpeechMenu.#pipeline !==
+                "silero"
+        ) {
+            return;
+        }
+
+        SpeechMenu.#emit(
+            "speechVadChanged",
+            {
+                pipeline: "silero",
+                detected: false,
+                processMilliseconds:
+                    Number(
+                        event.detail
+                            ?.processMilliseconds
+                    ) || 0,
+                maxProcessMilliseconds:
+                    Number(
+                        event.detail
+                            ?.maxProcessingMilliseconds
+                    ) || 0
+            }
+        );
+
+        if (
+            SpeechMenu.#utterance
+        ) {
+            SpeechMenu.#finishUtterance(
+                "vad-silence",
+                true
+            );
+        }
+    };
+
+    static #onVadError = event => {
+        const detail =
+            event.detail || {};
+
+        SpeechMenu.#emit(
+            "speechRecognitionFailed",
+            {
+                error:
+                    detail.error ||
+                    "SileroVadError",
+                message:
+                    detail.message ||
+                    "Silero VAD failed."
+            }
+        );
+    };
+
+    static #onVadStatus = event => {
+        const status =
+            event.detail?.status ||
+            "";
+
+        if (!status) {
+            return;
+        }
+
+        SpeechMenu.#emit(
+            "speechRecognitionStatusChanged",
+            {
+                status:
+                    `VAD: ${status}`
+            }
+        );
     };
 
     static #appendPreRollFrame(
@@ -953,7 +1168,6 @@ class SpeechMenu {
 
         if (
             recognize &&
-            !utterance.candidate &&
             !utterance.committed
         ) {
             SpeechMenu.#finishedUtterances
@@ -1001,7 +1215,13 @@ class SpeechMenu {
         if (
             utterance.candidate &&
             !utterance.committed &&
-            !utterance.committing
+            !utterance.committing &&
+            !(
+                SpeechMenu.#pipeline ===
+                    "silero" &&
+                reason ===
+                    "vad-silence"
+            )
         ) {
             void SpeechMenu.#commitUtterance(
                 utterance
@@ -2975,6 +3195,35 @@ class SpeechMenu {
                     SpeechMenu.#onSherpaUtteranceEnded
                 );
                 recognizer.close();
+            }
+            catch {}
+        }
+
+        const vad =
+            SpeechMenu.#vad;
+
+        SpeechMenu.#vad =
+            undefined;
+
+        if (vad) {
+            try {
+                vad.removeEventListener(
+                    "speechStart",
+                    SpeechMenu.#onVadSpeechStart
+                );
+                vad.removeEventListener(
+                    "speechEnd",
+                    SpeechMenu.#onVadSpeechEnd
+                );
+                vad.removeEventListener(
+                    "error",
+                    SpeechMenu.#onVadError
+                );
+                vad.removeEventListener(
+                    "status",
+                    SpeechMenu.#onVadStatus
+                );
+                vad.close();
             }
             catch {}
         }
