@@ -193,7 +193,8 @@ export class WhisperService {
     async transcribe(
         pcm,
         {
-            language = "en-US"
+            language = "en-US",
+            prompt = ""
         } = {}
     ) {
         if (!pcm?.length) return "";
@@ -231,6 +232,15 @@ export class WhisperService {
                         language || "en"
                     ).split("-")[0]
                 ),
+                ...(String(prompt || "").trim()
+                    ? [
+                        multipartPart(
+                            boundary,
+                            "prompt",
+                            String(prompt).trim()
+                        )
+                    ]
+                    : []),
                 multipartPart(
                     boundary,
                     "no_timestamps",

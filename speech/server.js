@@ -43,6 +43,36 @@ const MAX_UTTERANCE_BYTES =
 const whisper =
     new WhisperService();
 
+function recognitionPrompt(context) {
+    if (!context || typeof context !== "object") return "";
+
+    const values = [];
+
+    const append = input => {
+        for (const value of Array.isArray(input) ? input : []) {
+            const text = String(value ?? "").trim();
+            if (text && !values.includes(text)) values.push(text);
+        }
+    };
+
+    append(context.phrases);
+    append(context.vocabulary);
+
+    if (
+        context.options &&
+        typeof context.options === "object" &&
+        !Array.isArray(context.options)
+    ) {
+        for (const options of Object.values(context.options)) {
+            append(options);
+        }
+    }
+
+    return values
+        .join(". ")
+        .slice(0, 1000);
+}
+
 const server =
     http.createServer(
         (request, response) => {
@@ -226,7 +256,11 @@ async function recognize(
                 snapshot,
                 {
                     language:
-                        state.language
+                        state.language,
+                    prompt:
+                        recognitionPrompt(
+                            state.recognitionContext
+                        )
                 }
             );
 
