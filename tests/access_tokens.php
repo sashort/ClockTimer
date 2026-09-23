@@ -433,4 +433,73 @@ test(
     }
 );
 
+$managerId = seed_token(
+    'manager-token',
+    3,
+    PERMISSION_GRANT_TOKEN_ACCESS,
+    1,
+    true,
+    false
+);
+
+test(
+    'grant-token-access token can establish token-manager session grant',
+    function () use ($managerId): void {
+        $_SESSION = [];
+
+        $authorization =
+            consume_access_token(
+                'manager-token',
+                [PERMISSION_GRANT_TOKEN_ACCESS],
+                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
+                true
+            );
+
+        expect(
+            token_counter($managerId) === null &&
+            $authorization['mode'] === 'token_form' &&
+            (int) $authorization['permissions'] ===
+                PERMISSION_GRANT_TOKEN_ACCESS
+        );
+
+        $grant =
+            access_token_session_grant(
+                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+            );
+
+        expect(
+            is_array($grant) &&
+            (int) $grant['permissions'] ===
+                PERMISSION_GRANT_TOKEN_ACCESS
+        );
+    }
+);
+
+seed_token(
+    'developer-cannot-manage-tokens',
+    1,
+    PERMISSION_DEVELOPER,
+    1,
+    false,
+    false
+);
+
+test(
+    'developer token cannot enter token manager',
+    function (): void {
+        $_SESSION = [];
+
+        rejects(
+            fn() =>
+                consume_access_token(
+                    'developer-cannot-manage-tokens',
+                    [PERMISSION_GRANT_TOKEN_ACCESS],
+                    ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+                ),
+            403,
+            'permission_required'
+        );
+    }
+);
+
 echo $passed . " tests passed." . PHP_EOL;
