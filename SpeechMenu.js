@@ -303,6 +303,12 @@ class SpeechMenu {
             return true;
         }
         catch (error) {
+            globalThis
+                .WMOFPresentationSetters
+                ?.cancelSpeechResponse?.(
+                    responseSession
+                );
+
             SpeechMenu.#emit(
                 "speechCorrectionsFailed",
                 {
@@ -3172,26 +3178,34 @@ class SpeechMenu {
                 selector:
                     undefined,
                 element:
-                    undefined
+                    undefined,
+                elements: []
             };
         }
 
         try {
+            const elements =
+                [
+                    ...document
+                        .querySelectorAll(
+                            selector
+                        )
+                ];
+
             return {
                 selector,
                 element:
-                    document
-                        .querySelector(
-                            selector
-                        ) ||
-                    undefined
+                    elements[0] ||
+                    undefined,
+                elements
             };
         }
         catch {
             return {
                 selector,
                 element:
-                    undefined
+                    undefined,
+                elements: []
             };
         }
     }
@@ -3528,6 +3542,8 @@ class SpeechMenu {
                     target.selector,
                 targetElement:
                     target.element,
+                targetElements:
+                    target.elements.slice(),
                 provisional:
                     !execute
             }
@@ -3547,7 +3563,9 @@ class SpeechMenu {
                 targetSelector:
                     target.selector,
                 targetElement:
-                    target.element
+                    target.element,
+                targetElements:
+                    target.elements.slice()
             };
         }
 
@@ -3565,6 +3583,18 @@ class SpeechMenu {
             );
         }
 
+        const responseSession =
+            globalThis
+                .WMOFPresentationSetters
+                ?.beginSpeechResponse?.({
+                    commandElement:
+                        element,
+                    targetSelector:
+                        target.selector,
+                    targetElements:
+                        target.elements
+                });
+
         try {
             const outcome =
                 await element
@@ -3575,6 +3605,12 @@ class SpeechMenu {
                     );
 
             if (outcome === false) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
                 return false;
             }
 
@@ -3594,6 +3630,21 @@ class SpeechMenu {
                 );
             }
 
+            globalThis
+                .WMOFPresentationSetters
+                ?.finishSpeechResponse?.(
+                    responseSession,
+                    {
+                        commandElement:
+                            element,
+                        targetSelector:
+                            target.selector,
+                        targetElements:
+                            target.elements,
+                        utteranceId
+                    }
+                );
+
             SpeechMenu.#emit(
                 "speechCommandExecuted",
                 {
@@ -3608,7 +3659,9 @@ class SpeechMenu {
                     targetSelector:
                         target.selector,
                     targetElement:
-                        target.element
+                        target.element,
+                    targetElements:
+                        target.elements.slice()
                 }
             );
 
