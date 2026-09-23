@@ -86,6 +86,7 @@ export class WhisperService {
     #host;
     #port;
     #threads;
+    #tmpDir;
     #child;
     #startPromise;
 
@@ -104,7 +105,10 @@ export class WhisperService {
             8766,
         threads =
             Number(process.env.WHISPER_THREADS) ||
-            4
+            4,
+        tmpDir =
+            process.env.WHISPER_TMP_DIR ||
+            "/var/lib/clocktimer/speech/tmp"
     } = {}) {
         this.#binary = binary;
         this.#model = model;
@@ -115,6 +119,8 @@ export class WhisperService {
                 1,
                 Math.round(threads)
             );
+        this.#tmpDir =
+            tmpDir;
     }
 
     get started() {
@@ -390,6 +396,8 @@ export class WhisperService {
                     this.#model,
                     "-t",
                     String(this.#threads),
+                    "--tmp-dir",
+                    this.#tmpDir,
                     "-nt",
                     "-nc"
                 ],
