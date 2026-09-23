@@ -768,3 +768,186 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
     font-size: 10px !important;
     white-space: nowrap;
 }
+
+
+/* Regex Builder --------------------------------------------------------- */
+.regex-builder {
+    position: relative;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #567c9d;
+}
+.regex-builder-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.regex-builder-heading > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.regex-builder-heading h3 {
+    margin: 0;
+    font-size: 17px;
+}
+.regex-builder-heading p {
+    margin: 4px 0 10px;
+    color: #9fc9e8;
+    font-size: 12px;
+    line-height: 1.35;
+}
+.inspector .regex-help-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #8dc5ff;
+    border-radius: 50%;
+    color: #fff;
+    background: #0053e2;
+    font: 800 15px/1 Arial, sans-serif;
+}
+.regex-builder-help {
+    margin: 2px 0 11px;
+    padding: 10px 11px;
+    border: 1px solid #6997bd;
+    border-radius: 8px;
+    background: #102e53;
+    color: #dcecf8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.regex-builder-help[hidden],
+.regex-builder-picker[hidden] {
+    display: none !important;
+}
+.regex-builder-help p {
+    margin: 0 0 7px;
+}
+.regex-builder-help p:last-child {
+    margin-bottom: 0;
+}
+.regex-builder-help code {
+    color: #fff3b0;
+    font: 12px/1.3 Consolas, monospace;
+}
+.regex-builder-field {
+    position: relative;
+    display: grid;
+    gap: 6px;
+    color: #fff;
+    font: 700 13px/1.3 Consolas, monospace;
+}
+.regex-builder-field textarea {
+    width: 100%;
+    min-height: 76px;
+    resize: vertical;
+    padding: 9px 10px;
+    color: #fff;
+    background: #1a385e;
+    border: 1px solid #8cb4d3;
+    border-radius: 7px;
+    font: 400 13px/1.4 Consolas, monospace;
+}
+.regex-builder-picker {
+    position: absolute;
+    z-index: 45;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 260px;
+    overflow: auto;
+    padding: 5px;
+    border: 1px solid #8cb4d3;
+    border-radius: 8px;
+    background: #102e53;
+    box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
+}
+.regex-picker-heading {
+    padding: 6px 8px 4px;
+    color: #9fc9e8;
+    font: 800 10px/1.2 Arial, sans-serif;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.inspector .regex-picker-option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    text-align: left;
+    font-weight: 400;
+}
+.inspector .regex-picker-option:hover,
+.inspector .regex-picker-option:focus-visible {
+    color: #071d3b;
+    background: #a9ddf7;
+}
+.regex-picker-token {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font: 700 12px/1.25 Consolas, monospace;
+}
+.regex-picker-description {
+    grid-column: 1 / -1;
+    color: #9fc9e8;
+    font: 11px/1.25 Arial, sans-serif;
+}
+.regex-picker-option:hover .regex-picker-description,
+.regex-picker-option:focus-visible .regex-picker-description {
+    color: #173a61;
+}
+.regex-builder-regex-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 6px;
+    margin-top: 9px;
+}
+.regex-builder-regex-row code {
+    min-width: 0;
+    padding: 7px 8px;
+    overflow-wrap: anywhere;
+    border: 1px solid #587fa2;
+    border-radius: 6px;
+    color: #a9ddf7;
+    background: #092342;
+    font: 11px/1.35 Consolas, monospace;
+}
+.regex-builder-regex-row[data-valid="false"] code {
+    color: #ffaaaa;
+    border-color: #a95f67;
+}
+.inspector .regex-builder-regex-row button {
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.inspector #regexBuilderLive[aria-pressed="true"] {
+    color: #071d3b;
+    background: #a9ddf7;
+}
+.regex-builder-message {
+    min-height: 1.25em;
+    margin: 6px 0 0;
+    color: #9fc9e8;
+    font-size: 11px;
+}
+.regex-builder-message.error {
+    color: #ff9696;
+}
+@media (max-width: 1450px) {
+    .regex-builder-regex-row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+    #regexBuilderLive {
+        grid-column: 3;
+    }
+}
