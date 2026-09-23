@@ -390,23 +390,29 @@ $newUserCombinedId = seed_token(
 );
 
 test(
-    'New User capability combines with ordinary permissions',
+    'New User token carries combined initial permissions but stays signup-only',
     function () use ($newUserCombinedId): void {
         $newUser = consume_access_token(
             'new-user-combined',
             [],
             ACCESS_TOKEN_SCOPE_NEW_USER
         );
-        $tokenManager = consume_access_token(
-            'new-user-combined',
-            [PERMISSION_GRANT_TOKEN_ACCESS],
-            ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
-        );
 
         expect(
             $newUser['new_user'] === true &&
-            $tokenManager['new_user'] === true &&
+            $newUser['permissions'] ===
+                (PERMISSION_DEVELOPER | PERMISSION_GRANT_TOKEN_ACCESS) &&
             token_row($newUserCombinedId) !== null
+        );
+
+        rejects(
+            fn() => consume_access_token(
+                'new-user-combined',
+                [PERMISSION_GRANT_TOKEN_ACCESS],
+                ACCESS_TOKEN_SCOPE_ACCESS_TOKENS
+            ),
+            403,
+            'token_scope_denied'
         );
     }
 );
