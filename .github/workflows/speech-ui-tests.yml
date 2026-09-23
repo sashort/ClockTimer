@@ -17,7 +17,11 @@ on:
       - "api/_core/access_tokens.php"
       - "api/_core/sql_console.php"
       - "api/speech-editor-config/**"
+      - "api/speech-corrections/**"
+      - "api/_core/speech_corrections.php"
+      - "lang/en-US/DurationParser.js"
       - "tests/speech-*.mjs"
+      - "tests/spoken-duration.mjs"
       - "tests/package.json"
 
 jobs:
@@ -47,6 +51,7 @@ jobs:
           node --check api/admin/speech-editor/EditorActionFunctions.js
           node --check api/admin/speech-editor/RegexBuilder.js
           node --check api/admin/speech-editor/editor.js
+          node --check lang/en-US/DurationParser.js
 
       - name: Check PHP syntax
         run: |
@@ -62,6 +67,8 @@ jobs:
           php -l api/_core/permissions.php
           php -l api/_core/csrf.php
           php -l api/speech-editor-config/index.php
+          php -l api/speech-corrections/index.php
+          php -l api/_core/speech_corrections.php
 
       - name: Install test dependencies
         working-directory: tests
@@ -82,3 +89,4 @@ jobs:
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
+          node spoken-duration.mjs
