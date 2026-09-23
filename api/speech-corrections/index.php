@@ -254,11 +254,14 @@ if ($method === 'GET') {
         ($_GET['manage'] ?? null) ===
         '1';
 
-    $actor =
+    $authorization =
         $manage
-            ? require_any_permission(
-                PERMISSION_DEVELOPER_PREVIEW,
-                PERMISSION_DEVELOPER
+            ? authorize_guarded_access(
+                [
+                    PERMISSION_DEVELOPER_PREVIEW,
+                    PERMISSION_DEVELOPER
+                ],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
             )
             : null;
 
@@ -298,8 +301,8 @@ if ($method === 'GET') {
             SPEECH_TRAINING_TARGET_ACCURACY;
 
         $payload['canWrite'] =
-            has_permission(
-                $actor,
+            guarded_access_has_permission(
+                $authorization,
                 PERMISSION_DEVELOPER
             );
 
@@ -332,12 +335,24 @@ if ($method === 'GET') {
     );
 }
 
-$actor =
-    require_permission(
-        PERMISSION_DEVELOPER
+$authorization =
+    authorize_guarded_access(
+        [PERMISSION_DEVELOPER],
+        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
     );
 
-require_csrf();
+if (
+    guarded_access_requires_csrf(
+        $authorization
+    )
+) {
+    require_csrf();
+}
+
+$actorId =
+    guarded_access_audit_user_id(
+        $authorization
+    );
 
 $input =
     json_input();
@@ -488,7 +503,7 @@ if (
                 ? 1
                 : 0,
         ':created_by_user_id' =>
-            (int) $actor['id'],
+            $actorId,
         ':created_at' =>
             $now,
     ]);
@@ -636,7 +651,7 @@ if ($method === 'POST') {
         ':enabled' =>
             $enabled ? 1 : 0,
         ':created_by_user_id' =>
-            (int) $actor['id'],
+            $actorId,
         ':created_at' =>
             $now,
         ':updated_at' =>
