@@ -320,3 +320,12 @@ assert.match(speechEditorCss, /body\.training-mode\.training-mobile/);
 assert.match(speechEditorCss, /speech-training-prompt\{text-align:right\}/);
 
 console.log("PASS Sherpa client ASR baseline architecture");
+
+assert.match(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    /#shouldUseButtonFacsimile[\s\S]*width > 280[\s\S]*height > 48/
+);
+assert.match(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    /response-button-facsimile[\s\S]*background[\s\S]*color[\s\S]*border/
+);
