@@ -401,20 +401,24 @@
     function compileSequence(source) {
         const atoms = parseAtoms(source);
         let result = "";
+        let seenRequired = false;
 
         for (let index = 0; index < atoms.length; index++) {
             const atom = atoms[index];
+            const hasLater =
+                index < atoms.length - 1;
 
-            if (index === 0) {
-                result += atom.optional
-                    ? "(?:" + atom.pattern + ")?"
-                    : atom.pattern;
+            if (atom.optional) {
+                result += seenRequired
+                    ? "(?:\\s+" + atom.pattern + ")?"
+                    : "(?:" + atom.pattern + (hasLater ? "\\s+" : "") + ")?";
             }
-            else if (atom.optional) {
-                result += "(?:\\s+" + atom.pattern + ")?";
+            else if (seenRequired) {
+                result += "\\s+" + atom.pattern;
             }
             else {
-                result += "\\s+" + atom.pattern;
+                result += atom.pattern;
+                seenRequired = true;
             }
         }
 
