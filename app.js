@@ -375,6 +375,37 @@
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
 
+    new MutationObserver(
+        records => {
+            if (
+                records.some(
+                    record =>
+                        record.attributeName ===
+                            "open" &&
+                        record.target
+                            ?.matches?.(
+                                "dialog[open]"
+                            )
+                )
+            ) {
+                queueMicrotask(
+                    () =>
+                        speechMicBar
+                            ?.promoteTopLayer?.()
+                );
+            }
+        }
+    ).observe(
+        document.documentElement,
+        {
+            subtree: true,
+            attributes: true,
+            attributeFilter: [
+                "open"
+            ]
+        }
+    );
+
     const setSpeechButtonState =
         globalThis
             .WMOFPresentationSetters
