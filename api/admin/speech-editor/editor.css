@@ -1261,3 +1261,112 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
         min-height: 420px;
     }
 }
+
+
+/* Docked panes keep their controls regardless of which side they occupy. */
+.phrase-pane button,
+.attribute-pane button,
+.regex-builder-pane button,
+.macro-builder-pane button {
+    font: inherit;
+    font-weight: 700;
+    color: #fff;
+    background: #354657;
+    border: 1px solid #91b6d5;
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+}
+.phrase-pane button.primary,
+.attribute-pane button.primary,
+.regex-builder-pane button.primary,
+.macro-builder-pane button.primary {
+    background: #0053e2;
+}
+.phrase-pane button:disabled,
+.attribute-pane button:disabled,
+.regex-builder-pane button:disabled,
+.macro-builder-pane button:disabled {
+    opacity: .45;
+    cursor: default;
+}
+.workspace-dock h2 {
+    margin: 0;
+    font-size: 21px;
+}
+.workspace-pane-heading {
+    padding-right: 68px;
+}
+.workspace-pane-controls {
+    position: absolute;
+    z-index: 5;
+    top: 0;
+    right: 0;
+    margin: 0;
+}
+.navigator-header.workspace-pane-heading .workspace-pane-controls {
+    top: 12px;
+    right: 12px;
+}
+.regex-builder-pane .regex-help-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #8dc5ff;
+    border-radius: 50%;
+    color: #fff;
+    background: #0053e2;
+    font: 800 15px/1 Arial, sans-serif;
+}
+.regex-builder-pane .regex-picker-option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    text-align: left;
+    font-weight: 400;
+}
+.regex-builder-pane .regex-picker-option.app-specific {
+    border-left: 3px solid #ffc220;
+    background: rgb(255 194 32 / 8%);
+}
+.regex-builder-pane .regex-picker-option:hover,
+.regex-builder-pane .regex-picker-option:focus-visible {
+    color: #071d3b;
+    background: #a9ddf7;
+}
+.regex-builder-pane .regex-picker-option.app-specific:hover,
+.regex-builder-pane .regex-picker-option.app-specific:focus-visible {
+    background: #ffc220;
+}
+.regex-builder-pane .regex-builder-regex-row button {
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.regex-builder-pane #regexBuilderLive[aria-pressed="true"] {
+    color: #071d3b;
+    background: #a9ddf7;
+}
+.macro-builder-pane .macro-actions button,
+.macro-builder-pane #macroAddParameter {
+    padding: 7px 9px;
+    font-size: 11px;
+}
+.macro-builder-pane #macroRecord[aria-pressed="true"] {
+    color: #071d3b;
+    background: #ffc220;
+}
+.macro-builder-pane .macro-step-header button,
+.macro-builder-pane .macro-parameter-card button {
+    padding: 5px 7px;
+    font-size: 11px;
+}
