@@ -281,12 +281,10 @@
                 typeof value ===
                     "object" &&
                 (
-                    Object.getPrototypeOf(
-                        value
-                    ) === Object.prototype ||
-                    Object.getPrototypeOf(
-                        value
-                    ) === null
+                    Object.prototype
+                        .toString
+                        .call(value) ===
+                            "[object Object]"
                 )
             ) {
                 add(
