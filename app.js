@@ -10892,12 +10892,122 @@
                     loginPromptTimeout
                 );
 
+                let remoteDestroyed =
+                    false;
+
                 try {
-                    await clockTimer
-                        .disconnect();
+                    const result =
+                        await clockTimer
+                            .disconnect();
+
+                    remoteDestroyed =
+                        Boolean(
+                            result?.remote
+                        );
+
+                    if (!remoteDestroyed) {
+                        const sessionResponse =
+                            await fetch(
+                                API_BASE +
+                                "api/users/",
+                                {
+                                    credentials:
+                                        "same-origin",
+                                    cache:
+                                        "no-store",
+                                    headers: {
+                                        "Accept":
+                                            "application/json"
+                                    }
+                                }
+                            );
+
+                        if (
+                            sessionResponse
+                                .status ===
+                            401
+                        ) {
+                            remoteDestroyed =
+                                true;
+                        }
+                        else {
+                            const sessionData =
+                                await sessionResponse
+                                    .json();
+
+                            if (
+                                !sessionResponse
+                                    .ok ||
+                                typeof sessionData
+                                    .csrfToken !==
+                                    "string"
+                            ) {
+                                throw new Error(
+                                    sessionData
+                                        .message ||
+                                    "Unable to destroy the WMOF session."
+                                );
+                            }
+
+                            const logoutResponse =
+                                await fetch(
+                                    API_BASE +
+                                    "api/users/",
+                                    {
+                                        method:
+                                            "POST",
+                                        credentials:
+                                            "same-origin",
+                                        cache:
+                                            "no-store",
+                                        headers: {
+                                            "Accept":
+                                                "application/json",
+                                            "Content-Type":
+                                                "application/json",
+                                            "X-CSRF-Token":
+                                                sessionData
+                                                    .csrfToken
+                                        },
+                                        body:
+                                            JSON.stringify({
+                                                action:
+                                                    "disconnect"
+                                            })
+                                    }
+                                );
+
+                            if (
+                                !logoutResponse
+                                    .ok
+                            ) {
+                                const logoutData =
+                                    await logoutResponse
+                                        .json()
+                                        .catch(
+                                            () => ({})
+                                        );
+
+                                throw new Error(
+                                    logoutData
+                                        .message ||
+                                    "Unable to destroy the WMOF session."
+                                );
+                            }
+
+                            remoteDestroyed =
+                                true;
+                        }
+                    }
                 }
                 finally {
                     syncNetworkStatusUI();
+                }
+
+                if (!remoteDestroyed) {
+                    throw new Error(
+                        "The WMOF server session was not destroyed."
+                    );
                 }
 
                 return true;
