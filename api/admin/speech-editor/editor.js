@@ -27,6 +27,28 @@
         );
     }
 
+    const canWrite =
+        document.body
+            .dataset
+            .canWrite ===
+        "true";
+
+    const accessMode =
+        document.body
+            .dataset
+            .accessMode ||
+        (
+            canWrite
+                ? "developer"
+                : "developer-preview"
+        );
+
+    editorActionFunctions
+        .setMutationAllowedProvider(
+            () =>
+                canWrite
+        );
+
     const endpoint =
         "../../speech-editor-config/";
 
@@ -132,9 +154,11 @@
             !dirty();
 
         $("saveButton").disabled =
+            !canWrite ||
             clean;
 
         $("discardButton").disabled =
+            !canWrite ||
             clean;
     };
 
@@ -10460,6 +10484,134 @@
             }
         );
 
+    for (
+        const name of
+        [
+            "getEditorState",
+            "validateChanges",
+            "selectElement",
+            "setOverlay",
+            "setViewport",
+            "applyWorkspacePreset",
+            "moveWorkspacePane",
+            "compileSpeechPattern",
+            "reloadPreview"
+        ]
+    ) {
+        editorActionFunctions
+            .setMetadata(
+                name,
+                {
+                    mutates:
+                        false
+                }
+            );
+    }
+
+    const enforceAccessMode =
+        () => {
+            if (canWrite) {
+                return;
+            }
+
+            document.body
+                .classList
+                .add(
+                    "developer-preview"
+                );
+
+            document
+                .querySelectorAll(
+                    [
+                        "#speechMenuToggle",
+                        "#addCommandButton",
+                        "#attributeForm input",
+                        "#attributeForm select",
+                        "#attributeForm button",
+                        "#regexBuilderPaste",
+                        "#regexBuilderLive",
+                        "#macroPanel input",
+                        "#macroPanel button",
+                        "#macroPanel select",
+                        ".phrase-delete"
+                    ]
+                        .join(",")
+                )
+                .forEach(
+                    control => {
+                        control.disabled =
+                            true;
+                    }
+                );
+
+            const macroSelect =
+                $("macroSelect");
+
+            if (macroSelect) {
+                macroSelect.disabled =
+                    false;
+            }
+
+            document
+                .querySelectorAll(
+                    "#phraseList [draggable='true']"
+                )
+                .forEach(
+                    element => {
+                        element.draggable =
+                            false;
+                    }
+                );
+
+            $("saveButton").disabled =
+                true;
+
+            $("discardButton").disabled =
+                true;
+        };
+
+    if (!canWrite) {
+        const accessNotice =
+            document
+                .createElement(
+                    "span"
+                );
+
+        accessNotice.className =
+            "access-mode-badge";
+
+        accessNotice.textContent =
+            "Developer Preview — read only";
+
+        accessNotice.title =
+            "Developer Preview can inspect the Speech Editor but cannot change speech configuration.";
+
+        document
+            .querySelector(
+                ".toolbar"
+            )
+            ?.append(
+                accessNotice
+            );
+
+        const accessObserver =
+            new MutationObserver(
+                enforceAccessMode
+            );
+
+        accessObserver.observe(
+            document.body,
+            {
+                childList:
+                    true,
+                subtree:
+                    true
+            }
+        );
+
+        enforceAccessMode();
+    }
+
     $("saveButton")
         .addEventListener(
             "click",
@@ -10527,39 +10679,45 @@
                 $("jsonActionsInput")
                     .value =
                     JSON.stringify(
-                        {
-                            atomic:
-                                true,
-                            actions: [
-                                {
-                                    action:
-                                        "addSpeechMenu",
-                                    input: {
-                                        target:
-                                            "#tripActionControls"
-                                    }
-                                },
-                                {
-                                    action:
-                                        "addSpeechCommand",
-                                    input: {
-                                        menuTarget:
-                                            "#tripActionControls",
-                                        attrs: {
-                                            "speech-pattern":
-                                                "^open trip log$",
-                                            "speech-function":
-                                                "WMOFActions.openTripLog"
+                        canWrite
+                            ? {
+                                atomic:
+                                    true,
+                                actions: [
+                                    {
+                                        action:
+                                            "addSpeechMenu",
+                                        input: {
+                                            target:
+                                                "#tripActionControls"
                                         }
+                                    },
+                                    {
+                                        action:
+                                            "addSpeechCommand",
+                                        input: {
+                                            menuTarget:
+                                                "#tripActionControls",
+                                            attrs: {
+                                                "speech-pattern":
+                                                    "^open trip log$",
+                                                "speech-function":
+                                                    "WMOFActions.openTripLog"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        action:
+                                            "validateChanges",
+                                        input: {}
                                     }
-                                },
-                                {
-                                    action:
-                                        "validateChanges",
-                                    input: {}
-                                }
-                            ]
-                        },
+                                ]
+                            }
+                            : {
+                                action:
+                                    "getEditorState",
+                                input: {}
+                            },
                         null,
                         2
                     );
