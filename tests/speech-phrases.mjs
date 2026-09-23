@@ -47,14 +47,16 @@ window.Commands = {
     dialog() {},
     cancel() {},
     details() {},
-    page() {}
+    page() {},
+    priority() {}
 };
 
 window.document.body.innerHTML = [
     '<speech-menu id="top" speech-modal="top-level">',
     '<speech-command speech-pattern="^sync(?: (?<syncAction>on|off))?$" speech-function="Commands.sync"></speech-command>',
+    '<speech-command speech-index="10" speech-pattern="^priority$" speech-function="Commands.priority"></speech-command>',
     '</speech-menu>',
-    '<button id="page" speech-pattern="^(?:show )?trip log$" speech-function="Commands.page">Trip Log</button>',
+    '<button id="page" speech-index="999" speech-pattern="^(?:show )?trip log$" speech-function="Commands.page">Trip Log</button>',
     '<details id="more" open>',
     '<button id="detailsCommand" speech-pattern="^details$" speech-function="Commands.details">Details</button>',
     '</details>',
@@ -109,6 +111,48 @@ assert.deepEqual(
     ]
 );
 
+
+const reducedSyncPattern =
+    SpeechMenu.withoutPhrase(
+        "^sync(?: (?<syncAction>on|off))?$",
+        "sync off"
+    );
+
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                reducedSyncPattern
+            )
+    ],
+    [
+        "sync",
+        "sync on"
+    ],
+    "deleting one extrapolated phrase should preserve the remaining combinations"
+);
+
+const reducedRegex =
+    new RegExp(
+        reducedSyncPattern,
+        "i"
+    );
+
+assert.equal(
+    reducedRegex.exec(
+        "sync on"
+    )?.groups?.syncAction,
+    "on",
+    "phrase deletion should preserve named captures in the original regex"
+);
+
+assert.equal(
+    reducedRegex.test(
+        "sync off"
+    ),
+    false
+);
+
 SpeechMenu
     .extrapolatePhrases();
 
@@ -117,6 +161,7 @@ assert.deepEqual(
         ...SpeechMenu.phrases
     ],
     [
+        "priority",
         "sync",
         "sync on",
         "sync off",
@@ -143,6 +188,7 @@ assert.deepEqual(
         ...SpeechMenu.phrases
     ],
     [
+        "priority",
         "sync",
         "sync on",
         "sync off",
@@ -178,6 +224,27 @@ assert.equal(
         )
         ?.modal,
     "top-level"
+);
+
+
+assert.ok(
+    SpeechMenu.phrases.indexOf(
+        "priority"
+    ) <
+    SpeechMenu.phrases.indexOf(
+        "sync"
+    ),
+    "higher speech-index should take precedence inside the same scope"
+);
+
+assert.ok(
+    SpeechMenu.phrases.indexOf(
+        "cancel"
+    ) <
+    SpeechMenu.phrases.indexOf(
+        "trip log"
+    ),
+    "speech-index must not override effective scope precedence"
 );
 
 console.log(
