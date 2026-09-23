@@ -1372,6 +1372,312 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 }
 
 
+/* Phrase training ------------------------------------------------------ */
+.phrase-training-button{
+    --training-color:#899aaa;
+    display:inline-grid;
+    place-items:center;
+    width:20px;
+    height:20px;
+    padding:0;
+    border:1px solid color-mix(in srgb,var(--training-color) 72%,transparent);
+    border-radius:50%;
+    color:var(--training-color);
+    background:rgb(255 255 255 / 6%);
+    font:800 11px/1 system-ui,sans-serif;
+    cursor:pointer;
+}
+.phrase-training-button[data-training-state="needs-samples"]{
+    --training-color:#ffc220;
+}
+.phrase-training-button[data-training-state="well-trained"]{
+    --training-color:#68d391;
+}
+.phrase-training-button:hover,
+.phrase-training-button:focus-visible{
+    box-shadow:0 0 0 2px color-mix(in srgb,var(--training-color) 32%,transparent);
+}
+.phrase-training-button .training-glyph{
+    display:block;
+    width:8px;
+    height:8px;
+    border:2px solid currentColor;
+    border-radius:50%;
+}
+.phrase-training-button[data-training-state="needs-samples"] .training-glyph{
+    border-right-color:transparent;
+    transform:rotate(-35deg);
+}
+.phrase-training-button[data-training-state="well-trained"] .training-glyph{
+    width:9px;
+    height:5px;
+    border:0;
+    border-left:2px solid currentColor;
+    border-bottom:2px solid currentColor;
+    border-radius:0;
+    transform:rotate(-45deg) translateY(-1px);
+}
+
+.speech-training-dialog{
+    width:min(920px,calc(100vw - 28px));
+    max-width:none;
+    max-height:calc(100dvh - 28px);
+    padding:0;
+    color:#fff;
+    background:#0b2656;
+    border:1px solid #789fbe;
+    border-radius:14px;
+}
+.speech-training-dialog::backdrop{
+    background:rgb(0 0 0 / 60%);
+}
+.speech-training-shell{
+    position:relative;
+    display:grid;
+    gap:14px;
+    max-height:calc(100dvh - 28px);
+    overflow:auto;
+    padding:16px;
+}
+.speech-training-header{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+}
+.speech-training-header>div{
+    flex:1 1 auto;
+    min-width:0;
+}
+.speech-training-header h2{
+    margin:0 0 4px;
+}
+.speech-training-phrase{
+    margin:0;
+    color:#a9ddf7;
+    overflow-wrap:anywhere;
+}
+.speech-training-header .dialog-close{
+    width:34px;
+    height:34px;
+    padding:0;
+    flex:0 0 auto;
+    font-size:22px;
+}
+.speech-training-summary{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+}
+.speech-training-stat{
+    padding:10px;
+    border:1px solid rgb(143 185 216 / 40%);
+    border-radius:8px;
+    background:rgb(6 27 61 / 58%);
+}
+.speech-training-stat strong,
+.speech-training-stat span{
+    display:block;
+}
+.speech-training-stat strong{
+    color:#a9ddf7;
+    font-size:18px;
+}
+.speech-training-stat span{
+    margin-top:2px;
+    color:#bcd7e9;
+    font-size:11px;
+}
+.speech-training-session,
+.speech-training-section{
+    padding:14px;
+    border:1px solid rgb(143 185 216 / 42%);
+    border-radius:10px;
+    background:rgb(7 31 69 / 66%);
+}
+.speech-training-session{
+    display:grid;
+    gap:12px;
+}
+.speech-training-session[data-active="true"]{
+    border-color:#ffc220;
+    box-shadow:0 0 0 1px rgb(255 194 32 / 20%) inset;
+}
+.speech-training-prompt{
+    display:grid;
+    gap:6px;
+}
+#speechTrainingStyle{
+    color:#ffc220;
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+#speechTrainingPrompt{
+    font-size:clamp(20px,4vw,32px);
+    line-height:1.18;
+}
+#speechTrainingHeard{
+    min-height:1.25em;
+    color:#a9ddf7;
+}
+.speech-training-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+}
+.speech-training-actions button{
+    padding:8px 11px;
+    color:#fff;
+    background:#354657;
+    border:1px solid #91b6d5;
+    border-radius:7px;
+    font:inherit;
+    font-weight:750;
+    cursor:pointer;
+}
+.speech-training-actions button.primary{
+    background:#0053e2;
+}
+.speech-training-actions button:disabled{
+    opacity:.5;
+    cursor:default;
+}
+.speech-training-controls-popup{
+    position:sticky;
+    top:8px;
+    z-index:8;
+    justify-self:end;
+    width:min(390px,100%);
+    padding:12px 14px;
+    border:1px solid #ffc220;
+    border-radius:10px;
+    color:#fff;
+    background:rgb(24 39 56 / 96%);
+    box-shadow:0 10px 30px rgb(0 0 0 / 38%);
+    backdrop-filter:blur(8px);
+}
+.speech-training-controls-popup[hidden]{
+    display:none;
+}
+.speech-training-controls-popup>strong{
+    display:block;
+    margin-bottom:7px;
+    color:#ffc220;
+}
+.speech-training-controls-popup dl{
+    display:grid;
+    gap:7px;
+    margin:0;
+}
+.speech-training-controls-popup dl>div{
+    display:grid;
+    grid-template-columns:120px minmax(0,1fr);
+    gap:8px;
+}
+.speech-training-controls-popup dt{
+    font-weight:800;
+}
+.speech-training-controls-popup dd{
+    margin:0;
+    color:#c3d9e9;
+    font-size:12px;
+}
+.speech-training-section-heading{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+}
+.speech-training-section-heading h3{
+    margin:0 0 3px;
+}
+.speech-training-section-heading p{
+    margin:0;
+    color:#bcd7e9;
+    font-size:12px;
+}
+.speech-training-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+.speech-training-grid.correction-grid{
+    grid-template-columns:1fr 1fr 120px;
+}
+.speech-training-grid label{
+    display:grid;
+    gap:5px;
+    color:#cbe1f0;
+    font-size:12px;
+    font-weight:750;
+}
+.speech-training-grid input,
+.speech-training-grid select{
+    width:100%;
+    padding:8px 9px;
+    color:#fff;
+    background:#173a61;
+    border:1px solid #789fbe;
+    border-radius:7px;
+    font:inherit;
+}
+.speech-training-variants{
+    display:grid;
+    gap:7px;
+}
+.speech-training-variant{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    gap:9px;
+    align-items:center;
+    padding:8px 9px;
+    border:1px solid rgb(121 159 190 / 35%);
+    border-radius:8px;
+    background:rgb(255 255 255 / 4%);
+}
+.speech-training-variant strong{
+    overflow-wrap:anywhere;
+}
+.speech-training-variant span{
+    color:#bcd7e9;
+    font-size:12px;
+}
+.speech-training-variant button{
+    padding:5px 7px;
+    color:#fff;
+    background:#354657;
+    border:1px solid #91b6d5;
+    border-radius:6px;
+    font:inherit;
+    font-size:11px;
+    cursor:pointer;
+}
+#speechTrainingMessage{
+    color:#a9ddf7;
+}
+#speechTrainingMessage.error{
+    color:#ffaaaa;
+}
+body.developer-preview .speech-training-dialog :is(input,select,button)[data-write-control]{
+    opacity:.55;
+}
+@media(max-width:680px){
+    .speech-training-summary{
+        grid-template-columns:repeat(2,1fr);
+    }
+    .speech-training-grid,
+    .speech-training-grid.correction-grid{
+        grid-template-columns:1fr;
+    }
+    .speech-training-controls-popup dl>div{
+        grid-template-columns:1fr;
+        gap:1px;
+    }
+}
+
 /* Agent / JSON action console ------------------------------------------ */
 .json-actions-dialog {
     width: min(980px, calc(100vw - 48px));
