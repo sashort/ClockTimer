@@ -217,7 +217,7 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorLink").hidden=!(permissions&4);
+        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorButton").hidden=!(permissions&28);
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -2243,7 +2243,7 @@
     function syncConnectionUI(connected) {
         profileMenuButton.hidden = !connected;
         const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorLink").hidden=!showAdmin||!(permissions&4);
+        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorButton").hidden=!showAdmin||!(permissions&28);
         if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
@@ -6090,6 +6090,21 @@
 
     $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
+
+    $("#speechEditorButton")
+        .addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    name:
+                        "openSpeechEditorClick",
+                    action:
+                        "openSpeechEditor",
+                    preventDefault:
+                        true
+                })
+        );
 
     $("#profileForm").addEventListener(
         "submit",
@@ -10654,6 +10669,136 @@
                 finally {
                     loginPending =
                         false;
+                }
+            },
+
+            async openSpeechEditor() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        28
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                const target =
+                    "wmofSpeechEditor";
+
+                const editorWindow =
+                    window.open(
+                        "",
+                        target
+                    );
+
+                if (!editorWindow) {
+                    throw new Error(
+                        "The Speech Editor window was blocked by the browser."
+                    );
+                }
+
+                try {
+                    const response =
+                        await fetch(
+                            API_BASE +
+                            "api/users/",
+                            {
+                                credentials:
+                                    "same-origin",
+                                cache:
+                                    "no-store",
+                                headers: {
+                                    "Accept":
+                                        "application/json"
+                                }
+                            }
+                        );
+
+                    const data =
+                        await response.json();
+
+                    if (
+                        !response.ok ||
+                        typeof data
+                            .csrfToken !==
+                            "string" ||
+                        data.csrfToken
+                            .length <
+                            32
+                    ) {
+                        throw new Error(
+                            data.message ||
+                            "A valid WMOF CSRF token is required."
+                        );
+                    }
+
+                    const form =
+                        document
+                            .createElement(
+                                "form"
+                            );
+
+                    form.method =
+                        "POST";
+
+                    form.action =
+                        API_BASE +
+                        "api/admin/speech-editor/";
+
+                    form.target =
+                        target;
+
+                    const token =
+                        document
+                            .createElement(
+                                "input"
+                            );
+
+                    token.type =
+                        "hidden";
+
+                    token.name =
+                        "csrf_token";
+
+                    token.value =
+                        data.csrfToken;
+
+                    form.append(
+                        token
+                    );
+
+                    document.body
+                        .append(
+                            form
+                        );
+
+                    form.submit();
+                    form.remove();
+
+                    mainMenu
+                        ?.hidePopover?.();
+
+                    return true;
+                }
+                catch (
+                    error
+                ) {
+                    try {
+                        editorWindow
+                            .close();
+                    }
+                    catch {}
+
+                    throw error;
                 }
             },
 
