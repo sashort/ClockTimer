@@ -43,6 +43,10 @@ if (
 $storagePath = $storageDirectory . '/user-' . $actorId . '.json';
 $handle = fopen($storagePath, 'c+');
 
+if (is_resource($handle)) {
+    @chmod($storagePath, 0600);
+}
+
 if ($handle === false || !flock($handle, LOCK_EX)) {
     if (is_resource($handle)) {
         fclose($handle);
