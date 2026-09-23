@@ -13,7 +13,8 @@
     "test:deferred-trip": "node deferred-trip.mjs",
     "test:ui-state": "node clock-timer-ui-state.mjs",
     "test:active-restore": "node active-trip-restore.mjs",
-    "test:speech-editor": "node speech-editor.mjs"
+    "test:speech-editor": "node speech-editor.mjs",
+    "test:speech-phrases": "node speech-phrases.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
