@@ -63,6 +63,7 @@ class SpeechMenu {
                         attributeFilter: [
                             "speech-pattern",
                             "speech-modal",
+                            "speech-index",
                             "open",
                             "hidden",
                             "disabled"
@@ -368,6 +369,51 @@ class SpeechMenu {
                     pattern
                 )
                 .slice()
+        );
+    }
+
+    static withoutPhrase(
+        pattern,
+        phrase
+    ) {
+        if (
+            typeof pattern !== "string" ||
+            typeof phrase !== "string" ||
+            !phrase.trim()
+        ) {
+            return pattern;
+        }
+
+        const parts =
+            SpeechMenu
+                .#splitPhraseExclusions(
+                    pattern
+                );
+
+        const exclusion =
+            SpeechMenu
+                .#phraseExclusionSource(
+                    phrase
+                );
+
+        if (!exclusion) {
+            return pattern;
+        }
+
+        const exclusions =
+            [
+                ...new Set([
+                    ...parts.exclusions,
+                    exclusion
+                ])
+            ];
+
+        return (
+            "^(?!(?:" +
+            exclusions.join("|") +
+            ")$)(?:" +
+            parts.base +
+            ")$"
         );
     }
 
@@ -1719,6 +1765,72 @@ class SpeechMenu {
         }
     }
 
+    static #speechIndex(
+        element
+    ) {
+        if (!element) return 0;
+
+        const value =
+            Number(
+                element.getAttribute(
+                    "speech-index"
+                )
+            );
+
+        return Number.isFinite(value)
+            ? value
+            : 0;
+    }
+
+    static #candidatePriority(
+        element
+    ) {
+        return {
+            menu:
+                SpeechMenu
+                    .#speechIndex(
+                        element.closest(
+                            "speech-menu"
+                        )
+                    ),
+            command:
+                SpeechMenu
+                    .#speechIndex(
+                        element
+                    )
+        };
+    }
+
+    static #sortCandidates(
+        elements
+    ) {
+        return elements
+            .map(
+                (element, order) => ({
+                    element,
+                    order,
+                    priority:
+                        SpeechMenu
+                            .#candidatePriority(
+                                element
+                            )
+                })
+            )
+            .sort(
+                (left, right) =>
+                    right.priority.menu -
+                        left.priority.menu ||
+                    right.priority.command -
+                        left.priority.command ||
+                    left.order -
+                        right.order
+            )
+            .map(
+                item =>
+                    item.element
+            );
+    }
+
     static #availableCandidates() {
         const all =
             [
@@ -1754,7 +1866,13 @@ class SpeechMenu {
         const seen = new Set();
         const append =
             elements => {
-                for (const element of elements) {
+                for (
+                    const element of
+                    SpeechMenu
+                        .#sortCandidates(
+                            elements
+                        )
+                ) {
                     if (seen.has(element)) {
                         continue;
                     }
@@ -1854,15 +1972,12 @@ class SpeechMenu {
         return result;
     }
 
-    static #expandRegexSource(
-        source,
-        limit = 128
+    static #stripRegexAnchors(
+        source
     ) {
-        if (typeof source !== "string") {
-            return [];
-        }
-
-        let text = source.trim();
+        let text =
+            String(source || "")
+                .trim();
 
         if (text.startsWith("^")) {
             text = text.slice(1);
@@ -1873,6 +1988,200 @@ class SpeechMenu {
             !text.endsWith("\\$")
         ) {
             text = text.slice(0, -1);
+        }
+
+        return text;
+    }
+
+    static #splitPhraseExclusions(
+        source
+    ) {
+        const text =
+            String(source || "")
+                .trim();
+
+        const prefix =
+            "^(?!(?:";
+        const marker =
+            ")$)(?:";
+        const suffix =
+            ")$";
+
+        if (
+            text.startsWith(prefix) &&
+            text.endsWith(suffix)
+        ) {
+            const markerIndex =
+                text.indexOf(
+                    marker,
+                    prefix.length
+                );
+
+            if (markerIndex >= 0) {
+                const raw =
+                    text.slice(
+                        prefix.length,
+                        markerIndex
+                    );
+
+                const exclusions = [];
+                let current = "";
+
+                for (
+                    let index = 0;
+                    index < raw.length;
+                    index++
+                ) {
+                    const character =
+                        raw[index];
+
+                    if (
+                        character === "\\" &&
+                        index + 1 <
+                            raw.length
+                    ) {
+                        current +=
+                            character +
+                            raw[++index];
+                        continue;
+                    }
+
+                    if (character === "|") {
+                        exclusions.push(
+                            current
+                        );
+                        current = "";
+                        continue;
+                    }
+
+                    current +=
+                        character;
+                }
+
+                if (current) {
+                    exclusions.push(
+                        current
+                    );
+                }
+
+                return {
+                    base:
+                        text.slice(
+                            markerIndex +
+                                marker.length,
+                            -suffix.length
+                        ),
+                    exclusions:
+                        exclusions.filter(
+                            Boolean
+                        )
+                };
+            }
+        }
+
+        return {
+            base:
+                SpeechMenu
+                    .#stripRegexAnchors(
+                        text
+                    ),
+            exclusions: []
+        };
+    }
+
+    static #phraseExclusionSource(
+        phrase
+    ) {
+        const text =
+            String(phrase || "")
+                .trim();
+
+        if (!text) return "";
+
+        let result = "";
+        let offset = 0;
+        const slots =
+            /<([A-Za-z_$][\w$]*)>/g;
+
+        for (
+            let match;
+            (
+                match =
+                    slots.exec(text)
+            );
+        ) {
+            result +=
+                text
+                    .slice(
+                        offset,
+                        match.index
+                    )
+                    .replace(
+                        /[.*+?^${}()|[\]\\]/g,
+                        "\\    static #expandRegexSource(
+        source,
+        limit = 128
+    ) {
+"
+                    );
+
+            result += ".+";
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        result +=
+            text
+                .slice(offset)
+                .replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\    static #expandRegexSource(
+        source,
+        limit = 128
+    ) {
+"
+                );
+
+        return result;
+    }
+
+    static #expandRegexSource(
+        source,
+        limit = 128
+    ) {
+        if (typeof source !== "string") {
+            return [];
+        }
+
+        const exclusionParts =
+            SpeechMenu
+                .#splitPhraseExclusions(
+                    source
+                );
+
+        let text =
+            exclusionParts.base;
+
+        let exclusionRegex;
+
+        if (
+            exclusionParts
+                .exclusions
+                .length
+        ) {
+            try {
+                exclusionRegex =
+                    new RegExp(
+                        "^(?:" +
+                        exclusionParts
+                            .exclusions
+                            .join("|") +
+                        ")$",
+                        "i"
+                    );
+            }
+            catch {}
         }
 
         let index = 0;
@@ -2123,6 +2432,14 @@ class SpeechMenu {
                         .trim()
             )
             .filter(Boolean)
+            .filter(
+                phrase =>
+                    !exclusionRegex ||
+                    !exclusionRegex
+                        .test(
+                            phrase
+                        )
+            )
             .filter(
                 (
                     phrase,
