@@ -2146,24 +2146,6 @@ class SpeechMenu {
         limit = 128
     ) {
 "
-                    );
-
-            result += ".+";
-            offset =
-                match.index +
-                match[0].length;
-        }
-
-        result +=
-            text
-                .slice(offset)
-                .replace(
-                    /[.*+?^${}()|[\]\\]/g,
-                    "\\    static #expandRegexSource(
-        source,
-        limit = 128
-    ) {
-"
                 );
 
         return result;
