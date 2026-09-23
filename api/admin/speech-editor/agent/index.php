@@ -5,17 +5,22 @@ require_once dirname(__DIR__, 3) . '/_core/bootstrap.php';
 
 $method = require_method('GET', 'POST');
 
-$user = require_any_permission(
-    PERMISSION_DEVELOPER_PREVIEW,
+$authorization = authorize_guarded_access(
+    [
+        PERMISSION_DEVELOPER_PREVIEW,
+        PERMISSION_DEVELOPER
+    ],
+    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+);
+
+$canWrite = guarded_access_has_permission(
+    $authorization,
     PERMISSION_DEVELOPER
 );
 
-$canWrite = has_permission(
-    $user,
-    PERMISSION_DEVELOPER
-);
-
-require_csrf();
+if (guarded_access_requires_csrf($authorization)) {
+    require_csrf();
+}
 
 header('Cache-Control: no-store, private');
 
@@ -50,7 +55,17 @@ if ($method === 'POST') {
     }
 }
 
-$actorId = (int) $user['id'];
+$principalKey =
+    guarded_access_principal_key(
+        $authorization
+    );
+
+$principalStorageKey =
+    hash(
+        'sha256',
+        $principalKey
+    );
+
 $root = dirname(__DIR__, 4);
 $storageDirectory = $root . '/database/speech-editor-agent';
 
@@ -62,7 +77,7 @@ if (
     api_error('Speech Editor agent storage is unavailable.', 500, 'agent_storage_unavailable');
 }
 
-$storagePath = $storageDirectory . '/user-' . $actorId . '.json';
+$storagePath = $storageDirectory . '/principal-' . $principalStorageKey . '.json';
 $handle = fopen($storagePath, 'c+');
 
 if (is_resource($handle)) {
