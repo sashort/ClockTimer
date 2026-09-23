@@ -10345,7 +10345,17 @@
                 });
             },
 
-            showSpeechOptions() {
+            toggleSpeechOptions() {
+                if (
+                    speechMicBar
+                        ?.optionsOpen
+                ) {
+                    void speechMicBar
+                        .hideOptions?.();
+
+                    return true;
+                }
+
                 globalThis
                     .SpeechMenu
                     ?.extrapolatePhrases?.();
