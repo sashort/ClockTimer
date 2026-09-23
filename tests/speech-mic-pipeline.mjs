@@ -83,8 +83,10 @@ assert.equal(bubbledStarted, 1);
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceStarted", {detail:{id:7}}));
 assert.equal(bar.getAttribute("state"), "utterance");
 
-window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at"}}));
-window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at five"}}));
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at",isFinal:false}}));
+assert.equal(bar.getAttribute("phase"), null);
+window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscriptChanged", {detail:{id:7,transcript:"start at five",isFinal:false}}));
+assert.equal(bar.getAttribute("phase"), null);
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("utteranceTranscribed", {detail:{id:7,transcript:"start at five",live:true}}));
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("speechPreprocessed", {detail:{utteranceId:7,originalText:"start at five",processedText:"start at 5:00"}}));
 assert.equal(bar.getAttribute("phase"), "preprocessed");
@@ -227,6 +229,20 @@ assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition
 assert.match(speechMenuSource, /#compactTranscript/);
 assert.match(speechMenuSource, /speechCompactPattern/);
 assert.match(speechMenuSource, /speechCorrectionApplied/);
+assert.match(speechMenuSource, /provisional:\s*!execute/);
+assert.match(speechMenuSource, /"utteranceUnrecognized"[\s\S]*transcript/);
+assert.match(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    /--speech-load-progress[\s\S]*#003b73[\s\S]*#a9ddf7/
+);
+assert.match(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    /current\s*\+\s*" \/ "\s*\+\s*total/
+);
+assert.match(
+    fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8"),
+    /#scheduleRejectedClear[\s\S]*2000/
+);
 
 assert.match(sherpaRecognizerSource, /static sampleRate = 16000;/);
 assert.match(sherpaRecognizerSource, /new Worker\(workerUrl\)/);
