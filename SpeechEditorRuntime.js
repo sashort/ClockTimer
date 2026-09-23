@@ -319,29 +319,63 @@
                 globalThis
                     .WMOFSpeechFunctionRegistry;
 
-            const preprocFunctions =
-                all.filter(
-                    name =>
-                        registry
-                            ?.isPreproc?.(
-                                name
-                            )
-                );
+            const roles = {
+                processing: [],
+                action: [],
+                interaction: [],
+                presentation: [],
+                unclassified: []
+            };
 
-            const preproc =
-                new Set(
-                    preprocFunctions
-                );
+            for (const name of all) {
+                const role =
+                    registry
+                        ?.roleOf?.(
+                            name
+                        );
+
+                if (
+                    role &&
+                    Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            roles,
+                            role
+                        ) &&
+                    role !==
+                        "unclassified"
+                ) {
+                    roles[role].push(
+                        name
+                    );
+                }
+                else {
+                    roles.unclassified
+                        .push(
+                            name
+                        );
+                }
+            }
 
             return {
+                functionRoles:
+                    roles,
+                processingFunctions:
+                    roles.processing,
+                actionFunctions:
+                    roles.action,
+                interactionFunctions:
+                    roles.interaction,
+                presentationFunctions:
+                    roles.presentation,
+                unclassifiedFunctions:
+                    roles.unclassified,
+
+                // Compatibility aliases while saved editor data migrates.
+                preprocFunctions:
+                    roles.processing,
                 speechFunctions:
-                    all.filter(
-                        name =>
-                            !preproc.has(
-                                name
-                            )
-                    ),
-                preprocFunctions
+                    roles.action
             };
         };
 
