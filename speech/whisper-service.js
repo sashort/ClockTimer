@@ -80,6 +80,28 @@ function multipartPart(
     ]);
 }
 
+export function whisperServerArgs({
+    host,
+    port,
+    model,
+    threads,
+    tmpDir
+}) {
+    return [
+        "--host",
+        host,
+        "--port",
+        String(port),
+        "-m",
+        model,
+        "-t",
+        String(threads),
+        "--tmp-dir",
+        tmpDir,
+        "-nt"
+    ];
+}
+
 export class WhisperService {
     #binary;
     #model;
@@ -387,19 +409,18 @@ export class WhisperService {
         const child =
             spawn(
                 this.#binary,
-                [
-                    "--host",
-                    this.#host,
-                    "--port",
-                    String(this.#port),
-                    "-m",
-                    this.#model,
-                    "-t",
-                    String(this.#threads),
-                    "--tmp-dir",
-                    this.#tmpDir,
-                    "-nt"
-                ],
+                whisperServerArgs({
+                    host:
+                        this.#host,
+                    port:
+                        this.#port,
+                    model:
+                        this.#model,
+                    threads:
+                        this.#threads,
+                    tmpDir:
+                        this.#tmpDir
+                }),
                 {
                     stdio:
                         ["ignore", "pipe", "pipe"]
