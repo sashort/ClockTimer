@@ -90,18 +90,34 @@
                                 )
                                 : [];
 
-                        return globalThis
-                            .WMOFActions
-                            ?.[action]
-                            ?.(
-                                ...(
-                                    Array.isArray(
-                                        values
+                        const result =
+                            globalThis
+                                .WMOFActions
+                                ?.[action]
+                                ?.(
+                                    ...(
+                                        Array.isArray(
+                                            values
+                                        )
+                                            ? values
+                                            : [values]
                                     )
-                                        ? values
-                                        : [values]
-                                )
+                                );
+
+                        if (
+                            result &&
+                            typeof result.then ===
+                                "function"
+                        ) {
+                            result.catch(
+                                error =>
+                                    console.error(
+                                        error
+                                    )
                             );
+                        }
+
+                        return result;
                     }
                 );
 
