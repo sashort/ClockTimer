@@ -277,7 +277,7 @@ foreach ($macros as $macro) {
     }
 }
 
-$allowedAttributes = ['speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-modal', 'speech-index'];
+$allowedAttributes = ['speech-template', 'speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-modal', 'speech-index'];
 $seen = [];
 
 foreach ($entries as $entry) {
