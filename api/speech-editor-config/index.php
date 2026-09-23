@@ -82,21 +82,25 @@ $renderRegistry = static function (array $roles): string {
     return "globalThis.WMOFSpeechFunctionRoles = " . $encoded . ";\n";
 };
 
-authenticated_user_id();
-require_csrf();
+$authorization = authorize_guarded_access(
+    $method === 'GET'
+        ? [
+            PERMISSION_DEVELOPER_PREVIEW,
+            PERMISSION_DEVELOPER
+        ]
+        : [
+            PERMISSION_DEVELOPER
+        ],
+    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+);
 
-if ($method === 'GET') {
-    require_any_permission(
-        PERMISSION_DEVELOPER_PREVIEW,
-        PERMISSION_DEVELOPER
-    );
-
-    json_response(array_merge($read(), $readRegistry()));
+if (guarded_access_requires_csrf($authorization)) {
+    require_csrf();
 }
 
-require_permission(
-    PERMISSION_DEVELOPER
-);
+if ($method === 'GET') {
+    json_response(array_merge($read(), $readRegistry()));
+}
 
 $input = json_input();
 $entries = $input['entries'] ?? null;
