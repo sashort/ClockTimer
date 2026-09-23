@@ -1,6 +1,6 @@
 class EnglishDurationParser {
     static #small = Object.freeze({zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19});
-    static #tens = Object.freeze({twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90});
+    static #tens = Object.freeze({twenty:20,thirty:30,forty:40,fifty:50});
 
     static parse(value) {
         let text = String(value ?? "").toLocaleLowerCase("en-US").trim().replace(/[-–—]/g," ").replace(/\band\b/g," ").replace(/\s+/g," ");
@@ -41,7 +41,9 @@ class EnglishDurationParser {
             if(Number.isInteger(hours)&&hours>=0&&Number.isInteger(minutes)&&minutes>=0&&minutes<60)return (hours*3600+minutes*60)*1000;
         }
         const minutes=EnglishDurationParser.#number(text);
-        return Number.isFinite(minutes)&&minutes>0?minutes*60000:undefined;
+        return Number.isInteger(minutes)&&minutes>0&&minutes<=59
+            ? minutes*60000
+            : undefined;
     }
 
     static format(milliseconds) {
@@ -56,8 +58,9 @@ class EnglishDurationParser {
         for(const word of words){
             if(word in EnglishDurationParser.#small)current+=EnglishDurationParser.#small[word];
             else if(word in EnglishDurationParser.#tens)current+=EnglishDurationParser.#tens[word];
-            else if(word==="hundred")current=(current||1)*100;
             else return undefined;
+
+            if (current > 59) return undefined;
         }
         total+=current;return total;
     }
