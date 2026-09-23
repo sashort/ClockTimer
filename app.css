@@ -267,7 +267,7 @@ html[data-trip-log-startup="unpinned"] .app {
 
 .rendered-time-cell {position:relative;min-width:0;display:grid;}
 .rendered-time-cell>.summary-cell {width:100%;height:100%;}
-#renderedTimeButton {-webkit-touch-callout:none;user-select:none;}
+#toggleRenderedTimeButton {-webkit-touch-callout:none;user-select:none;}
 .end-time-goal-lock {position:absolute;right:10px;bottom:7px;width:25px;height:25px;margin:0;padding:0;border:0;color:var(--wm-blue-light);background:transparent;}
 .end-time-goal-lock::before {content:"";position:absolute;inset:1px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='black'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;}
 .end-time-goal-lock[hidden] {display:none;}
@@ -1477,7 +1477,7 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     border-color: rgb(255 255 255 / 84%);
 }
 
-button:active:not(:disabled):not(#goalSyncButton) {
+button:active:not(:disabled):not(#toggleSyncGoalButton) {
     filter: brightness(0.92);
     transform: translateY(1px);
 }
@@ -3415,19 +3415,19 @@ clock-timer[hide-latency] time-range[type="latency"] {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.2 4.1C5.8 4.8 3 8.1 3 12c0 4.9 4 8.9 8.9 8.9h1.2c1.5 0 2.7-1.2 2.7-2.7 0-1.4-1.1-2.5-2.5-2.5h-1.1c-1.1 0-2-.9-2-2s.9-2 2-2h2.4c.4 0 .9 0 1.3-.1' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='6.9' cy='11.4' r='1.1' fill='black'/%3E%3Ccircle cx='9.3' cy='7.6' r='1.1' fill='black'/%3E%3Cpath d='M18.1 2.2l.5 1.5 1.5.5 1.3-.7 1.1 1.1-.7 1.3.5 1.5 1.5.5v1.6l-1.5.5-.5 1.5.7 1.3-1.1 1.1-1.3-.7-1.5.5-.5 1.5h-1.6l-.5-1.5-1.5-.5-1.3.7-1.1-1.1.7-1.3-.5-1.5-1.5-.5V7.9l1.5-.5.5-1.5-.7-1.3 1.1-1.1 1.3.7 1.5-.5.5-1.5h1.6Z' fill='black'/%3E%3Ccircle cx='17.3' cy='8.7' r='2.1' fill='white'/%3E%3C/svg%3E");
 }
 
-#syncGoalsMenuButton::before,
+#toggleSyncMenuButton::before,
 .goal-sync-button::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2M5 5l14 14' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2M5 5l14 14' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-#syncGoalsMenuButton[aria-pressed="true"]::before,
+#toggleSyncMenuButton[aria-pressed="true"]::before,
 .goal-sync-button[aria-pressed="true"]::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-#syncGoalsMenuButton[aria-pressed="true"],
+#toggleSyncMenuButton[aria-pressed="true"],
 .goal-sync-button[aria-pressed="true"] {
     color: #a9ddf7;
 }
@@ -3610,11 +3610,11 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transform: translateY(-50%);
 }
 
-#syncGoalsMenuButton::before {
+#toggleSyncMenuButton::before {
     content: none;
 }
 
-#syncGoalsMenuButton[aria-pressed="true"] {
+#toggleSyncMenuButton[aria-pressed="true"] {
     color: var(--wm-white);
 }
 
@@ -3663,7 +3663,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 
 /* sync-disabled-strike-v2 */
-#syncGoalsMenuButton[aria-pressed="false"] {
+#toggleSyncMenuButton[aria-pressed="false"] {
     text-decoration-line: line-through;
     text-decoration-thickness: 2px;
     text-decoration-color: currentColor;
@@ -3806,18 +3806,18 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 /* Strike the Sync Goals label itself, not the entire menu row, so the
    connection annotation stays readable and unstruck. */
-#syncGoalsMenuButton[aria-pressed="false"] {
+#toggleSyncMenuButton[aria-pressed="false"] {
     text-decoration: none;
 }
 
-#syncGoalsMenuButton[aria-pressed="false"] > span:last-child,
-.app[data-network-status="offline"] #syncGoalsMenuButton > span:last-child {
+#toggleSyncMenuButton[aria-pressed="false"] > span:last-child,
+.app[data-network-status="offline"] #toggleSyncMenuButton > span:last-child {
     text-decoration-line: line-through;
     text-decoration-thickness: 2px;
     text-decoration-color: currentColor;
 }
 
-.app[data-network-status="offline"] #syncGoalsMenuButton::after {
+.app[data-network-status="offline"] #toggleSyncMenuButton::after {
     content: "(offline)";
     margin-left: -6px;
     color: rgb(255 255 255 / 78%);
