@@ -552,9 +552,6 @@
     const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
 
-    let timerStartedAt = 0;
-    let timerAccumulated = 0;
-    let timerInterval;
     let loginPromptTimeout;
     let loginPending = false;
     let stagedStandardTime;
@@ -9143,50 +9140,6 @@
             );
         });
 
-    function renderIndependentTimer() {
-        const active = timerStartedAt ? Date.now() - timerStartedAt : 0;
-        $("#independentTimerValue").value = formatDuration(timerAccumulated + active);
-    }
-
-    globalThis
-        .WMOFInteractionFunctions
-        .bindAction({
-            element:
-                $("#independentStart"),
-            event:
-                "click",
-            name:
-                "startIndependentTimerClick",
-            action:
-                "startIndependentTimer"
-        });
-
-    globalThis
-        .WMOFInteractionFunctions
-        .bindAction({
-            element:
-                $("#independentStop"),
-            event:
-                "click",
-            name:
-                "stopIndependentTimerClick",
-            action:
-                "stopIndependentTimer"
-        });
-
-    globalThis
-        .WMOFInteractionFunctions
-        .bindAction({
-            element:
-                $("#independentReset"),
-            event:
-                "click",
-            name:
-                "resetIndependentTimerClick",
-            action:
-                "resetIndependentTimer"
-        });
-
     function formatIntervalClock(milliseconds) {
         const numeric = Number(milliseconds);
         const negative = Number.isFinite(numeric) && numeric < 0;
@@ -12425,63 +12378,6 @@
                 return true;
             },
 
-            startIndependentTimer() {
-                if (timerStartedAt) {
-                    return false;
-                }
-
-                timerStartedAt =
-                    Date.now();
-
-                timerInterval =
-                    setInterval(
-                        renderIndependentTimer,
-                        250
-                    );
-
-                renderIndependentTimer();
-
-                return true;
-            },
-
-            stopIndependentTimer() {
-                if (!timerStartedAt) {
-                    return false;
-                }
-
-                timerAccumulated +=
-                    Date.now() -
-                    timerStartedAt;
-
-                timerStartedAt =
-                    0;
-
-                clearInterval(
-                    timerInterval
-                );
-
-                renderIndependentTimer();
-
-                return true;
-            },
-
-            resetIndependentTimer() {
-                timerStartedAt =
-                    0;
-
-                timerAccumulated =
-                    0;
-
-                clearInterval(
-                    timerInterval
-                );
-
-                $("#independentTimerValue")
-                    .value =
-                    "---";
-
-                return true;
-            }
         });
 
     globalThis
