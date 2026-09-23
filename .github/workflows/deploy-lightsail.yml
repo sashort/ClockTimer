@@ -66,6 +66,9 @@ jobs:
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database connectivity check passed."
 
+             sudo -n chown "$(id -un)":daemon SpeechFunctionRegistry.js
+             sudo -n chmod 664 SpeechFunctionRegistry.js
+
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
              sed -i \
@@ -75,6 +78,7 @@ jobs:
                -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
                -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
                -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
                index.html
