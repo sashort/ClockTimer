@@ -164,6 +164,8 @@ const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
+assert.match(app, /speech-editor-preview/);
+assert.match(app, /function showInitialLoginDialog\(\)[\s\S]*if \(speechEditorPreview\)[\s\S]*return false;/);
 assert.doesNotMatch(app, /startIndependentTimer|stopIndependentTimer|resetIndependentTimer|renderIndependentTimer|timerAccumulated|timerStartedAt/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 assert.match(app, /speechDiagnosticsEnabled/);
@@ -282,6 +284,7 @@ const speechEditorCss = fs.readFileSync(
 );
 
 assert.match(speechEditorHtml, /speechTrainingControlsPopup/);
+assert.match(speechEditorHtml, /index\.html\?speech-editor-preview=1/);
 assert.match(speechEditorHtml, /data-training-requested=/);
 assert.match(speechEditorHtml, /<option value="training">Training<\/option>/);
 assert.match(speechEditorHtml, /Scratch That/);
