@@ -8803,31 +8803,6 @@
         clockTimer.addEventListener(eventName, handler);
     }
 
-    function setStandardTimeFromSpeech(timeValue) {
-        const duration = EnglishSpeechValuePreprocessor.parse(timeValue, "duration");
-        const formatted = EnglishDurationParser.format(duration);
-        if (!formatted) return false;
-
-        if (scheduledStartDialog.open && !scheduledStartStandard.disabled && tripDraft) {
-            tripDraft.standardTime = formatted;
-            scheduledStartStandard.classList.remove("needs-value");
-            scheduledStartMessage.hidden = true;
-            updateScheduledStartDialog();
-            return true;
-        }
-
-        const editButton = tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]');
-        if (tripSettingsDialog.open && editButton && !editButton.disabled) {
-            const session = tripSettingsSession || beginTripSettingsSession();
-            if (!session) return false;
-            session.values.standardTime = formatted;
-            refreshTripSettingsValues();
-            return true;
-        }
-        return false;
-    }
-
-    const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
     globalThis
         .WMOFProcessingFunctions
         .define(
@@ -8850,12 +8825,10 @@
                     }
 
                     kind =
-                        numberPadState
-                            .mode ===
+                        numberPadState.mode ===
                             "absolute"
                             ? "clock-parts"
-                            : numberPadState
-                                .mode ===
+                            : numberPadState.mode ===
                                 "percent"
                                 ? "percent"
                                 : "duration";
@@ -8920,161 +8893,1022 @@
                 );
             }
         );
+
     let pendingSpeechReady;
-    const cancelPendingSpeechReady = () => {
-        if (pendingSpeechReady !== undefined) clearTimeout(pendingSpeechReady);
-        pendingSpeechReady = undefined;
-    };
-    const speechPointerUp = element => {
-        if (!element || element.hidden || element.disabled) return false;
-        element.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerType: "speech" }));
-        return true;
-    };
-    speechCommands.setStandardTime = setStandardTimeFromSpeech;
-    speechCommands.setKeypadValue = spokenValue => {
-        if (!numberPadDialog?.open || !numberPadState) return false;
-        let pending, meridiem = numberPadState.meridiem;
-        if (numberPadState.mode === "percent") {
-            const percent = EnglishSpeechValuePreprocessor.parse(spokenValue, "percent");
-            if (!Number.isInteger(percent) || percent <= 0) return false;
-            pending = String(percent);
-        }
-        else if (numberPadState.mode === "absolute") {
-            const parts = EnglishSpeechValuePreprocessor.parse(spokenValue, "clock-parts");
-            if (!parts) return false;
-            if (parts.meridiem) meridiem = parts.meridiem.toUpperCase();
-            else if (parts.hour > 12) meridiem = undefined;
-            const hour = meridiem && parts.hour > 12 ? parts.hour % 12 || 12 : parts.hour;
-            pending = absoluteDigits(hour, parts.minute, 0);
-            if (parts.day) {
-                const date = new Date();
-                if (parts.day === "tomorrow") date.setDate(date.getDate() + 1);
-                numberPadState.pendingDate = formatDateInput(date);
+
+    const cancelPendingSpeechReady =
+        () => {
+            if (
+                pendingSpeechReady !==
+                    undefined
+            ) {
+                clearTimeout(
+                    pendingSpeechReady
+                );
             }
-            if (!absoluteDigitsValid(pending, meridiem)) return false;
-        }
-        else {
-            const duration = EnglishSpeechValuePreprocessor.parse(spokenValue, "duration");
-            const formatted = EnglishDurationParser.format(duration);
-            if (!formatted) return false;
-            pending = normalizeTimeDigits(formatted);
-            if (!timeDigitsValid(pending)) return false;
-        }
-        numberPadState.pending = pending;
-        numberPadState.meridiem = meridiem;
-        numberPadState.replaceOnNextDigit = false;
-        numberPadState.everEdited = true;
-        refreshNumberPad();
-        return true;
-    };
-    speechCommands.ready = () => {
-        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
-        cancelPendingSpeechReady();
-        pendingSpeechReady = setTimeout(() => {
-            pendingSpeechReady = undefined;
-            speechPointerUp($("#newTripButton"));
-        }, 1100);
-        return true;
-    };
-    speechCommands.readyAt = async spokenTime => {
-        cancelPendingSpeechReady();
-        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
-        const now = new Date();
-        const target = EnglishSpeechValuePreprocessor.parse(spokenTime, "clock", {baseDate:now, preferFuture:true});
-        if (!target) return false;
-        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
-        const defaults = getTripMomentDefaults(now);
-        const scheduledStart = formatTimelineDateTime(target, defaults.creationDate);
-        const preferences = getTripPreferences();
-        if (!defaults || !scheduledStart) return false;
-        uiReturnStack.length = 0;
-        resetTripSettingsNavigation();
-        tripSettingsSession = undefined;
-        tripStartsNowState = undefined;
-        tripDraft = {
-            ...defaults,
-            standardTime: "",
-            scheduledStart,
-            startTime: scheduledStart,
-            lateBreakBehavior: preferences.lateBreakBehavior,
-            syncGoals: preferences.syncGoals
+
+            pendingSpeechReady =
+                undefined;
         };
-        renderDeferredTrip();
-        try { await clockTimer.prepareTrip({ timeout: 5000, at: now }); } catch {}
-        showScheduledStartDialog();
-        return true;
-    };
-    speechCommands.readyAtContinuation = spokenTime => {
-        if (pendingSpeechReady === undefined) return false;
-        return speechCommands.readyAt(spokenTime);
-    };
-    speechCommands.breakStart = () => speechPointerUp(breakButton);
-    speechCommands.chooseBreak = breakChoice => {
-        if (!breakDialog.open) return false;
-        const kind = ({"10":"short-break",short:"short-break","15":"break",long:"break",lunch:"lunch"})[String(breakChoice).toLowerCase()];
-        const button = breakDialog.querySelector(`[data-break-type="${kind}"]`);
-        if (!button) return false;
-        breakDialog.querySelectorAll(".speech-focused").forEach(item => item.classList.remove("speech-focused"));
-        button.classList.add("speech-focused");
-        button.focus();
-        return true;
-    };
-    speechCommands.confirmBreak = () => {
-        const button = breakDialog.querySelector("[data-break-type].speech-focused");
-        if (!breakDialog.open || !button) return false;
-        button.click();
-        return true;
-    };
-    speechCommands.down = () => speechPointerUp(downButton);
-    speechCommands.breakEnd = () => {
-        const type = String(clockTimer.getActiveIntervalState?.(new Date())?.intervalType || "").toLowerCase();
-        if (type !== "break" && type !== "lunch") return false;
-        openDialog("speechBreakEndDialog", { reason: "speech-break-end" });
-        return true;
-    };
-    speechCommands.resume = () => speechPointerUp(downResumeButton);
-    speechCommands.setGoal = (goalScope, percent) => {
-        const scope = String(goalScope).toLowerCase();
-        const value = EnglishSpeechValuePreprocessor.parse(percent, "percent");
-        if (!['trip','total'].includes(scope) || !Number.isFinite(value) || value <= 0) return false;
-        if ((endTimeGoalOverride?.scopes || []).includes(scope)) { flashEndTimeGoalLock(); return false; }
-        clockTimer.configure({ [scope === "total" ? "total_goal" : "trip_goal"]: `${value}%` });
-        queueSummaryRefresh();
-        return true;
-    };
-    speechCommands.setGoalMode = goalMode => {
-        const mode = String(goalMode).toLowerCase();
-        if (!PERCENT_MODES.includes(mode)) return false;
-        applyScope(mode);
-        return true;
-    };
-    speechCommands.sync = syncAction => {
-        const current = getSyncGoalsState();
-        const action = String(syncAction || "").toLowerCase();
-        setSyncGoals(action === "on" ? true : action === "off" ? false : !current);
-        return true;
-    };
-    speechCommands.lockEndTime = spokenTime => {
-        if (!tripIsLive()) return false;
-        const target = EnglishSpeechValuePreprocessor.parse(spokenTime, "clock", {baseDate:new Date(), preferFuture:true});
-        return target ? applyEndTimeGoalOverride(target) : false;
-    };
-    speechCommands.showTripLog = () => { if (getTripListState() !== "open") void openTripList("speech"); return true; };
-    speechCommands.hideTripLog = () => { if (getTripListState() === "open") void closeTripList("speech"); return true; };
-    speechCommands.deferTrip = () => {
-        if (!numberPadDialog?.open || numberPadState?.workflow !== "new-trip" || !tripDraft) return false;
-        tripDraft.deferred = true;
-        tripDraft.standardTime = "";
-        renderDeferredTrip();
-        void closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
-        return true;
-    };
-    speechCommands.setRenderedTimeMode = timeMode => {
-        const value = String(timeMode).toLowerCase();
-        applyRenderedTimeMode(value.startsWith("end") ? "calculated-end" : value);
-        return true;
-    };
-    globalThis.WMOFSpeechCommands = speechCommands;
+
+    const actions =
+        globalThis.WMOFActions;
+
+    globalThis
+        .WMOFActionFunctions
+        .defineAll({
+            changeStandardTime(
+                timeValue
+            ) {
+                const duration =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            timeValue,
+                            "duration"
+                        );
+
+                const formatted =
+                    EnglishDurationParser
+                        .format(
+                            duration
+                        );
+
+                if (!formatted) {
+                    return false;
+                }
+
+                if (
+                    scheduledStartDialog
+                        .open &&
+                    !scheduledStartStandard
+                        .disabled &&
+                    tripDraft
+                ) {
+                    tripDraft.standardTime =
+                        formatted;
+
+                    scheduledStartStandard
+                        .classList
+                        .remove(
+                            "needs-value"
+                        );
+
+                    scheduledStartMessage.hidden =
+                        true;
+
+                    updateScheduledStartDialog();
+
+                    return true;
+                }
+
+                const editButton =
+                    tripSettingsDialog
+                        .querySelector(
+                            '[data-trip-time-field="standard-time"]'
+                        );
+
+                if (
+                    tripSettingsDialog.open &&
+                    editButton &&
+                    !editButton.disabled
+                ) {
+                    const session =
+                        tripSettingsSession ||
+                        beginTripSettingsSession();
+
+                    if (!session) {
+                        return false;
+                    }
+
+                    session.values
+                        .standardTime =
+                        formatted;
+
+                    refreshTripSettingsValues();
+
+                    return true;
+                }
+
+                return false;
+            },
+
+            enterKeypadValue(
+                spokenValue
+            ) {
+                if (
+                    !numberPadDialog
+                        ?.open ||
+                    !numberPadState
+                ) {
+                    return false;
+                }
+
+                let pending;
+                let meridiem =
+                    numberPadState
+                        .meridiem;
+
+                if (
+                    numberPadState.mode ===
+                        "percent"
+                ) {
+                    const percent =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "percent"
+                            );
+
+                    if (
+                        !Number.isInteger(
+                            percent
+                        ) ||
+                        percent <= 0
+                    ) {
+                        return false;
+                    }
+
+                    pending =
+                        String(percent);
+                }
+                else if (
+                    numberPadState.mode ===
+                        "absolute"
+                ) {
+                    const parts =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "clock-parts"
+                            );
+
+                    if (!parts) {
+                        return false;
+                    }
+
+                    if (parts.meridiem) {
+                        meridiem =
+                            parts.meridiem
+                                .toUpperCase();
+                    }
+                    else if (
+                        parts.hour > 12
+                    ) {
+                        meridiem =
+                            undefined;
+                    }
+
+                    const hour =
+                        meridiem &&
+                        parts.hour > 12
+                            ? (
+                                parts.hour %
+                                    12 ||
+                                12
+                            )
+                            : parts.hour;
+
+                    pending =
+                        absoluteDigits(
+                            hour,
+                            parts.minute,
+                            0
+                        );
+
+                    if (parts.day) {
+                        const date =
+                            new Date();
+
+                        if (
+                            parts.day ===
+                                "tomorrow"
+                        ) {
+                            date.setDate(
+                                date.getDate() +
+                                    1
+                            );
+                        }
+
+                        numberPadState
+                            .pendingDate =
+                            formatDateInput(
+                                date
+                            );
+                    }
+
+                    if (
+                        !absoluteDigitsValid(
+                            pending,
+                            meridiem
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+                else {
+                    const duration =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "duration"
+                            );
+
+                    const formatted =
+                        EnglishDurationParser
+                            .format(
+                                duration
+                            );
+
+                    if (!formatted) {
+                        return false;
+                    }
+
+                    pending =
+                        normalizeTimeDigits(
+                            formatted
+                        );
+
+                    if (
+                        !timeDigitsValid(
+                            pending
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+
+                numberPadState.pending =
+                    pending;
+
+                numberPadState.meridiem =
+                    meridiem;
+
+                numberPadState
+                    .replaceOnNextDigit =
+                    false;
+
+                numberPadState.everEdited =
+                    true;
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            openStartMenu() {
+                if (
+                    tripIsLive() ||
+                    $("#newTripButton")
+                        ?.disabled
+                ) {
+                    return false;
+                }
+
+                cancelPendingSpeechReady();
+
+                void beginNewTripWorkflow({
+                    tripMoment:
+                        new Date()
+                }).catch(
+                    () => {}
+                );
+
+                return true;
+            },
+
+            prepareStartMenu() {
+                if (
+                    tripIsLive() ||
+                    $("#newTripButton")
+                        ?.disabled
+                ) {
+                    return false;
+                }
+
+                cancelPendingSpeechReady();
+
+                pendingSpeechReady =
+                    setTimeout(
+                        () => {
+                            pendingSpeechReady =
+                                undefined;
+
+                            actions
+                                .openStartMenu();
+                        },
+                        1100
+                    );
+
+                return true;
+            },
+
+            async scheduleStartAt(
+                spokenTime
+            ) {
+                cancelPendingSpeechReady();
+
+                if (
+                    tripIsLive() ||
+                    $("#newTripButton")
+                        ?.disabled
+                ) {
+                    return false;
+                }
+
+                const now =
+                    new Date();
+
+                const target =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            spokenTime,
+                            "clock",
+                            {
+                                baseDate:
+                                    now,
+                                preferFuture:
+                                    true
+                            }
+                        );
+
+                if (!target) {
+                    return false;
+                }
+
+                if (
+                    clockTimer.status ===
+                        "stopped"
+                ) {
+                    await clockTimer
+                        .resetCompletedTrip();
+                }
+
+                const defaults =
+                    getTripMomentDefaults(
+                        now
+                    );
+
+                if (!defaults) {
+                    return false;
+                }
+
+                const scheduledStart =
+                    formatTimelineDateTime(
+                        target,
+                        defaults
+                            .creationDate
+                    );
+
+                const preferences =
+                    getTripPreferences();
+
+                if (!scheduledStart) {
+                    return false;
+                }
+
+                uiReturnStack.length =
+                    0;
+
+                resetTripSettingsNavigation();
+
+                tripSettingsSession =
+                    undefined;
+
+                tripStartsNowState =
+                    undefined;
+
+                tripDraft = {
+                    ...defaults,
+                    standardTime: "",
+                    scheduledStart,
+                    startTime:
+                        scheduledStart,
+                    lateBreakBehavior:
+                        preferences
+                            .lateBreakBehavior,
+                    syncGoals:
+                        preferences
+                            .syncGoals
+                };
+
+                renderDeferredTrip();
+
+                try {
+                    await clockTimer
+                        .prepareTrip({
+                            timeout:
+                                5000,
+                            at: now
+                        });
+                }
+                catch {}
+
+                showScheduledStartDialog();
+
+                return true;
+            },
+
+            continueStartAt(
+                spokenTime
+            ) {
+                if (
+                    pendingSpeechReady ===
+                        undefined
+                ) {
+                    return false;
+                }
+
+                return actions
+                    .scheduleStartAt(
+                        spokenTime
+                    );
+            },
+
+            openBreakMenu(
+                reason = "break"
+            ) {
+                if (
+                    breakButton?.disabled
+                ) {
+                    return false;
+                }
+
+                return openDialog(
+                    "breakDialog",
+                    {
+                        reason
+                    }
+                );
+            },
+
+            chooseBreakType(
+                breakChoice
+            ) {
+                if (
+                    !breakDialog.open
+                ) {
+                    return false;
+                }
+
+                const kind =
+                    ({
+                        "10":
+                            "short-break",
+                        short:
+                            "short-break",
+                        "15":
+                            "break",
+                        long:
+                            "break",
+                        lunch:
+                            "lunch"
+                    })[
+                        String(
+                            breakChoice
+                        )
+                            .toLowerCase()
+                    ];
+
+                const button =
+                    breakDialog
+                        .querySelector(
+                            `[data-break-type="${kind}"]`
+                        );
+
+                if (!button) {
+                    return false;
+                }
+
+                breakDialog
+                    .querySelectorAll(
+                        ".speech-focused"
+                    )
+                    .forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    "speech-focused"
+                                )
+                    );
+
+                button.classList.add(
+                    "speech-focused"
+                );
+
+                button.focus();
+
+                return true;
+            },
+
+            async confirmBreakType() {
+                const button =
+                    breakDialog
+                        .querySelector(
+                            "[data-break-type].speech-focused"
+                        );
+
+                if (
+                    !breakDialog.open ||
+                    !button
+                ) {
+                    return false;
+                }
+
+                const kind =
+                    button.dataset
+                        .breakType;
+
+                closeDialog(
+                    breakDialog,
+                    {
+                        reason:
+                            "break-type-selected"
+                    }
+                );
+
+                return startBreakInterval(
+                    kind
+                );
+            },
+
+            async startBreak(
+                kind
+            ) {
+                if (!kind) {
+                    return false;
+                }
+
+                if (breakDialog.open) {
+                    closeDialog(
+                        breakDialog,
+                        {
+                            reason:
+                                "break-type-selected"
+                        }
+                    );
+                }
+
+                return startBreakInterval(
+                    kind
+                );
+            },
+
+            async startDownTime() {
+                if (
+                    downButton?.disabled
+                ) {
+                    return false;
+                }
+
+                const result =
+                    await clockTimer
+                        .startInterval(
+                            "down"
+                        );
+
+                if (result) {
+                    renderTripActionState();
+                }
+
+                return Boolean(
+                    result
+                );
+            },
+
+            openBreakEndMenu() {
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                if (
+                    type !== "break" &&
+                    type !== "lunch"
+                ) {
+                    return false;
+                }
+
+                return openDialog(
+                    "speechBreakEndDialog",
+                    {
+                        reason:
+                            "speech-break-end"
+                    }
+                );
+            },
+
+            async resumeTrip() {
+                const result =
+                    await clockTimer
+                        .endInterval();
+
+                renderTripActionState();
+
+                return Boolean(
+                    result
+                );
+            },
+
+            async endTrip() {
+                return endCurrentIntervalOrTrip();
+            },
+
+            async cancelDownTime() {
+                await clockTimer
+                    .endInterval();
+
+                return endCurrentIntervalOrTrip();
+            },
+
+            changeGoal(
+                goalScope,
+                percent
+            ) {
+                const scope =
+                    String(
+                        goalScope
+                    )
+                        .toLowerCase();
+
+                const value =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            percent,
+                            "percent"
+                        );
+
+                if (
+                    ![
+                        "trip",
+                        "total"
+                    ].includes(
+                        scope
+                    ) ||
+                    !Number.isFinite(
+                        value
+                    ) ||
+                    value <= 0
+                ) {
+                    return false;
+                }
+
+                if (
+                    (
+                        endTimeGoalOverride
+                            ?.scopes ||
+                        []
+                    ).includes(
+                        scope
+                    )
+                ) {
+                    flashEndTimeGoalLock();
+
+                    return false;
+                }
+
+                clockTimer.configure({
+                    [
+                        scope ===
+                            "total"
+                            ? "total_goal"
+                            : "trip_goal"
+                    ]:
+                        `${value}%`
+                });
+
+                queueSummaryRefresh();
+
+                return true;
+            },
+
+            changeGoalMode(
+                goalMode
+            ) {
+                const mode =
+                    String(
+                        goalMode
+                    )
+                        .toLowerCase();
+
+                if (
+                    !PERCENT_MODES
+                        .includes(
+                            mode
+                        )
+                ) {
+                    return false;
+                }
+
+                applyScope(
+                    mode
+                );
+
+                return true;
+            },
+
+            cycleGoalMode() {
+                const current =
+                    PERCENT_MODES
+                        .indexOf(
+                            normalizePercentMode(
+                                clockTimer
+                                    .percentMode
+                            )
+                        );
+
+                applyScope(
+                    PERCENT_MODES[
+                        (
+                            current +
+                            1
+                        ) %
+                        PERCENT_MODES
+                            .length
+                    ]
+                );
+
+                return true;
+            },
+
+            changeSyncState(
+                syncAction
+            ) {
+                if (
+                    normalizedConnectionStatus() ===
+                        "offline"
+                ) {
+                    animateOfflineClouds();
+                }
+
+                const current =
+                    getSyncGoalsState();
+
+                const action =
+                    String(
+                        syncAction ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                const enabled =
+                    setSyncGoals(
+                        action === "on"
+                            ? true
+                            : action ===
+                                "off"
+                                ? false
+                                : !current
+                    );
+
+                animateSyncGoalsIcons();
+
+                return enabled;
+            },
+
+            lockEndTime(
+                spokenTime
+            ) {
+                if (!tripIsLive()) {
+                    return false;
+                }
+
+                const target =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            spokenTime,
+                            "clock",
+                            {
+                                baseDate:
+                                    new Date(),
+                                preferFuture:
+                                    true
+                            }
+                        );
+
+                return target
+                    ? applyEndTimeGoalOverride(
+                        target
+                    )
+                    : false;
+            },
+
+            openTripLog(
+                source = "speech"
+            ) {
+                if (
+                    getTripListState() !==
+                        "open"
+                ) {
+                    void openTripList(
+                        source
+                    );
+                }
+
+                return true;
+            },
+
+            closeTripLog(
+                source = "speech"
+            ) {
+                if (
+                    getTripListState() ===
+                        "open"
+                ) {
+                    void closeTripList(
+                        source
+                    );
+                }
+
+                return true;
+            },
+
+            deferTrip() {
+                if (
+                    !numberPadDialog
+                        ?.open ||
+                    numberPadState
+                        ?.workflow !==
+                        "new-trip" ||
+                    !tripDraft
+                ) {
+                    return false;
+                }
+
+                tripDraft.deferred =
+                    true;
+
+                tripDraft.standardTime =
+                    "";
+
+                renderDeferredTrip();
+
+                void closeNumberPad({
+                    discardPrepared:
+                        false,
+                    allowChanged:
+                        true,
+                    immediate:
+                        true,
+                    destination:
+                        "home"
+                });
+
+                return true;
+            },
+
+            changeRenderedTimeMode(
+                timeMode
+            ) {
+                const value =
+                    String(
+                        timeMode
+                    )
+                        .toLowerCase();
+
+                applyRenderedTimeMode(
+                    value.startsWith(
+                        "end"
+                    )
+                        ? "calculated-end"
+                        : value
+                );
+
+                return true;
+            },
+
+            cycleRenderedTimeMode() {
+                const index =
+                    RENDERED_TIME_MODES
+                        .indexOf(
+                            clockTimer
+                                .renderedTimeMode
+                        );
+
+                applyRenderedTimeMode(
+                    RENDERED_TIME_MODES[
+                        (
+                            index +
+                            1
+                        ) %
+                        RENDERED_TIME_MODES
+                            .length
+                    ]
+                );
+
+                return true;
+            },
+
+            openStandardTimeSettings() {
+                let summary;
+
+                try {
+                    summary =
+                        clockTimer
+                            .getSummarySnapshot
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                if (
+                    !tripIsLive() ||
+                    summary?.scope ===
+                        "total"
+                ) {
+                    return false;
+                }
+
+                resetTripSettingsNavigation();
+
+                return openTripSettingsDialog(
+                    "summary-standard-time",
+                    {
+                        focusField:
+                            "standard-time"
+                    }
+                );
+            },
+
+            openGoalEditor() {
+                if (
+                    clockTimer.percentMode ===
+                        "auto"
+                ) {
+                    openAutoGoalDialog();
+
+                    return true;
+                }
+
+                if (
+                    endTimeGoalLockedForMode()
+                ) {
+                    flashEndTimeGoalLock();
+
+                    return false;
+                }
+
+                void openPercentGoalNumberPad(
+                    clockTimer
+                        .percentMode ===
+                        "total"
+                        ? "total"
+                        : "trip"
+                ).catch(
+                    () => {}
+                );
+
+                return true;
+            },
+
+            async confirmBreakEnd() {
+                const dialog =
+                    $("#speechBreakEndDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-confirm"
+                    }
+                );
+
+                await endCurrentIntervalOrTrip();
+
+                return true;
+            },
+
+            cancelBreakEnd() {
+                const dialog =
+                    $("#speechBreakEndDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-cancel"
+                    }
+                );
+
+                return true;
+            }
+        });
+
 
     function ensureSpeechMenu(
         container = document.body,
