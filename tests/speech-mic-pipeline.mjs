@@ -292,6 +292,7 @@ assert.match(speechEditorJs, /training:\s*\{[\s\S]*right:\s*\[[\s\S]*"phrases"/)
 assert.match(speechEditorJs, /trainingWorkspaceRestore/);
 assert.match(speechEditorJs, /applyWorkspacePreset\(\s*"training"[\s\S]*persist:\s*false/);
 assert.match(speechEditorJs, /workspacePreset"\)\.disabled/);
+assert.match(speechEditorJs, /Training-only access is locked to the Training workspace/);
 assert.match(speechEditorJs, /trainingOnly/);
 assert.match(speechEditorJs, /utteranceTranscriptChanged/);
 assert.match(speechEditorJs, /control ===\s*"scratch that"/s);
