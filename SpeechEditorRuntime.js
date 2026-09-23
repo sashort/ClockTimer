@@ -304,6 +304,41 @@
             );
     };
 
+    const listFunctionRoles =
+        () => {
+            const all =
+                listFunctions();
+
+            const registry =
+                globalThis
+                    .WMOFSpeechFunctionRegistry;
+
+            const preprocFunctions =
+                all.filter(
+                    name =>
+                        registry
+                            ?.isPreproc?.(
+                                name
+                            )
+                );
+
+            const preproc =
+                new Set(
+                    preprocFunctions
+                );
+
+            return {
+                speechFunctions:
+                    all.filter(
+                        name =>
+                            !preproc.has(
+                                name
+                            )
+                    ),
+                preprocFunctions
+            };
+        };
+
     const apply = entries => {
         for (const element of created.values()) {
             element.remove();
@@ -619,7 +654,8 @@
 
     globalThis.WMOFSpeechEditorRuntime = {
         apply,
-        listFunctions
+        listFunctions,
+        listFunctionRoles
     };
 
     fetch(
