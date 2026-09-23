@@ -335,10 +335,35 @@ header('Referrer-Policy: no-referrer');
                 </div>
             </section>
 
-            <section class="speech-training-section">
+            <section class="speech-training-session" aria-label="Guided training">
+                <div class="speech-training-prompt">
+                    <span id="speechTrainingStyle">Ready to train</span>
+                    <strong id="speechTrainingPrompt">Choose Start training.</strong>
+                    <span id="speechTrainingHeard"></span>
+                </div>
+                <div class="speech-training-actions">
+                    <button id="speechTrainingStart" class="primary" type="button">Start training</button>
+                    <button id="speechTrainingScratch" type="button" disabled>Scratch That</button>
+                    <button id="speechTrainingSkip" type="button" disabled>Skip</button>
+                    <button id="speechTrainingRepeat" type="button" disabled>Repeat prompt</button>
+                    <button id="speechTrainingStop" type="button" disabled>Stop training</button>
+                </div>
+            </section>
+
+            <aside id="speechTrainingControlsPopup" class="speech-training-controls-popup" hidden aria-label="Training voice commands">
+                <strong>Training controls</strong>
+                <dl>
+                    <div><dt>“Scratch that”</dt><dd>Discard this attempt and try the same prompt again.</dd></div>
+                    <div><dt>“Skip”</dt><dd>Move to the next prompt without recording.</dd></div>
+                    <div><dt>“Repeat prompt”</dt><dd>Show the current prompt again.</dd></div>
+                    <div><dt>“Stop training”</dt><dd>End this training session.</dd></div>
+                </dl>
+            </aside>
+
+            <section class="speech-training-section manual-training-section">
                 <div class="speech-training-section-heading">
                     <div>
-                        <h3>Record sample</h3>
+                        <h3>Record sample manually</h3>
                         <p>Enter what was intended and what Sherpa actually produced.</p>
                     </div>
                 </div>
