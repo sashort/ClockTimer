@@ -978,8 +978,116 @@
             );
         };
 
+    const scrubSpeechElement =
+        element => {
+            const entry =
+                entryForElement(
+                    element
+                );
+
+            if (!entry) return;
+
+            if (
+                element.matches(
+                    "speech-command"
+                ) &&
+                entry.id.startsWith(
+                    "edit:"
+                )
+            ) {
+                const menu =
+                    element.closest(
+                        "speech-menu"
+                    );
+
+                draft =
+                    draft.filter(
+                        item =>
+                            item.id !==
+                            entry.id
+                    );
+
+                selectedLocator =
+                    menu
+                        ? locatorFor(
+                            menu
+                        )
+                        : undefined;
+            }
+            else {
+                const writable =
+                    writableEntry(
+                        element
+                    );
+
+                if (!writable) return;
+
+                writable.attrs = {};
+            }
+
+            scheduleApply();
+        };
+
+    const deletePhrase =
+        (
+            group,
+            phrase
+        ) => {
+            const element =
+                group.element;
+
+            if (
+                group.phrases.length <=
+                    1
+            ) {
+                scrubSpeechElement(
+                    element
+                );
+                status(
+                    "Last phrase removed; speech attributes were cleared."
+                );
+                return;
+            }
+
+            const speechMenu =
+                frame.contentWindow
+                    ?.SpeechMenu;
+
+            const nextPattern =
+                speechMenu
+                    ?.withoutPhrase?.(
+                        group.pattern,
+                        phrase
+                    );
+
+            if (
+                !nextPattern ||
+                nextPattern ===
+                    group.pattern
+            ) {
+                status(
+                    "That phrase could not be removed from the pattern.",
+                    true
+                );
+                return;
+            }
+
+            updateEntryField(
+                element,
+                "speech-pattern",
+                nextPattern
+            );
+
+            status(
+                "Phrase removed and speech-pattern updated."
+            );
+        };
+
     const renderPhraseChips =
-        (container, phrases) => {
+        (
+            container,
+            group
+        ) => {
             const row =
                 document.createElement(
                     "div"
@@ -988,7 +1096,10 @@
             row.className =
                 "phrases";
 
-            for (const phrase of phrases) {
+            for (
+                const phrase of
+                group.phrases
+            ) {
                 const chip =
                     document.createElement(
                         "span"
@@ -1009,8 +1120,56 @@
                         );
                 }
 
-                chip.textContent =
+                const text =
+                    document.createElement(
+                        "span"
+                    );
+
+                text.textContent =
                     phrase;
+
+                const remove =
+                    document.createElement(
+                        "button"
+                    );
+
+                remove.type =
+                    "button";
+                remove.className =
+                    "phrase-delete";
+                remove.title =
+                    "Delete phrase";
+                remove.setAttribute(
+                    "aria-label",
+                    "Delete phrase " +
+                        phrase
+                );
+                remove.textContent =
+                    "×";
+
+                remove.addEventListener(
+                    "pointerdown",
+                    event =>
+                        event.stopPropagation()
+                );
+
+                remove.addEventListener(
+                    "click",
+                    event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        deletePhrase(
+                            group,
+                            phrase
+                        );
+                    }
+                );
+
+                chip.append(
+                    text,
+                    remove
+                );
 
                 row.append(
                     chip
@@ -1019,6 +1178,318 @@
 
             container.append(
                 row
+            );
+        };
+
+    const directSpeechChildren =
+        (
+            parent,
+            selector
+        ) =>
+            [
+                ...parent.children
+            ].filter(
+                element =>
+                    element.matches(
+                        selector
+                    )
+            );
+
+    const persistSiblingOrder =
+        elements => {
+            elements.forEach(
+                (
+                    element,
+                    order
+                ) => {
+                    const entry =
+                        writableEntry(
+                            element
+                        );
+
+                    if (entry) {
+                        entry.order =
+                            order;
+                    }
+                }
+            );
+
+            scheduleApply();
+        };
+
+    const reorderDraggedElement =
+        (
+            dragged,
+            target,
+            after
+        ) => {
+            if (
+                !dragged ||
+                !target ||
+                dragged === target
+            ) {
+                return false;
+            }
+
+            const isCommand =
+                dragged.matches(
+                    "speech-command"
+                ) &&
+                target.matches(
+                    "speech-command"
+                );
+
+            const isMenu =
+                dragged.matches(
+                    "speech-menu"
+                ) &&
+                target.matches(
+                    "speech-menu"
+                );
+
+            if (
+                !isCommand &&
+                !isMenu
+            ) {
+                return false;
+            }
+
+            if (
+                dragged.parentElement !==
+                    target.parentElement
+            ) {
+                return false;
+            }
+
+            const parent =
+                dragged.parentElement;
+
+            if (
+                isCommand &&
+                !parent?.matches(
+                    "speech-menu"
+                )
+            ) {
+                return false;
+            }
+
+            const selector =
+                isCommand
+                    ? "speech-command"
+                    : "speech-menu";
+
+            const siblings =
+                directSpeechChildren(
+                    parent,
+                    selector
+                );
+
+            const sourceIndex =
+                siblings.indexOf(
+                    dragged
+                );
+
+            let targetIndex =
+                siblings.indexOf(
+                    target
+                );
+
+            if (
+                sourceIndex < 0 ||
+                targetIndex < 0
+            ) {
+                return false;
+            }
+
+            siblings.splice(
+                sourceIndex,
+                1
+            );
+
+            targetIndex =
+                siblings.indexOf(
+                    target
+                );
+
+            siblings.splice(
+                targetIndex +
+                    (after ? 1 : 0),
+                0,
+                dragged
+            );
+
+            persistSiblingOrder(
+                siblings
+            );
+
+            status(
+                isCommand
+                    ? "Speech Command order changed."
+                    : "Speech Menu order changed."
+            );
+
+            return true;
+        };
+
+    const attachDragBehavior =
+        (
+            wrapper,
+            element,
+            kind
+        ) => {
+            wrapper.draggable =
+                true;
+
+            wrapper.dataset
+                .dragKind =
+                kind;
+
+            wrapper.addEventListener(
+                "dragstart",
+                event => {
+                    draggedPhraseItem = {
+                        element,
+                        kind
+                    };
+
+                    wrapper.classList
+                        .add(
+                            "dragging"
+                        );
+
+                    event.dataTransfer
+                        ?.setData(
+                            "text/plain",
+                            element.dataset
+                                .speechEditorId ||
+                            kind
+                        );
+
+                    if (
+                        event.dataTransfer
+                    ) {
+                        event.dataTransfer
+                            .effectAllowed =
+                            "move";
+                    }
+                }
+            );
+
+            wrapper.addEventListener(
+                "dragend",
+                () => {
+                    draggedPhraseItem =
+                        undefined;
+
+                    for (
+                        const node of
+                        document
+                            .querySelectorAll(
+                                ".dragging, .drop-before, .drop-after"
+                            )
+                    ) {
+                        node.classList
+                            .remove(
+                                "dragging",
+                                "drop-before",
+                                "drop-after"
+                            );
+                    }
+                }
+            );
+
+            wrapper.addEventListener(
+                "dragover",
+                event => {
+                    const dragged =
+                        draggedPhraseItem;
+
+                    if (
+                        !dragged ||
+                        dragged.kind !==
+                            kind ||
+                        dragged.element
+                            .parentElement !==
+                            element
+                                .parentElement
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        kind ===
+                            "command" &&
+                        !element.parentElement
+                            ?.matches(
+                                "speech-menu"
+                            )
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    const rect =
+                        wrapper
+                            .getBoundingClientRect();
+
+                    const after =
+                        event.clientY >
+                        rect.top +
+                            rect.height / 2;
+
+                    wrapper.classList
+                        .toggle(
+                            "drop-before",
+                            !after
+                        );
+
+                    wrapper.classList
+                        .toggle(
+                            "drop-after",
+                            after
+                        );
+                }
+            );
+
+            wrapper.addEventListener(
+                "dragleave",
+                () =>
+                    wrapper.classList
+                        .remove(
+                            "drop-before",
+                            "drop-after"
+                        )
+            );
+
+            wrapper.addEventListener(
+                "drop",
+                event => {
+                    const dragged =
+                        draggedPhraseItem;
+
+                    if (
+                        !dragged ||
+                        dragged.kind !==
+                            kind
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    const rect =
+                        wrapper
+                            .getBoundingClientRect();
+
+                    reorderDraggedElement(
+                        dragged.element,
+                        element,
+                        event.clientY >
+                            rect.top +
+                                rect.height / 2
+                    );
+                }
             );
         };
 
@@ -1056,10 +1527,56 @@
 
             source.className =
                 "phrase-source";
+
+            const index =
+                group.element
+                    .getAttribute(
+                        "speech-index"
+                    );
+
             source.textContent =
                 phraseSource(
                     group
+                ) +
+                (
+                    index
+                        ? " — index " +
+                            index
+                        : ""
                 );
+
+            if (
+                group.element.matches(
+                    "speech-command"
+                ) &&
+                group.element.parentElement
+                    ?.matches(
+                        "speech-menu"
+                    )
+            ) {
+                const handle =
+                    document.createElement(
+                        "span"
+                    );
+
+                handle.className =
+                    "drag-handle";
+                handle.textContent =
+                    "⋮⋮";
+                handle.title =
+                    "Drag to reorder Speech Command";
+
+                source.prepend(
+                    handle,
+                    " "
+                );
+
+                attachDragBehavior(
+                    wrapper,
+                    group.element,
+                    "command"
+                );
+            }
 
             button.append(
                 source
@@ -1067,7 +1584,7 @@
 
             renderPhraseChips(
                 button,
-                group.phrases
+                group
             );
 
             button.addEventListener(
@@ -1089,6 +1606,14 @@
             return wrapper;
         };
 
+    const menuStateKey =
+        menu =>
+            menu.dataset
+                .speechEditorId ||
+            selectorFor(
+                menu
+            );
+
     const renderTier =
         (
             tierInfo,
@@ -1096,7 +1621,7 @@
         ) => {
             const section =
                 document.createElement(
-                    "section"
+                    "details"
                 );
 
             section.className =
@@ -1104,9 +1629,27 @@
             section.dataset.tier =
                 tierInfo.tier;
 
+            section.open =
+                tierOpenState.has(
+                    tierInfo.tier
+                )
+                    ? tierOpenState.get(
+                        tierInfo.tier
+                    )
+                    : true;
+
+            section.addEventListener(
+                "toggle",
+                () =>
+                    tierOpenState.set(
+                        tierInfo.tier,
+                        section.open
+                    )
+            );
+
             const bar =
                 document.createElement(
-                    "div"
+                    "summary"
                 );
 
             bar.className =
@@ -1172,6 +1715,37 @@
                             selectedElement
                     );
 
+                const key =
+                    menuStateKey(
+                        menu
+                    );
+
+                details.open =
+                    menuOpenState.has(
+                        key
+                    )
+                        ? menuOpenState.get(
+                            key
+                        )
+                        : (
+                            menu ===
+                                selectedElement ||
+                            menuGroups.some(
+                                group =>
+                                    group.element ===
+                                    selectedElement
+                            )
+                        );
+
+                details.addEventListener(
+                    "toggle",
+                    () =>
+                        menuOpenState.set(
+                            key,
+                            details.open
+                        )
+                );
+
                 const summary =
                     document.createElement(
                         "summary"
@@ -1186,30 +1760,61 @@
                     menu.dataset
                         .speechTarget;
 
-                summary.textContent =
-                    "Speech Menu" +
-                    (
-                        mode
-                            ? " — " +
-                                mode
-                            : ""
-                    ) +
-                    (
-                        target
-                            ? " — " +
-                                target
-                            : ""
+                const index =
+                    menu.getAttribute(
+                        "speech-index"
                     );
+
+                const handle =
+                    document.createElement(
+                        "span"
+                    );
+
+                handle.className =
+                    "drag-handle";
+                handle.textContent =
+                    "⋮⋮";
+                handle.title =
+                    "Drag to reorder Speech Menu";
+
+                summary.append(
+                    handle,
+                    document.createTextNode(
+                        " Speech Menu" +
+                        (
+                            mode
+                                ? " — " +
+                                    mode
+                                : ""
+                        ) +
+                        (
+                            index
+                                ? " — index " +
+                                    index
+                                : ""
+                        ) +
+                        (
+                            target
+                                ? " — " +
+                                    target
+                                : ""
+                        )
+                    )
+                );
 
                 summary.addEventListener(
                     "click",
                     () => {
-                        selectElement(
-                            menu,
-                            {
-                                scrollPhrase:
-                                    false
-                            }
+                        setTimeout(
+                            () =>
+                                selectElement(
+                                    menu,
+                                    {
+                                        scrollPhrase:
+                                            false
+                                    }
+                                ),
+                            0
                         );
                     }
                 );
@@ -1238,18 +1843,11 @@
                     children
                 );
 
-                if (
-                    menu ===
-                        selectedElement ||
-                    menuGroups.some(
-                        group =>
-                            group.element ===
-                            selectedElement
-                    )
-                ) {
-                    details.open =
-                        true;
-                }
+                attachDragBehavior(
+                    details,
+                    menu,
+                    "menu"
+                );
 
                 section.append(
                     details
