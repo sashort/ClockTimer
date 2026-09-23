@@ -330,6 +330,13 @@ function finish(
         true
     );
 
+    self.postMessage({
+        type: "utteranceEnded",
+        utteranceId,
+        transcript:
+            lastText
+    });
+
     destroyStream();
 }
 
