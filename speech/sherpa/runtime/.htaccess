@@ -1,0 +1,12 @@
+Options -Indexes
+
+<IfModule mod_mime.c>
+    AddType application/wasm .wasm
+    AddType application/octet-stream .data
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(wasm|data|js)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
