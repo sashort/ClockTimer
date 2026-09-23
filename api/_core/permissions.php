@@ -6,7 +6,8 @@ const PERMISSION_MODIFY_USERS = 2;
 const PERMISSION_SUPERUSER = 4;
 const PERMISSION_DEVELOPER_PREVIEW = 8;
 const PERMISSION_DEVELOPER = 16;
-const PERMISSION_ALL = 31;
+const PERMISSION_GRANT_TOKEN_ACCESS = 32;
+const PERMISSION_ALL = 63;
 
 function has_permission(array $user, int $permission): bool
 {
@@ -58,7 +59,7 @@ function require_permission_assignment(array $actor, mixed $value): int
         api_error('Only a superuser can assign permissions.', 403, 'permission_required');
     }
     if (!is_int($value) || $value < 0 || ($value & ~PERMISSION_ALL) !== 0) {
-        api_error('permissions must be an integer bitmask between 0 and 31.', 422, 'invalid_argument');
+        api_error('permissions must be an integer bitmask between 0 and 63.', 422, 'invalid_argument');
     }
     return $value;
 }
