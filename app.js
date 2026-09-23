@@ -220,6 +220,14 @@
                                 speechPipeline;
                         }
 
+                        await globalThis.SpeechMenu
+                            .loadCorrections(
+                                new URL(
+                                    "api/speech-corrections/?language=en-US",
+                                    API_BASE
+                                ).href
+                            );
+
                         if (
                             !customElements.get(
                                 "speech-mic-bar"
