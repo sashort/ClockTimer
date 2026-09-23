@@ -24,14 +24,14 @@ restore_apache() {
   sudo -n /opt/bitnami/ctlscript.sh restart apache || true
 }
 
-for module in proxy_module proxy_wstunnel_module; do
+for module in proxy_module proxy_http_module; do
   if ! sudo -n "$APACHECTL" -M 2>/dev/null |
     grep -q "$module"
   then
     if [ "$module" = "proxy_module" ]; then
       so=proxy
     else
-      so=proxy_wstunnel
+      so=proxy_http
     fi
 
     sudo -n sed -i -E \
@@ -40,7 +40,7 @@ for module in proxy_module proxy_wstunnel_module; do
   fi
 done
 
-for module in proxy_module proxy_wstunnel_module; do
+for module in proxy_module proxy_http_module; do
   if ! sudo -n "$APACHECTL" -M 2>/dev/null |
     grep -q "$module"
   then
@@ -61,8 +61,8 @@ begin = "# BEGIN CLOCKTIMER SPEECH PROXY"
 end = "# END CLOCKTIMER SPEECH PROXY"
 
 proxy = """# BEGIN CLOCKTIMER SPEECH PROXY
-ProxyPass        "/api/speech/stream" "ws://127.0.0.1:8765/api/speech/stream"
-ProxyPassReverse "/api/speech/stream" "ws://127.0.0.1:8765/api/speech/stream"
+ProxyPass        "/api/speech/stream" "http://127.0.0.1:8765/api/speech/stream" upgrade=websocket
+ProxyPassReverse "/api/speech/stream" "http://127.0.0.1:8765/api/speech/stream"
 # END CLOCKTIMER SPEECH PROXY"""
 
 pattern = re.compile(
