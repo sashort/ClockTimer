@@ -4255,6 +4255,43 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .main-menu .admin-submenu a {display:block;padding:12px 14px;font-size:16px;font-weight:700;color:var(--wm-blue-light);text-decoration:none;border-radius:8px;}
 .main-menu .admin-submenu a:hover,.main-menu .admin-submenu a:focus-visible {background:rgb(255 255 255 / 10%);}
 .main-menu .admin-submenu a[hidden] {display:none;}
+
+.speech-admin-group[hidden],.speech-submenu[hidden]{display:none;}
+.main-menu #speechMenuButton::before{display:none;}
+.main-menu #speechMenuButton{gap:14px;}
+.main-menu #speechMenuButton::after{content:"›";margin-left:auto;font-size:24px;line-height:1;transition:transform 220ms ease-in-out;}
+.main-menu #speechMenuButton[aria-expanded="true"]::after{transform:rotate(90deg);}
+.main-menu .speech-submenu{margin:0 0 4px 28px;border-left:1px solid rgb(169 221 247 / 70%);}
+.main-menu .speech-submenu button{padding:10px 12px;font-size:15px;color:var(--wm-blue-light);}
+.speech-build-icon{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;color:currentColor;}
+.speech-build-icon svg{width:30px;height:30px;overflow:visible;}
+.speech-build-mic{fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round;}
+.speech-build-scaffold path{fill:none;stroke:#ffc220;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 180ms ease-in;}
+#speechMenuButton[aria-expanded="true"] .rail-left,
+#speechMenuButton[aria-expanded="true"] .rail-right{stroke-dashoffset:0;transition-delay:0ms;}
+#speechMenuButton[aria-expanded="true"] .floor-1{stroke-dashoffset:0;transition-delay:90ms;}
+#speechMenuButton[aria-expanded="true"] .brace-1a,
+#speechMenuButton[aria-expanded="true"] .brace-1b{stroke-dashoffset:0;transition-delay:150ms;}
+#speechMenuButton[aria-expanded="true"] .floor-2{stroke-dashoffset:0;transition-delay:210ms;}
+#speechMenuButton[aria-expanded="true"] .brace-2a,
+#speechMenuButton[aria-expanded="true"] .brace-2b{stroke-dashoffset:0;transition-delay:270ms;}
+#speechMenuButton[aria-expanded="true"] .floor-3{stroke-dashoffset:0;transition-delay:330ms;}
+#speechMenuButton[aria-expanded="true"] .floor-top{stroke-dashoffset:0;transition-delay:390ms;}
+#speechMenuButton:not([aria-expanded="true"]) .floor-top{transition-delay:0ms;}
+#speechMenuButton:not([aria-expanded="true"]) .floor-3{transition-delay:45ms;}
+#speechMenuButton:not([aria-expanded="true"]) .brace-2a,
+#speechMenuButton:not([aria-expanded="true"]) .brace-2b{transition-delay:90ms;}
+#speechMenuButton:not([aria-expanded="true"]) .floor-2{transition-delay:135ms;}
+#speechMenuButton:not([aria-expanded="true"]) .brace-1a,
+#speechMenuButton:not([aria-expanded="true"]) .brace-1b{transition-delay:180ms;}
+#speechMenuButton:not([aria-expanded="true"]) .floor-1{transition-delay:225ms;}
+#speechMenuButton:not([aria-expanded="true"]) .rail-left,
+#speechMenuButton:not([aria-expanded="true"]) .rail-right{transition-delay:270ms;}
+@media (prefers-reduced-motion: reduce){
+  .speech-build-scaffold path,.main-menu #speechMenuButton::after{transition:none!important;}
+  #speechMenuButton[aria-expanded="true"] .speech-build-scaffold path{stroke-dashoffset:0;}
+}
+
 #newUserButton::before {
     width:24px;height:24px;flex-basis:24px;
     -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='9' cy='8' r='4' fill='black'/%3E%3Cpath d='M2 21c0-4 3.1-7 7-7 2 0 3.8.8 5.1 2.1M18 11v8M14 15h8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
