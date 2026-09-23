@@ -2650,46 +2650,73 @@
                 handle.title =
                     "Drag to reorder Speech Menu";
 
-                summary.append(
-                    handle,
-                    document.createTextNode(
-                        " Speech Menu" +
-                        (
-                            mode
-                                ? " — " +
-                                    mode
-                                : ""
-                        ) +
-                        (
-                            index
-                                ? " — index " +
-                                    index
-                                : ""
-                        ) +
-                        (
-                            target
-                                ? " — " +
-                                    target
-                                : ""
-                        )
-                    )
+                const label =
+                    document.createElement(
+                        "span"
+                    );
+
+                label.className =
+                    "speech-menu-label";
+
+                label.textContent =
+                    "Speech Menu" +
+                    (
+                        mode
+                            ? " — " +
+                                mode
+                            : ""
+                    ) +
+                    (
+                        index
+                            ? " — index " +
+                                index
+                            : ""
+                    ) +
+                    (
+                        target
+                            ? " — " +
+                                target
+                            : ""
+                    );
+
+                const editButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                editButton.type =
+                    "button";
+                editButton.className =
+                    "speech-menu-edit";
+                editButton.textContent =
+                    "Edit";
+
+                editButton.addEventListener(
+                    "pointerdown",
+                    event =>
+                        event.stopPropagation()
                 );
 
-                summary.addEventListener(
+                editButton.addEventListener(
                     "click",
-                    () => {
-                        setTimeout(
-                            () =>
-                                selectElement(
-                                    menu,
-                                    {
-                                        scrollPhrase:
-                                            false
-                                    }
-                                ),
-                            0
+                    event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        selectElement(
+                            menu,
+                            {
+                                scrollPhrase:
+                                    false
+                            }
                         );
                     }
+                );
+
+                summary.append(
+                    handle,
+                    label,
+                    editButton
                 );
 
                 const children =
