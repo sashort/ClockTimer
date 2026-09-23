@@ -357,14 +357,14 @@
     const tripLogEndDate = $("#tripLogEndDate");
     const tripLogRangeError = $("#tripLogRangeError");
     let tripRangeRevision = 0;
-    const syncGoalsMenuButton = $("#syncGoalsMenuButton");
-    const syncGoalsMenuIcon = syncGoalsMenuButton?.querySelector(".sync-goals-menu-icon");
+    const toggleSyncMenuButton = $("#toggleSyncMenuButton");
+    const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
     const tripLogCloseButton = $("#tripLogCloseButton");
     const tripLogSettingsButton = $("#tripLogSettingsButton");
     let tripLogSettingsVisible = false;
     const tripLogBody = $("#tripLogBody");
-    const goalSyncButton = $("#goalSyncButton");
+    const toggleSyncGoalButton = $("#toggleSyncGoalButton");
     const autoGoalDialog = $("#autoGoalDialog");
     const autoTripGoalValue = $("#autoTripGoalValue");
     const autoTotalGoalValue = $("#autoTotalGoalValue");
@@ -545,7 +545,7 @@
 
     function beginButtonPressFeedback(button) {
         if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-        if (button === goalSyncButton) return;
+        if (button === toggleSyncGoalButton) return;
         if (buttonPressStates.has(button)) return;
 
         const style = getComputedStyle(button);
@@ -1795,7 +1795,7 @@
             getSyncGoalsState();
 
         const idle = enabled && normalizedConnectionStatus() === "online" && !tripIsLive();
-        for (const element of [goalSyncButton, syncGoalsMenuIcon]) {
+        for (const element of [toggleSyncGoalButton, syncGoalsMenuIcon]) {
             if (!element) continue;
             element.classList.toggle("sync-paused", idle);
             if (!element.querySelector(".sync-pause-badge")) {
@@ -1807,8 +1807,8 @@
         for (
             const button of
                 [
-                    syncGoalsMenuButton,
-                    goalSyncButton
+                    toggleSyncMenuButton,
+                    toggleSyncGoalButton
                 ]
         ) {
             if (!button) continue;
@@ -1838,11 +1838,11 @@
                     : "disabled";
         }
 
-        if (goalSyncButton) {
+        if (toggleSyncGoalButton) {
             const calculable=enabled&&normalizedConnectionStatus()==="online"&&tripIsLive()&&Boolean(state?.auto_goal_active)&&Boolean(state?.goal_component?.valid);
-            ensureSyncOfflineOverlay(goalSyncButton);
-            goalSyncButton.classList.toggle("sync-calculable",calculable);
-            goalSyncButton.hidden =
+            ensureSyncOfflineOverlay(toggleSyncGoalButton);
+            toggleSyncGoalButton.classList.toggle("sync-calculable",calculable);
+            toggleSyncGoalButton.hidden =
                 renderedScope !==
                     "trip";
         }
@@ -1891,7 +1891,7 @@
     function getSyncVisualElements() {
         return [
             syncGoalsMenuIcon,
-            goalSyncButton
+            toggleSyncGoalButton
         ].filter(Boolean);
     }
 
@@ -2034,7 +2034,7 @@
             const element of
                 [
                     syncGoalsMenuIcon,
-                    goalSyncButton
+                    toggleSyncGoalButton
                 ]
         ) {
             if (!element || element.hidden) continue;
@@ -5531,14 +5531,14 @@
         }
     );
 
-    const renderedTimeButton = $("#renderedTimeButton");
+    const toggleRenderedTimeButton = $("#toggleRenderedTimeButton");
 
     function cancelRenderedTimeLongPress() {
         clearTimeout(renderedTimeLongPressTimer);
         renderedTimeLongPressTimer = undefined;
     }
 
-    renderedTimeButton.addEventListener("pointerdown", event => {
+    toggleRenderedTimeButton.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
         event.preventDefault();
         renderedTimeLongPressed = false;
@@ -5550,7 +5550,7 @@
         }, 650);
     });
 
-    renderedTimeButton.addEventListener(
+    toggleRenderedTimeButton.addEventListener(
         "pointerup",
         globalThis
             .WMOFInteractionFunctions
@@ -5576,10 +5576,10 @@
     );
 
     for (const type of ["pointercancel", "pointerleave"]) {
-        renderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
+        toggleRenderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
     }
 
-    renderedTimeButton.addEventListener("contextmenu", event => event.preventDefault());
+    toggleRenderedTimeButton.addEventListener("contextmenu", event => event.preventDefault());
 
     $("#endTimeGoalLock")?.addEventListener("click", event => {
         event.stopPropagation();
@@ -5772,7 +5772,7 @@
         .WMOFInteractionFunctions
         .bindAction({
             element:
-                syncGoalsMenuButton,
+                toggleSyncMenuButton,
             event:
                 "click",
             name:
@@ -5787,7 +5787,7 @@
         .WMOFInteractionFunctions
         .bindAction({
             element:
-                goalSyncButton,
+                toggleSyncGoalButton,
             event:
                 "click",
             name:
@@ -9180,7 +9180,7 @@
     function alignStatusIcons() {
         if (!scopeConnectionButton || scopeConnectionButton.hidden) return;
         const reference=scopeConnectionButton.getBoundingClientRect();const center=reference.left+reference.width/2;
-        for(const icon of [goalSyncButton,$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
+        for(const icon of [toggleSyncGoalButton,$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
             if(!icon || icon.hidden) continue;
             const parent=icon.offsetParent;if(!parent) continue;
             icon.style.left=`${center-parent.getBoundingClientRect().left-parent.clientLeft-icon.offsetWidth/2}px`;
@@ -9188,7 +9188,7 @@
         }
     }
     const statusIconObserver=new ResizeObserver(()=>requestAnimationFrame(alignStatusIcons));
-    for(const element of [scopeConnectionButton,goalSyncButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
+    for(const element of [scopeConnectionButton,toggleSyncGoalButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
 
     // Semantic ClockTimer event integration points.
     // These bodies intentionally do not change UI yet; future speech synthesis and
@@ -12004,8 +12004,8 @@
                 readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
-                sync:"#syncGoalsMenuButton,#goalSyncButton", lockEndTime:"#renderedTimeButton", showTripLog:"#tripListMenuButton",
-                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#renderedTimeButton",
+                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
+                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
             };
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
