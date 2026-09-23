@@ -598,6 +598,10 @@
                 "aria-hidden",
                 "true"
             );
+            visual.setAttribute(
+                "data-speech-response-snapshot",
+                ""
+            );
 
             return visual;
         };
@@ -682,6 +686,10 @@
                     "none",
                     "important"
                 );
+            clone.setAttribute(
+                "data-speech-response-snapshot",
+                ""
+            );
 
             return clone;
         };
