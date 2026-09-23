@@ -45,10 +45,11 @@
     let functionNames = [];
     const emptyFunctionRoles =
         () => ({
-            processing: [],
+            "speech-processing": [],
             action: [],
             interaction: [],
-            presentation: []
+            presentation: [],
+            helper: []
         });
     let savedFunctionRoles =
         emptyFunctionRoles();
@@ -3797,15 +3798,15 @@
 
                         const alternateRole =
                             role ===
-                                "processing"
+                                "speech-processing"
                                 ? "action"
-                                : "processing";
+                                : "speech-processing";
 
                         toggle.textContent =
                             role ===
-                                "processing"
+                                "speech-processing"
                                 ? "Mark action"
-                                : "Mark processing";
+                                : "Mark speech processing";
 
                         toggle.title =
                             "Change function role to " +
@@ -4057,7 +4058,7 @@
         attachCombobox(
             $("preprocInput"),
             $("preprocOptions"),
-            "processing"
+            "speech-processing"
         );
 
     const renderAll = () => {
