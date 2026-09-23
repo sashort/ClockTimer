@@ -282,9 +282,16 @@ const speechEditorCss = fs.readFileSync(
 );
 
 assert.match(speechEditorHtml, /speechTrainingControlsPopup/);
+assert.match(speechEditorHtml, /data-training-requested=/);
+assert.match(speechEditorHtml, /<option value="training">Training<\/option>/);
 assert.match(speechEditorHtml, /Scratch That/);
 assert.match(speechEditorHtml, /Repeat prompt/);
 assert.match(speechEditorJs, /initialMobileTraining/);
+assert.match(speechEditorJs, /trainingRequested/);
+assert.match(speechEditorJs, /training:\s*\{[\s\S]*right:\s*\[[\s\S]*"phrases"/);
+assert.match(speechEditorJs, /trainingWorkspaceRestore/);
+assert.match(speechEditorJs, /applyWorkspacePreset\(\s*"training"[\s\S]*persist:\s*false/);
+assert.match(speechEditorJs, /workspacePreset"\)\.disabled/);
 assert.match(speechEditorJs, /trainingOnly/);
 assert.match(speechEditorJs, /utteranceTranscriptChanged/);
 assert.match(speechEditorJs, /control ===\s*"scratch that"/s);
