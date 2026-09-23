@@ -1,10 +1,18 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/_core/bootstrap.php';
+
+require_method('POST');
 authenticated_user_id();
-require_permission(PERMISSION_SUPERUSER);
+require_csrf_form();
+require_any_permission(
+    PERMISSION_DEVELOPER_PREVIEW,
+    PERMISSION_DEVELOPER
+);
+
 header('Content-Type: text/html; charset=utf-8');
-header('Cache-Control: no-store');
+header('Cache-Control: no-store, private');
+header('Referrer-Policy: no-referrer');
 ?><!doctype html>
 <html lang="en">
 <head>
