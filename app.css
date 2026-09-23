@@ -68,7 +68,7 @@ speech-mic-bar {
     min-height: 0;
     margin: 0;
     align-self: start;
-    overflow: hidden;
+    overflow: visible;
     transform: translateY(calc(100% + 0.125in));
     opacity: 0;
     pointer-events: none;
@@ -78,13 +78,44 @@ speech-mic-bar {
     will-change: transform, opacity;
 }
 
+speech-mic-bar[popover] {
+    position: fixed;
+    inset:
+        auto
+        0
+        var(--trip-log-row-height, 0px)
+        0;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2147483647;
+    transition:
+        transform var(--trip-log-layout-duration) ease-in-out,
+        opacity 250ms linear;
+}
+
+speech-mic-bar[popover]:popover-open {
+    display: block;
+    opacity: 0;
+}
+
+speech-mic-bar[popover]::backdrop {
+    display: none;
+}
+
 speech-mic-bar:not(:defined) {
     border: 3px solid rgb(255 255 255 / 38%);
     border-radius: 14px;
     background: var(--ui-charcoal-gradient, #2f3943);
 }
 
-.app[data-speech-active="true"] speech-mic-bar {
+.app[data-speech-active="true"] speech-mic-bar,
+.app[data-speech-active="true"] speech-mic-bar[popover]:popover-open {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
