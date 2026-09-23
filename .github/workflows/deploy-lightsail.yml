@@ -50,6 +50,11 @@ jobs:
              fi
              sudo -n /opt/bitnami/ctlscript.sh status mariadb
 
+             sudo -n chown root:daemon /etc/clocktimer
+             sudo -n chmod 750 /etc/clocktimer
+             sudo -n chown root:daemon /etc/clocktimer/config.php
+             sudo -n chmod 640 /etc/clocktimer/config.php
+
              cd /opt/bitnami/apache2/htdocs
              git fetch origin "$DEPLOY_BRANCH:refs/remotes/origin/$DEPLOY_BRANCH"
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
