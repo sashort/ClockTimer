@@ -1057,7 +1057,10 @@ class SpeechMenu {
             if (
                 !SpeechMenu.#utterance.committed &&
                 !SpeechMenu.#utterance.committing &&
-                SpeechMenu.#utterance.candidate &&
+                SpeechMenu
+                    .#exactCandidate(
+                        SpeechMenu.#utterance
+                    ) &&
                 SpeechMenu.#utterance.silenceMilliseconds >=
                     SpeechMenu
                         .#candidateCommitSilenceTimeout(
@@ -1247,7 +1250,9 @@ class SpeechMenu {
             transcriptRevision: 0,
             firstTranscriptAt:
                 undefined,
-            candidate: undefined,
+            candidatePool: [],
+            candidatePoolController:
+                undefined,
             committed: false,
             committing: false,
             recognitionStopped: false
@@ -1351,8 +1356,15 @@ class SpeechMenu {
             }
         );
 
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
         if (
-            utterance.candidate &&
+            recognize &&
+            exactCandidate &&
             !utterance.committed &&
             !utterance.committing &&
             !(
@@ -1365,6 +1377,12 @@ class SpeechMenu {
             void SpeechMenu.#commitUtterance(
                 utterance
             );
+        }
+        else {
+            SpeechMenu
+                .#clearCandidatePool(
+                    utterance
+                );
         }
     }
 
@@ -1608,22 +1626,33 @@ class SpeechMenu {
             );
         }
 
-        let candidate;
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
 
-        if (
-            SpeechMenu.#sleeping
-        ) {
-            if (
+        const controller =
+            new AbortController();
+
+        utterance.candidatePoolController =
+            controller;
+
+        let pool;
+
+        if (SpeechMenu.#sleeping) {
+            pool =
                 SpeechMenu.#test(
                     SpeechMenu.#wakePhrase,
                     transcript
                 )
-            ) {
-                candidate = {
-                    kind: "wake",
-                    transcript
-                };
-            }
+                    ? [{
+                        kind: "wake",
+                        transcript,
+                        exact: true,
+                        continuation: false,
+                        order: 0
+                    }]
+                    : [];
         }
         else if (
             SpeechMenu.#test(
@@ -1631,45 +1660,45 @@ class SpeechMenu {
                 transcript
             )
         ) {
-            candidate = {
+            pool = [{
                 kind: "mute",
-                transcript
-            };
+                transcript,
+                exact: true,
+                continuation: false,
+                order: 0
+            }];
         }
         else {
-            candidate =
-                await SpeechMenu.#processTranscript(
-                    transcript,
-                    utterance.id,
-                    false
-                );
-        }
-
-        if (
-            SpeechMenu.#utterance !==
-                utterance ||
-            utterance.committed ||
-            revision !==
-                utterance.transcriptRevision
-        ) {
-            return;
-        }
-
-        utterance.candidate =
-            candidate || undefined;
-
-        if (utterance.candidate) {
-            utterance.candidate.continuation =
-                utterance.candidate.kind ===
-                    "command" &&
-                SpeechMenu
-                    .#hasPhraseContinuation(
-                        transcript
+            pool =
+                await SpeechMenu
+                    .#refreshCandidatePool(
+                        utterance,
+                        transcript,
+                        controller.signal
                     );
         }
 
         if (
-            utterance.candidate &&
+            controller.signal.aborted ||
+            SpeechMenu.#utterance !==
+                utterance ||
+            utterance.committed ||
+            revision !==
+                utterance.transcriptRevision ||
+            utterance.candidatePoolController !==
+                controller
+        ) {
+            return;
+        }
+
+        utterance.candidatePool =
+            pool;
+
+        if (
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                ) &&
             utterance.silenceMilliseconds >=
                 SpeechMenu
                     .#candidateCommitSilenceTimeout(
@@ -1685,11 +1714,17 @@ class SpeechMenu {
     static async #commitUtterance(
         utterance
     ) {
+        const candidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
         if (
             !utterance ||
             utterance.committed ||
             utterance.committing ||
-            !utterance.candidate
+            !candidate
         ) {
             return false;
         }
@@ -1700,12 +1735,17 @@ class SpeechMenu {
         const transcript =
             utterance.transcript;
 
+        SpeechMenu
+            .#clearCandidatePool(
+                utterance
+            );
+
         let committed =
             false;
 
         try {
             if (
-                utterance.candidate.kind ===
+                candidate.kind ===
                     "wake"
             ) {
                 SpeechMenu.#sleeping =
@@ -1723,7 +1763,7 @@ class SpeechMenu {
                 committed = true;
             }
             else if (
-                utterance.candidate.kind ===
+                candidate.kind ===
                     "mute"
             ) {
                 SpeechMenu.#sleeping =
@@ -1744,9 +1784,13 @@ class SpeechMenu {
                 committed =
                     Boolean(
                         await SpeechMenu
-                            .#processTranscript(
+                            .#processElement(
+                                candidate
+                                    .commandElement,
                                 transcript,
                                 utterance.id,
+                                candidate
+                                    .speechMenuElement,
                                 SpeechMenu
                                     .#executionEnabled
                             )
@@ -1783,6 +1827,11 @@ class SpeechMenu {
         utterance,
         transcript
     ) {
+        SpeechMenu
+            .#clearCandidatePool(
+                utterance
+            );
+
         utterance.transcript =
             transcript;
 
@@ -2208,19 +2257,67 @@ class SpeechMenu {
         return regex.test(text);
     }
 
+    static #cancelCandidateWork(
+        utterance
+    ) {
+        const controller =
+            utterance
+                ?.candidatePoolController;
+
+        if (
+            controller &&
+            !controller.signal.aborted
+        ) {
+            controller.abort();
+        }
+
+        if (utterance) {
+            utterance.candidatePoolController =
+                undefined;
+        }
+    }
+
+    static #clearCandidatePool(
+        utterance
+    ) {
+        if (!utterance) return;
+
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
+
+        utterance.candidatePool = [];
+    }
+
+    static #exactCandidate(
+        utterance
+    ) {
+        return utterance
+            ?.candidatePool
+            ?.find(
+                candidate =>
+                    candidate.exact
+            );
+    }
+
     static #candidateCommitSilenceTimeout(
         utterance
     ) {
-        return utterance?.candidate
-            ?.continuation
-            ? SpeechMenu
-                .#commitSilenceTimeout
-            : Math.min(
-                SpeechMenu
-                    .#commitSilenceTimeout,
-                SpeechMenu
-                    .#terminalCommitSilenceTimeout
-            );
+        return utterance
+            ?.candidatePool
+            ?.some(
+                candidate =>
+                    candidate.continuation
+            )
+                ? SpeechMenu
+                    .#commitSilenceTimeout
+                : Math.min(
+                    SpeechMenu
+                        .#commitSilenceTimeout,
+                    SpeechMenu
+                        .#terminalCommitSilenceTimeout
+                );
     }
 
     static #phraseCanContinue(
@@ -2339,30 +2436,211 @@ class SpeechMenu {
         );
     }
 
-    static #hasPhraseContinuation(
+
+    static #elementContinuationDepth(
+        element,
         transcript
     ) {
-        for (
-            const group of
+        const group =
             SpeechMenu.#phraseGroups
-        ) {
-            for (
-                const phrase of
-                group.phrases
-            ) {
-                if (
-                    SpeechMenu
-                        .#phraseCanContinue(
-                            transcript,
-                            phrase
-                        )
-                ) {
-                    return true;
-                }
-            }
+                .find(
+                    item =>
+                        item.element ===
+                        element
+                );
+
+        if (!group) {
+            return undefined;
         }
 
-        return false;
+        let depth;
+
+        for (
+            const phrase of
+            group.phrases
+        ) {
+            if (
+                !SpeechMenu
+                    .#phraseCanContinue(
+                        transcript,
+                        phrase
+                    )
+            ) {
+                continue;
+            }
+
+            const words =
+                String(phrase)
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .length;
+
+            depth =
+                depth === undefined
+                    ? words
+                    : Math.min(
+                        depth,
+                        words
+                    );
+        }
+
+        return depth;
+    }
+
+    static async #refreshCandidatePool(
+        utterance,
+        transcript,
+        signal
+    ) {
+        SpeechMenu.extrapolatePhrases();
+
+        const previous =
+            utterance.candidatePool ||
+            [];
+
+        const previousElements =
+            new Set(
+                previous
+                    .map(
+                        candidate =>
+                            candidate
+                                .commandElement
+                    )
+                    .filter(Boolean)
+            );
+
+        const all =
+            SpeechMenu
+                .#availableCandidates();
+
+        const source =
+            previousElements.size
+                ? all.filter(
+                    element =>
+                        previousElements
+                            .has(element)
+                )
+                : all;
+
+        const evaluated =
+            await Promise.all(
+                source.map(
+                    async (
+                        element,
+                        order
+                    ) => {
+                        if (signal?.aborted) {
+                            return false;
+                        }
+
+                        const continuationDepth =
+                            SpeechMenu
+                                .#elementContinuationDepth(
+                                    element,
+                                    transcript
+                                );
+
+                        const speechMenuElement =
+                            SpeechMenu
+                                .#candidateMenu(
+                                    element
+                                );
+
+                        const exact =
+                            await SpeechMenu
+                                .#processElement(
+                                    element,
+                                    transcript,
+                                    utterance.id,
+                                    speechMenuElement,
+                                    false,
+                                    signal
+                                );
+
+                        if (signal?.aborted) {
+                            return false;
+                        }
+
+                        if (
+                            !exact &&
+                            continuationDepth ===
+                                undefined
+                        ) {
+                            return false;
+                        }
+
+                        return {
+                            kind: "command",
+                            utteranceId:
+                                utterance.id,
+                            commandElement:
+                                element,
+                            speechMenuElement,
+                            transcript,
+                            exact:
+                                Boolean(exact),
+                            continuation:
+                                continuationDepth !==
+                                undefined,
+                            depth:
+                                continuationDepth ??
+                                Number.MAX_SAFE_INTEGER,
+                            order
+                        };
+                    }
+                )
+            );
+
+        if (signal?.aborted) {
+            return [];
+        }
+
+        let next =
+            evaluated
+                .filter(Boolean)
+                .sort(
+                    (left, right) =>
+                        left.depth -
+                            right.depth ||
+                        left.order -
+                            right.order
+                );
+
+        /*
+         * The candidate pool behaves like a queue.  Newer words
+         * make shorter/front candidates ineligible, so discard
+         * those first before considering the longer continuations.
+         */
+        while (
+            next.length > 1 &&
+            !next[0].exact &&
+            !next[0].continuation
+        ) {
+            next.shift();
+        }
+
+        /*
+         * Recognition engines can revise earlier words.  If pruning
+         * an existing queue leaves nothing, reseed from every
+         * currently available speech candidate for the new revision.
+         */
+        if (
+            !next.length &&
+            previousElements.size &&
+            !signal?.aborted
+        ) {
+            utterance.candidatePool = [];
+
+            return SpeechMenu
+                .#refreshCandidatePool(
+                    utterance,
+                    transcript,
+                    signal
+                );
+        }
+
+        return next;
     }
 
     static async #processTranscript(
@@ -3389,8 +3667,13 @@ class SpeechMenu {
         transcript,
         utteranceId,
         speechMenuElement,
-        execute = true
+        execute = true,
+        signal
     ) {
+        if (signal?.aborted) {
+            return false;
+        }
+
         if (
             !SpeechMenu.#prepare(
                 element
@@ -3421,23 +3704,32 @@ class SpeechMenu {
                 element.speechPreprocFunc
             ) {
                 const processed =
-                    element.speechPreprocFunc(
-                        text,
-                        {
-                            kind:
-                                element.getAttribute(
-                                    "speech-preproc-context"
-                                ),
-                            field:
-                                element.getAttribute(
-                                    "speech-preproc-field"
-                                ),
-                            pattern:
-                                element.getAttribute(
-                                    "speech-pattern"
-                                )
-                        }
+                    await Promise.resolve(
+                        element.speechPreprocFunc(
+                            text,
+                            {
+                                kind:
+                                    element.getAttribute(
+                                        "speech-preproc-context"
+                                    ),
+                                field:
+                                    element.getAttribute(
+                                        "speech-preproc-field"
+                                    ),
+                                pattern:
+                                    element.getAttribute(
+                                        "speech-pattern"
+                                    ),
+                                provisional:
+                                    !execute,
+                                signal
+                            }
+                        )
                     );
+
+                if (signal?.aborted) {
+                    return false;
+                }
 
                 if (
                     typeof processed !==
@@ -3468,6 +3760,14 @@ class SpeechMenu {
             }
         }
         catch (error) {
+            if (
+                signal?.aborted ||
+                error?.name ===
+                    "AbortError"
+            ) {
+                return false;
+            }
+
             SpeechMenu.#emit(
                 "speechMenuCommandError",
                 {
