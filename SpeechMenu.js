@@ -27,6 +27,9 @@ class SpeechMenu {
     static #lastLevelEventAt = 0;
     static #debug = false;
     static #debugFunction = data => console.log(data);
+    static #phrases = Object.freeze([]);
+    static #phraseGroups = Object.freeze([]);
+    static #phraseRefreshQueued = false;
 
     static {
         document.addEventListener("visibilitychange", () => {
@@ -37,6 +40,38 @@ class SpeechMenu {
                 void SpeechMenu.#audioContext.resume().catch(() => {});
             }
         });
+
+        const refreshPhrases =
+            () => SpeechMenu.#schedulePhraseRefresh();
+
+        for (const type of ["toggle", "close", "cancel"]) {
+            document.addEventListener(
+                type,
+                refreshPhrases,
+                true
+            );
+        }
+
+        if (typeof MutationObserver === "function") {
+            new MutationObserver(refreshPhrases)
+                .observe(
+                    document.documentElement,
+                    {
+                        subtree: true,
+                        childList: true,
+                        attributes: true,
+                        attributeFilter: [
+                            "speech-pattern",
+                            "speech-modal",
+                            "open",
+                            "hidden",
+                            "disabled"
+                        ]
+                    }
+                );
+        }
+
+        queueMicrotask(refreshPhrases);
     }
 
     static get events() { return SpeechMenu.#events; }
@@ -48,6 +83,8 @@ class SpeechMenu {
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
+    static get phrases() { return SpeechMenu.#phrases; }
+    static get phraseGroups() { return SpeechMenu.#phraseGroups; }
 
     static set wakePhrase(value) { SpeechMenu.#setPhrase("wake", value); }
     static set sleepPhrase(value) { SpeechMenu.#setPhrase("sleep", value); }
@@ -320,6 +357,121 @@ class SpeechMenu {
                 true
             );
         }
+
+        return SpeechMenu.extrapolatePhrases();
+    }
+
+    static extrapolatePattern(pattern) {
+        return Object.freeze(
+            SpeechMenu
+                .#expandRegexSource(
+                    pattern
+                )
+                .slice()
+        );
+    }
+
+    static extrapolatePhrases() {
+        const groups = [];
+        const phrases = [];
+        const seen = new Set();
+
+        for (
+            const element of
+            SpeechMenu.#availableCandidates()
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
+                );
+
+            if (!pattern) continue;
+
+            const extrapolated =
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
+                    );
+
+            if (!extrapolated.length) {
+                continue;
+            }
+
+            const menu =
+                element.closest(
+                    "speech-menu"
+                );
+
+            groups.push(
+                Object.freeze({
+                    element,
+                    menu: menu || undefined,
+                    modal:
+                        SpeechMenu
+                            .#effectiveModal(
+                                element
+                            ),
+                    pattern,
+                    phrases:
+                        Object.freeze(
+                            extrapolated.slice()
+                        )
+                })
+            );
+
+            for (const phrase of extrapolated) {
+                if (seen.has(phrase)) continue;
+                seen.add(phrase);
+                phrases.push(phrase);
+            }
+        }
+
+        const previous =
+            SpeechMenu.#phrases;
+
+        SpeechMenu.#phraseGroups =
+            Object.freeze(groups);
+
+        SpeechMenu.#phrases =
+            Object.freeze(phrases);
+
+        if (
+            previous.length !== phrases.length ||
+            previous.some(
+                (phrase, index) =>
+                    phrase !==
+                    phrases[index]
+            )
+        ) {
+            SpeechMenu.#emit(
+                "phrasesChanged",
+                {
+                    phrases:
+                        SpeechMenu.#phrases,
+                    phraseGroups:
+                        SpeechMenu.#phraseGroups
+                }
+            );
+        }
+
+        return SpeechMenu.#phrases;
+    }
+
+    static #schedulePhraseRefresh() {
+        if (SpeechMenu.#phraseRefreshQueued) {
+            return;
+        }
+
+        SpeechMenu.#phraseRefreshQueued =
+            true;
+
+        queueMicrotask(
+            () => {
+                SpeechMenu.#phraseRefreshQueued =
+                    false;
+                SpeechMenu.extrapolatePhrases();
+            }
+        );
     }
 
     static #emit(type, detail) {
