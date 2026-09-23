@@ -107,7 +107,42 @@ assert.equal(bar.getAttribute("state"), "stopped");
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 assert.match(html, /<speech-mic-bar id="speechMicBar"/);
-assert.doesNotMatch(html, /<script src="SpeechMenu\.js"/);
+assert.doesNotMatch(html, /<script src="SpeechMenu\\.js"/);
+
+const primedSpeechIds = [
+    "readyAt",
+    "readyAtContinuation",
+    "ready",
+    "breakStart",
+    "down",
+    "breakEnd",
+    "resume",
+    "goal",
+    "goalMode",
+    "sync",
+    "lockEndTime",
+    "showTripLog",
+    "hideTripLog",
+    "deferTrip",
+    "renderedTimeMode"
+];
+
+for (const id of primedSpeechIds) {
+    assert.match(
+        html,
+        new RegExp(
+            `data-speech-editor-id=["']builtin:${id}:page["']`
+        ),
+        `index.html should prime the ${id} speech command`
+    );
+}
+
+assert.match(html, /builtin:breakChoice:breakDialog/);
+assert.match(html, /builtin:confirm:breakDialog/);
+assert.match(html, /builtin:confirm:speechBreakEndDialog/);
+assert.match(html, /builtin:cancel:speechBreakEndDialog/);
+assert.match(html, /builtin:standardTime:scheduledStartStandard/);
+assert.match(html, /builtin:standardTime:trip-settings/);
 
 const recognitionIndex = html.indexOf('id="speechRecognitionButton"');
 const speechToolsIndex = html.indexOf('id="speechMenuButton"');
