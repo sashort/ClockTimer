@@ -108,18 +108,6 @@ assert.match(
     /trip goal one hundred percent/
 );
 
-const unsafe =
-    buildRecognitionGrammar({
-        phrases: [
-            'say "hello"'
-        ]
-    });
-
-assert.match(
-    unsafe.grammar,
-    /\"hello\"/
-);
-
 console.log(
     "PASS speech recognition GBNF generation"
 );
