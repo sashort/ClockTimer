@@ -16,7 +16,8 @@ class SpeechMenu {
     static #language = "en-US";
     static #silenceTimeout = 5000;
     static #commitSilenceTimeout = 350;
-    static #speechThreshold = 0.025;
+    static #streamingSilenceTimeout = 650;
+    static #speechThreshold = 0.01;
     static #preRollMilliseconds = 350;
     static #stream;
     static #micTrack;
@@ -751,10 +752,11 @@ class SpeechMenu {
             return;
         }
 
+        // Once speech starts, stream the contiguous utterance.
+        // Dropping low-energy frames clips quiet phonemes and removes
+        // natural pauses before Whisper sees the audio.
         SpeechMenu.#appendUtteranceFrame(
-            frame,
-            level >=
-                SpeechMenu.#speechThreshold
+            frame
         );
 
         if (
@@ -780,11 +782,17 @@ class SpeechMenu {
                 );
             }
 
+            const endpointSilence =
+                SpeechMenu.#recognitionProvider
+                    ?.kind === "streaming"
+                    ? SpeechMenu.#streamingSilenceTimeout
+                    : SpeechMenu.#silenceTimeout;
+
             if (
                 SpeechMenu.#utterance &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
-                    SpeechMenu.#silenceTimeout
+                    endpointSilence
             ) {
                 SpeechMenu.#finishUtterance(
                     "silence",

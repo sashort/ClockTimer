@@ -203,6 +203,8 @@ const providerSource = fs.readFileSync(new URL("../SpeechRecognitionProviders.js
 const workletSource = fs.readFileSync(new URL("../SpeechAudioWorklet.js", import.meta.url), "utf8");
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
+assert.match(speechMenuSource, /static #streamingSilenceTimeout = 650;/);
+assert.match(speechMenuSource, /static #speechThreshold = 0\.01;/);
 assert.match(speechMenuSource, /#createRecognitionProvider/);
 assert.match(speechMenuSource, /provider\.startUtterance/);
 assert.match(speechMenuSource, /SpeechAudioWorklet\.js/);
@@ -214,3 +216,38 @@ assert.match(workletSource, /#targetRate = 16000/);
 assert.match(workletSource, /pcm:\s*packet\.buffer/);
 assert.match(speechMenuSource, /#processTranscript\(\s*transcript,\s*utterance\.id,\s*false\s*\)/s);
 assert.match(speechMenuSource, /silenceMilliseconds\s*>=\s*SpeechMenu\.#commitSilenceTimeout/s);
+assert.match(
+    speechMenuSource,
+    /#appendUtteranceFrame\(\s*frame\s*\);/s
+);
+
+const speechServerSource =
+    fs.readFileSync(
+        new URL("../speech/server.js", import.meta.url),
+        "utf8"
+    );
+const speechServiceSource =
+    fs.readFileSync(
+        new URL(
+            "../speech/clocktimer-speech.service",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+assert.match(
+    speechServerSource,
+    /SPEECH_PARTIAL_MIN_AUDIO_MS[\s\S]*2200/
+);
+assert.match(
+    speechServerSource,
+    /SPEECH_MAX_PARTIAL_PASSES[\s\S]*1/
+);
+assert.match(
+    speechServiceSource,
+    /ggml-tiny\.en\.bin/
+);
+assert.match(
+    speechServiceSource,
+    /WHISPER_THREADS=2/
+);

@@ -118,7 +118,7 @@ export class WhisperService {
             "/opt/clocktimer-speech/bin/whisper-server",
         model =
             process.env.WHISPER_MODEL ||
-            "/var/lib/clocktimer/speech/models/ggml-base.en.bin",
+            "/var/lib/clocktimer/speech/models/ggml-tiny.en.bin",
         host =
             process.env.WHISPER_HOST ||
             "127.0.0.1",
@@ -127,7 +127,7 @@ export class WhisperService {
             8766,
         threads =
             Number(process.env.WHISPER_THREADS) ||
-            4,
+            2,
         tmpDir =
             process.env.WHISPER_TMP_DIR ||
             "/var/lib/clocktimer/speech/tmp"
