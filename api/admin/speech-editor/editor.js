@@ -8903,6 +8903,11 @@
         () => ({
             version:
                 1,
+            access: {
+                mode:
+                    accessMode,
+                canWrite
+            },
             loaded:
                 macrosLoaded,
             dirty:
@@ -9115,6 +9120,327 @@
                     additionalProperties:
                         false
                 }
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "getPreviewElements",
+            input => {
+                if (!frameDocument) {
+                    throw new Error(
+                        "Preview document is not ready."
+                    );
+                }
+
+                const selector =
+                    String(
+                        input?.selector ||
+                        "body *"
+                    )
+                        .trim() ||
+                    "body *";
+
+                const search =
+                    String(
+                        input?.search ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const limit =
+                    Math.min(
+                        500,
+                        Math.max(
+                            1,
+                            Number(
+                                input?.limit
+                            ) ||
+                            200
+                        )
+                    );
+
+                let candidates;
+
+                try {
+                    candidates = [
+                        ...frameDocument
+                            .querySelectorAll(
+                                selector
+                            )
+                    ];
+                }
+                catch {
+                    throw new Error(
+                        "Invalid preview selector: " +
+                        selector
+                    );
+                }
+
+                const elements = [];
+
+                for (
+                    const element of
+                    candidates
+                ) {
+                    if (
+                        ignoredNavigatorTags
+                            .has(
+                                element.tagName
+                            )
+                    ) {
+                        continue;
+                    }
+
+                    const text =
+                        element.textContent
+                            ?.trim()
+                            .replace(
+                                /\s+/g,
+                                " "
+                            )
+                            .slice(
+                                0,
+                                160
+                            ) ||
+                        "";
+
+                    const ariaLabel =
+                        element.getAttribute(
+                            "aria-label"
+                        ) ||
+                        "";
+
+                    const target =
+                        selectorFor(
+                            element
+                        );
+
+                    if (
+                        search &&
+                        !(
+                            (
+                                element.id ||
+                                ""
+                            ) +
+                            " " +
+                            (
+                                typeof element.className ===
+                                    "string"
+                                    ? element.className
+                                    : ""
+                            ) +
+                            " " +
+                            ariaLabel +
+                            " " +
+                            text +
+                            " " +
+                            target
+                        )
+                            .toLowerCase()
+                            .includes(
+                                search
+                            )
+                    ) {
+                        continue;
+                    }
+
+                    elements.push({
+                        selector:
+                            target,
+                        tag:
+                            element.tagName
+                                .toLowerCase(),
+                        id:
+                            element.id ||
+                            "",
+                        classes: [
+                            ...element.classList
+                        ],
+                        text,
+                        ariaLabel,
+                        hidden:
+                            Boolean(
+                                element.hidden
+                            ),
+                        disabled:
+                            Boolean(
+                                element.disabled
+                            ),
+                        speech:
+                            snapshot(
+                                element
+                            ),
+                        hasSpeechMenu:
+                            Boolean(
+                                associatedMenuFor(
+                                    element
+                                )
+                            )
+                    });
+
+                    if (
+                        elements.length >=
+                        limit
+                    ) {
+                        break;
+                    }
+                }
+
+                return {
+                    selector,
+                    search,
+                    limit,
+                    count:
+                        elements.length,
+                    elements
+                };
+            },
+            {
+                description:
+                    "Inspect preview DOM elements and return stable selectors, labels and speech attributes.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    properties: {
+                        selector: {
+                            type:
+                                "string"
+                        },
+                        search: {
+                            type:
+                                "string"
+                        },
+                        limit: {
+                            type:
+                                "integer",
+                            minimum:
+                                1,
+                            maximum:
+                                500
+                        }
+                    },
+                    additionalProperties:
+                        false
+                },
+                examples: [
+                    {
+                        action:
+                            "getPreviewElements",
+                        input: {
+                            search:
+                                "trip",
+                            limit:
+                                50
+                        }
+                    }
+                ]
+            }
+        );
+
+    editorActionFunctions
+        .define(
+            "getSpeechCatalog",
+            () => {
+                const speechMenu =
+                    frame.contentWindow
+                        ?.SpeechMenu;
+
+                speechMenu
+                    ?.extrapolatePhrases
+                    ?.();
+
+                const groups = [
+                    ...(
+                        speechMenu
+                            ?.phraseGroups ||
+                        []
+                    )
+                ]
+                    .map(
+                        group => ({
+                            selector:
+                                selectorFor(
+                                    group.element
+                                ),
+                            editorId:
+                                group.element
+                                    ?.dataset
+                                    ?.speechEditorId ||
+                                "",
+                            menuSelector:
+                                group.menu
+                                    ? selectorFor(
+                                        group.menu
+                                    )
+                                    : "",
+                            target:
+                                group.element
+                                    ?.dataset
+                                    ?.speechTarget ||
+                                selectorFor(
+                                    group.element
+                                ),
+                            modal:
+                                group.modal,
+                            pattern:
+                                group.pattern,
+                            phrases: [
+                                ...group.phrases
+                            ],
+                            function:
+                                group.element
+                                    ?.getAttribute(
+                                        "speech-function"
+                                    ) ||
+                                "",
+                            preprocessor:
+                                group.element
+                                    ?.getAttribute(
+                                        "speech-preproc"
+                                    ) ||
+                                "",
+                            index:
+                                group.element
+                                    ?.getAttribute(
+                                        "speech-index"
+                                    ) ||
+                                ""
+                        })
+                    );
+
+                return {
+                    phrases: [
+                        ...(
+                            speechMenu
+                                ?.phrases ||
+                            []
+                        )
+                    ],
+                    groups
+                };
+            },
+            {
+                description:
+                    "Return the live SpeechMenu catalog for the current preview state.",
+                mutates:
+                    false,
+                input: {
+                    type:
+                        "object",
+                    additionalProperties:
+                        false
+                },
+                examples: [
+                    {
+                        action:
+                            "getSpeechCatalog",
+                        input: {}
+                    }
+                ]
             }
         );
 
@@ -10488,6 +10814,8 @@
         const name of
         [
             "getEditorState",
+            "getPreviewElements",
+            "getSpeechCatalog",
             "validateChanges",
             "selectElement",
             "setOverlay",
