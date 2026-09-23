@@ -89,6 +89,34 @@ CREATE TABLE IF NOT EXISTS `access_tokens` (
         CHECK (`requires_authentication` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `speech_corrections` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `language` VARCHAR(32) NOT NULL DEFAULT 'en-US',
+    `observed` VARCHAR(500) NOT NULL,
+    `observed_compact` VARCHAR(500) NOT NULL,
+    `canonical` VARCHAR(500) NOT NULL,
+    `canonical_compact` VARCHAR(500) NOT NULL,
+    `match_type` ENUM('exact', 'prefix') NOT NULL DEFAULT 'exact',
+    `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `occurrences` INT UNSIGNED NOT NULL DEFAULT 1,
+    `created_by_user_id` BIGINT UNSIGNED NULL,
+    `created_at` BIGINT UNSIGNED NOT NULL,
+    `updated_at` BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_speech_corrections_mapping`
+        (`language`, `observed_compact`, `canonical_compact`, `match_type`),
+    KEY `idx_speech_corrections_runtime`
+        (`language`, `enabled`, `observed_compact`),
+    KEY `idx_speech_corrections_creator` (`created_by_user_id`),
+    CONSTRAINT `fk_speech_corrections_creator`
+        FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
+        ON UPDATE RESTRICT ON DELETE SET NULL,
+    CONSTRAINT `chk_speech_corrections_enabled`
+        CHECK (`enabled` IN (0, 1)),
+    CONSTRAINT `chk_speech_corrections_occurrences`
+        CHECK (`occurrences` > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `trips` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL,
