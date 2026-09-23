@@ -229,6 +229,14 @@ assert.match(speechMenuSource, /new AudioWorkletNodeCtor\(\s*context,\s*"wmof-sp
 assert.match(speechMenuSource, /#refreshCandidatePool\(\s*utterance,\s*transcript,\s*controller\.signal\s*\)/s);
 assert.match(speechMenuSource, /candidatePool:\s*\[\]/);
 assert.match(speechMenuSource, /new AbortController\(\)/);
+assert.match(
+    speechMenuSource,
+    /#cancelPendingRecognitionForBargeIn[\s\S]*#finishedUtterances[\s\S]*#stopLiveRecognition\([\s\S]*false[\s\S]*\.delete\(id\)/
+);
+assert.match(
+    speechMenuSource,
+    /#beginUtterance\(now\)[\s\S]*#cancelPendingRecognitionForBargeIn\(\)/
+);
 assert.match(speechMenuSource, /#cancelCandidateWork[\s\S]*controller\.abort\(\)/);
 assert.match(speechMenuSource, /while\s*\([\s\S]*next\.shift\(\)/);
 assert.match(speechMenuSource, /await Promise\.resolve\([\s\S]*speechPreprocFunc[\s\S]*signal/s);
