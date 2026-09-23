@@ -243,6 +243,12 @@ header('Referrer-Policy: no-referrer');
                         </label>
                     </div>
 
+                    <label class="field" data-candidate-field>
+                        <span>speech-response-timeout</span>
+                        <input name="speech-response-timeout" spellcheck="false" placeholder="2000">
+                        <small class="field-hint">Blank = 2 seconds of silence. Use milliseconds, values such as 1.5s, or persistent to keep the response until the next phrase.</small>
+                    </label>
+
                     <label class="field">
                         <span>speech-index</span>
                         <input id="speechIndexValue" name="speech-index" type="number" step="1" inputmode="numeric">
