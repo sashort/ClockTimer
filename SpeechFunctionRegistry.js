@@ -1,15 +1,18 @@
 (() => {
     "use strict";
 
-    const taggedFunctionRoles = {
-        "speech-processing": [
-            "WMOFSpeechProcessing.normalizeSpeechValue"
-        ],
-        action: [],
-        interaction: [],
-        presentation: [],
-        helper: []
-    };
+    const taggedFunctionRoles =
+        globalThis
+            .WMOFSpeechFunctionRoles ||
+        {
+            "speech-processing": [
+                "WMOFSpeechProcessing.normalizeSpeechValue"
+            ],
+            action: [],
+            interaction: [],
+            presentation: [],
+            helper: []
+        };
 
     const validRoles =
         new Set([
