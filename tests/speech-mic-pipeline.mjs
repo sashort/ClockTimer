@@ -85,6 +85,43 @@ window.SpeechMenu.silenceTimeout = 6000;
 assert.equal(window.SpeechMenu.silenceTimeout, 6000);
 
 assert.equal(window.SpeechMenu.commitSilenceTimeout, 350);
+assert.deepEqual(
+    window.SpeechMenu.recognitionContext,
+    {
+        vocabulary: [],
+        options: {},
+        phrases: [],
+        numbers: {output: "digits"}
+    }
+);
+window.SpeechMenu.setRecognitionContext({
+    vocabulary: ["start", "stop"],
+    options: {
+        mode: ["elapsed", "remaining"]
+    },
+    phrases: ["start at <time>"],
+    numbers: {output: "digits"}
+});
+assert.deepEqual(
+    window.SpeechMenu.recognitionContext,
+    {
+        vocabulary: ["start", "stop"],
+        options: {
+            mode: ["elapsed", "remaining"]
+        },
+        phrases: ["start at <time>"],
+        numbers: {output: "digits"}
+    }
+);
+assert.throws(
+    () =>
+        window.SpeechMenu.setRecognitionContext({
+            numbers: {output: "roman"}
+        }),
+    TypeError
+);
+window.SpeechMenu.clearRecognitionContext();
+
 assert.equal(window.SpeechMenu.recognitionProvider, "browser");
 window.SpeechMenu.recognitionProvider = "streaming";
 assert.equal(window.SpeechMenu.recognitionProvider, "streaming");
