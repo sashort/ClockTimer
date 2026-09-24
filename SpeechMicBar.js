@@ -123,9 +123,14 @@ class SpeechMicBar extends HTMLElement {
                         bottom center;
                     scrollbar-gutter: stable;
                     z-index: 3;
+                    transition:
+                        max-height 180ms ease-in-out,
+                        padding 180ms ease-in-out;
                 }
 
                 :host([options-open])
+                #optionsPanel,
+                :host([training-mode][options-collapsed])
                 #optionsPanel {
                     clip-path:
                         inset(
@@ -134,6 +139,19 @@ class SpeechMicBar extends HTMLElement {
                         );
                     opacity: 1;
                     pointer-events: auto;
+                }
+
+                :host([training-mode][options-collapsed])
+                #optionsPanel {
+                    max-height: 42px;
+                    padding:
+                        42px 8px 0;
+                    overflow: hidden;
+                }
+
+                :host([training-mode][options-collapsed])
+                #optionsGrid {
+                    display: none;
                 }
 
                 #optionsHeader {
@@ -952,6 +970,18 @@ class SpeechMicBar extends HTMLElement {
             ?.addEventListener(
                 "click",
                 () => {
+                    if (this.trainingMode) {
+                        if (
+                            this.optionsCollapsed
+                        ) {
+                            this.expandOptions();
+                        } else {
+                            this.collapseOptions();
+                        }
+
+                        return;
+                    }
+
                     void this.hideOptions();
                 }
             );
@@ -1781,6 +1811,12 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
+    get optionsCollapsed() {
+        return this.hasAttribute(
+            "options-collapsed"
+        );
+    }
+
     promoteTopLayer() {
         this.#syncHostBounds();
 
@@ -1822,6 +1858,11 @@ class SpeechMicBar extends HTMLElement {
                 ?.phraseGroups ||
             []
     ) {
+        this.removeAttribute(
+            "options-collapsed"
+        );
+        this.#syncOptionsToggle();
+
         this.promoteTopLayer();
         this.#renderOptions(
             phraseGroups
@@ -1914,12 +1955,93 @@ class SpeechMicBar extends HTMLElement {
         return true;
     }
 
+    #syncOptionsToggle() {
+        if (!this.#optionsClose) {
+            return;
+        }
+
+        const collapsed =
+            this.optionsCollapsed;
+
+        this.#optionsClose.textContent =
+            collapsed
+                ? "▲"
+                : "▼";
+
+        const action =
+            collapsed
+                ? "Expand speech commands"
+                : "Collapse speech commands";
+
+        this.#optionsClose
+            .setAttribute(
+                "aria-label",
+                action
+            );
+
+        this.#optionsClose.title =
+            action;
+    }
+
+    collapseOptions() {
+        if (
+            !this.trainingMode ||
+            (
+                !this.optionsOpen &&
+                !this.optionsCollapsed
+            )
+        ) {
+            return false;
+        }
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        this.removeAttribute(
+            "options-open"
+        );
+        this.setAttribute(
+            "options-collapsed",
+            ""
+        );
+
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        this.#syncOptionsToggle();
+        this.#fitOptions();
+
+        return true;
+    }
+
+    expandOptions() {
+        if (
+            !this.trainingMode ||
+            !this.optionsCollapsed
+        ) {
+            return false;
+        }
+
+        return this.showOptions(
+            globalThis.SpeechMenu
+                ?.phraseGroups ||
+            []
+        );
+    }
+
     async hideOptions(
         {
             duration = 180
         } = {}
     ) {
-        if (!this.optionsOpen) {
+        if (
+            !this.optionsOpen &&
+            !this.optionsCollapsed
+        ) {
             return false;
         }
 
@@ -1951,6 +2073,11 @@ class SpeechMicBar extends HTMLElement {
         this.removeAttribute(
             "options-open"
         );
+        this.removeAttribute(
+            "options-collapsed"
+        );
+        this.#syncOptionsToggle();
+
         this.#optionsPanel
             .setAttribute(
                 "aria-hidden",
