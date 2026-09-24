@@ -1841,3 +1841,55 @@ body.developer-preview #macroPanel :is(input, select):disabled {
     color: #bdd4e7;
     background: #233a55;
 }
+
+
+/* Speech training attribution ----------------------------------------- */
+.speech-training-model-summary{
+    display:grid;
+    gap:8px;
+    margin:0 0 12px;
+    padding:10px;
+    border:1px solid rgb(143 185 216 / 35%);
+    border-radius:9px;
+    background:rgb(7 31 69 / 48%);
+}
+body:not(.training-mode) .speech-training-model-summary{
+    display:none!important;
+}
+.speech-training-model-summary .speech-training-section-heading{
+    margin:0;
+}
+.speech-training-contributors{
+    display:grid;
+    gap:7px;
+}
+.speech-training-contributor{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;
+    gap:9px;
+    padding:8px 9px;
+    border:1px solid rgb(121 159 190 / 35%);
+    border-radius:8px;
+    background:rgb(255 255 255 / 4%);
+}
+.speech-training-contributor strong{
+    overflow-wrap:anywhere;
+}
+.speech-training-contributor span{
+    color:#bcd7e9;
+    font-size:12px;
+}
+.speech-training-contributor button{
+    padding:5px 7px;
+    font-size:11px;
+}
+@media(max-width:680px){
+    .speech-training-contributor{
+        grid-template-columns:minmax(0,1fr) auto;
+    }
+    .speech-training-contributor button{
+        grid-column:1/-1;
+        justify-self:stretch;
+    }
+}
