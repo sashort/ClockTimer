@@ -267,6 +267,10 @@
           "tone": "G7",
           "length": "2",
           "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "speech": "Start meal now"
         }
       ]
     },
@@ -291,6 +295,10 @@
           "tone": "G7",
           "length": "2",
           "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "speech": "End meal now"
         }
       ]
     }
