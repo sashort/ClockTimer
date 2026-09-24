@@ -666,7 +666,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /case "utteranceTranscriptChanged":[\s\S]*#showText\(\s*this\.#currentTranscript\s*\)/
+    /case "utteranceTranscriptChanged":[\s\S]*#showStreamingPhrase\(\s*this\.#currentTranscript\s*\)/
 );
 assert.doesNotMatch(
     speechMicBarSource,
@@ -674,7 +674,7 @@ assert.doesNotMatch(
 );
 assert.match(
     speechMicBarSource,
-    /case "speechPreprocessed":[\s\S]*Keep the raw recognizer transcript[\s\S]*break;/
+    /case "speechPreprocessed":[\s\S]*detail\?\.contextChange[\s\S]*#showStreamingContext\(\s*detail\s*\)[\s\S]*break;/
 );
 assert.match(
     speechMicBarSource,
