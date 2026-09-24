@@ -34,6 +34,9 @@
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
+            <div id="mainMenuViewport" class="main-menu-viewport">
+                <div id="mainMenuTrack" class="main-menu-track">
+                    <section class="main-menu-panel" data-menu-panel="0">
             <div id="menuAccountRow" class="main-menu-row menu-account-row">
                 <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
                 <button id="authButton" type="button">Login</button>
@@ -119,6 +122,14 @@
                     <button id="sqlConsoleButton" type="button" hidden>Database Access</button>
                 </div>
             </div>
+        
+                    </section>
+                </div>
+            </div>
+            <div id="mainMenuIndicator" class="main-menu-indicator" aria-hidden="true" hidden>
+                <span id="mainMenuIndicatorThumb" class="main-menu-indicator-thumb"></span>
+            </div>
+            <div id="mainMenuFocusLayer" class="main-menu-focus-layer" hidden></div>
         </nav>
 
         <section class="trip-summary" aria-label="Trip summary">
