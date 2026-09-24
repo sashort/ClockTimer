@@ -175,7 +175,7 @@
             <speech-command data-speech-editor-id="builtin:readyAt:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-pattern="^ready at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.scheduleStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-pattern="^at (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.continueStartAt" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-pattern="^ready$" speech-function="WMOFActions.prepareStartMenu"></speech-command>
-            <speech-command data-speech-editor-id="builtin:breakStart:page" speech-available="WMOFSpeechAvailability.canOpenBreakMenu" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFActions.openBreakMenu"></speech-command>
+            <speech-command data-speech-editor-id="builtin:breakStart:page" speech-available="WMOFSpeechAvailability.canOpenBreakMenu" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFActions.openBreakStartConfirmation"></speech-command>
             <speech-command data-speech-editor-id="builtin:down:page" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-pattern="^down(?: time)?$" speech-function="WMOFActions.startDownTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:breakEnd:page" speech-available="WMOFSpeechAvailability.canOpenBreakEndMenu" data-speech-target="#breakButton" speech-pattern="^break end$" speech-function="WMOFActions.openBreakEndMenu"></speech-command>
             <speech-command data-speech-editor-id="builtin:resume:page" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-pattern="^resume$" speech-function="WMOFActions.resumeTrip"></speech-command>
@@ -748,17 +748,22 @@
         </section>
     </dialog>
 
-    <dialog id="speechBreakEndDialog" class="app-dialog">
+    <dialog id="speechBreakConfirmDialog" class="app-dialog">
         <form method="dialog">
-            <header class="dialog-header"><h2>End Break</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></header>
-            <p>Are you ready to end your break?</p>
-            <div class="dialog-actions two-actions">
-                <button id="speechBreakEndCancel" type="button">Cancel</button>
-                <button id="speechBreakEndConfirm" class="primary-action" type="button">OK</button>
+            <header class="dialog-header">
+                <h2 id="speechBreakConfirmTitle">Break</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <p id="speechBreakConfirmMessage">Confirm break action.</p>
+            <div class="dialog-actions three-actions">
+                <button id="speechBreakConfirmYes" class="primary-action" type="button">Yes</button>
+                <button id="speechBreakConfirmNo" type="button">No</button>
+                <button id="speechBreakConfirmCancel" type="button">Cancel</button>
             </div>
-            <speech-menu data-speech-editor-id="builtin:menu:speechBreakEndDialog">
-                <speech-command data-speech-editor-id="builtin:confirm:speechBreakEndDialog" data-speech-target="#speechBreakEndConfirm" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmBreakEnd"></speech-command>
-                <speech-command data-speech-editor-id="builtin:cancel:speechBreakEndDialog" data-speech-target="#speechBreakEndCancel" speech-pattern="^cancel$" speech-function="WMOFActions.cancelBreakEnd"></speech-command>
+            <speech-menu data-speech-editor-id="builtin:menu:speechBreakConfirmDialog">
+                <speech-command data-speech-editor-id="builtin:yes:speechBreakConfirmDialog" data-speech-target="#speechBreakConfirmYes" speech-pattern="^yes$" speech-function="WMOFActions.confirmBreakPromptYes"></speech-command>
+                <speech-command data-speech-editor-id="builtin:no:speechBreakConfirmDialog" data-speech-target="#speechBreakConfirmNo" speech-pattern="^no$" speech-function="WMOFActions.confirmBreakPromptNo"></speech-command>
+                <speech-command data-speech-editor-id="builtin:cancel:speechBreakConfirmDialog" data-speech-target="#speechBreakConfirmCancel" speech-pattern="^cancel$" speech-function="WMOFActions.cancelBreakPrompt"></speech-command>
             </speech-menu>
         </form>
     </dialog>
