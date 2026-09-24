@@ -395,6 +395,31 @@ const languageSource = fs.readFileSync(new URL("../lang/en-US.js", import.meta.u
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(
     app,
+    /getSpeechMicTop\(\)[\s\S]*--speech-mic-row-height[\s\S]*paddingBottom/
+);
+assert.match(
+    app,
+    /getTripLogBottomRect\(\)[\s\S]*getSpeechMicTop\(\)\s*-\s*metrics\.height/
+);
+assert.match(
+    app,
+    /getTripLogBodyRect\(\)[\s\S]*const bottom =[\s\S]*getSpeechMicTop\(\)/
+);
+assert.match(
+    app,
+    /animateTripLogBody\([\s\S]*anchorBottom[\s\S]*height =[\s\S]*fullHeight[\s\S]*top:[\s\S]*anchorBottom -[\s\S]*height/
+);
+assert.match(
+    app,
+    /const sourceRect =[\s\S]*getTripLogBottomRect\(\)[\s\S]*animateTripLogButton\([\s\S]*topRect\.top - sourceRect\.top/
+);
+assert.match(
+    app,
+    /const destination =[\s\S]*getTripLogBottomRect\(\)[\s\S]*destination\.top - topRect\.top/
+);
+
+assert.match(
+    app,
     /const disableSpeechRecognitionRuntime =[\s\S]*setSpeechButtonState\([\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false[\s\S]*SpeechMenu[\s\S]*\.stop/
 );
 assert.match(
@@ -471,8 +496,16 @@ assert.match(app, /1050/);
 
 console.log("PASS persistent speech pipeline and SpeechMicBar public API");
 
-assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*6;[^}]*display:\s*block;/s);
-assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*7;/s);
+assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*7;[^}]*display:\s*block;/s);
+assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*6;/s);
+assert.match(
+    css,
+    /grid-template-rows:\s*52px 142px 62px 29px 1fr var\(--trip-log-row-height\) var\(--speech-mic-row-height\)/
+);
+assert.match(
+    css,
+    /speech-mic-bar\[popover\][\s\S]*--speech-mic-fixed-bottom[\s\S]*--speech-mic-fixed-left[\s\S]*--speech-mic-fixed-width/
+);
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 assert.match(css, /#speechTrainingButton::before/);
 assert.match(css, /#speechEditorButton::before/);
@@ -487,6 +520,19 @@ assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
+
+assert.match(
+    speechMicBarSource,
+    /#syncHostBounds\(\)[\s\S]*documentElement[\s\S]*document\.body[\s\S]*this\.parentElement[\s\S]*--speech-mic-fixed-left[\s\S]*--speech-mic-fixed-width[\s\S]*--speech-mic-fixed-bottom/
+);
+assert.match(
+    speechMicBarSource,
+    /#contentBounds\([\s\S]*paddingLeft[\s\S]*paddingRight[\s\S]*paddingBottom/
+);
+assert.match(
+    speechMicBarSource,
+    /#observeHostBounds\(\)[\s\S]*ResizeObserver[\s\S]*addEventListener\?\.\([\s\S]*"resize"/
+);
 
 assert.match(
     speechMicBarSource,
