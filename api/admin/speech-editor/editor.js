@@ -33,6 +33,12 @@
             .canWrite ===
         "true";
 
+    const canTrain =
+        document.body
+            .dataset
+            .canTrain ===
+        "true";
+
     const accessMode =
         document.body
             .dataset
@@ -82,9 +88,12 @@
         );
 
     let trainingMode =
-        trainingOnly ||
-        trainingRequested ||
-        initialMobileTraining;
+        canTrain &&
+        (
+            trainingOnly ||
+            trainingRequested ||
+            initialMobileTraining
+        );
 
     let trainingWorkspaceRestore;
 
@@ -92,6 +101,7 @@
         new Map();
 
     let trainingCanWriteCorrections =
+        canTrain &&
         canWrite;
 
     let trainingCurrent;
@@ -236,6 +246,7 @@
             } = {}
         ) => {
             const next =
+                canTrain &&
                 Boolean(
                     enabled
                 );
@@ -541,6 +552,7 @@
                     await trainingApi();
 
                 trainingCanWriteCorrections =
+                    canTrain &&
                     Boolean(
                         data.canWrite
                     );
@@ -779,6 +791,7 @@
                 );
 
             trainingCanWriteCorrections =
+                canTrain &&
                 Boolean(
                     data.canWrite
                 );
@@ -1049,7 +1062,10 @@
             canonical,
             observed
         ) => {
-            if (!trainingCurrent) {
+            if (
+                !canTrain ||
+                !trainingCurrent
+            ) {
                 return;
             }
 
@@ -1321,6 +1337,7 @@
     const startTrainingSession =
         async () => {
             if (
+                !canTrain ||
                 !trainingCurrent ||
                 trainingSession
             ) {
