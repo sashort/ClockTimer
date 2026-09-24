@@ -504,6 +504,7 @@ const primedSpeechIds = [
     "down",
     "breakEnd",
     "resume",
+    "cancelDown",
     "tripGoal",
     "totalGoal",
     "setTripGoal",
@@ -534,6 +535,14 @@ assert.match(html, /builtin:confirm:breakDialog/);
 assert.match(html, /builtin:yes:speechBreakConfirmDialog/);
 assert.match(html, /builtin:no:speechBreakConfirmDialog/);
 assert.match(html, /builtin:cancel:speechBreakConfirmDialog/);
+assert.match(html, /id="cancelDownConfirmDialog"/);
+assert.match(html, /Press\/Say OK to Cancel your down time/);
+assert.match(html, /builtin:yes:cancelDownConfirmDialog/);
+assert.match(html, /builtin:no:cancelDownConfirmDialog/);
+assert.match(
+    html,
+    /builtin:cancelDown:page[\s\S]*speech-available="WMOFSpeechAvailability\.canCancelDownTime"[\s\S]*speech-pattern="\^cancel\$"[\s\S]*WMOFActions\.cancelDownTime/
+);
 assert.match(html, /builtin:standardTime:scheduledStartStandard/);
 assert.match(html, /builtin:standardTime:trip-settings/);
 
@@ -638,6 +647,26 @@ assert.match(app, /function showConnectionRetryLoginDialog\(\)[\s\S]*if \(speech
 assert.doesNotMatch(app, /startIndependentTimer|stopIndependentTimer|resetIndependentTimer|renderIndependentTimer|timerAccumulated|timerStartedAt/);
 assert.match(app, /loadClassicScript\(\s*"SherpaRecognizer\.js"\s*\)/s);
 assert.match(app, /speechDiagnosticsEnabled/);
+assert.match(
+    app,
+    /canCancelDownTime\(\)[\s\S]*downCancelButton[\s\S]*intervalType[\s\S]*"down"/
+);
+assert.match(
+    app,
+    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\/Say OK to Cancel your down time[\s\S]*WMOFAudio[\s\S]*\.speak/
+);
+assert.match(
+    app,
+    /confirmCancelDownTime\(\)[\s\S]*clockTimer[\s\S]*\.cancelInterval\([\s\S]*renderTripActionState/
+);
+assert.match(
+    app,
+    /keepDownTime\(\)[\s\S]*cancel-down-declined/
+);
+assert.doesNotMatch(
+    app,
+    /async cancelDownTime\(\)[\s\S]{0,700}endCurrentIntervalOrTrip/
+);
 assert.match(app, /speech-pipeline/);
 assert.match(app, /speechPipeline\s*=\s*[\s\S]*"silero"[\s\S]*"raw"/);
 assert.match(app, /loadClassicScript\(\s*"SileroVad\.js"\s*\)/s);
