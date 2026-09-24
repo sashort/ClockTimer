@@ -7728,6 +7728,22 @@
                 Boolean(disabled);
         };
 
+    speechTrainingPendingDialog
+        ?.addEventListener(
+            "cancel",
+            event => {
+                event.preventDefault();
+
+                if (
+                    !speechTrainingPendingBusy
+                ) {
+                    finishPendingSpeechTrainingDecision(
+                        "cancel"
+                    );
+                }
+            }
+        );
+
     speechTrainingPendingCommit
         ?.addEventListener(
             "click",
@@ -14605,6 +14621,21 @@
             async disconnectUser() {
                 mainMenu
                     ?.hidePopover?.();
+
+                if (speechTrainingActive) {
+                    return false;
+                }
+
+                if (
+                    inAppSpeechTrainingEnabled
+                ) {
+                    const exited =
+                        await disableInAppSpeechTraining();
+
+                    if (!exited) {
+                        return false;
+                    }
+                }
 
                 deliberatelyLoggedOut =
                     true;
