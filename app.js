@@ -6366,9 +6366,17 @@
     }
 
     async function persistInAppSpeechTrainingSample(
-        target,
-        observed
+        sample
     ) {
+        const target =
+            sample?.target;
+
+        const observed =
+            String(
+                sample?.observed ||
+                ""
+            ).trim();
+
         if (
             !target ||
             !observed ||
@@ -6463,10 +6471,12 @@
                             trainingStyle:
                                 "in-app",
                             pipeline:
+                                sample.pipeline ||
                                 globalThis
                                     .SpeechMenu
                                     ?.pipeline,
                             runtimeRevision:
+                                sample.runtimeRevision ||
                                 globalThis
                                     .SherpaRecognizer
                                     ?.runtimeRevision,
@@ -6499,6 +6509,153 @@
         }
 
         return true;
+    }
+
+    function clearPendingSpeechTrainingSamples() {
+        speechTrainingPendingSamples
+            .splice(
+                0,
+                speechTrainingPendingSamples
+                    .length
+            );
+
+        return true;
+    }
+
+    async function commitPendingSpeechTrainingSamples() {
+        while (
+            speechTrainingPendingSamples
+                .length
+        ) {
+            const sample =
+                speechTrainingPendingSamples[
+                    0
+                ];
+
+            await persistInAppSpeechTrainingSample(
+                sample
+            );
+
+            speechTrainingPendingSamples
+                .shift();
+        }
+
+        return true;
+    }
+
+    function pendingSpeechTrainingTargetLabel() {
+        return (
+            speechTrainingTarget
+                ?.display ||
+            speechTrainingTarget
+                ?.phrase ||
+            "this phrase"
+        );
+    }
+
+    function finishPendingSpeechTrainingDecision(
+        result
+    ) {
+        const resolve =
+            speechTrainingPendingDecisionResolve;
+
+        speechTrainingPendingDecisionResolve =
+            undefined;
+        speechTrainingPendingDecision =
+            undefined;
+        speechTrainingPendingBusy =
+            false;
+
+        if (speechTrainingPendingDialog?.open) {
+            closeDialog(
+                speechTrainingPendingDialog,
+                {
+                    reason:
+                        "speech-training-pending-" +
+                        result
+                }
+            );
+        }
+
+        speechMicBar.trainingLocked =
+            speechTrainingActive;
+
+        resolve?.(
+            result
+        );
+    }
+
+    function promptPendingSpeechTrainingSamples(
+        reason
+    ) {
+        if (
+            !speechTrainingPendingSamples
+                .length
+        ) {
+            return Promise.resolve(
+                "none"
+            );
+        }
+
+        if (
+            speechTrainingPendingDecision
+        ) {
+            return speechTrainingPendingDecision;
+        }
+
+        const count =
+            speechTrainingPendingSamples
+                .length;
+
+        const suffix =
+            count === 1
+                ? "utterance"
+                : "utterances";
+
+        if (speechTrainingPendingMessage) {
+            speechTrainingPendingMessage
+                .textContent =
+                count +
+                " pending " +
+                suffix +
+                " for “" +
+                pendingSpeechTrainingTargetLabel() +
+                "”. " +
+                (
+                    reason ===
+                        "switch"
+                        ? "Commit or discard them before changing phrases."
+                        : "Commit or discard them before leaving Speech Training."
+                );
+        }
+
+        if (speechTrainingPendingError) {
+            speechTrainingPendingError.hidden =
+                true;
+            speechTrainingPendingError.textContent =
+                "";
+        }
+
+        speechMicBar.trainingLocked =
+            true;
+
+        openDialogElement(
+            speechTrainingPendingDialog,
+            {
+                reason:
+                    "speech-training-pending"
+            }
+        );
+
+        speechTrainingPendingDecision =
+            new Promise(
+                resolve => {
+                    speechTrainingPendingDecisionResolve =
+                        resolve;
+                }
+            );
+
+        return speechTrainingPendingDecision;
     }
 
     async function enableInAppSpeechTraining() {
