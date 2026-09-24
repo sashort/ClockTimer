@@ -825,7 +825,15 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\)\(\?: mode\)\?\$"/
+    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\) mode\$"/
+);
+assert.match(
+    languageSource,
+    /readRenderedTime:\s*"\^\(\?<timeMode>time remaining\|time elapsed\|end time\)\$"/
+);
+assert.match(
+    languageSource,
+    /renderedTimeMode:\s*"\^show \(\?<timeMode>time remaining\|time elapsed\|end time\)\$"/
 );
 assert.match(
     html,
@@ -917,7 +925,23 @@ assert.match(
 );
 assert.match(
     app,
-    /readGoalMode\(\)[\s\S]*dictateSpeechMetric\(\s*"Mode"/
+    /readGoalMode\(\)[\s\S]*dictateSpeechMetric\(\s*label,\s*"Mode"/
+);
+assert.match(
+    app,
+    /readRenderedTime\([\s\S]*getRenderedTime\?\.\([\s\S]*dictateSpeechMetric\(/
+);
+assert.match(
+    html,
+    /builtin:readRenderedTime:page[^>]*speech-function="WMOFActions\.readRenderedTime"/
+);
+assert.doesNotMatch(
+    html,
+    /builtin:readRenderedTime:page[^>]*data-speech-target=/
+);
+assert.match(
+    html,
+    /builtin:renderedTimeMode:page[^>]*data-speech-target="#toggleRenderedTimeButton"/
 );
 assert.match(
     speechMenuSource,
@@ -986,6 +1010,14 @@ assert.match(
 assert.match(
     app,
     /"Showing " \+[\s\S]*"Remaining Time"/
+);
+assert.match(
+    speechMicBarSource,
+    /#appendPhraseSeparator\([\s\S]*document\.createTextNode\(\s*" "\s*\)/
+);
+assert.match(
+    speechMicBarSource,
+    /if \(\s*parent\.lastChild[\s\S]*#appendPhraseSeparator\(\s*parent\s*\)[\s\S]*if \(optional\)/
 );
 assert.match(
     speechMenuSource,
