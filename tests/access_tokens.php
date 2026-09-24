@@ -551,6 +551,38 @@ $bearerTokenId = seed_token(
 );
 
 test(
+    'invalid query token wins over an otherwise valid bearer token',
+    function (): void {
+        $_SESSION = [];
+        $_GET = [
+            'access_token' =>
+                'invalid-query-token',
+        ];
+        $_SERVER[
+            'HTTP_AUTHORIZATION'
+        ] =
+            'Bearer bearer-token';
+
+        rejects(
+            fn() =>
+                authorize_guarded_access(
+                    [PERMISSION_DEVELOPER],
+                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+                ),
+            401,
+            'invalid_access_token'
+        );
+
+        $_GET = [];
+        unset(
+            $_SERVER[
+                'HTTP_AUTHORIZATION'
+            ]
+        );
+    }
+);
+
+test(
     'bearer token path remains supported',
     function () use ($bearerTokenId): void {
         $_SESSION = [];
