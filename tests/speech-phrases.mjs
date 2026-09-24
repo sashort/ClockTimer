@@ -43,6 +43,8 @@ window.SpeechRecognition =
     class {};
 
 window.Commands = {
+    wake() {},
+    sleep() {},
     sync() {},
     dialog() {},
     cancel() {},
@@ -52,6 +54,10 @@ window.Commands = {
 };
 
 window.document.body.innerHTML = [
+    '<speech-menu id="system" speech-modal="system">',
+    '<speech-command id="wakeCommand" speech-pattern="^(?:wake|on)$" speech-function="Commands.wake"></speech-command>',
+    '<speech-command id="sleepCommand" speech-pattern="^(?:sleep|off)$" speech-function="Commands.sleep"></speech-command>',
+    '</speech-menu>',
     '<speech-menu id="top" speech-modal="top-level">',
     '<speech-command speech-pattern="^sync(?: (?<syncAction>on|off))?$" speech-function="Commands.sync"></speech-command>',
     '<speech-command speech-index="10" speech-pattern="^priority$" speech-function="Commands.priority"></speech-command>',
@@ -89,32 +95,40 @@ assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
-                SpeechMenu
-                    .wakePhrase
-                    .source
+                window.document
+                    .querySelector(
+                        "#wakeCommand"
+                    )
+                    .getAttribute(
+                        "speech-pattern"
+                    )
             )
     ],
     [
         "wake",
         "on"
     ],
-    "built-in wake controls should extrapolate into continuation phrases"
+    "system wake command should use normal phrase extrapolation"
 );
 
 assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
-                SpeechMenu
-                    .sleepPhrase
-                    .source
+                window.document
+                    .querySelector(
+                        "#sleepCommand"
+                    )
+                    .getAttribute(
+                        "speech-pattern"
+                    )
             )
     ],
     [
         "sleep",
         "off"
     ],
-    "built-in sleep controls should extrapolate into continuation phrases"
+    "system sleep command should use normal phrase extrapolation"
 );
 
 assert.deepEqual(
@@ -193,6 +207,10 @@ assert.deepEqual(
         ...SpeechMenu.phrases
     ],
     [
+        "wake",
+        "on",
+        "sleep",
+        "off",
         "priority",
         "sync",
         "sync on",
@@ -220,6 +238,10 @@ assert.deepEqual(
         ...SpeechMenu.phrases
     ],
     [
+        "wake",
+        "on",
+        "sleep",
+        "off",
         "priority",
         "sync",
         "sync on",
@@ -258,6 +280,16 @@ assert.equal(
     "top-level"
 );
 
+
+assert.ok(
+    SpeechMenu.phrases.indexOf(
+        "wake"
+    ) <
+    SpeechMenu.phrases.indexOf(
+        "priority"
+    ),
+    "system modal should outrank top-level regardless of speech-index"
+);
 
 assert.ok(
     SpeechMenu.phrases.indexOf(
