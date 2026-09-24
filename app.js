@@ -495,6 +495,7 @@
         layoutFrame: undefined,
         scrollIdleTimer: undefined,
         focused: undefined,
+        focusStack: [],
         animations: new Set(),
         transitionBusy: false
     };
