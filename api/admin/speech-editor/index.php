@@ -13,6 +13,7 @@ $sessionUser =
 $authorization = null;
 $canWrite = false;
 $canPreview = false;
+$canTrain = $sessionUser !== null;
 
 if ($sessionUser !== null) {
     if ($method === 'POST') {
@@ -109,7 +110,7 @@ header('Referrer-Policy: no-referrer');
     <title>WMOF Speech Command Editor</title>
     <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
-<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-training-requested="<?=$trainingRequested ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
+<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-can-train="<?=$canTrain ? 'true' : 'false'?>" data-training-requested="<?=$trainingRequested ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
         <div class="viewport-controls" aria-label="Preview viewport controls">
