@@ -109,6 +109,9 @@
     let trainingContributors =
         [];
 
+    let trainingDivergences =
+        [];
+
     let trainingCanWriteCorrections =
         canTrain &&
         canWrite;
@@ -310,6 +313,7 @@
                 next;
 
             renderModelContributors();
+            renderDivergenceReview();
 
             document.body
                 .classList
@@ -564,6 +568,368 @@
             }
         };
 
+    const reviewTrainingDivergence =
+        async (
+            cluster,
+            decision
+        ) => {
+            if (
+                !trainingCanWriteCorrections ||
+                !cluster ||
+                !Array.isArray(
+                    cluster.sampleIds
+                ) ||
+                !cluster.sampleIds.length
+            ) {
+                return false;
+            }
+
+            const data =
+                await trainingApi(
+                    "POST",
+                    {
+                        action:
+                            "divergence-review",
+                        language:
+                            trainingLanguage,
+                        decision,
+                        ids:
+                            cluster.sampleIds
+                    }
+                );
+
+            trainingDivergences =
+                Array.isArray(
+                    data.divergences
+                )
+                    ? data.divergences
+                    : [];
+
+            renderDivergenceReview();
+
+            await loadTrainingStats();
+
+            if (trainingCurrent) {
+                await refreshTrainingDialog();
+            }
+
+            return true;
+        };
+
+    const renderDivergenceReview =
+        () => {
+            const section =
+                $(
+                    "speechDivergenceReview"
+                );
+
+            const container =
+                $(
+                    "speechDivergenceList"
+                );
+
+            const count =
+                $(
+                    "speechDivergenceCount"
+                );
+
+            if (
+                !section ||
+                !container
+            ) {
+                return;
+            }
+
+            const canReview =
+                accessMode ===
+                    "developer" ||
+                accessMode ===
+                    "developer-preview";
+
+            section.hidden =
+                !trainingMode ||
+                !canReview;
+
+            if (count) {
+                count.textContent =
+                    String(
+                        trainingDivergences
+                            .length
+                    );
+            }
+
+            container
+                .replaceChildren();
+
+            if (
+                !trainingDivergences
+                    .length
+            ) {
+                const empty =
+                    document.createElement(
+                        "div"
+                    );
+
+                empty.className =
+                    "empty-list";
+
+                empty.textContent =
+                    "No divergent commands are awaiting review.";
+
+                container.append(
+                    empty
+                );
+
+                return;
+            }
+
+            for (
+                const cluster of
+                trainingDivergences
+            ) {
+                const item =
+                    document.createElement(
+                        "details"
+                    );
+
+                item.className =
+                    "speech-divergence-item";
+
+                const summary =
+                    document.createElement(
+                        "summary"
+                    );
+
+                const title =
+                    document.createElement(
+                        "span"
+                    );
+
+                title.className =
+                    "speech-divergence-title";
+
+                const command =
+                    document.createElement(
+                        "strong"
+                    );
+
+                command.textContent =
+                    cluster.commandKey ||
+                    cluster.commandId ||
+                    cluster.phrase ||
+                    cluster.phraseKey ||
+                    "Command";
+
+                const arrow =
+                    document.createElement(
+                        "span"
+                    );
+
+                arrow.textContent =
+                    "→";
+
+                const observed =
+                    document.createElement(
+                        "strong"
+                    );
+
+                observed.textContent =
+                    "“" +
+                    (
+                        cluster.observed ||
+                        "Unknown phrase"
+                    ) +
+                    "”";
+
+                title.append(
+                    command,
+                    arrow,
+                    observed
+                );
+
+                const badge =
+                    document.createElement(
+                        "span"
+                    );
+
+                badge.className =
+                    "speech-divergence-badge";
+
+                badge.textContent =
+                    String(
+                        cluster.samples ||
+                        0
+                    ) +
+                    (
+                        Number(
+                            cluster.samples
+                        ) === 1
+                            ? " sample"
+                            : " samples"
+                    );
+
+                summary.append(
+                    title,
+                    badge
+                );
+
+                const body =
+                    document.createElement(
+                        "div"
+                    );
+
+                body.className =
+                    "speech-divergence-body";
+
+                const meta =
+                    document.createElement(
+                        "p"
+                    );
+
+                meta.textContent =
+                    String(
+                        cluster.contributorCount ||
+                        0
+                    ) +
+                    (
+                        Number(
+                            cluster
+                                .contributorCount
+                        ) === 1
+                            ? " contributor"
+                            : " contributors"
+                    ) +
+                    " · current model rejected";
+
+                body.append(
+                    meta
+                );
+
+                const ids =
+                    document.createElement(
+                        "small"
+                    );
+
+                ids.textContent =
+                    "Runs: " +
+                    (
+                        cluster.sampleIds ||
+                        []
+                    ).join(
+                        ", "
+                    );
+
+                body.append(
+                    ids
+                );
+
+                const actions =
+                    document.createElement(
+                        "div"
+                    );
+
+                actions.className =
+                    "speech-divergence-actions";
+
+                if (
+                    trainingCanWriteCorrections
+                ) {
+                    for (
+                        const [
+                            decision,
+                            label
+                        ] of [
+                            [
+                                "approve",
+                                "Approve phrase"
+                            ],
+                            [
+                                "merge",
+                                "Merge"
+                            ],
+                            [
+                                "purge",
+                                "Purge"
+                            ]
+                        ]
+                    ) {
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
+
+                        button.type =
+                            "button";
+                        button.dataset
+                            .decision =
+                            decision;
+                        button.textContent =
+                            label;
+
+                        button.addEventListener(
+                            "click",
+                            async event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                button.disabled =
+                                    true;
+
+                                try {
+                                    await reviewTrainingDivergence(
+                                        cluster,
+                                        decision
+                                    );
+                                }
+                                catch (
+                                    error
+                                ) {
+                                    button.disabled =
+                                        false;
+                                    setTrainingMessage(
+                                        error.message,
+                                        true
+                                    );
+                                }
+                            }
+                        );
+
+                        actions.append(
+                            button
+                        );
+                    }
+                }
+                else {
+                    const readOnly =
+                        document.createElement(
+                            "span"
+                        );
+
+                    readOnly.className =
+                        "speech-divergence-read-only";
+                    readOnly.textContent =
+                        "Developer Preview · read only";
+
+                    actions.append(
+                        readOnly
+                    );
+                }
+
+                body.append(
+                    actions
+                );
+
+                item.append(
+                    summary,
+                    body
+                );
+
+                container.append(
+                    item
+                );
+            }
+        };
+
     const loadTrainingStats =
         async () => {
             try {
@@ -587,7 +953,15 @@
                         ? data.contributors
                         : [];
 
+                trainingDivergences =
+                    Array.isArray(
+                        data.divergences
+                    )
+                        ? data.divergences
+                        : [];
+
                 renderModelContributors();
+                renderDivergenceReview();
                 renderPhraseList();
 
                 return data;
@@ -1184,7 +1558,15 @@
                     ? data.contributors
                     : [];
 
+            trainingDivergences =
+                Array.isArray(
+                    data.divergences
+                )
+                    ? data.divergences
+                    : [];
+
             renderModelContributors();
+            renderDivergenceReview();
 
             renderTrainingSummary(
                 trainingStats.get(
