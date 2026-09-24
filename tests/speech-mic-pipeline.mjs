@@ -564,6 +564,10 @@ assert.match(html, /id="speechTrainingEditorChoice"/);
 assert.match(html, /id="speechTrainingWidget"[^>]*popover="manual"[^>]*hidden/);
 assert.match(html, /id="speechTrainingDragHandle"/);
 assert.match(html, /id="speechTrainingStartStop"[^>]*disabled>Start</);
+assert.match(html, /id="speechTrainingHeardStatus"/);
+assert.match(html, /id="speechTrainingResults"/);
+assert.match(html, /id="speechTrainingResultsCount"/);
+assert.match(html, /id="speechTrainingResultsList"/);
 assert.doesNotMatch(html, /id="speechAdminGroup"/);
 
 const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
@@ -699,7 +703,23 @@ assert.match(app, /startInAppSpeechTraining[\s\S]*speechMenu\.muted[\s\S]*speech
 assert.match(app, /stopInAppSpeechTraining[\s\S]*executionEnabled\s*=\s*speechTrainingExecutionBeforeStart/);
 assert.match(
     app,
-    /speech-training-telemetry[\s\S]*utteranceCommitted[\s\S]*utteranceUnrecognized[\s\S]*utteranceTranscribed[\s\S]*speechTrainingPendingSamples[\s\S]*\.push\(/
+    /speech-training-telemetry[\s\S]*speechCommandMatched[\s\S]*utteranceTranscribed[\s\S]*return;[\s\S]*utteranceCommitted[\s\S]*utteranceUnrecognized[\s\S]*finalizeSpeechTrainingResult/
+);
+assert.match(
+    app,
+    /finalizeSpeechTrainingResult[\s\S]*"accepted"[\s\S]*"model-miss"[\s\S]*"divergence"[\s\S]*"discarded"[\s\S]*speechTrainingPendingSamples[\s\S]*\.push/
+);
+assert.match(
+    app,
+    /speechTrainingResultPresentation[\s\S]*symbol:[\s\S]*"✓"[\s\S]*"model-miss"[\s\S]*symbol:[\s\S]*"✓"[\s\S]*"divergence"[\s\S]*symbol:[\s\S]*"×"/
+);
+assert.match(
+    app,
+    /reviewSpeechTrainingDivergence[\s\S]*"divergence-review"[\s\S]*"approve"[\s\S]*"merge"[\s\S]*"purge"/
+);
+assert.match(
+    app,
+    /removeSpeechTrainingResult[\s\S]*method:[\s\S]*"DELETE"[\s\S]*action:[\s\S]*"contribution"/
 );
 assert.match(
     app,
@@ -744,7 +764,11 @@ assert.match(
 );
 assert.match(
     app,
-    /telemetry\.utteranceId[\s\S]*speechTrainingSeenUtterances[\s\S]*speechTrainingUtteranceCount \+=\s*1/
+    /updateSpeechTrainingCount[\s\S]*speechTrainingResultsHistory[\s\S]*state !==[\s\S]*"discarded"/
+);
+assert.match(
+    app,
+    /trainingResultState:[\s\S]*sample\.state[\s\S]*modelAccepted:[\s\S]*sample\.modelAccepted[\s\S]*divergenceStatus/
 );
 assert.match(app, /speechTrainingDragHandle[\s\S]*pointerdown[\s\S]*setPointerCapture/);
 assert.match(app, /function showSpeechTrainingWidget[\s\S]*showPopover/);
@@ -776,6 +800,10 @@ assert.match(css, /\.speech-training-widget[\s\S]*height:\s*64px/);
 assert.match(css, /\.speech-training-widget\[popover\]:popover-open[\s\S]*display:\s*grid/);
 assert.match(css, /\.speech-training-copy[\s\S]*height:\s*56px[\s\S]*grid-template-rows:\s*1fr 1fr/);
 assert.match(css, /\.speech-training-start-stop[\s\S]*height:\s*56px/);
+assert.match(css, /speech-training-result-icon\[data-result="accepted"\][\s\S]*#7fe6a2/);
+assert.match(css, /speech-training-result-icon\[data-result="model-miss"\][\s\S]*var\(--wm-red/);
+assert.match(css, /speech-training-result-icon\[data-result="discarded"\][\s\S]*#f59e0b/);
+assert.match(css, /speech-training-result-remove::before[\s\S]*mask:/);
 assert.match(css, /\.main-menu button:disabled[\s\S]*cursor:\s*not-allowed/);
 assert.match(css, /#speechEditorButton::before/);
 assert.match(css, /#developerMenuButton::before/);
@@ -1237,6 +1265,18 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /#optionsGroupKey\([\s\S]*data-speech-options-group/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#optionsGroupKey\([\s\S]{0,900}data-speech-target/
+);
+assert.match(
+    speechMicBarSource,
+    /#compactOptionGroup\([\s\S]*familyPhrases[\s\S]*base\?\.phrase[\s\S]*item\.phrase/
+);
+assert.match(
+    speechMicBarSource,
+    /source:\s*"command"[\s\S]*expectedPhrases:[\s\S]*item\.familyPhrases[\s\S]*optionalPrefix[\s\S]*optionalSuffix/
 );
 assert.match(
     speechMicBarSource,
