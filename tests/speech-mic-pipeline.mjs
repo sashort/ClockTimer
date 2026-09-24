@@ -957,3 +957,24 @@ assert.match(
     speechMenuSource,
     /if \(\s*exactCandidate\.continuation\s*\)[\s\S]*return true;[\s\S]*const delay/
 );
+
+assert.match(
+    speechMenuSource,
+    /lastExactCandidate\s*=\s*\{[\s\S]*revision/
+);
+assert.match(
+    speechMenuSource,
+    /#armCandidateHardDeadline\([\s\S]*candidateHardCommitAt\s*=\s*performance\.now\(\)\s*\+/
+);
+assert.match(
+    speechMenuSource,
+    /pool\.length[\s\S]*lastExactCandidate[\s\S]*#armCandidateHardDeadline/
+);
+assert.match(
+    speechMenuSource,
+    /lastExactCandidate[\s\S]*\.revision !==[\s\S]*transcriptRevision[\s\S]*"candidate-stable"[\s\S]*true/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /candidateHardCommitAt[\s\S]{0,700}#commitHeldCandidate/
+);
