@@ -65,7 +65,6 @@ assert.deepEqual(
             )
     ].sort(),
     [
-        "listen",
         "on",
         "wake"
     ]
@@ -80,7 +79,6 @@ assert.deepEqual(
             )
     ].sort(),
     [
-        "mute",
         "off",
         "sleep"
     ]
@@ -732,6 +730,18 @@ assert.match(
     speechMicBarSource,
     /#speechControlItems\(\)[\s\S]*wakePhrase[\s\S]*sleepPhrase[\s\S]*extrapolatePattern/
 );
+assert.doesNotMatch(
+    languageSource,
+    /listen|mute/
+);
+assert.match(
+    speechMicBarSource,
+    /#text \{[\s\S]*display:\s*inline-flex[\s\S]*align-items:\s*center/
+);
+assert.match(
+    speechMicBarSource,
+    /code \{[\s\S]*display:\s*inline-flex[\s\S]*align-items:\s*center[\s\S]*vertical-align:\s*middle/
+);
 assert.match(
     speechMicBarSource,
     /if \(!cards\.length\) \{[\s\S]*continue;/
@@ -825,6 +835,18 @@ assert.match(
     html,
     /builtin:setTripGoal:page[^>]*speech-function="WMOFActions\.setTripGoal"/
 );
+assert.doesNotMatch(
+    html,
+    /builtin:tripGoal:page[^>]*data-speech-target=/
+);
+assert.doesNotMatch(
+    html,
+    /builtin:totalGoal:page[^>]*data-speech-target=/
+);
+assert.doesNotMatch(
+    html,
+    /builtin:readGoalMode:page[^>]*data-speech-target=/
+);
 assert.match(
     html,
     /builtin:readGoalMode:page[^>]*speech-function="WMOFActions\.readGoalMode"/
@@ -891,7 +913,11 @@ assert.match(
 );
 assert.match(
     app,
-    /readGoalMode\(\)[\s\S]*WMOFAudio[\s\S]*\.speak/
+    /dictateSpeechMetric\([\s\S]*speechResponse:[\s\S]*type:\s*"dictation"/
+);
+assert.match(
+    app,
+    /readGoalMode\(\)[\s\S]*dictateSpeechMetric\(\s*"Mode"/
 );
 assert.match(
     speechMenuSource,
@@ -899,11 +925,11 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /wakePhrase:\s*"\^\(\?:wake\|listen\|on\)\$"/
+    /wakePhrase:\s*"\^\(\?:wake\|on\)\$"/
 );
 assert.match(
     languageSource,
-    /sleepPhrase:\s*"\^\(\?:sleep\|mute\|off\)\$"/
+    /sleepPhrase:\s*"\^\(\?:sleep\|off\)\$"/
 );
 assert.match(
     speechMenuSource,
@@ -924,6 +950,14 @@ assert.match(
 assert.match(
     audioEngineSource,
     /speak\([\s\S]*registerSynthesizedSpeech[\s\S]*synthesis\.speak/
+);
+assert.match(
+    speechMenuSource,
+    /speechResponse[\s\S]*type\s*===\s*"dictation"[\s\S]*presentSpeechDictation/
+);
+assert.match(
+    presentationSettersSource,
+    /presentSpeechDictation\([\s\S]*bar\.setResponse[\s\S]*scheduleDismissal/
 );
 
 assert.match(
