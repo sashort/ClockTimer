@@ -1217,7 +1217,7 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /#maximumCandidateHoldTimeout\s*=\s*1000/
+    /#maximumCandidateHoldTimeout\s*=\s*1200/
 );
 assert.match(
     speechMenuSource,
