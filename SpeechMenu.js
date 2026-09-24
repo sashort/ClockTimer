@@ -9,7 +9,8 @@ class SpeechMenu {
     static #silenceTimeout = 5000;
     static #commitSilenceTimeout = 350;
     static #terminalCommitSilenceTimeout = 120;
-    static #maximumCandidateHoldTimeout = 1000;
+    static #continuationSilenceTimeout = 900;
+    static #maximumCandidateHoldTimeout = 1200;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
@@ -1140,8 +1141,17 @@ class SpeechMenu {
                     .committing &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
-                    SpeechMenu
-                        .#commitSilenceTimeout
+                    (
+                        SpeechMenu
+                            .#hasOpenContinuation(
+                                SpeechMenu
+                                    .#utterance
+                            )
+                            ? SpeechMenu
+                                .#continuationSilenceTimeout
+                            : SpeechMenu
+                                .#commitSilenceTimeout
+                    )
             ) {
                 const utterance =
                     SpeechMenu.#utterance;
@@ -1150,24 +1160,11 @@ class SpeechMenu {
                         .#exactCandidate(
                             utterance
                         );
-                const hasViableCandidate =
-                    Boolean(
-                        utterance
-                            .candidatePool
-                            ?.length
-                    );
-
                 if (
-                    (
-                        exactCandidate
-                            ?.continuation ||
-                        (
-                            !exactCandidate &&
-                            hasViableCandidate &&
+                    SpeechMenu
+                        .#hasOpenContinuation(
                             utterance
-                                .lastExactCandidate
                         )
-                    )
                 ) {
                     /*
                      * Open-ended values (for example
@@ -1227,6 +1224,32 @@ class SpeechMenu {
         }
 
         if (SpeechMenu.#utterance) {
+            if (
+                SpeechMenu
+                    .#hasOpenContinuation(
+                        SpeechMenu.#utterance
+                    )
+            ) {
+                SpeechMenu.#emit(
+                    "speechVadChanged",
+                    {
+                        pipeline: "silero",
+                        detected: true,
+                        resumed: true,
+                        processMilliseconds:
+                            Number(
+                                event.detail
+                                    ?.processMilliseconds
+                            ) || 0,
+                        maxProcessMilliseconds:
+                            Number(
+                                event.detail
+                                    ?.maxProcessingMilliseconds
+                            ) || 0
+                    }
+                );
+            }
+
             return;
         }
 
@@ -1287,6 +1310,23 @@ class SpeechMenu {
         ) {
             const utterance =
                 SpeechMenu.#utterance;
+
+            if (
+                !utterance.committed &&
+                !utterance.committing &&
+                SpeechMenu
+                    .#hasOpenContinuation(
+                        utterance
+                    )
+            ) {
+                /*
+                 * A short pause can occur inside an open-ended value,
+                 * e.g. "ready at four ... fifteen". Keep Sherpa's
+                 * current stream alive so the next VAD speech segment
+                 * continues the same logical utterance.
+                 */
+                return;
+            }
 
             if (
                 !utterance.committed &&
@@ -2584,6 +2624,29 @@ class SpeechMenu {
                         candidate
                             .continuation
                 )
+        );
+    }
+
+    static #hasOpenContinuation(
+        utterance
+    ) {
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
+        return Boolean(
+            exactCandidate
+                ?.continuation ||
+            (
+                !exactCandidate &&
+                utterance
+                    ?.candidatePool
+                    ?.length &&
+                utterance
+                    .lastExactCandidate
+            )
         );
     }
 
