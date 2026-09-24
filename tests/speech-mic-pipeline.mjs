@@ -559,6 +559,11 @@ assert.ok(speechToolsIndex > developerIndex);
 assert.ok(trainingIndex > speechToolsIndex && editorIndex > trainingIndex);
 assert.ok(databaseIndex > editorIndex);
 assert.match(html, /id="developerMenuGroup"/);
+assert.match(html, /id="mainMenuViewport"/);
+assert.match(html, /id="mainMenuTrack"/);
+assert.match(html, /id="mainMenuIndicator"/);
+assert.match(html, /id="mainMenuIndicatorThumb"/);
+assert.match(html, /id="mainMenuFocusLayer"/);
 assert.match(html, /id="speechToolsGroup"/);
 assert.match(html, /id="sqlConsoleButton"[^>]*>Database Access</);
 assert.match(html, /id="speechTrainingButton"[^>]*>Speech Training</);
@@ -677,7 +682,26 @@ assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
 assert.match(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]*PERMISSION_DEVELOPER_PREVIEW[\s\S]*PERMISSION_DEVELOPER/);
 assert.doesNotMatch(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]{0,120}PERMISSION_SUPERUSER/);
-assert.match(app, /developerMenuButton[\s\S]*developerSubmenu[\s\S]*aria-expanded/);
+assert.match(
+    app,
+    /mainMenu[\s\S]*button\[aria-controls\][\s\S]*promoteMainMenuGroup[\s\S]*restoreMainMenuFocusLevel/
+);
+assert.match(
+    app,
+    /focusStack[\s\S]*at\(-1\)[\s\S]*updateFocusedMainMenuBounds/
+);
+assert.match(
+    app,
+    /MAIN_MENU_ITEM_RATE_PX_PER_MS[\s\S]*mainMenuAnimationDuration[\s\S]*height[\s\S]*MAIN_MENU_ITEM_RATE_PX_PER_MS/
+);
+assert.match(
+    app,
+    /mainMenuFocusLayer[\s\S]*menuScrollable[\s\S]*safeHeight/
+);
+assert.match(
+    app,
+    /mainMenu[\s\S]*"toggle"[\s\S]*event\.newState ===[\s\S]*"open"[\s\S]*resetMainMenuLayout/
+);
 assert.match(app, /menuLogoutSlot\?\.append\(authButton\)/);
 assert.match(app, /menuAccountRow\?\.append\(authButton\)/);
 assert.match(
@@ -882,6 +906,30 @@ assert.match(css, /#speechEditorButton::before/);
 assert.match(css, /#developerMenuButton::before/);
 assert.match(css, /#accessTokensButton::before/);
 assert.match(css, /#sqlConsoleButton::before/);
+assert.match(
+    css,
+    /\.main-menu-viewport[\s\S]*overflow-x:\s*auto[\s\S]*scroll-snap-type:\s*x mandatory/
+);
+assert.match(
+    css,
+    /\.main-menu-panel[\s\S]*height:\s*var\(--main-menu-panel-height\)[\s\S]*scroll-snap-align:\s*start/
+);
+assert.match(
+    css,
+    /\.main-menu-indicator-thumb[\s\S]*transition:[\s\S]*transform 220ms ease-in-out[\s\S]*width 220ms ease-in-out/
+);
+assert.match(
+    css,
+    /\.main-menu-focus-layer\[data-menu-scrollable="true"\][\s\S]*overflow-y:\s*auto/
+);
+assert.match(
+    css,
+    /\.main-menu-transition-clip[\s\S]*overflow:\s*hidden !important/
+);
+assert.match(
+    css,
+    /\.main-menu-focus-group\.main-menu-focus-entering[\s\S]*position:\s*absolute/
+);
 assert.match(css, /stroke-dasharray:100;stroke-dashoffset:100/);
 assert.match(css, /@keyframes speech-mic-build/);
 assert.match(css, /from\{clip-path:inset\(100% 0 0 0\);\}/);
