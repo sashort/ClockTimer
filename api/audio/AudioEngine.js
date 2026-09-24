@@ -364,11 +364,240 @@
             return endAt;
         }
 
+        #maybeComplete(entry) {
+            if (
+                !entry ||
+                entry.released ||
+                !entry.timelineComplete ||
+                entry.pendingSpeech > 0
+            ) {
+                return;
+            }
+
+            if (entry.loop) {
+                const {
+                    name,
+                    bpm,
+                    volume
+                } = entry;
+
+                this.#release(
+                    entry,
+                    "loop"
+                );
+
+                void this.startSong(
+                    name,
+                    {
+                        bpm,
+                        volume,
+                        loop: true
+                    }
+                ).catch(
+                    error =>
+                        console.error(
+                            error
+                        )
+                );
+
+                return;
+            }
+
+            this.#release(
+                entry,
+                "ended"
+            );
+        }
+
+        #scheduleSpeech(
+            context,
+            entry,
+            event,
+            bpm
+        ) {
+            const text =
+                String(
+                    event.speech ||
+                    ""
+                ).trim();
+
+            if (!text) {
+                return entry.startedAt;
+            }
+
+            const synthesis =
+                globalThis.speechSynthesis;
+            const Utterance =
+                globalThis.SpeechSynthesisUtterance;
+
+            if (
+                !synthesis ||
+                typeof Utterance !==
+                    "function"
+            ) {
+                console.warn(
+                    "Speech synthesis is unavailable:",
+                    text
+                );
+                return entry.startedAt;
+            }
+
+            const beatSeconds =
+                60 / bpm;
+            const offsetBeats =
+                this.#beats(
+                    event.offset
+                );
+            const startAt =
+                entry.startedAt +
+                offsetBeats *
+                    beatSeconds;
+            const delay =
+                Math.max(
+                    0,
+                    (
+                        startAt -
+                        context.currentTime
+                    ) *
+                        1000
+                );
+
+            entry.pendingSpeech++;
+
+            const timer =
+                setTimeout(
+                    () => {
+                        entry.timers.delete(
+                            timer
+                        );
+
+                        if (entry.released) {
+                            entry.pendingSpeech =
+                                Math.max(
+                                    0,
+                                    entry.pendingSpeech -
+                                        1
+                                );
+                            return;
+                        }
+
+                        const utterance =
+                            new Utterance(
+                                text
+                            );
+
+                        if (
+                            Number.isFinite(
+                                Number(
+                                    event.rate
+                                )
+                            )
+                        ) {
+                            utterance.rate =
+                                Number(
+                                    event.rate
+                                );
+                        }
+
+                        if (
+                            Number.isFinite(
+                                Number(
+                                    event.pitch
+                                )
+                            )
+                        ) {
+                            utterance.pitch =
+                                Number(
+                                    event.pitch
+                                );
+                        }
+
+                        if (
+                            Number.isFinite(
+                                Number(
+                                    event.volume
+                                )
+                            )
+                        ) {
+                            utterance.volume =
+                                Math.max(
+                                    0,
+                                    Math.min(
+                                        1,
+                                        Number(
+                                            event.volume
+                                        )
+                                    )
+                                );
+                        }
+
+                        entry.utterances.add(
+                            utterance
+                        );
+
+                        const finish =
+                            () => {
+                                if (
+                                    !entry.utterances
+                                        .delete(
+                                            utterance
+                                        )
+                                ) {
+                                    return;
+                                }
+
+                                entry.pendingSpeech =
+                                    Math.max(
+                                        0,
+                                        entry.pendingSpeech -
+                                            1
+                                    );
+
+                                this.#maybeComplete(
+                                    entry
+                                );
+                            };
+
+                        utterance.addEventListener(
+                            "end",
+                            finish,
+                            {
+                                once: true
+                            }
+                        );
+
+                        utterance.addEventListener(
+                            "error",
+                            finish,
+                            {
+                                once: true
+                            }
+                        );
+
+                        synthesis.speak(
+                            utterance
+                        );
+                    },
+                    delay
+                );
+
+            entry.timers.add(
+                timer
+            );
+
+            return startAt;
+        }
+
         #release(entry, reason) {
             if (!entry || entry.released) return;
 
             entry.released = true;
             clearTimeout(entry.endTimer);
+
+            for (const timer of entry.timers) {
+                clearTimeout(timer);
+            }
+            entry.timers.clear();
 
             for (const node of entry.nodes) {
                 try { node.stop?.(); } catch {}
@@ -430,6 +659,16 @@
                 id: ++this.#sequence,
                 name,
                 nodes: new Set(),
+                timers: new Set(),
+                utterances: new Set(),
+                pendingSpeech: 0,
+                timelineComplete: false,
+                loop:
+                    shouldLoop,
+                bpm:
+                    tempo,
+                volume:
+                    songGain,
                 startedAt:
                     context.currentTime +
                     0.015,
@@ -452,20 +691,33 @@
                     entry.startedAt;
 
                 for (const event of song.events || []) {
-                    if (!event?.tone) continue;
+                    if (event?.tone) {
+                        endAt =
+                            Math.max(
+                                endAt,
+                                this.#scheduleTone(
+                                    context,
+                                    entry,
+                                    event,
+                                    instrument,
+                                    tempo,
+                                    songGain
+                                )
+                            );
+                    }
 
-                    endAt =
-                        Math.max(
-                            endAt,
-                            this.#scheduleTone(
-                                context,
-                                entry,
-                                event,
-                                instrument,
-                                tempo,
-                                songGain
-                            )
-                        );
+                    if (event?.speech) {
+                        endAt =
+                            Math.max(
+                                endAt,
+                                this.#scheduleSpeech(
+                                    context,
+                                    entry,
+                                    event,
+                                    tempo
+                                )
+                            );
+                    }
                 }
 
                 const durationMilliseconds =
@@ -475,46 +727,18 @@
                             1000
                     );
 
-                if (shouldLoop) {
-                    entry.endTimer =
-                        setTimeout(
-                            async () => {
-                                this.#release(
-                                    entry,
-                                    "loop"
-                                );
+                entry.endTimer =
+                    setTimeout(
+                        () => {
+                            entry.timelineComplete =
+                                true;
 
-                                try {
-                                    await this.startSong(
-                                        name,
-                                        {
-                                            bpm: tempo,
-                                            volume:
-                                                songGain,
-                                            loop: true
-                                        }
-                                    );
-                                }
-                                catch (error) {
-                                    console.error(
-                                        error
-                                    );
-                                }
-                            },
-                            durationMilliseconds
-                        );
-                }
-                else {
-                    entry.endTimer =
-                        setTimeout(
-                            () =>
-                                this.#release(
-                                    entry,
-                                    "ended"
-                                ),
-                            durationMilliseconds
-                        );
-                }
+                            this.#maybeComplete(
+                                entry
+                            );
+                        },
+                        durationMilliseconds
+                    );
 
                 return Object.freeze({
                     id: entry.id,
