@@ -2172,7 +2172,7 @@ class SpeechMicBar extends HTMLElement {
                 {
                     duration,
                     easing:
-                        "cubic-bezier(.2,.8,.2,1)",
+                        "cubic-bezier(.42,0,.58,1)",
                     fill:
                         "both"
                 }
@@ -2260,7 +2260,7 @@ class SpeechMicBar extends HTMLElement {
                 {
                     duration,
                     easing:
-                        "cubic-bezier(.4,0,.2,1)",
+                        "cubic-bezier(.42,0,.58,1)",
                     fill:
                         "both"
                 }
@@ -2337,7 +2337,7 @@ class SpeechMicBar extends HTMLElement {
                 {
                     duration,
                     easing:
-                        "cubic-bezier(.2,.8,.2,1)"
+                        "cubic-bezier(.42,0,.58,1)"
                 }
             );
 
@@ -2669,7 +2669,7 @@ class SpeechMicBar extends HTMLElement {
                 {
                     duration,
                     easing:
-                        "cubic-bezier(.2,.8,.2,1)",
+                        "cubic-bezier(.42,0,.58,1)",
                     fill:
                         "both"
                 }
@@ -2678,11 +2678,52 @@ class SpeechMicBar extends HTMLElement {
         animation.finished
             .catch(() => {})
             .finally(
-                () => {
+                async () => {
+                    /*
+                     * Preserve the measured final category height while
+                     * child exit/enter animations finish their cleanup.
+                     * Otherwise the category can briefly fall back to the
+                     * still-present pre-removal child layout and jerk just
+                     * before reaching its final auto-sized height.
+                     */
+                    section.style.height =
+                        end +
+                        "px";
+
+                    const descendants =
+                        (
+                            section
+                                .getAnimations?.({
+                                    subtree:
+                                        true
+                                }) ||
+                            []
+                        )
+                            .filter(
+                                item =>
+                                    item !==
+                                        animation
+                            );
+
                     try {
                         animation.cancel();
                     }
                     catch {}
+
+                    if (
+                        descendants
+                            .length
+                    ) {
+                        await Promise
+                            .allSettled(
+                                descendants
+                                    .map(
+                                        item =>
+                                            item
+                                                .finished
+                                    )
+                            );
+                    }
 
                     section.style
                         .removeProperty(
