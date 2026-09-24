@@ -57,6 +57,8 @@ class SpeechMicBar extends HTMLElement {
     #wakeCommand;
     #sleepCommand;
     #offCommand;
+    #commandsCommand;
+    #trainingSelection;
 
     constructor() {
         super();
@@ -396,6 +398,60 @@ class SpeechMicBar extends HTMLElement {
                     flex: 0 0 auto;
                     min-width: max-content;
                     white-space: nowrap;
+                }
+
+                :host([training-mode]) .option-phrase {
+                    cursor: pointer;
+                    border-radius: 6px;
+                    padding-inline: 5px;
+                    margin-inline: -5px;
+                    transition:
+                        background 150ms ease-in-out,
+                        color 150ms ease-in-out,
+                        box-shadow 150ms ease-in-out;
+                }
+
+                :host([training-mode]:not([training-locked]))
+                .option-phrase:hover {
+                    box-shadow:
+                        0 0 0 1px
+                        rgb(255 255 255 / 42%);
+                }
+
+                :host([training-mode])
+                .option-phrase.training-selected {
+                    color:
+                        var(
+                            --speech-training-contrast,
+                            white
+                        );
+                    background:
+                        var(
+                            --speech-training-category-color,
+                            var(--wm-blue)
+                        );
+                    box-shadow:
+                        0 0 0 2px
+                        rgb(255 255 255 / 56%);
+                }
+
+                :host([training-mode]:not([training-locked]))
+                #bar {
+                    cursor: pointer;
+                }
+
+                :host(
+                    [training-mode]
+                    [training-target-source="mic-bar"]
+                )
+                #bar {
+                    box-shadow:
+                        inset 0 1px 0
+                            rgb(255 255 255 / 14%),
+                        0 0 0 2px
+                            var(--wm-blue-light),
+                        0 7px 16px
+                            rgb(0 0 0 / 24%);
                 }
 
                 .option-phrase.unimplemented
@@ -890,6 +946,44 @@ class SpeechMicBar extends HTMLElement {
                 }
             );
         this.#bar = this.#shadow.querySelector("#bar");
+        this.#bar
+            ?.addEventListener(
+                "click",
+                () => {
+                    if (
+                        !this.trainingMode ||
+                        this.trainingLocked
+                    ) {
+                        return;
+                    }
+
+                    const command =
+                        this.#commandsCommand ||
+                        this.#ensureSystemSpeechMenu()
+                            ?.querySelector?.(
+                                ':scope > speech-command[data-speech-system-command="commands"]'
+                            );
+
+                    if (!command) {
+                        return;
+                    }
+
+                    this.#selectTrainingTarget({
+                        source:
+                            "mic-bar",
+                        category:
+                            "system",
+                        card:
+                            "speech-controls",
+                        phrase:
+                            "commands",
+                        display:
+                            "commands",
+                        element:
+                            command
+                    });
+                }
+            );
         this.#mic = this.#shadow.querySelector("#mic");
         this.#activity = this.#shadow.querySelector("#activity");
         this.#codes = this.#shadow.querySelector("#codes");
@@ -982,11 +1076,12 @@ class SpeechMicBar extends HTMLElement {
                 "^off$",
                 "WMOFActions.disableSpeechRecognition"
             );
-        ensureCommand(
-            "commands",
-            "^(?:speech )?commands$",
-            "WMOFActions.toggleSpeechOptions"
-        );
+        this.#commandsCommand =
+            ensureCommand(
+                "commands",
+                "^(?:speech )?commands$",
+                "WMOFActions.toggleSpeechOptions"
+            );
 
         return menu;
     }
@@ -1045,6 +1140,301 @@ class SpeechMicBar extends HTMLElement {
         ) {
             this.#showIdleText();
         }
+
+        return true;
+    }
+
+    get trainingMode() {
+        return this.hasAttribute(
+            "training-mode"
+        );
+    }
+
+    set trainingMode(value) {
+        this.toggleAttribute(
+            "training-mode",
+            Boolean(value)
+        );
+
+        if (!value) {
+            this.trainingLocked =
+                false;
+            this.clearTrainingTarget();
+        }
+    }
+
+    get trainingLocked() {
+        return this.hasAttribute(
+            "training-locked"
+        );
+    }
+
+    set trainingLocked(value) {
+        this.toggleAttribute(
+            "training-locked",
+            Boolean(value)
+        );
+    }
+
+    get trainingTarget() {
+        return this.#trainingSelection
+            ? {
+                ...this.#trainingSelection
+            }
+            : undefined;
+    }
+
+    clearTrainingTarget() {
+        this.#trainingSelection =
+            undefined;
+
+        this.removeAttribute(
+            "training-target-source"
+        );
+
+        for (
+            const row of
+            this.#optionsGrid
+                ?.querySelectorAll?.(
+                    ".option-phrase.training-selected"
+                ) ||
+            []
+        ) {
+            row.classList.remove(
+                "training-selected"
+            );
+
+            row.style.removeProperty(
+                "--speech-training-category-color"
+            );
+
+            row.style.removeProperty(
+                "--speech-training-contrast"
+            );
+        }
+    }
+
+    #trainingCategoryColor(
+        category
+    ) {
+        const variable =
+            {
+                "trip-actions":
+                    "--wm-blue-dark",
+                goals:
+                    "--wm-yellow",
+                settings:
+                    "--wm-gray",
+                system:
+                    "--wm-blue"
+            }[
+                category
+            ] ||
+            "--wm-gray";
+
+        const fallback =
+            {
+                "trip-actions":
+                    "#001e60",
+                goals:
+                    "#ffc220",
+                settings:
+                    "#a7a8aa",
+                system:
+                    "#0053e2"
+            }[
+                category
+            ] ||
+            "#a7a8aa";
+
+        return (
+            getComputedStyle(
+                this
+            )
+                .getPropertyValue(
+                    variable
+                )
+                .trim() ||
+            fallback
+        );
+    }
+
+    #trainingContrastColor(
+        color
+    ) {
+        const probe =
+            document.createElement(
+                "span"
+            );
+
+        probe.style.color =
+            color;
+        probe.style.position =
+            "absolute";
+        probe.style.visibility =
+            "hidden";
+
+        this.#shadow.append(
+            probe
+        );
+
+        const resolved =
+            getComputedStyle(
+                probe
+            ).color;
+
+        probe.remove();
+
+        const match =
+            resolved.match(
+                /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
+            );
+
+        if (!match) {
+            return "white";
+        }
+
+        const linear =
+            value => {
+                const channel =
+                    Number(value) /
+                    255;
+
+                return channel <=
+                    0.04045
+                        ? channel /
+                            12.92
+                        : (
+                            (
+                                channel +
+                                0.055
+                            ) /
+                            1.055
+                        ) **
+                            2.4;
+            };
+
+        const luminance =
+            0.2126 *
+                linear(
+                    match[1]
+                ) +
+            0.7152 *
+                linear(
+                    match[2]
+                ) +
+            0.0722 *
+                linear(
+                    match[3]
+                );
+
+        const blackContrast =
+            (
+                luminance +
+                0.05
+            ) /
+            0.05;
+
+        const whiteContrast =
+            1.05 /
+            (
+                luminance +
+                0.05
+            );
+
+        return blackContrast >=
+            whiteContrast
+                ? "black"
+                : "white";
+    }
+
+    #selectTrainingTarget(
+        {
+            source,
+            category,
+            card,
+            phrase,
+            display,
+            element,
+            row
+        }
+    ) {
+        if (
+            !this.trainingMode ||
+            this.trainingLocked ||
+            !element
+        ) {
+            return false;
+        }
+
+        this.clearTrainingTarget();
+
+        const categoryColor =
+            this.#trainingCategoryColor(
+                category
+            );
+
+        const contrast =
+            this.#trainingContrastColor(
+                categoryColor
+            );
+
+        if (row) {
+            row.classList.add(
+                "training-selected"
+            );
+
+            row.style.setProperty(
+                "--speech-training-category-color",
+                categoryColor
+            );
+
+            row.style.setProperty(
+                "--speech-training-contrast",
+                contrast
+            );
+        }
+
+        this.setAttribute(
+            "training-target-source",
+            source
+        );
+
+        this.#trainingSelection = {
+            source,
+            category,
+            card,
+            phrase,
+            display,
+            pattern:
+                element.getAttribute(
+                    "speech-pattern"
+                ) ||
+                "",
+            commandId:
+                element.dataset
+                    .speechEditorId ||
+                undefined,
+            commandKey:
+                element.dataset
+                    .speechSystemCommand ||
+                undefined,
+            categoryColor,
+            contrast
+        };
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-training-target-selected",
+                {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        ...this.#trainingSelection
+                    }
+                }
+            )
+        );
 
         return true;
     }
@@ -3060,6 +3450,78 @@ class SpeechMicBar extends HTMLElement {
                 card.key,
                 item
             );
+
+        row.dataset.trainingCategory =
+            categoryKey;
+        row.dataset.trainingCard =
+            card.key;
+
+        row.addEventListener(
+            "click",
+            event => {
+                if (
+                    !this.trainingMode ||
+                    this.trainingLocked
+                ) {
+                    return;
+                }
+
+                event.stopPropagation();
+
+                this.#selectTrainingTarget({
+                    source:
+                        "command",
+                    category:
+                        categoryKey,
+                    card:
+                        card.key,
+                    phrase:
+                        item.phrase,
+                    display:
+                        item.display,
+                    element:
+                        item.element,
+                    row
+                });
+            }
+        );
+
+        if (
+            this.#trainingSelection
+                ?.source ===
+                    "command" &&
+            this.#trainingSelection
+                ?.category ===
+                    categoryKey &&
+            this.#trainingSelection
+                ?.card ===
+                    card.key &&
+            this.#trainingSelection
+                ?.phrase ===
+                    item.phrase
+        ) {
+            const categoryColor =
+                this.#trainingCategoryColor(
+                    categoryKey
+                );
+
+            row.classList.add(
+                "training-selected"
+            );
+
+            row.style.setProperty(
+                "--speech-training-category-color",
+                categoryColor
+            );
+
+            row.style.setProperty(
+                "--speech-training-contrast",
+                this
+                    .#trainingContrastColor(
+                        categoryColor
+                    )
+            );
+        }
 
         return row;
     }
