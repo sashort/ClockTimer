@@ -714,17 +714,38 @@
         }
     )
         .then(
-            response =>
-                response.ok
-                    ? response.json()
-                    : Promise.reject(
-                        new Error(
-                            "Speech configuration unavailable"
-                        )
-                    )
+            async response => {
+                if (response.ok) {
+                    return response.json();
+                }
+
+                /*
+                 * Saved editor configuration is an optional overlay on
+                 * the built-in speech definitions. Anonymous/token
+                 * sessions may legitimately lack speech-editor access;
+                 * keep the built-ins without reporting that as a speech
+                 * runtime failure.
+                 */
+                if (
+                    response.status === 401 ||
+                    response.status === 403
+                ) {
+                    return undefined;
+                }
+
+                throw new Error(
+                    "Speech configuration unavailable (" +
+                    response.status +
+                    ")"
+                );
+            }
         )
         .then(
             config => {
+                if (!config) {
+                    return;
+                }
+
                 globalThis
                     .WMOFActionFunctions
                     ?.registerMacros?.(
