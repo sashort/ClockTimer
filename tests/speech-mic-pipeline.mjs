@@ -523,7 +523,14 @@ assert.match(app, /speechRecognitionButton\.disabled\s*=\s*[\s\S]*speechTraining
 assert.match(app, /disableSpeechRecognitionRuntime[\s\S]*if \(speechTrainingActive\)[\s\S]*return false/);
 assert.match(app, /startInAppSpeechTraining[\s\S]*speechMenu\.muted[\s\S]*speechMenu\.executionEnabled\s*=\s*false/);
 assert.match(app, /stopInAppSpeechTraining[\s\S]*executionEnabled\s*=\s*speechTrainingExecutionBeforeStart/);
-assert.match(app, /speech-training-telemetry[\s\S]*utteranceTranscribed[\s\S]*persistInAppSpeechTrainingSample/);
+assert.match(
+    app,
+    /speech-training-telemetry[\s\S]*utteranceCommitted[\s\S]*utteranceUnrecognized[\s\S]*utteranceTranscribed[\s\S]*persistInAppSpeechTrainingSample/
+);
+assert.match(
+    app,
+    /telemetry\.utteranceId[\s\S]*speechTrainingSeenUtterances[\s\S]*speechTrainingUtteranceCount \+=\s*1/
+);
 assert.match(app, /speechTrainingDragHandle[\s\S]*pointerdown[\s\S]*setPointerCapture/);
 assert.match(app, /function showSpeechTrainingWidget[\s\S]*showPopover/);
 assert.match(app, /speech-training-target-selected[\s\S]*showSpeechTrainingWidget\(\{[\s\S]*promote:\s*true/);
@@ -920,6 +927,14 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /"speech-training-telemetry"/
+);
+assert.match(
+    speechMicBarSource,
+    /const utteranceId =[\s\S]*detail\?\.id[\s\S]*detail\?\.utteranceId[\s\S]*#currentUtteranceId/
+);
+assert.match(
+    speechMicBarSource,
+    /const heard =[\s\S]*detail\?\.transcript[\s\S]*originalTranscript[\s\S]*#currentTranscript[\s\S]*responseText/
 );
 assert.match(
     speechMicBarSource,
