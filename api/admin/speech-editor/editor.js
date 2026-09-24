@@ -100,6 +100,9 @@
     let trainingStats =
         new Map();
 
+    let trainingContributors =
+        [];
+
     let trainingCanWriteCorrections =
         canTrain &&
         canWrite;
@@ -299,6 +302,8 @@
 
             trainingMode =
                 next;
+
+            renderModelContributors();
 
             document.body
                 .classList
@@ -569,6 +574,14 @@
                     data.trainingStats
                 );
 
+                trainingContributors =
+                    Array.isArray(
+                        data.contributors
+                    )
+                        ? data.contributors
+                        : [];
+
+                renderModelContributors();
                 renderPhraseList();
 
                 return data;
@@ -784,6 +797,291 @@
             }
         };
 
+    const contributorName =
+        contributor =>
+            contributor
+                ?.displayName ||
+            contributor
+                ?.username ||
+            "User #" +
+                String(
+                    contributor
+                        ?.userId ||
+                    "?"
+                );
+
+    const removeContributorTraining =
+        async (
+            contributor,
+            phraseScoped
+        ) => {
+            if (
+                !trainingCanWriteCorrections ||
+                !contributor
+                    ?.userId
+            ) {
+                return;
+            }
+
+            const scopeLabel =
+                phraseScoped
+                    ? "this phrase"
+                    : "the entire language model";
+
+            if (
+                !confirm(
+                    "Remove " +
+                    contributorName(
+                        contributor
+                    ) +
+                    "’s active training contributions from " +
+                    scopeLabel +
+                    " and recalculate the dictionary?"
+                )
+            ) {
+                return;
+            }
+
+            const body = {
+                action:
+                    "contributions",
+                language:
+                    "en-US",
+                userId:
+                    contributor
+                        .userId,
+                reason:
+                    phraseScoped
+                        ? "Removed from phrase by developer"
+                        : "Removed from language model by developer"
+            };
+
+            if (
+                phraseScoped &&
+                trainingCurrent
+            ) {
+                body.phraseKey =
+                    trainingCurrent
+                        .key;
+                body.componentKey =
+                    trainingCurrent
+                        .componentKey;
+            }
+
+            await trainingApi(
+                "DELETE",
+                body
+            );
+
+            await loadTrainingStats();
+
+            if (
+                phraseScoped &&
+                trainingCurrent
+            ) {
+                await refreshTrainingDialog();
+            }
+        };
+
+    const renderContributorList =
+        (
+            container,
+            contributors,
+            {
+                phraseScoped = false,
+                includePhraseCount = false
+            } = {}
+        ) => {
+            if (!container) {
+                return;
+            }
+
+            container
+                .replaceChildren();
+
+            if (
+                !Array.isArray(
+                    contributors
+                ) ||
+                !contributors.length
+            ) {
+                const empty =
+                    document.createElement(
+                        "div"
+                    );
+
+                empty.className =
+                    "empty-list";
+                empty.textContent =
+                    "No active contributions.";
+
+                container.append(
+                    empty
+                );
+
+                return;
+            }
+
+            for (
+                const contributor
+                of contributors
+            ) {
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "speech-training-contributor";
+
+                const name =
+                    document.createElement(
+                        "strong"
+                    );
+
+                name.textContent =
+                    contributorName(
+                        contributor
+                    );
+
+                const metrics =
+                    document.createElement(
+                        "span"
+                    );
+
+                const parts = [
+                    String(
+                        contributor
+                            .contributions ||
+                        0
+                    ) +
+                    " contributions",
+                    String(
+                        contributor
+                            .samples ||
+                        0
+                    ) +
+                    " samples",
+                    String(
+                        contributor
+                            .alternatives ||
+                        0
+                    ) +
+                    " alternatives",
+                    String(
+                        contributor
+                            .corrections ||
+                        0
+                    ) +
+                    " corrections"
+                ];
+
+                if (
+                    includePhraseCount
+                ) {
+                    parts.push(
+                        String(
+                            contributor
+                                .phrases ||
+                            0
+                        ) +
+                        " phrases"
+                    );
+                }
+
+                metrics.textContent =
+                    parts.join(
+                        " · "
+                    );
+
+                row.append(
+                    name,
+                    metrics
+                );
+
+                if (
+                    trainingCanWriteCorrections
+                ) {
+                    const remove =
+                        document.createElement(
+                            "button"
+                        );
+
+                    remove.type =
+                        "button";
+
+                    remove.textContent =
+                        phraseScoped
+                            ? "Remove from phrase"
+                            : "Remove all";
+
+                    remove.addEventListener(
+                        "click",
+                        () =>
+                            void removeContributorTraining(
+                                contributor,
+                                phraseScoped
+                            )
+                    );
+
+                    row.append(
+                        remove
+                    );
+                }
+
+                container.append(
+                    row
+                );
+            }
+        };
+
+    const renderModelContributors =
+        () => {
+            const summary =
+                $(
+                    "speechTrainingModelSummary"
+                );
+
+            if (summary) {
+                summary.hidden =
+                    !trainingMode;
+            }
+
+            renderContributorList(
+                $(
+                    "speechTrainingModelContributors"
+                ),
+                trainingContributors,
+                {
+                    includePhraseCount:
+                        true
+                }
+            );
+
+            const reset =
+                $(
+                    "speechTrainingResetModel"
+                );
+
+            if (reset) {
+                reset.hidden =
+                    !trainingCanWriteCorrections;
+            }
+        };
+
+    const renderTrainingContributors =
+        contributors =>
+            renderContributorList(
+                $(
+                    "speechTrainingContributors"
+                ),
+                contributors,
+                {
+                    phraseScoped:
+                        true
+                }
+            );
+
     const refreshTrainingDialog =
         async () => {
             if (!trainingCurrent) {
@@ -810,6 +1108,15 @@
                 data.trainingStats
             );
 
+            trainingContributors =
+                Array.isArray(
+                    data.contributors
+                )
+                    ? data.contributors
+                    : [];
+
+            renderModelContributors();
+
             renderTrainingSummary(
                 trainingStats.get(
                     trainingCurrent
@@ -820,6 +1127,12 @@
             renderTrainingVariants(
                 data.training
                     ?.variants ||
+                []
+            );
+
+            renderTrainingContributors(
+                data.training
+                    ?.contributors ||
                 []
             );
 
@@ -13122,6 +13435,57 @@
 
         enforceAccessMode();
     }
+
+    $(
+        "speechTrainingResetModel"
+    )
+        ?.addEventListener(
+            "click",
+            async () => {
+                if (
+                    !trainingCanWriteCorrections ||
+                    !confirm(
+                        "Reset all active training data for the en-US speech model? The separate training audit will be retained."
+                    )
+                ) {
+                    return;
+                }
+
+                try {
+                    await trainingApi(
+                        "DELETE",
+                        {
+                            action:
+                                "reset",
+                            language:
+                                "en-US"
+                        }
+                    );
+
+                    trainingStats =
+                        new Map();
+                    trainingContributors =
+                        [];
+
+                    renderModelContributors();
+                    renderPhraseList();
+
+                    if (
+                        trainingCurrent
+                    ) {
+                        await refreshTrainingDialog();
+                    }
+                }
+                catch (
+                    error
+                ) {
+                    setTrainingMessage(
+                        error.message,
+                        true
+                    );
+                }
+            }
+        );
 
     const trainingModeButton =
         $(
