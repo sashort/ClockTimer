@@ -1268,6 +1268,1890 @@
         );
     }
 
+
+    function mainMenuIsOpen() {
+        try {
+            return Boolean(
+                mainMenu
+                    ?.matches?.(
+                        ":popover-open"
+                    )
+            );
+        }
+        catch {
+            return false;
+        }
+    }
+
+    function getMainMenuPanels() {
+        return [
+            ...(
+                mainMenuTrack
+                    ?.querySelectorAll?.(
+                        ":scope > .main-menu-panel"
+                    ) ||
+                []
+            )
+        ];
+    }
+
+    function getMainMenuCurrentPanel() {
+        const panels =
+            getMainMenuPanels();
+
+        if (!panels.length) {
+            return undefined;
+        }
+
+        const width =
+            mainMenuViewport
+                ?.clientWidth ||
+            1;
+
+        const index =
+            Math.max(
+                0,
+                Math.min(
+                    panels.length -
+                        1,
+                    Math.round(
+                        (
+                            mainMenuViewport
+                                ?.scrollLeft ||
+                            0
+                        ) /
+                        width
+                    )
+                )
+            );
+
+        mainMenuLayoutState
+            .panelIndex =
+            index;
+
+        return panels[
+            index
+        ];
+    }
+
+    function getMainMenuNormalItems() {
+        return getMainMenuPanels()
+            .flatMap(
+                panel => [
+                    ...panel.children
+                ]
+            );
+    }
+
+    function measureMainMenuElement(
+        element
+    ) {
+        if (
+            !element ||
+            element.hidden ||
+            getComputedStyle(
+                element
+            ).display ===
+                "none"
+        ) {
+            return {
+                height: 0,
+                marginTop: 0,
+                marginBottom: 0,
+                outerHeight: 0
+            };
+        }
+
+        const style =
+            getComputedStyle(
+                element
+            );
+
+        const height =
+            element
+                .getBoundingClientRect()
+                .height;
+
+        const marginTop =
+            Number.parseFloat(
+                style.marginTop
+            ) ||
+            0;
+
+        const marginBottom =
+            Number.parseFloat(
+                style.marginBottom
+            ) ||
+            0;
+
+        return {
+            height,
+            marginTop,
+            marginBottom,
+            outerHeight:
+                height +
+                marginTop +
+                marginBottom
+        };
+    }
+
+    function clearMainMenuClipStyles(
+        element
+    ) {
+        if (!element) {
+            return;
+        }
+
+        for (
+            const property of [
+                "height",
+                "margin-top",
+                "margin-bottom",
+                "overflow"
+            ]
+        ) {
+            element.style
+                .removeProperty(
+                    property
+                );
+        }
+
+        element.classList
+            .remove(
+                "main-menu-transition-clip",
+                "main-menu-transition-hidden"
+            );
+    }
+
+    function getMainMenuSafePanelHeight(
+        reserveIndicator = false
+    ) {
+        const visualViewport =
+            globalThis
+                .visualViewport;
+
+        const viewportBottom =
+            (
+                visualViewport
+                    ?.offsetTop ||
+                0
+            ) +
+            (
+                visualViewport
+                    ?.height ||
+                globalThis
+                    .innerHeight ||
+                document
+                    .documentElement
+                    .clientHeight
+            );
+
+        const safeBottom =
+            Math.min(
+                viewportBottom,
+                getSpeechMicTop()
+            ) -
+            MAIN_MENU_EDGE_GAP;
+
+        const rect =
+            mainMenu
+                .getBoundingClientRect();
+
+        const style =
+            getComputedStyle(
+                mainMenu
+            );
+
+        const top =
+            Number.isFinite(
+                rect.top
+            ) &&
+            rect.top > 0
+                ? rect.top
+                : (
+                    Number.parseFloat(
+                        style.top
+                    ) ||
+                    60
+                );
+
+        const chrome =
+            (
+                Number.parseFloat(
+                    style.paddingTop
+                ) ||
+                0
+            ) +
+            (
+                Number.parseFloat(
+                    style.paddingBottom
+                ) ||
+                0
+            ) +
+            (
+                Number.parseFloat(
+                    style.borderTopWidth
+                ) ||
+                0
+            ) +
+            (
+                Number.parseFloat(
+                    style.borderBottomWidth
+                ) ||
+                0
+            );
+
+        const indicatorReserve =
+            reserveIndicator
+                ? 15
+                : 0;
+
+        return Math.max(
+            72,
+            safeBottom -
+                top -
+                chrome -
+                indicatorReserve
+        );
+    }
+
+    function packMainMenuItems(
+        items,
+        maximumHeight
+    ) {
+        const pages = [];
+        let page = {
+            items: [],
+            height: 0
+        };
+
+        const push =
+            () => {
+                if (
+                    page.items
+                        .length
+                ) {
+                    pages.push(
+                        page
+                    );
+                }
+
+                page = {
+                    items: [],
+                    height: 0
+                };
+            };
+
+        for (
+            let index = 0;
+            index < items.length;
+            index++
+        ) {
+            const first =
+                items[
+                    index
+                ];
+
+            let chunkItems = [
+                first
+            ];
+
+            if (
+                first.tagName ===
+                    "HR" &&
+                items[
+                    index +
+                        1
+                ]
+            ) {
+                chunkItems.push(
+                    items[
+                        index +
+                            1
+                    ]
+                );
+
+                index += 1;
+            }
+
+            const chunkHeight =
+                chunkItems.reduce(
+                    (
+                        total,
+                        item
+                    ) =>
+                        total +
+                        measureMainMenuElement(
+                            item
+                        )
+                            .outerHeight,
+                    0
+                );
+
+            if (
+                page.height > 0 &&
+                chunkHeight > 0 &&
+                page.height +
+                    chunkHeight >
+                    maximumHeight
+            ) {
+                push();
+            }
+
+            page.items.push(
+                ...chunkItems
+            );
+
+            page.height +=
+                chunkHeight;
+        }
+
+        push();
+
+        if (!pages.length) {
+            pages.push({
+                items: [],
+                height: 0
+            });
+        }
+
+        return pages;
+    }
+
+    function updateMainMenuIndicator() {
+        if (
+            !mainMenuViewport ||
+            !mainMenuIndicator ||
+            !mainMenuIndicatorThumb
+        ) {
+            return;
+        }
+
+        const panels =
+            getMainMenuPanels();
+
+        const count =
+            panels.length;
+
+        mainMenuIndicator.hidden =
+            count <= 1;
+
+        if (count <= 1) {
+            mainMenuLayoutState
+                .panelIndex =
+                0;
+
+            mainMenuIndicatorThumb
+                .style
+                .removeProperty(
+                    "width"
+                );
+
+            mainMenuIndicatorThumb
+                .style
+                .removeProperty(
+                    "transform"
+                );
+
+            return;
+        }
+
+        mainMenuIndicatorThumb
+            .style.width =
+            (
+                100 /
+                count
+            ) +
+            "%";
+
+        const width =
+            mainMenuViewport
+                .clientWidth ||
+            1;
+
+        const progress =
+            Math.max(
+                0,
+                Math.min(
+                    count -
+                        1,
+                    mainMenuViewport
+                        .scrollLeft /
+                        width
+                )
+            );
+
+        mainMenuIndicatorThumb
+            .style.transform =
+            "translateX(" +
+            (
+                progress *
+                100
+            ) +
+            "%)";
+
+        mainMenuLayoutState
+            .panelIndex =
+            Math.round(
+                progress
+            );
+    }
+
+    function setMainMenuPanelIndex(
+        index,
+        {
+            smooth = false
+        } = {}
+    ) {
+        if (!mainMenuViewport) {
+            return;
+        }
+
+        const panels =
+            getMainMenuPanels();
+
+        if (!panels.length) {
+            return;
+        }
+
+        const next =
+            Math.max(
+                0,
+                Math.min(
+                    panels.length -
+                        1,
+                    Number(index) ||
+                        0
+                )
+            );
+
+        mainMenuLayoutState
+            .panelIndex =
+            next;
+
+        const left =
+            next *
+            (
+                mainMenuViewport
+                    .clientWidth ||
+                1
+            );
+
+        if (
+            typeof mainMenuViewport
+                .scrollTo ===
+                "function"
+        ) {
+            mainMenuViewport
+                .scrollTo({
+                    left,
+                    behavior:
+                        smooth
+                            ? "smooth"
+                            : "auto"
+                });
+        }
+        else {
+            mainMenuViewport
+                .scrollLeft =
+                left;
+        }
+
+        requestAnimationFrame(
+            updateMainMenuIndicator
+        );
+    }
+
+    function layoutMainMenuPanels({
+        panelIndex =
+            mainMenuLayoutState
+                .panelIndex
+    } = {}) {
+        if (
+            !mainMenuIsOpen() ||
+            !mainMenuTrack ||
+            mainMenuLayoutState
+                .transitionBusy ||
+            mainMenuLayoutState
+                .focusStack
+                .length
+        ) {
+            return false;
+        }
+
+        const items =
+            getMainMenuNormalItems();
+
+        if (!items.length) {
+            return false;
+        }
+
+        mainMenu
+            .style
+            .setProperty(
+                "--main-menu-panel-height",
+                "auto"
+            );
+
+        const initialLimit =
+            getMainMenuSafePanelHeight(
+                false
+            );
+
+        let pages =
+            packMainMenuItems(
+                items,
+                initialLimit
+            );
+
+        const paged =
+            pages.length > 1;
+
+        const panelLimit =
+            getMainMenuSafePanelHeight(
+                paged
+            );
+
+        if (paged) {
+            pages =
+                packMainMenuItems(
+                    items,
+                    panelLimit
+                );
+        }
+
+        const panels =
+            pages.map(
+                (
+                    page,
+                    index
+                ) => {
+                    const panel =
+                        document
+                            .createElement(
+                                "section"
+                            );
+
+                    panel.className =
+                        "main-menu-panel";
+
+                    panel.dataset
+                        .menuPanel =
+                        String(index);
+
+                    for (
+                        const item of
+                        page.items
+                    ) {
+                        panel.append(
+                            item
+                        );
+                    }
+
+                    return panel;
+                }
+            );
+
+        mainMenuTrack
+            .replaceChildren(
+                ...panels
+            );
+
+        const tallest =
+            Math.max(
+                1,
+                ...pages.map(
+                    page =>
+                        Math.min(
+                            page.height,
+                            panelLimit
+                        )
+                )
+            );
+
+        mainMenuLayoutState
+            .panelHeight =
+            tallest;
+
+        mainMenu
+            .style
+            .setProperty(
+                "--main-menu-panel-height",
+                tallest +
+                    "px"
+            );
+
+        updateMainMenuIndicator();
+
+        setMainMenuPanelIndex(
+            Math.max(
+                0,
+                Math.min(
+                    panels.length -
+                        1,
+                    panelIndex
+                )
+            )
+        );
+
+        return true;
+    }
+
+    function scheduleMainMenuLayout() {
+        if (
+            mainMenuLayoutState
+                .layoutFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                mainMenuLayoutState
+                    .layoutFrame
+            );
+        }
+
+        mainMenuLayoutState
+            .layoutFrame =
+            requestAnimationFrame(
+                () => {
+                    mainMenuLayoutState
+                        .layoutFrame =
+                        undefined;
+
+                    if (
+                        mainMenuLayoutState
+                            .focusStack
+                            .length
+                    ) {
+                        updateFocusedMainMenuBounds();
+                        return;
+                    }
+
+                    layoutMainMenuPanels();
+                }
+            );
+    }
+
+    function mainMenuAnimationDuration(
+        height
+    ) {
+        return Math.max(
+            1,
+            Math.round(
+                Math.max(
+                    0,
+                    height
+                ) /
+                MAIN_MENU_ITEM_RATE_PX_PER_MS
+            )
+        );
+    }
+
+    function trackMainMenuAnimation(
+        animation
+    ) {
+        if (!animation) {
+            return animation;
+        }
+
+        mainMenuLayoutState
+            .animations
+            .add(
+                animation
+            );
+
+        animation
+            .finished
+            .catch(
+                () => {}
+            )
+            .finally(
+                () =>
+                    mainMenuLayoutState
+                        .animations
+                        .delete(
+                            animation
+                        )
+            );
+
+        return animation;
+    }
+
+    function cancelMainMenuAnimations() {
+        for (
+            const animation of
+            mainMenuLayoutState
+                .animations
+        ) {
+            try {
+                animation.cancel();
+            }
+            catch {}
+        }
+
+        mainMenuLayoutState
+            .animations
+            .clear();
+    }
+
+    function setMainMenuClipState(
+        element,
+        metrics,
+        fraction
+    ) {
+        if (
+            !element ||
+            !metrics
+        ) {
+            return;
+        }
+
+        element.classList.add(
+            "main-menu-transition-clip"
+        );
+
+        element.style.height =
+            (
+                metrics.height *
+                fraction
+            ) +
+            "px";
+
+        element.style.marginTop =
+            (
+                metrics.marginTop *
+                fraction
+            ) +
+            "px";
+
+        element.style.marginBottom =
+            (
+                metrics.marginBottom *
+                fraction
+            ) +
+            "px";
+
+        element.style.overflow =
+            "hidden";
+    }
+
+    function animateMainMenuItemHeight(
+        element,
+        metrics,
+        opening
+    ) {
+        if (
+            !element ||
+            !metrics ||
+            metrics.outerHeight <= 0
+        ) {
+            return Promise.resolve();
+        }
+
+        element.classList
+            .remove(
+                "main-menu-transition-hidden"
+            );
+
+        setMainMenuClipState(
+            element,
+            metrics,
+            opening
+                ? 0
+                : 1
+        );
+
+        const full = {
+            height:
+                metrics.height +
+                "px",
+            marginTop:
+                metrics.marginTop +
+                "px",
+            marginBottom:
+                metrics.marginBottom +
+                "px"
+        };
+
+        const zero = {
+            height:
+                "0px",
+            marginTop:
+                "0px",
+            marginBottom:
+                "0px"
+        };
+
+        const animation =
+            trackMainMenuAnimation(
+                element.animate(
+                    opening
+                        ? [
+                            zero,
+                            full
+                        ]
+                        : [
+                            full,
+                            zero
+                        ],
+                    {
+                        duration:
+                            mainMenuAnimationDuration(
+                                metrics.outerHeight
+                            ),
+                        easing:
+                            "linear",
+                        fill:
+                            "both"
+                    }
+                )
+            );
+
+        return animation
+            .finished
+            .catch(
+                () => {}
+            )
+            .finally(
+                () => {
+                    try {
+                        animation.cancel();
+                    }
+                    catch {}
+
+                    if (opening) {
+                        clearMainMenuClipStyles(
+                            element
+                        );
+                    }
+                    else {
+                        setMainMenuClipState(
+                            element,
+                            metrics,
+                            0
+                        );
+
+                        element.classList
+                            .add(
+                                "main-menu-transition-hidden"
+                            );
+                    }
+                }
+            );
+    }
+
+    function getMainMenuVisibleRows(
+        root,
+        excluding
+    ) {
+        const rows = [];
+
+        if (
+            root?.matches?.(
+                ".main-menu-panel"
+            )
+        ) {
+            rows.push(
+                ...root.children
+            );
+        }
+        else if (root) {
+            const ownerButton =
+                root.querySelector(
+                    ":scope > button[aria-controls]"
+                );
+
+            if (
+                ownerButton
+            ) {
+                rows.push(
+                    ownerButton
+                );
+            }
+
+            const submenu =
+                ownerButton
+                    ? document
+                        .getElementById(
+                            ownerButton
+                                .getAttribute(
+                                    "aria-controls"
+                                )
+                        )
+                    : undefined;
+
+            if (submenu) {
+                rows.push(
+                    ...submenu.children
+                );
+            }
+        }
+
+        return rows.filter(
+            row =>
+                row !==
+                    excluding &&
+                !row.hidden &&
+                getComputedStyle(
+                    row
+                ).display !==
+                    "none"
+        );
+    }
+
+    function updateFocusedMainMenuBounds() {
+        const current =
+            mainMenuLayoutState
+                .focusStack
+                .at(-1);
+
+        if (
+            !current ||
+            !mainMenuFocusLayer
+        ) {
+            return false;
+        }
+
+        const group =
+            current.group;
+
+        const safeHeight =
+            getMainMenuSafePanelHeight(
+                false
+            );
+
+        const fullHeight =
+            Math.max(
+                group.scrollHeight,
+                group
+                    .getBoundingClientRect()
+                    .height
+            );
+
+        const paneHeight =
+            Math.max(
+                1,
+                Math.min(
+                    safeHeight,
+                    fullHeight
+                )
+            );
+
+        mainMenuFocusLayer
+            .style.height =
+            paneHeight +
+            "px";
+
+        if (
+            fullHeight >
+            safeHeight +
+                0.5
+        ) {
+            mainMenuFocusLayer
+                .dataset
+                .menuScrollable =
+                "true";
+        }
+        else {
+            delete mainMenuFocusLayer
+                .dataset
+                .menuScrollable;
+
+            mainMenuFocusLayer
+                .scrollTop =
+                0;
+        }
+
+        mainMenu
+            .style
+            .setProperty(
+                "--main-menu-panel-height",
+                paneHeight +
+                    "px"
+            );
+
+        return true;
+    }
+
+    function prepareSubmenuForGrowth(
+        submenu
+    ) {
+        submenu.hidden =
+            false;
+
+        const items =
+            [
+                ...submenu
+                    .children
+            ]
+                .filter(
+                    child =>
+                        !child.hidden &&
+                        getComputedStyle(
+                            child
+                        ).display !==
+                            "none"
+                );
+
+        const records =
+            items.map(
+                element => ({
+                    element,
+                    metrics:
+                        measureMainMenuElement(
+                            element
+                        )
+                })
+            );
+
+        for (
+            const record of
+            records
+        ) {
+            setMainMenuClipState(
+                record.element,
+                record.metrics,
+                0
+            );
+        }
+
+        return records;
+    }
+
+    async function promoteMainMenuGroup(
+        group,
+        button,
+        submenu
+    ) {
+        if (
+            !group ||
+            !button ||
+            !submenu ||
+            mainMenuLayoutState
+                .transitionBusy
+        ) {
+            return false;
+        }
+
+        const currentEntry =
+            mainMenuLayoutState
+                .focusStack
+                .at(-1);
+
+        const sourceRoot =
+            currentEntry
+                ?.group ||
+            getMainMenuCurrentPanel();
+
+        if (!sourceRoot) {
+            return false;
+        }
+
+        mainMenuLayoutState
+            .transitionBusy =
+            true;
+
+        cancelMainMenuAnimations();
+
+        const originalPanelIndex =
+            mainMenuLayoutState
+                .panelIndex;
+
+        const originalRect =
+            group
+                .getBoundingClientRect();
+
+        const sourceParent =
+            group.parentNode;
+
+        const anchor =
+            document
+                .createComment(
+                    "main-menu-focus-anchor"
+                );
+
+        sourceParent.insertBefore(
+            anchor,
+            group
+        );
+
+        const placeholder =
+            document
+                .createElement(
+                    "div"
+                );
+
+        placeholder.className =
+            "main-menu-focus-placeholder";
+
+        const groupMetrics =
+            measureMainMenuElement(
+                group
+            );
+
+        setMainMenuClipState(
+            placeholder,
+            {
+                height:
+                    groupMetrics
+                        .height,
+                marginTop:
+                    groupMetrics
+                        .marginTop,
+                marginBottom:
+                    groupMetrics
+                        .marginBottom,
+                outerHeight:
+                    groupMetrics
+                        .outerHeight
+            },
+            1
+        );
+
+        sourceParent.insertBefore(
+            placeholder,
+            anchor
+        );
+
+        const hiding =
+            getMainMenuVisibleRows(
+                sourceRoot,
+                group
+            )
+                .map(
+                    element => ({
+                        element,
+                        metrics:
+                            measureMainMenuElement(
+                                element
+                            )
+                    })
+                )
+                .filter(
+                    record =>
+                        record.metrics
+                            .outerHeight >
+                        0
+                );
+
+        for (
+            const record of
+            hiding
+        ) {
+            setMainMenuClipState(
+                record.element,
+                record.metrics,
+                1
+            );
+        }
+
+        mainMenuFocusLayer.hidden =
+            false;
+
+        mainMenu.dataset
+            .menuFocused =
+            "true";
+
+        group.classList.add(
+            "main-menu-focus-group",
+            "main-menu-focus-entering"
+        );
+
+        group.style.zIndex =
+            String(
+                20 +
+                mainMenuLayoutState
+                    .focusStack
+                    .length
+            );
+
+        mainMenuFocusLayer.append(
+            group
+        );
+
+        const targetRect =
+            group
+                .getBoundingClientRect();
+
+        const translateY =
+            originalRect.top -
+            targetRect.top;
+
+        group.style.transform =
+            "translateY(" +
+            translateY +
+            "px)";
+
+        const growing =
+            prepareSubmenuForGrowth(
+                submenu
+            );
+
+        button.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+        const entry = {
+            group,
+            button,
+            submenu,
+            sourceRoot,
+            sourceParent,
+            anchor,
+            placeholder,
+            hiding,
+            originalPanelIndex
+        };
+
+        mainMenuLayoutState
+            .focusStack
+            .push(
+                entry
+            );
+
+        mainMenuLayoutState
+            .focused =
+            entry;
+
+        updateFocusedMainMenuBounds();
+
+        const moveDuration =
+            Math.max(
+                180,
+                Math.round(
+                    Math.abs(
+                        translateY
+                    ) /
+                    MAIN_MENU_ITEM_RATE_PX_PER_MS
+                )
+            );
+
+        const moveAnimation =
+            trackMainMenuAnimation(
+                group.animate(
+                    [
+                        {
+                            transform:
+                                "translateY(" +
+                                translateY +
+                                "px)"
+                        },
+                        {
+                            transform:
+                                "translateY(0px)"
+                        }
+                    ],
+                    {
+                        duration:
+                            moveDuration,
+                        easing:
+                            "ease-in-out",
+                        fill:
+                            "both"
+                    }
+                )
+            );
+
+        const animations = [
+            moveAnimation
+                .finished
+                .catch(
+                    () => {}
+                ),
+            animateMainMenuItemHeight(
+                placeholder,
+                {
+                    height:
+                        groupMetrics
+                            .height,
+                    marginTop:
+                        groupMetrics
+                            .marginTop,
+                    marginBottom:
+                        groupMetrics
+                            .marginBottom,
+                    outerHeight:
+                        groupMetrics
+                            .outerHeight
+                },
+                false
+            ),
+            ...hiding.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        false
+                    )
+            ),
+            ...growing.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        true
+                    )
+            )
+        ];
+
+        await Promise.all(
+            animations
+        );
+
+        try {
+            moveAnimation.cancel();
+        }
+        catch {}
+
+        group.style
+            .removeProperty(
+                "transform"
+            );
+
+        group.classList
+            .remove(
+                "main-menu-focus-entering"
+            );
+
+        if (currentEntry) {
+            currentEntry.group.hidden =
+                true;
+        }
+        else if (mainMenuViewport) {
+            mainMenuViewport
+                .style.visibility =
+                "hidden";
+        }
+
+        updateFocusedMainMenuBounds();
+
+        mainMenuLayoutState
+            .transitionBusy =
+            false;
+
+        return true;
+    }
+
+    async function restoreMainMenuFocusLevel() {
+        const stack =
+            mainMenuLayoutState
+                .focusStack;
+
+        const entry =
+            stack.at(-1);
+
+        if (
+            !entry ||
+            mainMenuLayoutState
+                .transitionBusy
+        ) {
+            return false;
+        }
+
+        mainMenuLayoutState
+            .transitionBusy =
+            true;
+
+        cancelMainMenuAnimations();
+
+        const oldRect =
+            entry.group
+                .getBoundingClientRect();
+
+        const submenuItems =
+            [
+                ...entry
+                    .submenu
+                    .children
+            ]
+                .filter(
+                    child =>
+                        !child.hidden &&
+                        getComputedStyle(
+                            child
+                        ).display !==
+                            "none"
+                )
+                .map(
+                    element => ({
+                        element,
+                        metrics:
+                            measureMainMenuElement(
+                                element
+                            )
+                    })
+                )
+                .filter(
+                    record =>
+                        record.metrics
+                            .outerHeight >
+                        0
+                );
+
+        const parentEntry =
+            stack.length > 1
+                ? stack[
+                    stack.length -
+                        2
+                ]
+                : undefined;
+
+        if (parentEntry) {
+            parentEntry.group.hidden =
+                false;
+        }
+        else if (mainMenuViewport) {
+            mainMenuViewport
+                .style.visibility =
+                "visible";
+        }
+
+        for (
+            const record of
+            entry.hiding
+        ) {
+            record.element
+                .classList
+                .remove(
+                    "main-menu-transition-hidden"
+                );
+
+            setMainMenuClipState(
+                record.element,
+                record.metrics,
+                0
+            );
+        }
+
+        entry.placeholder
+            ?.remove();
+
+        if (
+            entry.anchor
+                ?.parentNode
+        ) {
+            entry.anchor
+                .parentNode
+                .insertBefore(
+                    entry.group,
+                    entry.anchor
+                );
+        }
+
+        entry.group.classList.add(
+            "main-menu-focus-leaving"
+        );
+
+        entry.group.style.zIndex =
+            String(
+                20 +
+                stack.length
+            );
+
+        const newRect =
+            entry.group
+                .getBoundingClientRect();
+
+        const translateY =
+            oldRect.top -
+            newRect.top;
+
+        entry.group.style.transform =
+            "translateY(" +
+            translateY +
+            "px)";
+
+        const moveDuration =
+            Math.max(
+                180,
+                Math.round(
+                    Math.abs(
+                        translateY
+                    ) /
+                    MAIN_MENU_ITEM_RATE_PX_PER_MS
+                )
+            );
+
+        const moveAnimation =
+            trackMainMenuAnimation(
+                entry.group.animate(
+                    [
+                        {
+                            transform:
+                                "translateY(" +
+                                translateY +
+                                "px)"
+                        },
+                        {
+                            transform:
+                                "translateY(0px)"
+                        }
+                    ],
+                    {
+                        duration:
+                            moveDuration,
+                        easing:
+                            "ease-in-out",
+                        fill:
+                            "both"
+                    }
+                )
+            );
+
+        const animations = [
+            moveAnimation
+                .finished
+                .catch(
+                    () => {}
+                ),
+            ...entry.hiding.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        true
+                    )
+            ),
+            ...submenuItems.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        false
+                    )
+            )
+        ];
+
+        await Promise.all(
+            animations
+        );
+
+        try {
+            moveAnimation.cancel();
+        }
+        catch {}
+
+        entry.group.style
+            .removeProperty(
+                "transform"
+            );
+
+        entry.group.style
+            .removeProperty(
+                "z-index"
+            );
+
+        entry.group.classList
+            .remove(
+                "main-menu-focus-group",
+                "main-menu-focus-leaving"
+            );
+
+        for (
+            const record of
+            submenuItems
+        ) {
+            clearMainMenuClipStyles(
+                record.element
+            );
+        }
+
+        entry.submenu.hidden =
+            true;
+
+        entry.button.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        entry.anchor
+            ?.remove();
+
+        stack.pop();
+
+        mainMenuLayoutState
+            .focused =
+            stack.at(-1);
+
+        if (
+            parentEntry
+        ) {
+            parentEntry.group.hidden =
+                false;
+
+            updateFocusedMainMenuBounds();
+        }
+        else {
+            mainMenuFocusLayer.hidden =
+                true;
+
+            mainMenuFocusLayer
+                .style
+                .removeProperty(
+                    "height"
+                );
+
+            mainMenuFocusLayer
+                .scrollTop =
+                0;
+
+            delete mainMenuFocusLayer
+                .dataset
+                .menuScrollable;
+
+            delete mainMenu.dataset
+                .menuFocused;
+
+            layoutMainMenuPanels({
+                panelIndex:
+                    entry
+                        .originalPanelIndex
+            });
+        }
+
+        mainMenuLayoutState
+            .transitionBusy =
+            false;
+
+        return true;
+    }
+
+    function resetMainMenuLayout() {
+        cancelMainMenuAnimations();
+
+        mainMenuLayoutState
+            .transitionBusy =
+            false;
+
+        if (
+            mainMenuLayoutState
+                .layoutFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                mainMenuLayoutState
+                    .layoutFrame
+            );
+
+            mainMenuLayoutState
+                .layoutFrame =
+                undefined;
+        }
+
+        const stack =
+            mainMenuLayoutState
+                .focusStack;
+
+        while (stack.length) {
+            const entry =
+                stack.pop();
+
+            if (
+                entry.anchor
+                    ?.parentNode
+            ) {
+                entry.anchor
+                    .parentNode
+                    .insertBefore(
+                        entry.group,
+                        entry.anchor
+                    );
+            }
+
+            entry.group.hidden =
+                false;
+
+            entry.group.classList
+                .remove(
+                    "main-menu-focus-group",
+                    "main-menu-focus-entering",
+                    "main-menu-focus-leaving"
+                );
+
+            entry.group.style
+                .removeProperty(
+                    "transform"
+                );
+
+            entry.group.style
+                .removeProperty(
+                    "z-index"
+                );
+
+            entry.submenu.hidden =
+                true;
+
+            entry.button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            for (
+                const record of
+                entry.hiding
+            ) {
+                clearMainMenuClipStyles(
+                    record.element
+                );
+            }
+
+            for (
+                const child of
+                entry.submenu
+                    .children
+            ) {
+                clearMainMenuClipStyles(
+                    child
+                );
+            }
+
+            entry.placeholder
+                ?.remove();
+
+            entry.anchor
+                ?.remove();
+        }
+
+        mainMenuLayoutState
+            .focused =
+            undefined;
+
+        mainMenuLayoutState
+            .panelIndex =
+            0;
+
+        mainMenuFocusLayer
+            ?.replaceChildren();
+
+        if (mainMenuFocusLayer) {
+            mainMenuFocusLayer.hidden =
+                true;
+
+            mainMenuFocusLayer
+                .style
+                .removeProperty(
+                    "height"
+                );
+
+            mainMenuFocusLayer
+                .scrollTop =
+                0;
+
+            delete mainMenuFocusLayer
+                .dataset
+                .menuScrollable;
+        }
+
+        delete mainMenu.dataset
+            .menuFocused;
+
+        delete mainMenu.dataset
+            .menuDragging;
+
+        if (mainMenuViewport) {
+            mainMenuViewport
+                .style.visibility =
+                "visible";
+
+            mainMenuViewport
+                .scrollLeft =
+                0;
+        }
+
+        const buttons =
+            [
+                ...mainMenu
+                    .querySelectorAll(
+                        "button[aria-controls]"
+                    )
+            ];
+
+        for (
+            const button of
+            buttons
+        ) {
+            const submenu =
+                document
+                    .getElementById(
+                        button
+                            .getAttribute(
+                                "aria-controls"
+                            )
+                    );
+
+            if (
+                submenu &&
+                mainMenu
+                    .contains(
+                        submenu
+                    )
+            ) {
+                submenu.hidden =
+                    true;
+
+                button.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+            }
+        }
+
+        const items =
+            getMainMenuNormalItems();
+
+        if (
+            mainMenuTrack &&
+            items.length
+        ) {
+            const panel =
+                document
+                    .createElement(
+                        "section"
+                    );
+
+            panel.className =
+                "main-menu-panel";
+
+            panel.dataset
+                .menuPanel =
+                "0";
+
+            panel.append(
+                ...items
+            );
+
+            mainMenuTrack
+                .replaceChildren(
+                    panel
+                );
+        }
+
+        mainMenu
+            .style
+            .removeProperty(
+                "--main-menu-panel-height"
+            );
+
+        if (mainMenuIndicator) {
+            mainMenuIndicator.hidden =
+                true;
+        }
+
+        if (mainMenuIndicatorThumb) {
+            mainMenuIndicatorThumb
+                .style
+                .removeProperty(
+                    "width"
+                );
+
+            mainMenuIndicatorThumb
+                .style
+                .removeProperty(
+                    "transform"
+                );
+        }
+    }
+
     function getTripLogBottomRect() {
         const metrics =
             getAppContentMetrics();
