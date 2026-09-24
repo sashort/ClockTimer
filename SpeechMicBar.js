@@ -765,6 +765,20 @@ class SpeechMicBar extends HTMLElement {
             phraseGroups
         );
 
+        const currentStyle =
+            getComputedStyle(
+                this.#optionsPanel
+            );
+
+        const currentClipPath =
+            currentStyle.clipPath ||
+            "inset(100% 0 0 0 round 14px 14px 0 0)";
+
+        const currentOpacity =
+            Number(
+                currentStyle.opacity
+            );
+
         this.#optionsAnimation?.cancel();
         this.#optionsAnimation =
             undefined;
@@ -790,8 +804,13 @@ class SpeechMicBar extends HTMLElement {
                         [
                             {
                                 clipPath:
-                                    "inset(100% 0 0 0 round 14px 14px 0 0)",
-                                opacity: 0
+                                    currentClipPath,
+                                opacity:
+                                    Number.isFinite(
+                                        currentOpacity
+                                    )
+                                        ? currentOpacity
+                                        : 0
                             },
                             {
                                 clipPath:
@@ -840,6 +859,20 @@ class SpeechMicBar extends HTMLElement {
             return false;
         }
 
+        const currentStyle =
+            getComputedStyle(
+                this.#optionsPanel
+            );
+
+        const currentClipPath =
+            currentStyle.clipPath ||
+            "inset(0 round 14px 14px 0 0)";
+
+        const currentOpacity =
+            Number(
+                currentStyle.opacity
+            );
+
         this.#optionsAnimation?.cancel();
         this.#optionsAnimation =
             undefined;
@@ -856,8 +889,13 @@ class SpeechMicBar extends HTMLElement {
                         [
                             {
                                 clipPath:
-                                    "inset(0 round 14px 14px 0 0)",
-                                opacity: 1
+                                    currentClipPath,
+                                opacity:
+                                    Number.isFinite(
+                                        currentOpacity
+                                    )
+                                        ? currentOpacity
+                                        : 1
                             },
                             {
                                 clipPath:
