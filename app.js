@@ -6419,6 +6419,77 @@
         );
     }
 
+    function normalizeSpeechTrainingObserved(
+        observed,
+        outcome
+    ) {
+        const raw =
+            String(
+                observed ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        const live =
+            String(
+                outcome
+                    ?.lastLiveTranscript ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        if (
+            raw &&
+            live &&
+            raw !== live
+        ) {
+            const doubled =
+                (
+                    live +
+                    " " +
+                    live
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (
+                raw
+                    .toLocaleLowerCase() ===
+                doubled
+                    .toLocaleLowerCase()
+            ) {
+                return {
+                    observed:
+                        live,
+                    rawObserved:
+                        raw,
+                    normalizedFinalArtifact:
+                        true
+                };
+            }
+        }
+
+        return {
+            observed:
+                raw,
+            rawObserved:
+                raw,
+            normalizedFinalArtifact:
+                false
+        };
+    }
+
     function speechTrainingResultPresentation(
         result
     ) {
@@ -7086,7 +7157,7 @@
                 utteranceId
             );
 
-        const observed =
+        const rawObserved =
             String(
                 telemetry.heard ||
                 telemetry.event
@@ -7101,6 +7172,16 @@
                     utteranceId
                 ) ||
             {};
+
+        const normalizedObserved =
+            normalizeSpeechTrainingObserved(
+                rawObserved,
+                outcome
+            );
+
+        const observed =
+            normalizedObserved
+                .observed;
 
         speechTrainingOutcomeByUtterance
             .delete(
@@ -7143,6 +7224,12 @@
                     ]
             },
             observed,
+            rawObserved:
+                normalizedObserved
+                    .rawObserved,
+            normalizedFinalArtifact:
+                normalizedObserved
+                    .normalizedFinalArtifact,
             state,
             expected,
             modelAccepted,
@@ -7592,6 +7679,14 @@
                                 expected:
                                     Boolean(
                                         sample.expected
+                                    ),
+                                rawObserved:
+                                    sample.rawObserved ||
+                                    sample.observed ||
+                                    null,
+                                normalizedFinalArtifact:
+                                    Boolean(
+                                        sample.normalizedFinalArtifact
                                     ),
                                 divergenceStatus:
                                     sample.divergenceStatus ||
@@ -9190,6 +9285,49 @@
                 }
 
                 if (
+                    (
+                        telemetry.type ===
+                            "utteranceTranscriptChanged" ||
+                        telemetry.type ===
+                            "utteranceTranscribed"
+                    ) &&
+                    utteranceId !==
+                        undefined &&
+                    transcript
+                ) {
+                    const outcome =
+                        speechTrainingOutcomeByUtterance
+                            .get(
+                                utteranceId
+                            ) ||
+                        {
+                            matchedExpected:
+                                false,
+                            lastLiveTranscript:
+                                ""
+                        };
+
+                    if (
+                        telemetry.event
+                            ?.isFinal !==
+                                true &&
+                        telemetry.event
+                            ?.live !==
+                                false
+                    ) {
+                        outcome
+                            .lastLiveTranscript =
+                            transcript;
+                    }
+
+                    speechTrainingOutcomeByUtterance
+                        .set(
+                            utteranceId,
+                            outcome
+                        );
+                }
+
+                if (
                     telemetry.type ===
                         "utteranceStarted"
                 ) {
@@ -9202,7 +9340,9 @@
                                 utteranceId,
                                 {
                                     matchedExpected:
-                                        false
+                                        false,
+                                    lastLiveTranscript:
+                                        ""
                                 }
                             );
                     }
