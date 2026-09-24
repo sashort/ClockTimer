@@ -43,6 +43,7 @@ class SpeechMicBar extends HTMLElement {
     #loadingTarget = 0;
     #loadingTotal = 0;
     #optionsPanel;
+    #optionsClose;
     #optionsGrid;
     #optionsAnimation;
 
@@ -63,7 +64,6 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 #optionsPanel {
-                    --speech-option-row-height: 78px;
                     --speech-options-max-height:
                         calc(100dvh - 90px);
                     position: absolute;
@@ -75,7 +75,7 @@ class SpeechMicBar extends HTMLElement {
                         var(
                             --speech-options-max-height
                         );
-                    padding: 10px 8px 8px;
+                    padding: 42px 8px 8px;
                     overflow: auto;
                     overscroll-behavior: contain;
                     display: grid;
@@ -123,6 +123,32 @@ class SpeechMicBar extends HTMLElement {
                     pointer-events: auto;
                 }
 
+                #optionsClose {
+                    position: absolute;
+                    top: 7px;
+                    right: 9px;
+                    z-index: 5;
+                    width: 28px;
+                    height: 28px;
+                    padding: 0;
+                    display: grid;
+                    place-items: center;
+                    border: 1px solid
+                        rgb(255 255 255 / 38%);
+                    border-radius: 50%;
+                    color: white;
+                    background:
+                        rgb(20 30 42 / 82%);
+                    font: 700 22px/1
+                        system-ui,
+                        sans-serif;
+                    cursor: pointer;
+                }
+
+                #optionsClose:active {
+                    transform: scale(.94);
+                }
+
                 #optionsGrid {
                     grid-column: 1 / -1;
                     display: grid;
@@ -137,13 +163,9 @@ class SpeechMicBar extends HTMLElement {
                     display: grid;
                     grid-template-columns:
                         subgrid;
-                    min-height:
-                        var(
-                            --speech-option-row-height
-                        );
                     align-content: center;
-                    gap: 4px 0;
-                    padding: 7px 0;
+                    gap: 3px 0;
+                    padding: 8px 0;
                     border: 1px solid
                         rgb(169 221 247 / 24%);
                     border-radius: 11px;
@@ -571,6 +593,11 @@ class SpeechMicBar extends HTMLElement {
                 aria-label="Voice options"
                 aria-hidden="true"
             >
+                <button
+                    id="optionsClose"
+                    type="button"
+                    aria-label="Close speech options"
+                >×</button>
                 <div id="optionsGrid"></div>
             </section>
             <div id="bar">
@@ -588,9 +615,20 @@ class SpeechMicBar extends HTMLElement {
             this.#shadow.querySelector(
                 "#optionsPanel"
             );
+        this.#optionsClose =
+            this.#shadow.querySelector(
+                "#optionsClose"
+            );
         this.#optionsGrid =
             this.#shadow.querySelector(
                 "#optionsGrid"
+            );
+        this.#optionsClose
+            ?.addEventListener(
+                "click",
+                () => {
+                    void this.hideOptions();
+                }
             );
         this.#bar = this.#shadow.querySelector("#bar");
         this.#mic = this.#shadow.querySelector("#mic");
@@ -1130,14 +1168,10 @@ class SpeechMicBar extends HTMLElement {
             count = 1;
         }
 
-        this.#fitOptions(
-            count
-        );
+        this.#fitOptions();
     }
 
-    #fitOptions(
-        cardCount
-    ) {
+    #fitOptions() {
         const rect =
             this.getBoundingClientRect();
 
@@ -1155,52 +1189,6 @@ class SpeechMicBar extends HTMLElement {
                     viewportHeight -
                         86
                 )
-            );
-
-        const gap = 7;
-        const padding = 18;
-        const usable =
-            Math.max(
-                0,
-                available -
-                    padding -
-                    Math.max(
-                        0,
-                        cardCount - 1
-                    ) *
-                    gap
-            );
-
-        const perCard =
-            cardCount
-                ? usable /
-                    cardCount
-                : 78;
-
-        let rowHeight = 78;
-
-        if (perCard >= 72) {
-            rowHeight =
-                Math.min(
-                    96,
-                    Math.max(
-                        72,
-                        perCard
-                    )
-                );
-        }
-        else {
-            rowHeight =
-                Math.max(
-                    42,
-                    perCard
-                );
-        }
-
-        this.#optionsPanel.style
-            .setProperty(
-                "--speech-option-row-height",
-                rowHeight + "px"
             );
 
         this.#optionsPanel.style
