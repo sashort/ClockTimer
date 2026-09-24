@@ -48,6 +48,11 @@ class SpeechMicBar extends HTMLElement {
     #optionsClose;
     #optionsGrid;
     #optionsAnimation;
+    #layoutResizeObserver;
+    #layoutResizeHandler =
+        () =>
+            this
+                .#syncHostBounds();
     #systemSpeechMenu;
     #wakeCommand;
     #sleepCommand;
@@ -1047,14 +1052,272 @@ class SpeechMicBar extends HTMLElement {
     connectedCallback() {
         this.#ensureSystemSpeechMenu();
         this.#subscribe();
+        this.#observeHostBounds();
+        this.#syncHostBounds();
         this.promoteTopLayer();
     }
 
     disconnectedCallback() {
         this.#unsubscribe();
+        this.#layoutResizeObserver
+            ?.disconnect?.();
+        this.#layoutResizeObserver =
+            undefined;
+        this.ownerDocument
+            ?.defaultView
+            ?.removeEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
         this.#optionsAnimation?.cancel();
         this.#optionsAnimation =
             undefined;
+    }
+
+    #contentBounds(
+        element
+    ) {
+        if (
+            !element ||
+            typeof element
+                .getBoundingClientRect !==
+                "function"
+        ) {
+            return undefined;
+        }
+
+        const view =
+            this.ownerDocument
+                ?.defaultView;
+
+        const rect =
+            element
+                .getBoundingClientRect();
+
+        const style =
+            view
+                ?.getComputedStyle?.(
+                    element
+                ) ||
+            {};
+
+        const number =
+            value =>
+                Number.parseFloat(
+                    value
+                ) ||
+                0;
+
+        return {
+            left:
+                rect.left +
+                number(
+                    style.paddingLeft
+                ),
+            right:
+                rect.right -
+                number(
+                    style.paddingRight
+                ),
+            bottom:
+                rect.bottom -
+                number(
+                    style.paddingBottom
+                )
+        };
+    }
+
+    #syncHostBounds() {
+        const document =
+            this.ownerDocument;
+
+        const view =
+            document
+                ?.defaultView;
+
+        if (
+            !document ||
+            !view
+        ) {
+            return false;
+        }
+
+        const viewportWidth =
+            Math.max(
+                0,
+                Number(
+                    view.innerWidth
+                ) ||
+                document
+                    .documentElement
+                    ?.clientWidth ||
+                0
+            );
+
+        const viewportHeight =
+            Math.max(
+                0,
+                Number(
+                    view.innerHeight
+                ) ||
+                document
+                    .documentElement
+                    ?.clientHeight ||
+                0
+            );
+
+        let left = 0;
+        let right =
+            viewportWidth;
+        let bottom =
+            viewportHeight;
+
+        const containers =
+            [
+                document
+                    .documentElement,
+                document.body,
+                this.parentElement
+            ]
+                .filter(
+                    (
+                        element,
+                        index,
+                        values
+                    ) =>
+                        element &&
+                        values
+                            .indexOf(
+                                element
+                            ) ===
+                            index
+                );
+
+        for (
+            const element of
+            containers
+        ) {
+            const bounds =
+                this
+                    .#contentBounds(
+                        element
+                    );
+
+            if (!bounds) {
+                continue;
+            }
+
+            left =
+                Math.max(
+                    left,
+                    bounds.left
+                );
+
+            right =
+                Math.min(
+                    right,
+                    bounds.right
+                );
+
+            bottom =
+                Math.min(
+                    bottom,
+                    bounds.bottom
+                );
+        }
+
+        this.style.setProperty(
+            "--speech-mic-fixed-left",
+            Math.max(
+                0,
+                left
+            ) +
+                "px"
+        );
+
+        this.style.setProperty(
+            "--speech-mic-fixed-width",
+            Math.max(
+                0,
+                right -
+                left
+            ) +
+                "px"
+        );
+
+        this.style.setProperty(
+            "--speech-mic-fixed-bottom",
+            Math.max(
+                0,
+                viewportHeight -
+                bottom
+            ) +
+                "px"
+        );
+
+        return true;
+    }
+
+    #observeHostBounds() {
+        const document =
+            this.ownerDocument;
+
+        const view =
+            document
+                ?.defaultView;
+
+        const ResizeObserverCtor =
+            view
+                ?.ResizeObserver ||
+            globalThis
+                .ResizeObserver;
+
+        this.#layoutResizeObserver
+            ?.disconnect?.();
+
+        if (
+            typeof ResizeObserverCtor ===
+                "function"
+        ) {
+            this.#layoutResizeObserver =
+                new ResizeObserverCtor(
+                    this
+                        .#layoutResizeHandler
+                );
+
+            for (
+                const element of
+                [
+                    document
+                        ?.documentElement,
+                    document?.body,
+                    this.parentElement
+                ]
+            ) {
+                if (element) {
+                    this
+                        .#layoutResizeObserver
+                        .observe(
+                            element
+                        );
+                }
+            }
+        }
+
+        view
+            ?.removeEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
+
+        view
+            ?.addEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
     }
 
     get state() {
@@ -1068,6 +1331,8 @@ class SpeechMicBar extends HTMLElement {
     }
 
     promoteTopLayer() {
+        this.#syncHostBounds();
+
         if (
             typeof this.showPopover !==
             "function"
