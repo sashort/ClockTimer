@@ -930,3 +930,12 @@ assert.match(
     app,
     /clearLegacySpeechAssetCache[\s\S]*wmof-sherpa-[\s\S]*caches\.delete/
 );
+
+assert.match(
+    app,
+    /legacyController[\s\S]*serviceWorker[\s\S]*controller[\s\S]*SpeechAssetCacheWorker\.js/
+);
+assert.match(
+    app,
+    /wmof\.speechCacheRollbackReloaded[\s\S]*location\.reload\(\)/
+);
