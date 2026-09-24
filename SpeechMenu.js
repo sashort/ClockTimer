@@ -5307,36 +5307,71 @@ class SpeechMenu {
                 return false;
             }
 
-            await Promise.resolve();
+            const dictatedResponse =
+                outcome &&
+                typeof outcome ===
+                    "object" &&
+                outcome.speechResponse
+                    ?.type ===
+                    "dictation"
+                    ? String(
+                        outcome
+                            .speechResponse
+                            .value ??
+                        ""
+                    ).trim()
+                    : "";
 
-            if (
-                target.element &&
-                typeof requestAnimationFrame ===
-                    "function"
-            ) {
-                await new Promise(
-                    resolve =>
-                        requestAnimationFrame(
-                            () =>
-                                resolve()
-                        )
-                );
+            if (dictatedResponse) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.presentSpeechDictation?.(
+                        dictatedResponse,
+                        {
+                            commandElement:
+                                element,
+                            utteranceId
+                        }
+                    );
             }
+            else {
+                await Promise.resolve();
 
-            globalThis
-                .WMOFPresentationSetters
-                ?.finishSpeechResponse?.(
-                    responseSession,
-                    {
-                        commandElement:
-                            element,
-                        targetSelector:
-                            target.selector,
-                        targetElements:
-                            target.elements,
-                        utteranceId
-                    }
-                );
+                if (
+                    target.element &&
+                    typeof requestAnimationFrame ===
+                        "function"
+                ) {
+                    await new Promise(
+                        resolve =>
+                            requestAnimationFrame(
+                                () =>
+                                    resolve()
+                            )
+                    );
+                }
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.finishSpeechResponse?.(
+                        responseSession,
+                        {
+                            commandElement:
+                                element,
+                            targetSelector:
+                                target.selector,
+                            targetElements:
+                                target.elements,
+                            utteranceId
+                        }
+                    );
+            }
 
             SpeechMenu.#emit(
                 "speechCommandExecuted",
