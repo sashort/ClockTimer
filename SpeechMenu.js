@@ -2200,7 +2200,11 @@ class SpeechMenu {
             !pool.length &&
             !utterance.committing &&
             !utterance.lastExactCandidate &&
-            !SpeechMenu.#sleeping
+            !SpeechMenu.#sleeping &&
+            !SpeechMenu
+                .#hasAvailableContinuation(
+                    utterance.transcript
+                )
         ) {
             const id =
                 utterance.id;
@@ -3352,6 +3356,23 @@ class SpeechMenu {
         );
     }
 
+
+    static #hasAvailableContinuation(
+        transcript
+    ) {
+        SpeechMenu.extrapolatePhrases();
+
+        return SpeechMenu
+            .#availableCandidates()
+            .some(
+                element =>
+                    SpeechMenu
+                        .#elementContinuationDepth(
+                            element,
+                            transcript
+                        ) !== undefined
+            );
+    }
 
     static #elementContinuationDepth(
         element,
