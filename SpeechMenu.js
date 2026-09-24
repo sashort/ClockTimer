@@ -1,6 +1,4 @@
 class SpeechMenu {
-    static #wakePhrase = /^(?:wake|on)$/i;
-    static #sleepPhrase = /^(?:sleep|off)$/i;
     static #stopped = true;
     static #sleeping = false;
     static #listeningSuspensions = 0;
@@ -94,8 +92,6 @@ class SpeechMenu {
     }
 
     static get events() { return SpeechMenu.#events; }
-    static get wakePhrase() { return SpeechMenu.#wakePhrase; }
-    static get sleepPhrase() { return SpeechMenu.#sleepPhrase; }
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
@@ -121,6 +117,15 @@ class SpeechMenu {
             return false;
         }
 
+        utteranceId ??=
+            SpeechMenu
+                .#executionContext
+                ?.utteranceId;
+        transcript ??=
+            SpeechMenu
+                .#executionContext
+                ?.transcript;
+
         SpeechMenu.#sleeping =
             false;
 
@@ -143,6 +148,15 @@ class SpeechMenu {
         if (signal?.aborted) {
             return false;
         }
+
+        utteranceId ??=
+            SpeechMenu
+                .#executionContext
+                ?.utteranceId;
+        transcript ??=
+            SpeechMenu
+                .#executionContext
+                ?.transcript;
 
         SpeechMenu.#sleeping =
             true;
@@ -193,8 +207,6 @@ class SpeechMenu {
         );
     }
 
-    static set wakePhrase(value) { SpeechMenu.#setPhrase("wake", value); }
-    static set sleepPhrase(value) { SpeechMenu.#setPhrase("sleep", value); }
     static set silenceTimeout(value) {
         const milliseconds = Number(value);
         if (!Number.isFinite(milliseconds) || milliseconds < 100) {
@@ -1072,32 +1084,9 @@ class SpeechMenu {
     }
 
     static #hotwords() {
-        const values = [
+        return [
             ...SpeechMenu.#phrases
         ];
-
-        for (
-            const regex of
-            [
-                SpeechMenu.#wakePhrase,
-                SpeechMenu.#sleepPhrase
-            ]
-        ) {
-            const source =
-                regex?.source
-                    ?.replace(/^\^/, "")
-                    .replace(/\$$/, "");
-
-            if (
-                source &&
-                /^[\p{L}\p{N}' ]+$/u
-                    .test(source)
-            ) {
-                values.push(source);
-            }
-        }
-
-        return values;
     }
 
     static #refreshRecognizerHotwords() {
@@ -1133,44 +1122,6 @@ class SpeechMenu {
                     : {detail}
             )
         );
-    }
-
-    static #setPhrase(kind, value) {
-        try {
-            const regex =
-                value instanceof RegExp
-                    ? value
-                    : new RegExp(value, "i");
-
-            if (kind === "wake") {
-                SpeechMenu.#wakePhrase =
-                    regex;
-            }
-            else {
-                SpeechMenu.#sleepPhrase =
-                    regex;
-            }
-
-            SpeechMenu.#emit(
-                `${kind}PhraseChanged`,
-                {
-                    [`${kind}PhraseRegex`]:
-                        regex
-                }
-            );
-
-            SpeechMenu
-                .#refreshRecognizerHotwords();
-        }
-        catch {
-            SpeechMenu.#emit(
-                `${kind}PhraseChangeFailed`,
-                {
-                    message:
-                        `${kind}Phrase must be a valid regular expression.`
-                }
-            );
-        }
     }
 
     static #onTrackEnded = () => {
@@ -2113,29 +2064,13 @@ class SpeechMenu {
         utterance.candidatePoolController =
             controller;
 
-        let pool;
-
-        const controlPool =
-            SpeechMenu
-                .#controlCandidatePool(
-                    transcript
+        const pool =
+            await SpeechMenu
+                .#refreshCandidatePool(
+                    utterance,
+                    transcript,
+                    controller.signal
                 );
-
-        if (controlPool.length) {
-            pool = controlPool;
-        }
-        else if (SpeechMenu.#sleeping) {
-            pool = [];
-        }
-        else {
-            pool =
-                await SpeechMenu
-                    .#refreshCandidatePool(
-                        utterance,
-                        transcript,
-                        controller.signal
-                    );
-        }
 
         if (
             controller.signal.aborted ||
@@ -2168,8 +2103,7 @@ class SpeechMenu {
         if (
             !pool.length &&
             !utterance.committing &&
-            !utterance.lastExactCandidate &&
-            !SpeechMenu.#sleeping
+            !utterance.lastExactCandidate
         ) {
             const id =
                 utterance.id;
@@ -2246,46 +2180,20 @@ class SpeechMenu {
             false;
 
         try {
-            if (
-                candidate.kind ===
-                    "wake"
-            ) {
-                committed =
+            committed =
+                Boolean(
                     await SpeechMenu
-                        .wake({
-                            utteranceId:
-                                utterance.id,
-                            transcript
-                        });
-            }
-            else if (
-                candidate.kind ===
-                    "mute"
-            ) {
-                committed =
-                    await SpeechMenu
-                        .sleep({
-                            utteranceId:
-                                utterance.id,
-                            transcript
-                        });
-            }
-            else {
-                committed =
-                    Boolean(
-                        await SpeechMenu
-                            .#processElement(
-                                candidate
-                                    .commandElement,
-                                transcript,
-                                utterance.id,
-                                candidate
-                                    .speechMenuElement,
-                                SpeechMenu
-                                    .#executionEnabled
-                            )
-                    );
-            }
+                        .#processElement(
+                            candidate
+                                .commandElement,
+                            transcript,
+                            utterance.id,
+                            candidate
+                                .speechMenuElement,
+                            SpeechMenu
+                                .#executionEnabled
+                        )
+                );
 
             if (committed) {
                 utterance.committed =
@@ -2345,56 +2253,6 @@ class SpeechMenu {
                 live: false
             }
         );
-
-        if (SpeechMenu.#sleeping) {
-            if (
-                SpeechMenu.#test(
-                    SpeechMenu.#wakePhrase,
-                    transcript
-                )
-            ) {
-                await SpeechMenu
-                    .wake({
-                        utteranceId:
-                            utterance.id,
-                        transcript
-                    });
-            }
-
-            return;
-        }
-
-        if (
-            SpeechMenu.#test(
-                SpeechMenu.#wakePhrase,
-                transcript
-            )
-        ) {
-            await SpeechMenu
-                .wake({
-                    utteranceId:
-                        utterance.id,
-                    transcript
-                });
-
-            return;
-        }
-
-        if (
-            SpeechMenu.#test(
-                SpeechMenu.#sleepPhrase,
-                transcript
-            )
-        ) {
-            await SpeechMenu
-                .sleep({
-                    utteranceId:
-                        utterance.id,
-                    transcript
-                });
-
-            return;
-        }
 
         const matched =
             await SpeechMenu.#processTranscript(
@@ -3115,9 +2973,7 @@ class SpeechMenu {
             !utterance ||
             utterance.committed ||
             utterance.committing ||
-            !exactCandidate ||
-            exactCandidate.kind ===
-                "wake"
+            !exactCandidate
         ) {
             return false;
         }
@@ -3319,78 +3175,6 @@ class SpeechMenu {
             0,
             0
         );
-    }
-
-
-    static #controlCandidatePool(
-        transcript
-    ) {
-        const definitions = [
-            {
-                kind: "wake",
-                pattern:
-                    SpeechMenu.#wakePhrase
-            },
-            ...(
-                SpeechMenu.#sleeping
-                    ? []
-                    : [{
-                        kind: "mute",
-                        pattern:
-                            SpeechMenu
-                                .#sleepPhrase
-                    }]
-            )
-        ];
-
-        const candidates = [];
-
-        for (
-            const [
-                order,
-                definition
-            ] of definitions.entries()
-        ) {
-            const exact =
-                SpeechMenu.#test(
-                    definition.pattern,
-                    transcript
-                );
-
-            const continuation =
-                SpeechMenu
-                    .extrapolatePattern(
-                        definition
-                            .pattern
-                            .source
-                    )
-                    .some(
-                        phrase =>
-                            SpeechMenu
-                                .#phraseCanContinue(
-                                    transcript,
-                                    phrase
-                                )
-                    );
-
-            if (
-                !exact &&
-                !continuation
-            ) {
-                continue;
-            }
-
-            candidates.push({
-                kind:
-                    definition.kind,
-                transcript,
-                exact,
-                continuation,
-                order
-            });
-        }
-
-        return candidates;
     }
 
     static #elementContinuationDepth(
@@ -3644,6 +3428,10 @@ class SpeechMenu {
     }
 
     static #normalizeModal(value) {
+        if (value === "system") {
+            return "system";
+        }
+
         if (value === "top-level") {
             return "top-level";
         }
@@ -3940,6 +3728,7 @@ class SpeechMenu {
                     )
             ];
 
+        const system = [];
         const topLevel = [];
         const defaults = [];
         const contextual = [];
@@ -3960,7 +3749,10 @@ class SpeechMenu {
                         element
                     );
 
-            if (modal === "top-level") {
+            if (modal === "system") {
+                system.push(element);
+            }
+            else if (modal === "top-level") {
                 topLevel.push(element);
             }
             else if (modal === "default") {
@@ -3990,6 +3782,12 @@ class SpeechMenu {
                     result.push(element);
                 }
             };
+
+        append(system);
+
+        if (SpeechMenu.#sleeping) {
+            return result;
+        }
 
         append(topLevel);
 
@@ -5313,6 +5111,8 @@ class SpeechMenu {
             SpeechMenu.#executionContext =
                 Object.freeze({
                     utteranceId,
+                    transcript:
+                        text,
                     utteranceStartedAt:
                         utterance
                             ?.wallStartedAt
