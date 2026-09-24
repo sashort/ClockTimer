@@ -9901,22 +9901,37 @@
 
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-started");
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-started-early");
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-started-late");
     }
 
     function onBreakStarted(event) {
         reserveSemanticEvent(event, "Break or lunch started");
-        playSemanticSong("arpeggio-down");
+
+        const breakType =
+            String(
+                event.detail?.breakType ||
+                event.detail?.intervalType ||
+                ""
+            ).toLowerCase();
+
+        playSemanticSong(
+            breakType === "lunch"
+                ? "lunch-started"
+                : breakType === "short"
+                    ? "short-break-started"
+                    : "break-started"
+        );
+
         scheduleLunchClockCues(
             event.detail
         );
@@ -9924,7 +9939,7 @@
 
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-resumed-early");
         finishLunchClockCues(
             event.detail
         );
@@ -9932,7 +9947,7 @@
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-resumed-automatically");
         finishLunchClockCues(
             event.detail
         );
@@ -9940,7 +9955,7 @@
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
-        playSemanticSong("arpeggio-up");
+        playSemanticSong("trip-resumed-after-break");
         finishLunchClockCues(
             event.detail
         );
@@ -9948,17 +9963,17 @@
 
     function onDownTimeStarted(event) {
         reserveSemanticEvent(event, "Down time started");
-        playSemanticSong("polyharmonic-triplet");
+        playSemanticSong("down-time-started");
     }
 
     function onTripResumed(event) {
         reserveSemanticEvent(event, "Trip resumed from down time");
-        playSemanticSong("note-up-long");
+        playSemanticSong("trip-resumed-from-down");
     }
 
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
-        playSemanticSong("arpeggio-down");
+        playSemanticSong("trip-ended");
     }
 
     function onTotalGoalSet(event) {
