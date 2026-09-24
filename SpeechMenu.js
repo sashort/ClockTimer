@@ -1070,7 +1070,11 @@ class SpeechMenu {
         }
 
         if (
-            SpeechMenu.#utterance.committed &&
+            (
+                SpeechMenu.#utterance.committed ||
+                SpeechMenu.#utterance
+                    .recognitionStopped
+            ) &&
             level >= SpeechMenu.#speechThreshold
         ) {
             SpeechMenu
@@ -1103,7 +1107,6 @@ class SpeechMenu {
                 frameMilliseconds;
 
             if (
-                SpeechMenu.#sleeping &&
                 !SpeechMenu.#utterance
                     .committed &&
                 !SpeechMenu.#utterance
@@ -1111,8 +1114,7 @@ class SpeechMenu {
                 SpeechMenu
                     .#exactCandidate(
                         SpeechMenu.#utterance
-                    )
-                    ?.kind === "wake" &&
+                    ) &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
                     SpeechMenu
@@ -1142,9 +1144,22 @@ class SpeechMenu {
         if (
             SpeechMenu.#stopped ||
             SpeechMenu.#pipeline !==
-                "silero" ||
-            SpeechMenu.#utterance
+                "silero"
         ) {
+            return;
+        }
+
+        if (
+            SpeechMenu.#utterance
+                ?.recognitionStopped
+        ) {
+            SpeechMenu.#finishUtterance(
+                "recognition-committed",
+                false
+            );
+        }
+
+        if (SpeechMenu.#utterance) {
             return;
         }
 
@@ -1203,10 +1218,28 @@ class SpeechMenu {
         if (
             SpeechMenu.#utterance
         ) {
-            SpeechMenu.#finishUtterance(
-                "vad-silence",
-                true
-            );
+            const utterance =
+                SpeechMenu.#utterance;
+
+            if (
+                !utterance.committed &&
+                !utterance.committing &&
+                SpeechMenu
+                    .#exactCandidate(
+                        utterance
+                    )
+            ) {
+                void SpeechMenu
+                    .#commitUtterance(
+                        utterance
+                    );
+            }
+            else {
+                SpeechMenu.#finishUtterance(
+                    "vad-silence",
+                    true
+                );
+            }
         }
     };
 
@@ -1848,6 +1881,16 @@ class SpeechMenu {
                 utterance
             );
 
+        /*
+         * The recognition decision is complete before the action is.
+         * Cut the Sherpa stream now so a slow UI/API action cannot let
+         * later speech grow onto this already-accepted utterance.
+         */
+        SpeechMenu.#stopLiveRecognition(
+            utterance,
+            false
+        );
+
         let committed =
             false;
 
@@ -1913,17 +1956,6 @@ class SpeechMenu {
                     .#clearCandidatePool(
                         utterance
                     );
-
-                /*
-                 * A successful interim match is already authoritative.
-                 * Do not ask Sherpa for another blocking final decode;
-                 * release its stream immediately so barge-in / the next
-                 * utterance can begin without waiting behind finalization.
-                 */
-                SpeechMenu.#stopLiveRecognition(
-                    utterance,
-                    false
-                );
 
                 SpeechMenu.#emit(
                     "utteranceCommitted",
