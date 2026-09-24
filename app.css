@@ -876,6 +876,16 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
+.main-menu button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+    filter: saturate(.35);
+}
+
+#speechTrainingButton[aria-pressed="true"] {
+    color: var(--wm-yellow);
+}
+
 #speechRecognitionButton[aria-pressed="true"] { color: var(--wm-blue-light); }
 #speechRecognitionButton.is-sleeping::after { content: "Muted"; margin-left:auto; color:rgb(255 255 255 / 72%); font-size:13px; }
 .break-type-button.speech-focused { outline:3px solid var(--wm-blue-light); outline-offset:3px; }
@@ -4307,6 +4317,232 @@ clock-timer[hide-latency] time-range[type="latency"] {
   .speech-build-scaffold path,.speech-build-crane,.main-menu #speechMenuButton::after{transition:none!important;}
   #speechMenuButton.speech-build-active .speech-build-scaffold path{stroke-dashoffset:0;}
   #speechMenuButton.speech-build-active .speech-build-mic{animation:none;}
+}
+
+/* Compact in-app speech trainer -------------------------------------- */
+.speech-training-choice-dialog {
+    width: min(420px, calc(100vw - 28px));
+    padding: 14px;
+}
+
+.speech-training-choice-dialog .dialog-header {
+    margin-bottom: 10px;
+}
+
+.speech-training-choice-dialog h2 {
+    font-size: 22px;
+}
+
+.speech-training-choice-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.speech-training-choice-actions > button {
+    min-height: 58px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    justify-items: start;
+    border: 1px solid rgb(255 255 255 / 54%);
+    border-radius: 10px;
+    color: var(--wm-white);
+    background: rgb(0 30 96 / 58%);
+    text-align: left;
+}
+
+.speech-training-choice-actions > button:hover,
+.speech-training-choice-actions > button:focus-visible {
+    background: rgb(255 255 255 / 12%);
+}
+
+.speech-training-choice-actions strong {
+    font-size: 16px;
+}
+
+.speech-training-choice-actions span {
+    color: rgb(255 255 255 / 70%);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.speech-training-widget {
+    position: fixed;
+    left: 50%;
+    bottom: 88px;
+    z-index: 2147483646;
+    width: min(560px, calc(100vw - 24px));
+    min-width: 0;
+    height: 64px;
+    padding: 4px;
+    display: grid;
+    grid-template-columns:
+        32px
+        minmax(0, 1fr)
+        auto
+        76px;
+    gap: 6px;
+    align-items: stretch;
+    border: 2px solid rgb(255 255 255 / 46%);
+    border-radius: 12px;
+    color: var(--wm-white);
+    background:
+        linear-gradient(
+            180deg,
+            rgb(47 57 67 / 96%),
+            rgb(34 43 51 / 96%)
+        );
+    box-shadow:
+        0 9px 22px rgb(0 0 0 / 34%),
+        inset 0 1px 0 rgb(255 255 255 / 12%);
+    backdrop-filter: blur(8px);
+    transform: translateX(-50%);
+    touch-action: none;
+}
+
+.speech-training-widget[hidden] {
+    display: none;
+}
+
+.speech-training-drag-handle {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    color: rgb(255 255 255 / 72%);
+    background: rgb(255 255 255 / 7%);
+    cursor: grab;
+    font-size: 19px;
+    line-height: 1;
+    touch-action: none;
+}
+
+.speech-training-drag-handle:active {
+    cursor: grabbing;
+}
+
+.speech-training-copy {
+    min-width: 0;
+    height: 56px;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    align-items: center;
+    overflow: hidden;
+}
+
+.speech-training-copy strong,
+.speech-training-copy span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.speech-training-copy strong {
+    align-self: end;
+    padding-bottom: 2px;
+    font-size: 15px;
+}
+
+.speech-training-copy span {
+    align-self: start;
+    padding-top: 2px;
+    color: rgb(255 255 255 / 68%);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.speech-training-state {
+    min-width: 54px;
+    height: 56px;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    place-items: center;
+    padding-inline: 5px;
+    border-left: 1px solid rgb(255 255 255 / 18%);
+    border-right: 1px solid rgb(255 255 255 / 18%);
+}
+
+.speech-training-state strong {
+    align-self: end;
+    padding-bottom: 2px;
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.speech-training-state span {
+    align-self: start;
+    padding-top: 2px;
+    color: var(--wm-blue-light);
+    font-size: 13px;
+}
+
+.speech-training-widget[data-prompt="speak"]
+.speech-training-state strong {
+    color: #7fe6a2;
+}
+
+.speech-training-widget[data-prompt="pause"]
+.speech-training-state strong {
+    color: var(--wm-yellow);
+}
+
+.speech-training-widget[data-prompt="muted"]
+.speech-training-state strong {
+    color: #ff8d87;
+}
+
+.speech-training-start-stop {
+    width: 76px;
+    min-width: 76px;
+    height: 56px;
+    padding: 0 8px;
+    border: 1px solid rgb(255 255 255 / 64%);
+    border-radius: 9px;
+    color: var(--wm-blue-dark);
+    background: var(--wm-yellow);
+}
+
+.speech-training-start-stop[data-active="true"] {
+    color: var(--wm-white);
+    background: var(--wm-red);
+}
+
+.speech-training-start-stop:disabled {
+    cursor: not-allowed;
+    opacity: .44;
+    filter: saturate(.25);
+}
+
+@media (max-width: 520px) {
+    .speech-training-widget {
+        grid-template-columns:
+            28px
+            minmax(0, 1fr)
+            50px
+            66px;
+        gap: 4px;
+        height: 60px;
+    }
+
+    .speech-training-drag-handle {
+        width: 28px;
+        min-width: 28px;
+    }
+
+    .speech-training-copy,
+    .speech-training-state,
+    .speech-training-start-stop {
+        height: 52px;
+    }
+
+    .speech-training-start-stop {
+        width: 66px;
+        min-width: 66px;
+    }
 }
 
 #newUserButton::before {
