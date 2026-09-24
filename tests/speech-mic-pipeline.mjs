@@ -56,6 +56,53 @@ assert.equal(typeof bar.showOptions, "function");
 assert.equal(typeof bar.hideOptions, "function");
 assert.equal(typeof bar.promoteTopLayer, "function");
 
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                SpeechMenu.wakePhrase
+                    .source
+            )
+    ].sort(),
+    [
+        "listen",
+        "on",
+        "wake"
+    ]
+);
+
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                SpeechMenu.sleepPhrase
+                    .source
+            )
+    ].sort(),
+    [
+        "mute",
+        "off",
+        "sleep"
+    ]
+);
+
+assert.equal(
+    await SpeechMenu.sleep(),
+    true
+);
+assert.equal(
+    SpeechMenu.muted,
+    true
+);
+assert.equal(
+    await SpeechMenu.wake(),
+    true
+);
+assert.equal(
+    SpeechMenu.muted,
+    false
+);
+
 assert.equal(
     SpeechMenu.synthesizedSpeechActive,
     false
@@ -657,6 +704,38 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /#optionCategoryDefinitions\(\)[\s\S]*key:\s*"trip-actions"[\s\S]*key:\s*"goals"[\s\S]*key:\s*"settings"[\s\S]*key:\s*"speech"/
+);
+assert.match(
+    speechMicBarSource,
+    /data-category="trip-actions"[\s\S]*--wm-blue-dark/
+);
+assert.match(
+    speechMicBarSource,
+    /data-category="goals"[\s\S]*--wm-yellow/
+);
+assert.match(
+    speechMicBarSource,
+    /data-category="settings"[\s\S]*--ui-gray-gradient/
+);
+assert.match(
+    speechMicBarSource,
+    /data-category="speech"[\s\S]*--wm-blue/
+);
+assert.match(
+    speechMicBarSource,
+    /#speechControlItems\(\)[\s\S]*wakePhrase[\s\S]*sleepPhrase[\s\S]*extrapolatePattern/
+);
+assert.match(
+    speechMicBarSource,
+    /if \(!cards\.length\) \{[\s\S]*continue;/
+);
+assert.match(
+    speechMicBarSource,
+    /#compareOptionItems\([\s\S]*localeCompare[\s\S]*a\.length\s*-\s*b\.length/
+);
+assert.match(
+    speechMicBarSource,
     /status\.textContent\s*=\s*" \(unimplemented\)"/
 );
 assert.match(
@@ -729,8 +808,24 @@ assert.match(
     /builtin:goalMode:page[^>]*data-speech-options-group="mode"/
 );
 assert.match(
+    html,
+    /builtin:ready:page[^>]*data-speech-options-category="trip-actions"/
+);
+assert.match(
+    html,
+    /builtin:tripGoal:page[^>]*data-speech-options-category="goals"/
+);
+assert.match(
+    html,
+    /builtin:goalMode:page[^>]*data-speech-options-category="settings"/
+);
+assert.match(
     app,
     /speechOptionGroups[\s\S]*tripGoal:\s*"goals"[\s\S]*goalMode:\s*"mode"/
+);
+assert.match(
+    app,
+    /speechOptionCategories[\s\S]*ready:\s*"trip-actions"[\s\S]*tripGoal:\s*"goals"[\s\S]*goalMode:\s*"settings"/
 );
 assert.match(
     app,
@@ -767,6 +862,18 @@ assert.match(
 assert.match(
     speechMenuSource,
     /else if \([\s\S]*#wakePhrase[\s\S]*kind:\s*"wake"[\s\S]*#sleepPhrase[\s\S]*kind:\s*"mute"/
+);
+assert.match(
+    speechMenuSource,
+    /static async wake\([\s\S]*#sleeping\s*=\s*false[\s\S]*"unmuted"/
+);
+assert.match(
+    speechMenuSource,
+    /static async sleep\([\s\S]*#sleeping\s*=\s*true[\s\S]*"muted"/
+);
+assert.match(
+    speechMenuSource,
+    /candidate\.kind\s*===\s*"wake"[\s\S]*await SpeechMenu[\s\S]*\.wake\([\s\S]*candidate\.kind\s*===\s*"mute"[\s\S]*await SpeechMenu[\s\S]*\.sleep\(/
 );
 assert.match(
     audioEngineSource,
