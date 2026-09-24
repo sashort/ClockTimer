@@ -6182,7 +6182,9 @@
         }
     }
 
-    function showSpeechTrainingWidget() {
+    function showSpeechTrainingWidget({
+        promote = false
+    } = {}) {
         if (!speechTrainingWidget) {
             return false;
         }
@@ -6191,11 +6193,37 @@
             false;
 
         try {
-            if (
-                !speechTrainingWidget.matches(
+            const open =
+                speechTrainingWidget.matches(
                     ":popover-open"
-                )
+                );
+
+            if (
+                open &&
+                promote
             ) {
+                speechTrainingWidget
+                    .classList
+                    .add(
+                        "popover-immediate-close"
+                    );
+
+                speechTrainingWidget
+                    .hidePopover?.();
+
+                speechTrainingWidget
+                    .showPopover?.();
+
+                requestAnimationFrame(
+                    () =>
+                        speechTrainingWidget
+                            .classList
+                            .remove(
+                                "popover-immediate-close"
+                            )
+                );
+            }
+            else if (!open) {
                 speechTrainingWidget
                     .showPopover?.();
             }
@@ -7509,6 +7537,21 @@
 
     speechMicBar
         ?.addEventListener(
+            "speech-options-opened",
+            () => {
+                if (
+                    inAppSpeechTrainingEnabled &&
+                    speechTrainingTarget
+                ) {
+                    showSpeechTrainingWidget({
+                        promote: true
+                    });
+                }
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
             "speech-training-target-selected",
             event => {
                 if (
@@ -7522,7 +7565,9 @@
                     ...event.detail
                 };
 
-                showSpeechTrainingWidget();
+                showSpeechTrainingWidget({
+                    promote: true
+                });
 
                 speechTrainingUtteranceCount =
                     0;
