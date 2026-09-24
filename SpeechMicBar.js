@@ -48,6 +48,9 @@ class SpeechMicBar extends HTMLElement {
     #optionsClose;
     #optionsGrid;
     #optionsAnimation;
+    #systemSpeechMenu;
+    #wakeCommand;
+    #sleepCommand;
 
     constructor() {
         super();
@@ -884,10 +887,139 @@ class SpeechMicBar extends HTMLElement {
         this.#codes = this.#shadow.querySelector("#codes");
         this.#responseLane = this.#shadow.querySelector("#response");
         this.#responseContent = this.#shadow.querySelector("#responseContent");
+        this.#ensureSystemSpeechMenu();
         this.#showIdleText();
     }
 
+    #ensureSystemSpeechMenu() {
+        let menu =
+            this.querySelector(
+                ':scope > speech-menu[speech-modal="system"]'
+            );
+
+        if (!menu) {
+            menu =
+                document.createElement(
+                    "speech-menu"
+                );
+            menu.setAttribute(
+                "speech-modal",
+                "system"
+            );
+            menu.dataset.speechEditorId =
+                "builtin:menu:system";
+            this.append(menu);
+        }
+
+        const ensureCommand =
+            (
+                key,
+                pattern,
+                speechFunction
+            ) => {
+                let command =
+                    menu.querySelector(
+                        `:scope > speech-command[data-speech-system-command="${key}"]`
+                    );
+
+                if (!command) {
+                    command =
+                        document.createElement(
+                            "speech-command"
+                        );
+                    command.dataset
+                        .speechSystemCommand =
+                        key;
+                    command.dataset
+                        .speechEditorId =
+                        `builtin:${key}:system`;
+                    command.dataset
+                        .speechOptionsCategory =
+                        "speech";
+                    command.dataset
+                        .speechOptionsGroup =
+                        "speech-controls";
+                    menu.append(command);
+                }
+
+                command.setAttribute(
+                    "speech-pattern",
+                    pattern
+                );
+                command.setAttribute(
+                    "speech-function",
+                    speechFunction
+                );
+
+                return command;
+            };
+
+        this.#systemSpeechMenu =
+            menu;
+        this.#wakeCommand =
+            ensureCommand(
+                "wake",
+                "^(?:wake|on)$",
+                "SpeechMenu.wake"
+            );
+        this.#sleepCommand =
+            ensureCommand(
+                "sleep",
+                "^(?:sleep|off)$",
+                "SpeechMenu.sleep"
+            );
+
+        return menu;
+    }
+
+    setSystemSpeechPatterns(
+        {
+            wake,
+            sleep
+        } = {}
+    ) {
+        this.#ensureSystemSpeechMenu();
+
+        for (
+            const [
+                command,
+                pattern
+            ] of [
+                [
+                    this.#wakeCommand,
+                    wake
+                ],
+                [
+                    this.#sleepCommand,
+                    sleep
+                ]
+            ]
+        ) {
+            const source =
+                String(
+                    pattern ||
+                    ""
+                ).trim();
+
+            if (!source) {
+                continue;
+            }
+
+            command.setAttribute(
+                "speech-pattern",
+                source
+            );
+        }
+
+        globalThis
+            .SpeechMenu
+            ?.refresh?.();
+
+        return true;
+    }
+
     connectedCallback() {
+        this.#ensureSystemSpeechMenu();
         this.#subscribe();
         this.promoteTopLayer();
     }
@@ -1647,72 +1779,6 @@ class SpeechMicBar extends HTMLElement {
                 item.optionalSuffix
         );
     }
-
-    #speechControlItems() {
-        const speechMenu =
-            globalThis
-                .SpeechMenu;
-
-        if (!speechMenu) {
-            return [];
-        }
-
-        const values =
-            [];
-
-        for (
-            const [
-                kind,
-                regex
-            ] of
-            [
-                [
-                    "wake",
-                    speechMenu.wakePhrase
-                ],
-                [
-                    "sleep",
-                    speechMenu.sleepPhrase
-                ]
-            ]
-        ) {
-            const phrases =
-                typeof speechMenu
-                    .extrapolatePattern ===
-                    "function"
-                    ? speechMenu
-                        .extrapolatePattern(
-                            regex?.source ||
-                            ""
-                        )
-                    : [];
-
-            for (const phrase of phrases) {
-                values.push({
-                    phrase,
-                    display:
-                        String(
-                            phrase ||
-                            ""
-                        ),
-                    required:
-                        String(
-                            phrase ||
-                            ""
-                        ),
-                    optionalPrefix: "",
-                    optionalSuffix: "",
-                    element:
-                        undefined,
-                    implemented: true,
-                    kind
-                });
-            }
-        }
-
-        return values;
-    }
-
     #optionItemText(
         item
     ) {
@@ -2969,38 +3035,6 @@ class SpeechMicBar extends HTMLElement {
                 }
             }
         );
-
-        const speechCard =
-            ensureCard(
-                "speech",
-                "speech-controls"
-            );
-
-        for (
-            const item of
-            this.#speechControlItems()
-        ) {
-            const signature =
-                item.required
-                    .toLocaleLowerCase();
-
-            if (
-                speechCard.seen.has(
-                    signature
-                )
-            ) {
-                continue;
-            }
-
-            speechCard.seen.add(
-                signature
-            );
-
-            speechCard.phrases.push(
-                item
-            );
-        }
-
         const desiredCategories =
             [];
 
