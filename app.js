@@ -14132,11 +14132,41 @@
                 goalMode: "mode"
             };
 
+            const speechOptionCategories = {
+                readyAt: "trip-actions",
+                readyAtContinuation: "trip-actions",
+                ready: "trip-actions",
+                breakStart: "trip-actions",
+                down: "trip-actions",
+                breakEnd: "trip-actions",
+                resume: "trip-actions",
+                tripGoal: "goals",
+                totalGoal: "goals",
+                setTripGoal: "goals",
+                setTotalGoal: "goals",
+                readGoalMode: "settings",
+                goalMode: "settings",
+                sync: "settings",
+                lockEndTime: "settings",
+                showTripLog: "trip-actions",
+                hideTripLog: "trip-actions",
+                deferTrip: "trip-actions",
+                renderedTimeMode: "settings",
+                breakChoice: "trip-actions",
+                confirm: "trip-actions",
+                yes: "trip-actions",
+                no: "trip-actions",
+                cancel: "trip-actions"
+            };
+
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
             if (speechOptionGroups[key]) {
                 element.dataset.speechOptionsGroup =
                     speechOptionGroups[key];
             }
+            element.dataset.speechOptionsCategory =
+                speechOptionCategories[key] ||
+                "settings";
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
@@ -14150,6 +14180,8 @@
                 if (!element) continue;
                 element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
+                element.dataset.speechOptionsCategory =
+                    "settings";
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
                 element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
                 element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
