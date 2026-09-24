@@ -852,3 +852,20 @@ assert.match(
     speechMenuSource,
     /#scheduleCandidateCommit\([\s\S]*#hasCompetingContinuation\([\s\S]*return false/
 );
+
+assert.match(
+    speechMenuSource,
+    /candidateHardCommitAt:\s*undefined/
+);
+assert.match(
+    speechMenuSource,
+    /now >=[\s\S]*candidateHardCommitAt[\s\S]*#commitHeldCandidate/
+);
+assert.match(
+    speechMenuSource,
+    /#commitHeldCandidate\([\s\S]*lastExactCandidate[\s\S]*candidatePool = \[[\s\S]*#commitUtterance/
+);
+assert.match(
+    speechMenuSource,
+    /candidateHardCommitAt\s*=\s*performance\.now\(\)\s*\+[\s\S]*#maximumCandidateHoldTimeout/
+);
