@@ -182,6 +182,10 @@ assert.match(
 );
 assert.match(
     core,
+    /divergenceStatus[\s\S]*NOT IN \("pending","purged"\)/
+);
+assert.match(
+    core,
     /COUNT\(DISTINCT user_id\)/
 );
 assert.match(
@@ -217,10 +221,42 @@ assert.match(
     api,
     /contributors/
 );
+assert.match(
+    api,
+    /divergence-review/
+);
+assert.match(
+    api,
+    /Developer permission is required to review divergent commands/
+);
+assert.match(
+    api,
+    /You can only delete your own speech training runs/
+);
+assert.match(
+    api,
+    /JSON_EXTRACT\(tc\.metadata, "\$\.divergenceStatus"\)/
+);
+assert.match(
+    api,
+    /JSON_SET\([\s\S]*divergenceReviewedByUserId/
+);
+assert.match(
+    api,
+    /modelAccepted[\s\S]*recognizedCorrect/
+);
 
 assert.match(
     editorPage,
     /data-can-train/
+);
+assert.match(
+    editorPage,
+    /speechDivergenceReview/
+);
+assert.match(
+    editorPage,
+    /Divergent Commands/
 );
 assert.match(
     editor,
@@ -245,6 +281,22 @@ assert.match(
 assert.match(
     editor,
     /action:\s*"reset"/
+);
+assert.match(
+    editor,
+    /renderDivergenceReview/
+);
+assert.match(
+    editor,
+    /action:[\s\S]*"divergence-review"/
+);
+assert.match(
+    editor,
+    /"approve"[\s\S]*"merge"[\s\S]*"purge"/
+);
+assert.match(
+    editor,
+    /Developer Preview · read only/
 );
 
 assert.match(
