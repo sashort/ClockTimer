@@ -931,6 +931,22 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /#animateOptionEnter\([\s\S]*cubic-bezier\(\.42,0,\.58,1\)/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionExit\([\s\S]*cubic-bezier\(\.42,0,\.58,1\)/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionContainerResize\([\s\S]*cubic-bezier\(\.42,0,\.58,1\)[\s\S]*allSettled/
+);
+assert.match(
+    speechMicBarSource,
+    /const gridRect =[\s\S]*finalCategoryHeights[\s\S]*gridGap[\s\S]*finalGridHeight[\s\S]*#animateOptionContainerResize\([\s\S]*#optionsGrid/
+);
+assert.match(
+    speechMicBarSource,
     /row\.style\.order\s*=\s*String\([\s\S]*index/
 );
 assert.match(
