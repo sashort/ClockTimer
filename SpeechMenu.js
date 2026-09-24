@@ -34,6 +34,7 @@ class SpeechMenu {
     static #debug = false;
     static #debugFunction = data => console.log(data);
     static #executionEnabled = true;
+    static #executionContext;
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
@@ -93,6 +94,7 @@ class SpeechMenu {
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
+    static get executionContext() { return SpeechMenu.#executionContext; }
     static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
@@ -1474,11 +1476,19 @@ class SpeechMenu {
         SpeechMenu.#preRollSamples =
             0;
 
+        const wallStartedAt =
+            new Date(
+                performance.timeOrigin +
+                now
+            );
+
         SpeechMenu.#utterance = {
             id,
             sessionGeneration:
                 SpeechMenu.#sessionGeneration,
             startedAt: now,
+            wallStartedAt:
+                wallStartedAt.toISOString(),
             silenceMilliseconds: 0,
             sampleCount,
             transcript: "",
@@ -1505,7 +1515,9 @@ class SpeechMenu {
             "utteranceStarted",
             {
                 id,
-                startedAt: now
+                startedAt: now,
+                wallStartedAt:
+                    wallStartedAt.toISOString()
             }
         );
 
@@ -4968,13 +4980,47 @@ class SpeechMenu {
                 });
 
         try {
+            const utterance =
+                SpeechMenu.#utterance
+                    ?.id ===
+                        utteranceId
+                    ? SpeechMenu.#utterance
+                    : SpeechMenu
+                        .#finishedUtterances
+                        .get(
+                            utteranceId
+                        );
+
+            const previousExecutionContext =
+                SpeechMenu
+                    .#executionContext;
+
+            SpeechMenu.#executionContext =
+                Object.freeze({
+                    utteranceId,
+                    utteranceStartedAt:
+                        utterance
+                            ?.wallStartedAt
+                });
+
+            let outcomeValue;
+
+            try {
+                outcomeValue =
+                    element
+                        .speechFunc
+                        .apply(
+                            element.speechFuncThis,
+                            argumentValues
+                        );
+            }
+            finally {
+                SpeechMenu.#executionContext =
+                    previousExecutionContext;
+            }
+
             const outcome =
-                await element
-                    .speechFunc
-                    .apply(
-                        element.speechFuncThis,
-                        argumentValues
-                    );
+                await outcomeValue;
 
             if (outcome === false) {
                 globalThis
