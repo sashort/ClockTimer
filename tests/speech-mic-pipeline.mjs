@@ -788,7 +788,15 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#optionCategoryDefinitions\(\)[\s\S]*key:\s*"trip-actions"[\s\S]*key:\s*"goals"[\s\S]*key:\s*"settings"[\s\S]*key:\s*"speech"/
+    /#optionsCategoryKey\([\s\S]*group\?\.modal[\s\S]*"system"[\s\S]*return "system"/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /key:\s*"speech"[\s\S]*label:\s*"Speech Commands"/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionCategoryDefinitions\(\)[\s\S]*key:\s*"trip-actions"[\s\S]*key:\s*"goals"[\s\S]*key:\s*"settings"[\s\S]*key:\s*"system"/
 );
 assert.match(
     speechMicBarSource,
@@ -804,11 +812,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /data-category="speech"[\s\S]*--wm-blue/
+    /data-category="system"[\s\S]*--wm-blue/
 );
 assert.match(
     speechMicBarSource,
-    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*speechOptionsCategory[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
     speechMicBarSource,
