@@ -384,6 +384,12 @@ assert.match(html, /id="speechToolsGroup"/);
 assert.match(html, /id="sqlConsoleButton"[^>]*>Database Access</);
 assert.match(html, /id="speechTrainingButton"[^>]*>Speech Training</);
 assert.match(html, /id="speechEditorButton"[^>]*hidden/);
+assert.match(html, /id="speechTrainingChoiceDialog"/);
+assert.match(html, /id="speechTrainingInAppChoice"/);
+assert.match(html, /id="speechTrainingEditorChoice"/);
+assert.match(html, /id="speechTrainingWidget"/);
+assert.match(html, /id="speechTrainingDragHandle"/);
+assert.match(html, /id="speechTrainingStartStop"[^>]*disabled>Start</);
 assert.doesNotMatch(html, /id="speechAdminGroup"/);
 
 const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
@@ -512,6 +518,13 @@ assert.match(
     /setCloudIconVisualState[\s\S]*rotateY\(90deg\)[\s\S]*applyState\([\s\S]*controller[\s\S]*targetState/
 );
 assert.match(app, /element:\s*\$\("#speechTrainingButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechTraining"/);
+assert.match(app, /speechTrainingButton\.disabled\s*=\s*[\s\S]*speechTrainingActive/);
+assert.match(app, /speechRecognitionButton\.disabled\s*=\s*[\s\S]*speechTrainingActive/);
+assert.match(app, /disableSpeechRecognitionRuntime[\s\S]*if \(speechTrainingActive\)[\s\S]*return false/);
+assert.match(app, /startInAppSpeechTraining[\s\S]*speechMenu\.muted[\s\S]*speechMenu\.executionEnabled\s*=\s*false/);
+assert.match(app, /stopInAppSpeechTraining[\s\S]*executionEnabled\s*=\s*speechTrainingExecutionBeforeStart/);
+assert.match(app, /speech-training-telemetry[\s\S]*utteranceTranscribed[\s\S]*persistInAppSpeechTrainingSample/);
+assert.match(app, /speechTrainingDragHandle[\s\S]*pointerdown[\s\S]*setPointerCapture/);
 assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
 assert.match(app, /speech-build-active/);
 assert.match(app, /1050/);
@@ -530,6 +543,10 @@ assert.match(
 );
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 assert.match(css, /#speechTrainingButton::before/);
+assert.match(css, /\.speech-training-widget[\s\S]*height:\s*64px/);
+assert.match(css, /\.speech-training-copy[\s\S]*height:\s*56px[\s\S]*grid-template-rows:\s*1fr 1fr/);
+assert.match(css, /\.speech-training-start-stop[\s\S]*height:\s*56px/);
+assert.match(css, /\.main-menu button:disabled[\s\S]*cursor:\s*not-allowed/);
 assert.match(css, /#speechEditorButton::before/);
 assert.match(css, /#developerMenuButton::before/);
 assert.match(css, /#accessTokensButton::before/);
@@ -891,6 +908,14 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /"speech-training-target-selected"/
+);
+assert.match(
+    speechMicBarSource,
+    /"speech-training-telemetry"/
+);
+assert.match(
+    speechMicBarSource,
+    /toggleTrainingMic[\s\S]*if \(this\.trainingLocked\)[\s\S]*SpeechMenu[\s\S]*\.wake\?\.|\.sleep\?\./
 );
 assert.match(
     speechMicBarSource,
@@ -1607,7 +1632,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /id="optionsClose"[\s\S]*aria-label="Close speech commands"[\s\S]*>×<\/button>/
+    /id="optionsClose"[\s\S]*aria-label="Collapse speech commands"[\s\S]*>▼<\/button>/
 );
 assert.match(
     speechMicBarSource,
