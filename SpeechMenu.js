@@ -35,6 +35,9 @@ class SpeechMenu {
     static #debugFunction = data => console.log(data);
     static #executionEnabled = true;
     static #executionContext;
+    static #synthesizedSpeech = new Map();
+    static #synthesizedSpeechSequence = 0;
+    static #synthesizedSpeechGraceMilliseconds = 750;
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
@@ -95,6 +98,7 @@ class SpeechMenu {
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
     static get executionContext() { return SpeechMenu.#executionContext; }
+    static get synthesizedSpeechActive() { return SpeechMenu.#synthesizedSpeech.size > 0; }
     static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
@@ -142,6 +146,89 @@ class SpeechMenu {
         SpeechMenu.#emit("debugFunctionChanged", {
             debugFunction: SpeechMenu.#debugFunction
         });
+    }
+
+    static registerSynthesizedSpeech(value) {
+        const text =
+            SpeechMenu
+                .#normalizeTranscript(
+                    value
+                );
+
+        if (!text) {
+            return undefined;
+        }
+
+        const id =
+            ++SpeechMenu
+                .#synthesizedSpeechSequence;
+
+        SpeechMenu.#synthesizedSpeech
+            .set(
+                id,
+                {
+                    text,
+                    expiresAt:
+                        Infinity,
+                    timer:
+                        undefined
+                }
+            );
+
+        return id;
+    }
+
+    static unregisterSynthesizedSpeech(
+        id,
+        {
+            graceMilliseconds =
+                SpeechMenu
+                    .#synthesizedSpeechGraceMilliseconds
+        } = {}
+    ) {
+        const entry =
+            SpeechMenu
+                .#synthesizedSpeech
+                .get(id);
+
+        if (!entry) {
+            return false;
+        }
+
+        clearTimeout(
+            entry.timer
+        );
+
+        const delay =
+            Math.max(
+                0,
+                Number(
+                    graceMilliseconds
+                ) || 0
+            );
+
+        if (delay === 0) {
+            SpeechMenu
+                .#synthesizedSpeech
+                .delete(id);
+            return true;
+        }
+
+        entry.expiresAt =
+            performance.now() +
+            delay;
+
+        entry.timer =
+            setTimeout(
+                () => {
+                    SpeechMenu
+                        .#synthesizedSpeech
+                        .delete(id);
+                },
+                delay
+            );
+
+        return true;
     }
 
     static set executionEnabled(value) {
@@ -1690,8 +1777,11 @@ class SpeechMenu {
 
         const transcript =
             SpeechMenu
-                .#normalizeTranscript(
-                    detail.transcript
+                .#stripSynthesizedSpeech(
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            detail.transcript
+                        )
                 );
 
         if (!transcript) {
@@ -2245,6 +2335,96 @@ class SpeechMenu {
                 }
             );
         }
+    }
+
+    static #stripSynthesizedSpeech(value) {
+        let transcript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    value
+                );
+
+        if (
+            !transcript ||
+            !SpeechMenu
+                .#synthesizedSpeech
+                .size
+        ) {
+            return transcript;
+        }
+
+        const now =
+            performance.now();
+
+        const phrases = [];
+
+        for (
+            const [
+                id,
+                entry
+            ] of SpeechMenu
+                .#synthesizedSpeech
+        ) {
+            if (
+                entry.expiresAt !==
+                    Infinity &&
+                entry.expiresAt <= now
+            ) {
+                clearTimeout(
+                    entry.timer
+                );
+
+                SpeechMenu
+                    .#synthesizedSpeech
+                    .delete(id);
+
+                continue;
+            }
+
+            phrases.push(
+                entry.text
+            );
+        }
+
+        phrases.sort(
+            (left, right) =>
+                right.length -
+                left.length
+        );
+
+        for (
+            const phrase of
+            phrases
+        ) {
+            const escaped =
+                phrase.replace(
+                    /[-/\\^$*+?.()|[\]{}]/g,
+                    "\\$&"
+                );
+
+            transcript =
+                transcript
+                    .replace(
+                        new RegExp(
+                            "(?:^|\\s)" +
+                            escaped +
+                            "(?=\\s|$)",
+                            "g"
+                        ),
+                        " "
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!transcript) {
+                break;
+            }
+        }
+
+        return transcript;
     }
 
     static #normalizeTranscript(value) {
