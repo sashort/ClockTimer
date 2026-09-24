@@ -490,11 +490,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*subgrid/
+    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*minmax\(0, 1fr\)/
 );
 assert.match(
     speechMicBarSource,
-    /\.option-card[\s\S]*grid-template-columns:[\s\S]*subgrid/
+    /\.option-category[\s\S]*grid-template-columns:[\s\S]*42px[\s\S]*minmax\(0, 1fr\)/
 );
 assert.match(
     speechMicBarSource,
