@@ -84,6 +84,7 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         . 'observed VARCHAR(500) NOT NULL, '
         . 'observed_compact VARCHAR(500) NOT NULL, '
         . 'match_type ENUM("exact","prefix") NOT NULL DEFAULT "exact", '
+        . 'mapping_hash CHAR(64) NOT NULL, '
         . 'recognized_correct TINYINT(1) NOT NULL, '
         . 'training_style VARCHAR(100) NULL, '
         . 'prompt_index SMALLINT UNSIGNED NULL, '
@@ -100,7 +101,7 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         . 'KEY idx_speech_training_phrase (phrase_id, active, created_at), '
         . 'KEY idx_speech_training_user (user_id, active, created_at), '
         . 'KEY idx_speech_training_variant '
-        . '(phrase_id, active, observed_compact, canonical_compact, match_type), '
+        . '(phrase_id, active, mapping_hash), '
         . 'CONSTRAINT fk_speech_training_phrase '
         . 'FOREIGN KEY (phrase_id) REFERENCES speech_model_phrases(id) '
         . 'ON UPDATE RESTRICT ON DELETE RESTRICT, '
@@ -125,15 +126,16 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         . 'canonical VARCHAR(500) NOT NULL, '
         . 'canonical_compact VARCHAR(500) NOT NULL, '
         . 'match_type ENUM("exact","prefix") NOT NULL DEFAULT "exact", '
+        . 'mapping_hash CHAR(64) NOT NULL, '
         . 'enabled TINYINT(1) NOT NULL DEFAULT 1, '
         . 'occurrences INT UNSIGNED NOT NULL, '
         . 'contributor_count INT UNSIGNED NOT NULL, '
         . 'updated_at BIGINT UNSIGNED NOT NULL, '
         . 'PRIMARY KEY (id), '
         . 'UNIQUE KEY uq_speech_correction_phrase_mapping '
-        . '(phrase_id, observed_compact, canonical_compact, match_type), '
+        . '(phrase_id, mapping_hash), '
         . 'KEY idx_speech_correction_runtime '
-        . '(enabled, observed_compact, canonical_compact, match_type), '
+        . '(enabled, mapping_hash), '
         . 'CONSTRAINT fk_speech_correction_phrase '
         . 'FOREIGN KEY (phrase_id) REFERENCES speech_model_phrases(id) '
         . 'ON UPDATE RESTRICT ON DELETE CASCADE, '
@@ -148,10 +150,15 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         'CREATE TABLE IF NOT EXISTS speech_training_audit ('
         . 'id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, '
         . 'actor_user_id BIGINT UNSIGNED NOT NULL, '
+        . 'actor_username VARCHAR(191) NULL, '
         . 'subject_user_id BIGINT UNSIGNED NULL, '
+        . 'subject_username VARCHAR(191) NULL, '
         . 'language_model_component_id BIGINT UNSIGNED NULL, '
+        . 'language_code VARCHAR(32) NULL, '
         . 'component_id BIGINT UNSIGNED NULL, '
+        . 'component_key VARCHAR(500) NULL, '
         . 'phrase_id BIGINT UNSIGNED NULL, '
+        . 'phrase_key VARCHAR(500) NULL, '
         . 'contribution_id BIGINT UNSIGNED NULL, '
         . 'action VARCHAR(64) NOT NULL, '
         . 'details JSON NULL, '
@@ -160,6 +167,7 @@ function ensure_speech_corrections_schema(PDO $pdo): void
         . 'KEY idx_speech_training_audit_actor (actor_user_id, created_at), '
         . 'KEY idx_speech_training_audit_subject (subject_user_id, created_at), '
         . 'KEY idx_speech_training_audit_model (language_model_component_id, created_at), '
+        . 'KEY idx_speech_training_audit_language (language_code, created_at), '
         . 'KEY idx_speech_training_audit_phrase (phrase_id, created_at), '
         . 'KEY idx_speech_training_audit_contribution (contribution_id, created_at)'
         . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 '
@@ -719,10 +727,11 @@ function rebuild_speech_corrections(
         $pdo->prepare(
             'INSERT INTO speech_corrections '
             . '(phrase_id, observed, observed_compact, canonical, canonical_compact, '
-            . 'match_type, enabled, occurrences, contributor_count, updated_at) '
+            . 'match_type, mapping_hash, enabled, occurrences, contributor_count, updated_at) '
             . 'SELECT phrase_id, MAX(observed), observed_compact, MAX(canonical), '
-            . 'canonical_compact, match_type, 1, COUNT(*), COUNT(DISTINCT user_id), '
-            . 'MAX(created_at) '
+            . 'canonical_compact, match_type, '
+            . 'SHA2(CONCAT(observed_compact, CHAR(31), canonical_compact, CHAR(31), match_type), 256), '
+            . '1, COUNT(*), COUNT(DISTINCT user_id), MAX(created_at) '
             . 'FROM speech_training_contributions '
             . 'WHERE active = 1 '
             . 'AND recognized_correct = 0 '
@@ -746,21 +755,148 @@ function speech_training_audit_event(
     ?int $contributionId = null,
     array $details = []
 ): void {
+    $snapshot = [
+        'actor_username' => null,
+        'subject_username' => null,
+        'language_code' => null,
+        'component_key' => null,
+        'phrase_key' => null,
+    ];
+
+    $actor =
+        $pdo->prepare(
+            'SELECT username FROM users WHERE id = :id LIMIT 1'
+        );
+
+    $actor->execute([
+        ':id' => $actorUserId,
+    ]);
+
+    $actorUsername =
+        $actor->fetchColumn();
+
+    if ($actorUsername !== false) {
+        $snapshot['actor_username'] =
+            (string) $actorUsername;
+    }
+
+    if ($subjectUserId !== null) {
+        $subject =
+            $pdo->prepare(
+                'SELECT username FROM users WHERE id = :id LIMIT 1'
+            );
+
+        $subject->execute([
+            ':id' => $subjectUserId,
+        ]);
+
+        $subjectUsername =
+            $subject->fetchColumn();
+
+        if ($subjectUsername !== false) {
+            $snapshot['subject_username'] =
+                (string) $subjectUsername;
+        }
+    }
+
+    if ($phraseId !== null) {
+        $lookup =
+            $pdo->prepare(
+                'SELECT m.language_code, c.component_key, p.phrase_key '
+                . 'FROM speech_model_phrases p '
+                . 'INNER JOIN speech_model_components c ON c.id = p.component_id '
+                . 'INNER JOIN speech_model_components m '
+                . 'ON m.id = COALESCE(c.language_model_component_id, c.id) '
+                . 'WHERE p.id = :phrase_id LIMIT 1'
+            );
+
+        $lookup->execute([
+            ':phrase_id' => $phraseId,
+        ]);
+
+        $row = $lookup->fetch();
+
+        if ($row) {
+            $snapshot['language_code'] =
+                (string) $row['language_code'];
+            $snapshot['component_key'] =
+                (string) $row['component_key'];
+            $snapshot['phrase_key'] =
+                (string) $row['phrase_key'];
+        }
+    } elseif ($componentId !== null) {
+        $lookup =
+            $pdo->prepare(
+                'SELECT m.language_code, c.component_key '
+                . 'FROM speech_model_components c '
+                . 'INNER JOIN speech_model_components m '
+                . 'ON m.id = COALESCE(c.language_model_component_id, c.id) '
+                . 'WHERE c.id = :component_id LIMIT 1'
+            );
+
+        $lookup->execute([
+            ':component_id' => $componentId,
+        ]);
+
+        $row = $lookup->fetch();
+
+        if ($row) {
+            $snapshot['language_code'] =
+                (string) $row['language_code'];
+            $snapshot['component_key'] =
+                (string) $row['component_key'];
+        }
+    } elseif ($languageModelComponentId !== null) {
+        $lookup =
+            $pdo->prepare(
+                'SELECT language_code, component_key '
+                . 'FROM speech_model_components '
+                . 'WHERE id = :model_id LIMIT 1'
+            );
+
+        $lookup->execute([
+            ':model_id' =>
+                $languageModelComponentId,
+        ]);
+
+        $row = $lookup->fetch();
+
+        if ($row) {
+            $snapshot['language_code'] =
+                (string) $row['language_code'];
+            $snapshot['component_key'] =
+                (string) $row['component_key'];
+        }
+    }
+
     $insert =
         $pdo->prepare(
             'INSERT INTO speech_training_audit '
-            . '(actor_user_id, subject_user_id, language_model_component_id, '
-            . 'component_id, phrase_id, contribution_id, action, details, created_at) '
-            . 'VALUES (:actor_user_id, :subject_user_id, :model_id, :component_id, '
-            . ':phrase_id, :contribution_id, :action, :details, :created_at)'
+            . '(actor_user_id, actor_username, subject_user_id, subject_username, '
+            . 'language_model_component_id, language_code, component_id, component_key, '
+            . 'phrase_id, phrase_key, contribution_id, action, details, created_at) '
+            . 'VALUES (:actor_user_id, :actor_username, :subject_user_id, '
+            . ':subject_username, :model_id, :language_code, :component_id, '
+            . ':component_key, :phrase_id, :phrase_key, :contribution_id, '
+            . ':action, :details, :created_at)'
         );
 
     $insert->execute([
         ':actor_user_id' => $actorUserId,
+        ':actor_username' =>
+            $snapshot['actor_username'],
         ':subject_user_id' => $subjectUserId,
+        ':subject_username' =>
+            $snapshot['subject_username'],
         ':model_id' => $languageModelComponentId,
+        ':language_code' =>
+            $snapshot['language_code'],
         ':component_id' => $componentId,
+        ':component_key' =>
+            $snapshot['component_key'],
         ':phrase_id' => $phraseId,
+        ':phrase_key' =>
+            $snapshot['phrase_key'],
         ':contribution_id' => $contributionId,
         ':action' => $action,
         ':details' =>
