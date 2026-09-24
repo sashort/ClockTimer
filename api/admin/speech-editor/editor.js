@@ -61,6 +61,12 @@
     const trainingEndpoint =
         "../../speech-corrections/";
 
+    const trainingLanguage =
+        document.body
+            .dataset
+            .speechLanguage ||
+        "en-US";
+
     const trainingRequested =
         document.body
             .dataset
@@ -204,7 +210,7 @@
         value =>
             String(value || "")
                 .toLocaleLowerCase(
-                    "en-US"
+                    trainingLanguage
                 )
                 .replace(
                     /[^\p{L}\p{N}\s:.]+/gu,
@@ -435,7 +441,7 @@
 
             url.searchParams.set(
                 "language",
-                "en-US"
+                trainingLanguage
             );
 
             if (
@@ -846,7 +852,7 @@
                 action:
                     "contributions",
                 language:
-                    "en-US",
+                    trainingLanguage,
                 userId:
                     contributor
                         .userId,
@@ -1742,7 +1748,7 @@
             ) {
                 const started =
                     await speechMenu.start(
-                        "en-US"
+                        trainingLanguage
                     );
 
                 if (!started) {
@@ -13663,7 +13669,7 @@
                             action:
                                 "correction",
                             language:
-                                "en-US",
+                                trainingLanguage,
                             componentKey:
                                 trainingCurrent
                                     ?.componentKey,
