@@ -837,10 +837,10 @@ class SpeechMicBar extends HTMLElement {
             </style>
             <section
                 id="optionsPanel"
-                aria-label="Available Speech Commands"
+                aria-label="Speech Options"
                 aria-hidden="true"
             >
-                <div id="optionsHeader">Available Speech Commands</div>
+                <div id="optionsHeader">Speech Options</div>
                 <button
                     id="optionsClose"
                     type="button"
