@@ -690,7 +690,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /id="optionsHeader">Available Speech Commands<\/div>/
+    /id="optionsHeader">Speech Options<\/div>/
 );
 assert.match(
     speechMicBarSource,
