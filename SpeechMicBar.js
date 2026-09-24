@@ -1023,6 +1023,13 @@ class SpeechMicBar extends HTMLElement {
             .SpeechMenu
             ?.refresh?.();
 
+        if (
+            this.state ===
+                "muted"
+        ) {
+            this.#showIdleText();
+        }
+
         return true;
     }
 
@@ -3772,9 +3779,6 @@ class SpeechMicBar extends HTMLElement {
                 this.clear();
                 break;
             case "muted":
-                void this.hideOptions({
-                    duration: 0
-                });
                 this.#currentUtteranceId =
                     undefined;
                 this.#currentTranscript = "";
@@ -4096,10 +4100,43 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
+    #wakeActivationPhrase() {
+        const pattern =
+            this.#wakeCommand
+                ?.getAttribute(
+                    "speech-pattern"
+                ) ||
+            "";
+
+        const phrases =
+            globalThis
+                .SpeechMenu
+                ?.extrapolatePattern?.(
+                    pattern
+                ) ||
+            [];
+
+        return (
+            phrases.find(
+                phrase =>
+                    String(
+                        phrase ||
+                        ""
+                    ).trim()
+            ) ||
+            "wake"
+        );
+    }
+
     #showIdleText() {
         this.#showStatus(
             this.state === "muted"
-                ? "Muted"
+                ? (
+                    "Say " +
+                    this
+                        .#wakeActivationPhrase() +
+                    " to Activate"
+                )
                 : this.state === "suspended"
                     ? "Listening paused"
                     : this.state === "stopped"
