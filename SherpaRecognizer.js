@@ -14,6 +14,9 @@
         static sampleRate = 16000;
         static runtimeBase = "speech/sherpa/runtime";
         static workerSource = "speech/SherpaWorker.js";
+        static get runtimeRevision() {
+            return version || "";
+        }
 
         #worker;
         #readyPromise;
