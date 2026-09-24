@@ -6182,6 +6182,52 @@
         }
     }
 
+    function showSpeechTrainingWidget() {
+        if (!speechTrainingWidget) {
+            return false;
+        }
+
+        speechTrainingWidget.hidden =
+            false;
+
+        try {
+            if (
+                !speechTrainingWidget.matches(
+                    ":popover-open"
+                )
+            ) {
+                speechTrainingWidget
+                    .showPopover?.();
+            }
+        }
+        catch {}
+
+        return true;
+    }
+
+    function hideSpeechTrainingWidget() {
+        if (!speechTrainingWidget) {
+            return false;
+        }
+
+        try {
+            if (
+                speechTrainingWidget.matches(
+                    ":popover-open"
+                )
+            ) {
+                speechTrainingWidget
+                    .hidePopover?.();
+            }
+        }
+        catch {}
+
+        speechTrainingWidget.hidden =
+            true;
+
+        return true;
+    }
+
     function setSpeechTrainingPrompt(
         state,
         label
@@ -6459,11 +6505,6 @@
 
         resetSpeechTrainingTarget();
 
-        if (speechTrainingWidget) {
-            speechTrainingWidget.hidden =
-                false;
-        }
-
         globalThis.SpeechMenu
             ?.extrapolatePhrases?.();
 
@@ -6474,6 +6515,10 @@
                     ?.phraseGroups ||
                 []
             );
+
+        if (speechTrainingTarget) {
+            showSpeechTrainingWidget();
+        }
 
         mainMenu
             ?.hidePopover?.();
@@ -6507,8 +6552,7 @@
             ?.hideOptions?.();
 
         if (speechTrainingWidget) {
-            speechTrainingWidget.hidden =
-                true;
+            hideSpeechTrainingWidget();
             speechTrainingWidget.style.left =
                 "";
             speechTrainingWidget.style.top =
@@ -7477,6 +7521,8 @@
                 speechTrainingTarget = {
                     ...event.detail
                 };
+
+                showSpeechTrainingWidget();
 
                 speechTrainingUtteranceCount =
                     0;
