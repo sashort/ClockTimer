@@ -9,6 +9,7 @@ class SpeechMenu {
     static #silenceTimeout = 5000;
     static #commitSilenceTimeout = 350;
     static #terminalCommitSilenceTimeout = 120;
+    static #maximumCandidateHoldTimeout = 1000;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
@@ -1309,6 +1310,10 @@ class SpeechMenu {
                 undefined,
             candidateCommitTimer:
                 undefined,
+            candidateHardCommitTimer:
+                undefined,
+            lastExactCandidate:
+                undefined,
             committed: false,
             committing: false,
             recognitionStopped: false
@@ -1779,6 +1784,7 @@ class SpeechMenu {
         if (
             !pool.length &&
             !utterance.committing &&
+            !utterance.lastExactCandidate &&
             !SpeechMenu.#sleeping
         ) {
             const id =
@@ -2415,6 +2421,22 @@ class SpeechMenu {
                 utterance
             );
 
+        if (
+            utterance
+                .candidateHardCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateHardCommitTimer
+            );
+
+            utterance.candidateHardCommitTimer =
+                undefined;
+        }
+
+        utterance.lastExactCandidate =
+            undefined;
         utterance.candidatePool = [];
     }
 
@@ -2467,6 +2489,64 @@ class SpeechMenu {
                 "wake"
         ) {
             return false;
+        }
+
+        utterance.lastExactCandidate = {
+            ...exactCandidate,
+            transcript:
+                utterance.transcript
+        };
+
+        if (
+            utterance
+                .candidateHardCommitTimer ===
+            undefined
+        ) {
+            utterance.candidateHardCommitTimer =
+                setTimeout(
+                    () => {
+                        utterance
+                            .candidateHardCommitTimer =
+                            undefined;
+
+                        if (
+                            SpeechMenu.#stopped ||
+                            SpeechMenu.#utterance !==
+                                utterance ||
+                            utterance.committed ||
+                            utterance.committing
+                        ) {
+                            return;
+                        }
+
+                        const candidate =
+                            SpeechMenu
+                                .#exactCandidate(
+                                    utterance
+                                ) ||
+                            utterance
+                                .lastExactCandidate;
+
+                        if (!candidate) {
+                            return;
+                        }
+
+                        utterance.candidatePool = [
+                            candidate
+                        ];
+
+                        utterance.transcript =
+                            candidate.transcript ||
+                            utterance.transcript;
+
+                        void SpeechMenu
+                            .#commitUtterance(
+                                utterance
+                            );
+                    },
+                    SpeechMenu
+                        .#maximumCandidateHoldTimeout
+                );
         }
 
         if (
