@@ -2198,7 +2198,9 @@
         );
     }
 
-    function updateFocusedMainMenuBounds() {
+    function updateFocusedMainMenuBounds(
+        knownFullHeight
+    ) {
         const current =
             mainMenuLayoutState
                 .focusStack
@@ -2220,12 +2222,16 @@
             );
 
         const fullHeight =
-            Math.max(
-                group.scrollHeight,
-                group
-                    .getBoundingClientRect()
-                    .height
-            );
+            Number.isFinite(
+                knownFullHeight
+            )
+                ? knownFullHeight
+                : Math.max(
+                    group.scrollHeight,
+                    group
+                        .getBoundingClientRect()
+                        .height
+                );
 
         const paneHeight =
             Math.max(
@@ -2417,6 +2423,11 @@
                 sourceRoot,
                 group
             )
+                .filter(
+                    element =>
+                        element !==
+                        placeholder
+                )
                 .map(
                     element => ({
                         element,
@@ -2513,7 +2524,22 @@
             .focused =
             entry;
 
-        updateFocusedMainMenuBounds();
+        const intendedFocusHeight =
+            targetRect.height +
+            growing.reduce(
+                (
+                    total,
+                    record
+                ) =>
+                    total +
+                    record.metrics
+                        .outerHeight,
+                0
+            );
+
+        updateFocusedMainMenuBounds(
+            intendedFocusHeight
+        );
 
         const moveDuration =
             Math.max(
