@@ -5142,6 +5142,52 @@
 
             const prepared = this.#preparedTrip;
             const { tripId: ignoredTripId, ...localOptions } = options;
+
+            let transactionTime;
+
+            try {
+                const suppliedTransactionTime =
+                    this.#transactionTimestampProvider
+                        ?.();
+
+                if (
+                    suppliedTransactionTime !==
+                        undefined &&
+                    suppliedTransactionTime !==
+                        null
+                ) {
+                    transactionTime =
+                        suppliedTransactionTime instanceof Date
+                            ? new Date(
+                                suppliedTransactionTime.getTime()
+                            )
+                            : new Date(
+                                suppliedTransactionTime
+                            );
+
+                    if (
+                        Number.isNaN(
+                            transactionTime.getTime()
+                        )
+                    ) {
+                        transactionTime =
+                            undefined;
+                    }
+                }
+            }
+            catch {}
+
+            if (
+                transactionTime &&
+                localOptions.creationTime ===
+                    undefined
+            ) {
+                localOptions.creationTime =
+                    this.#dateToStandardTime(
+                        transactionTime
+                    );
+            }
+
             if (prepared) {
                 if (localOptions.creationTime === undefined) localOptions.creationTime = prepared.creationTime;
                 if (localOptions.startTime === undefined) localOptions.startTime = prepared.startTime;
@@ -5294,7 +5340,11 @@
                             new Date()
                         )
                     )
-                    : stopTime;
+                    : stopTime instanceof Date
+                        ? this.#dateToStandardTime(
+                            stopTime
+                        )
+                        : stopTime;
 
             const parsed = this.#validateClockTime(effectiveStopTime, "stopTime");
             const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
