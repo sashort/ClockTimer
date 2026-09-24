@@ -28,13 +28,14 @@
                 setTripGoal: "^trip goal (?<percent>.+)$",
                 setTotalGoal: "^total goal (?<percent>.+)$",
                 readGoalMode: "^mode$",
-                goalMode: "^(?<goalMode>auto|total|trip)(?: mode)?$",
+                goalMode: "^(?<goalMode>auto|total|trip) mode$",
                 sync: "^sync(?: (?<syncAction>on|off))?$",
                 lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
                 showTripLog: "^(?:show )?trip log$",
                 hideTripLog: "^(?:hide|close) trip log$",
                 deferTrip: "^defer trip$",
-                renderedTimeMode: "^(?:time )?(?<timeMode>elapsed|remaining|end(?: time)?)$",
+                readRenderedTime: "^(?<timeMode>time remaining|time elapsed|end time)$",
+                renderedTimeMode: "^show (?<timeMode>time remaining|time elapsed|end time)$",
                 keypadValue: "^(?<spokenValue>.+)$"
             })
         }),
