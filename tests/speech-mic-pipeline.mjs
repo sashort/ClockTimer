@@ -758,6 +758,18 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /#animateOptionMove\([\s\S]*before\.left\s*-\s*after\.left[\s\S]*translate\(/
+);
+assert.match(
+    speechMicBarSource,
+    /row\.style\.order\s*=\s*String\([\s\S]*index/
+);
+assert.match(
+    speechMicBarSource,
+    /box\.style\.order\s*=\s*String\([\s\S]*index/
+);
+assert.match(
+    speechMicBarSource,
     /#optionItemKey\([\s\S]*optionItemText/
 );
 assert.match(
