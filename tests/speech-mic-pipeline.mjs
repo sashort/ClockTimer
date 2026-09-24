@@ -55,6 +55,10 @@ assert.equal(typeof bar.clear, "function");
 assert.equal(typeof bar.showOptions, "function");
 assert.equal(typeof bar.hideOptions, "function");
 assert.equal(typeof bar.promoteTopLayer, "function");
+assert.match(
+    bar.shadowRoot?.innerHTML || "",
+    /Available Speech Commands/
+);
 
 assert.equal(
     SpeechMenu.synthesizedSpeechActive,
@@ -629,6 +633,26 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /hideOptions\([\s\S]*getComputedStyle[\s\S]*#optionsPanel[\s\S]*currentClipPath/
+);
+assert.match(
+    speechMicBarSource,
+    /id="optionsHeader">Available Speech Commands<\/div>/
+);
+assert.match(
+    speechMicBarSource,
+    /option-phrase\.unimplemented[\s\S]*option-command-text[\s\S]*text-decoration-line:\s*line-through/
+);
+assert.match(
+    speechMicBarSource,
+    /option-unimplemented-label[\s\S]*text-overflow:\s*clip[\s\S]*font-size:\s*\.72em/
+);
+assert.match(
+    speechMicBarSource,
+    /status\.textContent\s*=\s*" \(unimplemented\)"/
+);
+assert.match(
+    speechMenuSource,
+    /static isCommandImplemented\(element\)/
 );
 
 assert.match(
