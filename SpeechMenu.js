@@ -2625,40 +2625,45 @@ class SpeechMenu {
 
         if (
             utterance
-                .candidateHardCommitTimer ===
+                .candidateHardCommitTimer !==
             undefined
         ) {
-            utterance.candidateHardCommitAt =
-                performance.now() +
-                SpeechMenu
-                    .#maximumCandidateHoldTimeout;
-
-            utterance.candidateHardCommitTimer =
-                setTimeout(
-                    () => {
-                        utterance
-                            .candidateHardCommitTimer =
-                            undefined;
-
-                        if (
-                            SpeechMenu.#stopped ||
-                            SpeechMenu.#utterance !==
-                                utterance ||
-                            utterance.committed ||
-                            utterance.committing
-                        ) {
-                            return;
-                        }
-
-                        SpeechMenu
-                            .#commitHeldCandidate(
-                                utterance
-                            );
-                    },
-                    SpeechMenu
-                        .#maximumCandidateHoldTimeout
-                );
+            clearTimeout(
+                utterance
+                    .candidateHardCommitTimer
+            );
         }
+
+        utterance.candidateHardCommitAt =
+            performance.now() +
+            SpeechMenu
+                .#maximumCandidateHoldTimeout;
+
+        utterance.candidateHardCommitTimer =
+            setTimeout(
+                () => {
+                    utterance
+                        .candidateHardCommitTimer =
+                        undefined;
+
+                    if (
+                        SpeechMenu.#stopped ||
+                        SpeechMenu.#utterance !==
+                            utterance ||
+                        utterance.committed ||
+                        utterance.committing
+                    ) {
+                        return;
+                    }
+
+                    SpeechMenu
+                        .#commitHeldCandidate(
+                            utterance
+                        );
+                },
+                SpeechMenu
+                    .#maximumCandidateHoldTimeout
+            );
 
         if (
             utterance
@@ -2669,6 +2674,15 @@ class SpeechMenu {
                 utterance
                     .candidateCommitTimer
             );
+
+            utterance.candidateCommitTimer =
+                undefined;
+        }
+
+        if (
+            exactCandidate.continuation
+        ) {
+            return true;
         }
 
         const delay =
