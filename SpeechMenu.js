@@ -77,6 +77,8 @@ class SpeechMenu {
                             "speech-pattern",
                             "speech-modal",
                             "speech-index",
+                            "data-speech-options-group",
+                            "data-speech-options-category",
                             "open",
                             "hidden",
                             "disabled",
@@ -964,6 +966,20 @@ class SpeechMenu {
                                 element
                             ),
                     pattern,
+                    optionsGroup:
+                        element
+                            .getAttribute(
+                                "data-speech-options-group"
+                            )
+                            ?.trim() ||
+                        undefined,
+                    optionsCategory:
+                        element
+                            .getAttribute(
+                                "data-speech-options-category"
+                            )
+                            ?.trim() ||
+                        undefined,
                     phrases:
                         Object.freeze(
                             extrapolated.slice()
@@ -1012,6 +1028,10 @@ class SpeechMenu {
                             next.element ||
                         group.pattern !==
                             next.pattern ||
+                        group.optionsGroup !==
+                            next.optionsGroup ||
+                        group.optionsCategory !==
+                            next.optionsCategory ||
                         group.phrases.length !==
                             next.phrases.length ||
                         group.phrases.some(
