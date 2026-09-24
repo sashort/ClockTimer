@@ -14135,8 +14135,8 @@
             const speechTargets = {
                 readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
-                resume:"#downResumeButton", tripGoal:"#goalPercentValue", totalGoal:"#goalPercentValue",
-                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", readGoalMode:"#scopeToggle", goalMode:"#scopeToggle",
+                resume:"#downResumeButton",
+                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", goalMode:"#scopeToggle",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
