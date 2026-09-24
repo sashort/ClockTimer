@@ -853,6 +853,22 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /#measureOptionCategoryHeight\([\s\S]*#createOptionCategory\([\s\S]*getBoundingClientRect\(\)[\s\S]*section\.remove\(\)/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionCategoryResize\([\s\S]*fromHeight[\s\S]*toHeight[\s\S]*section\.animate/
+);
+assert.match(
+    speechMicBarSource,
+    /const categoryResizePlan[\s\S]*#measureOptionCategoryHeight\([\s\S]*for \([\s\S]*existingCategories[\s\S]*#animateOptionExit/
+);
+assert.match(
+    speechMicBarSource,
+    /categoryResizePlan\.get\([\s\S]*#animateOptionCategoryResize\([\s\S]*#syncOptionCards\(/
+);
+assert.match(
+    speechMicBarSource,
     /#animateOptionEnter\([\s\S]*height:[\s\S]*opacity:[\s\S]*scaleY/
 );
 assert.match(
