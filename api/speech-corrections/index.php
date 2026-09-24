@@ -346,7 +346,7 @@ $phraseTraining =
                 'SELECT id, source, canonical, canonical_compact, '
                 . 'observed, observed_compact, match_type, recognized_correct, '
                 . 'user_id, training_style, prompt_index, recognizer, pipeline, '
-                . 'runtime_revision, active, revoked_at, revoked_by_user_id, '
+                . 'runtime_revision, metadata, active, revoked_at, revoked_by_user_id, '
                 . 'revocation_reason, created_at '
                 . 'FROM speech_training_contributions '
                 . 'WHERE phrase_id = :phrase_id '
@@ -366,6 +366,21 @@ $phraseTraining =
             $statement->fetchAll()
             as $row
         ) {
+            $sampleMetadata =
+                is_string(
+                    $row['metadata'] ??
+                    null
+                )
+                    ? json_decode(
+                        (string) $row['metadata'],
+                        true
+                    )
+                    : null;
+
+            if (!is_array($sampleMetadata)) {
+                $sampleMetadata = [];
+            }
+
             $sample = [
                 'id' =>
                     (int) $row['id'],
@@ -416,6 +431,18 @@ $phraseTraining =
                     $row[
                         'runtime_revision'
                     ],
+                'metadata' =>
+                    $sampleMetadata,
+                'divergenceStatus' =>
+                    isset(
+                        $sampleMetadata[
+                            'divergenceStatus'
+                        ]
+                    )
+                        ? (string) $sampleMetadata[
+                            'divergenceStatus'
+                        ]
+                        : null,
                 'active' =>
                     (bool) $row['active'],
                 'revokedAt' =>
@@ -660,6 +687,185 @@ $phraseTraining =
         ];
     };
 
+
+$divergenceClusters =
+    static function (
+        ?array $languageModel
+    ) use (
+        $pdo
+    ): array {
+        if ($languageModel === null) {
+            return [];
+        }
+
+        $statement =
+            $pdo->prepare(
+                'SELECT tc.id, tc.phrase_id, tc.user_id, tc.observed, '
+                . 'tc.observed_compact, tc.created_at, tc.metadata, '
+                . 'p.phrase_key, p.phrase, c.id AS component_id, '
+                . 'c.component_key, u.username, u.preferred_name, '
+                . 'u.first_name, u.last_name '
+                . 'FROM speech_training_contributions tc '
+                . 'INNER JOIN speech_model_phrases p ON p.id = tc.phrase_id '
+                . 'INNER JOIN speech_model_components c ON c.id = p.component_id '
+                . 'LEFT JOIN users u ON u.id = tc.user_id '
+                . 'WHERE tc.active = 1 '
+                . 'AND COALESCE(c.language_model_component_id, c.id) = :model_id '
+                . 'AND JSON_UNQUOTE(JSON_EXTRACT(tc.metadata, "$.divergenceStatus")) = "pending" '
+                . 'ORDER BY tc.created_at DESC, tc.id DESC'
+            );
+
+        $statement->execute([
+            ':model_id' =>
+                (int) $languageModel['id'],
+        ]);
+
+        $clusters = [];
+
+        foreach (
+            $statement->fetchAll()
+            as $row
+        ) {
+            $metadata =
+                is_string(
+                    $row['metadata'] ??
+                    null
+                )
+                    ? json_decode(
+                        (string) $row['metadata'],
+                        true
+                    )
+                    : null;
+
+            if (!is_array($metadata)) {
+                $metadata = [];
+            }
+
+            $key =
+                (string) $row['phrase_id'] .
+                "\x1F" .
+                (string) $row[
+                    'observed_compact'
+                ];
+
+            if (!isset($clusters[$key])) {
+                $clusters[$key] = [
+                    'phraseId' =>
+                        (int) $row['phrase_id'],
+                    'phraseKey' =>
+                        (string) $row[
+                            'phrase_key'
+                        ],
+                    'phrase' =>
+                        (string) $row['phrase'],
+                    'componentId' =>
+                        (int) $row[
+                            'component_id'
+                        ],
+                    'componentKey' =>
+                        (string) $row[
+                            'component_key'
+                        ],
+                    'observed' =>
+                        (string) $row['observed'],
+                    'observedCompact' =>
+                        (string) $row[
+                            'observed_compact'
+                        ],
+                    'commandId' =>
+                        isset(
+                            $metadata['commandId']
+                        )
+                            ? (string) $metadata[
+                                'commandId'
+                            ]
+                            : null,
+                    'commandKey' =>
+                        isset(
+                            $metadata['commandKey']
+                        )
+                            ? (string) $metadata[
+                                'commandKey'
+                            ]
+                            : null,
+                    'status' =>
+                        'pending',
+                    'samples' => 0,
+                    'sampleIds' => [],
+                    'contributors' => [],
+                    'lastSeenAt' =>
+                        (int) $row[
+                            'created_at'
+                        ],
+                ];
+            }
+
+            $clusters[$key]['samples']++;
+            $clusters[$key][
+                'sampleIds'
+            ][] =
+                (int) $row['id'];
+            $clusters[$key][
+                'contributors'
+            ][
+                (int) $row['user_id']
+            ] =
+                true;
+            $clusters[$key][
+                'lastSeenAt'
+            ] =
+                max(
+                    $clusters[$key][
+                        'lastSeenAt'
+                    ],
+                    (int) $row[
+                        'created_at'
+                    ]
+                );
+        }
+
+        foreach (
+            $clusters
+            as &$cluster
+        ) {
+            $cluster[
+                'contributorCount'
+            ] =
+                count(
+                    $cluster[
+                        'contributors'
+                    ]
+                );
+
+            unset(
+                $cluster[
+                    'contributors'
+                ]
+            );
+        }
+
+        unset($cluster);
+
+        $clusters =
+            array_values(
+                $clusters
+            );
+
+        usort(
+            $clusters,
+            static fn (
+                array $left,
+                array $right
+            ): int =>
+                $right['samples'] <=>
+                    $left['samples'] ||
+                $right['lastSeenAt'] <=>
+                    $left['lastSeenAt']
+        );
+
+        return $clusters;
+    };
+
 $languageModel =
     speech_model_root(
         $pdo,
@@ -673,6 +879,8 @@ if ($method === 'GET') {
         '1';
 
     $manageUser = null;
+    $canReviewDivergence =
+        false;
 
     if ($manage) {
         $manageUser =
@@ -686,6 +894,18 @@ if ($method === 'GET') {
                 ],
                 ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
             );
+
+            $canReviewDivergence =
+                true;
+        } else {
+            $canReviewDivergence =
+                permission_mask_allows_any(
+                    (int) $manageUser[
+                        'permissions'
+                    ],
+                    PERMISSION_DEVELOPER_PREVIEW,
+                    PERMISSION_DEVELOPER
+                );
         }
     }
 
@@ -763,6 +983,13 @@ if ($method === 'GET') {
 
         $payload['csrfToken'] =
             csrf_token();
+
+        if ($canReviewDivergence) {
+            $payload['divergences'] =
+                $divergenceClusters(
+                    $languageModel
+                );
+        }
 
         if (
             $languageModel !==
@@ -1332,14 +1559,20 @@ if (
 }
 
 $writeUser =
-    require_permission(
-        PERMISSION_DEVELOPER
-    );
+    current_user();
 
 require_csrf();
 
 $actorId =
     (int) $writeUser['id'];
+
+$writeIsDeveloper =
+    permission_mask_allows(
+        (int) $writeUser[
+            'permissions'
+        ],
+        PERMISSION_DEVELOPER
+    );
 
 $languageModel =
     speech_model_root(
@@ -1363,8 +1596,337 @@ if (
     $method ===
         'POST' &&
     $action ===
+        'divergence-review'
+) {
+    if (!$writeIsDeveloper) {
+        api_error(
+            'Developer permission is required to review divergent commands.',
+            403,
+            'permission_denied'
+        );
+    }
+
+    $decision =
+        is_string(
+            $input['decision'] ??
+            null
+        )
+            ? strtolower(
+                trim(
+                    (string) $input[
+                        'decision'
+                    ]
+                )
+            )
+            : '';
+
+    if (
+        !in_array(
+            $decision,
+            [
+                'approve',
+                'merge',
+                'purge',
+            ],
+            true
+        )
+    ) {
+        api_error(
+            'decision must be approve, merge, or purge.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $rawIds =
+        $input['ids'] ??
+        [];
+
+    if (
+        !is_array($rawIds) ||
+        $rawIds === [] ||
+        count($rawIds) > 250
+    ) {
+        api_error(
+            'ids must contain between 1 and 250 contribution IDs.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $ids =
+        array_values(
+            array_unique(
+                array_map(
+                    static fn (
+                        mixed $value
+                    ): int =>
+                        is_int($value) ||
+                        (
+                            is_string($value) &&
+                            ctype_digit($value)
+                        )
+                            ? (int) $value
+                            : 0,
+                    $rawIds
+                )
+            )
+        );
+
+    $ids =
+        array_values(
+            array_filter(
+                $ids,
+                static fn (
+                    int $id
+                ): bool =>
+                    $id > 0
+            )
+        );
+
+    if ($ids === []) {
+        api_error(
+            'No valid contribution IDs were provided.',
+            422,
+            'invalid_argument'
+        );
+    }
+
+    $placeholders =
+        implode(
+            ',',
+            array_fill(
+                0,
+                count($ids),
+                '?'
+            )
+        );
+
+    $find =
+        $pdo->prepare(
+            'SELECT tc.id, tc.phrase_id '
+            . 'FROM speech_training_contributions tc '
+            . 'INNER JOIN speech_model_phrases p ON p.id = tc.phrase_id '
+            . 'INNER JOIN speech_model_components c ON c.id = p.component_id '
+            . 'WHERE tc.id IN (' .
+            $placeholders .
+            ') '
+            . 'AND tc.active = 1 '
+            . 'AND COALESCE(c.language_model_component_id, c.id) = ? '
+            . 'AND JSON_UNQUOTE(JSON_EXTRACT(tc.metadata, "$.divergenceStatus")) = "pending"'
+        );
+
+    $find->execute([
+        ...$ids,
+        (int) $languageModel['id'],
+    ]);
+
+    $rows =
+        $find->fetchAll();
+
+    if ($rows === []) {
+        api_error(
+            'No pending divergent training contributions matched.',
+            404,
+            'speech_divergence_not_found'
+        );
+    }
+
+    $reviewIds =
+        array_map(
+            static fn (
+                array $row
+            ): int =>
+                (int) $row['id'],
+            $rows
+        );
+
+    $phraseIds =
+        array_values(
+            array_unique(
+                array_map(
+                    static fn (
+                        array $row
+                    ): int =>
+                        (int) $row[
+                            'phrase_id'
+                        ],
+                    $rows
+                )
+            )
+        );
+
+    $reviewPlaceholders =
+        implode(
+            ',',
+            array_fill(
+                0,
+                count($reviewIds),
+                '?'
+            )
+        );
+
+    $now =
+        time();
+
+    $status =
+        $decision ===
+            'approve'
+                ? 'approved'
+                : (
+                    $decision ===
+                        'merge'
+                        ? 'merged'
+                        : 'purged'
+                );
+
+    try {
+        $pdo->beginTransaction();
+
+        if ($decision === 'purge') {
+            $update =
+                $pdo->prepare(
+                    'UPDATE speech_training_contributions '
+                    . 'SET metadata = JSON_SET('
+                    . 'COALESCE(metadata, JSON_OBJECT()), '
+                    . '"$.divergenceStatus", ?, '
+                    . '"$.divergenceDecision", ?, '
+                    . '"$.divergenceReviewedByUserId", ?, '
+                    . '"$.divergenceReviewedAt", ?'
+                    . '), active = 0, revoked_at = ?, '
+                    . 'revoked_by_user_id = ?, '
+                    . 'revocation_reason = ? '
+                    . 'WHERE id IN (' .
+                    $reviewPlaceholders .
+                    ')'
+                );
+
+            $update->execute([
+                $status,
+                $decision,
+                $actorId,
+                $now,
+                $now,
+                $actorId,
+                'Divergent phrase purged by developer',
+                ...$reviewIds,
+            ]);
+        } else {
+            $update =
+                $pdo->prepare(
+                    'UPDATE speech_training_contributions '
+                    . 'SET metadata = JSON_SET('
+                    . 'COALESCE(metadata, JSON_OBJECT()), '
+                    . '"$.divergenceStatus", ?, '
+                    . '"$.divergenceDecision", ?, '
+                    . '"$.divergenceReviewedByUserId", ?, '
+                    . '"$.divergenceReviewedAt", ?'
+                    . ') '
+                    . 'WHERE id IN (' .
+                    $reviewPlaceholders .
+                    ')'
+                );
+
+            $update->execute([
+                $status,
+                $decision,
+                $actorId,
+                $now,
+                ...$reviewIds,
+            ]);
+        }
+
+        $derived =
+            rebuild_speech_corrections(
+                $pdo,
+                (int) $languageModel[
+                    'id'
+                ],
+                $phraseIds
+            );
+
+        speech_training_audit_event(
+            $pdo,
+            $actorId,
+            'divergence-' .
+                (
+                    $decision ===
+                        'approve'
+                        ? 'approved'
+                        : (
+                            $decision ===
+                                'merge'
+                                ? 'merged'
+                                : 'purged'
+                        )
+                ),
+            (int) $languageModel[
+                'id'
+            ],
+            null,
+            count($phraseIds) ===
+                1
+                    ? $phraseIds[0]
+                    : null,
+            null,
+            null,
+            [
+                'contributionIds' =>
+                    $reviewIds,
+                'phraseIds' =>
+                    $phraseIds,
+                'decision' =>
+                    $decision,
+                'derivedCorrections' =>
+                    $derived,
+            ]
+        );
+
+        $pdo->commit();
+    } catch (
+        Throwable $error
+    ) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $error;
+    }
+
+    json_response([
+        'reviewed' =>
+            count($reviewIds),
+        'decision' =>
+            $decision,
+        'contributionIds' =>
+            $reviewIds,
+        'phraseIds' =>
+            $phraseIds,
+        'divergences' =>
+            $divergenceClusters(
+                $languageModel
+            ),
+        'corrections' =>
+            $runtimeCorrections(
+                $languageModel,
+                true
+            ),
+    ]);
+}
+
+if (
+    $method ===
+        'POST' &&
+    $action ===
         'rebuild'
 ) {
+    if (!$writeIsDeveloper) {
+        api_error(
+            'Developer permission is required to rebuild speech training.',
+            403,
+            'permission_denied'
+        );
+    }
     $phraseIds = null;
     $phraseId = null;
     $componentId = null;
@@ -1495,6 +2057,13 @@ if (
     $action ===
         'reset'
 ) {
+    if (!$writeIsDeveloper) {
+        api_error(
+            'Developer permission is required to reset speech training.',
+            403,
+            'permission_denied'
+        );
+    }
     $modelId =
         (int) $languageModel['id'];
 
@@ -1654,6 +2223,17 @@ if (
         true
     )
 ) {
+    if (
+        $action ===
+            'contributions' &&
+        !$writeIsDeveloper
+    ) {
+        api_error(
+            'Developer permission is required to remove multiple training contributions.',
+            403,
+            'permission_denied'
+        );
+    }
     $where = [
         'tc.active = 1',
         'COALESCE(c.language_model_component_id, c.id) = :model_id',
@@ -1858,6 +2438,26 @@ if (
             'No active training contributions matched.',
             404,
             'training_contribution_not_found'
+        );
+    }
+
+    if (
+        !$writeIsDeveloper &&
+        array_filter(
+            $rows,
+            static fn (
+                array $row
+            ): bool =>
+                (int) $row[
+                    'user_id'
+                ] !==
+                $actorId
+        )
+    ) {
+        api_error(
+            'You can only delete your own speech training runs.',
+            403,
+            'permission_denied'
         );
     }
 
