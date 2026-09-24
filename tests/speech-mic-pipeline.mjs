@@ -822,3 +822,24 @@ assert.match(
     speechMicBarSource,
     /#optionsHeader[\s\S]*position:\s*absolute[\s\S]*line-height:\s*28px/
 );
+
+assert.match(
+    speechMenuSource,
+    /#utterance\.committed\s*\|\|[\s\S]*#utterance[\s\S]*\.recognitionStopped[\s\S]*level >= SpeechMenu\.#speechThreshold/
+);
+assert.match(
+    speechMenuSource,
+    /silenceMilliseconds >=[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
+);
+assert.match(
+    speechMenuSource,
+    /#onVadSpeechStart[\s\S]*recognitionStopped[\s\S]*"recognition-committed"/
+);
+assert.match(
+    speechMenuSource,
+    /#onVadSpeechEnd[\s\S]*#exactCandidate[\s\S]*#commitUtterance/
+);
+assert.match(
+    speechMenuSource,
+    /#commitUtterance\([\s\S]*#cancelCandidateWork\([\s\S]*#stopLiveRecognition\([\s\S]*false[\s\S]*let committed/
+);
