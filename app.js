@@ -4651,6 +4651,10 @@
         }
 
         syncSpeechTrainingControls();
+
+        if (mainMenuIsOpen()) {
+            scheduleMainMenuLayout();
+        }
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
