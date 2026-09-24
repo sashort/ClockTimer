@@ -14122,7 +14122,21 @@
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
                 yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
             };
+
+            const speechOptionGroups = {
+                tripGoal: "goals",
+                totalGoal: "goals",
+                setTripGoal: "goals",
+                setTotalGoal: "goals",
+                readGoalMode: "mode",
+                goalMode: "mode"
+            };
+
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
+            if (speechOptionGroups[key]) {
+                element.dataset.speechOptionsGroup =
+                    speechOptionGroups[key];
+            }
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
