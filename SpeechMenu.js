@@ -82,7 +82,8 @@ class SpeechMenu {
                             "disabled",
                             "inert",
                             "aria-hidden",
-                            "speech-available"
+                            "speech-available",
+                            "speech-implemented"
                         ]
                     }
                 );
@@ -953,6 +954,11 @@ class SpeechMenu {
                                 element
                             ),
                     pattern,
+                    implemented:
+                        SpeechMenu
+                            .isCommandImplemented(
+                                element
+                            ),
                     phrases:
                         Object.freeze(
                             extrapolated.slice()
@@ -1001,6 +1007,8 @@ class SpeechMenu {
                             next.element ||
                         group.pattern !==
                             next.pattern ||
+                        group.implemented !==
+                            next.implemented ||
                         group.phrases.length !==
                             next.phrases.length ||
                         group.phrases.some(
