@@ -6159,6 +6159,117 @@
             .trim();
     }
 
+    function speechTrainingTokenBelongsToFamily(
+        observed,
+        expected
+    ) {
+        if (observed === expected) {
+            return true;
+        }
+
+        const singularPluralPair =
+            (
+                observed + "s" ===
+                    expected ||
+                expected + "s" ===
+                    observed
+            ) ||
+            (
+                observed + "es" ===
+                    expected ||
+                expected + "es" ===
+                    observed
+            );
+
+        if (singularPluralPair) {
+            return true;
+        }
+
+        /*
+         * Keep small recognizer slips inside the existing phrase family
+         * without allowing materially different wording to become an
+         * automatic alias.  This is intentionally token-local: a phrase
+         * such as "voice menu" cannot become equivalent to "commands".
+         */
+        if (
+            observed.length < 4 ||
+            expected.length < 4 ||
+            Math.abs(
+                observed.length -
+                expected.length
+            ) > 1
+        ) {
+            return false;
+        }
+
+        let previous =
+            Array.from(
+                {
+                    length:
+                        expected.length +
+                        1
+                },
+                (
+                    _,
+                    index
+                ) => index
+            );
+
+        for (
+            let row = 1;
+            row <= observed.length;
+            row++
+        ) {
+            const current = [
+                row
+            ];
+
+            for (
+                let column = 1;
+                column <= expected.length;
+                column++
+            ) {
+                current[column] =
+                    Math.min(
+                        current[
+                            column -
+                                1
+                        ] +
+                            1,
+                        previous[
+                            column
+                        ] +
+                            1,
+                        previous[
+                            column -
+                                1
+                        ] +
+                            (
+                                observed[
+                                    row -
+                                        1
+                                ] ===
+                                expected[
+                                    column -
+                                        1
+                                ]
+                                    ? 0
+                                    : 1
+                            )
+                    );
+            }
+
+            previous =
+                current;
+        }
+
+        return (
+            previous[
+                expected.length
+            ] <= 1
+        );
+    }
+
     function speechTrainingExpectedPhraseMatches(
         observed,
         candidate
@@ -6198,7 +6309,7 @@
                 }
             );
 
-        let normalizedTemplate =
+        const normalizedTemplate =
             protectedTemplate
                 .replace(
                     /[^\p{L}\p{N}_\s]/gu,
@@ -6214,48 +6325,126 @@
             return false;
         }
 
-        if (!placeholders.length) {
-            return (
-                heard ===
-                normalizedTemplate
-            );
-        }
-
-        let source =
-            normalizedTemplate
-                .replace(
-                    /[.*+?^${}()|[\]\\]/g,
-                    "\\$&"
+        const heardTokens =
+            heard
+                .split(
+                    " "
                 )
-                .replace(
-                    /\s+/g,
-                    "\\s+"
+                .filter(
+                    Boolean
                 );
 
-        for (
-            const token of
-            placeholders
+        const templateTokens =
+            normalizedTemplate
+                .split(
+                    " "
+                )
+                .filter(
+                    Boolean
+                );
+
+        if (
+            !placeholders.length &&
+            heardTokens.length !==
+                templateTokens.length
         ) {
-            source =
-                source.replace(
-                    token,
-                    "(?:\\S+(?:\\s+\\S+)*)"
-                );
-        }
-
-        try {
-            return new RegExp(
-                "^(?:" +
-                source +
-                ")$",
-                "iu"
-            ).test(
-                heard
-            );
-        }
-        catch {
             return false;
         }
+
+        if (!placeholders.length) {
+            return templateTokens
+                .every(
+                    (
+                        token,
+                        index
+                    ) =>
+                        speechTrainingTokenBelongsToFamily(
+                            heardTokens[
+                                index
+                            ],
+                            token
+                        )
+                );
+        }
+
+        const placeholderSet =
+            new Set(
+                placeholders
+            );
+
+        const visit =
+            (
+                templateIndex,
+                heardIndex
+            ) => {
+                if (
+                    templateIndex >=
+                        templateTokens
+                            .length
+                ) {
+                    return (
+                        heardIndex ===
+                        heardTokens.length
+                    );
+                }
+
+                const token =
+                    templateTokens[
+                        templateIndex
+                    ];
+
+                if (
+                    placeholderSet.has(
+                        token
+                    )
+                ) {
+                    for (
+                        let next =
+                            heardIndex +
+                            1;
+                        next <=
+                            heardTokens.length;
+                        next++
+                    ) {
+                        if (
+                            visit(
+                                templateIndex +
+                                    1,
+                                next
+                            )
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if (
+                    heardIndex >=
+                        heardTokens.length ||
+                    !speechTrainingTokenBelongsToFamily(
+                        heardTokens[
+                            heardIndex
+                        ],
+                        token
+                    )
+                ) {
+                    return false;
+                }
+
+                return visit(
+                    templateIndex +
+                        1,
+                    heardIndex +
+                        1
+                );
+            };
+
+        return visit(
+            0,
+            0
+        );
     }
 
     function speechTrainingPhraseWasExpected(
