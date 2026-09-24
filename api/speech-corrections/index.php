@@ -859,8 +859,16 @@ if (
         speech_model_root(
             $pdo,
             $inputLanguage,
-            true
+            false
         );
+
+    if ($languageModel === null) {
+        api_error(
+            'Speech language model was not found.',
+            404,
+            'speech_model_not_found'
+        );
+    }
 
     $componentKey =
         speech_training_component_key(
