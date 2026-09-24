@@ -1,4 +1,5 @@
 let runtimeBase = "";
+let runtimeVersion = "";
 let hotwords = [];
 let hotwordsScore = 2.0;
 let maxActivePaths = 4;
@@ -10,12 +11,27 @@ let pendingHotwords;
 let loading = false;
 let initialized = false;
 
-var Module = {
-    locateFile(path) {
-        return new URL(
+function runtimeUrl(path) {
+    const url =
+        new URL(
             path,
             runtimeBase
-        ).href;
+        );
+
+    if (
+        runtimeVersion &&
+        !url.search
+    ) {
+        url.search =
+            runtimeVersion;
+    }
+
+    return url.href;
+}
+
+var Module = {
+    locateFile(path) {
+        return runtimeUrl(path);
     },
 
     setStatus(status) {
@@ -369,6 +385,11 @@ self.addEventListener(
                             message.runtimeBase ||
                             ""
                         );
+                    runtimeVersion =
+                        String(
+                            message.runtimeVersion ||
+                            ""
+                        );
                     hotwords =
                         Array.isArray(
                             message.hotwords
@@ -397,17 +418,15 @@ self.addEventListener(
                         );
 
                     importScripts(
-                        new URL(
-                            "sherpa-onnx-asr.js",
-                            runtimeBase
-                        ).href
+                        runtimeUrl(
+                            "sherpa-onnx-asr.js"
+                        )
                     );
 
                     importScripts(
-                        new URL(
-                            "sherpa-onnx-wasm-main-asr.js",
-                            runtimeBase
-                        ).href
+                        runtimeUrl(
+                            "sherpa-onnx-wasm-main-asr.js"
+                        )
                     );
                     break;
 
