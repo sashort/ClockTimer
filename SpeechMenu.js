@@ -2894,41 +2894,21 @@ class SpeechMenu {
             return true;
         }
 
-        const delay =
-            SpeechMenu
-                .#candidateCommitTimeout(
-                    utterance
-                );
-
-        utterance.candidateCommitTimer =
-            setTimeout(
-                () => {
-                    utterance
-                        .candidateCommitTimer =
-                        undefined;
-
-                    if (
-                        SpeechMenu.#stopped ||
-                        SpeechMenu.#utterance !==
-                            utterance ||
-                        utterance.committed ||
-                        utterance.committing ||
-                        utterance.transcriptRevision !==
-                            revision ||
-                        !SpeechMenu
-                            .#exactCandidate(
-                                utterance
-                            )
-                    ) {
-                        return;
-                    }
-
-                    void SpeechMenu
-                        .#commitUtterance(
-                            utterance
-                        );
-                },
-                delay
+        /*
+         * Once a terminal phrase is exact and no competing phrase can
+         * still grow from the same transcript, the recognition decision
+         * is complete.  Commit it immediately instead of holding the
+         * utterance for the terminal silence timeout.  #commitUtterance()
+         * stops the current Sherpa stream before running the action, so
+         * the very next voiced frame can start a fresh utterance and
+         * barge in even while the previous action is still finishing.
+         *
+         * Open/ambiguous phrases keep the normal hold above, preserving
+         * cases such as "ready" -> "ready at four fifteen".
+         */
+        void SpeechMenu
+            .#commitUtterance(
+                utterance
             );
 
         return true;
