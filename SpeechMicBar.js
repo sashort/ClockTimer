@@ -4,6 +4,8 @@ class SpeechMicBar extends HTMLElement {
         "stopped",
         "muted",
         "unmuted",
+        "listeningSuspended",
+        "listeningResumed",
         "utteranceStarted",
         "utteranceFinished",
         "utteranceTranscriptChanged",
@@ -1581,7 +1583,14 @@ class SpeechMicBar extends HTMLElement {
         }
 
         if (speechMenu.started) {
-            this.setAttribute("state", speechMenu.muted ? "muted" : "listening");
+            this.setAttribute(
+                "state",
+                speechMenu.listeningSuspended
+                    ? "suspended"
+                    : speechMenu.muted
+                        ? "muted"
+                        : "listening"
+            );
         }
     }
 
@@ -1597,7 +1606,14 @@ class SpeechMicBar extends HTMLElement {
         switch (type) {
             case "started":
                 this.#clearLoadingProgress();
-                this.setAttribute("state", "listening");
+                this.setAttribute(
+                    "state",
+                    globalThis.SpeechMenu?.listeningSuspended
+                        ? "suspended"
+                        : globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                );
                 this.clear();
                 break;
             case "stopped":
@@ -1626,6 +1642,31 @@ class SpeechMicBar extends HTMLElement {
                 );
                 this.#showIdleText();
                 break;
+            case "listeningSuspended":
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    "suspended"
+                );
+                this.#showIdleText();
+                break;
+            case "listeningResumed":
+                this.setAttribute(
+                    "state",
+                    globalThis.SpeechMenu?.started
+                        ? globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                        : "stopped"
+                );
+                this.#showIdleText();
+                break;
             case "unmuted":
                 this.#currentUtteranceId =
                     undefined;
@@ -1636,7 +1677,9 @@ class SpeechMicBar extends HTMLElement {
                 this.#codes.replaceChildren();
                 this.setAttribute(
                     "state",
-                    "listening"
+                    globalThis.SpeechMenu?.listeningSuspended
+                        ? "suspended"
+                        : "listening"
                 );
                 this.#showIdleText();
                 break;
@@ -1710,9 +1753,11 @@ class SpeechMicBar extends HTMLElement {
                 if (detail?.id === this.#currentUtteranceId) {
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
+                        globalThis.SpeechMenu?.listeningSuspended
+                            ? "suspended"
+                            : globalThis.SpeechMenu?.muted
+                                ? "muted"
+                                : "listening"
                     );
 
                     if (
@@ -1784,9 +1829,11 @@ class SpeechMicBar extends HTMLElement {
 
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
+                        globalThis.SpeechMenu?.listeningSuspended
+                            ? "suspended"
+                            : globalThis.SpeechMenu?.muted
+                                ? "muted"
+                                : "listening"
                     );
                 }
                 break;
@@ -1876,7 +1923,15 @@ class SpeechMicBar extends HTMLElement {
     }
 
     #showIdleText() {
-        this.#showStatus(this.state === "muted" ? "Muted" : this.state === "stopped" ? "" : "Listening…");
+        this.#showStatus(
+            this.state === "muted"
+                ? "Muted"
+                : this.state === "suspended"
+                    ? "Listening paused"
+                    : this.state === "stopped"
+                        ? ""
+                        : "Listening…"
+        );
     }
 
     #showLoadingProgress(status) {
