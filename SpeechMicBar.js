@@ -1275,6 +1275,37 @@ class SpeechMicBar extends HTMLElement {
             );
     }
 
+    #appendPhraseSeparator(
+        parent
+    ) {
+        const last =
+            parent?.lastChild;
+
+        if (!last) {
+            return;
+        }
+
+        const text =
+            String(
+                last.textContent ||
+                ""
+            );
+
+        if (
+            /\s$/.test(
+                text
+            )
+        ) {
+            return;
+        }
+
+        parent.append(
+            document.createTextNode(
+                " "
+            )
+        );
+    }
+
     #appendOptionText(
         parent,
         text,
@@ -1292,6 +1323,17 @@ class SpeechMicBar extends HTMLElement {
 
         if (!value) {
             return;
+        }
+
+        if (
+            parent.lastChild &&
+            !/^\s/.test(
+                value
+            )
+        ) {
+            this.#appendPhraseSeparator(
+                parent
+            );
         }
 
         if (optional) {
@@ -1385,6 +1427,10 @@ class SpeechMicBar extends HTMLElement {
                 );
             }
 
+            this.#appendPhraseSeparator(
+                parent
+            );
+
             const code =
                 document.createElement(
                     "code"
@@ -1409,12 +1455,25 @@ class SpeechMicBar extends HTMLElement {
             offset <
             remainder.length
         ) {
+            const tail =
+                remainder.slice(
+                    offset
+                );
+
+            if (
+                !/^\s/.test(
+                    tail
+                )
+            ) {
+                this.#appendPhraseSeparator(
+                    parent
+                );
+            }
+
             parent.append(
                 document
                     .createTextNode(
-                        remainder.slice(
-                            offset
-                        )
+                        tail
                     )
             );
         }
