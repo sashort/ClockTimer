@@ -764,6 +764,142 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 .main-menu .logout-button { color: var(--wm-white); }
 .main-menu .logout-button::before { background: #ff554d; }
 
+/* Responsive paged hamburger menu ----------------------------------- */
+.main-menu {
+    --main-menu-panel-height: auto;
+    --main-menu-indicator-height: 4px;
+    --main-menu-indicator-gap: 8px;
+}
+
+.main-menu-viewport {
+    position: relative;
+    width: 100%;
+    height: var(--main-menu-panel-height);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-y;
+    transition: height 240ms ease-in-out;
+}
+
+.main-menu-viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.main-menu-track {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: stretch;
+}
+
+.main-menu-panel {
+    width: 100%;
+    min-width: 100%;
+    height: var(--main-menu-panel-height);
+    flex: 0 0 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.main-menu-indicator {
+    position: relative;
+    height: var(--main-menu-indicator-height);
+    margin:
+        var(--main-menu-indicator-gap)
+        14px
+        3px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 20%);
+    opacity: 1;
+    transition:
+        opacity 180ms ease-in-out,
+        height 180ms ease-in-out,
+        margin 180ms ease-in-out;
+}
+
+.main-menu-indicator[hidden] {
+    display: none;
+}
+
+.main-menu-indicator-thumb {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    border-radius: inherit;
+    background: var(--wm-blue-light, #a9ddf7);
+    transform: translateX(0);
+    will-change: transform, width;
+    transition:
+        transform 220ms ease-in-out,
+        width 220ms ease-in-out;
+}
+
+.main-menu[data-menu-dragging="true"]
+    .main-menu-indicator-thumb {
+    transition: none;
+}
+
+.main-menu-focus-layer {
+    position: absolute;
+    inset: 8px 0 auto;
+    z-index: 8;
+    width: 100%;
+    pointer-events: auto;
+}
+
+.main-menu-focus-layer[hidden] {
+    display: none;
+}
+
+.main-menu[data-menu-focused="true"]
+    .main-menu-viewport {
+    overflow: hidden;
+    scroll-snap-type: none;
+}
+
+.main-menu-focus-group {
+    position: relative;
+    z-index: 9;
+    width: 100%;
+    margin: 0;
+    will-change: transform;
+}
+
+.main-menu-transition-clip {
+    overflow: hidden !important;
+    min-height: 0 !important;
+}
+
+.main-menu-transition-hidden {
+    display: none !important;
+}
+
+.main-menu-focus-placeholder {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .main-menu-viewport,
+    .main-menu-indicator,
+    .main-menu-indicator-thumb {
+        transition: none !important;
+        scroll-behavior: auto;
+    }
+}
+
+
 .app-dialog {
     color: var(--wm-white);
     background: linear-gradient(135deg, rgb(0 83 226 / 98%), rgb(0 30 96 / 98%));
