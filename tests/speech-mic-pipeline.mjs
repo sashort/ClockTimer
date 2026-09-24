@@ -645,6 +645,18 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /\.option-optional[\s\S]*opacity:\s*\.42/
+);
+assert.match(
+    speechMicBarSource,
+    /#compactOptionGroup\([\s\S]*optionalPrefix[\s\S]*optionalSuffix/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsGroupKey\([\s\S]*data-speech-options-group/
+);
+assert.match(
+    speechMicBarSource,
     /status\.textContent\s*=\s*" \(unimplemented\)"/
 );
 assert.match(
@@ -691,6 +703,34 @@ assert.match(
 assert.match(
     html,
     /builtin:readGoalMode:page[^>]*speech-function="WMOFActions\.readGoalMode"/
+);
+assert.match(
+    html,
+    /builtin:tripGoal:page[^>]*data-speech-options-group="goals"/
+);
+assert.match(
+    html,
+    /builtin:totalGoal:page[^>]*data-speech-options-group="goals"/
+);
+assert.match(
+    html,
+    /builtin:setTripGoal:page[^>]*data-speech-options-group="goals"/
+);
+assert.match(
+    html,
+    /builtin:setTotalGoal:page[^>]*data-speech-options-group="goals"/
+);
+assert.match(
+    html,
+    /builtin:readGoalMode:page[^>]*data-speech-options-group="mode"/
+);
+assert.match(
+    html,
+    /builtin:goalMode:page[^>]*data-speech-options-group="mode"/
+);
+assert.match(
+    app,
+    /speechOptionGroups[\s\S]*tripGoal:\s*"goals"[\s\S]*goalMode:\s*"mode"/
 );
 assert.match(
     app,
