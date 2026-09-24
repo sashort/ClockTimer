@@ -420,7 +420,15 @@ assert.match(
 
 assert.match(
     app,
-    /const disableSpeechRecognitionRuntime =[\s\S]*setSpeechButtonState\([\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false[\s\S]*SpeechMenu[\s\S]*\.stop/
+    /const disableSpeechRecognitionRuntime =[\s\S]*setSpeechButtonState\([\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false[\s\S]*suspendListening\?\.\([\s\S]*"speech-recognition-disabled"/
+);
+assert.match(
+    app,
+    /const enableSpeechRecognitionRuntime =[\s\S]*speechRecognitionSuspended[\s\S]*speechMenu\?\.started[\s\S]*resumeListening\?\.\([\s\S]*"speech-recognition-disabled"[\s\S]*return true/
+);
+assert.doesNotMatch(
+    app,
+    /const disableSpeechRecognitionRuntime =[\s\S]{0,1400}SpeechMenu[\s\S]{0,250}\.stop\?\.\(/
 );
 assert.match(
     app,
