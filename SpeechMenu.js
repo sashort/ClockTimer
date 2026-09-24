@@ -39,6 +39,7 @@ class SpeechMenu {
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
+    static #recognizerHotwordKey = "";
     static #corrections = Object.freeze([]);
     static #correctionsRevision = "empty";
 
@@ -1078,26 +1079,103 @@ class SpeechMenu {
                 }
             );
 
-            if (phrasesChanged) {
-                SpeechMenu
-                    .#refreshRecognizerHotwords();
-            }
         }
+
+        /*
+         * Command scope and recognizer vocabulary are separate concerns.
+         * Sleep/wake, dialogs, popovers, availability, etc. can change
+         * the executable phrase set without changing the vocabulary the
+         * recognizer should know. Keep a stable superset of all defined
+         * speech phrases so transient scope changes do not force Sherpa
+         * to destroy/rebuild its recognizer between utterances.
+         */
+        SpeechMenu
+            .#refreshRecognizerHotwords();
 
         return SpeechMenu.#phrases;
     }
 
     static #hotwords() {
-        return [
-            ...SpeechMenu.#phrases
-        ];
+        const values = [];
+        const seen =
+            new Set();
+
+        for (
+            const element of
+            document.querySelectorAll(
+                "[speech-pattern]"
+            )
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
+                );
+
+            if (!pattern) {
+                continue;
+            }
+
+            for (
+                const phrase of
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
+                    )
+            ) {
+                const value =
+                    String(
+                        phrase ||
+                        ""
+                    ).trim();
+
+                if (
+                    !value ||
+                    seen.has(
+                        value
+                    )
+                ) {
+                    continue;
+                }
+
+                seen.add(
+                    value
+                );
+                values.push(
+                    value
+                );
+            }
+        }
+
+        return values;
     }
 
     static #refreshRecognizerHotwords() {
+        const values =
+            SpeechMenu
+                .#hotwords();
+
+        const key =
+            JSON.stringify(
+                values
+            );
+
+        if (
+            key ===
+                SpeechMenu
+                    .#recognizerHotwordKey
+        ) {
+            return false;
+        }
+
+        SpeechMenu.#recognizerHotwordKey =
+            key;
+
         SpeechMenu.#recognizer
             ?.setHotwords(
-                SpeechMenu.#hotwords()
+                values
             );
+
+        return true;
     }
 
     static #schedulePhraseRefresh() {
