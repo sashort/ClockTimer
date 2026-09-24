@@ -11004,6 +11004,139 @@
             }
         });
 
+    const speakSpeechMetric =
+        (
+            label,
+            value
+        ) => {
+            const spokenValue =
+                String(
+                    value ??
+                    ""
+                )
+                    .replace(
+                        /%/g,
+                        " percent"
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!spokenValue) {
+                return false;
+            }
+
+            return Boolean(
+                globalThis
+                    .WMOFAudio
+                    ?.speak?.(
+                        label +
+                        " " +
+                        spokenValue
+                    )
+            );
+        };
+
+    const goalPercentForScope =
+        scope => {
+            let summary;
+
+            try {
+                summary =
+                    clockTimer
+                        .getSummarySnapshot?.(
+                            new Date()
+                        );
+            }
+            catch {
+                return undefined;
+            }
+
+            const value =
+                summary?.[
+                    scope
+                ]?.percentGoal;
+
+            return Number.isFinite(
+                Number(value)
+            )
+                ? formatSummaryPercent(
+                    value
+                )
+                : undefined;
+        };
+
+    const setGoalPercentValue =
+        (
+            scope,
+            percent
+        ) => {
+            const normalizedScope =
+                String(
+                    scope ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const value =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        percent,
+                        "percent"
+                    );
+
+            if (
+                ![
+                    "trip",
+                    "total"
+                ].includes(
+                    normalizedScope
+                ) ||
+                !Number.isFinite(
+                    value
+                ) ||
+                value <= 0
+            ) {
+                return false;
+            }
+
+            if (
+                (
+                    endTimeGoalOverride
+                        ?.scopes ||
+                    []
+                ).includes(
+                    normalizedScope
+                )
+            ) {
+                flashEndTimeGoalLock();
+
+                return false;
+            }
+
+            const state =
+                clockTimer.configure({
+                    [
+                        normalizedScope ===
+                            "total"
+                            ? "total_goal"
+                            : "trip_goal"
+                    ]:
+                        `${value}%`
+                });
+
+            renderClockTimerUIState(
+                state
+            );
+            refreshAutoGoalDialog();
+            queueSummaryRefresh();
+
+            return true;
+        };
+
     const actions =
         globalThis.WMOFActions;
 
@@ -11626,70 +11759,72 @@
                 );
             },
 
+            readTripGoal() {
+                return speakSpeechMetric(
+                    "Trip Goal",
+                    goalPercentForScope(
+                        "trip"
+                    )
+                );
+            },
+
+            readTotalGoal() {
+                return speakSpeechMetric(
+                    "Total Goal",
+                    goalPercentForScope(
+                        "total"
+                    )
+                );
+            },
+
+            setTripGoal(
+                percent
+            ) {
+                return setGoalPercentValue(
+                    "trip",
+                    percent
+                );
+            },
+
+            setTotalGoal(
+                percent
+            ) {
+                return setGoalPercentValue(
+                    "total",
+                    percent
+                );
+            },
+
             changeGoal(
                 goalScope,
                 percent
             ) {
-                const scope =
-                    String(
-                        goalScope
-                    )
-                        .toLowerCase();
-
-                const value =
-                    EnglishSpeechValuePreprocessor
-                        .parse(
-                            percent,
-                            "percent"
-                        );
-
-                if (
-                    ![
-                        "trip",
-                        "total"
-                    ].includes(
-                        scope
-                    ) ||
-                    !Number.isFinite(
-                        value
-                    ) ||
-                    value <= 0
-                ) {
-                    return false;
-                }
-
-                if (
-                    (
-                        endTimeGoalOverride
-                            ?.scopes ||
-                        []
-                    ).includes(
-                        scope
-                    )
-                ) {
-                    flashEndTimeGoalLock();
-
-                    return false;
-                }
-
-                const state =
-                    clockTimer.configure({
-                        [
-                            scope ===
-                                "total"
-                                ? "total_goal"
-                                : "trip_goal"
-                        ]:
-                            `${value}%`
-                    });
-
-                renderClockTimerUIState(
-                    state
+                return setGoalPercentValue(
+                    goalScope,
+                    percent
                 );
-                refreshAutoGoalDialog();
-                queueSummaryRefresh();
+            },
 
-                return true;
+            readGoalMode() {
+                const mode =
+                    normalizePercentMode(
+                        clockTimer
+                            .percentMode
+                    );
+
+                const label =
+                    mode.charAt(0)
+                        .toUpperCase() +
+                    mode.slice(1);
+
+                return Boolean(
+                    globalThis
+                        .WMOFAudio
+                        ?.speak?.(
+                            "Mode " +
+                            label
+                        )
+                );
             },
 
             changeGoalMode(
