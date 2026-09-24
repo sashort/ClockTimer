@@ -486,6 +486,12 @@
                                 text
                             );
 
+                        utterance.lang =
+                            typeof event.lang === "string" &&
+                            event.lang.trim()
+                                ? event.lang.trim()
+                                : "en-US";
+
                         if (
                             Number.isFinite(
                                 Number(
@@ -559,6 +565,19 @@
                             };
 
                         utterance.addEventListener(
+                            "start",
+                            () => {
+                                console.debug(
+                                    "Audio speech started:",
+                                    text
+                                );
+                            },
+                            {
+                                once: true
+                            }
+                        );
+
+                        utterance.addEventListener(
                             "end",
                             finish,
                             {
@@ -568,7 +587,15 @@
 
                         utterance.addEventListener(
                             "error",
-                            finish,
+                            error => {
+                                console.warn(
+                                    "Audio speech failed:",
+                                    text,
+                                    error?.error ||
+                                        error
+                                );
+                                finish();
+                            },
                             {
                                 once: true
                             }
@@ -751,6 +778,123 @@
                     stop: () =>
                         this.stopSong(
                             entry.id
+                        )
+                });
+            }
+            catch (error) {
+                this.#release(
+                    entry,
+                    "error"
+                );
+                throw error;
+            }
+        }
+
+        async startFrequencies(
+            frequencies,
+            {
+                waveform = "square",
+                volume = 1,
+                reason = "direct-tone"
+            } = {}
+        ) {
+            const values =
+                Array.from(
+                    frequencies || []
+                )
+                    .map(Number)
+                    .filter(
+                        value =>
+                            Number.isFinite(value) &&
+                            value > 0
+                    );
+
+            if (!values.length) {
+                throw new RangeError(
+                    "At least one positive frequency is required."
+                );
+            }
+
+            const context =
+                await this.#audioContext();
+
+            const entry = {
+                id: ++this.#sequence,
+                name: reason,
+                nodes: new Set(),
+                timers: new Set(),
+                utterances: new Set(),
+                pendingSpeech: 0,
+                timelineComplete: false,
+                loop: false,
+                bpm: undefined,
+                volume,
+                startedAt: context.currentTime,
+                released: false,
+                endTimer: undefined
+            };
+
+            globalThis.SpeechMenu
+                ?.suspendListening?.(
+                    "audio:" + reason
+                );
+
+            this.#active.set(
+                entry.id,
+                entry
+            );
+
+            try {
+                for (const frequency of values) {
+                    const oscillator =
+                        context.createOscillator();
+                    const gain =
+                        context.createGain();
+
+                    oscillator.type =
+                        waveform;
+                    oscillator.frequency
+                        .setValueAtTime(
+                            frequency,
+                            context.currentTime
+                        );
+
+                    gain.gain
+                        .setValueAtTime(
+                            Math.max(
+                                0,
+                                Math.min(
+                                    1,
+                                    Number(volume) ||
+                                    0
+                                )
+                            ),
+                            context.currentTime
+                        );
+
+                    oscillator.connect(
+                        gain
+                    );
+                    gain.connect(
+                        context.destination
+                    );
+
+                    oscillator.start();
+
+                    entry.nodes.add(
+                        oscillator
+                    );
+                    entry.nodes.add(
+                        gain
+                    );
+                }
+
+                return Object.freeze({
+                    id: entry.id,
+                    stop: () =>
+                        this.#release(
+                            entry,
+                            "stopped"
                         )
                 });
             }
