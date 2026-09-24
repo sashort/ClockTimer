@@ -10866,105 +10866,158 @@
             )
     );
 
-    $("#adminMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#adminSubmenu");
-
-                const open =
-                    submenu.hidden;
-
-                submenu.hidden =
-                    !open;
-
-                $("#adminMenuButton")
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
-            }
-        );
-
-    $("#developerMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#developerSubmenu");
-
-                const open =
-                    submenu.hidden;
-
-                submenu.hidden =
-                    !open;
-
-                $("#developerMenuButton")
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
-            }
-        );
-
     let speechBuildTimer;
 
-    $("#speechMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#speechSubmenu");
+    function runSpeechBuildAnimation(
+        open
+    ) {
+        const button =
+            $("#speechMenuButton");
 
-                const button =
-                    $("#speechMenuButton");
+        if (!button) {
+            return;
+        }
 
-                const open =
-                    submenu.hidden;
+        clearTimeout(
+            speechBuildTimer
+        );
 
-                submenu.hidden =
-                    !open;
+        button
+            .classList
+            .remove(
+                "speech-build-active"
+            );
 
-                button
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
+        if (!open) {
+            return;
+        }
 
-                clearTimeout(
-                    speechBuildTimer
-                );
+        void button.offsetWidth;
 
-                button
-                    .classList
-                    .remove(
-                        "speech-build-active"
-                    );
+        button
+            .classList
+            .add(
+                "speech-build-active"
+            );
 
-                if (open) {
-                    void button.offsetWidth;
-
+        speechBuildTimer =
+            setTimeout(
+                () => {
                     button
                         .classList
-                        .add(
+                        .remove(
                             "speech-build-active"
                         );
+                },
+                1050
+            );
+    }
 
-                    speechBuildTimer =
-                        setTimeout(
-                            () => {
-                                button
-                                    .classList
-                                    .remove(
-                                        "speech-build-active"
-                                    );
-                            },
-                            1050
+    mainMenu
+        ?.addEventListener(
+            "click",
+            event => {
+                const button =
+                    event.target
+                        ?.closest?.(
+                            "button[aria-controls]"
                         );
+
+                if (
+                    !button ||
+                    !mainMenu
+                        .contains(
+                            button
+                        )
+                ) {
+                    return;
                 }
+
+                const submenu =
+                    document
+                        .getElementById(
+                            button
+                                .getAttribute(
+                                    "aria-controls"
+                                )
+                        );
+
+                if (
+                    !submenu ||
+                    !mainMenu
+                        .contains(
+                            submenu
+                        )
+                ) {
+                    return;
+                }
+
+                const group =
+                    button.parentElement;
+
+                if (
+                    !group ||
+                    !group.contains(
+                        submenu
+                    )
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (
+                    mainMenuLayoutState
+                        .transitionBusy
+                ) {
+                    return;
+                }
+
+                const active =
+                    mainMenuLayoutState
+                        .focusStack
+                        .at(-1);
+
+                if (
+                    active
+                        ?.group ===
+                        group &&
+                    !submenu.hidden
+                ) {
+                    if (
+                        button.id ===
+                            "speechMenuButton"
+                    ) {
+                        runSpeechBuildAnimation(
+                            false
+                        );
+                    }
+
+                    void restoreMainMenuFocusLevel();
+                    return;
+                }
+
+                if (!submenu.hidden) {
+                    return;
+                }
+
+                if (
+                    button.id ===
+                        "speechMenuButton"
+                ) {
+                    runSpeechBuildAnimation(
+                        true
+                    );
+                }
+
+                void promoteMainMenuGroup(
+                    group,
+                    button,
+                    submenu
+                );
             }
         );
+
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
     globalThis
