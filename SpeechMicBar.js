@@ -223,16 +223,17 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 .option-phrase code {
-                    margin: 0 .12em;
-                    padding: .08em .34em;
+                    max-width: 180px;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                     border: 1px solid
-                        rgb(169 221 247 / 42%);
-                    border-radius: .34em;
-                    color: #a9ddf7;
-                    background:
-                        rgb(0 30 96 / 58%);
+                        rgb(169 221 247 / 38%);
+                    border-radius: 5px;
                     font:
-                        700 .86em/1.2
+                        600 12px/1.3
                         ui-monospace,
                         SFMono-Regular,
                         Consolas,
@@ -512,7 +513,8 @@ class SpeechMicBar extends HTMLElement {
                     font: 600 12px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
                 }
 
-                #text > code.streaming-core-phrase {
+                #text > code.streaming-core-phrase,
+                .option-phrase code.streaming-core-phrase {
                     display: inline-block;
                     max-width: none;
                     margin-inline: 2px;
@@ -531,7 +533,8 @@ class SpeechMicBar extends HTMLElement {
                         );
                 }
 
-                #text > code.streaming-context {
+                #text > code.streaming-context,
+                .option-phrase code.streaming-context {
                     display: inline-block;
                     max-width: none;
                     margin-inline: 2px;
@@ -1011,6 +1014,38 @@ class SpeechMicBar extends HTMLElement {
                 element
             );
 
+        const coreParts =
+            this.#corePhraseParts(
+                text
+            );
+
+        let remainder =
+            text;
+
+        if (coreParts) {
+            const coreCode =
+                document.createElement(
+                    "code"
+                );
+
+            coreCode.className =
+                "streaming-core-phrase";
+
+            coreCode.textContent =
+                coreParts.core;
+
+            row.append(
+                coreCode
+            );
+
+            remainder =
+                coreParts.rest;
+
+            if (remainder) {
+                row.append(" ");
+            }
+        }
+
         const pattern =
             /<([^>]+)>/g;
 
@@ -1021,7 +1056,7 @@ class SpeechMicBar extends HTMLElement {
             (
                 match =
                     pattern.exec(
-                        text
+                        remainder
                     )
             )
         ) {
@@ -1032,7 +1067,7 @@ class SpeechMicBar extends HTMLElement {
                 row.append(
                     document
                         .createTextNode(
-                            text.slice(
+                            remainder.slice(
                                 offset,
                                 match.index
                             )
@@ -1045,10 +1080,15 @@ class SpeechMicBar extends HTMLElement {
                     "code"
                 );
 
+            code.className =
+                "streaming-context";
+
             code.textContent =
                 match[0];
 
-            row.append(code);
+            row.append(
+                code
+            );
 
             offset =
                 match.index +
@@ -1057,12 +1097,12 @@ class SpeechMicBar extends HTMLElement {
 
         if (
             offset <
-            text.length
+            remainder.length
         ) {
             row.append(
                 document
                     .createTextNode(
-                        text.slice(
+                        remainder.slice(
                             offset
                         )
                     )
@@ -2447,12 +2487,7 @@ class SpeechMicBar extends HTMLElement {
                 );
             }
 
-            if (
-                prefix.length &&
-                !/\s$/.test(
-                    prefix
-                )
-            ) {
+            if (prefix.length) {
                 span.append(" ");
             }
         }
