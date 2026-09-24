@@ -7166,6 +7166,61 @@
         }
     }
 
+    let numberPadAmbientTone;
+    let numberPadAmbientToneGeneration = 0;
+
+    function startNumberPadAmbientTone() {
+        const generation =
+            ++numberPadAmbientToneGeneration;
+
+        numberPadAmbientTone
+            ?.stop?.();
+        numberPadAmbientTone =
+            undefined;
+
+        void globalThis
+            .WMOFAudio
+            ?.startFrequencies?.(
+                [350, 440],
+                {
+                    waveform: "square",
+                    volume: 0.01,
+                    reason:
+                        "number-pad-ambient"
+                }
+            )
+            .then(
+                handle => {
+                    if (
+                        generation !==
+                        numberPadAmbientToneGeneration
+                    ) {
+                        handle
+                            ?.stop?.();
+                        return;
+                    }
+
+                    numberPadAmbientTone =
+                        handle;
+                }
+            )
+            .catch(
+                error =>
+                    console.error(
+                        "Number pad ambient tone failed:",
+                        error
+                    )
+            );
+    }
+
+    function stopNumberPadAmbientTone() {
+        numberPadAmbientToneGeneration++;
+        numberPadAmbientTone
+            ?.stop?.();
+        numberPadAmbientTone =
+            undefined;
+    }
+
     async function openNumberPad({
         mode,
         source,
@@ -7264,6 +7319,8 @@
             });
         }
 
+        startNumberPadAmbientTone();
+
         if (source === "new-trip") {
             void settleInitialNumberPadConnection(
                 state,
@@ -7283,6 +7340,8 @@
                 reason: "trip-settings-return"
             });
         }
+
+        startNumberPadAmbientTone();
     }
 
     function resetNumberPad() {
@@ -7313,6 +7372,8 @@
     } = {}) {
         const state = numberPadState;
         if (!state) return false;
+
+        stopNumberPadAmbientTone();
         if (!allowChanged && numberPadHasChanges()) return false;
 
         const target = destination ?? state.cancelTarget ?? "home";
