@@ -98,7 +98,7 @@
             .WMOFUtilities;
 
     const SHERPA_ASSET_VERSION =
-        "2026-09-24-1";
+        "2026-09-24-2";
 
     const speechRuntimeVersion =
         "?sherpa=" +
