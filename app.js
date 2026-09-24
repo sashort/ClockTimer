@@ -9925,17 +9925,26 @@
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
         playSemanticSong("arpeggio-up");
-        finishLunchClockCues(\n            event.detail\n        );\n    }
+        finishLunchClockCues(
+            event.detail
+        );
+    }
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
         playSemanticSong("arpeggio-up");
-        finishLunchClockCues(\n            event.detail\n        );\n    }
+        finishLunchClockCues(
+            event.detail
+        );
+    }
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
         playSemanticSong("arpeggio-up");
-        finishLunchClockCues(\n            event.detail\n        );\n    }
+        finishLunchClockCues(
+            event.detail
+        );
+    }
 
     function onDownTimeStarted(event) {
         reserveSemanticEvent(event, "Down time started");
