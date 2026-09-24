@@ -368,13 +368,22 @@ assert.match(html, /builtin:standardTime:scheduledStartStandard/);
 assert.match(html, /builtin:standardTime:trip-settings/);
 
 const recognitionIndex = html.indexOf('id="speechRecognitionButton"');
+const developerIndex = html.indexOf('id="developerMenuButton"');
 const speechToolsIndex = html.indexOf('id="speechMenuButton"');
 const trainingIndex = html.indexOf('id="speechTrainingButton"');
 const editorIndex = html.indexOf('id="speechEditorButton"');
+const databaseIndex = html.indexOf('id="sqlConsoleButton"');
 
-assert.ok(recognitionIndex >= 0 && speechToolsIndex > recognitionIndex);
+assert.ok(recognitionIndex >= 0);
+assert.ok(developerIndex > recognitionIndex);
+assert.ok(speechToolsIndex > developerIndex);
 assert.ok(trainingIndex > speechToolsIndex && editorIndex > trainingIndex);
+assert.ok(databaseIndex > editorIndex);
+assert.match(html, /id="developerMenuGroup"/);
 assert.match(html, /id="speechToolsGroup"/);
+assert.match(html, /id="sqlConsoleButton"[^>]*>Database Access</);
+assert.match(html, /id="speechTrainingButton"[^>]*>Speech Training</);
+assert.match(html, /id="speechEditorButton"[^>]*hidden/);
 assert.doesNotMatch(html, /id="speechAdminGroup"/);
 
 const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
@@ -453,6 +462,11 @@ assert.match(app, /document\.createElement\(\s*"speech-diagnostics"\s*\)/s);
 assert.match(app, /openSpeechTraining\(\)/);
 assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
+assert.match(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]*PERMISSION_DEVELOPER_PREVIEW[\s\S]*PERMISSION_DEVELOPER/);
+assert.doesNotMatch(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]{0,120}PERMISSION_SUPERUSER/);
+assert.match(app, /developerMenuButton[\s\S]*developerSubmenu[\s\S]*aria-expanded/);
+assert.match(app, /menuLogoutSlot\?\.append\(authButton\)/);
+assert.match(app, /menuAccountRow\?\.append\(authButton\)/);
 assert.match(
     app,
     /prepareStartMenu\(\)[\s\S]*armSpeechReadyContinuation\(\)[\s\S]*openStartMenuWorkflow/
@@ -517,6 +531,9 @@ assert.match(
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 assert.match(css, /#speechTrainingButton::before/);
 assert.match(css, /#speechEditorButton::before/);
+assert.match(css, /#developerMenuButton::before/);
+assert.match(css, /#accessTokensButton::before/);
+assert.match(css, /#sqlConsoleButton::before/);
 assert.match(css, /stroke-dasharray:100;stroke-dashoffset:100/);
 assert.match(css, /@keyframes speech-mic-build/);
 assert.match(css, /from\{clip-path:inset\(100% 0 0 0\);\}/);
