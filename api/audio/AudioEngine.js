@@ -574,6 +574,11 @@
                             }
                         );
 
+                        try {
+                            synthesis.resume();
+                        }
+                        catch {}
+
                         synthesis.speak(
                             utterance
                         );
