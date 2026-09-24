@@ -1031,7 +1031,7 @@ assert.match(
 );
 assert.match(
     presentationSource,
-    /presentSpeechDictation\([\s\S]*bar\.setResponse[\s\S]*scheduleDismissal/
+    /const presentSpeechDictation\s*=[\s\S]*bar\.setResponse[\s\S]*scheduleDismissal/
 );
 
 assert.match(
