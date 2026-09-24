@@ -1429,7 +1429,11 @@
                         promptIndex,
                         pipeline:
                             speechMenu
-                                ?.pipeline
+                                ?.pipeline,
+                        runtimeRevision:
+                            frame.contentWindow
+                                ?.SherpaRecognizer
+                                ?.runtimeRevision
                     }
                 );
 
