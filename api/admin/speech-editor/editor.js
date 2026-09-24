@@ -795,6 +795,69 @@
                     row.append(
                         use
                     );
+
+                    const remove =
+                        document.createElement(
+                            "button"
+                        );
+
+                    remove.type =
+                        "button";
+                    remove.textContent =
+                        "Remove variant";
+
+                    remove.addEventListener(
+                        "click",
+                        async () => {
+                            if (
+                                !trainingCurrent ||
+                                !confirm(
+                                    "Remove all active training contributions for “" +
+                                    variant.observed +
+                                    "” from this phrase and recalculate the dictionary?"
+                                )
+                            ) {
+                                return;
+                            }
+
+                            try {
+                                await trainingApi(
+                                    "DELETE",
+                                    {
+                                        action:
+                                            "contributions",
+                                        language:
+                                            trainingLanguage,
+                                        phraseKey:
+                                            trainingCurrent
+                                                .key,
+                                        componentKey:
+                                            trainingCurrent
+                                                .componentKey,
+                                        observed:
+                                            variant.observed,
+                                        reason:
+                                            "Removed misrecognition variant by developer"
+                                    }
+                                );
+
+                                await loadTrainingStats();
+                                await refreshTrainingDialog();
+                            }
+                            catch (
+                                error
+                            ) {
+                                setTrainingMessage(
+                                    error.message,
+                                    true
+                                );
+                            }
+                        }
+                    );
+
+                    row.append(
+                        remove
+                    );
                 }
 
                 container.append(
