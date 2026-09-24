@@ -1120,6 +1120,11 @@ class SpeechMenu {
                     SpeechMenu
                         .#commitSilenceTimeout
             ) {
+                /*
+                 * Silence means the speaker stopped. At that point a
+                 * shorter exact phrase may commit even if it had longer
+                 * continuations (for example "ready" vs "ready at …").
+                 */
                 void SpeechMenu
                     .#commitUtterance(
                         SpeechMenu.#utterance
@@ -2483,6 +2488,23 @@ class SpeechMenu {
             );
     }
 
+    static #hasCompetingContinuation(
+        utterance,
+        exactCandidate
+    ) {
+        return Boolean(
+            utterance
+                ?.candidatePool
+                ?.some(
+                    candidate =>
+                        candidate !==
+                            exactCandidate &&
+                        candidate
+                            .continuation
+                )
+        );
+    }
+
     static #candidateCommitTimeout(
         utterance
     ) {
@@ -2519,6 +2541,16 @@ class SpeechMenu {
             !exactCandidate ||
             exactCandidate.kind ===
                 "wake"
+        ) {
+            return false;
+        }
+
+        if (
+            SpeechMenu
+                .#hasCompetingContinuation(
+                    utterance,
+                    exactCandidate
+                )
         ) {
             return false;
         }
