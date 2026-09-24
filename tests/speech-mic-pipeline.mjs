@@ -991,3 +991,28 @@ assert.match(
     speechMenuSource,
     /reason ===[\s\S]*"candidate-silence"/
 );
+
+assert.match(
+    speechMenuSource,
+    /#continuationSilenceTimeout\s*=\s*900/
+);
+assert.match(
+    speechMenuSource,
+    /#maximumCandidateHoldTimeout\s*=\s*1200/
+);
+assert.match(
+    speechMenuSource,
+    /#hasOpenContinuation\([\s\S]*exactCandidate[\s\S]*\.continuation[\s\S]*lastExactCandidate/
+);
+assert.match(
+    speechMenuSource,
+    /silenceMilliseconds >=[\s\S]*#hasOpenContinuation[\s\S]*#continuationSilenceTimeout[\s\S]*#commitSilenceTimeout/
+);
+assert.match(
+    speechMenuSource,
+    /#onVadSpeechEnd[\s\S]*#hasOpenContinuation\([\s\S]*return;/
+);
+assert.match(
+    speechMenuSource,
+    /#onVadSpeechStart[\s\S]*#hasOpenContinuation[\s\S]*resumed:\s*true/
+);
