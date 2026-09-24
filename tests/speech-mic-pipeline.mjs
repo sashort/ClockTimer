@@ -903,7 +903,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#animateOptionCategoryResize\([\s\S]*fromHeight[\s\S]*toHeight[\s\S]*section\.animate/
+    /#animateOptionContainerResize\([\s\S]*fromHeight[\s\S]*toHeight[\s\S]*container\.animate/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionCategoryResize\([\s\S]*#animateOptionContainerResize\([\s\S]*section[\s\S]*fromHeight[\s\S]*toHeight/
 );
 assert.match(
     speechMicBarSource,
