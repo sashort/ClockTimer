@@ -968,6 +968,11 @@ class SpeechMicBar extends HTMLElement {
                 "^(?:sleep|off)$",
                 "SpeechMenu.sleep"
             );
+        ensureCommand(
+            "commands",
+            "^(?:speech )?commands$",
+            "WMOFActions.toggleSpeechOptions"
+        );
 
         return menu;
     }
