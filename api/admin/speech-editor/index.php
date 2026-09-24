@@ -64,7 +64,7 @@ if ($sessionUser !== null) {
         ) {
             render_access_token_prompt(
                 'WMOF Speech Command Editor',
-                'Sign in to use Speech Training, or enter a Developer Preview / Developer access token for the full Speech Editor.',
+                'Sign in to use Speech Training, or enter a Developer Preview / Developer access token to use the Speech Editor without contributing training data.',
                 $trainingRequested
                     ? '?training=1'
                     : ''
