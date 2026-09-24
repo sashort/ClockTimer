@@ -1127,16 +1127,7 @@ assert.match(
     /#scheduleRejectedClear\(\s*utteranceId,\s*delay = 2000\s*\)/
 );
 
-window.SpeechMenu.events.dispatchEvent(
-    new window.CustomEvent(
-        "muted",
-        {
-            detail: {
-                utteranceId: 20
-            }
-        }
-    )
-);
+await window.SpeechMenu.sleep();
 assert.equal(
     bar.getAttribute("state"),
     "muted"
@@ -1171,17 +1162,7 @@ assert.equal(
     bar.getAttribute("state"),
     "muted"
 );
-window.SpeechMenu.events.dispatchEvent(
-    new window.CustomEvent(
-        "unmuted",
-        {
-            detail: {
-                utteranceId: 21,
-                transcript: "listen"
-            }
-        }
-    )
-);
+await window.SpeechMenu.wake();
 assert.equal(
     bar.getAttribute("state"),
     "listening"
@@ -1201,7 +1182,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /case "utteranceTranscriptChanged":[\s\S]*!globalThis\.SpeechMenu[\s\S]*\.muted[\s\S]*#showText/
+    /case "utteranceTranscriptChanged":[\s\S]*!globalThis\.SpeechMenu[\s\S]*\.muted[\s\S]*#showStreamingPhrase/
 );
 assert.match(
     speechMenuSource,
