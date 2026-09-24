@@ -3,10 +3,12 @@ Options -Indexes
 <IfModule mod_mime.c>
     AddType application/wasm .wasm
     AddType application/octet-stream .data
+    AddType application/octet-stream .onnx
+    AddType text/plain .txt
 </IfModule>
 
 <IfModule mod_headers.c>
-    <FilesMatch "\.(wasm|data|js)$">
-        Header set Cache-Control "public, max-age=604800"
+    <FilesMatch "\.(wasm|data|onnx|js|txt)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 </IfModule>
