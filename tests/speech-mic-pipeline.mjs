@@ -72,6 +72,10 @@ const sleepSystemCommand =
     systemSpeechMenu?.querySelector(
         '[data-speech-system-command="sleep"]'
     );
+const offSystemCommand =
+    systemSpeechMenu?.querySelector(
+        '[data-speech-system-command="off"]'
+    );
 const commandsSystemCommand =
     systemSpeechMenu?.querySelector(
         '[data-speech-system-command="commands"]'
@@ -80,6 +84,7 @@ const commandsSystemCommand =
 assert.ok(systemSpeechMenu);
 assert.ok(wakeSystemCommand);
 assert.ok(sleepSystemCommand);
+assert.ok(offSystemCommand);
 assert.ok(commandsSystemCommand);
 assert.equal(
     wakeSystemCommand.getAttribute(
@@ -92,6 +97,12 @@ assert.equal(
         "speech-function"
     ),
     "SpeechMenu.sleep"
+);
+assert.equal(
+    offSystemCommand.getAttribute(
+        "speech-function"
+    ),
+    "WMOFActions.disableSpeechRecognition"
 );
 assert.equal(
     commandsSystemCommand.getAttribute(
@@ -125,7 +136,6 @@ assert.deepEqual(
             )
     ].sort(),
     [
-        "on",
         "wake"
     ]
 );
@@ -140,8 +150,21 @@ assert.deepEqual(
             )
     ].sort(),
     [
-        "off",
         "sleep"
+    ]
+);
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                offSystemCommand
+                    .getAttribute(
+                        "speech-pattern"
+                    )
+            )
+    ],
+    [
+        "off"
     ]
 );
 
@@ -370,7 +393,18 @@ assert.match(
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const languageSource = fs.readFileSync(new URL("../lang/en-US.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
-assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
+assert.match(
+    app,
+    /const disableSpeechRecognitionRuntime =[\s\S]*setSpeechButtonState\([\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false[\s\S]*SpeechMenu[\s\S]*\.stop/
+);
+assert.match(
+    app,
+    /if \(enabled\) \{[\s\S]*await disableSpeechRecognitionRuntime\(\)[\s\S]*return;/
+);
+assert.match(
+    app,
+    /disableSpeechRecognition\(\) \{[\s\S]*return disableSpeechRecognitionRuntime\(\)/
+);
 assert.match(app, /ensureSpeechRuntime/);
 assert.match(app, /speech-editor-preview/);
 assert.match(app, /function showInitialLoginDialog\(\)[\s\S]*if \(speechEditorPreview\)[\s\S]*return false;/);
@@ -1070,11 +1104,15 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /wakePhrase:\s*"\^\(\?:wake\|on\)\$"/
+    /wakePhrase:\s*"\^wake\$"/
 );
 assert.match(
     languageSource,
-    /sleepPhrase:\s*"\^\(\?:sleep\|off\)\$"/
+    /sleepPhrase:\s*"\^sleep\$"/
+);
+assert.match(
+    languageSource,
+    /offPhrase:\s*"\^off\$"/
 );
 assert.doesNotMatch(
     speechMenuSource,
@@ -1082,7 +1120,7 @@ assert.doesNotMatch(
 );
 assert.match(
     app,
-    /setSystemSpeechPatterns\?\.\([\s\S]*wake:[\s\S]*wakePhrase[\s\S]*sleep:[\s\S]*sleepPhrase/
+    /setSystemSpeechPatterns\?\.\([\s\S]*wake:[\s\S]*wakePhrase[\s\S]*sleep:[\s\S]*sleepPhrase[\s\S]*off:[\s\S]*offPhrase/
 );
 assert.match(
     speechMenuSource,
