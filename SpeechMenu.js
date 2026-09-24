@@ -150,13 +150,22 @@ class SpeechMenu {
                 )
                 ?.[1];
 
-        if (
-            actionName &&
-            globalThis
-                .WMOFActionFunctions
-                ?.isImplemented?.(
-                    actionName
-                ) === false
+        if (actionName) {
+            if (
+                globalThis
+                    .WMOFActionFunctions
+                    ?.isImplemented?.(
+                        actionName
+                    ) !== true
+            ) {
+                return false;
+            }
+        }
+        else if (
+            !SpeechMenu
+                .#functionHasImplementation(
+                    resolvedFunction.fn
+                )
         ) {
             return false;
         }
@@ -177,7 +186,113 @@ class SpeechMenu {
                 );
 
         return Boolean(
-            resolvedPreproc
+            resolvedPreproc &&
+            SpeechMenu
+                .#functionHasImplementation(
+                    resolvedPreproc.fn
+                )
+        );
+    }
+
+    static #functionHasImplementation(
+        implementation
+    ) {
+        if (
+            typeof implementation !==
+            "function"
+        ) {
+            return false;
+        }
+
+        let source;
+
+        try {
+            source =
+                Function.prototype
+                    .toString
+                    .call(
+                        implementation
+                    );
+        }
+        catch {
+            return true;
+        }
+
+        if (
+            /\[native code\]/
+                .test(source)
+        ) {
+            return true;
+        }
+
+        const withoutComments =
+            source
+                .replace(
+                    /\/\*[\s\S]*?\*\//g,
+                    ""
+                )
+                .replace(
+                    /\/\/.*$/gm,
+                    ""
+                )
+                .trim();
+
+        const arrowIndex =
+            withoutComments
+                .indexOf(
+                    "=>"
+                );
+
+        if (arrowIndex >= 0) {
+            const body =
+                withoutComments
+                    .slice(
+                        arrowIndex + 2
+                    )
+                    .trim();
+
+            if (
+                !body.startsWith(
+                    "{"
+                )
+            ) {
+                return Boolean(
+                    body
+                );
+            }
+        }
+
+        const openBrace =
+            withoutComments
+                .indexOf(
+                    "{"
+                );
+
+        const closeBrace =
+            withoutComments
+                .lastIndexOf(
+                    "}"
+                );
+
+        if (
+            openBrace < 0 ||
+            closeBrace <=
+                openBrace
+        ) {
+            return true;
+        }
+
+        return Boolean(
+            withoutComments
+                .slice(
+                    openBrace + 1,
+                    closeBrace
+                )
+                .replace(
+                    /^\s*(?:"use strict"|'use strict');?\s*/,
+                    ""
+                )
+                .trim()
         );
     }
 
