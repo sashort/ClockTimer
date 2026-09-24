@@ -514,6 +514,7 @@
     let speechTrainingPendingDecision;
     let speechTrainingPendingDecisionResolve;
     let speechTrainingPendingBusy = false;
+    let speechTrainingPendingReason;
     const speechTrainingPendingSamples = [];
     const speechTrainingSeenUtterances = new Set();
 
@@ -6545,19 +6546,69 @@
 
             speechTrainingPendingSamples
                 .shift();
+
+            if (
+                speechTrainingPendingSamples
+                    .length
+            ) {
+                renderPendingSpeechTrainingMessage();
+            }
         }
 
         return true;
     }
 
     function pendingSpeechTrainingTargetLabel() {
+        const target =
+            speechTrainingPendingSamples[
+                0
+            ]?.target ||
+            speechTrainingTarget;
+
         return (
-            speechTrainingTarget
-                ?.display ||
-            speechTrainingTarget
-                ?.phrase ||
+            target?.display ||
+            target?.phrase ||
             "this phrase"
         );
+    }
+
+    function renderPendingSpeechTrainingMessage(
+        reason =
+            speechTrainingPendingReason ||
+            "exit"
+    ) {
+        const count =
+            speechTrainingPendingSamples
+                .length;
+
+        if (
+            !count ||
+            !speechTrainingPendingMessage
+        ) {
+            return false;
+        }
+
+        const suffix =
+            count === 1
+                ? "utterance"
+                : "utterances";
+
+        speechTrainingPendingMessage
+            .textContent =
+            count +
+            " pending " +
+            suffix +
+            " for “" +
+            pendingSpeechTrainingTargetLabel() +
+            "”. " +
+            (
+                reason ===
+                    "switch"
+                    ? "Commit or discard them before changing phrases."
+                    : "Commit or discard them before leaving Speech Training."
+            );
+
+        return true;
     }
 
     function finishPendingSpeechTrainingDecision(
@@ -6572,6 +6623,8 @@
             undefined;
         speechTrainingPendingBusy =
             false;
+        speechTrainingPendingReason =
+            undefined;
 
         if (speechTrainingPendingDialog?.open) {
             closeDialog(
@@ -6610,31 +6663,12 @@
             return speechTrainingPendingDecision;
         }
 
-        const count =
-            speechTrainingPendingSamples
-                .length;
+        speechTrainingPendingReason =
+            reason;
 
-        const suffix =
-            count === 1
-                ? "utterance"
-                : "utterances";
-
-        if (speechTrainingPendingMessage) {
-            speechTrainingPendingMessage
-                .textContent =
-                count +
-                " pending " +
-                suffix +
-                " for “" +
-                pendingSpeechTrainingTargetLabel() +
-                "”. " +
-                (
-                    reason ===
-                        "switch"
-                        ? "Commit or discard them before changing phrases."
-                        : "Commit or discard them before leaving Speech Training."
-                );
-        }
+        renderPendingSpeechTrainingMessage(
+            reason
+        );
 
         if (speechTrainingPendingError) {
             speechTrainingPendingError.hidden =
