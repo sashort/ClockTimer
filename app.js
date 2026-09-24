@@ -569,6 +569,7 @@
             );
 
     let speechActivationPending = false;
+    let speechRecognitionSuspended = false;
 
     const disableSpeechRecognitionRuntime =
         async () => {
@@ -583,16 +584,65 @@
             try {
                 await ensureSpeechRuntime();
 
-                return (
-                    await globalThis
-                        .SpeechMenu
-                        ?.stop?.()
-                ) !== false;
+                const speechMenu =
+                    globalThis.SpeechMenu;
+
+                if (!speechMenu?.started) {
+                    speechRecognitionSuspended =
+                        false;
+                    return false;
+                }
+
+                if (!speechRecognitionSuspended) {
+                    speechMenu
+                        .suspendListening?.(
+                            "speech-recognition-disabled"
+                        );
+                    speechRecognitionSuspended =
+                        true;
+                }
+
+                return true;
             }
             catch (error) {
                 console.error(error);
                 return false;
             }
+        };
+
+    const enableSpeechRecognitionRuntime =
+        async () => {
+            await ensureSpeechRuntime();
+
+            const speechMenu =
+                globalThis.SpeechMenu;
+
+            if (
+                speechRecognitionSuspended &&
+                speechMenu?.started
+            ) {
+                speechMenu
+                    .resumeListening?.(
+                        "speech-recognition-disabled"
+                    );
+                speechRecognitionSuspended =
+                    false;
+                return true;
+            }
+
+            speechRecognitionSuspended =
+                false;
+
+            const englishLanguage =
+                globalThis.WMOFLanguages?.["en-US"];
+
+            return Boolean(
+                await speechMenu?.start?.(
+                    englishLanguage
+                        ?.speechRecognitionLanguage ||
+                        "en-US"
+                )
+            );
         };
 
     setSpeechButtonState(false);
@@ -619,16 +669,8 @@
             mainMenu?.hidePopover?.();
 
             try {
-                await ensureSpeechRuntime();
-
-                const englishLanguage =
-                    globalThis.WMOFLanguages?.["en-US"];
-
                 const started =
-                    await globalThis.SpeechMenu?.start?.(
-                        englishLanguage?.speechRecognitionLanguage ||
-                            "en-US"
-                    );
+                    await enableSpeechRecognitionRuntime();
 
                 if (!started) {
                     setSpeechButtonState(false, false);
