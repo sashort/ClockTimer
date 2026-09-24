@@ -251,6 +251,11 @@ class SpeechMicBar extends HTMLElement {
                     opacity: .72;
                 }
 
+                .option-optional {
+                    opacity: .42;
+                    font-weight: 600;
+                }
+
                 .option-phrase code {
                     max-width: 180px;
                     margin-inline: 2px;
@@ -1067,9 +1072,323 @@ class SpeechMicBar extends HTMLElement {
             );
     }
 
+    #appendOptionText(
+        parent,
+        text,
+        element,
+        {
+            optional = false,
+            core = true
+        } = {}
+    ) {
+        const value =
+            String(
+                text ||
+                ""
+            );
+
+        if (!value) {
+            return;
+        }
+
+        if (optional) {
+            const span =
+                document.createElement(
+                    "span"
+                );
+
+            span.className =
+                "option-optional";
+
+            this.#appendOptionText(
+                span,
+                value,
+                element,
+                {
+                    optional: false,
+                    core: false
+                }
+            );
+
+            parent.append(
+                span
+            );
+
+            return;
+        }
+
+        let remainder =
+            value;
+
+        if (core) {
+            const coreParts =
+                this.#corePhraseParts(
+                    value
+                );
+
+            if (coreParts) {
+                const coreCode =
+                    document.createElement(
+                        "code"
+                    );
+
+                coreCode.className =
+                    "streaming-core-phrase";
+
+                coreCode.textContent =
+                    coreParts.core;
+
+                parent.append(
+                    coreCode
+                );
+
+                remainder =
+                    coreParts.rest;
+
+                if (remainder) {
+                    parent.append(
+                        " "
+                    );
+                }
+            }
+        }
+
+        const pattern =
+            /<([^>]+)>/g;
+
+        let offset = 0;
+        let match;
+
+        while (
+            (
+                match =
+                    pattern.exec(
+                        remainder
+                    )
+            )
+        ) {
+            if (
+                match.index >
+                offset
+            ) {
+                parent.append(
+                    document
+                        .createTextNode(
+                            remainder.slice(
+                                offset,
+                                match.index
+                            )
+                        )
+                );
+            }
+
+            const code =
+                document.createElement(
+                    "code"
+                );
+
+            code.className =
+                "streaming-context";
+
+            code.textContent =
+                match[0];
+
+            parent.append(
+                code
+            );
+
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        if (
+            offset <
+            remainder.length
+        ) {
+            parent.append(
+                document
+                    .createTextNode(
+                        remainder.slice(
+                            offset
+                        )
+                    )
+            );
+        }
+    }
+
+    #compactOptionGroup(
+        group
+    ) {
+        const items =
+            [];
+
+        const seen =
+            new Set();
+
+        for (
+            const phrase of
+            group?.phrases ||
+            []
+        ) {
+            const display =
+                this.#displayPhrase(
+                    phrase,
+                    group?.element
+                );
+
+            if (
+                !display ||
+                seen.has(
+                    display
+                )
+            ) {
+                continue;
+            }
+
+            seen.add(
+                display
+            );
+
+            items.push({
+                phrase,
+                display,
+                element:
+                    group?.element
+            });
+        }
+
+        const suppressed =
+            new Set();
+
+        const compacted =
+            items.map(
+                item => {
+                    let base;
+                    let optionalPrefix =
+                        "";
+                    let optionalSuffix =
+                        "";
+
+                    for (
+                        const candidate of
+                        items
+                    ) {
+                        if (
+                            candidate ===
+                                item ||
+                            candidate
+                                .display
+                                .length >=
+                                item.display
+                                    .length
+                        ) {
+                            continue;
+                        }
+
+                        const prefix =
+                            candidate.display +
+                            " ";
+
+                        const suffix =
+                            " " +
+                            candidate.display;
+
+                        if (
+                            item.display
+                                .startsWith(
+                                    prefix
+                                )
+                        ) {
+                            if (
+                                !base ||
+                                candidate
+                                    .display
+                                    .length >
+                                    base.display
+                                        .length
+                            ) {
+                                base =
+                                    candidate;
+                                optionalPrefix =
+                                    "";
+                                optionalSuffix =
+                                    item.display
+                                        .slice(
+                                            candidate
+                                                .display
+                                                .length
+                                        );
+                            }
+                        }
+                        else if (
+                            item.display
+                                .endsWith(
+                                    suffix
+                                )
+                        ) {
+                            if (
+                                !base ||
+                                candidate
+                                    .display
+                                    .length >
+                                    base.display
+                                        .length
+                            ) {
+                                base =
+                                    candidate;
+                                optionalPrefix =
+                                    item.display
+                                        .slice(
+                                            0,
+                                            item.display
+                                                .length -
+                                            candidate
+                                                .display
+                                                .length
+                                        );
+                                optionalSuffix =
+                                    "";
+                            }
+                        }
+                    }
+
+                    if (base) {
+                        suppressed.add(
+                            base.display
+                        );
+                    }
+
+                    return {
+                        ...item,
+                        required:
+                            base
+                                ?.display ||
+                            item.display,
+                        optionalPrefix,
+                        optionalSuffix
+                    };
+                }
+            );
+
+        return compacted.filter(
+            item =>
+                !suppressed.has(
+                    item.display
+                ) ||
+                item.optionalPrefix ||
+                item.optionalSuffix
+        );
+    }
+
     #phraseNode(
         phrase,
-        element
+        element,
+        {
+            required,
+            optionalPrefix = "",
+            optionalSuffix = ""
+        } = {}
     ) {
         const row =
             document.createElement(
@@ -1109,102 +1428,31 @@ class SpeechMicBar extends HTMLElement {
         commandText.className =
             "option-command-text";
 
-        const coreParts =
-            this.#corePhraseParts(
-                text
-            );
-
-        let remainder =
-            text;
-
-        if (coreParts) {
-            const coreCode =
-                document.createElement(
-                    "code"
-                );
-
-            coreCode.className =
-                "streaming-core-phrase";
-
-            coreCode.textContent =
-                coreParts.core;
-
-            commandText.append(
-                coreCode
-            );
-
-            remainder =
-                coreParts.rest;
-
-            if (remainder) {
-                commandText.append(
-                    " "
-                );
+        this.#appendOptionText(
+            commandText,
+            optionalPrefix,
+            element,
+            {
+                optional: true,
+                core: false
             }
-        }
+        );
 
-        const pattern =
-            /<([^>]+)>/g;
+        this.#appendOptionText(
+            commandText,
+            required || text,
+            element
+        );
 
-        let offset = 0;
-        let match;
-
-        while (
-            (
-                match =
-                    pattern.exec(
-                        remainder
-                    )
-            )
-        ) {
-            if (
-                match.index >
-                offset
-            ) {
-                commandText.append(
-                    document
-                        .createTextNode(
-                            remainder.slice(
-                                offset,
-                                match.index
-                            )
-                        )
-                );
+        this.#appendOptionText(
+            commandText,
+            optionalSuffix,
+            element,
+            {
+                optional: true,
+                core: false
             }
-
-            const code =
-                document.createElement(
-                    "code"
-                );
-
-            code.className =
-                "streaming-context";
-
-            code.textContent =
-                match[0];
-
-            commandText.append(
-                code
-            );
-
-            offset =
-                match.index +
-                match[0].length;
-        }
-
-        if (
-            offset <
-            remainder.length
-        ) {
-            commandText.append(
-                document
-                    .createTextNode(
-                        remainder.slice(
-                            offset
-                        )
-                    )
-            );
-        }
+        );
 
         row.append(
             commandText
@@ -1230,6 +1478,12 @@ class SpeechMicBar extends HTMLElement {
                 "aria-label",
                 text +
                 " (unimplemented)"
+            );
+        }
+        else {
+            row.setAttribute(
+                "aria-label",
+                text
             );
         }
 
@@ -1279,34 +1533,35 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 for (
-                    const phrase of
-                    group?.phrases ||
-                    []
+                    const item of
+                    this.#compactOptionGroup(
+                        group
+                    )
                 ) {
-                    const display =
-                        this
-                            .#displayPhrase(
-                                phrase,
-                                group
-                                    ?.element
-                            );
+                    const signature =
+                        [
+                            item.required,
+                            item.optionalPrefix,
+                            item.optionalSuffix
+                        ].join(
+                            "\u0000"
+                        );
 
                     if (
                         card.seen.has(
-                            display
+                            signature
                         )
                     ) {
                         continue;
                     }
 
                     card.seen.add(
-                        display
+                        signature
                     );
-                    card.phrases.push({
-                        phrase,
-                        element:
-                            group?.element
-                    });
+
+                    card.phrases.push(
+                        item
+                    );
                 }
             }
         );
@@ -1361,7 +1616,15 @@ class SpeechMicBar extends HTMLElement {
                 box.append(
                     this.#phraseNode(
                         item.phrase,
-                        item.element
+                        item.element,
+                        {
+                            required:
+                                item.required,
+                            optionalPrefix:
+                                item.optionalPrefix,
+                            optionalSuffix:
+                                item.optionalSuffix
+                        }
                     )
                 );
             }
