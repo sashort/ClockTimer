@@ -7,6 +7,18 @@ $trainingRequested =
     ($_GET['training'] ?? null) === '1' ||
     ($_POST['training'] ?? null) === '1';
 
+$speechLanguage =
+    $_GET['language'] ??
+    $_POST['language'] ??
+    'en-US';
+
+if (
+    !is_string($speechLanguage) ||
+    !preg_match('/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{2,8})*$/D', $speechLanguage)
+) {
+    api_error('language is invalid.', 422, 'invalid_argument');
+}
+
 $sessionUser =
     optional_current_user();
 
@@ -110,7 +122,7 @@ header('Referrer-Policy: no-referrer');
     <title>WMOF Speech Command Editor</title>
     <link rel="stylesheet" href="editor.css?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.css'), ENT_QUOTES)?>">
 </head>
-<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-can-train="<?=$canTrain ? 'true' : 'false'?>" data-training-requested="<?=$trainingRequested ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
+<body data-csrf="<?=htmlspecialchars(csrf_token(), ENT_QUOTES)?>" data-can-write="<?=$canWrite ? 'true' : 'false'?>" data-can-preview="<?=$canPreview ? 'true' : 'false'?>" data-can-train="<?=$canTrain ? 'true' : 'false'?>" data-speech-language="<?=htmlspecialchars($speechLanguage, ENT_QUOTES)?>" data-training-requested="<?=$trainingRequested ? 'true' : 'false'?>" data-training-only="<?=$trainingOnly ? 'true' : 'false'?>" data-access-mode="<?=htmlspecialchars($accessMode, ENT_QUOTES)?>">
     <header class="toolbar">
         <h1>Speech Command Editor</h1>
         <div class="viewport-controls" aria-label="Preview viewport controls">
