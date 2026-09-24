@@ -82,8 +82,7 @@ class SpeechMenu {
                             "disabled",
                             "inert",
                             "aria-hidden",
-                            "speech-available",
-                            "speech-implemented"
+                            "speech-available"
                         ]
                     }
                 );
@@ -116,55 +115,15 @@ class SpeechMenu {
             return false;
         }
 
-        if (
-            element.getAttribute(
-                "speech-implemented"
-            ) === "false"
-        ) {
-            return false;
-        }
-
         const speechFunction =
             element.getAttribute(
                 "speech-function"
             );
 
-        const resolvedFunction =
-            SpeechMenu
+        if (
+            !SpeechMenu
                 .#resolve(
                     speechFunction
-                );
-
-        if (!resolvedFunction) {
-            return false;
-        }
-
-        const actionName =
-            String(
-                speechFunction ||
-                ""
-            )
-                .trim()
-                .match(
-                    /^WMOFActions.([A-Za-z_$][\w$]*)$/
-                )
-                ?.[1];
-
-        if (actionName) {
-            if (
-                globalThis
-                    .WMOFActionFunctions
-                    ?.isImplemented?.(
-                        actionName
-                    ) !== true
-            ) {
-                return false;
-            }
-        }
-        else if (
-            !SpeechMenu
-                .#functionHasImplementation(
-                    resolvedFunction.fn
                 )
         ) {
             return false;
@@ -175,124 +134,14 @@ class SpeechMenu {
                 "speech-preproc"
             );
 
-        if (!speechPreproc) {
-            return true;
-        }
-
-        const resolvedPreproc =
-            SpeechMenu
-                .#resolve(
-                    speechPreproc
-                );
-
-        return Boolean(
-            resolvedPreproc &&
-            SpeechMenu
-                .#functionHasImplementation(
-                    resolvedPreproc.fn
-                )
-        );
-    }
-
-    static #functionHasImplementation(
-        implementation
-    ) {
-        if (
-            typeof implementation !==
-            "function"
-        ) {
-            return false;
-        }
-
-        let source;
-
-        try {
-            source =
-                Function.prototype
-                    .toString
-                    .call(
-                        implementation
-                    );
-        }
-        catch {
-            return true;
-        }
-
-        if (
-            /\[native code\]/
-                .test(source)
-        ) {
-            return true;
-        }
-
-        const withoutComments =
-            source
-                .replace(
-                    /\/\*[\s\S]*?\*\//g,
-                    ""
-                )
-                .replace(
-                    /\/\/.*$/gm,
-                    ""
-                )
-                .trim();
-
-        const arrowIndex =
-            withoutComments
-                .indexOf(
-                    "=>"
-                );
-
-        if (arrowIndex >= 0) {
-            const body =
-                withoutComments
-                    .slice(
-                        arrowIndex + 2
+        return (
+            !speechPreproc ||
+            Boolean(
+                SpeechMenu
+                    .#resolve(
+                        speechPreproc
                     )
-                    .trim();
-
-            if (
-                !body.startsWith(
-                    "{"
-                )
-            ) {
-                return Boolean(
-                    body
-                );
-            }
-        }
-
-        const openBrace =
-            withoutComments
-                .indexOf(
-                    "{"
-                );
-
-        const closeBrace =
-            withoutComments
-                .lastIndexOf(
-                    "}"
-                );
-
-        if (
-            openBrace < 0 ||
-            closeBrace <=
-                openBrace
-        ) {
-            return true;
-        }
-
-        return Boolean(
-            withoutComments
-                .slice(
-                    openBrace + 1,
-                    closeBrace
-                )
-                .replace(
-                    /^\s*(?:"use strict"|'use strict');?\s*/,
-                    ""
-                )
-                .trim()
+            )
         );
     }
 
@@ -1069,11 +918,6 @@ class SpeechMenu {
                                 element
                             ),
                     pattern,
-                    implemented:
-                        SpeechMenu
-                            .isCommandImplemented(
-                                element
-                            ),
                     phrases:
                         Object.freeze(
                             extrapolated.slice()
@@ -1122,8 +966,6 @@ class SpeechMenu {
                             next.element ||
                         group.pattern !==
                             next.pattern ||
-                        group.implemented !==
-                            next.implemented ||
                         group.phrases.length !==
                             next.phrases.length ||
                         group.phrases.some(
