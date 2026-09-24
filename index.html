@@ -194,7 +194,7 @@
             <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-options-category="settings" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canToggleRenderedTime" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^show (?&lt;timeMode&gt;time remaining|time elapsed|end time)$" speech-function="WMOFActions.toggleRenderedTime"></speech-command>
         </speech-menu>
         <speech-menu id="speechDefaultMenu" speech-modal="default" data-speech-editor-id="builtin:menu:default">
-            <speech-command data-speech-editor-id="builtin:voiceOptions:default" data-speech-options-category="settings" speech-pattern="^(?:speech )?options$" speech-function="WMOFActions.toggleSpeechOptions"></speech-command>
+            <speech-command data-speech-editor-id="builtin:voiceOptions:default" data-speech-options-category="settings" speech-pattern="^(?:speech )?commands$" speech-function="WMOFActions.toggleSpeechOptions"></speech-command>
             <speech-command data-speech-editor-id="builtin:closeSurface:default" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-pattern="^(?:cancel|close)$" speech-function="WMOFActions.closeActiveSurface"></speech-command>
         </speech-menu>
         <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody">Trip Log</button>
