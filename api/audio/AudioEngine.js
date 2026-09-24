@@ -7,8 +7,46 @@
         #active = new Map();
         #sequence = 0;
 
+        constructor() {
+            const unlock = () => {
+                void this.unlock();
+            };
+
+            document.addEventListener(
+                "pointerdown",
+                unlock,
+                {
+                    once: true,
+                    capture: true
+                }
+            );
+
+            document.addEventListener(
+                "keydown",
+                unlock,
+                {
+                    once: true,
+                    capture: true
+                }
+            );
+        }
+
         get activeSongs() {
             return Array.from(this.#active.values()).map(entry => entry.name);
+        }
+
+        async unlock() {
+            try {
+                await this.#audioContext();
+                return true;
+            }
+            catch (error) {
+                console.warn(
+                    "Audio could not be unlocked:",
+                    error
+                );
+                return false;
+            }
         }
 
         async load() {
