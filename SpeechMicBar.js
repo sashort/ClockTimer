@@ -1040,6 +1040,11 @@ class SpeechMicBar extends HTMLElement {
                             "commands",
                         display:
                             "commands",
+                        expectedPhrases: [
+                            "commands"
+                        ],
+                        required:
+                            "commands",
                         element:
                             command
                     });
