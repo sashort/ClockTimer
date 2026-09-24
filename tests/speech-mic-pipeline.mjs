@@ -1108,7 +1108,7 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /!pool\.length[\s\S]*"no-candidates"[\s\S]*#finishUtterance\([\s\S]*false[\s\S]*"utteranceUnrecognized"/
+    /!pool\.length[\s\S]*#finishUtterance\([\s\S]*"no-candidates"[\s\S]*false[\s\S]*"utteranceUnrecognized"/
 );
 assert.match(
     speechMenuSource,
