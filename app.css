@@ -4596,6 +4596,254 @@ clock-timer[hide-latency] time-range[type="latency"] {
     }
 }
 
+
+/* Speech training result history ------------------------------------- */
+.speech-training-widget {
+    height: auto;
+    min-height: 64px;
+    grid-template-rows: 56px auto;
+}
+
+.speech-training-drag-handle,
+.speech-training-copy,
+.speech-training-state,
+.speech-training-start-stop {
+    grid-row: 1;
+}
+
+.speech-training-heard-line {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+}
+
+.speech-training-heard-line > #speechTrainingHeard {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.speech-training-result-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.speech-training-result-icon[hidden] {
+    display: none;
+}
+
+.speech-training-result-icon[data-result="accepted"] {
+    color: #7fe6a2;
+}
+
+.speech-training-result-icon[data-result="model-miss"],
+.speech-training-result-icon[data-result="divergence"] {
+    color: var(--wm-red, #e1251b);
+}
+
+.speech-training-result-icon[data-result="discarded"] {
+    color: #f59e0b;
+}
+
+.speech-training-results {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+    margin: 2px 0 0;
+    border-top: 1px solid rgb(255 255 255 / 18%);
+    touch-action: auto;
+}
+
+.speech-training-results > summary {
+    min-height: 30px;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    color: rgb(255 255 255 / 78%);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    user-select: none;
+}
+
+.speech-training-results > summary::marker {
+    color: var(--wm-blue-light);
+}
+
+#speechTrainingResultsCount {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    color: var(--wm-blue-dark);
+    background: var(--wm-blue-light);
+    text-align: center;
+    font-size: 10px;
+}
+
+.speech-training-results-list {
+    max-height: min(310px, 46dvh);
+    overflow: auto;
+    padding: 0 5px 5px;
+    display: grid;
+    gap: 4px;
+    overscroll-behavior: contain;
+}
+
+.speech-training-result {
+    min-width: 0;
+    padding: 7px 7px 6px;
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto 28px;
+    grid-template-areas:
+        "icon copy state remove"
+        ". review review review";
+    align-items: center;
+    gap: 5px 7px;
+    border: 1px solid rgb(255 255 255 / 13%);
+    border-radius: 8px;
+    background: rgb(0 0 0 / 14%);
+}
+
+.speech-training-result > .speech-training-result-icon {
+    grid-area: icon;
+    width: 22px;
+    height: 22px;
+    font-size: 19px;
+}
+
+.speech-training-result-copy {
+    grid-area: copy;
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+
+.speech-training-result-copy strong,
+.speech-training-result-copy span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.speech-training-result-copy strong {
+    font-size: 12px;
+}
+
+.speech-training-result-copy span {
+    color: rgb(255 255 255 / 58%);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.speech-training-result-state {
+    grid-area: state;
+    color: rgb(255 255 255 / 58%);
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.speech-training-result[data-result="accepted"]
+.speech-training-result-state {
+    color: #7fe6a2;
+}
+
+.speech-training-result[data-result="model-miss"]
+.speech-training-result-state,
+.speech-training-result[data-result="divergence"]
+.speech-training-result-state {
+    color: #ff7b73;
+}
+
+.speech-training-result[data-result="discarded"]
+.speech-training-result-state {
+    color: #f7b84b;
+}
+
+.speech-training-result-remove {
+    grid-area: remove;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    color: #f59e0b;
+    background: transparent;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.speech-training-result-remove:hover,
+.speech-training-result-remove:focus-visible {
+    background: rgb(245 158 11 / 16%);
+}
+
+.speech-training-result-review {
+    grid-area: review;
+    min-width: 0;
+    padding-top: 4px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    color: rgb(255 255 255 / 64%);
+    font-size: 10px;
+}
+
+.speech-training-result-review button {
+    min-height: 26px;
+    padding: 3px 7px;
+    border: 1px solid rgb(255 255 255 / 32%);
+    border-radius: 6px;
+    color: var(--wm-white);
+    background: rgb(255 255 255 / 7%);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.speech-training-result-review button[data-decision="approve"] {
+    border-color: rgb(127 230 162 / 65%);
+}
+
+.speech-training-result-review button[data-decision="purge"] {
+    color: #f7b84b;
+    border-color: rgb(245 158 11 / 55%);
+}
+
+@media (max-width: 520px) {
+    .speech-training-widget {
+        height: auto;
+        min-height: 60px;
+        grid-template-rows: 52px auto;
+    }
+
+    .speech-training-result {
+        grid-template-columns: 20px minmax(0, 1fr) 26px;
+        grid-template-areas:
+            "icon copy remove"
+            ". state state"
+            ". review review";
+    }
+
+    .speech-training-result-state {
+        white-space: normal;
+    }
+}
+
 #newUserButton::before {
     width:24px;height:24px;flex-basis:24px;
     -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='9' cy='8' r='4' fill='black'/%3E%3Cpath d='M2 21c0-4 3.1-7 7-7 2 0 3.8.8 5.1 2.1M18 11v8M14 15h8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
