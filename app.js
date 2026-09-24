@@ -1137,11 +1137,35 @@
         };
     }
 
+    function getSpeechMicTop() {
+        const metrics =
+            getAppContentMetrics();
+
+        const rowHeight =
+            Number.parseFloat(
+                getComputedStyle(app)
+                    .getPropertyValue(
+                        "--speech-mic-row-height"
+                    )
+            ) ||
+            0;
+
+        return (
+            metrics.rect.bottom -
+            metrics.paddingBottom -
+            rowHeight
+        );
+    }
+
     function getTripLogBottomRect() {
-        const metrics = getAppContentMetrics();
+        const metrics =
+            getAppContentMetrics();
+
         return {
             left: metrics.left,
-            top: metrics.rect.bottom - metrics.paddingBottom - metrics.height,
+            top:
+                getSpeechMicTop() -
+                metrics.height,
             width: metrics.width,
             height: metrics.height
         };
@@ -1213,7 +1237,7 @@
             topRect.height;
 
         const bottom =
-            metrics.rect.bottom;
+            getSpeechMicTop();
 
         return {
             left: metrics.left,
@@ -1514,13 +1538,9 @@
                 target.height
             );
 
-        const centerX =
-            target.left +
-            fullWidth / 2;
-
-        const centerY =
+        const anchorBottom =
             target.top +
-            fullHeight / 2;
+            fullHeight;
 
         if (
             fullWidth <= 0 ||
@@ -1535,13 +1555,6 @@
 
         const fullDuration =
             Math.max(1, duration);
-
-        const edgeSpeed =
-            Math.max(
-                fullWidth / 2,
-                fullHeight / 2
-            ) /
-            fullDuration;
 
         return new Promise(
             resolve => {
@@ -1564,44 +1577,43 @@
                                     startedAt
                             );
 
-                        const travelled =
-                            edgeSpeed *
-                            (
-                                opening
-                                    ? elapsed
-                                    : fullDuration -
-                                        elapsed
-                            );
+                        const linear =
+                            elapsed /
+                            fullDuration;
 
-                        const halfWidth =
-                            Math.min(
-                                fullWidth / 2,
-                                Math.max(
-                                    0,
-                                    travelled
-                                )
-                            );
+                        const progress =
+                            linear < .5
+                                ? 2 *
+                                    linear *
+                                    linear
+                                : 1 -
+                                    Math.pow(
+                                        -2 *
+                                            linear +
+                                            2,
+                                        2
+                                    ) /
+                                    2;
 
-                        const halfHeight =
-                            Math.min(
-                                fullHeight / 2,
-                                Math.max(
-                                    0,
-                                    travelled
-                                )
-                            );
+                        const visible =
+                            opening
+                                ? progress
+                                : 1 -
+                                    progress;
+
+                        const height =
+                            fullHeight *
+                            visible;
 
                         setFloatingTripLogBodyRect({
                             left:
-                                centerX -
-                                halfWidth,
+                                target.left,
                             top:
-                                centerY -
-                                halfHeight,
+                                anchorBottom -
+                                height,
                             width:
-                                halfWidth * 2,
-                            height:
-                                halfHeight * 2
+                                fullWidth,
+                            height
                         });
 
                         if (elapsed >= fullDuration) {
@@ -1826,9 +1838,13 @@
             getTripLogBodyRect();
 
         setFloatingTripLogBodyRect({
-            left: bodyRect.left + bodyRect.width / 2,
-            top: bodyRect.top + bodyRect.height / 2,
-            width: 0,
+            left:
+                bodyRect.left,
+            top:
+                bodyRect.top +
+                bodyRect.height,
+            width:
+                bodyRect.width,
             height: 0
         });
 
