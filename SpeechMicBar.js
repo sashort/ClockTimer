@@ -203,13 +203,13 @@ class SpeechMicBar extends HTMLElement {
                     justify-self: start;
                     display: inline-flex;
                     align-items: baseline;
-                    min-width: max-content;
+                    width: max-content;
+                    min-width: 0;
                     max-width: min(
                         82vw,
                         calc(100vw - 36px)
                     );
                     overflow: hidden;
-                    text-overflow: ellipsis;
                     white-space: nowrap;
                     font-size:
                         clamp(
@@ -222,13 +222,33 @@ class SpeechMicBar extends HTMLElement {
                     letter-spacing: .01em;
                 }
 
-                .option-phrase.unimplemented {
+                .option-command-text {
+                    display: inline-flex;
+                    align-items: baseline;
+                    flex: 0 0 auto;
+                    min-width: max-content;
+                    white-space: nowrap;
+                }
+
+                .option-phrase.unimplemented
+                .option-command-text {
                     text-decoration-line:
                         line-through;
                     text-decoration-thickness:
                         2px;
                     text-decoration-color:
                         currentColor;
+                }
+
+                .option-unimplemented-label {
+                    flex: 0 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: clip;
+                    font-size: .72em;
+                    font-weight: 600;
+                    opacity: .72;
                 }
 
                 .option-phrase code {
@@ -1071,11 +1091,6 @@ class SpeechMicBar extends HTMLElement {
                 "unimplemented"
             );
 
-            row.setAttribute(
-                "aria-label",
-                "Not implemented"
-            );
-
             row.title =
                 "Not implemented";
         }
@@ -1085,6 +1100,14 @@ class SpeechMicBar extends HTMLElement {
                 phrase,
                 element
             );
+
+        const commandText =
+            document.createElement(
+                "span"
+            );
+
+        commandText.className =
+            "option-command-text";
 
         const coreParts =
             this.#corePhraseParts(
@@ -1106,7 +1129,7 @@ class SpeechMicBar extends HTMLElement {
             coreCode.textContent =
                 coreParts.core;
 
-            row.append(
+            commandText.append(
                 coreCode
             );
 
@@ -1114,7 +1137,9 @@ class SpeechMicBar extends HTMLElement {
                 coreParts.rest;
 
             if (remainder) {
-                row.append(" ");
+                commandText.append(
+                    " "
+                );
             }
         }
 
@@ -1136,7 +1161,7 @@ class SpeechMicBar extends HTMLElement {
                 match.index >
                 offset
             ) {
-                row.append(
+                commandText.append(
                     document
                         .createTextNode(
                             remainder.slice(
@@ -1158,7 +1183,7 @@ class SpeechMicBar extends HTMLElement {
             code.textContent =
                 match[0];
 
-            row.append(
+            commandText.append(
                 code
             );
 
@@ -1171,13 +1196,40 @@ class SpeechMicBar extends HTMLElement {
             offset <
             remainder.length
         ) {
-            row.append(
+            commandText.append(
                 document
                     .createTextNode(
                         remainder.slice(
                             offset
                         )
                     )
+            );
+        }
+
+        row.append(
+            commandText
+        );
+
+        if (!implemented) {
+            const status =
+                document.createElement(
+                    "span"
+                );
+
+            status.className =
+                "option-unimplemented-label";
+
+            status.textContent =
+                " (unimplemented)";
+
+            row.append(
+                status
+            );
+
+            row.setAttribute(
+                "aria-label",
+                text +
+                " (unimplemented)"
             );
         }
 
