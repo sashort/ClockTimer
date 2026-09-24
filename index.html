@@ -34,7 +34,7 @@
         </header>
 
         <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
-            <div class="main-menu-row menu-account-row">
+            <div id="menuAccountRow" class="main-menu-row menu-account-row">
                 <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
                 <button id="authButton" type="button">Login</button>
             </div>
@@ -45,7 +45,8 @@
                     <button id="accessTokensButton" type="button" hidden>Access Tokens</button>
                 </div>
             </div>
-            <hr>
+            <div id="menuLogoutSlot"></div>
+            <hr id="accountMenuDivider">
             <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
             <div class="main-menu-row speech-recognition-menu-row">
                 <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled><span>Speech Recognition</span></button>
