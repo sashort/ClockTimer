@@ -115,16 +115,47 @@ class SpeechMenu {
             return false;
         }
 
+        if (
+            element.getAttribute(
+                "speech-implemented"
+            ) === "false"
+        ) {
+            return false;
+        }
+
         const speechFunction =
             element.getAttribute(
                 "speech-function"
             );
 
-        if (
-            !SpeechMenu
+        const resolvedFunction =
+            SpeechMenu
                 .#resolve(
                     speechFunction
+                );
+
+        if (!resolvedFunction) {
+            return false;
+        }
+
+        const actionName =
+            String(
+                speechFunction ||
+                ""
+            )
+                .trim()
+                .match(
+                    /^WMOFActions.([A-Za-z_$][\w$]*)$/
                 )
+                ?.[1];
+
+        if (
+            actionName &&
+            globalThis
+                .WMOFActionFunctions
+                ?.isImplemented?.(
+                    actionName
+                ) === false
         ) {
             return false;
         }
@@ -134,14 +165,18 @@ class SpeechMenu {
                 "speech-preproc"
             );
 
-        return (
-            !speechPreproc ||
-            Boolean(
-                SpeechMenu
-                    .#resolve(
-                        speechPreproc
-                    )
-            )
+        if (!speechPreproc) {
+            return true;
+        }
+
+        const resolvedPreproc =
+            SpeechMenu
+                .#resolve(
+                    speechPreproc
+                );
+
+        return Boolean(
+            resolvedPreproc
         );
     }
 
