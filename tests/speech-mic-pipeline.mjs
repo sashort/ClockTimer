@@ -277,8 +277,9 @@ for (const id of primedSpeechIds) {
 
 assert.match(html, /builtin:breakChoice:breakDialog/);
 assert.match(html, /builtin:confirm:breakDialog/);
-assert.match(html, /builtin:confirm:speechBreakEndDialog/);
-assert.match(html, /builtin:cancel:speechBreakEndDialog/);
+assert.match(html, /builtin:yes:speechBreakConfirmDialog/);
+assert.match(html, /builtin:no:speechBreakConfirmDialog/);
+assert.match(html, /builtin:cancel:speechBreakConfirmDialog/);
 assert.match(html, /builtin:standardTime:scheduledStartStandard/);
 assert.match(html, /builtin:standardTime:trip-settings/);
 
