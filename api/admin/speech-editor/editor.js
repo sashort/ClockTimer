@@ -55,6 +55,19 @@
                 canWrite
         );
 
+    const trainingModeButton =
+        $("trainingModeButton");
+
+    if (trainingModeButton) {
+        trainingModeButton.disabled =
+            !canTrain;
+
+        if (!canTrain) {
+            trainingModeButton.title =
+                "Sign in to contribute speech training data.";
+        }
+    }
+
     const endpoint =
         "../../speech-editor-config/";
 
@@ -419,7 +432,8 @@
         async (
             method = "GET",
             body,
-            phraseKey
+            phraseKey,
+            componentKey
         ) => {
             const url =
                 new URL(
@@ -445,6 +459,13 @@
                     url.searchParams.set(
                         "phraseKey",
                         phraseKey
+                    );
+                }
+
+                if (componentKey) {
+                    url.searchParams.set(
+                        "componentKey",
+                        componentKey
                     );
                 }
             }
@@ -787,7 +808,9 @@
                     "GET",
                     undefined,
                     trainingCurrent
-                        .key
+                        .key,
+                    trainingCurrent
+                        .componentKey
                 );
 
             trainingCanWriteCorrections =
@@ -843,6 +866,10 @@
                 group,
                 phrase,
                 key,
+                componentKey:
+                    trainingGroupId(
+                        group
+                    ),
                 prompt:
                     trainingPromptFor(
                         phrase,
@@ -1060,7 +1087,12 @@
     const recordTrainingSample =
         async (
             canonical,
-            observed
+            observed,
+            {
+                source = "manual",
+                trainingStyle,
+                promptIndex
+            } = {}
         ) => {
             if (
                 !canTrain ||
@@ -1068,6 +1100,10 @@
             ) {
                 return;
             }
+
+            const speechMenu =
+                frame.contentWindow
+                    ?.SpeechMenu;
 
             const data =
                 await trainingApi(
@@ -1077,6 +1113,9 @@
                             "sample",
                         language:
                             "en-US",
+                        componentKey:
+                            trainingCurrent
+                                .componentKey,
                         phraseKey:
                             trainingCurrent
                                 .key,
@@ -1084,7 +1123,13 @@
                             trainingCurrent
                                 .phrase,
                         canonical,
-                        observed
+                        observed,
+                        source,
+                        trainingStyle,
+                        promptIndex,
+                        pipeline:
+                            speechMenu
+                                ?.pipeline
                     }
                 );
 
@@ -13242,6 +13287,15 @@
                                 "correction",
                             language:
                                 "en-US",
+                            componentKey:
+                                trainingCurrent
+                                    ?.componentKey,
+                            phraseKey:
+                                trainingCurrent
+                                    ?.key,
+                            phrase:
+                                trainingCurrent
+                                    ?.phrase,
                             observed:
                                 $(
                                     "speechCorrectionObserved"
