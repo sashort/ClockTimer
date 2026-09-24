@@ -441,8 +441,7 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 :host(
-                    [training-mode]
-                    [training-target-source="mic-bar"]
+                    [training-mode][training-target-source="mic-bar"]
                 )
                 #bar {
                     box-shadow:
