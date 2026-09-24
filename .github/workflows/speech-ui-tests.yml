@@ -69,6 +69,7 @@ jobs:
           php -l api/speech-editor-config/index.php
           php -l api/speech-corrections/index.php
           php -l api/_core/speech_corrections.php
+          php -l migrations/006_speech_model_training.php
 
       - name: Install test dependencies
         working-directory: tests
@@ -89,4 +90,5 @@ jobs:
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-value-preprocessor.mjs
+          node speech-training-model.mjs
           node spoken-duration.mjs
