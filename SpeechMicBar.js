@@ -910,8 +910,9 @@ class SpeechMicBar extends HTMLElement {
                 <button
                     id="optionsClose"
                     type="button"
-                    aria-label="Close speech commands"
-                >×</button>
+                    aria-label="Collapse speech commands"
+                    title="Collapse speech commands"
+                >▼</button>
                 <div id="optionsGrid"></div>
             </section>
             <div id="bar">
@@ -984,6 +985,34 @@ class SpeechMicBar extends HTMLElement {
                 }
             );
         this.#mic = this.#shadow.querySelector("#mic");
+        this.#mic
+            ?.addEventListener(
+                "click",
+                event => {
+                    if (!this.trainingMode) {
+                        return;
+                    }
+
+                    event.stopPropagation();
+
+                    if (this.trainingLocked) {
+                        return;
+                    }
+
+                    const speechMenu =
+                        globalThis.SpeechMenu;
+
+                    if (!speechMenu?.started) {
+                        return;
+                    }
+
+                    if (speechMenu.muted) {
+                        void speechMenu.wake?.();
+                    } else {
+                        void speechMenu.sleep?.();
+                    }
+                }
+            );
         this.#activity = this.#shadow.querySelector("#activity");
         this.#codes = this.#shadow.querySelector("#codes");
         this.#responseLane = this.#shadow.querySelector("#response");
@@ -4583,6 +4612,20 @@ class SpeechMicBar extends HTMLElement {
                     }
                 );
         }
+
+        if (this.trainingMode) {
+            this.#emitTrainingTelemetry(
+                "responseChanged",
+                {
+                    response:
+                        String(
+                            this.#responseContent
+                                ?.textContent ||
+                            ""
+                        ).trim()
+                }
+            );
+        }
     }
 
     presentResponseTransition(
@@ -5134,6 +5177,13 @@ class SpeechMicBar extends HTMLElement {
                 break;
         }
 
+        if (this.trainingMode) {
+            this.#emitTrainingTelemetry(
+                type,
+                detail
+            );
+        }
+
         this.dispatchEvent(
             new CustomEvent(
                 type,
@@ -5141,6 +5191,65 @@ class SpeechMicBar extends HTMLElement {
                     detail,
                     bubbles: true,
                     composed: true
+                }
+            )
+        );
+    }
+
+    #emitTrainingTelemetry(
+        type,
+        detail = {}
+    ) {
+        const responseText =
+            String(
+                this.#responseContent
+                    ?.textContent ||
+                ""
+            ).trim();
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-training-telemetry",
+                {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        type,
+                        event:
+                            detail,
+                        target:
+                            this.trainingTarget,
+                        state:
+                            this.state,
+                        phase:
+                            this.getAttribute(
+                                "phase"
+                            ) ||
+                            undefined,
+                        transcript:
+                            this.#currentTranscript,
+                        final:
+                            this.#currentTranscriptFinal,
+                        response:
+                            responseText,
+                        muted:
+                            Boolean(
+                                globalThis
+                                    .SpeechMenu
+                                    ?.muted
+                            ),
+                        listening:
+                            Boolean(
+                                globalThis
+                                    .SpeechMenu
+                                    ?.started
+                            ) &&
+                            !globalThis
+                                .SpeechMenu
+                                ?.listeningSuspended,
+                        locked:
+                            this.trainingLocked
+                    }
                 }
             )
         );
