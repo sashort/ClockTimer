@@ -965,7 +965,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /data-speech-target/
+    /data-speech-options-group/
 );
 assert.match(
     speechMicBarSource,
