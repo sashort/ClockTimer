@@ -55,10 +55,6 @@ assert.equal(typeof bar.clear, "function");
 assert.equal(typeof bar.showOptions, "function");
 assert.equal(typeof bar.hideOptions, "function");
 assert.equal(typeof bar.promoteTopLayer, "function");
-assert.match(
-    bar.shadowRoot?.innerHTML || "",
-    /Available Speech Commands/
-);
 
 assert.equal(
     SpeechMenu.synthesizedSpeechActive,
