@@ -781,8 +781,11 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    touch-action: pan-y;
-    transition: height 240ms ease-in-out;
+    touch-action: pan-x pan-y;
+    transition:
+        height
+        var(--main-menu-layout-duration, 240ms)
+        ease-in-out;
 }
 
 .main-menu-viewport::-webkit-scrollbar {
@@ -856,6 +859,45 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 
 .main-menu-focus-layer[hidden] {
     display: none;
+}
+
+
+.main-menu-panel[data-menu-panel-scrollable="true"],
+.main-menu-focus-layer[data-menu-scrollable="true"] {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    touch-action: pan-y;
+}
+
+.main-menu-panel:not([data-menu-panel-scrollable="true"]),
+.main-menu-focus-layer:not([data-menu-scrollable="true"]) {
+    overflow-y: hidden;
+}
+
+.main-menu[data-menu-focused="true"]
+    .main-menu-indicator {
+    height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+}
+
+.main-menu-focus-group#speechToolsGroup
+    > #speechMenuButton {
+    padding: 12px 14px;
+    font-size: 16px;
+    color: var(--wm-blue-light);
+}
+
+.main-menu-focus-group#speechToolsGroup
+    > #speechMenuButton::before {
+    display: none;
+}
+
+.main-menu-focus-group
+    .speech-submenu {
+    margin-left: 28px;
 }
 
 .main-menu[data-menu-focused="true"]
