@@ -650,6 +650,22 @@ assert.match(
     speechMenuSource,
     /static isCommandImplemented\(element\)/
 );
+assert.match(
+    speechMenuSource,
+    /speech-implemented[\s\S]*=== "false"/
+);
+assert.match(
+    speechMenuSource,
+    /WMOFActionFunctions[\s\S]*isImplemented/
+);
+assert.match(
+    speechMenuSource,
+    /#functionHasImplementation/
+);
+assert.match(
+    html,
+    /builtin:goal:page[^>]*speech-implemented="false"/
+);
 
 assert.match(
     speechMenuSource,
