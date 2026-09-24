@@ -7413,6 +7413,461 @@
                 true
         });
 
+    $("#speechTrainingInAppChoice")
+        ?.addEventListener(
+            "click",
+            async () => {
+                closeDialog(
+                    speechTrainingChoiceDialog,
+                    {
+                        reason:
+                            "speech-training-in-app"
+                    }
+                );
+
+                try {
+                    await enableInAppSpeechTraining();
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+        );
+
+    $("#speechTrainingEditorChoice")
+        ?.addEventListener(
+            "click",
+            () => {
+                closeDialog(
+                    speechTrainingChoiceDialog,
+                    {
+                        reason:
+                            "speech-training-editor"
+                    }
+                );
+
+                openSpeechTrainingEditorMode();
+            }
+        );
+
+    speechTrainingStartStop
+        ?.addEventListener(
+            "click",
+            () => {
+                if (speechTrainingActive) {
+                    stopInAppSpeechTraining();
+                    return;
+                }
+
+                startInAppSpeechTraining();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-target-selected",
+            event => {
+                if (
+                    !inAppSpeechTrainingEnabled ||
+                    speechTrainingActive
+                ) {
+                    return;
+                }
+
+                speechTrainingTarget = {
+                    ...event.detail
+                };
+
+                speechTrainingUtteranceCount =
+                    0;
+                speechTrainingSeenUtterances
+                    .clear();
+
+                if (speechTrainingPhrase) {
+                    speechTrainingPhrase
+                        .textContent =
+                        speechTrainingTarget
+                            .display ||
+                        speechTrainingTarget
+                            .phrase ||
+                        "Command";
+                }
+
+                if (speechTrainingHeard) {
+                    speechTrainingHeard
+                        .textContent =
+                        "Heard: —";
+                }
+
+                if (speechTrainingCount) {
+                    speechTrainingCount
+                        .textContent =
+                        "0";
+                }
+
+                syncSpeechTrainingStartButton();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-telemetry",
+            event => {
+                if (!inAppSpeechTrainingEnabled) {
+                    return;
+                }
+
+                const telemetry =
+                    event.detail ||
+                    {};
+
+                speechTrainingWidget
+                    ?.dispatchEvent(
+                        new CustomEvent(
+                            "speech-training-metrics",
+                            {
+                                bubbles: true,
+                                detail: {
+                                    ...telemetry
+                                }
+                            }
+                        )
+                    );
+
+                if (
+                    telemetry.type ===
+                        "muted" ||
+                    telemetry.type ===
+                        "unmuted" ||
+                    telemetry.type ===
+                        "started" ||
+                    telemetry.type ===
+                        "listeningResumed"
+                ) {
+                    syncSpeechTrainingStartButton();
+                }
+
+                if (!speechTrainingActive) {
+                    return;
+                }
+
+                const transcript =
+                    String(
+                        telemetry.response ||
+                        telemetry.transcript ||
+                        telemetry.event
+                            ?.transcript ||
+                        ""
+                    ).trim();
+
+                if (
+                    transcript &&
+                    speechTrainingHeard
+                ) {
+                    speechTrainingHeard
+                        .textContent =
+                        "Heard: " +
+                        transcript;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceStarted"
+                ) {
+                    clearTimeout(
+                        speechTrainingPromptTimer
+                    );
+
+                    setSpeechTrainingPrompt(
+                        "speak",
+                        "Speak"
+                    );
+
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceFinished"
+                ) {
+                    clearTimeout(
+                        speechTrainingPromptTimer
+                    );
+
+                    setSpeechTrainingPrompt(
+                        "pause",
+                        "Pause"
+                    );
+
+                    speechTrainingPromptTimer =
+                        setTimeout(
+                            () => {
+                                if (
+                                    speechTrainingActive &&
+                                    !globalThis
+                                        .SpeechMenu
+                                        ?.muted
+                                ) {
+                                    setSpeechTrainingPrompt(
+                                        "speak",
+                                        "Speak"
+                                    );
+                                }
+                            },
+                            650
+                        );
+
+                    return;
+                }
+
+                if (
+                    telemetry.type !==
+                        "utteranceTranscribed"
+                ) {
+                    return;
+                }
+
+                const utteranceId =
+                    telemetry.event
+                        ?.id;
+
+                const observed =
+                    String(
+                        telemetry.event
+                            ?.transcript ||
+                        telemetry.transcript ||
+                        ""
+                    ).trim();
+
+                if (
+                    !observed ||
+                    utteranceId ===
+                        undefined ||
+                    speechTrainingSeenUtterances
+                        .has(
+                            utteranceId
+                        )
+                ) {
+                    return;
+                }
+
+                speechTrainingSeenUtterances
+                    .add(
+                        utteranceId
+                    );
+
+                speechTrainingUtteranceCount +=
+                    1;
+
+                if (speechTrainingCount) {
+                    speechTrainingCount
+                        .textContent =
+                        String(
+                            speechTrainingUtteranceCount
+                        );
+                }
+
+                void persistInAppSpeechTrainingSample(
+                    speechTrainingTarget,
+                    observed
+                )
+                    .catch(
+                        error => {
+                            console.error(
+                                error
+                            );
+
+                            if (
+                                speechTrainingActive
+                            ) {
+                                setSpeechTrainingPrompt(
+                                    "error",
+                                    "Save failed"
+                                );
+                            }
+                        }
+                    );
+            }
+        );
+
+    if (speechTrainingDragHandle) {
+        let drag;
+
+        const move =
+            event => {
+                if (
+                    !drag ||
+                    event.pointerId !==
+                        drag.pointerId
+                ) {
+                    return;
+                }
+
+                const width =
+                    speechTrainingWidget
+                        .offsetWidth;
+
+                const height =
+                    speechTrainingWidget
+                        .offsetHeight;
+
+                const left =
+                    Math.max(
+                        4,
+                        Math.min(
+                            window.innerWidth -
+                                width -
+                                4,
+                            event.clientX -
+                                drag.offsetX
+                        )
+                    );
+
+                const top =
+                    Math.max(
+                        4,
+                        Math.min(
+                            window.innerHeight -
+                                height -
+                                4,
+                            event.clientY -
+                                drag.offsetY
+                        )
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "left",
+                        left + "px"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "top",
+                        top + "px"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "bottom",
+                        "auto"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "transform",
+                        "none"
+                    );
+            };
+
+        const finish =
+            event => {
+                if (
+                    !drag ||
+                    event.pointerId !==
+                        drag.pointerId
+                ) {
+                    return;
+                }
+
+                try {
+                    speechTrainingDragHandle
+                        .releasePointerCapture(
+                            event.pointerId
+                        );
+                }
+                catch {}
+
+                drag =
+                    undefined;
+            };
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointerdown",
+                event => {
+                    if (
+                        speechTrainingWidget
+                            ?.hidden
+                    ) {
+                        return;
+                    }
+
+                    const rect =
+                        speechTrainingWidget
+                            .getBoundingClientRect();
+
+                    drag = {
+                        pointerId:
+                            event.pointerId,
+                        offsetX:
+                            event.clientX -
+                            rect.left,
+                        offsetY:
+                            event.clientY -
+                            rect.top
+                    };
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "left",
+                            rect.left +
+                                "px"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "top",
+                            rect.top +
+                                "px"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "bottom",
+                            "auto"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "transform",
+                            "none"
+                        );
+
+                    speechTrainingDragHandle
+                        .setPointerCapture(
+                            event.pointerId
+                        );
+                }
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointermove",
+                move
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointerup",
+                finish
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointercancel",
+                finish
+            );
+    }
+
     globalThis
         .WMOFInteractionFunctions
         .bindAction({
