@@ -939,3 +939,12 @@ assert.match(
     app,
     /wmof\.speechCacheRollbackReloaded[\s\S]*location\.reload\(\)/
 );
+
+assert.match(
+    speechMenuSource,
+    /spokenIndex ===[\s\S]*spoken\.length -[\s\S]*1[\s\S]*token\.startsWith\([\s\S]*spokenToken/
+);
+assert.match(
+    speechMenuSource,
+    /"re" \/ "read" -> "ready"/
+);
