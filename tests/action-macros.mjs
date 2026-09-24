@@ -87,6 +87,7 @@ for (
     const name of [
         "continueMacroProbe",
         "cycleMacroProbe",
+        "readMacroProbe",
         "runMacroProbe",
         "connectMacroProbe"
     ]
@@ -113,6 +114,10 @@ window.WMOFActionFunctions
             return true;
         },
 
+        readRegistrationProbe() {
+            return true;
+        },
+
         runRegistrationProbe() {
             return true;
         },
@@ -124,9 +129,16 @@ window.WMOFActionFunctions
 
 assert.equal(
     typeof window.WMOFActions
+        .readRegistrationProbe,
+    "function",
+    "read actions should satisfy the action verb contract"
+);
+
+assert.equal(
+    typeof window.WMOFActions
         .connectRegistrationProbe,
     "function",
-    "defineAll should continue registering actions after continue/cycle/run verbs"
+    "defineAll should continue registering actions after continue/cycle/read/run verbs"
 );
 
 let interruptedSignal;
