@@ -898,12 +898,18 @@ if ($method === 'GET') {
             $canReviewDivergence =
                 true;
         } else {
+            $permissionMask =
+                (int) $manageUser[
+                    'permissions'
+                ];
+
             $canReviewDivergence =
-                permission_mask_allows_any(
-                    (int) $manageUser[
-                        'permissions'
-                    ],
-                    PERMISSION_DEVELOPER_PREVIEW,
+                permission_mask_allows(
+                    $permissionMask,
+                    PERMISSION_DEVELOPER_PREVIEW
+                ) ||
+                permission_mask_allows(
+                    $permissionMask,
                     PERMISSION_DEVELOPER
                 );
         }
