@@ -300,6 +300,71 @@ function speech_correction_match_type(mixed $value): string
     return $type;
 }
 
+function speech_correction_boolean(mixed $value, string $name): bool
+{
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    if ($value === 1 || $value === 0 || $value === '1' || $value === '0') {
+        return (bool) $value;
+    }
+
+    api_error($name . ' must be a boolean.', 422, 'invalid_argument');
+}
+
+function validate_speech_correction_pair(
+    mixed $observedValue,
+    mixed $canonicalValue
+): array {
+    if (!is_string($observedValue) || !is_string($canonicalValue)) {
+        api_error('observed and canonical must be strings.', 422, 'invalid_argument');
+    }
+
+    $observed =
+        normalize_speech_correction_text(
+            $observedValue
+        );
+
+    $canonical =
+        normalize_speech_correction_text(
+            $canonicalValue
+        );
+
+    if ($observed === '' || $canonical === '') {
+        api_error('observed and canonical must not be empty.', 422, 'invalid_argument');
+    }
+
+    if (strlen($observed) > 500 || strlen($canonical) > 500) {
+        api_error('Speech corrections are limited to 500 characters.', 422, 'invalid_argument');
+    }
+
+    $observedCompact =
+        compact_speech_correction_text(
+            $observed
+        );
+
+    $canonicalCompact =
+        compact_speech_correction_text(
+            $canonical
+        );
+
+    if ($observedCompact === $canonicalCompact) {
+        api_error(
+            'The observed form must differ from the canonical phrase.',
+            422,
+            'redundant_correction'
+        );
+    }
+
+    return [
+        'observed' => $observed,
+        'observedCompact' => $observedCompact,
+        'canonical' => $canonical,
+        'canonicalCompact' => $canonicalCompact,
+    ];
+}
+
 function speech_training_component_key(mixed $value): string
 {
     if ($value === null || $value === '') {
