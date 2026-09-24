@@ -5714,6 +5714,132 @@
             return result;
         }
 
+        async cancelInterval(
+            at
+        ) {
+            const nowDate =
+                at === undefined
+                    ? new Date()
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval cancellation time must be a valid date/time."
+                );
+            }
+
+            const now =
+                this.#getCurrentTimelineTime(
+                    nowDate
+                );
+
+            const current =
+                this.#getCurrentInterval(
+                    now
+                );
+
+            if (
+                !current ||
+                current.source !==
+                    "inserted" ||
+                current.open !==
+                    true
+            ) {
+                throw new Error(
+                    "Only the active open interval can be canceled."
+                );
+            }
+
+            const record =
+                current.record;
+
+            if (
+                !this.#closeOpenIntervalAt(
+                    nowDate,
+                    current
+                )
+            ) {
+                throw new Error(
+                    "The active interval could not be closed for cancellation."
+                );
+            }
+
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
+
+            const intervalType =
+                String(
+                    record.type ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const result =
+                await this.#commitIntervalDeletion(
+                    record
+                );
+
+            const detail = {
+                ...result,
+                type:
+                    record.type,
+                canceled:
+                    true,
+                canceledAt:
+                    nowDate.toISOString(),
+                startTime:
+                    record.startDate
+                        ?.toISOString?.()
+            };
+
+            this.#emitClockTimerEvent(
+                "intervalCanceled",
+                detail
+            );
+
+            if (
+                intervalType ===
+                    "down"
+            ) {
+                const semanticDetail =
+                    this.#getSemanticIntervalDetail(
+                        record,
+                        {
+                            ...detail,
+                            completion:
+                                "canceled",
+                            resumedFrom:
+                                "down"
+                        }
+                    );
+
+                this.#emitClockTimerEvent(
+                    "downTimeCanceled",
+                    semanticDetail
+                );
+
+                this.#emitClockTimerEvent(
+                    "tripResumed",
+                    semanticDetail
+                );
+            }
+
+            return result;
+        }
+
         async endInterval(at) {
             const nowDate =
                 at === undefined
