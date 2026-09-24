@@ -1267,7 +1267,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /id="optionsHeader">Speech Options<\/div>/
+    /id="optionsHeader">Speech Commands<\/div>/
 );
 assert.match(
     speechMicBarSource,
