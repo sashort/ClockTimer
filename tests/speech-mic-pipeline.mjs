@@ -1435,7 +1435,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /!exactCandidate[\s\S]*hasViableCandidate[\s\S]*lastExactCandidate[\s\S]*"candidate-silence"/
+    /#hasOpenContinuation\(\s*utterance\s*\)[\s\S]*#finishUtterance\([\s\S]*"candidate-silence"[\s\S]*true/
 );
 assert.match(
     speechMenuSource,
