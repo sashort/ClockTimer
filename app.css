@@ -47,7 +47,7 @@ button {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-rows: 52px 142px 62px 29px 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 62px 29px 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
     overflow: hidden;
     transition:
@@ -82,10 +82,14 @@ speech-mic-bar[popover] {
     position: fixed;
     inset:
         auto
-        0
-        var(--trip-log-row-height, 0px)
-        0;
-    width: 100%;
+        auto
+        var(--speech-mic-fixed-bottom, 0px)
+        var(--speech-mic-fixed-left, 0px);
+    width:
+        var(
+            --speech-mic-fixed-width,
+            100%
+        );
     max-width: none;
     padding: 0;
     border: 0;
@@ -356,7 +360,7 @@ html[data-trip-log-startup="unpinned"] .app {
 }
 
 .app[data-trip-state="running"] {
-    grid-template-rows: 52px 142px 122px 0 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 122px 0 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
 }
 
 .app[data-trip-state="running"] .new-trip-button {
@@ -1941,7 +1945,7 @@ button:active:not(:disabled):not(#toggleSyncGoalButton) {
 }
 
 .app[data-interval-state="down"] {
-    grid-template-rows: 52px 142px 230px 0 1fr var(--speech-mic-row-height) var(--trip-log-row-height);
+    grid-template-rows: 52px 142px 230px 0 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
 }
 
 .app[data-interval-state="down"] .active-trip-controls {
