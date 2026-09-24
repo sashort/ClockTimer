@@ -1023,6 +1023,25 @@ class SpeechMenu {
         }
 
         if (
+            SpeechMenu.#utterance &&
+            SpeechMenu.#utterance
+                .candidateHardCommitAt !==
+                undefined &&
+            now >=
+                SpeechMenu.#utterance
+                    .candidateHardCommitAt &&
+            !SpeechMenu.#utterance
+                .committed &&
+            !SpeechMenu.#utterance
+                .committing
+        ) {
+            SpeechMenu
+                .#commitHeldCandidate(
+                    SpeechMenu.#utterance
+                );
+        }
+
+        if (
             SpeechMenu.#pipeline ===
                 "silero"
         ) {
@@ -1349,6 +1368,8 @@ class SpeechMenu {
             candidateCommitTimer:
                 undefined,
             candidateHardCommitTimer:
+                undefined,
+            candidateHardCommitAt:
                 undefined,
             lastExactCandidate:
                 undefined,
@@ -2472,6 +2493,8 @@ class SpeechMenu {
                 undefined;
         }
 
+        utterance.candidateHardCommitAt =
+            undefined;
         utterance.lastExactCandidate =
             undefined;
         utterance.candidatePool = [];
@@ -2503,6 +2526,45 @@ class SpeechMenu {
                             .continuation
                 )
         );
+    }
+
+    static #commitHeldCandidate(
+        utterance
+    ) {
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing
+        ) {
+            return false;
+        }
+
+        const candidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                ) ||
+            utterance.lastExactCandidate;
+
+        if (!candidate) {
+            return false;
+        }
+
+        utterance.candidatePool = [
+            candidate
+        ];
+
+        if (candidate.transcript) {
+            utterance.transcript =
+                candidate.transcript;
+        }
+
+        void SpeechMenu
+            .#commitUtterance(
+                utterance
+            );
+
+        return true;
     }
 
     static #candidateCommitTimeout(
@@ -2566,6 +2628,11 @@ class SpeechMenu {
                 .candidateHardCommitTimer ===
             undefined
         ) {
+            utterance.candidateHardCommitAt =
+                performance.now() +
+                SpeechMenu
+                    .#maximumCandidateHoldTimeout;
+
             utterance.candidateHardCommitTimer =
                 setTimeout(
                     () => {
@@ -2583,28 +2650,8 @@ class SpeechMenu {
                             return;
                         }
 
-                        const candidate =
-                            SpeechMenu
-                                .#exactCandidate(
-                                    utterance
-                                ) ||
-                            utterance
-                                .lastExactCandidate;
-
-                        if (!candidate) {
-                            return;
-                        }
-
-                        utterance.candidatePool = [
-                            candidate
-                        ];
-
-                        utterance.transcript =
-                            candidate.transcript ||
-                            utterance.transcript;
-
-                        void SpeechMenu
-                            .#commitUtterance(
+                        SpeechMenu
+                            .#commitHeldCandidate(
                                 utterance
                             );
                     },
