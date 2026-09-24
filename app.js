@@ -404,6 +404,11 @@
         PERMISSION_DEVELOPER_PREVIEW |
         PERMISSION_DEVELOPER;
 
+    const DEVELOPER_MENU_PERMISSION_MASK =
+        PERMISSION_SUPERUSER |
+        PERMISSION_DEVELOPER_PREVIEW |
+        PERMISSION_DEVELOPER;
+
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
@@ -433,17 +438,18 @@
                 ACCESS_TOKEN_PERMISSION_MASK
             );
 
+        const canUseDeveloperTools =
+            Boolean(
+                permissions &
+                DEVELOPER_MENU_PERMISSION_MASK
+            );
+
         const canUseSpeechEditor =
             Boolean(
                 permissions &
                 SPEECH_EDITOR_PERMISSION_MASK
-            );
-
-        const canUseSql =
-            Boolean(
-                permissions &
-                PERMISSION_SUPERUSER
-            );
+            ) &&
+            canUseDeveloperTools;
 
         $("#newUserButton").hidden =
             !canCreateUsers;
@@ -461,13 +467,12 @@
             !canUseSpeechEditor;
 
         $("#sqlConsoleButton").hidden =
-            !canUseSql;
+            !canUseDeveloperTools;
 
         $("#adminMenuGroup").hidden =
             !(
                 canCreateUsers ||
-                canManageTokens ||
-                canUseSql
+                canManageTokens
             );
     }
     profileDialog.addEventListener("opening", () => populateProfile());
@@ -2600,27 +2605,23 @@
                 ACCESS_TOKEN_PERMISSION_MASK
             );
 
-        const canUseSpeechEditor =
+        const canUseDeveloperTools =
             connected &&
+            Boolean(
+                permissions &
+                DEVELOPER_MENU_PERMISSION_MASK
+            );
+
+        const canUseSpeechEditor =
+            canUseDeveloperTools &&
             Boolean(
                 permissions &
                 SPEECH_EDITOR_PERMISSION_MASK
             );
 
-        const canUseSpeechTools =
-            connected;
-
-        const canUseSql =
-            connected &&
-            Boolean(
-                permissions &
-                PERMISSION_SUPERUSER
-            );
-
         const showAdmin =
             canCreateUsers ||
-            canManageTokens ||
-            canUseSql;
+            canManageTokens;
 
         $("#adminMenuGroup").hidden =
             !showAdmin;
@@ -2632,16 +2633,16 @@
             !canManageTokens;
 
         $("#speechToolsGroup").hidden =
-            !canUseSpeechTools;
+            false;
 
         $("#speechTrainingButton").hidden =
-            !canUseSpeechTools;
+            false;
 
         $("#speechEditorButton").hidden =
             !canUseSpeechEditor;
 
         $("#sqlConsoleButton").hidden =
-            !canUseSql;
+            !canUseDeveloperTools;
 
         if (!showAdmin) {
             $("#adminSubmenu").hidden =
@@ -2654,15 +2655,11 @@
                 );
         }
 
-        if (!canUseSpeechTools) {
-            $("#speechSubmenu").hidden =
+        if (!canUseDeveloperTools) {
+            $("#speechEditorButton").hidden =
                 true;
-
-            $("#speechMenuButton")
-                .setAttribute(
-                    "aria-expanded",
-                    "false"
-                );
+            $("#sqlConsoleButton").hidden =
+                true;
         }
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
@@ -6675,6 +6672,27 @@
                     !open;
 
                 $("#adminMenuButton")
+                    .setAttribute(
+                        "aria-expanded",
+                        String(open)
+                    );
+            }
+        );
+
+    $("#developerMenuButton")
+        .addEventListener(
+            "click",
+            () => {
+                const submenu =
+                    $("#developerSubmenu");
+
+                const open =
+                    submenu.hidden;
+
+                submenu.hidden =
+                    !open;
+
+                $("#developerMenuButton")
                     .setAttribute(
                         "aria-expanded",
                         String(open)
@@ -12992,24 +13010,6 @@
             },
 
             openSqlConsole() {
-                const permissions =
-                    Number(
-                        signedInProfile
-                            ?.permissions
-                    ) ||
-                    0;
-
-                if (
-                    !(
-                        permissions &
-                        PERMISSION_SUPERUSER
-                    )
-                ) {
-                    throw new Error(
-                        "Superuser permission is required."
-                    );
-                }
-
                 const opened =
                     window.open(
                         API_BASE +
@@ -13019,7 +13019,7 @@
 
                 if (!opened) {
                     throw new Error(
-                        "The SQL window was blocked by the browser."
+                        "The Database Access window was blocked by the browser."
                     );
                 }
 
