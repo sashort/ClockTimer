@@ -128,6 +128,8 @@ class SpeechMenu {
 
         SpeechMenu.#sleeping =
             false;
+        SpeechMenu
+            .#schedulePhraseRefresh();
 
         SpeechMenu.#emit(
             "unmuted",
@@ -160,6 +162,8 @@ class SpeechMenu {
 
         SpeechMenu.#sleeping =
             true;
+        SpeechMenu
+            .#schedulePhraseRefresh();
 
         SpeechMenu.#emit(
             "muted",
