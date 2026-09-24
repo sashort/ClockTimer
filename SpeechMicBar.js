@@ -618,6 +618,16 @@ class SpeechMicBar extends HTMLElement {
                     transition: color 180ms linear, background 180ms linear;
                 }
 
+                :host([training-mode]:not([training-locked]))
+                #mic {
+                    cursor: pointer;
+                }
+
+                :host([training-mode][training-locked])
+                #mic {
+                    cursor: default;
+                }
+
                 #mic::before {
                     content: "";
                     width: 27px;
@@ -916,7 +926,7 @@ class SpeechMicBar extends HTMLElement {
                 <div id="optionsGrid"></div>
             </section>
             <div id="bar">
-                <div id="mic" aria-hidden="true"></div>
+                <div id="mic" role="button" tabindex="0" aria-label="Sleep or wake speech recognition"></div>
                 <div id="main">
                     <div id="activity" aria-live="polite"></div>
                     <div id="codes"></div>
@@ -985,32 +995,55 @@ class SpeechMicBar extends HTMLElement {
                 }
             );
         this.#mic = this.#shadow.querySelector("#mic");
+        const toggleTrainingMic =
+            event => {
+                if (!this.trainingMode) {
+                    return;
+                }
+
+                event.stopPropagation();
+
+                if (this.trainingLocked) {
+                    return;
+                }
+
+                const speechMenu =
+                    globalThis.SpeechMenu;
+
+                if (!speechMenu?.started) {
+                    return;
+                }
+
+                if (speechMenu.muted) {
+                    void speechMenu.wake?.();
+                } else {
+                    void speechMenu.sleep?.();
+                }
+            };
+
         this.#mic
             ?.addEventListener(
                 "click",
+                toggleTrainingMic
+            );
+
+        this.#mic
+            ?.addEventListener(
+                "keydown",
                 event => {
-                    if (!this.trainingMode) {
+                    if (
+                        event.key !==
+                            "Enter" &&
+                        event.key !==
+                            " "
+                    ) {
                         return;
                     }
 
-                    event.stopPropagation();
-
-                    if (this.trainingLocked) {
-                        return;
-                    }
-
-                    const speechMenu =
-                        globalThis.SpeechMenu;
-
-                    if (!speechMenu?.started) {
-                        return;
-                    }
-
-                    if (speechMenu.muted) {
-                        void speechMenu.wake?.();
-                    } else {
-                        void speechMenu.sleep?.();
-                    }
+                    event.preventDefault();
+                    toggleTrainingMic(
+                        event
+                    );
                 }
             );
         this.#activity = this.#shadow.querySelector("#activity");
