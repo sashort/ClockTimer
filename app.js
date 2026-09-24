@@ -11286,6 +11286,10 @@
                         .disabled &&
                     tripDraft
                 ) {
+                    const previous =
+                        tripDraft
+                            .standardTime;
+
                     tripDraft.standardTime =
                         formatted;
 
@@ -11300,10 +11304,13 @@
 
                     updateScheduledStartDialog();
 
-                    return confirmSettingChange(
-                        "Standard Time Set to " +
+                    return previous ===
                         formatted
-                    );
+                        ? true
+                        : confirmSettingChange(
+                            "Standard Time Set to " +
+                            formatted
+                        );
                 }
 
                 const editButton =
@@ -11325,16 +11332,23 @@
                         return false;
                     }
 
+                    const previous =
+                        session.values
+                            .standardTime;
+
                     session.values
                         .standardTime =
                         formatted;
 
                     refreshTripSettingsValues();
 
-                    return confirmSettingChange(
-                        "Standard Time Set to " +
+                    return previous ===
                         formatted
-                    );
+                        ? true
+                        : confirmSettingChange(
+                            "Standard Time Set to " +
+                            formatted
+                        );
                 }
 
                 return false;
@@ -12166,6 +12180,11 @@
                             }
                         );
 
+                const previousDeadline =
+                    endTimeGoalOverride
+                        ?.deadline
+                        ?.getTime?.();
+
                 if (
                     !target ||
                     !applyEndTimeGoalOverride(
@@ -12173,6 +12192,13 @@
                     )
                 ) {
                     return false;
+                }
+
+                if (
+                    previousDeadline ===
+                    target.getTime()
+                ) {
+                    return true;
                 }
 
                 const label =
