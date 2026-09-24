@@ -12666,6 +12666,32 @@
                 "cancelDownTime"
         });
 
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#cancelDownConfirmYes"),
+            event:
+                "click",
+            name:
+                "confirmCancelDownTimeClick",
+            action:
+                "confirmCancelDownTime"
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#cancelDownConfirmNo"),
+            event:
+                "click",
+            name:
+                "keepDownTimeClick",
+            action:
+                "keepDownTime"
+        });
+
     breakDialog
         .querySelectorAll(
             "[data-break-type]"
@@ -13971,6 +13997,25 @@
                 );
             },
 
+            canCancelDownTime() {
+                return Boolean(
+                    downCancelButton &&
+                    !downCancelButton.hidden &&
+                    !downCancelButton.disabled &&
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() ===
+                        "down"
+                );
+            },
+
             canLockEndTime() {
                 return tripIsLive();
             },
@@ -14929,18 +14974,140 @@
                 );
             },
 
-            async cancelDownTime() {
+            cancelDownTime() {
+                const active =
+                    clockTimer
+                        .getActiveIntervalState
+                        ?.(
+                            new Date()
+                        );
+
+                if (
+                    String(
+                        active
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() !==
+                        "down"
+                ) {
+                    return false;
+                }
+
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog) {
+                    return false;
+                }
+
+                const prompt =
+                    "Press/Say OK to Cancel your down time";
+
+                const opened =
+                    openDialog(
+                        "cancelDownConfirmDialog",
+                        {
+                            reason:
+                                "cancel-down"
+                        }
+                    );
+
+                if (
+                    opened &&
+                    globalThis
+                        .SpeechMenu
+                        ?.executionContext
+                ) {
+                    globalThis
+                        .WMOFAudio
+                        ?.speak?.(
+                            prompt
+                        );
+                }
+
+                return Boolean(
+                    opened
+                );
+            },
+
+            async confirmCancelDownTime() {
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                const active =
+                    clockTimer
+                        .getActiveIntervalState
+                        ?.(
+                            new Date()
+                        );
+
+                if (
+                    String(
+                        active
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() !==
+                        "down"
+                ) {
+                    closeDialog(
+                        dialog,
+                        {
+                            reason:
+                                "cancel-down-invalid"
+                        }
+                    );
+
+                    return false;
+                }
+
                 const transactionTime =
                     speechTransactionDate();
 
-                await clockTimer
-                    .endInterval(
-                        transactionTime
-                    );
-
-                return endCurrentIntervalOrTrip(
-                    transactionTime
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "cancel-down-confirmed"
+                    }
                 );
+
+                const result =
+                    await clockTimer
+                        .cancelInterval(
+                            transactionTime
+                        );
+
+                updateSummaryValues();
+                renderTripActionState();
+
+                return Boolean(
+                    result
+                );
+            },
+
+            keepDownTime() {
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "cancel-down-declined"
+                    }
+                );
+
+                return true;
             },
 
             readTripGoal() {
