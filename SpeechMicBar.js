@@ -245,7 +245,7 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 .option-category[
-                    data-category="speech"
+                    data-category="system"
                 ]
                 .option-category-rail {
                     background:
@@ -303,7 +303,7 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 .option-category[
-                    data-category="speech"
+                    data-category="system"
                 ]
                 .option-category-icon::before {
                     content: "";
@@ -935,7 +935,7 @@ class SpeechMicBar extends HTMLElement {
                         `builtin:${key}:system`;
                     command.dataset
                         .speechOptionsCategory =
-                        "speech";
+                        "system";
                     command.dataset
                         .speechOptionsGroup =
                         "speech-controls";
@@ -1310,6 +1310,18 @@ class SpeechMicBar extends HTMLElement {
     #optionsCategoryKey(
         group
     ) {
+        if (
+            String(
+                group?.modal ||
+                ""
+            )
+                .trim()
+                .toLowerCase() ===
+                    "system"
+        ) {
+            return "system";
+        }
+
         const category =
             (
                 group
@@ -1328,7 +1340,7 @@ class SpeechMicBar extends HTMLElement {
             "trip-actions",
             "goals",
             "settings",
-            "speech"
+            "system"
         ].includes(category)
             ? category
             : "settings";
@@ -1349,8 +1361,8 @@ class SpeechMicBar extends HTMLElement {
                 label: "Settings"
             },
             {
-                key: "speech",
-                label: "Speech Commands"
+                key: "system",
+                label: "System"
             }
         ];
     }
