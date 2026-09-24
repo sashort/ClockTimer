@@ -17,6 +17,8 @@
                 breakStart: "^break start$",
                 breakChoice: "^(?<breakChoice>10|15|long|short|lunch)$",
                 confirm: "^ok(?:ay)?$",
+                yes: "^yes$",
+                no: "^no$",
                 cancel: "^cancel$",
                 down: "^down(?: time)?$",
                 breakEnd: "^break end$",
