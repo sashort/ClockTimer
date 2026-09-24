@@ -1138,24 +1138,59 @@ class SpeechMenu {
                     .committed &&
                 !SpeechMenu.#utterance
                     .committing &&
-                SpeechMenu
-                    .#exactCandidate(
-                        SpeechMenu.#utterance
-                    ) &&
                 SpeechMenu.#utterance
                     .silenceMilliseconds >=
                     SpeechMenu
                         .#commitSilenceTimeout
             ) {
-                /*
-                 * Silence means the speaker stopped. At that point a
-                 * shorter exact phrase may commit even if it had longer
-                 * continuations (for example "ready" vs "ready at …").
-                 */
-                void SpeechMenu
-                    .#commitUtterance(
-                        SpeechMenu.#utterance
+                const utterance =
+                    SpeechMenu.#utterance;
+                const exactCandidate =
+                    SpeechMenu
+                        .#exactCandidate(
+                            utterance
+                        );
+                const hasViableCandidate =
+                    Boolean(
+                        utterance
+                            .candidatePool
+                            ?.length
                     );
+
+                if (
+                    (
+                        exactCandidate
+                            ?.continuation ||
+                        (
+                            !exactCandidate &&
+                            hasViableCandidate &&
+                            utterance
+                                .lastExactCandidate
+                        )
+                    )
+                ) {
+                    /*
+                     * Open-ended values (for example
+                     * "ready at five fif") often stop changing before
+                     * Sherpa emits the completed last word. Real silence
+                     * is the boundary; request the recognizer's final
+                     * decode instead of committing a stale interim.
+                     */
+                    SpeechMenu
+                        .#finishUtterance(
+                            "candidate-silence",
+                            true
+                        );
+
+                    return;
+                }
+
+                if (exactCandidate) {
+                    void SpeechMenu
+                        .#commitUtterance(
+                            utterance
+                        );
+                }
             }
 
             if (
@@ -1521,10 +1556,14 @@ class SpeechMenu {
             !utterance.committed &&
             !utterance.committing &&
             !(
-                SpeechMenu.#pipeline ===
-                    "silero" &&
+                (
+                    SpeechMenu.#pipeline ===
+                        "silero" &&
+                    reason ===
+                        "vad-silence"
+                ) ||
                 reason ===
-                    "vad-silence"
+                    "candidate-silence"
             )
         ) {
             void SpeechMenu.#commitUtterance(
@@ -2677,7 +2716,7 @@ class SpeechMenu {
                     ) {
                         SpeechMenu
                             .#finishUtterance(
-                                "candidate-stable",
+                                "candidate-silence",
                                 true
                             );
                     }
