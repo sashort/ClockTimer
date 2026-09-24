@@ -8590,6 +8590,132 @@
                 )
         );
 
+        const activeTouchTones =
+            new WeakMap();
+
+        const stopTouchTone =
+            button => {
+                const state =
+                    activeTouchTones.get(
+                        button
+                    );
+
+                if (!state) {
+                    return;
+                }
+
+                state.released =
+                    true;
+
+                state.handle?.stop?.();
+
+                activeTouchTones.delete(
+                    button
+                );
+            };
+
+        numberPadDialog
+            .querySelectorAll(
+                "[data-touch-tone]"
+            )
+            .forEach(
+                button => {
+                    button.addEventListener(
+                        "pointerdown",
+                        event => {
+                            stopTouchTone(
+                                button
+                            );
+
+                            if (
+                                button.disabled ||
+                                button.hasAttribute(
+                                    "disabled"
+                                )
+                            ) {
+                                return;
+                            }
+
+                            button
+                                .setPointerCapture?.(
+                                    event.pointerId
+                                );
+
+                            const state = {
+                                released: false,
+                                handle: undefined
+                            };
+
+                            activeTouchTones.set(
+                                button,
+                                state
+                            );
+
+                            const frequencies =
+                                String(
+                                    button.dataset
+                                        .touchTone ||
+                                    ""
+                                )
+                                    .split(",")
+                                    .map(Number);
+
+                            void globalThis
+                                .WMOFAudio
+                                ?.startFrequencies?.(
+                                    frequencies,
+                                    {
+                                        waveform:
+                                            "square",
+                                        volume: 1,
+                                        reason:
+                                            "number-pad"
+                                    }
+                                )
+                                .then(
+                                    handle => {
+                                        if (
+                                            state.released
+                                        ) {
+                                            handle
+                                                ?.stop?.();
+                                            return;
+                                        }
+
+                                        state.handle =
+                                            handle;
+                                    }
+                                )
+                                .catch(
+                                    error =>
+                                        console.error(
+                                            "Number pad tone failed:",
+                                            error
+                                        )
+                                );
+                        }
+                    );
+
+                    for (
+                        const type of
+                        [
+                            "pointerup",
+                            "pointercancel",
+                            "pointerleave",
+                            "lostpointercapture"
+                        ]
+                    ) {
+                        button.addEventListener(
+                            type,
+                            () =>
+                                stopTouchTone(
+                                    button
+                                )
+                        );
+                    }
+                }
+            );
+
         numberPadDialog
             .querySelectorAll(
                 "[data-number]"
