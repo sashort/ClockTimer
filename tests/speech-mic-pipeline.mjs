@@ -250,6 +250,7 @@ assert.match(
 );
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
+const languageSource = fs.readFileSync(new URL("../lang/en-US.js", import.meta.url), "utf8");
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(app, /setSpeechLayoutState\(false\);[\s\S]*ensureSpeechRuntime[\s\S]*SpeechMenu\?\.stop/);
 assert.match(app, /ensureSpeechRuntime/);
@@ -650,21 +651,86 @@ assert.match(
     speechMenuSource,
     /static isCommandImplemented\(element\)/
 );
-assert.match(
+assert.doesNotMatch(
     speechMenuSource,
-    /speech-implemented[\s\S]*=== "false"/
+    /speech-implemented/
+);
+assert.doesNotMatch(
+    app,
+    /implemented:\s*(?:true|false)/
+);
+assert.doesNotMatch(
+    html,
+    /speech-implemented/
+);
+
+assert.match(
+    languageSource,
+    /tripGoal:\s*"\^trip goal\$"/
 );
 assert.match(
-    speechMenuSource,
-    /WMOFActionFunctions[\s\S]*isImplemented/
+    languageSource,
+    /setTripGoal:\s*"\^trip goal \(\?<percent>\.\+\)\$"/
 );
 assert.match(
-    speechMenuSource,
-    /#functionHasImplementation/
+    languageSource,
+    /readGoalMode:\s*"\^mode\$"/
+);
+assert.match(
+    languageSource,
+    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\)\(\?: mode\)\?\$"/
 );
 assert.match(
     html,
-    /builtin:goal:page[^>]*speech-implemented="false"/
+    /builtin:tripGoal:page[^>]*speech-function="WMOFActions\.readTripGoal"/
+);
+assert.match(
+    html,
+    /builtin:setTripGoal:page[^>]*speech-function="WMOFActions\.setTripGoal"/
+);
+assert.match(
+    html,
+    /builtin:readGoalMode:page[^>]*speech-function="WMOFActions\.readGoalMode"/
+);
+assert.match(
+    app,
+    /readTripGoal\(\)[\s\S]*speakSpeechMetric\(\s*"Trip Goal"/
+);
+assert.match(
+    app,
+    /readTotalGoal\(\)[\s\S]*speakSpeechMetric\(\s*"Total Goal"/
+);
+assert.match(
+    app,
+    /setTripGoal\([\s\S]*setGoalPercentValue\(\s*"trip"/
+);
+assert.match(
+    app,
+    /setTotalGoal\([\s\S]*setGoalPercentValue\(\s*"total"/
+);
+assert.match(
+    app,
+    /readGoalMode\(\)[\s\S]*WMOFAudio[\s\S]*\.speak/
+);
+assert.match(
+    speechMenuSource,
+    /append\(topLevel\)[\s\S]*dialog\[open\][\s\S]*append\([\s\S]*contextual/
+);
+assert.match(
+    languageSource,
+    /wakePhrase:\s*"\^\(\?:wake\|listen\|on\)\$"/
+);
+assert.match(
+    languageSource,
+    /sleepPhrase:\s*"\^\(\?:sleep\|mute\|off\)\$"/
+);
+assert.match(
+    speechMenuSource,
+    /else if \([\s\S]*#wakePhrase[\s\S]*kind:\s*"wake"[\s\S]*#sleepPhrase[\s\S]*kind:\s*"mute"/
+);
+assert.match(
+    audioEngineSource,
+    /speak\([\s\S]*registerSynthesizedSpeech[\s\S]*synthesis\.speak/
 );
 
 assert.match(
