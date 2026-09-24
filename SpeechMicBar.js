@@ -1811,6 +1811,812 @@ class SpeechMicBar extends HTMLElement {
         return row;
     }
 
+    #optionMutationDuration() {
+        const reduceMotion =
+            this.ownerDocument
+                ?.defaultView
+                ?.matchMedia?.(
+                    "(prefers-reduced-motion: reduce)"
+                )
+                ?.matches;
+
+        return (
+            this.optionsOpen &&
+            !reduceMotion
+        )
+            ? 750
+            : 0;
+    }
+
+    #optionItemKey(
+        categoryKey,
+        cardKey,
+        item
+    ) {
+        return [
+            categoryKey,
+            cardKey,
+            this
+                .#optionItemText(
+                    item
+                )
+                .toLocaleLowerCase()
+        ].join(
+            "\u0001"
+        );
+    }
+
+    #optionChildrenByKey(
+        parent,
+        className,
+        datasetKey
+    ) {
+        return new Map(
+            [
+                ...parent?.children ||
+                []
+            ]
+                .filter(
+                    child =>
+                        child.classList
+                            ?.contains(
+                                className
+                            )
+                )
+                .map(
+                    child => [
+                        child.dataset[
+                            datasetKey
+                        ],
+                        child
+                    ]
+                )
+                .filter(
+                    entry =>
+                        Boolean(
+                            entry[0]
+                        )
+                )
+        );
+    }
+
+    #optionAnimationState(
+        node
+    ) {
+        const view =
+            this.ownerDocument
+                ?.defaultView;
+
+        const style =
+            view
+                ?.getComputedStyle?.(
+                    node
+                ) || {};
+
+        const opacity =
+            Number(
+                style.opacity
+            );
+
+        return {
+            height:
+                Math.max(
+                    0,
+                    node
+                        .getBoundingClientRect()
+                        .height
+                ),
+            opacity:
+                Number.isFinite(
+                    opacity
+                )
+                    ? opacity
+                    : 1
+        };
+    }
+
+    #cancelOptionAnimations(
+        node
+    ) {
+        for (
+            const animation of
+            node?.getAnimations?.() ||
+            []
+        ) {
+            try {
+                animation.cancel();
+            }
+            catch {}
+        }
+    }
+
+    #animateOptionEnter(
+        node,
+        duration,
+        {
+            fromHeight = 0,
+            fromOpacity = 0
+        } = {}
+    ) {
+        if (
+            !node ||
+            duration <= 0 ||
+            typeof node.animate !==
+                "function"
+        ) {
+            return;
+        }
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.removeAttribute(
+            "data-option-exiting"
+        );
+
+        const targetHeight =
+            Math.max(
+                0,
+                node
+                    .getBoundingClientRect()
+                    .height
+            );
+
+        node.style.overflow =
+            "hidden";
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        height:
+                            Math.min(
+                                fromHeight,
+                                targetHeight
+                            ) +
+                            "px",
+                        opacity:
+                            fromOpacity,
+                        transform:
+                            "scaleY(.82)"
+                    },
+                    {
+                        height:
+                            targetHeight +
+                            "px",
+                        opacity: 1,
+                        transform:
+                            "scaleY(1)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.2,.8,.2,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    if (
+                        !node.hasAttribute(
+                            "data-option-exiting"
+                        )
+                    ) {
+                        try {
+                            animation.cancel();
+                        }
+                        catch {}
+
+                        node.style
+                            .removeProperty(
+                                "overflow"
+                            );
+                    }
+                }
+            );
+    }
+
+    #animateOptionExit(
+        node,
+        duration,
+        remove
+    ) {
+        if (!node) {
+            return;
+        }
+
+        if (
+            duration <= 0 ||
+            typeof node.animate !==
+                "function"
+        ) {
+            remove();
+            return;
+        }
+
+        const state =
+            this
+                .#optionAnimationState(
+                    node
+                );
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.setAttribute(
+            "data-option-exiting",
+            ""
+        );
+
+        node.style.overflow =
+            "hidden";
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        height:
+                            state.height +
+                            "px",
+                        opacity:
+                            state.opacity,
+                        transform:
+                            "scaleY(1)"
+                    },
+                    {
+                        height: "0px",
+                        opacity: 0,
+                        transform:
+                            "scaleY(.82)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.4,0,.2,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    if (
+                        node.hasAttribute(
+                            "data-option-exiting"
+                        )
+                    ) {
+                        remove();
+                    }
+                }
+            );
+    }
+
+    #reviveOptionNode(
+        node,
+        duration
+    ) {
+        if (
+            !node?.hasAttribute?.(
+                "data-option-exiting"
+            )
+        ) {
+            return;
+        }
+
+        const state =
+            this
+                .#optionAnimationState(
+                    node
+                );
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.removeAttribute(
+            "data-option-exiting"
+        );
+
+        node.style
+            .removeProperty(
+                "overflow"
+            );
+
+        this
+            .#animateOptionEnter(
+                node,
+                duration,
+                {
+                    fromHeight:
+                        state.height,
+                    fromOpacity:
+                        state.opacity
+                }
+            );
+    }
+
+    #copyOptionPhraseNode(
+        target,
+        source
+    ) {
+        target.className =
+            source.className;
+
+        if (source.title) {
+            target.title =
+                source.title;
+        }
+        else {
+            target.removeAttribute(
+                "title"
+            );
+        }
+
+        const ariaLabel =
+            source.getAttribute(
+                "aria-label"
+            );
+
+        if (ariaLabel) {
+            target.setAttribute(
+                "aria-label",
+                ariaLabel
+            );
+        }
+        else {
+            target.removeAttribute(
+                "aria-label"
+            );
+        }
+
+        target.replaceChildren(
+            ...[
+                ...source.childNodes
+            ]
+        );
+    }
+
+    #createOptionCategory(
+        definition
+    ) {
+        const section =
+            document.createElement(
+                "section"
+            );
+
+        section.className =
+            "option-category";
+
+        section.dataset.category =
+            definition.key;
+
+        const rail =
+            document.createElement(
+                "div"
+            );
+
+        rail.className =
+            "option-category-rail";
+
+        rail.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        const icon =
+            document.createElement(
+                "span"
+            );
+
+        icon.className =
+            "option-category-icon";
+
+        rail.append(
+            icon
+        );
+
+        const content =
+            document.createElement(
+                "div"
+            );
+
+        content.className =
+            "option-category-content";
+
+        const title =
+            document.createElement(
+                "h3"
+            );
+
+        title.className =
+            "option-category-title";
+
+        title.textContent =
+            definition.label;
+
+        const cards =
+            document.createElement(
+                "div"
+            );
+
+        cards.className =
+            "option-category-cards";
+
+        content.append(
+            title,
+            cards
+        );
+
+        section.append(
+            rail,
+            content
+        );
+
+        return section;
+    }
+
+    #createOptionCard(
+        card
+    ) {
+        const box =
+            document.createElement(
+                "div"
+            );
+
+        box.className =
+            "option-card";
+
+        box.dataset.optionCardKey =
+            card.key;
+
+        return box;
+    }
+
+    #createOptionPhrase(
+        categoryKey,
+        card,
+        item
+    ) {
+        const row =
+            this.#phraseNode(
+                item.phrase,
+                item.element,
+                {
+                    required:
+                        item.required,
+                    optionalPrefix:
+                        item.optionalPrefix,
+                    optionalSuffix:
+                        item.optionalSuffix,
+                    implemented:
+                        item.implemented
+                }
+            );
+
+        row.dataset.optionItemKey =
+            this.#optionItemKey(
+                categoryKey,
+                card.key,
+                item
+            );
+
+        return row;
+    }
+
+    #syncOptionRows(
+        box,
+        categoryKey,
+        card,
+        duration
+    ) {
+        const desired =
+            card.phrases;
+
+        const desiredKeys =
+            desired.map(
+                item =>
+                    this
+                        .#optionItemKey(
+                            categoryKey,
+                            card.key,
+                            item
+                        )
+            );
+
+        const desiredSet =
+            new Set(
+                desiredKeys
+            );
+
+        const existing =
+            this.#optionChildrenByKey(
+                box,
+                "option-phrase",
+                "optionItemKey"
+            );
+
+        for (
+            const [
+                key,
+                row
+            ] of
+            existing
+        ) {
+            if (
+                desiredSet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    row,
+                    duration,
+                    () =>
+                        row.remove()
+                );
+        }
+
+        for (
+            let index = 0;
+            index <
+                desired.length;
+            index++
+        ) {
+            const item =
+                desired[index];
+
+            const key =
+                desiredKeys[
+                    index
+                ];
+
+            let row =
+                existing.get(
+                    key
+                );
+
+            if (row) {
+                this
+                    .#reviveOptionNode(
+                        row,
+                        duration
+                    );
+
+                const fresh =
+                    this
+                        .#createOptionPhrase(
+                            categoryKey,
+                            card,
+                            item
+                        );
+
+                this
+                    .#copyOptionPhraseNode(
+                        row,
+                        fresh
+                    );
+
+                continue;
+            }
+
+            row =
+                this
+                    .#createOptionPhrase(
+                        categoryKey,
+                        card,
+                        item
+                    );
+
+            let reference;
+
+            for (
+                let next =
+                    index + 1;
+                next <
+                    desiredKeys.length;
+                next++
+            ) {
+                reference =
+                    existing.get(
+                        desiredKeys[
+                            next
+                        ]
+                    );
+
+                if (
+                    reference &&
+                    reference.parentElement ===
+                        box
+                ) {
+                    break;
+                }
+
+                reference =
+                    undefined;
+            }
+
+            box.insertBefore(
+                row,
+                reference ||
+                null
+            );
+
+            existing.set(
+                key,
+                row
+            );
+
+            this
+                .#animateOptionEnter(
+                    row,
+                    duration
+                );
+        }
+    }
+
+    #syncOptionCards(
+        container,
+        categoryKey,
+        cards,
+        duration
+    ) {
+        const desiredKeys =
+            cards.map(
+                card =>
+                    card.key
+            );
+
+        const desiredSet =
+            new Set(
+                desiredKeys
+            );
+
+        const existing =
+            this.#optionChildrenByKey(
+                container,
+                "option-card",
+                "optionCardKey"
+            );
+
+        for (
+            const [
+                key,
+                box
+            ] of
+            existing
+        ) {
+            if (
+                desiredSet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    box,
+                    duration,
+                    () =>
+                        box.remove()
+                );
+        }
+
+        for (
+            let index = 0;
+            index <
+                cards.length;
+            index++
+        ) {
+            const card =
+                cards[index];
+
+            let box =
+                existing.get(
+                    card.key
+                );
+
+            if (box) {
+                this
+                    .#reviveOptionNode(
+                        box,
+                        duration
+                    );
+
+                this
+                    .#syncOptionRows(
+                        box,
+                        categoryKey,
+                        card,
+                        duration
+                    );
+
+                continue;
+            }
+
+            box =
+                this
+                    .#createOptionCard(
+                        card
+                    );
+
+            for (
+                const item of
+                card.phrases
+            ) {
+                box.append(
+                    this
+                        .#createOptionPhrase(
+                            categoryKey,
+                            card,
+                            item
+                        )
+                );
+            }
+
+            let reference;
+
+            for (
+                let next =
+                    index + 1;
+                next <
+                    desiredKeys.length;
+                next++
+            ) {
+                reference =
+                    existing.get(
+                        desiredKeys[
+                            next
+                        ]
+                    );
+
+                if (
+                    reference &&
+                    reference.parentElement ===
+                        container
+                ) {
+                    break;
+                }
+
+                reference =
+                    undefined;
+            }
+
+            container.insertBefore(
+                box,
+                reference ||
+                null
+            );
+
+            existing.set(
+                card.key,
+                box
+            );
+
+            this
+                .#animateOptionEnter(
+                    box,
+                    duration
+                );
+        }
+    }
+
     #renderOptions(
         phraseGroups
     ) {
@@ -1852,6 +2658,10 @@ class SpeechMicBar extends HTMLElement {
 
                 if (!card) {
                     card = {
+                        key:
+                            String(
+                                cardKey
+                            ),
                         phrases: [],
                         seen:
                             new Set()
@@ -1957,10 +2767,8 @@ class SpeechMicBar extends HTMLElement {
             );
         }
 
-        this.#optionsGrid
-            .replaceChildren();
-
-        let count = 0;
+        const desiredCategories =
+            [];
 
         for (
             const definition of
@@ -2013,128 +2821,171 @@ class SpeechMicBar extends HTMLElement {
                 continue;
             }
 
-            const section =
-                document.createElement(
-                    "section"
-                );
-
-            section.className =
-                "option-category";
-
-            section.dataset.category =
-                definition.key;
-
-            const rail =
-                document.createElement(
-                    "div"
-                );
-
-            rail.className =
-                "option-category-rail";
-
-            rail.setAttribute(
-                "aria-hidden",
-                "true"
-            );
-
-            const icon =
-                document.createElement(
-                    "span"
-                );
-
-            icon.className =
-                "option-category-icon";
-
-            rail.append(
-                icon
-            );
-
-            const content =
-                document.createElement(
-                    "div"
-                );
-
-            content.className =
-                "option-category-content";
-
-            const title =
-                document.createElement(
-                    "h3"
-                );
-
-            title.className =
-                "option-category-title";
-
-            title.textContent =
-                definition.label;
-
-            const cardContainer =
-                document.createElement(
-                    "div"
-                );
-
-            cardContainer.className =
-                "option-category-cards";
-
-            for (
-                const card of
+            desiredCategories.push({
+                definition,
                 cards
-            ) {
-                const box =
-                    document.createElement(
-                        "div"
-                    );
+            });
+        }
 
-                box.className =
-                    "option-card";
+        const duration =
+            this
+                .#optionMutationDuration();
+
+        const existingCategories =
+            this.#optionChildrenByKey(
+                this.#optionsGrid,
+                "option-category",
+                "category"
+            );
+
+        const desiredCategoryKeys =
+            desiredCategories.map(
+                entry =>
+                    entry.definition
+                        .key
+            );
+
+        const desiredCategorySet =
+            new Set(
+                desiredCategoryKeys
+            );
+
+        for (
+            const [
+                key,
+                section
+            ] of
+            existingCategories
+        ) {
+            if (
+                desiredCategorySet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    section,
+                    duration,
+                    () =>
+                        section.remove()
+                );
+        }
+
+        this.#optionsGrid
+            .querySelector(
+                ".option-empty"
+            )
+            ?.remove();
+
+        for (
+            let index = 0;
+            index <
+                desiredCategories.length;
+            index++
+        ) {
+            const {
+                definition,
+                cards
+            } =
+                desiredCategories[
+                    index
+                ];
+
+            let section =
+                existingCategories.get(
+                    definition.key
+                );
+
+            const isNew =
+                !section;
+
+            if (!section) {
+                section =
+                    this
+                        .#createOptionCategory(
+                            definition
+                        );
+
+                let reference;
 
                 for (
-                    const item of
-                    card.phrases
+                    let next =
+                        index + 1;
+                    next <
+                        desiredCategoryKeys
+                            .length;
+                    next++
                 ) {
-                    box.append(
-                        this.#phraseNode(
-                            item.phrase,
-                            item.element,
-                            {
-                                required:
-                                    item.required,
-                                optionalPrefix:
-                                    item.optionalPrefix,
-                                optionalSuffix:
-                                    item.optionalSuffix,
-                                implemented:
-                                    item.implemented
-                            }
-                        )
-                    );
+                    reference =
+                        existingCategories.get(
+                            desiredCategoryKeys[
+                                next
+                            ]
+                        );
+
+                    if (
+                        reference &&
+                        reference.parentElement ===
+                            this.#optionsGrid
+                    ) {
+                        break;
+                    }
+
+                    reference =
+                        undefined;
                 }
 
-                cardContainer
-                    .append(
-                        box
+                this.#optionsGrid
+                    .insertBefore(
+                        section,
+                        reference ||
+                        null
+                    );
+
+                existingCategories
+                    .set(
+                        definition.key,
+                        section
+                    );
+            }
+            else {
+                this
+                    .#reviveOptionNode(
+                        section,
+                        duration
                     );
             }
 
-            content.append(
-                title,
-                cardContainer
-            );
-
-            section.append(
-                rail,
-                content
-            );
-
-            this.#optionsGrid
-                .append(
-                    section
+            const cardsContainer =
+                section.querySelector(
+                    ".option-category-cards"
                 );
 
-            count += 1;
+            this
+                .#syncOptionCards(
+                    cardsContainer,
+                    definition.key,
+                    cards,
+                    isNew
+                        ? 0
+                        : duration
+                );
+
+            if (isNew) {
+                this
+                    .#animateOptionEnter(
+                        section,
+                        duration
+                    );
+            }
         }
 
-        if (!count) {
+        if (
+            !desiredCategories.length
+        ) {
             const empty =
                 document.createElement(
                     "div"
