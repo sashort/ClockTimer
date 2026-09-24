@@ -7,8 +7,9 @@
         direction: "ltr",
         speechRecognitionLanguage: "en-US",
         speech: Object.freeze({
-            wakePhrase: "^(?:wake|on)$",
-            sleepPhrase: "^(?:sleep|off)$",
+            wakePhrase: "^wake$",
+            sleepPhrase: "^sleep$",
+            offPhrase: "^off$",
             commands: Object.freeze({
                 standardTime: "^standard time (?<timeValue>.+)$",
                 readyAt: "^ready at (?<spokenTime>.+)$",
