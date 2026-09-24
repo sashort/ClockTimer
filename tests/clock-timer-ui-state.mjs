@@ -127,5 +127,18 @@ await repeatedDown.startInterval('down');await repeatedDown.endInterval();window
 await repeatedDown.startInterval('down');
 assert.equal(downStartedCount,2,'each successfully started Down interval emits downTimeStarted');
 await repeatedDown.endInterval();repeatedDown.remove();
+const canceledDown=window.document.createElement('clock-timer');window.document.body.append(canceledDown);
+let canceledDownEvents=0;let resumedAfterCancel=0;
+canceledDown.addEventListener('downTimeCanceled',()=>canceledDownEvents++);
+canceledDown.addEventListener('tripResumed',()=>resumedAfterCancel++);
+await canceledDown.start({standardTime:'0:10:00'});
+await canceledDown.startInterval('down');
+window.__testTime+=5000;
+const canceled=await canceledDown.cancelInterval();
+assert.equal(Boolean(canceled?.deleted),true,'cancelInterval deletes the active Down interval');
+assert.equal(canceledDownEvents,1,'canceling Down emits downTimeCanceled');
+assert.equal(resumedAfterCancel,1,'canceling Down resumes the trip');
+assert.notEqual(String(canceledDown.getActiveIntervalState()?.intervalType||'').toLowerCase(),'down','canceled Down is no longer active');
+canceledDown.remove();
 console.log('PASS configure is partial and UI state describes values, state, and transitions');
 timer.remove();window.happyDOM.abort();
