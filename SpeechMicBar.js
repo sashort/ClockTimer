@@ -1029,7 +1029,7 @@ class SpeechMicBar extends HTMLElement {
                         return;
                     }
 
-                    this.#selectTrainingTarget({
+                    this.#requestTrainingTarget({
                         source:
                             "mic-bar",
                         category:
@@ -1458,6 +1458,58 @@ class SpeechMicBar extends HTMLElement {
             whiteContrast
                 ? "black"
                 : "white";
+    }
+
+    selectTrainingTarget(
+        target
+    ) {
+        return this.#selectTrainingTarget(
+            target
+        );
+    }
+
+    #requestTrainingTarget(
+        target
+    ) {
+        if (
+            !this.trainingMode ||
+            this.trainingLocked ||
+            !target?.element
+        ) {
+            return false;
+        }
+
+        const current =
+            this.#trainingSelection;
+
+        if (
+            current &&
+            current.source === target.source &&
+            current.category === target.category &&
+            current.card === target.card &&
+            current.phrase === target.phrase
+        ) {
+            return true;
+        }
+
+        const event =
+            new CustomEvent(
+                "speech-training-target-requested",
+                {
+                    bubbles: true,
+                    composed: true,
+                    cancelable: true,
+                    detail: target
+                }
+            );
+
+        if (!this.dispatchEvent(event)) {
+            return false;
+        }
+
+        return this.#selectTrainingTarget(
+            target
+        );
     }
 
     #selectTrainingTarget(
@@ -3687,7 +3739,7 @@ class SpeechMicBar extends HTMLElement {
 
                 event.stopPropagation();
 
-                this.#selectTrainingTarget({
+                this.#requestTrainingTarget({
                     source:
                         "command",
                     category:
