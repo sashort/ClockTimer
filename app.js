@@ -2649,65 +2649,188 @@
         let controller = cloudIconTransitions.get(element);
         if (!controller) {
             controller = {
-                chain: Promise.resolve(),
                 animation: undefined,
                 generation: 0,
+                running: false,
                 targetState: getState()
             };
             cloudIconTransitions.set(element, controller);
         }
 
+        controller.targetState = nextState;
+
         if (!animate) {
             controller.generation += 1;
             controller.animation?.cancel();
             controller.animation = undefined;
-            controller.chain = Promise.resolve();
-            controller.targetState = nextState;
+            controller.running = false;
             element.style.transform = "";
             applyState(nextState);
             return;
         }
 
-        if (controller.targetState === nextState) return;
-        controller.targetState = nextState;
-        const generation = controller.generation;
+        if (controller.running || getState() === controller.targetState) {
+            return;
+        }
 
-        controller.chain = controller.chain.then(async () => {
-            if (generation !== controller.generation) return;
-            if (getState() === nextState) return;
+        controller.running = true;
+        const generation =
+            controller.generation;
 
-            const halfDuration = CONNECTION_UI_TRANSITION_DURATION / 2;
-            controller.animation = element.animate(
-                [
-                    { transform: "rotateY(0deg)" },
-                    { transform: "rotateY(90deg)" }
-                ],
-                { duration: halfDuration, easing: "linear", fill: "forwards" }
-            );
+        void (async () => {
+            try {
+                const halfDuration =
+                    CONNECTION_UI_TRANSITION_DURATION /
+                    2;
 
-            try { await controller.animation.finished; }
-            catch { return; }
-            if (generation !== controller.generation) return;
+                while (
+                    generation ===
+                        controller.generation &&
+                    getState() !==
+                        controller.targetState
+                ) {
+                    controller.animation =
+                        element.animate(
+                            [
+                                {
+                                    transform:
+                                        "rotateY(0deg)"
+                                },
+                                {
+                                    transform:
+                                        "rotateY(90deg)"
+                                }
+                            ],
+                            {
+                                duration:
+                                    halfDuration,
+                                easing:
+                                    "linear",
+                                fill:
+                                    "forwards"
+                            }
+                        );
 
-            applyState(nextState);
-            element.style.transform = "rotateY(-90deg)";
-            controller.animation.cancel();
-            controller.animation = element.animate(
-                [
-                    { transform: "rotateY(-90deg)" },
-                    { transform: "rotateY(0deg)" }
-                ],
-                { duration: halfDuration, easing: "linear", fill: "forwards" }
-            );
+                    try {
+                        await controller
+                            .animation
+                            .finished;
+                    }
+                    catch {
+                        return;
+                    }
 
-            try { await controller.animation.finished; }
-            catch { return; }
-            if (generation !== controller.generation) return;
+                    if (
+                        generation !==
+                        controller.generation
+                    ) {
+                        return;
+                    }
 
-            element.style.transform = "";
-            controller.animation.cancel();
-            controller.animation = undefined;
-        }).catch(() => {});
+                    /*
+                     * The face is invisible at 90 degrees. Apply the
+                     * newest requested state here, so rapid state
+                     * changes retarget the same flip instead of
+                     * cancelling/restarting it and causing a jerk.
+                     */
+                    applyState(
+                        controller
+                            .targetState
+                    );
+
+                    element.style.transform =
+                        "rotateY(-90deg)";
+
+                    controller.animation
+                        .cancel();
+
+                    controller.animation =
+                        element.animate(
+                            [
+                                {
+                                    transform:
+                                        "rotateY(-90deg)"
+                                },
+                                {
+                                    transform:
+                                        "rotateY(0deg)"
+                                }
+                            ],
+                            {
+                                duration:
+                                    halfDuration,
+                                easing:
+                                    "linear",
+                                fill:
+                                    "forwards"
+                            }
+                        );
+
+                    try {
+                        await controller
+                            .animation
+                            .finished;
+                    }
+                    catch {
+                        return;
+                    }
+
+                    if (
+                        generation !==
+                        controller.generation
+                    ) {
+                        return;
+                    }
+
+                    element.style.transform =
+                        "";
+
+                    controller.animation
+                        .cancel();
+
+                    controller.animation =
+                        undefined;
+
+                    /*
+                     * If the requested state changed during the
+                     * reveal half, loop through another complete
+                     * hidden-midpoint flip. Never swap a visible
+                     * face in place.
+                     */
+                }
+            }
+            finally {
+                if (
+                    generation ===
+                    controller.generation
+                ) {
+                    controller.running =
+                        false;
+                    element.style.transform =
+                        "";
+                    controller.animation
+                        ?.cancel();
+                    controller.animation =
+                        undefined;
+
+                    if (
+                        getState() !==
+                        controller.targetState
+                    ) {
+                        setCloudIconVisualState(
+                            element,
+                            getState,
+                            applyState,
+                            controller
+                                .targetState,
+                            {
+                                animate: true
+                            }
+                        );
+                    }
+                }
+            }
+        })();
     }
 
     function syncTripSettingsCloud(status = clockTimer.networkStatus) {
