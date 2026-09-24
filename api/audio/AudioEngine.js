@@ -391,7 +391,10 @@
                     {
                         bpm,
                         volume,
-                        loop: true
+                        loop: true,
+                        suspendListening:
+                            entry
+                                .suspendsListening
                     }
                 ).catch(
                     error =>
@@ -541,8 +544,23 @@
                             utterance
                         );
 
+                        let synthesizedSpeechToken;
+
                         const finish =
                             () => {
+                                if (
+                                    synthesizedSpeechToken !==
+                                    undefined
+                                ) {
+                                    globalThis
+                                        .SpeechMenu
+                                        ?.unregisterSynthesizedSpeech?.(
+                                            synthesizedSpeechToken
+                                        );
+
+                                    synthesizedSpeechToken =
+                                        undefined;
+                                }
                                 if (
                                     !entry.utterances
                                         .delete(
@@ -567,6 +585,13 @@
                         utterance.addEventListener(
                             "start",
                             () => {
+                                synthesizedSpeechToken =
+                                    globalThis
+                                        .SpeechMenu
+                                        ?.registerSynthesizedSpeech?.(
+                                            text
+                                        );
+
                                 console.debug(
                                     "Audio speech started:",
                                     text
@@ -655,7 +680,9 @@
             {
                 bpm,
                 volume = 1,
-                loop
+                loop,
+                suspendListening =
+                    false
             } = {}
         ) {
             const catalog = await this.load();
@@ -710,13 +737,19 @@
                     context.currentTime +
                     0.015,
                 released: false,
-                endTimer: undefined
+                endTimer: undefined,
+                suspendsListening:
+                    Boolean(
+                        suspendListening
+                    )
             };
 
-            globalThis.SpeechMenu
-                ?.suspendListening?.(
-                    "audio:" + name
-                );
+            if (suspendListening) {
+                globalThis.SpeechMenu
+                    ?.suspendListening?.(
+                        "audio:" + name
+                    );
+            }
 
             this.#active.set(
                 entry.id,
