@@ -545,6 +545,26 @@
                 .second-hand {
                     display: block;
                     border-radius: 999px;
+                    transition:
+                        all
+                        50ms
+                        cubic-bezier(
+                            0.1,
+                            2.7,
+                            0.58,
+                            1
+                        );
+                }
+
+                @media (
+                    prefers-reduced-motion:
+                        reduce
+                ) {
+                    .hour-hand,
+                    .minute-hand,
+                    .second-hand {
+                        transition: none;
+                    }
                 }
 
                 .hour-hand {
@@ -31131,137 +31151,45 @@
                 minuteAngle
             );
 
-            const previousSecondAngle =
-                Number.isFinite(
-                    this.#secondHandAngle
-                )
-                    ? this.#secondHandAngle
-                    : secondAngle;
-
-            const secondAdvance =
-                (
-                    secondAngle -
-                    previousSecondAngle +
-                    360
-                ) % 360;
-
-            const settledSecondAngle =
-                previousSecondAngle +
-                secondAdvance;
-
             this.#secondHandTickAnimation
                 ?.cancel();
 
             this.#secondHandTickAnimation =
                 undefined;
 
-            const animateSecondHand =
-                secondAdvance > 0 &&
-                !globalThis.matchMedia?.(
+            const reduceMotion =
+                globalThis.matchMedia?.(
                     "(prefers-reduced-motion: reduce)"
-                )?.matches;
+                )?.matches ===
+                    true;
 
             if (
-                animateSecondHand
+                this.#secondHand
             ) {
-                const previousSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        previousSecondAngle
-                    );
-
-                const overshootSecondAngle =
-                    settledSecondAngle +
-                    0.8;
-
-                const overshootSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        overshootSecondAngle
-                    );
-
-                const settledSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        settledSecondAngle
-                    );
-
-                const handKeyframe =
-                    (
-                        angle,
-                        height
-                    ) => {
-                        const keyframe = {
-                            transform:
-                                `translate(-50%, -100%) rotate(${angle}deg)`
-                        };
-
-                        if (
-                            Number.isFinite(
-                                height
-                            )
-                        ) {
-                            keyframe.height =
-                                `${height}px`;
-                        }
-
-                        return keyframe;
-                    };
-
-                const animation =
-                    this.#secondHand.animate(
-                        [
-                            handKeyframe(
-                                previousSecondAngle,
-                                previousSecondHeight
-                            ),
-                            {
-                                ...handKeyframe(
-                                    overshootSecondAngle,
-                                    overshootSecondHeight
-                                ),
-                                offset: 0.78
-                            },
-                            handKeyframe(
-                                settledSecondAngle,
-                                settledSecondHeight
-                            )
-                        ],
-                        {
-                            duration: 180,
-                            easing: "ease-out",
-                            fill: "both"
-                        }
-                    );
-
-                this.#setHandGeometry(
-                    this.#secondHand,
-                    settledSecondAngle
-                );
-
-                this.#secondHandTickAnimation =
-                    animation;
-
-                animation.finished
-                    .catch(() => {})
-                    .finally(() => {
-                        if (
-                            this.#secondHandTickAnimation ===
-                                animation
-                        ) {
-                            this.#secondHandTickAnimation =
-                                undefined;
-
-                            animation.cancel();
-                        }
-                    });
+                if (
+                    reduceMotion ||
+                    seconds === 0
+                ) {
+                    this.#secondHand
+                        .style
+                        .setProperty(
+                            "transition",
+                            "none"
+                        );
+                }
+                else {
+                    this.#secondHand
+                        .style
+                        .removeProperty(
+                            "transition"
+                        );
+                }
             }
-            else {
-                this.#setHandGeometry(
-                    this.#secondHand,
-                    secondAngle
-                );
-            }
+
+            this.#setHandGeometry(
+                this.#secondHand,
+                secondAngle
+            );
 
             this.#secondHandAngle =
                 secondAngle;
