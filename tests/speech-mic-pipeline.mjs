@@ -72,10 +72,15 @@ const sleepSystemCommand =
     systemSpeechMenu?.querySelector(
         '[data-speech-system-command="sleep"]'
     );
+const commandsSystemCommand =
+    systemSpeechMenu?.querySelector(
+        '[data-speech-system-command="commands"]'
+    );
 
 assert.ok(systemSpeechMenu);
 assert.ok(wakeSystemCommand);
 assert.ok(sleepSystemCommand);
+assert.ok(commandsSystemCommand);
 assert.equal(
     wakeSystemCommand.getAttribute(
         "speech-function"
@@ -87,6 +92,27 @@ assert.equal(
         "speech-function"
     ),
     "SpeechMenu.sleep"
+);
+assert.equal(
+    commandsSystemCommand.getAttribute(
+        "speech-function"
+    ),
+    "WMOFActions.toggleSpeechOptions"
+);
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                commandsSystemCommand
+                    .getAttribute(
+                        "speech-pattern"
+                    )
+            )
+    ].sort(),
+    [
+        "commands",
+        "speech commands"
+    ]
 );
 assert.deepEqual(
     [
@@ -266,9 +292,13 @@ assert.match(
     html,
     /<speech-mic-bar id="speechMicBar" popover="manual"/
 );
-assert.match(
+assert.doesNotMatch(
     html,
     /speech-modal="default"[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
+);
+assert.match(
+    speechMicBarSource,
+    /ensureCommand\(\s*"commands",[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
     html,
@@ -778,7 +808,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep/
+    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
     speechMicBarSource,
