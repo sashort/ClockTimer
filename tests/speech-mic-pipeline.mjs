@@ -1636,6 +1636,22 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /get optionsCollapsed\(\)[\s\S]*options-collapsed/
+);
+assert.match(
+    speechMicBarSource,
+    /#syncOptionsToggle\(\)[\s\S]*collapsed[\s\S]*"▲"[\s\S]*"▼"[\s\S]*"Expand speech commands"[\s\S]*"Collapse speech commands"/
+);
+assert.match(
+    speechMicBarSource,
+    /collapseOptions\(\)[\s\S]*trainingMode[\s\S]*options-collapsed/
+);
+assert.match(
+    speechMicBarSource,
+    /expandOptions\(\)[\s\S]*showOptions/
+);
+assert.match(
+    speechMicBarSource,
     /#optionsClose[\s\S]*position:\s*absolute[\s\S]*top:\s*7px[\s\S]*right:\s*9px/
 );
 assert.match(
