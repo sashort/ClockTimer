@@ -766,9 +766,11 @@ class SpeechMicBar extends HTMLElement {
         );
 
         const currentStyle =
-            getComputedStyle(
-                this.#optionsPanel
-            );
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsPanel
+                ) || {};
 
         const currentClipPath =
             currentStyle.clipPath ||
@@ -860,9 +862,11 @@ class SpeechMicBar extends HTMLElement {
         }
 
         const currentStyle =
-            getComputedStyle(
-                this.#optionsPanel
-            );
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsPanel
+                ) || {};
 
         const currentClipPath =
             currentStyle.clipPath ||
