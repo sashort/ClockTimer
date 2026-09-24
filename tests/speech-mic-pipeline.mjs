@@ -297,10 +297,6 @@ assert.doesNotMatch(
     /speech-modal="default"[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
-    speechMicBarSource,
-    /ensureCommand\(\s*"commands",[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
-);
-assert.match(
     html,
     /speech-modal="default"[\s\S]*\^\(\?:cancel\|close\)\$[\s\S]*WMOFActions\.closeActiveSurface/
 );
@@ -457,6 +453,11 @@ assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
+
+assert.match(
+    speechMicBarSource,
+    /ensureCommand\(\s*"commands",[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
+);
 const presentationSource = fs.readFileSync(new URL("../PresentationSetters.js", import.meta.url), "utf8");
 const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-config/index.php", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
