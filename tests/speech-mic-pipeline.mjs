@@ -956,7 +956,7 @@ assert.match(
     /speechResponse[\s\S]*type\s*===\s*"dictation"[\s\S]*presentSpeechDictation/
 );
 assert.match(
-    presentationSettersSource,
+    presentationSource,
     /presentSpeechDictation\([\s\S]*bar\.setResponse[\s\S]*scheduleDismissal/
 );
 
