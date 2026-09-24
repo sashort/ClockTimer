@@ -488,6 +488,12 @@
     const speechMicBar = $("#speechMicBar");
     const speechTrainingButton = $("#speechTrainingButton");
     const speechTrainingChoiceDialog = $("#speechTrainingChoiceDialog");
+    const speechTrainingPendingDialog = $("#speechTrainingPendingDialog");
+    const speechTrainingPendingMessage = $("#speechTrainingPendingMessage");
+    const speechTrainingPendingError = $("#speechTrainingPendingError");
+    const speechTrainingPendingCancel = $("#speechTrainingPendingCancel");
+    const speechTrainingPendingDiscard = $("#speechTrainingPendingDiscard");
+    const speechTrainingPendingCommit = $("#speechTrainingPendingCommit");
     const speechTrainingWidget = $("#speechTrainingWidget");
     const speechTrainingDragHandle = $("#speechTrainingDragHandle");
     const speechTrainingPhrase = $("#speechTrainingPhrase");
@@ -505,6 +511,10 @@
     let speechTrainingCsrfToken;
     let speechTrainingExecutionBeforeStart = true;
     let speechTrainingPromptTimer;
+    let speechTrainingPendingDecision;
+    let speechTrainingPendingDecisionResolve;
+    let speechTrainingPendingBusy = false;
+    const speechTrainingPendingSamples = [];
     const speechTrainingSeenUtterances = new Set();
 
     new MutationObserver(
