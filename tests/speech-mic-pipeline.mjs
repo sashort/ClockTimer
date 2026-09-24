@@ -387,7 +387,7 @@ assert.match(html, /id="speechEditorButton"[^>]*hidden/);
 assert.match(html, /id="speechTrainingChoiceDialog"/);
 assert.match(html, /id="speechTrainingInAppChoice"/);
 assert.match(html, /id="speechTrainingEditorChoice"/);
-assert.match(html, /id="speechTrainingWidget"/);
+assert.match(html, /id="speechTrainingWidget"[^>]*popover="manual"[^>]*hidden/);
 assert.match(html, /id="speechTrainingDragHandle"/);
 assert.match(html, /id="speechTrainingStartStop"[^>]*disabled>Start</);
 assert.doesNotMatch(html, /id="speechAdminGroup"/);
@@ -525,6 +525,13 @@ assert.match(app, /startInAppSpeechTraining[\s\S]*speechMenu\.muted[\s\S]*speech
 assert.match(app, /stopInAppSpeechTraining[\s\S]*executionEnabled\s*=\s*speechTrainingExecutionBeforeStart/);
 assert.match(app, /speech-training-telemetry[\s\S]*utteranceTranscribed[\s\S]*persistInAppSpeechTrainingSample/);
 assert.match(app, /speechTrainingDragHandle[\s\S]*pointerdown[\s\S]*setPointerCapture/);
+assert.match(app, /function showSpeechTrainingWidget[\s\S]*showPopover/);
+assert.match(app, /speech-training-target-selected[\s\S]*showSpeechTrainingWidget\(\{[\s\S]*promote:\s*true/);
+assert.match(app, /speech-options-opened[\s\S]*showSpeechTrainingWidget\(\{[\s\S]*promote:\s*true/);
+assert.doesNotMatch(
+    app,
+    /enableInAppSpeechTraining[\s\S]{0,1800}speechTrainingWidget\.hidden\s*=\s*false/
+);
 assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
 assert.match(app, /speech-build-active/);
 assert.match(app, /1050/);
@@ -544,6 +551,7 @@ assert.match(
 assert.match(css, /speech-mic-bar:not\(:defined\)/);
 assert.match(css, /#speechTrainingButton::before/);
 assert.match(css, /\.speech-training-widget[\s\S]*height:\s*64px/);
+assert.match(css, /\.speech-training-widget\[popover\]:popover-open[\s\S]*display:\s*grid/);
 assert.match(css, /\.speech-training-copy[\s\S]*height:\s*56px[\s\S]*grid-template-rows:\s*1fr 1fr/);
 assert.match(css, /\.speech-training-start-stop[\s\S]*height:\s*56px/);
 assert.match(css, /\.main-menu button:disabled[\s\S]*cursor:\s*not-allowed/);
@@ -932,6 +940,14 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /\.option-phrase\.training-selected[\s\S]*--speech-training-category-color[\s\S]*--speech-training-contrast/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-phrase\.training-selected code[\s\S]*--speech-training-contrast[\s\S]*!important/
+);
+assert.match(
+    speechMicBarSource,
+    /"speech-options-opened"/
 );
 assert.match(
     speechMicBarSource,
