@@ -11279,16 +11279,21 @@
                     return false;
                 }
 
-                clockTimer.configure({
-                    [
-                        scope ===
-                            "total"
-                            ? "total_goal"
-                            : "trip_goal"
-                    ]:
-                        `${value}%`
-                });
+                const state =
+                    clockTimer.configure({
+                        [
+                            scope ===
+                                "total"
+                                ? "total_goal"
+                                : "trip_goal"
+                        ]:
+                            `${value}%`
+                    });
 
+                renderClockTimerUIState(
+                    state
+                );
+                refreshAutoGoalDialog();
                 queueSummaryRefresh();
 
                 return true;
@@ -11312,11 +11317,19 @@
                     return false;
                 }
 
-                applyScope(
-                    mode
-                );
+                const appliedMode =
+                    applyScope(
+                        mode
+                    );
 
-                return true;
+                syncScopeUI(true);
+                renderClockTimerUIState(
+                    clockTimer.uiState
+                );
+                refreshAutoGoalDialog();
+                queueSummaryRefresh();
+
+                return appliedMode === mode;
             },
 
             cycleGoalMode() {
@@ -13573,6 +13586,59 @@
         speechMicBar?.addEventListener("unmuted", () => {
             setSpeechButtonState(true, false);
         });
+
+        if (
+            englishSpeech &&
+            !globalThis.SpeechMenu
+                ?.started
+        ) {
+            speechActivationPending =
+                true;
+            setSpeechButtonState(
+                true,
+                false
+            );
+            setSpeechLayoutState(
+                true
+            );
+
+            try {
+                const started =
+                    await globalThis
+                        .SpeechMenu
+                        ?.start?.(
+                            englishLanguage
+                                ?.speechRecognitionLanguage ||
+                            "en-US"
+                        );
+
+                if (!started) {
+                    setSpeechButtonState(
+                        false,
+                        false
+                    );
+                    setSpeechLayoutState(
+                        false
+                    );
+                }
+            }
+            catch (error) {
+                console.error(
+                    error
+                );
+                setSpeechButtonState(
+                    false,
+                    false
+                );
+                setSpeechLayoutState(
+                    false
+                );
+            }
+            finally {
+                speechActivationPending =
+                    false;
+            }
+        }
 
         const speechBreakEndDialog = $("#speechBreakEndDialog");
 
