@@ -1242,10 +1242,20 @@ assert.match(
     /#scheduleRejectedClear\(\s*utteranceId,\s*delay = 2000\s*\)/
 );
 
+bar.showOptions();
+assert.equal(
+    bar.optionsOpen,
+    true
+);
 await window.SpeechMenu.sleep();
 assert.equal(
     bar.getAttribute("state"),
     "muted"
+);
+assert.equal(
+    bar.optionsOpen,
+    true,
+    "sleep should not collapse the Speech Commands panel"
 );
 window.SpeechMenu.events.dispatchEvent(
     new window.CustomEvent(
@@ -1285,11 +1295,15 @@ assert.equal(
 
 assert.match(
     speechMicBarSource,
-    /:host\(\[state="muted"\]\)[\s\S]*#bar::after[\s\S]*opacity:\s*1/
+    /#mic::after[\s\S]*to bottom left[\s\S]*#e32636/
 );
 assert.match(
     speechMicBarSource,
-    /to bottom left[\s\S]*#e32636/
+    /:host\(\[state="muted"\]\)[\s\S]*#mic::after[\s\S]*opacity:\s*1/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#bar::after[\s\S]*#e32636/
 );
 assert.match(
     speechMicBarSource,
@@ -1298,6 +1312,26 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /case "utteranceTranscriptChanged":[\s\S]*!globalThis\.SpeechMenu[\s\S]*\.muted[\s\S]*#showStreamingPhrase/
+);
+assert.match(
+    speechMicBarSource,
+    /case "muted":[\s\S]*#showIdleText\(\)[\s\S]*case "listeningSuspended"/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /case "muted":[\s\S]{0,250}hideOptions/
+);
+assert.match(
+    speechMicBarSource,
+    /#wakeActivationPhrase\(\)[\s\S]*#wakeCommand[\s\S]*extrapolatePattern/
+);
+assert.match(
+    speechMicBarSource,
+    /"Say " \+[\s\S]*#wakeActivationPhrase\(\) \+[\s\S]*" to Activate"/
+);
+assert.match(
+    speechMicBarSource,
+    /#commandCatalogGroups\s*=\s*\[\][\s\S]*SpeechMenu[\s\S]*\.muted[\s\S]*#commandCatalogGroups/
 );
 assert.doesNotMatch(
     speechMenuSource,
