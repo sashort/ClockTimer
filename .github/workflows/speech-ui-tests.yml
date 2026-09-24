@@ -19,6 +19,8 @@ on:
       - "api/speech-editor-config/**"
       - "api/speech-corrections/**"
       - "api/_core/speech_corrections.php"
+      - "migrations/**"
+      - "database/create_database.sql"
       - "lang/en-US/DurationParser.js"
       - "tests/speech-*.mjs"
       - "tests/spoken-duration.mjs"
