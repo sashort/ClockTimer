@@ -948,3 +948,12 @@ assert.match(
     speechMenuSource,
     /"re" \/ "read" -> "ready"/
 );
+
+assert.match(
+    speechMenuSource,
+    /candidateHardCommitTimer !==[\s\S]*clearTimeout\([\s\S]*candidateHardCommitTimer[\s\S]*candidateHardCommitAt\s*=\s*performance\.now\(\)\s*\+/
+);
+assert.match(
+    speechMenuSource,
+    /if \(\s*exactCandidate\.continuation\s*\)[\s\S]*return true;[\s\S]*const delay/
+);
