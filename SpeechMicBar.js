@@ -2603,13 +2603,13 @@ class SpeechMicBar extends HTMLElement {
         return height;
     }
 
-    #animateOptionCategoryResize(
-        section,
+    #animateOptionContainerResize(
+        container,
         fromHeight,
         toHeight,
         duration
     ) {
-        if (!section) {
+        if (!container) {
             return;
         }
 
@@ -2627,25 +2627,25 @@ class SpeechMicBar extends HTMLElement {
                 0
             );
 
-        section.style.height =
+        container.style.height =
             start +
             "px";
-        section.style.overflow =
+        container.style.overflow =
             "hidden";
 
         if (
             duration <= 0 ||
-            typeof section.animate !==
+            typeof container.animate !==
                 "function" ||
             Math.abs(
                 end - start
             ) < .5
         ) {
-            section.style
+            container.style
                 .removeProperty(
                     "height"
                 );
-            section.style
+            container.style
                 .removeProperty(
                     "overflow"
                 );
@@ -2653,7 +2653,7 @@ class SpeechMicBar extends HTMLElement {
         }
 
         const animation =
-            section.animate(
+            container.animate(
                 [
                     {
                         height:
@@ -2680,19 +2680,18 @@ class SpeechMicBar extends HTMLElement {
             .finally(
                 async () => {
                     /*
-                     * Preserve the measured final category height while
-                     * child exit/enter animations finish their cleanup.
-                     * Otherwise the category can briefly fall back to the
-                     * still-present pre-removal child layout and jerk just
-                     * before reaching its final auto-sized height.
+                     * Hold the measured final size while descendants
+                     * remove their animated exit nodes. This also absorbs
+                     * grid-gap removal, which otherwise produces a small
+                     * snap at the end of a collapse.
                      */
-                    section.style.height =
+                    container.style.height =
                         end +
                         "px";
 
                     const descendants =
                         (
-                            section
+                            container
                                 .getAnimations?.({
                                     subtree:
                                         true
@@ -2725,15 +2724,30 @@ class SpeechMicBar extends HTMLElement {
                             );
                     }
 
-                    section.style
+                    container.style
                         .removeProperty(
                             "height"
                         );
-                    section.style
+                    container.style
                         .removeProperty(
                             "overflow"
                         );
                 }
+            );
+    }
+
+    #animateOptionCategoryResize(
+        section,
+        fromHeight,
+        toHeight,
+        duration
+    ) {
+        this
+            .#animateOptionContainerResize(
+                section,
+                fromHeight,
+                toHeight,
+                duration
             );
     }
 
