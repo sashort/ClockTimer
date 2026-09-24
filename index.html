@@ -213,13 +213,23 @@
         <button id="speechTrainingDragHandle" class="speech-training-drag-handle" type="button" aria-label="Drag Speech Training" title="Drag Speech Training">⋮⋮</button>
         <div class="speech-training-copy">
             <strong id="speechTrainingPhrase">Select a command</strong>
-            <span id="speechTrainingHeard">Heard: —</span>
+            <span class="speech-training-heard-line">
+                <span id="speechTrainingHeard">Heard: —</span>
+                <span id="speechTrainingHeardStatus" class="speech-training-result-icon" aria-live="polite" hidden></span>
+            </span>
         </div>
         <div class="speech-training-state">
             <strong id="speechTrainingPrompt">Ready</strong>
             <span id="speechTrainingCount">0</span>
         </div>
         <button id="speechTrainingStartStop" class="speech-training-start-stop" type="button" disabled>Start</button>
+        <details id="speechTrainingResults" class="speech-training-results">
+            <summary>
+                <span>Results</span>
+                <span id="speechTrainingResultsCount">0</span>
+            </summary>
+            <div id="speechTrainingResultsList" class="speech-training-results-list"></div>
+        </details>
     </section>
 
     <dialog id="speechTrainingChoiceDialog" class="app-dialog speech-training-choice-dialog">
