@@ -9285,12 +9285,11 @@
                 }
 
                 if (
-                    (
-                        telemetry.type ===
-                            "utteranceTranscriptChanged" ||
-                        telemetry.type ===
-                            "utteranceTranscribed"
-                    ) &&
+                    telemetry.type ===
+                        "utteranceTranscriptChanged" &&
+                    telemetry.event
+                        ?.isFinal !==
+                            true &&
                     utteranceId !==
                         undefined &&
                     transcript
@@ -9307,18 +9306,9 @@
                                 ""
                         };
 
-                    if (
-                        telemetry.event
-                            ?.isFinal !==
-                                true &&
-                        telemetry.event
-                            ?.live !==
-                                false
-                    ) {
-                        outcome
-                            .lastLiveTranscript =
-                            transcript;
-                    }
+                    outcome
+                        .lastLiveTranscript =
+                        transcript;
 
                     speechTrainingOutcomeByUtterance
                         .set(
