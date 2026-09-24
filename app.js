@@ -1797,34 +1797,20 @@
             "true"
         );
 
-        if (pinned) {
-            const sourceRect =
-                tripLogButton.getBoundingClientRect();
+        const sourceRect =
+            pinned
+                ? tripLogButton
+                    .getBoundingClientRect()
+                : getTripLogBottomRect();
 
-            setFloatingTripLogRect(
-                sourceRect
-            );
+        setFloatingTripLogRect(
+            sourceRect
+        );
 
-            await animateTripLogButton(
-                "translateY(0px)",
-                `translateY(${topRect.top - sourceRect.top}px)`
-            );
-        }
-        else {
-            setFloatingTripLogRect(
-                topRect
-            );
-
-            const distance =
-                topRect.top +
-                topRect.height +
-                8;
-
-            await animateTripLogButton(
-                `translateY(-${distance}px)`,
-                "translateY(0px)"
-            );
-        }
+        await animateTripLogButton(
+            "translateY(0px)",
+            `translateY(${topRect.top - sourceRect.top}px)`
+        );
 
         setFloatingTripLogRect(
             topRect
@@ -1945,32 +1931,18 @@
             TRIP_LIST_BODY_DELAY
         );
 
-        if (pinned) {
-            const destination =
-                getTripLogBottomRect();
+        const destination =
+            getTripLogBottomRect();
 
-            await animateTripLogButton(
-                "translateY(0px)",
-                `translateY(${destination.top - topRect.top}px)`,
-                TRIP_LIST_BUTTON_TRANSITION_DURATION
-            );
+        await animateTripLogButton(
+            "translateY(0px)",
+            `translateY(${destination.top - topRect.top}px)`,
+            TRIP_LIST_BUTTON_TRANSITION_DURATION
+        );
 
-            setFloatingTripLogRect(
-                destination
-            );
-        }
-        else {
-            const distance =
-                topRect.top +
-                topRect.height +
-                8;
-
-            await animateTripLogButton(
-                "translateY(0px)",
-                `translateY(-${distance}px)`,
-                TRIP_LIST_BUTTON_TRANSITION_DURATION
-            );
-        }
+        setFloatingTripLogRect(
+            destination
+        );
 
         app.dataset.tripListState =
             "closed";
