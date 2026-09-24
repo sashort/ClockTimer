@@ -844,7 +844,7 @@ class SpeechMicBar extends HTMLElement {
                 <button
                     id="optionsClose"
                     type="button"
-                    aria-label="Close speech options"
+                    aria-label="Close speech commands"
                 >×</button>
                 <div id="optionsGrid"></div>
             </section>
