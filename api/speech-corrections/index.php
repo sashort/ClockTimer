@@ -174,7 +174,7 @@ $contributorStats =
                 . 'u.username, u.preferred_name, u.first_name, u.last_name, '
                 . 'COUNT(*) AS contribution_count, '
                 . 'SUM(tc.source IN ("guided","manual")) AS sample_count, '
-                . 'SUM(tc.recognized_correct = 0) AS alternative_count, '
+                . 'SUM(tc.source IN ("guided","manual") AND tc.recognized_correct = 0) AS alternative_count, '
                 . 'SUM(tc.source = "correction") AS correction_count, '
                 . 'COUNT(DISTINCT tc.phrase_id) AS phrase_count '
                 . 'FROM speech_training_contributions tc '
@@ -560,7 +560,7 @@ $phraseTraining =
                 'SELECT tc.user_id, u.username, u.preferred_name, '
                 . 'u.first_name, u.last_name, COUNT(*) AS contribution_count, '
                 . 'SUM(tc.source IN ("guided","manual")) AS sample_count, '
-                . 'SUM(tc.recognized_correct = 0) AS alternative_count, '
+                . 'SUM(tc.source IN ("guided","manual") AND tc.recognized_correct = 0) AS alternative_count, '
                 . 'SUM(tc.source = "correction") AS correction_count '
                 . 'FROM speech_training_contributions tc '
                 . 'LEFT JOIN users u ON u.id = tc.user_id '
@@ -1152,12 +1152,12 @@ if (
             $pdo->prepare(
                 'INSERT INTO speech_training_contributions '
                 . '(phrase_id, user_id, source, canonical, canonical_compact, '
-                . 'observed, observed_compact, match_type, recognized_correct, '
+                . 'observed, observed_compact, match_type, mapping_hash, recognized_correct, '
                 . 'training_style, prompt_index, recognizer, pipeline, '
                 . 'runtime_revision, metadata, active, created_at) '
                 . 'VALUES (:phrase_id, :user_id, :source, :canonical, '
                 . ':canonical_compact, :observed, :observed_compact, :match_type, '
-                . ':recognized_correct, :training_style, :prompt_index, "sherpa", '
+                . ':mapping_hash, :recognized_correct, :training_style, :prompt_index, "sherpa", '
                 . ':pipeline, :runtime_revision, :metadata, 1, :created_at)'
             );
 
@@ -1178,6 +1178,15 @@ if (
                 $observedCompact,
             ':match_type' =>
                 $matchType,
+            ':mapping_hash' =>
+                hash(
+                    'sha256',
+                    $observedCompact .
+                    "\x1F" .
+                    $canonicalCompact .
+                    "\x1F" .
+                    $matchType
+                ),
             ':recognized_correct' =>
                 $recognizedCorrect
                     ? 1
