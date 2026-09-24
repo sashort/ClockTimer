@@ -152,6 +152,8 @@
         #apiBase =
             "api";
 
+        #transactionTimestampProvider;
+
         #scheduledStart;
 
         #scheduledStartMilliseconds;
@@ -2949,6 +2951,63 @@
             );
         }
 
+        #transactionTimestamp(
+            fallback = new Date()
+        ) {
+            let candidate;
+
+            try {
+                candidate =
+                    this.#transactionTimestampProvider
+                        ?.();
+            }
+            catch {}
+
+            const source =
+                candidate === undefined ||
+                candidate === null
+                    ? fallback
+                    : candidate;
+
+            const date =
+                source instanceof Date
+                    ? new Date(
+                        source.getTime()
+                    )
+                    : new Date(
+                        source
+                    );
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+                const fallbackDate =
+                    fallback instanceof Date
+                        ? new Date(
+                            fallback.getTime()
+                        )
+                        : new Date(
+                            fallback
+                        );
+
+                if (
+                    Number.isNaN(
+                        fallbackDate.getTime()
+                    )
+                ) {
+                    throw new TypeError(
+                        "Transaction timestamp must be a valid date/time."
+                    );
+                }
+
+                return fallbackDate;
+            }
+
+            return date;
+        }
+
         #parseTripEventTimestamp(value) {
             if (value instanceof Date) {
                 return new Date(
@@ -3007,9 +3066,9 @@
             }
 
             const date =
-                timestamp instanceof Date
-                    ? new Date(timestamp.getTime())
-                    : new Date(timestamp);
+                this.#transactionTimestamp(
+                    timestamp
+                );
 
             if (Number.isNaN(date.getTime())) {
                 throw new TypeError(
@@ -5227,8 +5286,17 @@
             return result;
         }
 
-        async stop(stopTime = this.#dateToStandardTime(new Date())) {
-            const parsed = this.#validateClockTime(stopTime, "stopTime");
+        async stop(stopTime) {
+            const effectiveStopTime =
+                stopTime === undefined
+                    ? this.#dateToStandardTime(
+                        this.#transactionTimestamp(
+                            new Date()
+                        )
+                    )
+                    : stopTime;
+
+            const parsed = this.#validateClockTime(effectiveStopTime, "stopTime");
             const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
             const persistedEnd = this.#timelineToISO(stopTimeline);
             const aggregateStartTimeline =
@@ -5247,7 +5315,7 @@
                 this.#nonProduction;
 
             this.#checkGoalMisses(stopTimeline);
-            const localResult = this.#stopLocal(stopTime);
+            const localResult = this.#stopLocal(effectiveStopTime);
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
             }
@@ -5422,15 +5490,42 @@
             length,
             attributes,
             startBuffer,
-            endBuffer
+            endBuffer,
+            at
         ) {
+            const operationTime =
+                at === undefined
+                    ? this.#transactionTimestamp(
+                        new Date()
+                    )
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    operationTime.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval start time must be a valid date/time."
+                );
+            }
+
             const localResult =
                 this.#startIntervalLocal(
                     type,
                     length,
                     attributes,
                     startBuffer,
-                    endBuffer
+                    endBuffer,
+                    operationTime
                 );
 
             if (!localResult) {
@@ -5571,8 +5666,31 @@
             return result;
         }
 
-        async endInterval() {
-            const nowDate = new Date();
+        async endInterval(at) {
+            const nowDate =
+                at === undefined
+                    ? this.#transactionTimestamp(
+                        new Date()
+                    )
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval end time must be a valid date/time."
+                );
+            }
             const now = this.#getCurrentTimelineTime(nowDate);
             const current = this.#getCurrentInterval(now);
             const pending = this.#pendingIntervalRecord;
@@ -5643,7 +5761,9 @@
                 Number.isFinite(scheduledEnd) &&
                 now < scheduledEnd;
 
-            const localResult = this.#endIntervalLocal();
+            const localResult = this.#endIntervalLocal(
+                nowDate
+            );
             if (!localResult) {
                 throw new Error("The interval could not be ended.");
             }
@@ -6235,6 +6355,28 @@
         }
 
         get currentTripId() { return this.#tripId; }
+
+        get transactionTimestampProvider() {
+            return this.#transactionTimestampProvider;
+        }
+
+        set transactionTimestampProvider(
+            provider
+        ) {
+            if (
+                provider !== undefined &&
+                provider !== null &&
+                typeof provider !==
+                    "function"
+            ) {
+                throw new TypeError(
+                    "transactionTimestampProvider must be a function, null, or undefined."
+                );
+            }
+
+            this.#transactionTimestampProvider =
+                provider || undefined;
+        }
 
         async persistCurrentTrip() {
             if (!(await this.#ensureConnected())) throw new Error("Connect before saving trip settings.");
