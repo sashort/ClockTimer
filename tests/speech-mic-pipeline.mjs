@@ -691,6 +691,14 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /hideOptions\([\s\S]*removeAttribute\(\s*"options-open"\s*\)[\s\S]*aria-hidden[\s\S]*animation\.finished/
+);
+assert.match(
+    app,
+    /speechMicBar[\s\S]*\.optionsOpen[\s\S]*void speechMicBar[\s\S]*\.hideOptions\?\.\(\)[\s\S]*return true/
+);
+assert.match(
+    speechMicBarSource,
     /id="optionsHeader">Speech Commands<\/div>/
 );
 assert.match(
