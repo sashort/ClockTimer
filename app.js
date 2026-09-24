@@ -9684,6 +9684,91 @@
         });
     }
 
+    let speechBreakPromptState;
+
+    function openSpeechBreakPrompt(
+        mode
+    ) {
+        const dialog =
+            $("#speechBreakConfirmDialog");
+        const title =
+            $("#speechBreakConfirmTitle");
+        const message =
+            $("#speechBreakConfirmMessage");
+
+        if (
+            !dialog ||
+            !title ||
+            !message
+        ) {
+            return false;
+        }
+
+        if (mode === "start") {
+            title.textContent =
+                "Start Break";
+            message.textContent =
+                "Is this a lunch?";
+
+            speechBreakPromptState = {
+                mode: "start"
+            };
+        }
+        else if (mode === "end") {
+            const active =
+                clockTimer
+                    .getActiveIntervalState
+                    ?.(
+                        new Date()
+                    );
+            const type =
+                String(
+                    active?.intervalType ||
+                    ""
+                )
+                    .toLowerCase();
+
+            if (
+                type !== "break" &&
+                type !== "lunch"
+            ) {
+                return false;
+            }
+
+            const label =
+                type === "lunch"
+                    ? "Lunch"
+                    : "Break";
+
+            title.textContent =
+                `End ${label}`;
+            message.textContent =
+                `Are you ready to end your ${label.toLowerCase()}?`;
+
+            speechBreakPromptState = {
+                mode: "end",
+                intervalType:
+                    type
+            };
+        }
+        else {
+            return false;
+        }
+
+        return openDialog(
+            "speechBreakConfirmDialog",
+            {
+                reason:
+                    `speech-break-${mode}`
+            }
+        );
+    }
+
+    function clearSpeechBreakPrompt() {
+        speechBreakPromptState =
+            undefined;
+    }
+
     async function startBreakInterval(kind) {
         const configs = {
             break: { type: "break", length: "15:00", attributes: { breakType: "break" } },
@@ -11050,6 +11135,18 @@
                     );
             },
 
+            openBreakStartConfirmation() {
+                if (
+                    breakButton?.disabled
+                ) {
+                    return false;
+                }
+
+                return openSpeechBreakPrompt(
+                    "start"
+                );
+            },
+
             openBreakMenu(
                 reason = "break"
             ) {
@@ -11202,31 +11299,8 @@
             },
 
             openBreakEndMenu() {
-                const type =
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .toLowerCase();
-
-                if (
-                    type !== "break" &&
-                    type !== "lunch"
-                ) {
-                    return false;
-                }
-
-                return openDialog(
-                    "speechBreakEndDialog",
-                    {
-                        reason:
-                            "speech-break-end"
-                    }
+                return openSpeechBreakPrompt(
+                    "end"
                 );
             },
 
@@ -11680,11 +11754,16 @@
                 return true;
             },
 
-            async confirmBreakEnd() {
+            async confirmBreakPromptYes() {
                 const dialog =
-                    $("#speechBreakEndDialog");
+                    $("#speechBreakConfirmDialog");
+                const state =
+                    speechBreakPromptState;
 
-                if (!dialog?.open) {
+                if (
+                    !dialog?.open ||
+                    !state
+                ) {
                     return false;
                 }
 
@@ -11692,18 +11771,71 @@
                     dialog,
                     {
                         reason:
-                            "speech-confirm"
+                            "speech-break-yes"
                     }
                 );
 
-                await endCurrentIntervalOrTrip();
+                clearSpeechBreakPrompt();
 
-                return true;
+                if (
+                    state.mode ===
+                    "start"
+                ) {
+                    return startBreakInterval(
+                        "lunch"
+                    );
+                }
+
+                if (
+                    state.mode ===
+                    "end"
+                ) {
+                    await endCurrentIntervalOrTrip();
+                    return true;
+                }
+
+                return false;
             },
 
-            cancelBreakEnd() {
+            async confirmBreakPromptNo() {
                 const dialog =
-                    $("#speechBreakEndDialog");
+                    $("#speechBreakConfirmDialog");
+                const state =
+                    speechBreakPromptState;
+
+                if (
+                    !dialog?.open ||
+                    !state
+                ) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-break-no"
+                    }
+                );
+
+                clearSpeechBreakPrompt();
+
+                if (
+                    state.mode ===
+                    "start"
+                ) {
+                    return startBreakInterval(
+                        "break"
+                    );
+                }
+
+                return state.mode ===
+                    "end";
+            },
+
+            cancelBreakPrompt() {
+                const dialog =
+                    $("#speechBreakConfirmDialog");
 
                 if (!dialog?.open) {
                     return false;
@@ -11713,9 +11845,11 @@
                     dialog,
                     {
                         reason:
-                            "speech-cancel"
+                            "speech-break-cancel"
                     }
                 );
+
+                clearSpeechBreakPrompt();
 
                 return true;
             },
@@ -13525,7 +13659,8 @@
                 resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
-                breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
+                breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
+                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
             };
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
             element.setAttribute("speech-pattern", pattern);
@@ -13548,7 +13683,7 @@
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakStartConfirmation"], ["down","startDownTime"],
                 ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"], ["goal","changeGoal"], ["goalMode","changeGoalMode"],
                 ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
@@ -13660,49 +13795,72 @@
             }
         }
 
-        const speechBreakEndDialog = $("#speechBreakEndDialog");
+        const speechBreakConfirmDialog =
+            $("#speechBreakConfirmDialog");
 
-        globalThis
-            .WMOFInteractionFunctions
-            .bindAction({
-                element:
-                    $("#speechBreakEndCancel"),
-                event:
-                    "click",
-                name:
-                    "cancelBreakEndClick",
-                action:
-                    "cancelBreakEnd"
-            });
+        for (
+            const [
+                id,
+                action,
+                name
+            ] of [
+                [
+                    "speechBreakConfirmYes",
+                    "confirmBreakPromptYes",
+                    "confirmBreakPromptYesClick"
+                ],
+                [
+                    "speechBreakConfirmNo",
+                    "confirmBreakPromptNo",
+                    "confirmBreakPromptNoClick"
+                ],
+                [
+                    "speechBreakConfirmCancel",
+                    "cancelBreakPrompt",
+                    "cancelBreakPromptClick"
+                ]
+            ]
+        ) {
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    element:
+                        $("#" + id),
+                    event:
+                        "click",
+                    name,
+                    action
+                });
+        }
 
-        globalThis
-            .WMOFInteractionFunctions
-            .bindAction({
-                element:
-                    $("#speechBreakEndConfirm"),
-                event:
-                    "click",
-                name:
-                    "confirmBreakEndClick",
-                action:
-                    "confirmBreakEnd"
-            });
+        speechBreakConfirmDialog
+            ?.addEventListener(
+                "close",
+                clearSpeechBreakPrompt
+            );
 
         if (
             englishSpeech &&
-            speechBreakEndDialog
+            speechBreakConfirmDialog
         ) {
             installSpeechCommand(
-                "confirm",
-                "confirmBreakEnd",
-                speechBreakEndDialog,
+                "yes",
+                "confirmBreakPromptYes",
+                speechBreakConfirmDialog,
+                false
+            );
+
+            installSpeechCommand(
+                "no",
+                "confirmBreakPromptNo",
+                speechBreakConfirmDialog,
                 false
             );
 
             installSpeechCommand(
                 "cancel",
-                "cancelBreakEnd",
-                speechBreakEndDialog,
+                "cancelBreakPrompt",
+                speechBreakConfirmDialog,
                 false
             );
 
