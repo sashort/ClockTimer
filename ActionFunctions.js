@@ -7,6 +7,8 @@
     const macros = new Map();
     const actions = Object.create(null);
     const events = new EventTarget();
+    const activeInterruptGroups = new Map();
+    let invocationContext;
 
     const actionVerbs = Object.freeze([
         "add","apply","begin","cancel","change","choose","clear","close",
@@ -378,11 +380,127 @@
                                 );
                             }
 
-                            return implementations
-                                .get(
+                            const definition =
+                                metadata.get(
                                     normalized
-                                )
-                                (...args);
+                                ) || {};
+
+                            const interruptGroup =
+                                String(
+                                    definition
+                                        .interruptGroup ||
+                                    ""
+                                ).trim();
+
+                            const previousInvocationContext =
+                                invocationContext;
+
+                            let invocation;
+                            let controller;
+
+                            if (interruptGroup) {
+                                const interrupted =
+                                    activeInterruptGroups
+                                        .get(
+                                            interruptGroup
+                                        );
+
+                                interrupted
+                                    ?.controller
+                                    ?.abort();
+
+                                controller =
+                                    new AbortController();
+
+                                invocation = {
+                                    token:
+                                        Symbol(
+                                            interruptGroup
+                                        ),
+                                    action:
+                                        normalized,
+                                    controller
+                                };
+
+                                activeInterruptGroups
+                                    .set(
+                                        interruptGroup,
+                                        invocation
+                                    );
+
+                                invocationContext =
+                                    Object.freeze({
+                                        action:
+                                            normalized,
+                                        interruptGroup,
+                                        signal:
+                                            controller
+                                                .signal,
+                                        interrupted:
+                                            Boolean(
+                                                interrupted
+                                            ),
+                                        interruptedAction:
+                                            interrupted
+                                                ?.action
+                                    });
+                            }
+
+                            let result;
+
+                            try {
+                                result =
+                                    implementations
+                                        .get(
+                                            normalized
+                                        )
+                                        (...args);
+                            }
+                            finally {
+                                invocationContext =
+                                    previousInvocationContext;
+                            }
+
+                            if (
+                                !interruptGroup ||
+                                !invocation
+                            ) {
+                                return result;
+                            }
+
+                            const finish =
+                                () => {
+                                    if (
+                                        activeInterruptGroups
+                                            .get(
+                                                interruptGroup
+                                            ) ===
+                                        invocation
+                                    ) {
+                                        activeInterruptGroups
+                                            .delete(
+                                                interruptGroup
+                                            );
+                                    }
+                                };
+
+                            if (
+                                result &&
+                                typeof result.then ===
+                                    "function"
+                            ) {
+                                return Promise
+                                    .resolve(
+                                        result
+                                    )
+                                    .finally(
+                                        finish
+                                    );
+                            }
+
+                            finish();
+
+                            return result;
                         }
                     }
                 );
@@ -1354,6 +1472,22 @@
             defineAll,
             events,
             actionVerbs,
+
+            get invocationContext() {
+                return invocationContext;
+            },
+
+            isInterruptGroupActive(
+                group
+            ) {
+                return activeInterruptGroups
+                    .has(
+                        String(
+                            group ||
+                            ""
+                        ).trim()
+                    );
+            },
 
             validateName,
 
