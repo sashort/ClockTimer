@@ -14115,7 +14115,8 @@
             const speechTargets = {
                 readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
-                resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
+                resume:"#downResumeButton", tripGoal:"#goalPercentValue", totalGoal:"#goalPercentValue",
+                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", readGoalMode:"#scopeToggle", goalMode:"#scopeToggle",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
@@ -14143,13 +14144,17 @@
             }
             for (const [key, fn] of [
                 ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
-                ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"], ["goal","changeGoal"], ["goalMode","changeGoalMode"],
+                ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"],
+                ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
+                ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
+                ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
-                    goal:["percent","percent"], lockEndTime:["clock","spokenTime"]
+                    setTripGoal:["percent","percent"], setTotalGoal:["percent","percent"],
+                    lockEndTime:["clock","spokenTime"]
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
