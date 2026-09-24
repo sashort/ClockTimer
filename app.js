@@ -10795,7 +10795,7 @@
                 speechMicBar
                     ?.optionsOpen
             ) {
-                await speechMicBar
+                void speechMicBar
                     .hideOptions?.();
 
                 return true;
