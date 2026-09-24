@@ -86,6 +86,8 @@ assert.deepEqual(
     ]
 );
 
+bar.remove();
+
 assert.equal(
     await SpeechMenu.sleep(),
     true
@@ -101,6 +103,10 @@ assert.equal(
 assert.equal(
     SpeechMenu.muted,
     false
+);
+
+window.document.body.append(
+    bar
 );
 
 assert.equal(
