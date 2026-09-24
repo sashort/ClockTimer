@@ -222,6 +222,15 @@ class SpeechMicBar extends HTMLElement {
                     letter-spacing: .01em;
                 }
 
+                .option-phrase.unimplemented {
+                    text-decoration-line:
+                        line-through;
+                    text-decoration-thickness:
+                        2px;
+                    text-decoration-color:
+                        currentColor;
+                }
+
                 .option-phrase code {
                     max-width: 180px;
                     margin-inline: 2px;
@@ -649,10 +658,10 @@ class SpeechMicBar extends HTMLElement {
             </style>
             <section
                 id="optionsPanel"
-                aria-label="Speech Options"
+                aria-label="Available Speech Commands"
                 aria-hidden="true"
             >
-                <div id="optionsHeader">Speech Options</div>
+                <div id="optionsHeader">Available Speech Commands</div>
                 <button
                     id="optionsClose"
                     type="button"
@@ -1049,6 +1058,27 @@ class SpeechMicBar extends HTMLElement {
 
         row.className =
             "option-phrase";
+
+        const implemented =
+            globalThis
+                .SpeechMenu
+                ?.isCommandImplemented?.(
+                    element
+                ) !== false;
+
+        if (!implemented) {
+            row.classList.add(
+                "unimplemented"
+            );
+
+            row.setAttribute(
+                "aria-label",
+                "Not implemented"
+            );
+
+            row.title =
+                "Not implemented";
+        }
 
         const text =
             this.#displayPhrase(
