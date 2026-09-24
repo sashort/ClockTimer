@@ -126,6 +126,58 @@
             ? "silero"
             : "raw";
 
+    let speechAssetCachePromise;
+    const ensureSpeechAssetCache = () => {
+        if (
+            !("serviceWorker" in navigator) ||
+            !globalThis.isSecureContext
+        ) {
+            return Promise.resolve(false);
+        }
+
+        if (!speechAssetCachePromise) {
+            const workerUrl =
+                "SpeechAssetCacheWorker.js" +
+                speechRuntimeVersion;
+
+            speechAssetCachePromise =
+                navigator.serviceWorker
+                    .register(
+                        workerUrl,
+                        {
+                            scope: "./",
+                            updateViaCache:
+                                "none"
+                        }
+                    )
+                    .then(
+                        async registration => {
+                            await navigator
+                                .serviceWorker
+                                .ready;
+
+                            return Boolean(
+                                registration
+                            );
+                        }
+                    )
+                    .catch(
+                        error => {
+                            console.warn(
+                                "Sherpa asset cache unavailable.",
+                                error
+                            );
+
+                            return false;
+                        }
+                    );
+        }
+
+        return speechAssetCachePromise;
+    };
+
+    void ensureSpeechAssetCache();
+
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
             const existing = document.querySelector(
@@ -190,6 +242,8 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
+                        await ensureSpeechAssetCache();
+
                         if (!globalThis.SherpaRecognizer) {
                             await loadClassicScript(
                                 "SherpaRecognizer.js"
