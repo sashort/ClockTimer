@@ -624,11 +624,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /showOptions\([\s\S]*getComputedStyle\([\s\S]*#optionsPanel[\s\S]*currentClipPath/
+    /showOptions\([\s\S]*getComputedStyle[\s\S]*#optionsPanel[\s\S]*currentClipPath/
 );
 assert.match(
     speechMicBarSource,
-    /hideOptions\([\s\S]*getComputedStyle\([\s\S]*#optionsPanel[\s\S]*currentClipPath/
+    /hideOptions\([\s\S]*getComputedStyle[\s\S]*#optionsPanel[\s\S]*currentClipPath/
 );
 
 assert.match(
