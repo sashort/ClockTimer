@@ -497,6 +497,7 @@
         focused: undefined,
         focusStack: [],
         animations: new Set(),
+        generation: 0,
         transitionBusy: false
     };
     const MAIN_MENU_ITEM_RATE_PX_PER_MS = 0.5;
@@ -2186,7 +2187,10 @@
     function animateMainMenuItemHeight(
         element,
         metrics,
-        opening
+        opening,
+        generation =
+            mainMenuLayoutState
+                .generation
     ) {
         if (
             !element ||
@@ -2266,6 +2270,14 @@
                         animation.cancel();
                     }
                     catch {}
+
+                    if (
+                        generation !==
+                        mainMenuLayoutState
+                            .generation
+                    ) {
+                        return;
+                    }
 
                     if (opening) {
                         clearMainMenuClipStyles(
@@ -2504,6 +2516,10 @@
         mainMenuLayoutState
             .transitionBusy =
             true;
+
+        const generation =
+            ++mainMenuLayoutState
+                .generation;
 
         cancelMainMenuAnimations();
 
@@ -2773,6 +2789,14 @@
             animations
         );
 
+        if (
+            generation !==
+            mainMenuLayoutState
+                .generation
+        ) {
+            return false;
+        }
+
         try {
             moveAnimation.cancel();
         }
@@ -2826,6 +2850,10 @@
         mainMenuLayoutState
             .transitionBusy =
             true;
+
+        const generation =
+            ++mainMenuLayoutState
+                .generation;
 
         cancelMainMenuAnimations();
 
@@ -3001,6 +3029,14 @@
             animations
         );
 
+        if (
+            generation !==
+            mainMenuLayoutState
+                .generation
+        ) {
+            return false;
+        }
+
         try {
             moveAnimation.cancel();
         }
@@ -3092,6 +3128,10 @@
     }
 
     function resetMainMenuLayout() {
+        mainMenuLayoutState
+            .generation +=
+            1;
+
         cancelMainMenuAnimations();
 
         mainMenuLayoutState
