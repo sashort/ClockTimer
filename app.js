@@ -7410,9 +7410,18 @@
         confirmTarget,
         backTarget,
         duration = 250,
-        onConfirm, onCancel, title, allowEmpty = false
+        onConfirm, onCancel, title, allowEmpty = false,
+        signal
     } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
         await ensureNumberPadLoaded();
+
+        if (signal?.aborted) {
+            return false;
+        }
         const normalizedMode = mode === "percent"
             ? "percent"
             : mode === "absolute"
@@ -7503,6 +7512,8 @@
                 preparationPromise ?? Promise.resolve()
             );
         }
+
+        return true;
     }
 
     async function restoreNumberPadState(snapshot, { duration = 0 } = {}) {
@@ -9428,8 +9439,26 @@
         return { scheduledStart: draft.scheduledStart ?? draft.creationTime, startTime: time };
     }
 
-    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
-        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
+    async function beginNewTripWorkflow({
+        initialValue,
+        tripMoment,
+        signal
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        if (clockTimer.status === "stopped") {
+            await clockTimer.resetCompletedTrip();
+
+            if (signal?.aborted) {
+                return false;
+            }
+        }
+
+        const previousTripDraft =
+            tripDraft;
+
         const deferredDraft = tripDraft?.deferred ? tripDraft : undefined;
         uiReturnStack.length = 0;
         resetTripSettingsNavigation();
@@ -9475,18 +9504,32 @@
             });
         }
 
-        return openNumberPad({
-            mode: "time",
-            source: "new-trip",
-            initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
-            preparationPromise,
-            tripDefaults: tripDraft,
-            startsTripOnConfirm: true,
-            role: "root",
-            workflow: "new-trip",
-            cancelTarget: "home",
-            confirmTarget: "home"
-        });
+        const opened =
+            await openNumberPad({
+                mode: "time",
+                source: "new-trip",
+                initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
+                preparationPromise,
+                tripDefaults: tripDraft,
+                startsTripOnConfirm: true,
+                role: "root",
+                workflow: "new-trip",
+                cancelTarget: "home",
+                confirmTarget: "home",
+                signal
+            });
+
+        if (
+            !opened &&
+            signal?.aborted
+        ) {
+            tripDraft =
+                previousTripDraft;
+
+            renderDeferredTrip();
+        }
+
+        return opened;
     }
 
     globalThis
@@ -10712,18 +10755,42 @@
                 cancelPendingSpeechReady();
             }
 
-            void beginNewTripWorkflow({
-                tripMoment:
-                    new Date()
-            }).catch(
-                () => {}
-            );
+            const signal =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.invocationContext
+                    ?.signal;
 
-            return true;
+            return Promise
+                .resolve(
+                    beginNewTripWorkflow({
+                        tripMoment:
+                            new Date(),
+                        signal
+                    })
+                )
+                .then(
+                    result =>
+                        signal?.aborted
+                            ? true
+                            : result !== false
+                )
+                .catch(
+                    () =>
+                        Boolean(
+                            signal?.aborted
+                        )
+                );
         };
 
     const closeActiveSpeechSurface =
         async () => {
+            const interruptedAction =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.invocationContext
+                    ?.interruptedAction;
+
             if (
                 speechMicBar
                     ?.optionsOpen
@@ -10774,7 +10841,9 @@
                 ].at(-1);
 
             if (!dialog) {
-                return false;
+                return Boolean(
+                    interruptedAction
+                );
             }
 
             if (
@@ -10891,6 +10960,16 @@
             },
 
             canCloseSurface() {
+                if (
+                    globalThis
+                        .WMOFActionFunctions
+                        ?.isInterruptGroupActive?.(
+                            "primary-surface"
+                        )
+                ) {
+                    return true;
+                }
+
                 if (
                     speechMicBar
                         ?.optionsOpen
@@ -13660,6 +13739,25 @@
             },
 
         });
+
+    for (
+        const actionName of
+        [
+            "openStartMenu",
+            "prepareStartMenu",
+            "closeActiveSurface"
+        ]
+    ) {
+        globalThis
+            .WMOFActionFunctions
+            .setMetadata(
+                actionName,
+                {
+                    interruptGroup:
+                        "primary-surface"
+                }
+            );
+    }
 
     globalThis
         .WMOFActionFunctions
