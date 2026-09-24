@@ -6159,111 +6159,103 @@
             .trim();
     }
 
-    function speechTrainingEditSimilarity(
-        left,
-        right
+    function speechTrainingExpectedPhraseMatches(
+        observed,
+        candidate
     ) {
-        const a =
+        const heard =
             normalizeSpeechTrainingPhrase(
-                left
-            )
-                .replace(
-                    /\s+/g,
-                    ""
-                );
-
-        const b =
-            normalizeSpeechTrainingPhrase(
-                right
-            )
-                .replace(
-                    /\s+/g,
-                    ""
-                );
-
-        if (!a || !b) {
-            return 0;
-        }
-
-        if (a === b) {
-            return 1;
-        }
-
-        const previous =
-            Array.from(
-                {
-                    length:
-                        b.length +
-                        1
-                },
-                (
-                    _,
-                    index
-                ) => index
+                observed
             );
 
-        for (
-            let row = 1;
-            row <= a.length;
-            row++
-        ) {
-            let diagonal =
-                previous[0];
+        const template =
+            String(
+                candidate ||
+                ""
+            )
+                .toLocaleLowerCase()
+                .trim();
 
-            previous[0] =
-                row;
+        if (!heard || !template) {
+            return false;
+        }
 
-            for (
-                let column = 1;
-                column <= b.length;
-                column++
-            ) {
-                const above =
-                    previous[
-                        column
-                    ];
+        const placeholders = [];
+        const protectedTemplate =
+            template.replace(
+                /<[^>]+>/g,
+                value => {
+                    const token =
+                        "__wmof_placeholder_" +
+                        placeholders.length +
+                        "__";
 
-                previous[
-                    column
-                ] =
-                    Math.min(
-                        previous[
-                            column
-                        ] +
-                            1,
-                        previous[
-                            column -
-                                1
-                        ] +
-                            1,
-                        diagonal +
-                            (
-                                a[
-                                    row -
-                                        1
-                                ] ===
-                                b[
-                                    column -
-                                        1
-                                ]
-                                    ? 0
-                                    : 1
-                            )
+                    placeholders.push(
+                        token
                     );
 
-                diagonal =
-                    above;
-            }
+                    return token;
+                }
+            );
+
+        let normalizedTemplate =
+            protectedTemplate
+                .replace(
+                    /[^\p{L}\p{N}_\s]/gu,
+                    " "
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        if (!normalizedTemplate) {
+            return false;
         }
 
-        return 1 -
-            previous[
-                b.length
-            ] /
-            Math.max(
-                a.length,
-                b.length
+        if (!placeholders.length) {
+            return (
+                heard ===
+                normalizedTemplate
             );
+        }
+
+        let source =
+            normalizedTemplate
+                .replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&"
+                )
+                .replace(
+                    /\s+/g,
+                    "\\s+"
+                );
+
+        for (
+            const token of
+            placeholders
+        ) {
+            source =
+                source.replace(
+                    token,
+                    "(?:\\S+(?:\\s+\\S+)*)"
+                );
+        }
+
+        try {
+            return new RegExp(
+                "^(?:" +
+                source +
+                ")$",
+                "iu"
+            ).test(
+                heard
+            );
+        }
+        catch {
+            return false;
+        }
     }
 
     function speechTrainingPhraseWasExpected(
@@ -6271,24 +6263,12 @@
         target =
             speechTrainingTarget
     ) {
-        const heard =
-            normalizeSpeechTrainingPhrase(
-                observed
-            );
-
-        if (!heard || !target) {
+        if (
+            !observed ||
+            !target
+        ) {
             return false;
         }
-
-        const heardTokens =
-            new Set(
-                heard.split(
-                    " "
-                )
-                    .filter(
-                        Boolean
-                    )
-            );
 
         const candidates =
             [
@@ -6313,58 +6293,11 @@
             ];
 
         return candidates.some(
-            candidate => {
-                const expected =
-                    normalizeSpeechTrainingPhrase(
-                        candidate
-                    );
-
-                if (!expected) {
-                    return false;
-                }
-
-                const expectedTokens =
-                    expected
-                        .split(
-                            " "
-                        )
-                        .filter(
-                            Boolean
-                        );
-
-                const common =
-                    expectedTokens
-                        .filter(
-                            token =>
-                                heardTokens
-                                    .has(
-                                        token
-                                    )
-                        )
-                        .length;
-
-                const overlap =
-                    common /
-                    Math.max(
-                        1,
-                        Math.min(
-                            expectedTokens
-                                .length,
-                            heardTokens
-                                .size
-                        )
-                    );
-
-                return (
-                    overlap >=
-                        .66 ||
-                    speechTrainingEditSimilarity(
-                        heard,
-                        expected
-                    ) >=
-                        .7
-                );
-            }
+            candidate =>
+                speechTrainingExpectedPhraseMatches(
+                    observed,
+                    candidate
+                )
         );
     }
 
