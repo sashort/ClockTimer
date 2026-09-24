@@ -882,6 +882,61 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /get trainingMode\(\)[\s\S]*training-mode/
+);
+assert.match(
+    speechMicBarSource,
+    /get trainingLocked\(\)[\s\S]*training-locked/
+);
+assert.match(
+    speechMicBarSource,
+    /"speech-training-target-selected"/
+);
+assert.match(
+    speechMicBarSource,
+    /data-speech-system-command="commands"/
+);
+assert.match(
+    speechMicBarSource,
+    /source:\s*"mic-bar"[\s\S]*phrase:\s*"commands"/
+);
+assert.match(
+    speechMicBarSource,
+    /source:\s*"command"[\s\S]*category:\s*categoryKey[\s\S]*card:\s*card\.key/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-phrase\.training-selected[\s\S]*--speech-training-category-color[\s\S]*--speech-training-contrast/
+);
+assert.match(
+    speechMicBarSource,
+    /blackContrast[\s\S]*whiteContrast[\s\S]*black[\s\S]*white/
+);
+
+bar.trainingMode = true;
+assert.equal(
+    bar.hasAttribute("training-mode"),
+    true,
+    "mic bar should expose training mode"
+);
+bar.trainingLocked = true;
+assert.equal(
+    bar.hasAttribute("training-locked"),
+    true,
+    "mic bar should lock phrase selection while listening"
+);
+bar.trainingMode = false;
+assert.equal(
+    bar.hasAttribute("training-mode"),
+    false
+);
+assert.equal(
+    bar.hasAttribute("training-locked"),
+    false
+);
+
+assert.match(
+    speechMicBarSource,
     /id="optionsHeader">Speech Commands<\/div>/
 );
 assert.match(
