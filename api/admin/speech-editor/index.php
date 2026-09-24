@@ -211,6 +211,15 @@ header('Referrer-Policy: no-referrer');
                     </div>
                     <div id="speechTrainingModelContributors" class="speech-training-contributors"></div>
                 </section>
+                <section id="speechDivergenceReview" class="speech-divergence-review" hidden>
+                    <div class="speech-training-section-heading">
+                        <div>
+                            <h3>Divergent Commands <span id="speechDivergenceCount" class="speech-divergence-count">0</span></h3>
+                            <p>Unexpected phrase families awaiting developer review.</p>
+                        </div>
+                    </div>
+                    <div id="speechDivergenceList" class="speech-divergence-list"></div>
+                </section>
                 <div id="phraseList" class="phrase-list" role="tree" aria-label="Configured speech phrases"></div>
             </section>
 
