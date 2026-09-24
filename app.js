@@ -351,6 +351,33 @@
     };
 
     const clockTimer = $("#clockTimer");
+
+    const speechTransactionDate =
+        () => {
+            const value =
+                globalThis.SpeechMenu
+                    ?.executionContext
+                    ?.utteranceStartedAt;
+
+            if (!value) {
+                return undefined;
+            }
+
+            const date =
+                new Date(
+                    value
+                );
+
+            return Number.isNaN(
+                date.getTime()
+            )
+                ? undefined
+                : date;
+        };
+
+    clockTimer.transactionTimestampProvider =
+        speechTransactionDate;
+
     const clockPreview = $("#clockPreview");
     if (clockPreview) {
         clockPreview.keepAspectRatio =
@@ -9639,26 +9666,63 @@
         downButton.hidden = false;
     }
 
-    async function endCurrentIntervalOrTrip() {
-        const interval = clockTimer.getActiveIntervalState?.(new Date());
-        const intervalType = String(interval?.intervalType || "").toLowerCase();
+    async function endCurrentIntervalOrTrip(
+        transactionTime =
+            speechTransactionDate()
+    ) {
+        const effectiveTime =
+            transactionTime instanceof Date &&
+            !Number.isNaN(
+                transactionTime.getTime()
+            )
+                ? new Date(
+                    transactionTime.getTime()
+                )
+                : new Date();
 
-        if (intervalType === "break" || intervalType === "lunch") {
-            await clockTimer.endInterval();
+        const interval =
+            clockTimer.getActiveIntervalState
+                ?.(
+                    effectiveTime
+                );
+
+        const intervalType =
+            String(
+                interval?.intervalType ||
+                ""
+            )
+                .toLowerCase();
+
+        if (
+            intervalType === "break" ||
+            intervalType === "lunch"
+        ) {
+            await clockTimer.endInterval(
+                transactionTime
+            );
             updateSummaryValues();
             renderTripActionState();
             return;
         }
 
         if (intervalType === "down") {
-            await clockTimer.endInterval();
+            await clockTimer.endInterval(
+                transactionTime
+            );
             renderTripActionState();
             return;
         }
 
-        const tripMoment = new Date();
-        await clockTimer.stop();
-        await clockTimer.resetCompletedTrip();
+        const tripMoment =
+            effectiveTime;
+
+        await clockTimer.stop(
+            transactionTime
+        );
+
+        await clockTimer
+            .resetCompletedTrip();
+
         await beginNewTripWorkflow({
             initialValue: "",
             tripMoment
@@ -9750,7 +9814,11 @@
             undefined;
     }
 
-    async function startBreakInterval(kind) {
+    async function startBreakInterval(
+        kind,
+        transactionTime =
+            speechTransactionDate()
+    ) {
         const configs = {
             break: { type: "break", length: "15:00", attributes: { breakType: "break" } },
             lunch: { type: "lunch", length: "30:00", attributes: { breakType: "lunch" } },
@@ -9759,10 +9827,34 @@
         const config = configs[kind];
         if (!config) return false;
 
-        const active = clockTimer.getActiveIntervalState?.(new Date());
-        if (String(active?.intervalType || "").toLowerCase() === "down") {
+        const lookupTime =
+            transactionTime instanceof Date &&
+            !Number.isNaN(
+                transactionTime.getTime()
+            )
+                ? transactionTime
+                : new Date();
+
+        const active =
+            clockTimer
+                .getActiveIntervalState
+                ?.(
+                    lookupTime
+                );
+
+        if (
+            String(
+                active?.intervalType ||
+                ""
+            )
+                .toLowerCase() ===
+                "down"
+        ) {
             const ended =
-                await clockTimer.endInterval();
+                await clockTimer
+                    .endInterval(
+                        transactionTime
+                    );
 
             updateSummaryValues();
             renderTripActionState();
@@ -9772,13 +9864,16 @@
             }
         }
 
-        const result = await clockTimer.startInterval(
-            config.type,
-            config.length,
-            config.attributes,
-            "2:30",
-            "2:30"
-        );
+        const result =
+            await clockTimer
+                .startInterval(
+                    config.type,
+                    config.length,
+                    config.attributes,
+                    "2:30",
+                    "2:30",
+                    transactionTime
+                );
 
         updateSummaryValues();
         renderTripActionState();
@@ -11193,6 +11288,9 @@
             },
 
             async confirmBreakType() {
+                const transactionTime =
+                    speechTransactionDate();
+
                 const button =
                     breakDialog
                         .querySelector(
@@ -11219,13 +11317,17 @@
                 );
 
                 return startBreakInterval(
-                    kind
+                    kind,
+                    transactionTime
                 );
             },
 
             async startBreak(
                 kind
             ) {
+                const transactionTime =
+                    speechTransactionDate();
+
                 if (!kind) {
                     return false;
                 }
@@ -11241,11 +11343,15 @@
                 }
 
                 return startBreakInterval(
-                    kind
+                    kind,
+                    transactionTime
                 );
             },
 
             async startDownTime() {
+                const transactionTime =
+                    speechTransactionDate();
+
                 if (
                     downButton?.disabled
                 ) {
@@ -11255,7 +11361,12 @@
                 const result =
                     await clockTimer
                         .startInterval(
-                            "down"
+                            "down",
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            transactionTime
                         );
 
                 if (result) {
@@ -11274,9 +11385,14 @@
             },
 
             async resumeTrip() {
+                const transactionTime =
+                    speechTransactionDate();
+
                 const result =
                     await clockTimer
-                        .endInterval();
+                        .endInterval(
+                            transactionTime
+                        );
 
                 renderTripActionState();
 
@@ -11286,14 +11402,26 @@
             },
 
             async endTrip() {
-                return endCurrentIntervalOrTrip();
+                const transactionTime =
+                    speechTransactionDate();
+
+                return endCurrentIntervalOrTrip(
+                    transactionTime
+                );
             },
 
             async cancelDownTime() {
-                await clockTimer
-                    .endInterval();
+                const transactionTime =
+                    speechTransactionDate();
 
-                return endCurrentIntervalOrTrip();
+                await clockTimer
+                    .endInterval(
+                        transactionTime
+                    );
+
+                return endCurrentIntervalOrTrip(
+                    transactionTime
+                );
             },
 
             changeGoal(
@@ -11724,6 +11852,9 @@
             },
 
             async confirmBreakPromptYes() {
+                const transactionTime =
+                    speechTransactionDate();
+
                 const dialog =
                     $("#speechBreakConfirmDialog");
                 const state =
@@ -11751,7 +11882,8 @@
                     "start"
                 ) {
                     return startBreakInterval(
-                        "lunch"
+                        "lunch",
+                        transactionTime
                     );
                 }
 
@@ -11759,7 +11891,9 @@
                     state.mode ===
                     "end"
                 ) {
-                    await endCurrentIntervalOrTrip();
+                    await endCurrentIntervalOrTrip(
+                        transactionTime
+                    );
                     return true;
                 }
 
