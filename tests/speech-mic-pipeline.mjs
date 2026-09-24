@@ -1117,11 +1117,19 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /!pool\.length[\s\S]*#hasAvailableContinuation\([\s\S]*utterance\.transcript[\s\S]*#finishUtterance\([\s\S]*"no-candidates"[\s\S]*false[\s\S]*"utteranceUnrecognized"/
+    /#controlCandidatePool\([\s\S]*#wakePhrase[\s\S]*#sleepPhrase[\s\S]*extrapolatePattern\([\s\S]*#phraseCanContinue/
 );
 assert.match(
     speechMenuSource,
-    /#hasAvailableContinuation\([\s\S]*#availableCandidates\(\)[\s\S]*#elementContinuationDepth/
+    /const controlPool[\s\S]*#controlCandidatePool\([\s\S]*if \(controlPool\.length\)[\s\S]*pool = controlPool/
+);
+assert.match(
+    speechMenuSource,
+    /!pool\.length[\s\S]*#finishUtterance\([\s\S]*"no-candidates"[\s\S]*false[\s\S]*"utteranceUnrecognized"/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /#hasAvailableContinuation/
 );
 assert.match(
     speechMenuSource,
