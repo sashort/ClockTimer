@@ -908,3 +908,8 @@ assert.match(
     sherpaRuntimeHtaccessSource,
     /wasm\|data\|onnx\|js\|txt/
 );
+
+assert.match(
+    app,
+    /SHERPA_ASSET_VERSION\s*=\s*"2026-09-23-1"[\s\S]*speechRuntimeVersion[\s\S]*\?sherpa=/
+);
