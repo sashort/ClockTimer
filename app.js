@@ -6636,6 +6636,16 @@
                 "";
         }
 
+        speechTrainingPendingBusy =
+            false;
+
+        speechTrainingPendingCancel.disabled =
+            false;
+        speechTrainingPendingDiscard.disabled =
+            false;
+        speechTrainingPendingCommit.disabled =
+            false;
+
         speechMicBar.trainingLocked =
             true;
 
@@ -8118,26 +8128,46 @@
                         );
                 }
 
-                void persistInAppSpeechTrainingSample(
-                    speechTrainingTarget,
-                    observed
-                )
-                    .catch(
-                        error => {
-                            console.error(
-                                error
-                            );
-
-                            if (
-                                speechTrainingActive
-                            ) {
-                                setSpeechTrainingPrompt(
-                                    "error",
-                                    "Save failed"
-                                );
-                            }
-                        }
-                    );
+                speechTrainingPendingSamples
+                    .push({
+                        target: {
+                            source:
+                                speechTrainingTarget
+                                    .source,
+                            category:
+                                speechTrainingTarget
+                                    .category,
+                            card:
+                                speechTrainingTarget
+                                    .card,
+                            phrase:
+                                speechTrainingTarget
+                                    .phrase,
+                            display:
+                                speechTrainingTarget
+                                    .display,
+                            pattern:
+                                speechTrainingTarget
+                                    .pattern,
+                            commandId:
+                                speechTrainingTarget
+                                    .commandId,
+                            commandKey:
+                                speechTrainingTarget
+                                    .commandKey
+                        },
+                        observed,
+                        pipeline:
+                            globalThis
+                                .SpeechMenu
+                                ?.pipeline,
+                        runtimeRevision:
+                            globalThis
+                                .SherpaRecognizer
+                                ?.runtimeRevision,
+                        capturedAt:
+                            Date.now()
+                    });
             }
         );
 
