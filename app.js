@@ -1018,6 +1018,151 @@
         return event.composedPath().find(node => node instanceof HTMLButtonElement);
     }
 
+    mainMenu
+        ?.addEventListener(
+            "toggle",
+            event => {
+                if (
+                    event.newState ===
+                    "open"
+                ) {
+                    requestAnimationFrame(
+                        () => {
+                            mainMenuLayoutState
+                                .panelIndex =
+                                0;
+
+                            layoutMainMenuPanels({
+                                panelIndex:
+                                    0
+                            });
+                        }
+                    );
+
+                    return;
+                }
+
+                requestAnimationFrame(
+                    () => {
+                        if (
+                            !mainMenuIsOpen()
+                        ) {
+                            resetMainMenuLayout();
+                        }
+                    }
+                );
+            }
+        );
+
+    mainMenuViewport
+        ?.addEventListener(
+            "scroll",
+            () => {
+                updateMainMenuIndicator();
+
+                clearTimeout(
+                    mainMenuLayoutState
+                        .scrollIdleTimer
+                );
+
+                mainMenuLayoutState
+                    .scrollIdleTimer =
+                    setTimeout(
+                        () => {
+                            const width =
+                                mainMenuViewport
+                                    .clientWidth ||
+                                1;
+
+                            mainMenuLayoutState
+                                .panelIndex =
+                                Math.max(
+                                    0,
+                                    Math.min(
+                                        getMainMenuPanels()
+                                            .length -
+                                            1,
+                                        Math.round(
+                                            mainMenuViewport
+                                                .scrollLeft /
+                                            width
+                                        )
+                                    )
+                                );
+
+                            delete mainMenu
+                                .dataset
+                                .menuDragging;
+
+                            updateMainMenuIndicator();
+                        },
+                        90
+                    );
+            },
+            {
+                passive: true
+            }
+        );
+
+    mainMenuViewport
+        ?.addEventListener(
+            "pointerdown",
+            () => {
+                mainMenu.dataset
+                    .menuDragging =
+                    "true";
+            },
+            {
+                passive: true
+            }
+        );
+
+    for (
+        const type of [
+            "pointerup",
+            "pointercancel"
+        ]
+    ) {
+        mainMenuViewport
+            ?.addEventListener(
+                type,
+                () => {
+                    delete mainMenu
+                        .dataset
+                        .menuDragging;
+                },
+                {
+                    passive: true
+                }
+            );
+    }
+
+    const scheduleMainMenuViewportLayout =
+        () => {
+            if (mainMenuIsOpen()) {
+                scheduleMainMenuLayout();
+            }
+        };
+
+    globalThis
+        .addEventListener(
+            "resize",
+            scheduleMainMenuViewportLayout,
+            {
+                passive: true
+            }
+        );
+
+    globalThis
+        .visualViewport
+        ?.addEventListener(
+            "resize",
+            scheduleMainMenuViewportLayout,
+            {
+                passive: true
+            }
+        );
+
     document.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
         const button = getEventButton(event);
