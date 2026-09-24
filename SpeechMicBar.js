@@ -512,6 +512,25 @@ class SpeechMicBar extends HTMLElement {
                     font: 600 12px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
                 }
 
+                #text > code.streaming-core-phrase {
+                    display: inline-block;
+                    max-width: none;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    vertical-align: baseline;
+                    color: #a9ddf7;
+                    border-color:
+                        rgb(
+                            169 221 247 /
+                            48%
+                        );
+                    background:
+                        rgb(
+                            169 221 247 /
+                            14%
+                        );
+                }
+
                 #text > code.streaming-context {
                     display: inline-block;
                     max-width: none;
@@ -1805,7 +1824,7 @@ class SpeechMicBar extends HTMLElement {
                         !globalThis.SpeechMenu
                             ?.muted
                     ) {
-                        this.#showText(
+                        this.#showStreamingPhrase(
                             this.#currentTranscript
                         );
                     }
@@ -1821,7 +1840,7 @@ class SpeechMicBar extends HTMLElement {
                         !globalThis.SpeechMenu
                             ?.muted
                     ) {
-                        this.#showText(
+                        this.#showStreamingPhrase(
                             this.#currentTranscript
                         );
                     }
@@ -1841,7 +1860,7 @@ class SpeechMicBar extends HTMLElement {
                         ) !==
                         "preprocessed"
                     ) {
-                        this.#showText(
+                        this.#showStreamingPhrase(
                             this.#currentTranscript
                         );
                     }
@@ -2211,6 +2230,148 @@ class SpeechMicBar extends HTMLElement {
         this.#showStatus(text);
     }
 
+    #corePhraseParts(
+        text
+    ) {
+        const transcript =
+            String(
+                text || ""
+            )
+                .trim();
+
+        const readyAt =
+            /^ready\s+at(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (readyAt) {
+            return {
+                core: "Ready At",
+                rest:
+                    transcript.slice(
+                        readyAt[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const ready =
+            /^ready(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (ready) {
+            return {
+                core: "Ready",
+                rest:
+                    transcript.slice(
+                        ready[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const syncOff =
+            /^sync\s+off(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (syncOff) {
+            return {
+                core: "Sync Off",
+                rest:
+                    transcript.slice(
+                        syncOff[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const sync =
+            /^sync(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (sync) {
+            return {
+                core: "Sync",
+                rest:
+                    transcript.slice(
+                        sync[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        return undefined;
+    }
+
+    #showStreamingPhrase(
+        text
+    ) {
+        const parts =
+            this.#corePhraseParts(
+                text
+            );
+
+        if (!parts) {
+            this.#showText(
+                text
+            );
+            return;
+        }
+
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.id =
+            "text";
+
+        const code =
+            document.createElement(
+                "code"
+            );
+
+        code.className =
+            "streaming-core-phrase";
+
+        code.textContent =
+            parts.core;
+
+        span.append(
+            code
+        );
+
+        if (parts.rest) {
+            span.append(
+                " " +
+                parts.rest
+            );
+        }
+
+        this.#activity
+            .replaceChildren(
+                span
+            );
+
+        this.#text =
+            span;
+    }
+
     #showStreamingContext(
         detail
     ) {
@@ -2252,15 +2413,52 @@ class SpeechMicBar extends HTMLElement {
         span.id =
             "text";
 
-        if (
-            change.sourceStart >
-                0
-        ) {
+        const prefix =
+            original.slice(
+                0,
+                change.sourceStart
+            );
+
+        const coreParts =
+            this.#corePhraseParts(
+                prefix
+            );
+
+        if (coreParts) {
+            const coreCode =
+                document.createElement(
+                    "code"
+                );
+
+            coreCode.className =
+                "streaming-core-phrase";
+
+            coreCode.textContent =
+                coreParts.core;
+
             span.append(
-                original.slice(
-                    0,
-                    change.sourceStart
+                coreCode
+            );
+
+            if (coreParts.rest) {
+                span.append(
+                    " " +
+                    coreParts.rest
+                );
+            }
+
+            if (
+                prefix.length &&
+                !/\s$/.test(
+                    prefix
                 )
+            ) {
+                span.append(" ");
+            }
+        }
+        else if (prefix) {
+            span.append(
+                prefix
             );
         }
 
