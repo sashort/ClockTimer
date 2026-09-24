@@ -473,6 +473,8 @@
                 canCreateUsers ||
                 canManageTokens
             );
+
+        syncSpeechTrainingControls();
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -484,6 +486,26 @@
     const mainMenu = $("#mainMenu");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
+    const speechTrainingButton = $("#speechTrainingButton");
+    const speechTrainingChoiceDialog = $("#speechTrainingChoiceDialog");
+    const speechTrainingWidget = $("#speechTrainingWidget");
+    const speechTrainingDragHandle = $("#speechTrainingDragHandle");
+    const speechTrainingPhrase = $("#speechTrainingPhrase");
+    const speechTrainingHeard = $("#speechTrainingHeard");
+    const speechTrainingPrompt = $("#speechTrainingPrompt");
+    const speechTrainingCount = $("#speechTrainingCount");
+    const speechTrainingStartStop = $("#speechTrainingStartStop");
+
+    let speechRecognitionLanguageAvailable = false;
+    let speechTrainingConnectionAvailable = false;
+    let inAppSpeechTrainingEnabled = false;
+    let speechTrainingActive = false;
+    let speechTrainingTarget;
+    let speechTrainingUtteranceCount = 0;
+    let speechTrainingCsrfToken;
+    let speechTrainingExecutionBeforeStart = true;
+    let speechTrainingPromptTimer;
+    const speechTrainingSeenUtterances = new Set();
 
     new MutationObserver(
         records => {
@@ -579,6 +601,10 @@
 
     const disableSpeechRecognitionRuntime =
         async () => {
+            if (speechTrainingActive) {
+                return false;
+            }
+
             setSpeechButtonState(
                 false,
                 false
@@ -657,7 +683,10 @@
     speechRecognitionButton?.addEventListener(
         "click",
         async () => {
-            if (speechActivationPending) return;
+            if (
+                speechActivationPending ||
+                speechTrainingActive
+            ) return;
 
             const enabled =
                 speechRecognitionButton.getAttribute(
@@ -2583,6 +2612,8 @@
     }
 
     function syncConnectionUI(connected) {
+        speechTrainingConnectionAvailable =
+            Boolean(connected);
         profileMenuButton.hidden = !connected;
         const permissions =
             Number(
@@ -2670,6 +2701,8 @@
         } else {
             menuAccountRow?.append(authButton);
         }
+
+        syncSpeechTrainingControls();
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
@@ -6042,6 +6075,575 @@
             });
         }
     );
+
+    function hasSpeechDeveloperAccess() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            DEVELOPER_MENU_PERMISSION_MASK
+        );
+    }
+
+    function syncSpeechTrainingControls() {
+        if (speechTrainingButton) {
+            const unavailable =
+                !signedInProfile ||
+                !speechTrainingConnectionAvailable;
+
+            speechTrainingButton.disabled =
+                unavailable ||
+                speechTrainingActive;
+
+            speechTrainingButton.setAttribute(
+                "aria-pressed",
+                String(
+                    inAppSpeechTrainingEnabled
+                )
+            );
+
+            speechTrainingButton.title =
+                speechTrainingActive
+                    ? "Stop active training before disabling Speech Training"
+                    : unavailable
+                        ? "Sign in and connect to use Speech Training"
+                        : inAppSpeechTrainingEnabled
+                            ? "Disable Speech Training"
+                            : "Enable Speech Training";
+        }
+
+        if (speechRecognitionButton) {
+            speechRecognitionButton.disabled =
+                !speechRecognitionLanguageAvailable ||
+                speechTrainingActive;
+        }
+
+        syncSpeechTrainingStartButton();
+    }
+
+    function syncSpeechTrainingStartButton() {
+        if (!speechTrainingStartStop) {
+            return;
+        }
+
+        const speechMenu =
+            globalThis.SpeechMenu;
+
+        const muted =
+            Boolean(
+                speechMenu?.muted
+            );
+
+        const ready =
+            inAppSpeechTrainingEnabled &&
+            Boolean(
+                speechTrainingTarget
+            ) &&
+            Boolean(
+                speechMenu?.started
+            ) &&
+            !muted;
+
+        speechTrainingStartStop.disabled =
+            speechTrainingActive
+                ? false
+                : !ready;
+
+        speechTrainingStartStop.textContent =
+            speechTrainingActive
+                ? "Stop"
+                : "Start";
+
+        speechTrainingStartStop.dataset.active =
+            String(
+                speechTrainingActive
+            );
+
+        if (
+            !speechTrainingActive &&
+            inAppSpeechTrainingEnabled
+        ) {
+            setSpeechTrainingPrompt(
+                muted
+                    ? "muted"
+                    : speechTrainingTarget
+                        ? "ready"
+                        : "select",
+                muted
+                    ? "Muted"
+                    : speechTrainingTarget
+                        ? "Ready"
+                        : "Select"
+            );
+        }
+    }
+
+    function setSpeechTrainingPrompt(
+        state,
+        label
+    ) {
+        if (!speechTrainingWidget) {
+            return;
+        }
+
+        speechTrainingWidget.dataset.prompt =
+            state || "ready";
+
+        if (speechTrainingPrompt) {
+            speechTrainingPrompt.textContent =
+                label ||
+                state ||
+                "Ready";
+        }
+    }
+
+    function resetSpeechTrainingTarget({
+        clearSelection = true
+    } = {}) {
+        speechTrainingTarget =
+            undefined;
+        speechTrainingUtteranceCount =
+            0;
+        speechTrainingSeenUtterances
+            .clear();
+
+        if (speechTrainingPhrase) {
+            speechTrainingPhrase.textContent =
+                "Select a command";
+        }
+
+        if (speechTrainingHeard) {
+            speechTrainingHeard.textContent =
+                "Heard: —";
+        }
+
+        if (speechTrainingCount) {
+            speechTrainingCount.textContent =
+                "0";
+        }
+
+        if (clearSelection) {
+            speechMicBar
+                ?.clearTrainingTarget?.();
+        }
+
+        syncSpeechTrainingStartButton();
+    }
+
+    async function ensureSpeechTrainingCsrfToken() {
+        if (speechTrainingCsrfToken) {
+            return speechTrainingCsrfToken;
+        }
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/users/",
+                {
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (
+            !response.ok ||
+            typeof data.csrfToken !==
+                "string" ||
+            data.csrfToken.length <
+                32
+        ) {
+            throw new Error(
+                data.message ||
+                "Unable to authorize speech training."
+            );
+        }
+
+        speechTrainingCsrfToken =
+            data.csrfToken;
+
+        return speechTrainingCsrfToken;
+    }
+
+    async function persistInAppSpeechTrainingSample(
+        target,
+        observed
+    ) {
+        if (
+            !target ||
+            !observed ||
+            !signedInProfile
+        ) {
+            return false;
+        }
+
+        const csrf =
+            await ensureSpeechTrainingCsrfToken();
+
+        const commandIdentity =
+            target.commandId ||
+            target.commandKey ||
+            target.card ||
+            "command";
+
+        const componentKey =
+            (
+                target.source ===
+                    "mic-bar"
+                    ? "system:speech-controls"
+                    : (
+                        "app:" +
+                        String(
+                            target.category ||
+                            "settings"
+                        ) +
+                        ":" +
+                        String(
+                            target.card ||
+                            "default"
+                        )
+                    )
+            ).slice(
+                0,
+                500
+            );
+
+        const phraseKey =
+            (
+                String(
+                    commandIdentity
+                ) +
+                ":" +
+                String(
+                    target.phrase ||
+                    target.display ||
+                    ""
+                )
+            ).slice(
+                0,
+                500
+            );
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/speech-corrections/?language=en-US",
+                {
+                    method:
+                        "POST",
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Content-Type":
+                            "application/json",
+                        "X-CSRF-Token":
+                            csrf
+                    },
+                    body:
+                        JSON.stringify({
+                            action:
+                                "sample",
+                            language:
+                                "en-US",
+                            componentKey,
+                            phraseKey,
+                            phrase:
+                                target.display ||
+                                target.phrase,
+                            canonical:
+                                target.phrase ||
+                                target.display,
+                            observed,
+                            source:
+                                "manual",
+                            trainingStyle:
+                                "in-app",
+                            pipeline:
+                                globalThis
+                                    .SpeechMenu
+                                    ?.pipeline,
+                            runtimeRevision:
+                                globalThis
+                                    .SherpaRecognizer
+                                    ?.runtimeRevision,
+                            metadata: {
+                                trainingTargetSource:
+                                    target.source,
+                                commandId:
+                                    target.commandId ||
+                                    null,
+                                commandKey:
+                                    target.commandKey ||
+                                    null
+                            }
+                        })
+                }
+            );
+
+        if (!response.ok) {
+            const data =
+                await response
+                    .json()
+                    .catch(
+                        () => ({})
+                    );
+
+            throw new Error(
+                data.message ||
+                "Unable to save speech training sample."
+            );
+        }
+
+        return true;
+    }
+
+    async function enableInAppSpeechTraining() {
+        if (
+            speechTrainingActive ||
+            !signedInProfile ||
+            !speechTrainingConnectionAvailable
+        ) {
+            return false;
+        }
+
+        await ensureSpeechRuntime();
+
+        const started =
+            await enableSpeechRecognitionRuntime();
+
+        if (!started) {
+            throw new Error(
+                "Speech recognition is unavailable."
+            );
+        }
+
+        setSpeechButtonState(
+            true,
+            Boolean(
+                globalThis
+                    .SpeechMenu
+                    ?.muted
+            )
+        );
+        setSpeechLayoutState(
+            true
+        );
+
+        inAppSpeechTrainingEnabled =
+            true;
+
+        speechMicBar.trainingMode =
+            true;
+        speechMicBar.trainingLocked =
+            false;
+
+        resetSpeechTrainingTarget();
+
+        if (speechTrainingWidget) {
+            speechTrainingWidget.hidden =
+                false;
+        }
+
+        globalThis.SpeechMenu
+            ?.extrapolatePhrases?.();
+
+        await speechMicBar
+            ?.showOptions?.(
+                globalThis
+                    .SpeechMenu
+                    ?.phraseGroups ||
+                []
+            );
+
+        mainMenu
+            ?.hidePopover?.();
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    function disableInAppSpeechTraining() {
+        if (speechTrainingActive) {
+            return false;
+        }
+
+        inAppSpeechTrainingEnabled =
+            false;
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingPromptTimer =
+            undefined;
+
+        speechMicBar.trainingLocked =
+            false;
+        speechMicBar.trainingMode =
+            false;
+
+        void speechMicBar
+            ?.hideOptions?.();
+
+        if (speechTrainingWidget) {
+            speechTrainingWidget.hidden =
+                true;
+            speechTrainingWidget.style.left =
+                "";
+            speechTrainingWidget.style.top =
+                "";
+            speechTrainingWidget.style.bottom =
+                "";
+            speechTrainingWidget.style.transform =
+                "";
+        }
+
+        resetSpeechTrainingTarget({
+            clearSelection:
+                false
+        });
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    function startInAppSpeechTraining() {
+        const speechMenu =
+            globalThis.SpeechMenu;
+
+        if (
+            !inAppSpeechTrainingEnabled ||
+            speechTrainingActive ||
+            !speechTrainingTarget ||
+            !speechMenu?.started ||
+            speechMenu.muted
+        ) {
+            syncSpeechTrainingStartButton();
+            return false;
+        }
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingSeenUtterances
+            .clear();
+
+        speechTrainingExecutionBeforeStart =
+            speechMenu.executionEnabled;
+
+        speechMenu.executionEnabled =
+            false;
+
+        speechTrainingActive =
+            true;
+        speechMicBar.trainingLocked =
+            true;
+
+        setSpeechTrainingPrompt(
+            "speak",
+            "Speak"
+        );
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    function stopInAppSpeechTraining({
+        forced = false
+    } = {}) {
+        if (!speechTrainingActive) {
+            if (forced) {
+                disableInAppSpeechTraining();
+            }
+
+            return false;
+        }
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingPromptTimer =
+            undefined;
+
+        speechTrainingActive =
+            false;
+        speechMicBar.trainingLocked =
+            false;
+
+        if (globalThis.SpeechMenu) {
+            globalThis.SpeechMenu
+                .executionEnabled =
+                speechTrainingExecutionBeforeStart;
+        }
+
+        setSpeechTrainingPrompt(
+            globalThis.SpeechMenu
+                ?.muted
+                ? "muted"
+                : "ready",
+            globalThis.SpeechMenu
+                ?.muted
+                ? "Muted"
+                : "Ready"
+        );
+
+        syncSpeechTrainingControls();
+
+        if (forced) {
+            disableInAppSpeechTraining();
+        }
+
+        return true;
+    }
+
+    function openSpeechTrainingEditorMode() {
+        if (
+            !signedInProfile ||
+            !hasSpeechDeveloperAccess()
+        ) {
+            return false;
+        }
+
+        const opened =
+            window.open(
+                API_BASE +
+                "api/admin/speech-editor/?training=1",
+                "wmofSpeechEditor"
+            );
+
+        if (!opened) {
+            throw new Error(
+                "The Speech Editor training window was blocked by the browser."
+            );
+        }
+
+        return true;
+    }
 
     function openDialog(id, { fromPopover = false, reason = "user" } = {}) {
         const dialog = document.getElementById(id);
@@ -10640,8 +11242,18 @@
 
     function onDisconnected(event) {
         if (event.detail?.source === "disconnect") {
+            if (speechTrainingActive) {
+                stopInAppSpeechTraining({
+                    forced: true
+                });
+            } else if (inAppSpeechTrainingEnabled) {
+                disableInAppSpeechTraining();
+            }
+
             signedInProfile = undefined;
+            speechTrainingCsrfToken = undefined;
             for (const id of ["profileUsername", "firstName", "lastName", "preferredName"]) $("#" + id).value = "";
+            syncSpeechTrainingControls();
         }
         reserveSemanticEvent(event, "ClockTimer disconnected");
     }
@@ -12861,27 +13473,45 @@
             },
 
             openSpeechTraining() {
-                if (!signedInProfile) {
-                    throw new Error(
-                        "Sign in to use Speech Training."
-                    );
+                if (
+                    !signedInProfile ||
+                    !speechTrainingConnectionAvailable
+                ) {
+                    return false;
                 }
 
-                const opened =
-                    window.open(
-                        API_BASE +
-                        "api/admin/speech-editor/?training=1",
-                        "wmofSpeechEditor"
-                    );
-
-                if (!opened) {
-                    throw new Error(
-                        "The Speech Training window was blocked by the browser."
-                    );
+                if (speechTrainingActive) {
+                    return false;
                 }
 
                 mainMenu
                     ?.hidePopover?.();
+
+                if (inAppSpeechTrainingEnabled) {
+                    return disableInAppSpeechTraining();
+                }
+
+                if (
+                    hasSpeechDeveloperAccess()
+                ) {
+                    openDialogElement(
+                        speechTrainingChoiceDialog,
+                        {
+                            reason:
+                                "speech-training-choice"
+                        }
+                    );
+
+                    return true;
+                }
+
+                void enableInAppSpeechTraining()
+                    .catch(
+                        error =>
+                            console.error(
+                                error
+                            )
+                    );
 
                 return true;
             },
@@ -14594,10 +15224,12 @@
             SpeechMenu.refresh();
         }
 
-        if (speechRecognitionButton) {
-            speechRecognitionButton.disabled =
-                !englishSpeech;
-        }
+        speechRecognitionLanguageAvailable =
+            Boolean(
+                englishSpeech
+            );
+
+        syncSpeechTrainingControls();
 
         speechMicBar?.addEventListener("started", () => {
             setSpeechButtonState(true, false);
@@ -14619,20 +15251,38 @@
             cancelPendingSpeechReady();
             setSpeechButtonState(false, false);
             setSpeechLayoutState(false);
+
+            if (speechTrainingActive) {
+                stopInAppSpeechTraining({
+                    forced: true
+                });
+            }
+
+            syncSpeechTrainingControls();
         });
 
         speechMicBar?.addEventListener("speechCaptureEnded", () => {
             cancelPendingSpeechReady();
             setSpeechButtonState(false, false);
             setSpeechLayoutState(false);
+
+            if (speechTrainingActive) {
+                stopInAppSpeechTraining({
+                    forced: true
+                });
+            }
+
+            syncSpeechTrainingControls();
         });
 
         speechMicBar?.addEventListener("muted", () => {
             setSpeechButtonState(true, true);
+            syncSpeechTrainingControls();
         });
 
         speechMicBar?.addEventListener("unmuted", () => {
             setSpeechButtonState(true, false);
+            syncSpeechTrainingControls();
         });
 
         if (
