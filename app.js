@@ -97,17 +97,14 @@
         globalThis
             .WMOFUtilities;
 
-    const speechRuntimeVersion = (() => {
-        try {
-            return new URL(
-                document.currentScript?.src ||
-                    location.href
-            ).search;
-        }
-        catch {
-            return "";
-        }
-    })();
+    const SHERPA_ASSET_VERSION =
+        "2026-09-23-1";
+
+    const speechRuntimeVersion =
+        "?sherpa=" +
+        encodeURIComponent(
+            SHERPA_ASSET_VERSION
+        );
 
     const speechSearchParams =
         new URLSearchParams(
