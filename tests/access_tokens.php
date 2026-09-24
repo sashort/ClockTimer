@@ -474,6 +474,154 @@ test(
     }
 );
 
+$queryTokenId = seed_token(
+    'query-token',
+    1,
+    PERMISSION_DEVELOPER,
+    null,
+    false,
+    false
+);
+
+test(
+    'query parameter token authorizes and establishes scoped grant',
+    function () use ($queryTokenId): void {
+        $_SESSION = [];
+        $_GET = [
+            'access_token' =>
+                'query-token',
+        ];
+
+        $authorization =
+            existing_guarded_access(
+                [PERMISSION_DEVELOPER],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            );
+
+        $grant =
+            access_token_session_grant(
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            );
+
+        expect(
+            $authorization !== null &&
+            $authorization['mode'] === 'token_query' &&
+            $grant !== null &&
+            $grant['token_id'] === $queryTokenId
+        );
+
+        $_GET = [];
+        $_SESSION = [];
+    }
+);
+
+test(
+    'invalid query token denies instead of falling back to signed-in session',
+    function (): void {
+        $_SESSION = [
+            'user_id' => 1,
+        ];
+        $_GET = [
+            'access_token' =>
+                'definitely-invalid',
+        ];
+
+        rejects(
+            fn() =>
+                existing_guarded_access(
+                    [PERMISSION_DEVELOPER],
+                    ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+                ),
+            401,
+            'invalid_access_token'
+        );
+
+        $_GET = [];
+        $_SESSION = [];
+    }
+);
+
+$bearerTokenId = seed_token(
+    'bearer-token',
+    1,
+    PERMISSION_DEVELOPER,
+    null,
+    false,
+    false
+);
+
+test(
+    'bearer token path remains supported',
+    function () use ($bearerTokenId): void {
+        $_SESSION = [];
+        $_GET = [];
+        $_SERVER[
+            'HTTP_AUTHORIZATION'
+        ] =
+            'Bearer bearer-token';
+
+        $authorization =
+            authorize_guarded_access(
+                [PERMISSION_DEVELOPER],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            );
+
+        expect(
+            $authorization['mode'] ===
+                'token_bearer' &&
+            $authorization['token_id'] ===
+                $bearerTokenId
+        );
+
+        unset(
+            $_SERVER[
+                'HTTP_AUTHORIZATION'
+            ]
+        );
+    }
+);
+
+$formTokenId = seed_token(
+    'form-token',
+    1,
+    PERMISSION_DEVELOPER,
+    null,
+    false,
+    false
+);
+
+test(
+    'form token path remains supported',
+    function () use ($formTokenId): void {
+        $_SESSION = [];
+        $_GET = [];
+        $_POST = [
+            'access_token' =>
+                'form-token',
+        ];
+
+        $authorization =
+            authorize_guarded_access(
+                [PERMISSION_DEVELOPER],
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
+                true
+            );
+
+        expect(
+            $authorization['mode'] ===
+                'token_form' &&
+            $authorization['token_id'] ===
+                $formTokenId &&
+            access_token_session_grant(
+                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+            ) !== null
+        );
+
+        $_POST = [];
+        $_SESSION = [];
+    }
+);
+
 seed_token(
     'wrong-scope-permission',
     1,
