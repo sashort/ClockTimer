@@ -664,6 +664,17 @@
 
             this.#active.delete(entry.id);
 
+            entry.resolveFinished?.({
+                id:
+                    entry.id,
+                name:
+                    entry.name,
+                reason
+            });
+
+            entry.resolveFinished =
+                undefined;
+
             if (
                 entry.suspendsListening !==
                     false
@@ -719,6 +730,16 @@
                 );
             }
 
+            let resolveFinished;
+
+            const finished =
+                new Promise(
+                    resolve => {
+                        resolveFinished =
+                            resolve;
+                    }
+                );
+
             const entry = {
                 id: ++this.#sequence,
                 name,
@@ -741,7 +762,8 @@
                 suspendsListening:
                     Boolean(
                         suspendListening
-                    )
+                    ),
+                resolveFinished
             };
 
             if (suspendListening) {
@@ -813,6 +835,7 @@
                 return Object.freeze({
                     id: entry.id,
                     name,
+                    finished,
                     stop: () =>
                         this.stopSong(
                             entry.id
