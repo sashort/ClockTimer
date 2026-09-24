@@ -385,6 +385,10 @@ assert.match(html, /id="sqlConsoleButton"[^>]*>Database Access</);
 assert.match(html, /id="speechTrainingButton"[^>]*>Speech Training</);
 assert.match(html, /id="speechEditorButton"[^>]*hidden/);
 assert.match(html, /id="speechTrainingChoiceDialog"/);
+assert.match(html, /id="speechTrainingPendingDialog"/);
+assert.match(html, /id="speechTrainingPendingCommit"[^>]*>Commit</);
+assert.match(html, /id="speechTrainingPendingDiscard"[^>]*>Discard</);
+assert.match(html, /id="speechTrainingPendingCancel"[^>]*>Cancel</);
 assert.match(html, /id="speechTrainingInAppChoice"/);
 assert.match(html, /id="speechTrainingEditorChoice"/);
 assert.match(html, /id="speechTrainingWidget"[^>]*popover="manual"[^>]*hidden/);
@@ -525,7 +529,27 @@ assert.match(app, /startInAppSpeechTraining[\s\S]*speechMenu\.muted[\s\S]*speech
 assert.match(app, /stopInAppSpeechTraining[\s\S]*executionEnabled\s*=\s*speechTrainingExecutionBeforeStart/);
 assert.match(
     app,
-    /speech-training-telemetry[\s\S]*utteranceCommitted[\s\S]*utteranceUnrecognized[\s\S]*utteranceTranscribed[\s\S]*persistInAppSpeechTrainingSample/
+    /speech-training-telemetry[\s\S]*utteranceCommitted[\s\S]*utteranceUnrecognized[\s\S]*utteranceTranscribed[\s\S]*speechTrainingPendingSamples[\s\S]*\.push\(/
+);
+assert.match(
+    app,
+    /commitPendingSpeechTrainingSamples[\s\S]*persistInAppSpeechTrainingSample[\s\S]*\.shift\(/
+);
+assert.match(
+    app,
+    /promptPendingSpeechTrainingSamples[\s\S]*"Commit or discard them before changing phrases\."[\s\S]*"Commit or discard them before leaving Speech Training\."/
+);
+assert.match(
+    app,
+    /speech-training-target-requested[\s\S]*event\.preventDefault\(\)[\s\S]*promptPendingSpeechTrainingSamples[\s\S]*"switch"[\s\S]*selectTrainingTarget/
+);
+assert.match(
+    app,
+    /async function disableInAppSpeechTraining[\s\S]*promptPendingSpeechTrainingSamples[\s\S]*"exit"[\s\S]*decision === "cancel"/
+);
+assert.match(
+    app,
+    /async disconnectUser\(\)[\s\S]*speechTrainingActive[\s\S]*disableInAppSpeechTraining\(\)/
 );
 assert.match(
     app,
@@ -923,6 +947,14 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /"speech-training-target-selected"/
+);
+assert.match(
+    speechMicBarSource,
+    /"speech-training-target-requested"[\s\S]*cancelable:\s*true/
+);
+assert.match(
+    speechMicBarSource,
+    /selectTrainingTarget\([\s\S]*#selectTrainingTarget/
 );
 assert.match(
     speechMicBarSource,
