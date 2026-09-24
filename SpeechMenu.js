@@ -1,6 +1,6 @@
 class SpeechMenu {
-    static #wakePhrase = /^listen$/i;
-    static #sleepPhrase = /^mute$/i;
+    static #wakePhrase = /^(?:wake|listen|on)$/i;
+    static #sleepPhrase = /^(?:sleep|mute|off)$/i;
     static #stopped = true;
     static #sleeping = false;
     static #listeningSuspensions = 0;
@@ -2066,6 +2066,20 @@ class SpeechMenu {
         }
         else if (
             SpeechMenu.#test(
+                SpeechMenu.#wakePhrase,
+                transcript
+            )
+        ) {
+            pool = [{
+                kind: "wake",
+                transcript,
+                exact: true,
+                continuation: false,
+                order: 0
+            }];
+        }
+        else if (
+            SpeechMenu.#test(
                 SpeechMenu.#sleepPhrase,
                 transcript
             )
@@ -2328,6 +2342,24 @@ class SpeechMenu {
                     }
                 );
             }
+
+            return;
+        }
+
+        if (
+            SpeechMenu.#test(
+                SpeechMenu.#wakePhrase,
+                transcript
+            )
+        ) {
+            SpeechMenu.#emit(
+                "unmuted",
+                {
+                    utteranceId:
+                        utterance.id,
+                    transcript
+                }
+            );
 
             return;
         }
