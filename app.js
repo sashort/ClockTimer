@@ -11063,6 +11063,69 @@
             };
         };
 
+    const confirmSettingChange =
+        async (
+            value
+        ) => {
+            const response =
+                String(
+                    value ??
+                    ""
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!response) {
+                return false;
+            }
+
+            const audio =
+                globalThis
+                    .WMOFAudio;
+
+            try {
+                const cue =
+                    await audio
+                        ?.startSong?.(
+                            "info-tone",
+                            {
+                                bpm: 120
+                            }
+                        );
+
+                await cue
+                    ?.finished;
+            }
+            catch (
+                error
+            ) {
+                console.warn(
+                    "Setting confirmation cue failed:",
+                    error
+                );
+            }
+
+            audio
+                ?.speak?.(
+                    response.replace(
+                        /%/g,
+                        " percent"
+                    )
+                );
+
+            return {
+                speechResponse: {
+                    type:
+                        "dictation",
+                    value:
+                        response
+                }
+            };
+        };
+
     const goalPercentForScope =
         scope => {
             let summary;
@@ -11093,7 +11156,7 @@
         };
 
     const setGoalPercentValue =
-        (
+        async (
             scope,
             percent
         ) => {
@@ -11141,6 +11204,11 @@
                 return false;
             }
 
+            const before =
+                goalPercentForScope(
+                    normalizedScope
+                );
+
             const state =
                 clockTimer.configure({
                     [
@@ -11158,7 +11226,31 @@
             refreshAutoGoalDialog();
             queueSummaryRefresh();
 
-            return true;
+            const after =
+                goalPercentForScope(
+                    normalizedScope
+                );
+
+            if (
+                !after ||
+                before ===
+                    after
+            ) {
+                return true;
+            }
+
+            const label =
+                normalizedScope
+                    .charAt(0)
+                    .toUpperCase() +
+                normalizedScope
+                    .slice(1);
+
+            return confirmSettingChange(
+                label +
+                " Goal Set to " +
+                after
+            );
         };
 
     const actions =
@@ -11208,7 +11300,10 @@
 
                     updateScheduledStartDialog();
 
-                    return true;
+                    return confirmSettingChange(
+                        "Standard Time Set to " +
+                        formatted
+                    );
                 }
 
                 const editButton =
@@ -11236,7 +11331,10 @@
 
                     refreshTripSettingsValues();
 
-                    return true;
+                    return confirmSettingChange(
+                        "Standard Time Set to " +
+                        formatted
+                    );
                 }
 
                 return false;
@@ -11865,6 +11963,12 @@
                     return false;
                 }
 
+                const previousMode =
+                    normalizePercentMode(
+                        clockTimer
+                            .percentMode
+                    );
+
                 const appliedMode =
                     applyScope(
                         mode
@@ -11877,7 +11981,32 @@
                 refreshAutoGoalDialog();
                 queueSummaryRefresh();
 
-                return appliedMode === mode;
+                if (
+                    appliedMode !==
+                    mode
+                ) {
+                    return false;
+                }
+
+                if (
+                    previousMode ===
+                    appliedMode
+                ) {
+                    return true;
+                }
+
+                const label =
+                    appliedMode
+                        .charAt(0)
+                        .toUpperCase() +
+                    appliedMode
+                        .slice(1);
+
+                return confirmSettingChange(
+                    "Showing " +
+                    label +
+                    " Mode"
+                );
             },
 
             cycleGoalMode() {
@@ -11890,7 +12019,7 @@
                             )
                         );
 
-                applyScope(
+                const next =
                     PERCENT_MODES[
                         (
                             current +
@@ -11898,10 +12027,25 @@
                         ) %
                         PERCENT_MODES
                             .length
-                    ]
-                );
+                    ];
 
-                return true;
+                const applied =
+                    applyScope(
+                        next
+                    );
+
+                const label =
+                    applied
+                        .charAt(0)
+                        .toUpperCase() +
+                    applied
+                        .slice(1);
+
+                return confirmSettingChange(
+                    "Showing " +
+                    label +
+                    " Mode"
+                );
             },
 
             toggleSync(
@@ -11979,14 +12123,27 @@
                     }
                 }
 
-                const result =
-                    setSyncGoals(
-                        enabled
-                    );
+                setSyncGoals(
+                    enabled
+                );
 
                 animateSyncGoalsIcons();
 
-                return result;
+                if (
+                    current ===
+                    enabled
+                ) {
+                    return true;
+                }
+
+                return confirmSettingChange(
+                    "Sync Goals Set to " +
+                    (
+                        enabled
+                            ? "On"
+                            : "Off"
+                    )
+                );
             },
 
             lockEndTime(
@@ -12009,11 +12166,31 @@
                             }
                         );
 
-                return target
-                    ? applyEndTimeGoalOverride(
+                if (
+                    !target ||
+                    !applyEndTimeGoalOverride(
                         target
                     )
-                    : false;
+                ) {
+                    return false;
+                }
+
+                const label =
+                    target
+                        .toLocaleTimeString(
+                            undefined,
+                            {
+                                hour:
+                                    "numeric",
+                                minute:
+                                    "2-digit"
+                            }
+                        );
+
+                return confirmSettingChange(
+                    "End Time Locked to " +
+                    label
+                );
             },
 
             openTripLog(
@@ -12138,11 +12315,34 @@
                     }
                 }
 
+                const previous =
+                    clockTimer
+                        .renderedTimeMode;
+
                 applyRenderedTimeMode(
                     next
                 );
 
-                return true;
+                if (
+                    previous ===
+                    next
+                ) {
+                    return true;
+                }
+
+                const label =
+                    next ===
+                        "calculated-end"
+                        ? "End Time"
+                        : next ===
+                            "elapsed"
+                            ? "Elapsed Time"
+                            : "Remaining Time";
+
+                return confirmSettingChange(
+                    "Showing " +
+                    label
+                );
             },
 
             openStandardTimeSettings() {
