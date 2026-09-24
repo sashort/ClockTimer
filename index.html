@@ -186,6 +186,7 @@
             <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-pattern="^down(?: time)?$" speech-function="WMOFActions.startDownTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:breakEnd:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenBreakEndMenu" data-speech-target="#breakButton" speech-pattern="^break end$" speech-function="WMOFActions.openBreakEndMenu"></speech-command>
             <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-pattern="^resume$" speech-function="WMOFActions.resumeTrip"></speech-command>
+            <speech-command data-speech-editor-id="builtin:cancelDown:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canCancelDownTime" data-speech-target="#downCancelButton" speech-pattern="^cancel$" speech-function="WMOFActions.cancelDownTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-pattern="^trip goal$" speech-function="WMOFActions.readTripGoal"></speech-command>
             <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-pattern="^total goal$" speech-function="WMOFActions.readTotalGoal"></speech-command>
             <speech-command data-speech-editor-id="builtin:setTripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" data-speech-target="#goalPercentValue" speech-pattern="^trip goal (?&lt;percent&gt;.+)$" speech-function="WMOFActions.setTripGoal" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="percent" speech-preproc-field="percent"></speech-command>
@@ -810,6 +811,24 @@
                 <speech-command data-speech-editor-id="builtin:confirm:breakDialog" data-speech-options-category="trip-actions" data-speech-target="#breakDialog [data-break-type]" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmBreakType"></speech-command>
             </speech-menu>
         </section>
+    </dialog>
+
+    <dialog id="cancelDownConfirmDialog" class="app-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2>Cancel Down Time</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <p id="cancelDownConfirmMessage">Press/Say OK to Cancel your down time</p>
+            <div class="dialog-actions two-actions">
+                <button id="cancelDownConfirmYes" class="primary-action" type="button">Yes</button>
+                <button id="cancelDownConfirmNo" type="button">No</button>
+            </div>
+            <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
+                <speech-command data-speech-editor-id="builtin:yes:cancelDownConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^(?:yes|ok(?:ay)?)$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
+                <speech-command data-speech-editor-id="builtin:no:cancelDownConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmNo" speech-pattern="^no$" speech-function="WMOFActions.keepDownTime"></speech-command>
+            </speech-menu>
+        </form>
     </dialog>
 
     <dialog id="speechBreakConfirmDialog" class="app-dialog">
