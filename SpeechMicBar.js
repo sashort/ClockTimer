@@ -3399,6 +3399,13 @@ class SpeechMicBar extends HTMLElement {
         const categoryResizePlan =
             new Map();
 
+        const gridRect =
+            this.#optionsGrid
+                .getBoundingClientRect();
+
+        const finalCategoryHeights =
+            new Map();
+
         for (
             const {
                 definition,
@@ -3410,13 +3417,33 @@ class SpeechMicBar extends HTMLElement {
                     definition.key
                 );
 
+            const rect =
+                section
+                    ?.getBoundingClientRect?.();
+
+            const width =
+                Math.max(
+                    0,
+                    rect?.width ||
+                    gridRect.width
+                );
+
+            const toHeight =
+                this
+                    .#measureOptionCategoryHeight(
+                        definition,
+                        cards,
+                        width
+                    );
+
+            finalCategoryHeights.set(
+                definition.key,
+                toHeight
+            );
+
             if (!section) {
                 continue;
             }
-
-            const rect =
-                section
-                    .getBoundingClientRect();
 
             categoryResizePlan.set(
                 definition.key,
@@ -3426,15 +3453,64 @@ class SpeechMicBar extends HTMLElement {
                             0,
                             rect.height
                         ),
-                    toHeight:
-                        this
-                            .#measureOptionCategoryHeight(
-                                definition,
-                                cards,
-                                rect.width
-                            )
+                    toHeight
                 }
             );
+        }
+
+        const gridStyle =
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsGrid
+                ) ||
+            {};
+
+        const gridGap =
+            Number.parseFloat(
+                gridStyle.rowGap ||
+                gridStyle.gap ||
+                "0"
+            ) ||
+            0;
+
+        if (
+            desiredCategories.length
+        ) {
+            const finalGridHeight =
+                desiredCategories
+                    .reduce(
+                        (
+                            total,
+                            {
+                                definition
+                            }
+                        ) =>
+                            total +
+                            (
+                                finalCategoryHeights
+                                    .get(
+                                        definition.key
+                                    ) ||
+                                0
+                            ),
+                        0
+                    ) +
+                gridGap *
+                    Math.max(
+                        0,
+                        desiredCategories
+                            .length -
+                            1
+                    );
+
+            this
+                .#animateOptionContainerResize(
+                    this.#optionsGrid,
+                    gridRect.height,
+                    finalGridHeight,
+                    duration
+                );
         }
 
         for (
