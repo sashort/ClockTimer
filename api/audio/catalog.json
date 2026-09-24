@@ -301,6 +301,366 @@
           "speech": "End meal now"
         }
       ]
+    },
+    "trip-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.99",
+          "speech": "Trip started",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-started-early": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.99",
+          "speech": "Trip started early",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-started-late": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.99",
+          "speech": "Trip started late",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "break-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Break started",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "short-break-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Short Break started",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "lunch-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Lunch started",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-resumed-early": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Trip resumed early",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-resumed-automatically": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Trip automatically resumed",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-resumed-after-break": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Trip resumed",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-ended": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.74",
+          "speech": "Trip ended",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "down-time-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#8",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.532",
+          "speech": "Down time started",
+          "lang": "en-US"
+        }
+      ]
+    },
+    "trip-resumed-from-down": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#8",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.72",
+          "speech": "Trip resumed",
+          "lang": "en-US"
+        }
+      ]
     }
   }
 }
