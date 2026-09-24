@@ -1418,7 +1418,7 @@
                         action:
                             "sample",
                         language:
-                            "en-US",
+                            trainingLanguage,
                         componentKey:
                             trainingCurrent
                                 .componentKey,
@@ -13468,7 +13468,7 @@
                             action:
                                 "reset",
                             language:
-                                "en-US"
+                                trainingLanguage
                         }
                     );
 
