@@ -2549,6 +2549,184 @@ class SpeechMicBar extends HTMLElement {
         return section;
     }
 
+    #measureOptionCategoryHeight(
+        definition,
+        cards,
+        width
+    ) {
+        const section =
+            this
+                .#createOptionCategory(
+                    definition
+                );
+
+        const cardsContainer =
+            section.querySelector(
+                ".option-category-cards"
+            );
+
+        for (const card of cards) {
+            const box =
+                this
+                    .#createOptionCard(
+                        card
+                    );
+
+            for (
+                const item of
+                card.phrases
+            ) {
+                box.append(
+                    this
+                        .#createOptionPhrase(
+                            definition.key,
+                            card,
+                            item
+                        )
+                );
+            }
+
+            cardsContainer.append(
+                box
+            );
+        }
+
+        Object.assign(
+            section.style,
+            {
+                position:
+                    "absolute",
+                visibility:
+                    "hidden",
+                pointerEvents:
+                    "none",
+                inset:
+                    "0 auto auto 0",
+                width:
+                    Math.max(
+                        0,
+                        width
+                    ) +
+                    "px",
+                height:
+                    "auto",
+                maxHeight:
+                    "none",
+                overflow:
+                    "visible"
+            }
+        );
+
+        this.#optionsGrid.append(
+            section
+        );
+
+        const height =
+            Math.max(
+                0,
+                section
+                    .getBoundingClientRect()
+                    .height
+            );
+
+        section.remove();
+
+        return height;
+    }
+
+    #animateOptionCategoryResize(
+        section,
+        fromHeight,
+        toHeight,
+        duration
+    ) {
+        if (!section) {
+            return;
+        }
+
+        const start =
+            Math.max(
+                0,
+                Number(fromHeight) ||
+                0
+            );
+
+        const end =
+            Math.max(
+                0,
+                Number(toHeight) ||
+                0
+            );
+
+        section.style.height =
+            start +
+            "px";
+        section.style.overflow =
+            "hidden";
+
+        if (
+            duration <= 0 ||
+            typeof section.animate !==
+                "function" ||
+            Math.abs(
+                end - start
+            ) < .5
+        ) {
+            section.style
+                .removeProperty(
+                    "height"
+                );
+            section.style
+                .removeProperty(
+                    "overflow"
+                );
+            return;
+        }
+
+        const animation =
+            section.animate(
+                [
+                    {
+                        height:
+                            start +
+                            "px"
+                    },
+                    {
+                        height:
+                            end +
+                            "px"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.2,.8,.2,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    try {
+                        animation.cancel();
+                    }
+                    catch {}
+
+                    section.style
+                        .removeProperty(
+                            "height"
+                        );
+                    section.style
+                        .removeProperty(
+                            "overflow"
+                        );
+                }
+            );
+    }
+
     #createOptionCard(
         card
     ) {
@@ -3187,6 +3365,54 @@ class SpeechMicBar extends HTMLElement {
                 desiredCategoryKeys
             );
 
+        /*
+         * Preflight every existing category before any card/category
+         * mutation starts. The real category is measured in its current
+         * state, while a hidden final-state category is measured at the
+         * same width. This gives the parent both animation endpoints
+         * before any child animation can begin.
+         */
+        const categoryResizePlan =
+            new Map();
+
+        for (
+            const {
+                definition,
+                cards
+            } of desiredCategories
+        ) {
+            const section =
+                existingCategories.get(
+                    definition.key
+                );
+
+            if (!section) {
+                continue;
+            }
+
+            const rect =
+                section
+                    .getBoundingClientRect();
+
+            categoryResizePlan.set(
+                definition.key,
+                {
+                    fromHeight:
+                        Math.max(
+                            0,
+                            rect.height
+                        ),
+                    toHeight:
+                        this
+                            .#measureOptionCategoryHeight(
+                                definition,
+                                cards,
+                                rect.width
+                            )
+                }
+            );
+        }
+
         for (
             const [
                 key,
@@ -3300,6 +3526,24 @@ class SpeechMicBar extends HTMLElement {
                 section.querySelector(
                     ".option-category-cards"
                 );
+
+            const resize =
+                categoryResizePlan.get(
+                    definition.key
+                );
+
+            if (
+                !isNew &&
+                resize
+            ) {
+                this
+                    .#animateOptionCategoryResize(
+                        section,
+                        resize.fromHeight,
+                        resize.toHeight,
+                        duration
+                    );
+            }
 
             this
                 .#syncOptionCards(
