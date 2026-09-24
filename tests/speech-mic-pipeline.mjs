@@ -55,13 +55,47 @@ assert.equal(typeof bar.clear, "function");
 assert.equal(typeof bar.showOptions, "function");
 assert.equal(typeof bar.hideOptions, "function");
 assert.equal(typeof bar.promoteTopLayer, "function");
+assert.equal(
+    typeof bar.setSystemSpeechPatterns,
+    "function"
+);
 
+const systemSpeechMenu =
+    bar.querySelector(
+        ':scope > speech-menu[speech-modal="system"]'
+    );
+const wakeSystemCommand =
+    systemSpeechMenu?.querySelector(
+        '[data-speech-system-command="wake"]'
+    );
+const sleepSystemCommand =
+    systemSpeechMenu?.querySelector(
+        '[data-speech-system-command="sleep"]'
+    );
+
+assert.ok(systemSpeechMenu);
+assert.ok(wakeSystemCommand);
+assert.ok(sleepSystemCommand);
+assert.equal(
+    wakeSystemCommand.getAttribute(
+        "speech-function"
+    ),
+    "SpeechMenu.wake"
+);
+assert.equal(
+    sleepSystemCommand.getAttribute(
+        "speech-function"
+    ),
+    "SpeechMenu.sleep"
+);
 assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
-                SpeechMenu.wakePhrase
-                    .source
+                wakeSystemCommand
+                    .getAttribute(
+                        "speech-pattern"
+                    )
             )
     ].sort(),
     [
@@ -69,13 +103,14 @@ assert.deepEqual(
         "wake"
     ]
 );
-
 assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
-                SpeechMenu.sleepPhrase
-                    .source
+                sleepSystemCommand
+                    .getAttribute(
+                        "speech-pattern"
+                    )
             )
     ].sort(),
     [
@@ -743,7 +778,15 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#speechControlItems\(\)[\s\S]*wakePhrase[\s\S]*sleepPhrase[\s\S]*extrapolatePattern/
+    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep/
+);
+assert.match(
+    speechMicBarSource,
+    /setSystemSpeechPatterns\([\s\S]*speech-pattern[\s\S]*SpeechMenu[\s\S]*refresh/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#speechControlItems\(/
 );
 assert.doesNotMatch(
     languageSource,
@@ -960,7 +1003,11 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /append\(topLevel\)[\s\S]*dialog\[open\][\s\S]*append\([\s\S]*contextual/
+    /#normalizeModal\([\s\S]*value === "system"[\s\S]*value === "top-level"/
+);
+assert.match(
+    speechMenuSource,
+    /append\(system\)[\s\S]*#sleeping[\s\S]*return result[\s\S]*append\(topLevel\)[\s\S]*dialog\[open\]/
 );
 assert.match(
     languageSource,
@@ -970,9 +1017,13 @@ assert.match(
     languageSource,
     /sleepPhrase:\s*"\^\(\?:sleep\|off\)\$"/
 );
-assert.match(
+assert.doesNotMatch(
     speechMenuSource,
-    /else if \([\s\S]*#wakePhrase[\s\S]*kind:\s*"wake"[\s\S]*#sleepPhrase[\s\S]*kind:\s*"mute"/
+    /#wakePhrase|#sleepPhrase|#controlCandidatePool/
+);
+assert.match(
+    app,
+    /setSystemSpeechPatterns\?\.\([\s\S]*wake:[\s\S]*wakePhrase[\s\S]*sleep:[\s\S]*sleepPhrase/
 );
 assert.match(
     speechMenuSource,
@@ -984,7 +1035,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /candidate\.kind\s*===\s*"wake"[\s\S]*await SpeechMenu[\s\S]*\.wake\([\s\S]*candidate\.kind\s*===\s*"mute"[\s\S]*await SpeechMenu[\s\S]*\.sleep\(/
+    /#commitUtterance\([\s\S]*#processElement\([\s\S]*candidate[\s\S]*commandElement/
 );
 assert.match(
     audioEngineSource,
@@ -1115,13 +1166,13 @@ assert.match(
     /new ParameterParser\(\s*element\.speechParameterFunc\s*\|\|\s*element\.speechFunc\s*\)/
 );
 
-assert.match(
+assert.doesNotMatch(
     speechMenuSource,
-    /#controlCandidatePool\([\s\S]*#wakePhrase[\s\S]*#sleepPhrase[\s\S]*extrapolatePattern\([\s\S]*#phraseCanContinue/
+    /#controlCandidatePool|controlPool/
 );
 assert.match(
     speechMenuSource,
-    /const controlPool[\s\S]*#controlCandidatePool\([\s\S]*if \(controlPool\.length\)[\s\S]*pool = controlPool/
+    /const pool =[\s\S]*#refreshCandidatePool\([\s\S]*utterance,[\s\S]*transcript/
 );
 assert.match(
     speechMenuSource,
@@ -1205,13 +1256,13 @@ assert.match(
     speechMicBarSource,
     /case "utteranceTranscriptChanged":[\s\S]*!globalThis\.SpeechMenu[\s\S]*\.muted[\s\S]*#showStreamingPhrase/
 );
-assert.match(
+assert.doesNotMatch(
     speechMenuSource,
-    /exactCandidate\.kind ===\s*"wake"[\s\S]*return false/
+    /exactCandidate\.kind ===\s*"wake"/
 );
-assert.match(
+assert.doesNotMatch(
     speechMenuSource,
-    /#handleCompletedTranscript\([\s\S]*#sleeping[\s\S]*#wakePhrase[\s\S]*\.wake\(/
+    /#handleCompletedTranscript\([\s\S]{0,1800}#wakePhrase/
 );
 
 
