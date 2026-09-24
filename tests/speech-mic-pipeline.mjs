@@ -813,3 +813,12 @@ assert.match(
     speechMicBarSource,
     /\.option-card[\s\S]*padding:\s*8px 0/
 );
+
+assert.match(
+    speechMicBarSource,
+    /id="optionsHeader">Speech Options<\/div>/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsHeader[\s\S]*position:\s*absolute[\s\S]*line-height:\s*28px/
+);
