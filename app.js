@@ -7644,10 +7644,11 @@
 
                 const transcript =
                     String(
-                        telemetry.response ||
-                        telemetry.transcript ||
+                        telemetry.heard ||
                         telemetry.event
                             ?.transcript ||
+                        telemetry.transcript ||
+                        telemetry.response ||
                         ""
                     ).trim();
 
@@ -7712,18 +7713,27 @@
                 }
 
                 if (
-                    telemetry.type !==
+                    ![
+                        "utteranceCommitted",
+                        "utteranceUnrecognized",
                         "utteranceTranscribed"
+                    ].includes(
+                        telemetry.type
+                    )
                 ) {
                     return;
                 }
 
                 const utteranceId =
+                    telemetry.utteranceId ??
                     telemetry.event
-                        ?.id;
+                        ?.id ??
+                    telemetry.event
+                        ?.utteranceId;
 
                 const observed =
                     String(
+                        telemetry.heard ||
                         telemetry.event
                             ?.transcript ||
                         telemetry.transcript ||
