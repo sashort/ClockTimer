@@ -22,93 +22,276 @@
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8\\A4", "length": "1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8\\A4",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "bend-up": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "A4/D#8", "length": "1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "A4/D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "arpeggio-down": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8", "length": "1/2", "dynamic": "ff" },
-        { "offset": "0.52", "tone": "B7", "length": "1/2", "dynamic": "ff" },
-        { "offset": "1.04", "tone": "G7", "length": "1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "arpeggio-up": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "G7", "length": "1/2", "dynamic": "ff" },
-        { "offset": "0.52", "tone": "B7", "length": "1/2", "dynamic": "ff" },
-        { "offset": "1.04", "tone": "D#8", "length": "1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "note-down": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8", "length": "1", "dynamic": "ff" },
-        { "offset": "1.02", "tone": "G7", "length": "1", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G7",
+          "length": "1",
+          "dynamic": "ff"
+        }
       ]
     },
     "note-down-long": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8", "length": "1", "dynamic": "ff" },
-        { "offset": "1.02", "tone": "G7", "length": "1 1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G7",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "note-up": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "G7", "length": "1", "dynamic": "ff" },
-        { "offset": "1.02", "tone": "D#8", "length": "1", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#8",
+          "length": "1",
+          "dynamic": "ff"
+        }
       ]
     },
     "note-up-long": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "G7", "length": "1", "dynamic": "ff" },
-        { "offset": "1.02", "tone": "D#8", "length": "1 1/2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#8",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        }
       ]
     },
     "polyharmonic-triplet": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8", "length": "2/3", "dynamic": "ff" },
-        { "offset": "0", "tone": "B7", "length": "2/3", "dynamic": "ff" },
-        { "offset": "0", "tone": "G7", "length": "2/3", "dynamic": "ff" },
-        { "offset": "2/3", "tone": "D#8", "length": "2/3", "dynamic": "ff" },
-        { "offset": "2/3", "tone": "B7", "length": "2/3", "dynamic": "ff" },
-        { "offset": "2/3", "tone": "G7", "length": "2/3", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#8",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B7",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G7",
+          "length": "2/3",
+          "dynamic": "ff"
+        }
       ]
     },
     "long-polyharmonic-triplet": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "D#8", "length": "2", "dynamic": "ff" },
-        { "offset": "0", "tone": "B7", "length": "2", "dynamic": "ff" },
-        { "offset": "0", "tone": "G7", "length": "2", "dynamic": "ff" }
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B7",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "2",
+          "dynamic": "ff"
+        }
       ]
     },
     "info-tone": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
-        { "offset": "0", "tone": "C4", "length": "2/3", "dynamic": "p" },
-        { "offset": "2/3", "tone": "G4", "length": "1 1/3", "dynamic": "p" }
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G4",
+          "length": "1 1/3",
+          "dynamic": "p"
+        }
+      ]
+    },
+    "lunch-clock-out": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B7",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "2",
+          "dynamic": "ff"
+        }
+      ]
+    },
+    "lunch-clock-in": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B7",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G7",
+          "length": "2",
+          "dynamic": "ff"
+        }
       ]
     }
   }
