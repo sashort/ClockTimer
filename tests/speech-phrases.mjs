@@ -45,6 +45,7 @@ window.SpeechRecognition =
 window.Commands = {
     wake() {},
     sleep() {},
+    off() {},
     sync() {},
     dialog() {},
     cancel() {},
@@ -55,8 +56,9 @@ window.Commands = {
 
 window.document.body.innerHTML = [
     '<speech-menu id="system" speech-modal="system">',
-    '<speech-command id="wakeCommand" speech-pattern="^(?:wake|on)$" speech-function="Commands.wake"></speech-command>',
-    '<speech-command id="sleepCommand" speech-pattern="^(?:sleep|off)$" speech-function="Commands.sleep"></speech-command>',
+    '<speech-command id="wakeCommand" speech-pattern="^wake$" speech-function="Commands.wake"></speech-command>',
+    '<speech-command id="sleepCommand" speech-pattern="^sleep$" speech-function="Commands.sleep"></speech-command>',
+    '<speech-command id="offCommand" speech-pattern="^off$" speech-function="Commands.off"></speech-command>',
     '</speech-menu>',
     '<speech-menu id="top" speech-modal="top-level">',
     '<speech-command speech-pattern="^sync(?: (?<syncAction>on|off))?$" speech-function="Commands.sync"></speech-command>',
@@ -105,8 +107,7 @@ assert.deepEqual(
             )
     ],
     [
-        "wake",
-        "on"
+        "wake"
     ],
     "system wake command should use normal phrase extrapolation"
 );
@@ -125,10 +126,28 @@ assert.deepEqual(
             )
     ],
     [
-        "sleep",
-        "off"
+        "sleep"
     ],
     "system sleep command should use normal phrase extrapolation"
+);
+
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                window.document
+                    .querySelector(
+                        "#offCommand"
+                    )
+                    .getAttribute(
+                        "speech-pattern"
+                    )
+            )
+    ],
+    [
+        "off"
+    ],
+    "system off command should use normal phrase extrapolation"
 );
 
 assert.deepEqual(
@@ -208,7 +227,6 @@ assert.deepEqual(
     ],
     [
         "wake",
-        "on",
         "sleep",
         "off",
         "priority",
@@ -239,7 +257,6 @@ assert.deepEqual(
     ],
     [
         "wake",
-        "on",
         "sleep",
         "off",
         "priority",
