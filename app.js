@@ -484,6 +484,22 @@
     const menuAccountRow = $("#menuAccountRow");
     const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
+    const mainMenuViewport = $("#mainMenuViewport");
+    const mainMenuTrack = $("#mainMenuTrack");
+    const mainMenuIndicator = $("#mainMenuIndicator");
+    const mainMenuIndicatorThumb = $("#mainMenuIndicatorThumb");
+    const mainMenuFocusLayer = $("#mainMenuFocusLayer");
+    const mainMenuLayoutState = {
+        panelIndex: 0,
+        panelHeight: 0,
+        layoutFrame: undefined,
+        scrollIdleTimer: undefined,
+        focused: undefined,
+        animations: new Set(),
+        transitionBusy: false
+    };
+    const MAIN_MENU_ITEM_RATE_PX_PER_MS = 0.5;
+    const MAIN_MENU_EDGE_GAP = 8;
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
     const speechTrainingButton = $("#speechTrainingButton");
