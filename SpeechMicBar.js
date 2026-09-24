@@ -1519,6 +1519,10 @@ class SpeechMicBar extends HTMLElement {
             card,
             phrase,
             display,
+            expectedPhrases,
+            required,
+            optionalPrefix,
+            optionalSuffix,
             element,
             row
         }
@@ -1570,6 +1574,38 @@ class SpeechMicBar extends HTMLElement {
             card,
             phrase,
             display,
+            expectedPhrases:
+                [
+                    ...new Set(
+                        (
+                            Array.isArray(
+                                expectedPhrases
+                            )
+                                ? expectedPhrases
+                                : [phrase]
+                        )
+                            .map(
+                                value =>
+                                    String(
+                                        value ||
+                                        ""
+                                    ).trim()
+                            )
+                            .filter(
+                                Boolean
+                            )
+                    )
+                ],
+            required:
+                required ||
+                display ||
+                phrase,
+            optionalPrefix:
+                optionalPrefix ||
+                "",
+            optionalSuffix:
+                optionalSuffix ||
+                "",
             pattern:
                 element.getAttribute(
                     "speech-pattern"
@@ -2235,6 +2271,11 @@ class SpeechMicBar extends HTMLElement {
         const element =
             group?.element;
 
+        /*
+         * A card is a visual grouping surface, not a command.
+         * Individual commands remain separate rows inside one card.
+         * Only an explicit options-group asks for another card.
+         */
         return (
             group?.optionsGroup ||
             element
@@ -2242,15 +2283,7 @@ class SpeechMicBar extends HTMLElement {
                     "data-speech-options-group"
                 )
                 ?.trim() ||
-            element
-                ?.getAttribute?.(
-                    "data-speech-target"
-                )
-                ?.trim() ||
-            (
-                "element:" +
-                index
-            )
+            "commands"
         );
     }
 
@@ -2729,7 +2762,18 @@ class SpeechMicBar extends HTMLElement {
                                 ?.display ||
                             item.display,
                         optionalPrefix,
-                        optionalSuffix
+                        optionalSuffix,
+                        familyPhrases:
+                            [
+                                ...new Set(
+                                    [
+                                        base?.phrase,
+                                        item.phrase
+                                    ].filter(
+                                        Boolean
+                                    )
+                                )
+                            ]
                     };
                 }
             );
@@ -3750,6 +3794,15 @@ class SpeechMicBar extends HTMLElement {
                         item.phrase,
                     display:
                         item.display,
+                    expectedPhrases:
+                        item.familyPhrases ||
+                        [item.phrase],
+                    required:
+                        item.required,
+                    optionalPrefix:
+                        item.optionalPrefix,
+                    optionalSuffix:
+                        item.optionalSuffix,
                     element:
                         item.element,
                     row
