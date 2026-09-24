@@ -911,11 +911,11 @@ assert.match(
 );
 assert.match(
     app,
-    /readTripGoal\(\)[\s\S]*speakSpeechMetric\(\s*"Trip Goal"/
+    /readTripGoal\(\)[\s\S]*dictateSpeechMetric\(\s*"Trip Goal"/
 );
 assert.match(
     app,
-    /readTotalGoal\(\)[\s\S]*speakSpeechMetric\(\s*"Total Goal"/
+    /readTotalGoal\(\)[\s\S]*dictateSpeechMetric\(\s*"Total Goal"/
 );
 assert.match(
     app,
