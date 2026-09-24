@@ -14523,8 +14523,15 @@
             }
             installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
-            SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
-            SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            speechMicBar
+                ?.setSystemSpeechPatterns?.({
+                    wake:
+                        englishSpeech
+                            .wakePhrase,
+                    sleep:
+                        englishSpeech
+                            .sleepPhrase
+                });
             SpeechMenu.refresh();
         }
 
