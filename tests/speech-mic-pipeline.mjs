@@ -11,7 +11,11 @@ Object.assign(globalThis, {
     Node: window.Node,
     CustomEvent: window.CustomEvent,
     EventTarget: window.EventTarget,
-    customElements: window.customElements
+    customElements: window.customElements,
+    getComputedStyle:
+        window.getComputedStyle.bind(
+            window
+        )
 });
 Object.defineProperty(globalThis, "navigator", {
     configurable: true,
@@ -189,6 +193,172 @@ assert.equal(
 
 window.document.body.append(
     bar
+);
+
+const trainingCommand =
+    window.document.createElement(
+        "div"
+    );
+trainingCommand.dataset
+    .speechSystemCommand =
+    "commands";
+trainingCommand.setAttribute(
+    "speech-pattern",
+    "^(?:speech )?commands$"
+);
+
+const trainingRow =
+    window.document.createElement(
+        "div"
+    );
+
+let selectedTrainingTarget;
+bar.addEventListener(
+    "speech-training-target-selected",
+    event => {
+        selectedTrainingTarget =
+            event.detail;
+    },
+    {
+        once: true
+    }
+);
+
+bar.trainingMode =
+    true;
+
+assert.equal(
+    bar.selectTrainingTarget({
+        source:
+            "mic-bar",
+        category:
+            "system",
+        card:
+            "commands",
+        phrase:
+            "commands",
+        display:
+            "commands",
+        element:
+            trainingCommand,
+        row:
+            trainingRow
+    }),
+    true
+);
+
+assert.equal(
+    selectedTrainingTarget?.phrase,
+    "commands"
+);
+assert.equal(
+    bar.trainingTarget?.commandKey,
+    "commands"
+);
+assert.equal(
+    trainingRow.classList.contains(
+        "training-selected"
+    ),
+    true
+);
+
+const trainingTelemetry =
+    [];
+
+bar.addEventListener(
+    "speech-training-telemetry",
+    event => {
+        trainingTelemetry.push(
+            event.detail
+        );
+    }
+);
+
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "utteranceStarted",
+        {
+            detail: {
+                id: 701
+            }
+        }
+    )
+);
+
+window.SpeechMenu.events.dispatchEvent(
+    new window.CustomEvent(
+        "utteranceTranscribed",
+        {
+            detail: {
+                id: 701,
+                transcript:
+                    "commands"
+            }
+        }
+    )
+);
+
+const transcribedTrainingTelemetry =
+    trainingTelemetry.find(
+        event =>
+            event.type ===
+            "utteranceTranscribed"
+    );
+
+assert.ok(
+    transcribedTrainingTelemetry
+);
+assert.equal(
+    transcribedTrainingTelemetry
+        .utteranceId,
+    701
+);
+assert.equal(
+    transcribedTrainingTelemetry
+        .heard,
+    "commands"
+);
+assert.equal(
+    transcribedTrainingTelemetry
+        .target
+        ?.phrase,
+    "commands"
+);
+
+bar.trainingLocked =
+    true;
+
+assert.equal(
+    bar.selectTrainingTarget({
+        source:
+            "mic-bar",
+        category:
+            "system",
+        card:
+            "wake",
+        phrase:
+            "wake",
+        display:
+            "wake",
+        element:
+            trainingCommand,
+        row:
+            trainingRow
+    }),
+    false
+);
+
+assert.equal(
+    bar.trainingTarget?.phrase,
+    "commands"
+);
+
+bar.trainingMode =
+    false;
+
+assert.equal(
+    bar.trainingTarget,
+    undefined
 );
 
 assert.equal(
