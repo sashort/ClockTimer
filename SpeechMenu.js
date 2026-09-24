@@ -3,6 +3,7 @@ class SpeechMenu {
     static #sleepPhrase = /^mute$/i;
     static #stopped = true;
     static #sleeping = false;
+    static #listeningSuspensions = 0;
     static #events = new EventTarget();
     static #separator = ",";
     static #language = "en-US";
@@ -97,6 +98,7 @@ class SpeechMenu {
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
+    static get listeningSuspended() { return SpeechMenu.#listeningSuspensions > 0; }
     static get phrases() { return SpeechMenu.#phrases; }
     static get phraseGroups() { return SpeechMenu.#phraseGroups; }
     static get corrections() { return SpeechMenu.#corrections; }
@@ -615,6 +617,43 @@ class SpeechMenu {
         return SpeechMenu.#startPromise;
     }
 
+    static suspendListening(reason = "audio-playback") {
+        SpeechMenu.#listeningSuspensions++;
+
+        if (SpeechMenu.#listeningSuspensions === 1) {
+            SpeechMenu.#preRollFrames = [];
+            SpeechMenu.#preRollSamples = 0;
+
+            SpeechMenu.#emit("listeningSuspended", {
+                reason,
+                count: SpeechMenu.#listeningSuspensions
+            });
+        }
+
+        return SpeechMenu.#listeningSuspensions;
+    }
+
+    static resumeListening(reason = "audio-playback") {
+        if (SpeechMenu.#listeningSuspensions <= 0) {
+            SpeechMenu.#listeningSuspensions = 0;
+            return false;
+        }
+
+        SpeechMenu.#listeningSuspensions--;
+
+        if (SpeechMenu.#listeningSuspensions === 0) {
+            SpeechMenu.#preRollFrames = [];
+            SpeechMenu.#preRollSamples = 0;
+
+            SpeechMenu.#emit("listeningResumed", {
+                reason,
+                count: 0
+            });
+        }
+
+        return true;
+    }
+
     static async stop() {
         const wasActive =
             !SpeechMenu.#stopped ||
@@ -963,6 +1002,7 @@ class SpeechMenu {
     static #onAudioWorkletMessage = event => {
         if (
             SpeechMenu.#stopped ||
+            SpeechMenu.listeningSuspended ||
             !SpeechMenu.#audioContext
         ) {
             return;
