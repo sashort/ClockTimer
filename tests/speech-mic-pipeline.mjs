@@ -1190,7 +1190,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /#sleeping[\s\S]*#exactCandidate[\s\S]*kind === "wake"[\s\S]*#commitSilenceTimeout[\s\S]*#commitUtterance/
+    /#handleCompletedTranscript\([\s\S]*#sleeping[\s\S]*#wakePhrase[\s\S]*\.wake\(/
 );
 
 
