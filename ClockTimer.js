@@ -3350,6 +3350,7 @@
 
             void this.#protectedSync(
                 async () => {
+                    await this.#ensureTripPersisted();
                     await this.#syncTripEvents();
                 }
             ).catch(() => {});
@@ -5649,14 +5650,11 @@
                 }
             );
 
-            const synced = await this.#protectedSync(async () => {
-                await this.#ensureTripPersisted();
-                await this.#syncTripEvents();
-            });
+            this.#scheduleTripEventSync();
 
             const result =
                 this.#mutationResult(
-                    synced,
+                    false,
                     record
                 );
 
@@ -5845,11 +5843,13 @@
                 }
             );
 
-            const synced = await this.#protectedSync(async () => {
-                await this.#ensureTripPersisted();
-                await this.#syncTripEvents();
-            });
-            const result = this.#mutationResult(synced, record);
+            this.#scheduleTripEventSync();
+
+            const result =
+                this.#mutationResult(
+                    false,
+                    record
+                );
             this.#checkGoalMisses(this.#getCurrentTimelineTime());
 
             const intervalEndedDetail = {
