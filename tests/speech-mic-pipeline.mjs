@@ -533,7 +533,15 @@ assert.match(
 );
 assert.match(
     app,
-    /commitPendingSpeechTrainingSamples[\s\S]*persistInAppSpeechTrainingSample[\s\S]*\.shift\(/
+    /commitPendingSpeechTrainingSamples[\s\S]*persistInAppSpeechTrainingSample[\s\S]*\.shift\([\s\S]*renderPendingSpeechTrainingMessage/
+);
+assert.match(
+    app,
+    /pendingSpeechTrainingTargetLabel[\s\S]*speechTrainingPendingSamples[\s\S]*\[\s*0\s*\][\s\S]*\.target[\s\S]*speechTrainingTarget/
+);
+assert.match(
+    app,
+    /renderPendingSpeechTrainingMessage[\s\S]*speechTrainingPendingReason[\s\S]*pendingSpeechTrainingTargetLabel/
 );
 assert.match(
     app,
