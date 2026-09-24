@@ -11135,18 +11135,6 @@
                     );
             },
 
-            openBreakStartConfirmation() {
-                if (
-                    breakButton?.disabled
-                ) {
-                    return false;
-                }
-
-                return openSpeechBreakPrompt(
-                    "start"
-                );
-            },
-
             openBreakMenu(
                 reason = "break"
             ) {
@@ -13683,7 +13671,7 @@
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakStartConfirmation"], ["down","startDownTime"],
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
                 ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"], ["goal","changeGoal"], ["goalMode","changeGoalMode"],
                 ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
