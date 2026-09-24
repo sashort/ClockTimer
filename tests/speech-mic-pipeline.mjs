@@ -1262,7 +1262,7 @@ assert.doesNotMatch(
 );
 assert.match(
     speechMicBarSource,
-    /\.option-card[\s\S]*padding:\s*8px 0/
+    /\.option-card[\s\S]*padding:\s*3px 0/
 );
 
 assert.match(
