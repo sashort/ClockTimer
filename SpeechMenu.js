@@ -2115,48 +2115,17 @@ class SpeechMenu {
 
         let pool;
 
-        if (SpeechMenu.#sleeping) {
-            pool =
-                SpeechMenu.#test(
-                    SpeechMenu.#wakePhrase,
+        const controlPool =
+            SpeechMenu
+                .#controlCandidatePool(
                     transcript
-                )
-                    ? [{
-                        kind: "wake",
-                        transcript,
-                        exact: true,
-                        continuation: false,
-                        order: 0
-                    }]
-                    : [];
+                );
+
+        if (controlPool.length) {
+            pool = controlPool;
         }
-        else if (
-            SpeechMenu.#test(
-                SpeechMenu.#wakePhrase,
-                transcript
-            )
-        ) {
-            pool = [{
-                kind: "wake",
-                transcript,
-                exact: true,
-                continuation: false,
-                order: 0
-            }];
-        }
-        else if (
-            SpeechMenu.#test(
-                SpeechMenu.#sleepPhrase,
-                transcript
-            )
-        ) {
-            pool = [{
-                kind: "mute",
-                transcript,
-                exact: true,
-                continuation: false,
-                order: 0
-            }];
+        else if (SpeechMenu.#sleeping) {
+            pool = [];
         }
         else {
             pool =
@@ -2200,11 +2169,7 @@ class SpeechMenu {
             !pool.length &&
             !utterance.committing &&
             !utterance.lastExactCandidate &&
-            !SpeechMenu.#sleeping &&
-            !SpeechMenu
-                .#hasAvailableContinuation(
-                    utterance.transcript
-                )
+            !SpeechMenu.#sleeping
         ) {
             const id =
                 utterance.id;
@@ -3357,21 +3322,75 @@ class SpeechMenu {
     }
 
 
-    static #hasAvailableContinuation(
+    static #controlCandidatePool(
         transcript
     ) {
-        SpeechMenu.extrapolatePhrases();
+        const definitions = [
+            {
+                kind: "wake",
+                pattern:
+                    SpeechMenu.#wakePhrase
+            },
+            ...(
+                SpeechMenu.#sleeping
+                    ? []
+                    : [{
+                        kind: "mute",
+                        pattern:
+                            SpeechMenu
+                                .#sleepPhrase
+                    }]
+            )
+        ];
 
-        return SpeechMenu
-            .#availableCandidates()
-            .some(
-                element =>
-                    SpeechMenu
-                        .#elementContinuationDepth(
-                            element,
-                            transcript
-                        ) !== undefined
-            );
+        const candidates = [];
+
+        for (
+            const [
+                order,
+                definition
+            ] of definitions.entries()
+        ) {
+            const exact =
+                SpeechMenu.#test(
+                    definition.pattern,
+                    transcript
+                );
+
+            const continuation =
+                SpeechMenu
+                    .extrapolatePattern(
+                        definition
+                            .pattern
+                            .source
+                    )
+                    .some(
+                        phrase =>
+                            SpeechMenu
+                                .#phraseCanContinue(
+                                    transcript,
+                                    phrase
+                                )
+                    );
+
+            if (
+                !exact &&
+                !continuation
+            ) {
+                continue;
+            }
+
+            candidates.push({
+                kind:
+                    definition.kind,
+                transcript,
+                exact,
+                continuation,
+                order
+            });
+        }
+
+        return candidates;
     }
 
     static #elementContinuationDepth(
