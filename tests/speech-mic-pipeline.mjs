@@ -843,3 +843,12 @@ assert.match(
     speechMenuSource,
     /#commitUtterance\([\s\S]*#cancelCandidateWork\([\s\S]*#stopLiveRecognition\([\s\S]*false[\s\S]*let committed/
 );
+
+assert.match(
+    speechMenuSource,
+    /#hasCompetingContinuation\([\s\S]*candidate !==[\s\S]*exactCandidate[\s\S]*candidate[\s\S]*\.continuation/
+);
+assert.match(
+    speechMenuSource,
+    /#scheduleCandidateCommit\([\s\S]*#hasCompetingContinuation\([\s\S]*return false/
+);
