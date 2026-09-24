@@ -453,6 +453,27 @@ class SpeechMicBar extends HTMLElement {
                         rgb(255 255 255 / 56%);
                 }
 
+                :host([training-mode])
+                .option-phrase.training-selected code,
+                :host([training-mode])
+                .option-phrase.training-selected code.streaming-core-phrase,
+                :host([training-mode])
+                .option-phrase.training-selected code.streaming-context {
+                    color:
+                        var(
+                            --speech-training-contrast,
+                            white
+                        ) !important;
+                    border-color:
+                        currentColor !important;
+                    background:
+                        color-mix(
+                            in srgb,
+                            currentColor 12%,
+                            transparent
+                        ) !important;
+                }
+
                 :host([training-mode]:not([training-locked]))
                 #bar {
                     cursor: pointer;
@@ -1951,6 +1972,16 @@ class SpeechMicBar extends HTMLElement {
                     }
                 );
         }
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-options-opened",
+                {
+                    bubbles: true,
+                    composed: true
+                }
+            )
+        );
 
         return true;
     }
