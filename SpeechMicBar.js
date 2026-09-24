@@ -2103,6 +2103,78 @@ class SpeechMicBar extends HTMLElement {
             );
     }
 
+    #animateOptionMove(
+        node,
+        before,
+        duration
+    ) {
+        if (
+            !node ||
+            !before ||
+            duration <= 0 ||
+            typeof node.animate !==
+                "function" ||
+            node.hasAttribute(
+                "data-option-exiting"
+            ) ||
+            (
+                node.getAnimations?.()
+                    ?.length ||
+                0
+            )
+        ) {
+            return;
+        }
+
+        const after =
+            node.getBoundingClientRect();
+
+        const x =
+            before.left -
+            after.left;
+
+        const y =
+            before.top -
+            after.top;
+
+        if (
+            Math.abs(x) < .5 &&
+            Math.abs(y) < .5
+        ) {
+            return;
+        }
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        transform:
+                            `translate(${x}px, ${y}px)`
+                    },
+                    {
+                        transform:
+                            "translate(0, 0)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.2,.8,.2,1)"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    try {
+                        animation.cancel();
+                    }
+                    catch {}
+                }
+            );
+    }
+
     #reviveOptionNode(
         node,
         duration
@@ -2348,6 +2420,24 @@ class SpeechMicBar extends HTMLElement {
                 "optionItemKey"
             );
 
+        const beforePositions =
+            new Map(
+                [
+                    ...existing
+                ].map(
+                    (
+                        [
+                            key,
+                            row
+                        ]
+                    ) => [
+                        key,
+                        row
+                            .getBoundingClientRect()
+                    ]
+                )
+            );
+
         for (
             const [
                 key,
@@ -2398,6 +2488,11 @@ class SpeechMicBar extends HTMLElement {
                         duration
                     );
 
+                row.style.order =
+                    String(
+                        index
+                    );
+
                 const fresh =
                     this
                         .#createOptionPhrase(
@@ -2422,6 +2517,11 @@ class SpeechMicBar extends HTMLElement {
                         card,
                         item
                     );
+
+            row.style.order =
+                String(
+                    index
+                );
 
             let reference;
 
@@ -2468,6 +2568,22 @@ class SpeechMicBar extends HTMLElement {
                     duration
                 );
         }
+
+        for (
+            const key of
+            desiredKeys
+        ) {
+            this
+                .#animateOptionMove(
+                    existing.get(
+                        key
+                    ),
+                    beforePositions.get(
+                        key
+                    ),
+                    duration
+                );
+        }
     }
 
     #syncOptionCards(
@@ -2492,6 +2608,24 @@ class SpeechMicBar extends HTMLElement {
                 container,
                 "option-card",
                 "optionCardKey"
+            );
+
+        const beforePositions =
+            new Map(
+                [
+                    ...existing
+                ].map(
+                    (
+                        [
+                            key,
+                            box
+                        ]
+                    ) => [
+                        key,
+                        box
+                            .getBoundingClientRect()
+                    ]
+                )
             );
 
         for (
@@ -2539,6 +2673,11 @@ class SpeechMicBar extends HTMLElement {
                         duration
                     );
 
+                box.style.order =
+                    String(
+                        index
+                    );
+
                 this
                     .#syncOptionRows(
                         box,
@@ -2555,6 +2694,11 @@ class SpeechMicBar extends HTMLElement {
                     .#createOptionCard(
                         card
                     );
+
+            box.style.order =
+                String(
+                    index
+                );
 
             for (
                 const item of
@@ -2612,6 +2756,22 @@ class SpeechMicBar extends HTMLElement {
             this
                 .#animateOptionEnter(
                     box,
+                    duration
+                );
+        }
+
+        for (
+            const key of
+            desiredKeys
+        ) {
+            this
+                .#animateOptionMove(
+                    existing.get(
+                        key
+                    ),
+                    beforePositions.get(
+                        key
+                    ),
                     duration
                 );
         }
