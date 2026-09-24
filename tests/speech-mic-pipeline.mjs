@@ -763,3 +763,32 @@ assert.match(
     speechMenuSource,
     /!pool\.length[\s\S]*!utterance\.committing[\s\S]*!SpeechMenu\.#sleeping/
 );
+
+assert.match(
+    speechMenuSource,
+    /#maximumCandidateHoldTimeout\s*=\s*1000/
+);
+assert.match(
+    speechMenuSource,
+    /candidateHardCommitTimer:\s*undefined[\s\S]*lastExactCandidate:\s*undefined/
+);
+assert.match(
+    speechMenuSource,
+    /!pool\.length[\s\S]*!utterance\.lastExactCandidate[\s\S]*!SpeechMenu\.#sleeping/
+);
+assert.match(
+    speechMenuSource,
+    /lastExactCandidate\s*=\s*\{[\s\S]*\.\.\.exactCandidate[\s\S]*transcript:\s*utterance\.transcript/
+);
+assert.match(
+    speechMenuSource,
+    /candidateHardCommitTimer\s*=\s*setTimeout[\s\S]*#maximumCandidateHoldTimeout/
+);
+assert.match(
+    speechMenuSource,
+    /#exactCandidate\([\s\S]*\|\|[\s\S]*lastExactCandidate[\s\S]*#commitUtterance/
+);
+assert.match(
+    speechMenuSource,
+    /#clearCandidatePool\([\s\S]*candidateHardCommitTimer[\s\S]*clearTimeout[\s\S]*lastExactCandidate\s*=\s*undefined/
+);
