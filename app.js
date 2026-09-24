@@ -570,6 +570,31 @@
 
     let speechActivationPending = false;
 
+    const disableSpeechRecognitionRuntime =
+        async () => {
+            setSpeechButtonState(
+                false,
+                false
+            );
+            setSpeechLayoutState(
+                false
+            );
+
+            try {
+                await ensureSpeechRuntime();
+
+                return (
+                    await globalThis
+                        .SpeechMenu
+                        ?.stop?.()
+                ) !== false;
+            }
+            catch (error) {
+                console.error(error);
+                return false;
+            }
+        };
+
     setSpeechButtonState(false);
     setSpeechLayoutState(false);
 
@@ -584,17 +609,7 @@
                 ) === "true";
 
             if (enabled) {
-                setSpeechButtonState(false, false);
-                setSpeechLayoutState(false);
-
-                try {
-                    await ensureSpeechRuntime();
-                    await globalThis.SpeechMenu?.stop?.();
-                }
-                catch (error) {
-                    console.error(error);
-                }
-
+                await disableSpeechRecognitionRuntime();
                 return;
             }
 
@@ -11530,6 +11545,10 @@
                 });
             },
 
+            disableSpeechRecognition() {
+                return disableSpeechRecognitionRuntime();
+            },
+
             toggleSpeechOptions() {
                 if (
                     speechMicBar
@@ -14530,7 +14549,10 @@
                             .wakePhrase,
                     sleep:
                         englishSpeech
-                            .sleepPhrase
+                            .sleepPhrase,
+                    off:
+                        englishSpeech
+                            .offPhrase
                 });
             SpeechMenu.refresh();
         }
