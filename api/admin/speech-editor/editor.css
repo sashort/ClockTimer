@@ -1863,6 +1863,119 @@ body:not(.training-mode) .speech-training-model-summary{
     display:grid;
     gap:7px;
 }
+
+.speech-divergence-review{
+    display:grid;
+    gap:8px;
+    margin:0 0 12px;
+    padding:10px;
+    border:1px solid rgb(225 37 27 / 48%);
+    border-radius:9px;
+    background:rgb(72 20 24 / 34%);
+}
+body:not(.training-mode) .speech-divergence-review{
+    display:none!important;
+}
+.speech-divergence-review .speech-training-section-heading{
+    margin:0;
+}
+.speech-divergence-count{
+    display:inline-grid;
+    min-width:21px;
+    min-height:21px;
+    place-items:center;
+    margin-left:4px;
+    padding:1px 6px;
+    border-radius:999px;
+    color:#fff;
+    background:#e1251b;
+    font-size:11px;
+    vertical-align:2px;
+}
+.speech-divergence-list{
+    display:grid;
+    gap:7px;
+}
+.speech-divergence-item{
+    border:1px solid rgb(255 255 255 / 16%);
+    border-radius:8px;
+    background:rgb(255 255 255 / 4%);
+    overflow:hidden;
+}
+.speech-divergence-item>summary{
+    padding:8px 9px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    cursor:pointer;
+    list-style-position:inside;
+}
+.speech-divergence-title{
+    min-width:0;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:5px;
+}
+.speech-divergence-title strong{
+    overflow-wrap:anywhere;
+}
+.speech-divergence-title strong:last-child{
+    color:#ff8d87;
+}
+.speech-divergence-badge{
+    flex:0 0 auto;
+    padding:2px 7px;
+    border-radius:999px;
+    color:#fff;
+    background:#e1251b;
+    font-size:10px;
+    font-weight:800;
+}
+.speech-divergence-body{
+    padding:0 10px 10px;
+    display:grid;
+    gap:6px;
+    color:#bcd7e9;
+    font-size:12px;
+}
+.speech-divergence-body p{
+    margin:0;
+}
+.speech-divergence-body small{
+    overflow-wrap:anywhere;
+    color:#93b9d5;
+}
+.speech-divergence-actions{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    padding-top:3px;
+}
+.speech-divergence-actions button{
+    padding:5px 8px;
+    color:#fff;
+    background:#354657;
+    border:1px solid #91b6d5;
+    border-radius:6px;
+    font:inherit;
+    font-size:11px;
+    font-weight:750;
+    cursor:pointer;
+}
+.speech-divergence-actions button[data-decision="approve"]{
+    border-color:#7fe6a2;
+}
+.speech-divergence-actions button[data-decision="purge"]{
+    color:#ffc45a;
+    border-color:#f59e0b;
+}
+.speech-divergence-read-only{
+    color:#ffc220;
+    font-weight:750;
+}
 .speech-training-contributor{
     display:grid;
     grid-template-columns:minmax(0,1fr) auto auto;
