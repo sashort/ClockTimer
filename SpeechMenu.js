@@ -1,6 +1,6 @@
 class SpeechMenu {
-    static #wakePhrase = /^(?:wake|listen|on)$/i;
-    static #sleepPhrase = /^(?:sleep|mute|off)$/i;
+    static #wakePhrase = /^(?:wake|on)$/i;
+    static #sleepPhrase = /^(?:sleep|off)$/i;
     static #stopped = true;
     static #sleeping = false;
     static #listeningSuspensions = 0;
