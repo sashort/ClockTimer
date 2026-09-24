@@ -927,7 +927,7 @@ assert.match(
 );
 assert.match(
     app,
-    /dictateSpeechMetric\([\s\S]*speechResponse:[\s\S]*type:\s*"dictation"/
+    /const dictateSpeechMetric\s*=[\s\S]*speechResponse:[\s\S]*type:\s*"dictation"/
 );
 assert.match(
     app,
