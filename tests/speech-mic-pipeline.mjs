@@ -1422,7 +1422,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /lastExactCandidate[\s\S]*\.revision !==[\s\S]*transcriptRevision[\s\S]*"candidate-stable"[\s\S]*true/
+    /lastExactCandidate[\s\S]*\.revision !==[\s\S]*transcriptRevision[\s\S]*"candidate-silence"[\s\S]*true/
 );
 assert.doesNotMatch(
     speechMenuSource,
