@@ -1035,10 +1035,18 @@ class SpeechMenu {
             !SpeechMenu.#utterance
                 .committing
         ) {
-            SpeechMenu
-                .#commitHeldCandidate(
-                    SpeechMenu.#utterance
-                );
+            const currentExact =
+                SpeechMenu
+                    .#exactCandidate(
+                        SpeechMenu.#utterance
+                    );
+
+            if (currentExact) {
+                void SpeechMenu
+                    .#commitUtterance(
+                        SpeechMenu.#utterance
+                    );
+            }
         }
 
         if (
@@ -1841,6 +1849,18 @@ class SpeechMenu {
             pool;
 
         if (
+            pool.length &&
+            utterance.lastExactCandidate &&
+            !utterance.committed &&
+            !utterance.committing
+        ) {
+            SpeechMenu
+                .#armCandidateHardDeadline(
+                    utterance
+                );
+        }
+
+        if (
             !pool.length &&
             !utterance.committing &&
             !utterance.lastExactCandidate &&
@@ -2586,42 +2606,12 @@ class SpeechMenu {
                 );
     }
 
-    static #scheduleCandidateCommit(
-        utterance,
-        revision
+    static #armCandidateHardDeadline(
+        utterance
     ) {
-        const exactCandidate =
-            SpeechMenu
-                .#exactCandidate(
-                    utterance
-                );
-
-        if (
-            !utterance ||
-            utterance.committed ||
-            utterance.committing ||
-            !exactCandidate ||
-            exactCandidate.kind ===
-                "wake"
-        ) {
+        if (!utterance) {
             return false;
         }
-
-        if (
-            SpeechMenu
-                .#hasCompetingContinuation(
-                    utterance,
-                    exactCandidate
-                )
-        ) {
-            return false;
-        }
-
-        utterance.lastExactCandidate = {
-            ...exactCandidate,
-            transcript:
-                utterance.transcript
-        };
 
         if (
             utterance
@@ -2656,13 +2646,90 @@ class SpeechMenu {
                         return;
                     }
 
-                    SpeechMenu
-                        .#commitHeldCandidate(
+                    const currentExact =
+                        SpeechMenu
+                            .#exactCandidate(
+                                utterance
+                            );
+
+                    if (currentExact) {
+                        void SpeechMenu
+                            .#commitUtterance(
+                                utterance
+                            );
+                        return;
+                    }
+
+                    /*
+                     * The recognizer advanced beyond the last exact
+                     * transcript but is still inside a viable command.
+                     * Do not commit the stale snapshot; ask Sherpa for
+                     * its final decode of the newer partial instead.
+                     */
+                    if (
+                        utterance
+                            .lastExactCandidate &&
+                        utterance
+                            .lastExactCandidate
+                            .revision !==
                             utterance
-                        );
+                                .transcriptRevision
+                    ) {
+                        SpeechMenu
+                            .#finishUtterance(
+                                "candidate-stable",
+                                true
+                            );
+                    }
                 },
                 SpeechMenu
                     .#maximumCandidateHoldTimeout
+            );
+
+        return true;
+    }
+
+    static #scheduleCandidateCommit(
+        utterance,
+        revision
+    ) {
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing ||
+            !exactCandidate ||
+            exactCandidate.kind ===
+                "wake"
+        ) {
+            return false;
+        }
+
+        if (
+            SpeechMenu
+                .#hasCompetingContinuation(
+                    utterance,
+                    exactCandidate
+                )
+        ) {
+            return false;
+        }
+
+        utterance.lastExactCandidate = {
+            ...exactCandidate,
+            transcript:
+                utterance.transcript,
+            revision
+        };
+
+        SpeechMenu
+            .#armCandidateHardDeadline(
+                utterance
             );
 
         if (
