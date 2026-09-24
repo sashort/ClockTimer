@@ -296,6 +296,8 @@ const presentationSource = fs.readFileSync(new URL("../PresentationSetters.js", 
 const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-config/index.php", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
 const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
+const speechAssetCacheWorkerSource = fs.readFileSync(new URL("../SpeechAssetCacheWorker.js", import.meta.url), "utf8");
+const sherpaRuntimeHtaccessSource = fs.readFileSync(new URL("../speech/sherpa/runtime/.htaccess", import.meta.url), "utf8");
 const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
 
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
@@ -868,4 +870,41 @@ assert.match(
 assert.match(
     speechMenuSource,
     /candidateHardCommitAt\s*=\s*performance\.now\(\)\s*\+[\s\S]*#maximumCandidateHoldTimeout/
+);
+
+assert.match(
+    app,
+    /serviceWorker[\s\S]*SpeechAssetCacheWorker\.js[\s\S]*updateViaCache:[\s\S]*"none"/
+);
+assert.match(
+    app,
+    /await ensureSpeechAssetCache\(\)[\s\S]*SherpaRecognizer/
+);
+assert.match(
+    sherpaRecognizerSource,
+    /runtimeVersion:\s*version/
+);
+assert.match(
+    sherpaWorkerSource,
+    /function runtimeUrl\(path\)[\s\S]*runtimeVersion[\s\S]*url\.search/
+);
+assert.match(
+    sherpaWorkerSource,
+    /importScripts\([\s\S]*runtimeUrl\([\s\S]*sherpa-onnx-asr\.js/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /CACHE_PREFIX[\s\S]*wmof-sherpa-[\s\S]*caches\.open/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /speech\/sherpa\/runtime\/[\s\S]*cache\.match[\s\S]*cache\.put/
+);
+assert.match(
+    sherpaRuntimeHtaccessSource,
+    /max-age=31536000, immutable/
+);
+assert.match(
+    sherpaRuntimeHtaccessSource,
+    /wasm\|data\|onnx\|js\|txt/
 );
