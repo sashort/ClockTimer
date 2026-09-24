@@ -742,6 +742,34 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
+    /#optionMutationDuration\(\)[\s\S]*\? 750\s*:\s*0/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionEnter\([\s\S]*height:[\s\S]*opacity:[\s\S]*scaleY/
+);
+assert.match(
+    speechMicBarSource,
+    /#animateOptionExit\([\s\S]*height:\s*"0px"[\s\S]*opacity:\s*0/
+);
+assert.match(
+    speechMicBarSource,
+    /#reviveOptionNode\([\s\S]*data-option-exiting[\s\S]*#animateOptionEnter/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionItemKey\([\s\S]*optionItemText/
+);
+assert.match(
+    speechMicBarSource,
+    /insertBefore\([\s\S]*reference\s*\|\|\s*null[\s\S]*#animateOptionEnter/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#renderOptions\([\s\S]{0,10000}#optionsGrid[\s\S]{0,120}\.replaceChildren\(\)/
+);
+assert.match(
+    speechMicBarSource,
     /status\.textContent\s*=\s*" \(unimplemented\)"/
 );
 assert.match(
