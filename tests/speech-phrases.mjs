@@ -89,6 +89,38 @@ assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
+                SpeechMenu
+                    .wakePhrase
+                    .source
+            )
+    ],
+    [
+        "wake",
+        "on"
+    ],
+    "built-in wake controls should extrapolate into continuation phrases"
+);
+
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                SpeechMenu
+                    .sleepPhrase
+                    .source
+            )
+    ],
+    [
+        "sleep",
+        "off"
+    ],
+    "built-in sleep controls should extrapolate into continuation phrases"
+);
+
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
                 "^(?:show )?trip log$"
             )
     ],
