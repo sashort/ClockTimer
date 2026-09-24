@@ -2779,12 +2779,33 @@ class SpeechMenu {
                 if (
                     !placeholder(token)
                 ) {
-                    if (
-                        token !==
+                    const spokenToken =
                         spoken[
                             spokenIndex
-                        ]
+                        ];
+
+                    if (
+                        token !==
+                        spokenToken
                     ) {
+                        /*
+                         * Streaming recognizers revise the final word
+                         * character-by-character/phoneme-by-phoneme.
+                         * Keep a phrase alive when the last observed
+                         * token is still a prefix of the expected token
+                         * (for example "re" / "read" -> "ready").
+                         */
+                        if (
+                            spokenIndex ===
+                                spoken.length -
+                                    1 &&
+                            token.startsWith(
+                                spokenToken
+                            )
+                        ) {
+                            return true;
+                        }
+
                         return false;
                     }
 
