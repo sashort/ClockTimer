@@ -56,6 +56,32 @@ assert.equal(typeof bar.showOptions, "function");
 assert.equal(typeof bar.hideOptions, "function");
 assert.equal(typeof bar.promoteTopLayer, "function");
 
+assert.equal(
+    SpeechMenu.synthesizedSpeechActive,
+    false
+);
+const synthesizedSpeechToken =
+    SpeechMenu.registerSynthesizedSpeech(
+        "Trip started"
+    );
+assert.equal(
+    SpeechMenu.synthesizedSpeechActive,
+    true
+);
+assert.equal(
+    SpeechMenu.unregisterSynthesizedSpeech(
+        synthesizedSpeechToken,
+        {
+            graceMilliseconds: 0
+        }
+    ),
+    true
+);
+assert.equal(
+    SpeechMenu.synthesizedSpeechActive,
+    false
+);
+
 const optionCommand =
     window.document
         .createElement(
@@ -298,14 +324,30 @@ const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js",
 const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
 const sherpaRuntimeHtaccessSource = fs.readFileSync(new URL("../speech/sherpa/runtime/.htaccess", import.meta.url), "utf8");
 const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
+const audioEngineSource = fs.readFileSync(new URL("../api/audio/AudioEngine.js", import.meta.url), "utf8");
 
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
 assert.match(speechMenuSource, /new globalThis\.SherpaRecognizer/);
-assert.match(speechMenuSource, /echoCancellation:\s*false/);
+assert.match(speechMenuSource, /echoCancellation:\s*true/);
 assert.match(speechMenuSource, /noiseSuppression:\s*false/);
 assert.match(speechMenuSource, /autoGainControl:\s*false/);
 assert.match(speechMenuSource, /static #executionEnabled = true;/);
+assert.match(speechMenuSource, /registerSynthesizedSpeech/);
+assert.match(speechMenuSource, /unregisterSynthesizedSpeech/);
+assert.match(speechMenuSource, /#stripSynthesizedSpeech/);
+assert.match(
+    audioEngineSource,
+    /startSong\([\s\S]*suspendListening\s*=\s*false/
+);
+assert.match(
+    audioEngineSource,
+    /registerSynthesizedSpeech/
+);
+assert.match(
+    audioEngineSource,
+    /unregisterSynthesizedSpeech/
+);
 assert.match(speechMenuSource, /static #pipeline = "raw";/);
 assert.match(speechMenuSource, /SpeechMenu\.pipeline must be "raw" or "silero"/);
 assert.match(speechMenuSource, /new globalThis\.SileroVad/);
