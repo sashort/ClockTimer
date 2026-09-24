@@ -468,23 +468,24 @@ function authorize_guarded_access(
     string $scope,
     bool $allowFormToken = false
 ): array {
-    $bearer = access_token_bearer();
-
-    if ($bearer !== null) {
-        return consume_access_token(
-            $bearer,
-            $requiredPermissions,
-            $scope,
-            false
-        );
-    }
-
     $queryToken =
         access_token_query_value();
 
     if ($queryToken !== null) {
         return consume_access_token(
             $queryToken,
+            $requiredPermissions,
+            $scope,
+            true,
+            'token_query'
+        );
+    }
+
+    $bearer = access_token_bearer();
+
+    if ($bearer !== null) {
+        return consume_access_token(
+            $bearer,
             $requiredPermissions,
             $scope,
             false
