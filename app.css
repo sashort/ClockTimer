@@ -914,6 +914,11 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     will-change: transform;
 }
 
+.main-menu-focus-group.main-menu-focus-entering {
+    position: absolute;
+    inset: 0 0 auto;
+}
+
 .main-menu-transition-clip {
     overflow: hidden !important;
     min-height: 0 !important;
