@@ -828,6 +828,146 @@
             }
         }
 
+        speak(
+            value,
+            {
+                lang = "en-US",
+                rate,
+                pitch,
+                volume
+            } = {}
+        ) {
+            const text =
+                String(
+                    value ??
+                    ""
+                ).trim();
+
+            if (!text) {
+                return false;
+            }
+
+            const synthesis =
+                globalThis.speechSynthesis;
+
+            const Utterance =
+                globalThis
+                    .SpeechSynthesisUtterance;
+
+            if (
+                !synthesis ||
+                typeof Utterance !==
+                    "function"
+            ) {
+                return false;
+            }
+
+            const utterance =
+                new Utterance(
+                    text
+                );
+
+            utterance.lang =
+                String(
+                    lang ||
+                    "en-US"
+                );
+
+            if (
+                Number.isFinite(
+                    Number(rate)
+                )
+            ) {
+                utterance.rate =
+                    Number(rate);
+            }
+
+            if (
+                Number.isFinite(
+                    Number(pitch)
+                )
+            ) {
+                utterance.pitch =
+                    Number(pitch);
+            }
+
+            if (
+                Number.isFinite(
+                    Number(volume)
+                )
+            ) {
+                utterance.volume =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(volume)
+                        )
+                    );
+            }
+
+            let synthesizedSpeechToken;
+
+            const finish =
+                () => {
+                    if (
+                        synthesizedSpeechToken !==
+                        undefined
+                    ) {
+                        globalThis
+                            .SpeechMenu
+                            ?.unregisterSynthesizedSpeech?.(
+                                synthesizedSpeechToken
+                            );
+
+                        synthesizedSpeechToken =
+                            undefined;
+                    }
+                };
+
+            utterance.addEventListener(
+                "start",
+                () => {
+                    synthesizedSpeechToken =
+                        globalThis
+                            .SpeechMenu
+                            ?.registerSynthesizedSpeech?.(
+                                text
+                            );
+                },
+                {
+                    once: true
+                }
+            );
+
+            utterance.addEventListener(
+                "end",
+                finish,
+                {
+                    once: true
+                }
+            );
+
+            utterance.addEventListener(
+                "error",
+                finish,
+                {
+                    once: true
+                }
+            );
+
+            try {
+                synthesis.resume();
+            }
+            catch {}
+
+            synthesis.speak(
+                utterance
+            );
+
+            return true;
+        }
+
         async startFrequencies(
             frequencies,
             {
