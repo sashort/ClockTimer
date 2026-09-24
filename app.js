@@ -498,9 +498,13 @@
     const speechTrainingDragHandle = $("#speechTrainingDragHandle");
     const speechTrainingPhrase = $("#speechTrainingPhrase");
     const speechTrainingHeard = $("#speechTrainingHeard");
+    const speechTrainingHeardStatus = $("#speechTrainingHeardStatus");
     const speechTrainingPrompt = $("#speechTrainingPrompt");
     const speechTrainingCount = $("#speechTrainingCount");
     const speechTrainingStartStop = $("#speechTrainingStartStop");
+    const speechTrainingResults = $("#speechTrainingResults");
+    const speechTrainingResultsCount = $("#speechTrainingResultsCount");
+    const speechTrainingResultsList = $("#speechTrainingResultsList");
 
     let speechRecognitionLanguageAvailable = false;
     let speechTrainingConnectionAvailable = false;
@@ -517,6 +521,8 @@
     let speechTrainingPendingReason;
     const speechTrainingPendingSamples = [];
     const speechTrainingSeenUtterances = new Set();
+    const speechTrainingResultsHistory = [];
+    const speechTrainingOutcomeByUtterance = new Map();
 
     new MutationObserver(
         records => {
@@ -6100,6 +6106,1087 @@
         );
     }
 
+    function canResolveSpeechTrainingDivergence() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            PERMISSION_DEVELOPER
+        );
+    }
+
+    function isSpeechTrainingDeveloperPreviewOnly() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            PERMISSION_DEVELOPER_PREVIEW
+        ) &&
+            !Boolean(
+                permissions &
+                PERMISSION_DEVELOPER
+            );
+    }
+
+    function normalizeSpeechTrainingPhrase(
+        value
+    ) {
+        return String(
+            value ||
+            ""
+        )
+            .toLocaleLowerCase()
+            .replace(
+                /<[^>]+>/g,
+                " "
+            )
+            .replace(
+                /[^\p{L}\p{N}\s]/gu,
+                " "
+            )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
+    function speechTrainingEditSimilarity(
+        left,
+        right
+    ) {
+        const a =
+            normalizeSpeechTrainingPhrase(
+                left
+            )
+                .replace(
+                    /\s+/g,
+                    ""
+                );
+
+        const b =
+            normalizeSpeechTrainingPhrase(
+                right
+            )
+                .replace(
+                    /\s+/g,
+                    ""
+                );
+
+        if (!a || !b) {
+            return 0;
+        }
+
+        if (a === b) {
+            return 1;
+        }
+
+        const previous =
+            Array.from(
+                {
+                    length:
+                        b.length +
+                        1
+                },
+                (
+                    _,
+                    index
+                ) => index
+            );
+
+        for (
+            let row = 1;
+            row <= a.length;
+            row++
+        ) {
+            let diagonal =
+                previous[0];
+
+            previous[0] =
+                row;
+
+            for (
+                let column = 1;
+                column <= b.length;
+                column++
+            ) {
+                const above =
+                    previous[
+                        column
+                    ];
+
+                previous[
+                    column
+                ] =
+                    Math.min(
+                        previous[
+                            column
+                        ] +
+                            1,
+                        previous[
+                            column -
+                                1
+                        ] +
+                            1,
+                        diagonal +
+                            (
+                                a[
+                                    row -
+                                        1
+                                ] ===
+                                b[
+                                    column -
+                                        1
+                                ]
+                                    ? 0
+                                    : 1
+                            )
+                    );
+
+                diagonal =
+                    above;
+            }
+        }
+
+        return 1 -
+            previous[
+                b.length
+            ] /
+            Math.max(
+                a.length,
+                b.length
+            );
+    }
+
+    function speechTrainingPhraseWasExpected(
+        observed,
+        target =
+            speechTrainingTarget
+    ) {
+        const heard =
+            normalizeSpeechTrainingPhrase(
+                observed
+            );
+
+        if (!heard || !target) {
+            return false;
+        }
+
+        const heardTokens =
+            new Set(
+                heard.split(
+                    " "
+                )
+                    .filter(
+                        Boolean
+                    )
+            );
+
+        const candidates =
+            [
+                ...new Set(
+                    [
+                        ...(
+                            Array.isArray(
+                                target
+                                    .expectedPhrases
+                            )
+                                ? target
+                                    .expectedPhrases
+                                : []
+                        ),
+                        target.required,
+                        target.phrase,
+                        target.display
+                    ].filter(
+                        Boolean
+                    )
+                )
+            ];
+
+        return candidates.some(
+            candidate => {
+                const expected =
+                    normalizeSpeechTrainingPhrase(
+                        candidate
+                    );
+
+                if (!expected) {
+                    return false;
+                }
+
+                const expectedTokens =
+                    expected
+                        .split(
+                            " "
+                        )
+                        .filter(
+                            Boolean
+                        );
+
+                const common =
+                    expectedTokens
+                        .filter(
+                            token =>
+                                heardTokens
+                                    .has(
+                                        token
+                                    )
+                        )
+                        .length;
+
+                const overlap =
+                    common /
+                    Math.max(
+                        1,
+                        Math.min(
+                            expectedTokens
+                                .length,
+                            heardTokens
+                                .size
+                        )
+                    );
+
+                return (
+                    overlap >=
+                        .66 ||
+                    speechTrainingEditSimilarity(
+                        heard,
+                        expected
+                    ) >=
+                        .7
+                );
+            }
+        );
+    }
+
+    function speechTrainingTargetMatchesCommand(
+        target,
+        element
+    ) {
+        if (!target || !element) {
+            return false;
+        }
+
+        const commandId =
+            element.dataset
+                ?.speechEditorId;
+
+        if (
+            target.commandId &&
+            commandId
+        ) {
+            return (
+                target.commandId ===
+                commandId
+            );
+        }
+
+        const commandKey =
+            element.dataset
+                ?.speechSystemCommand;
+
+        if (
+            target.commandKey &&
+            commandKey
+        ) {
+            return (
+                target.commandKey ===
+                commandKey
+            );
+        }
+
+        const pattern =
+            element
+                .getAttribute?.(
+                    "speech-pattern"
+                ) ||
+            "";
+
+        return Boolean(
+            target.pattern &&
+            pattern &&
+            target.pattern ===
+                pattern
+        );
+    }
+
+    function speechTrainingResultPresentation(
+        result
+    ) {
+        switch (
+            result?.state
+        ) {
+            case "accepted":
+                return {
+                    symbol:
+                        "✓",
+                    label:
+                        "Current model accepted"
+                };
+            case "model-miss":
+                return {
+                    symbol:
+                        "✓",
+                    label:
+                        "Current model rejected"
+                };
+            case "divergence":
+                return {
+                    symbol:
+                        "×",
+                    label:
+                        "Current model rejected · divergence"
+                };
+            default:
+                return {
+                    symbol:
+                        "",
+                    label:
+                        "Discarded · unusable input"
+                };
+        }
+    }
+
+    function speechTrainingSameTarget(
+        left,
+        right
+    ) {
+        return Boolean(
+            left &&
+            right &&
+            left.source ===
+                right.source &&
+            left.category ===
+                right.category &&
+            left.card ===
+                right.card &&
+            left.phrase ===
+                right.phrase
+        );
+    }
+
+    function updateSpeechTrainingCount() {
+        speechTrainingUtteranceCount =
+            speechTrainingResultsHistory
+                .filter(
+                    result =>
+                        result.state !==
+                            "discarded" &&
+                        speechTrainingSameTarget(
+                            result.target,
+                            speechTrainingTarget
+                        )
+                )
+                .length;
+
+        if (speechTrainingCount) {
+            speechTrainingCount
+                .textContent =
+                String(
+                    speechTrainingUtteranceCount
+                );
+        }
+    }
+
+    function setSpeechTrainingHeardResult(
+        result
+    ) {
+        if (speechTrainingHeard) {
+            speechTrainingHeard
+                .textContent =
+                "Heard: " +
+                (
+                    result?.observed ||
+                    "—"
+                );
+        }
+
+        if (!speechTrainingHeardStatus) {
+            return;
+        }
+
+        if (!result) {
+            speechTrainingHeardStatus
+                .hidden =
+                true;
+            speechTrainingHeardStatus
+                .textContent =
+                "";
+            speechTrainingHeardStatus
+                .removeAttribute(
+                    "data-result"
+                );
+            return;
+        }
+
+        const presentation =
+            speechTrainingResultPresentation(
+                result
+            );
+
+        speechTrainingHeardStatus.hidden =
+            false;
+        speechTrainingHeardStatus
+            .dataset
+            .result =
+            result.state;
+        speechTrainingHeardStatus
+            .textContent =
+            presentation.symbol;
+        speechTrainingHeardStatus
+            .setAttribute(
+                "aria-label",
+                presentation.label
+            );
+        speechTrainingHeardStatus.title =
+            presentation.label;
+    }
+
+    function speechTrainingReviewLabel(
+        result
+    ) {
+        if (
+            result.divergenceStatus ===
+                "approved"
+        ) {
+            return "Approved as phrase";
+        }
+
+        if (
+            result.divergenceStatus ===
+                "merged"
+        ) {
+            return "Merged with existing phrase";
+        }
+
+        return isSpeechTrainingDeveloperPreviewOnly()
+            ? "Pending developer review · read only"
+            : "Pending developer review";
+    }
+
+    async function reviewSpeechTrainingDivergence(
+        result,
+        decision
+    ) {
+        if (
+            !result ||
+            result.state !==
+                "divergence" ||
+            !canResolveSpeechTrainingDivergence()
+        ) {
+            return false;
+        }
+
+        if (
+            decision ===
+                "purge" &&
+            !result.contributionId
+        ) {
+            return removeSpeechTrainingResult(
+                result
+            );
+        }
+
+        if (!result.contributionId) {
+            result.divergenceStatus =
+                decision ===
+                    "approve"
+                    ? "approved"
+                    : "merged";
+            result.reviewDecision =
+                decision;
+            renderSpeechTrainingResults();
+            return true;
+        }
+
+        const csrf =
+            await ensureSpeechTrainingCsrfToken();
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/speech-corrections/?language=en-US",
+                {
+                    method:
+                        "POST",
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Content-Type":
+                            "application/json",
+                        "X-CSRF-Token":
+                            csrf
+                    },
+                    body:
+                        JSON.stringify({
+                            action:
+                                "divergence-review",
+                            language:
+                                "en-US",
+                            decision,
+                            ids: [
+                                result
+                                    .contributionId
+                            ]
+                        })
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to review divergent speech training."
+            );
+        }
+
+        if (decision === "purge") {
+            const index =
+                speechTrainingResultsHistory
+                    .indexOf(
+                        result
+                    );
+
+            if (index >= 0) {
+                speechTrainingResultsHistory
+                    .splice(
+                        index,
+                        1
+                    );
+            }
+        }
+        else {
+            result.divergenceStatus =
+                decision ===
+                    "approve"
+                    ? "approved"
+                    : "merged";
+        }
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
+    async function removeSpeechTrainingResult(
+        result
+    ) {
+        if (!result) {
+            return false;
+        }
+
+        if (result.contributionId) {
+            const csrf =
+                await ensureSpeechTrainingCsrfToken();
+
+            const response =
+                await fetch(
+                    API_BASE +
+                    "api/speech-corrections/?language=en-US",
+                    {
+                        method:
+                            "DELETE",
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json",
+                            "Content-Type":
+                                "application/json",
+                            "X-CSRF-Token":
+                                csrf
+                        },
+                        body:
+                            JSON.stringify({
+                                action:
+                                    "contribution",
+                                language:
+                                    "en-US",
+                                id:
+                                    result
+                                        .contributionId,
+                                reason:
+                                    "Deleted from in-app speech training results"
+                            })
+                    }
+                );
+
+            const data =
+                await response
+                    .json()
+                    .catch(
+                        () => ({})
+                    );
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to delete speech training run."
+                );
+            }
+        }
+
+        const pendingIndex =
+            speechTrainingPendingSamples
+                .indexOf(
+                    result
+                );
+
+        if (pendingIndex >= 0) {
+            speechTrainingPendingSamples
+                .splice(
+                    pendingIndex,
+                    1
+                );
+        }
+
+        const historyIndex =
+            speechTrainingResultsHistory
+                .indexOf(
+                    result
+                );
+
+        if (historyIndex >= 0) {
+            speechTrainingResultsHistory
+                .splice(
+                    historyIndex,
+                    1
+                );
+        }
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
+    function renderSpeechTrainingResults() {
+        if (speechTrainingResultsCount) {
+            speechTrainingResultsCount
+                .textContent =
+                String(
+                    speechTrainingResultsHistory
+                        .length
+                );
+        }
+
+        if (!speechTrainingResultsList) {
+            return;
+        }
+
+        speechTrainingResultsList
+            .replaceChildren();
+
+        for (
+            const result of
+            [
+                ...speechTrainingResultsHistory
+            ].reverse()
+        ) {
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "speech-training-result";
+            row.dataset.result =
+                result.state;
+
+            const presentation =
+                speechTrainingResultPresentation(
+                    result
+                );
+
+            const icon =
+                document.createElement(
+                    "span"
+                );
+
+            icon.className =
+                "speech-training-result-icon";
+            icon.dataset.result =
+                result.state;
+            icon.textContent =
+                presentation.symbol;
+            icon.setAttribute(
+                "aria-label",
+                presentation.label
+            );
+
+            const copy =
+                document.createElement(
+                    "span"
+                );
+
+            copy.className =
+                "speech-training-result-copy";
+
+            const heard =
+                document.createElement(
+                    "strong"
+                );
+
+            heard.textContent =
+                result.observed ||
+                "Bad input";
+
+            const target =
+                document.createElement(
+                    "span"
+                );
+
+            target.textContent =
+                "Expected: " +
+                (
+                    result.target
+                        ?.display ||
+                    result.target
+                        ?.phrase ||
+                    "command"
+                );
+
+            copy.append(
+                heard,
+                target
+            );
+
+            const state =
+                document.createElement(
+                    "span"
+                );
+
+            state.className =
+                "speech-training-result-state";
+            state.textContent =
+                presentation.label;
+
+            const remove =
+                document.createElement(
+                    "button"
+                );
+
+            remove.type =
+                "button";
+            remove.className =
+                "speech-training-result-remove";
+            remove.title =
+                "Delete this training run";
+            remove.setAttribute(
+                "aria-label",
+                "Delete this training run"
+            );
+
+            remove.addEventListener(
+                "click",
+                () => {
+                    remove.disabled =
+                        true;
+
+                    void removeSpeechTrainingResult(
+                        result
+                    )
+                        .catch(
+                            error => {
+                                remove.disabled =
+                                    false;
+                                console.error(
+                                    error
+                                );
+                                setSpeechTrainingPrompt(
+                                    "error",
+                                    "Error"
+                                );
+                            }
+                        );
+                }
+            );
+
+            row.append(
+                icon,
+                copy,
+                state,
+                remove
+            );
+
+            if (
+                result.state ===
+                    "divergence"
+            ) {
+                const review =
+                    document.createElement(
+                        "div"
+                    );
+
+                review.className =
+                    "speech-training-result-review";
+
+                const label =
+                    document.createElement(
+                        "span"
+                    );
+
+                label.textContent =
+                    speechTrainingReviewLabel(
+                        result
+                    );
+
+                review.append(
+                    label
+                );
+
+                if (
+                    canResolveSpeechTrainingDivergence() &&
+                    ![
+                        "approved",
+                        "merged"
+                    ].includes(
+                        result
+                            .divergenceStatus
+                    )
+                ) {
+                    for (
+                        const [
+                            decision,
+                            text
+                        ] of [
+                            [
+                                "approve",
+                                "Approve phrase"
+                            ],
+                            [
+                                "merge",
+                                "Merge"
+                            ],
+                            [
+                                "purge",
+                                "Purge"
+                            ]
+                        ]
+                    ) {
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
+
+                        button.type =
+                            "button";
+                        button.dataset
+                            .decision =
+                            decision;
+                        button.textContent =
+                            text;
+
+                        button.addEventListener(
+                            "click",
+                            () => {
+                                button.disabled =
+                                    true;
+
+                                void reviewSpeechTrainingDivergence(
+                                    result,
+                                    decision
+                                )
+                                    .catch(
+                                        error => {
+                                            button.disabled =
+                                                false;
+                                            console.error(
+                                                error
+                                            );
+                                        }
+                                    );
+                            }
+                        );
+
+                        review.append(
+                            button
+                        );
+                    }
+                }
+
+                row.append(
+                    review
+                );
+            }
+
+            speechTrainingResultsList
+                .append(
+                    row
+                );
+        }
+    }
+
+    function clearSpeechTrainingResults() {
+        speechTrainingResultsHistory
+            .splice(
+                0,
+                speechTrainingResultsHistory
+                    .length
+            );
+
+        speechTrainingOutcomeByUtterance
+            .clear();
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+        setSpeechTrainingHeardResult();
+
+        if (speechTrainingResults) {
+            speechTrainingResults.open =
+                false;
+        }
+    }
+
+    function finalizeSpeechTrainingResult(
+        telemetry
+    ) {
+        const utteranceId =
+            telemetry.utteranceId ??
+            telemetry.event
+                ?.id ??
+            telemetry.event
+                ?.utteranceId;
+
+        if (
+            utteranceId ===
+                undefined ||
+            speechTrainingSeenUtterances
+                .has(
+                    utteranceId
+                )
+        ) {
+            return false;
+        }
+
+        speechTrainingSeenUtterances
+            .add(
+                utteranceId
+            );
+
+        const observed =
+            String(
+                telemetry.heard ||
+                telemetry.event
+                    ?.transcript ||
+                telemetry.transcript ||
+                ""
+            ).trim();
+
+        const outcome =
+            speechTrainingOutcomeByUtterance
+                .get(
+                    utteranceId
+                ) ||
+            {};
+
+        speechTrainingOutcomeByUtterance
+            .delete(
+                utteranceId
+            );
+
+        const modelAccepted =
+            Boolean(
+                outcome.matchedExpected
+            );
+
+        const expected =
+            observed
+                ? speechTrainingPhraseWasExpected(
+                    observed,
+                    speechTrainingTarget
+                )
+                : false;
+
+        const state =
+            !observed
+                ? "discarded"
+                : modelAccepted
+                    ? "accepted"
+                    : expected
+                        ? "model-miss"
+                        : "divergence";
+
+        const result = {
+            utteranceId,
+            target: {
+                ...speechTrainingTarget,
+                expectedPhrases:
+                    [
+                        ...(
+                            speechTrainingTarget
+                                ?.expectedPhrases ||
+                            []
+                        )
+                    ]
+            },
+            observed,
+            state,
+            expected,
+            modelAccepted,
+            divergenceStatus:
+                state ===
+                    "divergence"
+                    ? "pending"
+                    : undefined,
+            pipeline:
+                globalThis
+                    .SpeechMenu
+                    ?.pipeline,
+            runtimeRevision:
+                globalThis
+                    .SherpaRecognizer
+                    ?.runtimeRevision,
+            capturedAt:
+                Date.now()
+        };
+
+        speechTrainingResultsHistory
+            .push(
+                result
+            );
+
+        if (
+            state !==
+                "discarded"
+        ) {
+            speechTrainingPendingSamples
+                .push(
+                    result
+                );
+        }
+
+        setSpeechTrainingHeardResult(
+            result
+        );
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
     function syncSpeechTrainingControls() {
         if (speechTrainingButton) {
             const unavailable =
@@ -6301,15 +7388,10 @@
                 "Select a command";
         }
 
-        if (speechTrainingHeard) {
-            speechTrainingHeard.textContent =
-                "Heard: —";
-        }
-
-        if (speechTrainingCount) {
-            speechTrainingCount.textContent =
-                "0";
-        }
+        setSpeechTrainingHeardResult();
+        speechTrainingOutcomeByUtterance
+            .clear();
+        updateSpeechTrainingCount();
 
         if (clearSelection) {
             speechMicBar
@@ -6496,27 +7578,44 @@
                                     null,
                                 commandKey:
                                     target.commandKey ||
+                                    null,
+                                expectedPhrases:
+                                    target.expectedPhrases ||
+                                    [],
+                                trainingResultState:
+                                    sample.state ||
+                                    null,
+                                modelAccepted:
+                                    Boolean(
+                                        sample.modelAccepted
+                                    ),
+                                expected:
+                                    Boolean(
+                                        sample.expected
+                                    ),
+                                divergenceStatus:
+                                    sample.divergenceStatus ||
                                     null
                             }
                         })
                 }
             );
 
-        if (!response.ok) {
-            const data =
-                await response
-                    .json()
-                    .catch(
-                        () => ({})
-                    );
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
 
+        if (!response.ok) {
             throw new Error(
                 data.message ||
                 "Unable to save speech training sample."
             );
         }
 
-        return true;
+        return data;
     }
 
     function clearPendingSpeechTrainingSamples() {
@@ -6540,9 +7639,23 @@
                     0
                 ];
 
-            await persistInAppSpeechTrainingSample(
-                sample
-            );
+            const persisted =
+                await persistInAppSpeechTrainingSample(
+                    sample
+                );
+
+            sample.contributionId =
+                persisted
+                    ?.contribution
+                    ?.id ||
+                persisted
+                    ?.sample
+                    ?.id ||
+                sample.contributionId;
+            sample.committed =
+                true;
+
+            renderSpeechTrainingResults();
 
             speechTrainingPendingSamples
                 .shift();
@@ -6749,6 +7862,7 @@
         speechMicBar.trainingLocked =
             false;
 
+        clearSpeechTrainingResults();
         resetSpeechTrainingTarget();
 
         globalThis.SpeechMenu
@@ -7986,9 +9100,9 @@
                     promote: true
                 });
 
-                speechTrainingUtteranceCount =
-                    0;
                 speechTrainingSeenUtterances
+                    .clear();
+                speechTrainingOutcomeByUtterance
                     .clear();
 
                 if (speechTrainingPhrase) {
@@ -8001,18 +9115,8 @@
                         "Command";
                 }
 
-                if (speechTrainingHeard) {
-                    speechTrainingHeard
-                        .textContent =
-                        "Heard: —";
-                }
-
-                if (speechTrainingCount) {
-                    speechTrainingCount
-                        .textContent =
-                        "0";
-                }
-
+                setSpeechTrainingHeardResult();
+                updateSpeechTrainingCount();
                 syncSpeechTrainingStartButton();
             }
         );
@@ -8059,13 +9163,19 @@
                     return;
                 }
 
+                const utteranceId =
+                    telemetry.utteranceId ??
+                    telemetry.event
+                        ?.id ??
+                    telemetry.event
+                        ?.utteranceId;
+
                 const transcript =
                     String(
                         telemetry.heard ||
                         telemetry.event
                             ?.transcript ||
                         telemetry.transcript ||
-                        telemetry.response ||
                         ""
                     ).trim();
 
@@ -8083,6 +9193,20 @@
                     telemetry.type ===
                         "utteranceStarted"
                 ) {
+                    if (
+                        utteranceId !==
+                            undefined
+                    ) {
+                        speechTrainingOutcomeByUtterance
+                            .set(
+                                utteranceId,
+                                {
+                                    matchedExpected:
+                                        false
+                                }
+                            );
+                    }
+
                     clearTimeout(
                         speechTrainingPromptTimer
                     );
@@ -8092,6 +9216,49 @@
                         "Speak"
                     );
 
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "speechCommandMatched" &&
+                    utteranceId !==
+                        undefined
+                ) {
+                    const outcome =
+                        speechTrainingOutcomeByUtterance
+                            .get(
+                                utteranceId
+                            ) ||
+                        {
+                            matchedExpected:
+                                false
+                        };
+
+                    if (
+                        speechTrainingTargetMatchesCommand(
+                            speechTrainingTarget,
+                            telemetry.event
+                                ?.commandElement
+                        )
+                    ) {
+                        outcome.matchedExpected =
+                            true;
+                    }
+
+                    speechTrainingOutcomeByUtterance
+                        .set(
+                            utteranceId,
+                            outcome
+                        );
+
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceTranscribed"
+                ) {
                     return;
                 }
 
@@ -8132,8 +9299,7 @@
                 if (
                     ![
                         "utteranceCommitted",
-                        "utteranceUnrecognized",
-                        "utteranceTranscribed"
+                        "utteranceUnrecognized"
                     ].includes(
                         telemetry.type
                     )
@@ -8141,90 +9307,9 @@
                     return;
                 }
 
-                const utteranceId =
-                    telemetry.utteranceId ??
-                    telemetry.event
-                        ?.id ??
-                    telemetry.event
-                        ?.utteranceId;
-
-                const observed =
-                    String(
-                        telemetry.heard ||
-                        telemetry.event
-                            ?.transcript ||
-                        telemetry.transcript ||
-                        ""
-                    ).trim();
-
-                if (
-                    !observed ||
-                    utteranceId ===
-                        undefined ||
-                    speechTrainingSeenUtterances
-                        .has(
-                            utteranceId
-                        )
-                ) {
-                    return;
-                }
-
-                speechTrainingSeenUtterances
-                    .add(
-                        utteranceId
-                    );
-
-                speechTrainingUtteranceCount +=
-                    1;
-
-                if (speechTrainingCount) {
-                    speechTrainingCount
-                        .textContent =
-                        String(
-                            speechTrainingUtteranceCount
-                        );
-                }
-
-                speechTrainingPendingSamples
-                    .push({
-                        target: {
-                            source:
-                                speechTrainingTarget
-                                    .source,
-                            category:
-                                speechTrainingTarget
-                                    .category,
-                            card:
-                                speechTrainingTarget
-                                    .card,
-                            phrase:
-                                speechTrainingTarget
-                                    .phrase,
-                            display:
-                                speechTrainingTarget
-                                    .display,
-                            pattern:
-                                speechTrainingTarget
-                                    .pattern,
-                            commandId:
-                                speechTrainingTarget
-                                    .commandId,
-                            commandKey:
-                                speechTrainingTarget
-                                    .commandKey
-                        },
-                        observed,
-                        pipeline:
-                            globalThis
-                                .SpeechMenu
-                                ?.pipeline,
-                        runtimeRevision:
-                            globalThis
-                                .SherpaRecognizer
-                                ?.runtimeRevision,
-                        capturedAt:
-                            Date.now()
-                    });
+                finalizeSpeechTrainingResult(
+                    telemetry
+                );
             }
         );
 
