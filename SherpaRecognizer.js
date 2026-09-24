@@ -88,6 +88,8 @@
                         SherpaRecognizer.runtimeBase + "/",
                         location.href
                     ).href,
+                runtimeVersion:
+                    version,
                 hotwords:
                     SherpaRecognizer
                         .normalizeHotwords(
