@@ -480,6 +480,8 @@
     const stateDialog = $("#stateSettingsDialog");
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
+    const menuAccountRow = $("#menuAccountRow");
+    const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
@@ -2663,6 +2665,12 @@
         }
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
+
+        if (connected) {
+            menuLogoutSlot?.append(authButton);
+        } else {
+            menuAccountRow?.append(authButton);
+        }
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
