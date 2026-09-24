@@ -6159,6 +6159,117 @@
             .trim();
     }
 
+    function speechTrainingEnglishSoftOmission(
+        observed,
+        expected
+    ) {
+        if (
+            !observed ||
+            !expected ||
+            observed ===
+                expected
+        ) {
+            return false;
+        }
+
+        const weakConsonants =
+            new Set([
+                "s",
+                "z",
+                "f",
+                "v",
+                "h"
+            ]);
+
+        const weakFinalConsonants =
+            new Set([
+                ...weakConsonants,
+                "t",
+                "d"
+            ]);
+
+        if (
+            expected.length ===
+                observed.length +
+                    1
+        ) {
+            for (
+                let index = 0;
+                index < expected.length;
+                index++
+            ) {
+                if (
+                    expected.slice(
+                        0,
+                        index
+                    ) +
+                        expected.slice(
+                            index +
+                                1
+                        ) !==
+                    observed
+                ) {
+                    continue;
+                }
+
+                const omitted =
+                    expected[
+                        index
+                    ];
+
+                if (
+                    weakConsonants.has(
+                        omitted
+                    )
+                ) {
+                    return true;
+                }
+
+                if (
+                    index ===
+                        expected.length -
+                            1 &&
+                    weakFinalConsonants
+                        .has(
+                            omitted
+                        )
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        const softClusters = [
+            "sh",
+            "th",
+            "ph",
+            "wh"
+        ];
+
+        return softClusters.some(
+            cluster =>
+                (
+                    expected.startsWith(
+                        cluster
+                    ) &&
+                    observed ===
+                        expected.slice(
+                            cluster.length
+                        )
+                ) ||
+                (
+                    expected.endsWith(
+                        cluster
+                    ) &&
+                    observed ===
+                        expected.slice(
+                            0,
+                            -cluster.length
+                        )
+                )
+        );
+    }
+
     function speechTrainingTokenBelongsToFamily(
         observed,
         expected
@@ -6185,88 +6296,9 @@
             return true;
         }
 
-        /*
-         * Keep small recognizer slips inside the existing phrase family
-         * without allowing materially different wording to become an
-         * automatic alias.  This is intentionally token-local: a phrase
-         * such as "voice menu" cannot become equivalent to "commands".
-         */
-        if (
-            observed.length < 4 ||
-            expected.length < 4 ||
-            Math.abs(
-                observed.length -
-                expected.length
-            ) > 1
-        ) {
-            return false;
-        }
-
-        let previous =
-            Array.from(
-                {
-                    length:
-                        expected.length +
-                        1
-                },
-                (
-                    _,
-                    index
-                ) => index
-            );
-
-        for (
-            let row = 1;
-            row <= observed.length;
-            row++
-        ) {
-            const current = [
-                row
-            ];
-
-            for (
-                let column = 1;
-                column <= expected.length;
-                column++
-            ) {
-                current[column] =
-                    Math.min(
-                        current[
-                            column -
-                                1
-                        ] +
-                            1,
-                        previous[
-                            column
-                        ] +
-                            1,
-                        previous[
-                            column -
-                                1
-                        ] +
-                            (
-                                observed[
-                                    row -
-                                        1
-                                ] ===
-                                expected[
-                                    column -
-                                        1
-                                ]
-                                    ? 0
-                                    : 1
-                            )
-                    );
-            }
-
-            previous =
-                current;
-        }
-
-        return (
-            previous[
-                expected.length
-            ] <= 1
+        return speechTrainingEnglishSoftOmission(
+            observed,
+            expected
         );
     }
 
