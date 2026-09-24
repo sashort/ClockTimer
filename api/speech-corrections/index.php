@@ -308,16 +308,15 @@ if ($method === 'GET') {
         $payload['targetAccuracy'] =
             SPEECH_TRAINING_TARGET_ACCURACY;
 
+        $payload['canTrain'] =
+            $manageUser !== null;
+
         $payload['canWrite'] =
-            $manageUser !== null
-                ? permission_mask_allows(
-                    (int) $manageUser['permissions'],
-                    PERMISSION_DEVELOPER
-                )
-                : guarded_access_has_permission(
-                    $authorization,
-                    PERMISSION_DEVELOPER
-                );
+            $manageUser !== null &&
+            permission_mask_allows(
+                (int) $manageUser['permissions'],
+                PERMISSION_DEVELOPER
+            );
 
         $payload['csrfToken'] =
             csrf_token();
@@ -374,43 +373,12 @@ if (
         'sample'
 ) {
     $sampleUser =
-        optional_current_user();
+        current_user();
 
-    $sampleAuthorization =
-        null;
+    require_csrf();
 
-    if ($sampleUser !== null) {
-        require_csrf();
-        $actorId =
-            (int) $sampleUser['id'];
-    } else {
-        $sampleAuthorization =
-            authorize_guarded_access(
-                [
-                    PERMISSION_DEVELOPER_PREVIEW,
-                    PERMISSION_DEVELOPER
-                ],
-                ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
-            );
-
-        if (
-            guarded_access_requires_csrf(
-                $sampleAuthorization
-            )
-        ) {
-            require_csrf();
-        }
-
-        $tokenActorId =
-            guarded_access_audit_user_id(
-                $sampleAuthorization
-            );
-
-        $actorId =
-            $tokenActorId > 0
-                ? $tokenActorId
-                : null;
-    }
+    $actorId =
+        (int) $sampleUser['id'];
 
     $phraseKey =
         speech_training_phrase_key(
@@ -582,28 +550,15 @@ if (
     ], 201);
 }
 
-$authorization =
-    authorize_guarded_access(
-        [PERMISSION_DEVELOPER],
-        ACCESS_TOKEN_SCOPE_SPEECH_EDITOR
+$writeUser =
+    require_permission(
+        PERMISSION_DEVELOPER
     );
 
-if (
-    guarded_access_requires_csrf(
-        $authorization
-    )
-) {
-    require_csrf();
-}
+require_csrf();
 
 $actorId =
-    guarded_access_audit_user_id(
-        $authorization
-    );
-
-if ($actorId <= 0) {
-    $actorId = null;
-}
+    (int) $writeUser['id'];
 
 if ($method === 'DELETE') {
     $id =
