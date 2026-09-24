@@ -88,6 +88,35 @@ function access_token_form_value(): ?string
     return $value === '' ? null : $value;
 }
 
+function access_token_query_value(): ?string
+{
+    if (!array_key_exists('access_token', $_GET)) {
+        return null;
+    }
+
+    $value = $_GET['access_token'];
+
+    if (!is_string($value)) {
+        api_error(
+            'The access token is invalid.',
+            401,
+            'invalid_access_token'
+        );
+    }
+
+    $value = trim($value);
+
+    if ($value === '') {
+        api_error(
+            'The access token is invalid.',
+            401,
+            'invalid_access_token'
+        );
+    }
+
+    return $value;
+}
+
 function access_token_hash(string $token): string
 {
     return hash('sha256', $token);
@@ -171,7 +200,8 @@ function consume_access_token(
     string $rawToken,
     array $requiredPermissions,
     string $scope,
-    bool $establishSessionGrant = false
+    bool $establishSessionGrant = false,
+    string $mode = 'token_bearer'
 ): array {
     if (
         !in_array(
@@ -337,7 +367,10 @@ function consume_access_token(
         $pdo->commit();
 
         $authorization = [
-            'mode' => $establishSessionGrant ? 'token_form' : 'token_bearer',
+            'mode' =>
+                $establishSessionGrant
+                    ? 'token_form'
+                    : $mode,
             'scope' => $scope,
             'token_id' => (int) $row['id'],
             'token_name' => (string) $row['name'],
@@ -368,8 +401,24 @@ function consume_access_token(
 
 function existing_guarded_access(
     array $requiredPermissions,
-    string $scope
+    string $scope,
+    bool $allowQueryToken = true
 ): ?array {
+    if ($allowQueryToken) {
+        $queryToken =
+            access_token_query_value();
+
+        if ($queryToken !== null) {
+            return consume_access_token(
+                $queryToken,
+                $requiredPermissions,
+                $scope,
+                false,
+                'token_query'
+            );
+        }
+    }
+
     $user = optional_current_user();
 
     if ($user !== null && has_any_permission($user, ...$requiredPermissions)) {
@@ -427,6 +476,18 @@ function authorize_guarded_access(
         );
     }
 
+    $queryToken =
+        access_token_query_value();
+
+    if ($queryToken !== null) {
+        return consume_access_token(
+            $queryToken,
+            $requiredPermissions,
+            $scope,
+            false
+        );
+    }
+
     if ($allowFormToken) {
         $formToken = access_token_form_value();
 
@@ -442,7 +503,8 @@ function authorize_guarded_access(
 
     $existing = existing_guarded_access(
         $requiredPermissions,
-        $scope
+        $scope,
+        false
     );
 
     if ($existing !== null) {
@@ -518,7 +580,7 @@ function guarded_access_requires_csrf(array $authorization): bool
 {
     return !in_array(
         $authorization['mode'] ?? '',
-        ['token_bearer', 'token_form'],
+        ['token_bearer', 'token_query', 'token_form'],
         true
     );
 }
