@@ -519,39 +519,6 @@ class SpeechMicBar extends HTMLElement {
                         infinite;
                 }
 
-                #bar::after {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    z-index: 4;
-                    border-radius: inherit;
-                    background:
-                        linear-gradient(
-                            to bottom left,
-                            transparent
-                                calc(50% - 3px),
-                            #e32636
-                                calc(50% - 3px),
-                            #e32636
-                                calc(50% + 3px),
-                            transparent
-                                calc(50% + 3px)
-                        );
-                    filter:
-                        drop-shadow(
-                            0 1px 1px
-                            rgb(0 0 0 / 48%)
-                        );
-                    opacity: 0;
-                    pointer-events: none;
-                    transition:
-                        opacity 120ms linear;
-                }
-
-                :host([state="muted"])
-                #bar::after {
-                    opacity: 1;
-                }
 
                 @keyframes speech-load-wave {
                     from {
@@ -584,6 +551,7 @@ class SpeechMicBar extends HTMLElement {
                     flex: 0 0 48px;
                     display: grid;
                     place-items: center;
+                    overflow: hidden;
                     border-radius: 50%;
                     color: rgb(255 255 255 / 70%);
                     background: rgb(0 30 96 / 76%);
@@ -597,6 +565,40 @@ class SpeechMicBar extends HTMLElement {
                     background: currentColor;
                     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
                     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+                }
+
+                #mic::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 2;
+                    border-radius: inherit;
+                    background:
+                        linear-gradient(
+                            to bottom left,
+                            transparent
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% + 3px),
+                            transparent
+                                calc(50% + 3px)
+                        );
+                    filter:
+                        drop-shadow(
+                            0 1px 1px
+                            rgb(0 0 0 / 48%)
+                        );
+                    opacity: 0;
+                    pointer-events: none;
+                    transition:
+                        opacity 120ms linear;
+                }
+
+                :host([state="muted"])
+                #mic::after {
+                    opacity: 1;
                 }
 
                 :host([state="listening"]) #mic,
