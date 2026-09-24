@@ -52,6 +52,7 @@ class SpeechMicBar extends HTMLElement {
     #systemSpeechMenu;
     #wakeCommand;
     #sleepCommand;
+    #offCommand;
 
     constructor() {
         super();
@@ -962,14 +963,20 @@ class SpeechMicBar extends HTMLElement {
         this.#wakeCommand =
             ensureCommand(
                 "wake",
-                "^(?:wake|on)$",
+                "^wake$",
                 "SpeechMenu.wake"
             );
         this.#sleepCommand =
             ensureCommand(
                 "sleep",
-                "^(?:sleep|off)$",
+                "^sleep$",
                 "SpeechMenu.sleep"
+            );
+        this.#offCommand =
+            ensureCommand(
+                "off",
+                "^off$",
+                "WMOFActions.disableSpeechRecognition"
             );
         ensureCommand(
             "commands",
@@ -983,7 +990,8 @@ class SpeechMicBar extends HTMLElement {
     setSystemSpeechPatterns(
         {
             wake,
-            sleep
+            sleep,
+            off
         } = {}
     ) {
         this.#ensureSystemSpeechMenu();
@@ -1000,6 +1008,10 @@ class SpeechMicBar extends HTMLElement {
                 [
                     this.#sleepCommand,
                     sleep
+                ],
+                [
+                    this.#offCommand,
+                    off
                 ]
             ]
         ) {
