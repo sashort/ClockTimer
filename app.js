@@ -7168,6 +7168,8 @@
 
     let numberPadAmbientTone;
     let numberPadAmbientToneGeneration = 0;
+    const activeNumberPadTouchTones =
+        new Map();
 
     function startNumberPadAmbientTone() {
         const generation =
@@ -7221,6 +7223,47 @@
             ?.stop?.();
         numberPadAmbientTone =
             undefined;
+    }
+
+    function stopNumberPadTouchTone(
+        button
+    ) {
+        const state =
+            activeNumberPadTouchTones
+                .get(
+                    button
+                );
+
+        if (!state) {
+            return;
+        }
+
+        state.released =
+            true;
+
+        state.handle
+            ?.stop?.();
+
+        activeNumberPadTouchTones
+            .delete(
+                button
+            );
+    }
+
+    function stopAllNumberPadAudio() {
+        stopNumberPadAmbientTone();
+
+        for (
+            const button of
+            Array.from(
+                activeNumberPadTouchTones
+                    .keys()
+            )
+        ) {
+            stopNumberPadTouchTone(
+                button
+            );
+        }
     }
 
     async function openNumberPad({
@@ -7375,7 +7418,6 @@
         const state = numberPadState;
         if (!state) return false;
 
-        stopNumberPadAmbientTone();
         if (!allowChanged && numberPadHasChanges()) return false;
 
         const target = destination ?? state.cancelTarget ?? "home";
@@ -8653,30 +8695,6 @@
                 )
         );
 
-        const activeTouchTones =
-            new WeakMap();
-
-        const stopTouchTone =
-            button => {
-                const state =
-                    activeTouchTones.get(
-                        button
-                    );
-
-                if (!state) {
-                    return;
-                }
-
-                state.released =
-                    true;
-
-                state.handle?.stop?.();
-
-                activeTouchTones.delete(
-                    button
-                );
-            };
-
         numberPadDialog
             .querySelectorAll(
                 "[data-touch-tone]"
@@ -8686,7 +8704,7 @@
                     button.addEventListener(
                         "pointerdown",
                         event => {
-                            stopTouchTone(
+                            stopNumberPadTouchTone(
                                 button
                             );
 
@@ -8709,10 +8727,11 @@
                                 handle: undefined
                             };
 
-                            activeTouchTones.set(
-                                button,
-                                state
-                            );
+                            activeNumberPadTouchTones
+                                .set(
+                                    button,
+                                    state
+                                );
 
                             const frequencies =
                                 String(
@@ -8773,7 +8792,7 @@
                         button.addEventListener(
                             type,
                             () =>
-                                stopTouchTone(
+                                stopNumberPadTouchTone(
                                     button
                                 )
                         );
@@ -9067,6 +9086,7 @@
         );
 
         numberPadDialog.addEventListener("close", () => {
+            stopAllNumberPadAudio();
             resetNumberPad();
         });
 
