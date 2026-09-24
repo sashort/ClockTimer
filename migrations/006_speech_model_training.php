@@ -83,6 +83,7 @@ return [
         observed VARCHAR(500) NOT NULL,
         observed_compact VARCHAR(500) NOT NULL,
         match_type ENUM('exact','prefix') NOT NULL DEFAULT 'exact',
+        mapping_hash CHAR(64) NOT NULL,
         recognized_correct TINYINT(1) NOT NULL,
         training_style VARCHAR(100) NULL,
         prompt_index SMALLINT UNSIGNED NULL,
@@ -99,7 +100,7 @@ return [
         KEY idx_speech_training_phrase (phrase_id, active, created_at),
         KEY idx_speech_training_user (user_id, active, created_at),
         KEY idx_speech_training_variant
-            (phrase_id, active, observed_compact, canonical_compact, match_type),
+            (phrase_id, active, mapping_hash),
         CONSTRAINT fk_speech_training_phrase
             FOREIGN KEY (phrase_id) REFERENCES speech_model_phrases(id)
             ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -123,15 +124,16 @@ return [
         canonical VARCHAR(500) NOT NULL,
         canonical_compact VARCHAR(500) NOT NULL,
         match_type ENUM('exact','prefix') NOT NULL DEFAULT 'exact',
+        mapping_hash CHAR(64) NOT NULL,
         enabled TINYINT(1) NOT NULL DEFAULT 1,
         occurrences INT UNSIGNED NOT NULL,
         contributor_count INT UNSIGNED NOT NULL,
         updated_at BIGINT UNSIGNED NOT NULL,
         PRIMARY KEY (id),
         UNIQUE KEY uq_speech_correction_phrase_mapping
-            (phrase_id, observed_compact, canonical_compact, match_type),
+            (phrase_id, mapping_hash),
         KEY idx_speech_correction_runtime
-            (enabled, observed_compact, canonical_compact, match_type),
+            (enabled, mapping_hash),
         CONSTRAINT fk_speech_correction_phrase
             FOREIGN KEY (phrase_id) REFERENCES speech_model_phrases(id)
             ON UPDATE RESTRICT ON DELETE CASCADE,
@@ -143,10 +145,15 @@ return [
     "CREATE TABLE speech_training_audit (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         actor_user_id BIGINT UNSIGNED NOT NULL,
+        actor_username VARCHAR(191) NULL,
         subject_user_id BIGINT UNSIGNED NULL,
+        subject_username VARCHAR(191) NULL,
         language_model_component_id BIGINT UNSIGNED NULL,
+        language_code VARCHAR(32) NULL,
         component_id BIGINT UNSIGNED NULL,
+        component_key VARCHAR(500) NULL,
         phrase_id BIGINT UNSIGNED NULL,
+        phrase_key VARCHAR(500) NULL,
         contribution_id BIGINT UNSIGNED NULL,
         action VARCHAR(64) NOT NULL,
         details JSON NULL,
@@ -155,6 +162,7 @@ return [
         KEY idx_speech_training_audit_actor (actor_user_id, created_at),
         KEY idx_speech_training_audit_subject (subject_user_id, created_at),
         KEY idx_speech_training_audit_model (language_model_component_id, created_at),
+        KEY idx_speech_training_audit_language (language_code, created_at),
         KEY idx_speech_training_audit_phrase (phrase_id, created_at),
         KEY idx_speech_training_audit_contribution (contribution_id, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -180,17 +188,25 @@ return [
      FOR EACH ROW
      BEGIN
          INSERT INTO speech_training_audit
-             (actor_user_id, subject_user_id, language_model_component_id,
-              component_id, phrase_id, contribution_id, action, details, created_at)
+             (actor_user_id, actor_username, subject_user_id, subject_username,
+              language_model_component_id, language_code, component_id,
+              component_key, phrase_id, phrase_key, contribution_id,
+              action, details, created_at)
          SELECT
              NEW.user_id,
+             u.username,
              NEW.user_id,
-             COALESCE(c.language_model_component_id, c.id),
+             u.username,
+             m.id,
+             m.language_code,
              c.id,
+             c.component_key,
              p.id,
+             p.phrase_key,
              NEW.id,
              'contribution-added',
              JSON_OBJECT(
+                 'phrase', p.phrase,
                  'source', NEW.source,
                  'canonical', NEW.canonical,
                  'observed', NEW.observed,
@@ -206,6 +222,9 @@ return [
              NEW.created_at
          FROM speech_model_phrases p
          INNER JOIN speech_model_components c ON c.id = p.component_id
+         INNER JOIN speech_model_components m
+             ON m.id = COALESCE(c.language_model_component_id, c.id)
+         LEFT JOIN users u ON u.id = NEW.user_id
          WHERE p.id = NEW.phrase_id;
      END",
 
@@ -218,20 +237,28 @@ return [
             OR NOT (OLD.revoked_by_user_id <=> NEW.revoked_by_user_id)
             OR NOT (OLD.revocation_reason <=> NEW.revocation_reason) THEN
              INSERT INTO speech_training_audit
-                 (actor_user_id, subject_user_id, language_model_component_id,
-                  component_id, phrase_id, contribution_id, action, details, created_at)
+                 (actor_user_id, actor_username, subject_user_id, subject_username,
+                  language_model_component_id, language_code, component_id,
+                  component_key, phrase_id, phrase_key, contribution_id,
+                  action, details, created_at)
              SELECT
                  COALESCE(NEW.revoked_by_user_id, NEW.user_id),
+                 actor.username,
                  NEW.user_id,
-                 COALESCE(c.language_model_component_id, c.id),
+                 subject.username,
+                 m.id,
+                 m.language_code,
                  c.id,
+                 c.component_key,
                  p.id,
+                 p.phrase_key,
                  NEW.id,
                  CASE WHEN NEW.active = 0
                       THEN 'contribution-revoked'
                       ELSE 'contribution-restored'
                  END,
                  JSON_OBJECT(
+                     'phrase', p.phrase,
                      'activeBefore', OLD.active,
                      'activeAfter', NEW.active,
                      'revokedAt', NEW.revoked_at,
@@ -240,6 +267,11 @@ return [
                  UNIX_TIMESTAMP()
              FROM speech_model_phrases p
              INNER JOIN speech_model_components c ON c.id = p.component_id
+             INNER JOIN speech_model_components m
+                 ON m.id = COALESCE(c.language_model_component_id, c.id)
+             LEFT JOIN users subject ON subject.id = NEW.user_id
+             LEFT JOIN users actor
+                 ON actor.id = COALESCE(NEW.revoked_by_user_id, NEW.user_id)
              WHERE p.id = NEW.phrase_id;
          END IF;
      END",
@@ -249,17 +281,25 @@ return [
      FOR EACH ROW
      BEGIN
          INSERT INTO speech_training_audit
-             (actor_user_id, subject_user_id, language_model_component_id,
-              component_id, phrase_id, contribution_id, action, details, created_at)
+             (actor_user_id, actor_username, subject_user_id, subject_username,
+              language_model_component_id, language_code, component_id,
+              component_key, phrase_id, phrase_key, contribution_id,
+              action, details, created_at)
          SELECT
              COALESCE(@speech_training_actor_user_id, OLD.user_id),
+             actor.username,
              OLD.user_id,
-             COALESCE(c.language_model_component_id, c.id),
+             subject.username,
+             m.id,
+             m.language_code,
              c.id,
+             c.component_key,
              p.id,
+             p.phrase_key,
              OLD.id,
              'contribution-deleted',
              JSON_OBJECT(
+                 'phrase', p.phrase,
                  'source', OLD.source,
                  'canonical', OLD.canonical,
                  'observed', OLD.observed,
@@ -271,6 +311,11 @@ return [
              UNIX_TIMESTAMP()
          FROM speech_model_phrases p
          INNER JOIN speech_model_components c ON c.id = p.component_id
+         INNER JOIN speech_model_components m
+             ON m.id = COALESCE(c.language_model_component_id, c.id)
+         LEFT JOIN users subject ON subject.id = OLD.user_id
+         LEFT JOIN users actor
+             ON actor.id = COALESCE(@speech_training_actor_user_id, OLD.user_id)
          WHERE p.id = OLD.phrase_id;
      END"
 ];
