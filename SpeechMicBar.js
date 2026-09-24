@@ -123,6 +123,22 @@ class SpeechMicBar extends HTMLElement {
                     pointer-events: auto;
                 }
 
+                #optionsHeader {
+                    position: absolute;
+                    top: 8px;
+                    left: 12px;
+                    right: 48px;
+                    z-index: 4;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 16px;
+                    font-weight: 800;
+                    line-height: 28px;
+                    color: white;
+                }
+
                 #optionsClose {
                     position: absolute;
                     top: 7px;
@@ -590,9 +606,10 @@ class SpeechMicBar extends HTMLElement {
             </style>
             <section
                 id="optionsPanel"
-                aria-label="Voice options"
+                aria-label="Speech Options"
                 aria-hidden="true"
             >
+                <div id="optionsHeader">Speech Options</div>
                 <button
                     id="optionsClose"
                     type="button"
