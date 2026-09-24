@@ -55,19 +55,6 @@
                 canWrite
         );
 
-    const trainingModeButton =
-        $("trainingModeButton");
-
-    if (trainingModeButton) {
-        trainingModeButton.disabled =
-            !canTrain;
-
-        if (!canTrain) {
-            trainingModeButton.title =
-                "Sign in to contribute speech training data.";
-        }
-    }
-
     const endpoint =
         "../../speech-editor-config/";
 
@@ -13137,6 +13124,13 @@
     if (trainingModeButton) {
         trainingModeButton.hidden =
             trainingOnly;
+        trainingModeButton.disabled =
+            !canTrain;
+
+        if (!canTrain) {
+            trainingModeButton.title =
+                "Sign in to contribute speech training data.";
+        }
 
         trainingModeButton
             .addEventListener(
