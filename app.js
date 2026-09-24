@@ -124,6 +124,19 @@
             : "raw";
 
     const clearLegacySpeechAssetCache = async () => {
+        const legacyController =
+            "serviceWorker" in navigator &&
+            String(
+                navigator
+                    .serviceWorker
+                    .controller
+                    ?.scriptURL ||
+                ""
+            )
+                .includes(
+                    "SpeechAssetCacheWorker.js"
+                );
+
         if ("serviceWorker" in navigator) {
             try {
                 const registrations =
@@ -184,6 +197,27 @@
             }
             catch {}
         }
+
+        if (legacyController) {
+            const reloadKey =
+                "wmof.speechCacheRollbackReloaded";
+
+            if (
+                sessionStorage.getItem(
+                    reloadKey
+                ) !== "1"
+            ) {
+                sessionStorage.setItem(
+                    reloadKey,
+                    "1"
+                );
+
+                location.reload();
+                return true;
+            }
+        }
+
+        return false;
     };
 
     void clearLegacySpeechAssetCache();
