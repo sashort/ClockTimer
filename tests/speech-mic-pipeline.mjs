@@ -295,6 +295,22 @@ assert.match(
     app,
     /closeActiveSurface\(\)[\s\S]*closeActiveSpeechSurface/
 );
+assert.match(
+    app,
+    /canCloseSurface\(\)[\s\S]*isInterruptGroupActive[\s\S]*primary-surface/
+);
+assert.match(
+    app,
+    /interruptGroup:\s*"primary-surface"/
+);
+assert.match(
+    app,
+    /openNumberPad\([\s\S]*signal[\s\S]*ensureNumberPadLoaded\(\)[\s\S]*signal\?\.aborted/
+);
+assert.match(
+    app,
+    /setCloudIconVisualState[\s\S]*rotateY\(90deg\)[\s\S]*applyState\([\s\S]*controller[\s\S]*targetState/
+);
 assert.match(app, /element:\s*\$\("#speechTrainingButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechTraining"/);
 assert.match(app, /element:\s*\$\("#speechEditorButton"\)[\s\S]*event:\s*"click"[\s\S]*action:\s*"openSpeechEditor"/);
 assert.match(app, /speech-build-active/);
@@ -605,6 +621,14 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /case "speechCommandExecuted":[\s\S]*#showPreprocessed\(\s*this\.#currentTranscript,\s*formatted\s*\)/
+);
+assert.match(
+    speechMicBarSource,
+    /showOptions\([\s\S]*getComputedStyle\([\s\S]*#optionsPanel[\s\S]*currentClipPath/
+);
+assert.match(
+    speechMicBarSource,
+    /hideOptions\([\s\S]*getComputedStyle\([\s\S]*#optionsPanel[\s\S]*currentClipPath/
 );
 
 assert.match(
