@@ -1405,7 +1405,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /if \(\s*exactCandidate\.continuation\s*\)[\s\S]*return true;[\s\S]*const delay/
+    /if \(\s*exactCandidate\.continuation\s*\)[\s\S]*return true;[\s\S]*#commitUtterance\(\s*utterance\s*\)/
 );
 
 assert.match(
