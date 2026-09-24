@@ -110,6 +110,41 @@ class SpeechMenu {
     static get corrections() { return SpeechMenu.#corrections; }
     static get correctionsRevision() { return SpeechMenu.#correctionsRevision; }
 
+    static isCommandImplemented(element) {
+        if (!(element instanceof Element)) {
+            return false;
+        }
+
+        const speechFunction =
+            element.getAttribute(
+                "speech-function"
+            );
+
+        if (
+            !SpeechMenu
+                .#resolve(
+                    speechFunction
+                )
+        ) {
+            return false;
+        }
+
+        const speechPreproc =
+            element.getAttribute(
+                "speech-preproc"
+            );
+
+        return (
+            !speechPreproc ||
+            Boolean(
+                SpeechMenu
+                    .#resolve(
+                        speechPreproc
+                    )
+            )
+        );
+    }
+
     static set wakePhrase(value) { SpeechMenu.#setPhrase("wake", value); }
     static set sleepPhrase(value) { SpeechMenu.#setPhrase("sleep", value); }
     static set silenceTimeout(value) {
