@@ -4652,6 +4652,33 @@ clock-timer[hide-latency] time-range[type="latency"] {
     color: #f59e0b;
 }
 
+.speech-training-result-icon[data-result="discarded"] {
+    font-size: 0;
+}
+
+.speech-training-result-icon[data-result="discarded"]::before,
+.speech-training-result-remove::before {
+    content: "";
+    width: 15px;
+    height: 15px;
+    display: block;
+    background: currentColor;
+    -webkit-mask:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 4h8l1 2h4v2h-2l-1 12H6L5 8H3V6h4l1-2Zm1.3 4 .7 9h2V8H9.3ZM14 8v9h2l.7-9H14Z' fill='black'/%3E%3C/svg%3E")
+        center / contain
+        no-repeat;
+    mask:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 4h8l1 2h4v2h-2l-1 12H6L5 8H3V6h4l1-2Zm1.3 4 .7 9h2V8H9.3ZM14 8v9h2l.7-9H14Z' fill='black'/%3E%3C/svg%3E")
+        center / contain
+        no-repeat;
+}
+
+.speech-training-result >
+.speech-training-result-icon[data-result="discarded"]::before {
+    width: 18px;
+    height: 18px;
+}
+
 .speech-training-results {
     grid-column: 1 / -1;
     grid-row: 2;
