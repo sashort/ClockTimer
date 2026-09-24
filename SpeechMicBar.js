@@ -649,6 +649,9 @@ class SpeechMicBar extends HTMLElement {
 
                 #text {
                     min-width: 0;
+                    min-height: 26px;
+                    display: inline-flex;
+                    align-items: center;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -679,11 +682,17 @@ class SpeechMicBar extends HTMLElement {
 
                 code {
                     max-width: 180px;
+                    min-height: 18px;
                     padding: 2px 5px;
                     flex: 0 1 auto;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    align-self: center;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                    vertical-align: middle;
                     border: 1px solid rgb(169 221 247 / 38%);
                     border-radius: 5px;
                     color: #a9ddf7;
@@ -693,11 +702,12 @@ class SpeechMicBar extends HTMLElement {
 
                 #text > code.streaming-core-phrase,
                 .option-phrase code.streaming-core-phrase {
-                    display: inline-block;
+                    display: inline-flex;
+                    align-items: center;
                     max-width: none;
                     margin-inline: 2px;
                     padding: 1px 4px;
-                    vertical-align: baseline;
+                    vertical-align: middle;
                     color: #a9ddf7;
                     border-color:
                         rgb(
