@@ -239,6 +239,19 @@
         </div>
     </dialog>
 
+    <dialog id="speechTrainingPendingDialog" class="app-dialog speech-training-pending-dialog">
+        <header class="dialog-header">
+            <h2>Pending Training</h2>
+        </header>
+        <p id="speechTrainingPendingMessage" class="speech-training-pending-message"></p>
+        <p id="speechTrainingPendingError" class="speech-training-pending-error" role="alert" hidden></p>
+        <div class="speech-training-pending-actions">
+            <button id="speechTrainingPendingCancel" type="button">Cancel</button>
+            <button id="speechTrainingPendingDiscard" type="button">Discard</button>
+            <button id="speechTrainingPendingCommit" class="primary-action" type="button">Commit</button>
+        </div>
+    </dialog>
+
     <dialog id="loginDialog" class="app-dialog login-dialog">
         <form id="loginForm" method="dialog">
             <header class="dialog-header">
