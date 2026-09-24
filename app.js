@@ -11004,39 +11004,63 @@
             }
         });
 
-    const speakSpeechMetric =
+    const dictateSpeechMetric =
         (
             label,
             value
         ) => {
-            const spokenValue =
+            const displayValue =
                 String(
                     value ??
                     ""
                 )
-                    .replace(
-                        /%/g,
-                        " percent"
-                    )
                     .replace(
                         /\s+/g,
                         " "
                     )
                     .trim();
 
-            if (!spokenValue) {
+            if (!displayValue) {
                 return false;
             }
 
-            return Boolean(
-                globalThis
-                    .WMOFAudio
-                    ?.speak?.(
-                        label +
-                        " " +
-                        spokenValue
+            const response =
+                (
+                    String(
+                        label ||
+                        ""
                     )
-            );
+                        .trim() +
+                    " " +
+                    displayValue
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            const spokenResponse =
+                response
+                    .replace(
+                        /%/g,
+                        " percent"
+                    );
+
+            globalThis
+                .WMOFAudio
+                ?.speak?.(
+                    spokenResponse
+                );
+
+            return {
+                speechResponse: {
+                    type:
+                        "dictation",
+                    value:
+                        response
+                }
+            };
         };
 
     const goalPercentForScope =
@@ -11760,7 +11784,7 @@
             },
 
             readTripGoal() {
-                return speakSpeechMetric(
+                return dictateSpeechMetric(
                     "Trip Goal",
                     goalPercentForScope(
                         "trip"
@@ -11769,7 +11793,7 @@
             },
 
             readTotalGoal() {
-                return speakSpeechMetric(
+                return dictateSpeechMetric(
                     "Total Goal",
                     goalPercentForScope(
                         "total"
@@ -11817,13 +11841,9 @@
                         .toUpperCase() +
                     mode.slice(1);
 
-                return Boolean(
-                    globalThis
-                        .WMOFAudio
-                        ?.speak?.(
-                            "Mode " +
-                            label
-                        )
+                return dictateSpeechMetric(
+                    "Mode",
+                    label
                 );
             },
 
