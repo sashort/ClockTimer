@@ -1383,9 +1383,17 @@ assert.match(
     speechMicBarSource,
     /"Say " \+[\s\S]*#wakeActivationPhrase\(\) \+[\s\S]*" to Activate"/
 );
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#commandCatalogGroups/
+);
 assert.match(
     speechMicBarSource,
-    /#commandCatalogGroups\s*=\s*\[\][\s\S]*SpeechMenu[\s\S]*\.muted[\s\S]*#commandCatalogGroups/
+    /showOptions\([\s\S]*#renderOptions\(\s*phraseGroups\s*\)/
+);
+assert.match(
+    speechMicBarSource,
+    /case "phrasesChanged":[\s\S]*#renderOptions\([\s\S]*detail\?\.phraseGroups[\s\S]*SpeechMenu[\s\S]*phraseGroups/
 );
 assert.doesNotMatch(
     speechMenuSource,
