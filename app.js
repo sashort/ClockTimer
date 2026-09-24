@@ -98,7 +98,7 @@
             .WMOFUtilities;
 
     const SHERPA_ASSET_VERSION =
-        "2026-09-23-1";
+        "2026-09-24-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -294,12 +294,15 @@
                                 speechPipeline;
                         }
 
-                        await globalThis.SpeechMenu
+                        void globalThis.SpeechMenu
                             .loadCorrections(
                                 new URL(
                                     "api/speech-corrections/?language=en-US",
                                     API_BASE
                                 ).href
+                            )
+                            .catch(
+                                () => {}
                             );
 
                         if (
