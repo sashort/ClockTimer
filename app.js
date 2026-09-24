@@ -7708,6 +7708,100 @@
             }
         );
 
+    const setPendingSpeechTrainingButtonsDisabled =
+        disabled => {
+            speechTrainingPendingCancel.disabled =
+                Boolean(disabled);
+            speechTrainingPendingDiscard.disabled =
+                Boolean(disabled);
+            speechTrainingPendingCommit.disabled =
+                Boolean(disabled);
+        };
+
+    speechTrainingPendingCommit
+        ?.addEventListener(
+            "click",
+            async () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                speechTrainingPendingBusy =
+                    true;
+
+                setPendingSpeechTrainingButtonsDisabled(
+                    true
+                );
+
+                if (speechTrainingPendingError) {
+                    speechTrainingPendingError.hidden =
+                        true;
+                    speechTrainingPendingError.textContent =
+                        "";
+                }
+
+                try {
+                    await commitPendingSpeechTrainingSamples();
+
+                    finishPendingSpeechTrainingDecision(
+                        "commit"
+                    );
+                }
+                catch (error) {
+                    speechTrainingPendingBusy =
+                        false;
+
+                    setPendingSpeechTrainingButtonsDisabled(
+                        false
+                    );
+
+                    if (speechTrainingPendingError) {
+                        speechTrainingPendingError.hidden =
+                            false;
+                        speechTrainingPendingError.textContent =
+                            error?.message ||
+                            "Unable to commit pending speech training.";
+                    }
+                }
+            }
+        );
+
+    speechTrainingPendingDiscard
+        ?.addEventListener(
+            "click",
+            () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                clearPendingSpeechTrainingSamples();
+
+                finishPendingSpeechTrainingDecision(
+                    "discard"
+                );
+            }
+        );
+
+    speechTrainingPendingCancel
+        ?.addEventListener(
+            "click",
+            () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                finishPendingSpeechTrainingDecision(
+                    "cancel"
+                );
+            }
+        );
+
     speechTrainingStartStop
         ?.addEventListener(
             "click",
@@ -7733,6 +7827,76 @@
                         promote: true
                     });
                 }
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-target-requested",
+            event => {
+                if (
+                    !inAppSpeechTrainingEnabled ||
+                    speechTrainingActive
+                ) {
+                    event.preventDefault();
+                    return;
+                }
+
+                const requested =
+                    event.detail;
+
+                const current =
+                    speechTrainingTarget;
+
+                const sameTarget =
+                    current &&
+                    requested &&
+                    current.source ===
+                        requested.source &&
+                    current.category ===
+                        requested.category &&
+                    current.card ===
+                        requested.card &&
+                    current.phrase ===
+                        requested.phrase;
+
+                if (
+                    sameTarget ||
+                    !current ||
+                    !speechTrainingPendingSamples
+                        .length
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (
+                    speechTrainingPendingDecision
+                ) {
+                    return;
+                }
+
+                void (
+                    async () => {
+                        const decision =
+                            await promptPendingSpeechTrainingSamples(
+                                "switch"
+                            );
+
+                        if (
+                            decision ===
+                                "cancel"
+                        ) {
+                            return;
+                        }
+
+                        speechMicBar
+                            ?.selectTrainingTarget?.(
+                                requested
+                            );
+                    }
+                )();
             }
         );
 
