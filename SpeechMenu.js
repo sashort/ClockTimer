@@ -453,7 +453,7 @@ class SpeechMenu {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
-                        echoCancellation: false,
+                        echoCancellation: true,
                         noiseSuppression: false,
                         autoGainControl: false
                     }
