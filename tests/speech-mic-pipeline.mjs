@@ -250,13 +250,18 @@ const primedSpeechIds = [
     "down",
     "breakEnd",
     "resume",
-    "goal",
+    "tripGoal",
+    "totalGoal",
+    "setTripGoal",
+    "setTotalGoal",
+    "readGoalMode",
     "goalMode",
     "sync",
     "lockEndTime",
     "showTripLog",
     "hideTripLog",
     "deferTrip",
+    "readRenderedTime",
     "renderedTimeMode"
 ];
 
