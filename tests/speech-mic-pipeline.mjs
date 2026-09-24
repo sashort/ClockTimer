@@ -776,11 +776,19 @@ assert.match(
 );
 assert.match(
     app,
+    /speechTrainingEnglishSoftOmission[\s\S]*weakConsonants[\s\S]*"s"[\s\S]*"h"/
+);
+assert.match(
+    app,
+    /speechTrainingEnglishSoftOmission[\s\S]*softClusters[\s\S]*"sh"[\s\S]*"th"[\s\S]*"ph"[\s\S]*"wh"/
+);
+assert.match(
+    app,
     /speechTrainingTokenBelongsToFamily[\s\S]*observed \+ "s"[\s\S]*expected[\s\S]*observed \+ "es"/
 );
 assert.match(
     app,
-    /speechTrainingTokenBelongsToFamily[\s\S]*previous\[[\s\S]*expected\.length[\s\S]*<= 1/
+    /speechTrainingTokenBelongsToFamily[\s\S]*speechTrainingEnglishSoftOmission/
 );
 assert.match(
     app,
