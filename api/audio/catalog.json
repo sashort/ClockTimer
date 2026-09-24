@@ -269,7 +269,7 @@
           "dynamic": "ff"
         },
         {
-          "offset": "0",
+          "offset": "3",
           "speech": "Start meal now"
         }
       ]
@@ -297,7 +297,7 @@
           "dynamic": "ff"
         },
         {
-          "offset": "0",
+          "offset": "3",
           "speech": "End meal now"
         }
       ]
