@@ -11954,8 +11954,8 @@
                     mode.slice(1);
 
                 return dictateSpeechMetric(
-                    "Mode",
-                    label
+                    label,
+                    "Mode"
                 );
             },
 
@@ -12283,6 +12283,65 @@
                 return true;
             },
 
+            readRenderedTime(
+                timeMode
+            ) {
+                const value =
+                    String(
+                        timeMode ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const mode =
+                    value.includes(
+                        "end"
+                    )
+                        ? "calculated-end"
+                        : value.includes(
+                            "elapsed"
+                        )
+                            ? "elapsed"
+                            : value.includes(
+                                "remaining"
+                            )
+                                ? "remaining"
+                                : undefined;
+
+                if (!mode) {
+                    return false;
+                }
+
+                let rendered;
+
+                try {
+                    rendered =
+                        clockTimer
+                            .getRenderedTime?.(
+                                mode,
+                                new Date()
+                            );
+                }
+                catch {
+                    return false;
+                }
+
+                const label =
+                    mode ===
+                        "calculated-end"
+                        ? "End Time"
+                        : mode ===
+                            "elapsed"
+                            ? "Time Elapsed"
+                            : "Time Remaining";
+
+                return dictateSpeechMetric(
+                    label,
+                    rendered
+                );
+            },
+
             toggleRenderedTime(
                 timeMode
             ) {
@@ -12325,11 +12384,19 @@
                             .toLowerCase();
 
                     next =
-                        value.startsWith(
+                        value.includes(
                             "end"
                         )
                             ? "calculated-end"
-                            : value;
+                            : value.includes(
+                                "elapsed"
+                            )
+                                ? "elapsed"
+                                : value.includes(
+                                    "remaining"
+                                )
+                                    ? "remaining"
+                                    : value;
 
                     if (
                         !RENDERED_TIME_MODES
@@ -14375,7 +14442,9 @@
                 setTripGoal: "goals",
                 setTotalGoal: "goals",
                 readGoalMode: "mode",
-                goalMode: "mode"
+                goalMode: "mode",
+                readRenderedTime: "time",
+                renderedTimeMode: "time"
             };
 
             const speechOptionCategories = {
@@ -14392,6 +14461,7 @@
                 setTotalGoal: "goals",
                 readGoalMode: "settings",
                 goalMode: "settings",
+                readRenderedTime: "settings",
                 sync: "settings",
                 lockEndTime: "settings",
                 showTripLog: "trip-actions",
@@ -14440,6 +14510,7 @@
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
                 ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
+                ["readRenderedTime","readRenderedTime"],
                 ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
