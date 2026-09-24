@@ -233,7 +233,7 @@ assert.match(
 );
 assert.match(
     html,
-    /speech-modal="default"[\s\S]*\^\(\?:speech \)\?options\$[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /speech-modal="default"[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
 );
 assert.match(
     html,
