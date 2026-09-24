@@ -296,7 +296,6 @@ const presentationSource = fs.readFileSync(new URL("../PresentationSetters.js", 
 const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-config/index.php", import.meta.url), "utf8");
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
 const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
-const speechAssetCacheWorkerSource = fs.readFileSync(new URL("../SpeechAssetCacheWorker.js", import.meta.url), "utf8");
 const sherpaRuntimeHtaccessSource = fs.readFileSync(new URL("../speech/sherpa/runtime/.htaccess", import.meta.url), "utf8");
 const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
 
@@ -568,7 +567,7 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /if \(committed\)[\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)/
+    /#commitUtterance\([\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)[\s\S]*let committed/
 );
 
 assert.match(
@@ -873,14 +872,6 @@ assert.match(
 );
 
 assert.match(
-    app,
-    /serviceWorker[\s\S]*SpeechAssetCacheWorker\.js[\s\S]*updateViaCache:[\s\S]*"none"/
-);
-assert.match(
-    app,
-    /await ensureSpeechAssetCache\(\)[\s\S]*SherpaRecognizer/
-);
-assert.match(
     sherpaRecognizerSource,
     /runtimeVersion:\s*version/
 );
@@ -891,14 +882,6 @@ assert.match(
 assert.match(
     sherpaWorkerSource,
     /importScripts\([\s\S]*runtimeUrl\([\s\S]*sherpa-onnx-asr\.js/
-);
-assert.match(
-    speechAssetCacheWorkerSource,
-    /CACHE_PREFIX[\s\S]*wmof-sherpa-[\s\S]*caches\.open/
-);
-assert.match(
-    speechAssetCacheWorkerSource,
-    /speech\/sherpa\/runtime\/[\s\S]*cache\.match[\s\S]*cache\.put/
 );
 assert.match(
     sherpaRuntimeHtaccessSource,
@@ -933,4 +916,17 @@ assert.match(
         "utf8"
     ),
     /if \(!config\)[\s\S]*return;[\s\S]*registerMacros/
+);
+
+assert.doesNotMatch(
+    app,
+    /serviceWorker\s*\.register\([\s\S]*SpeechAssetCacheWorker\.js/
+);
+assert.match(
+    app,
+    /clearLegacySpeechAssetCache[\s\S]*getRegistrations[\s\S]*SpeechAssetCacheWorker\.js[\s\S]*unregister/
+);
+assert.match(
+    app,
+    /clearLegacySpeechAssetCache[\s\S]*wmof-sherpa-[\s\S]*caches\.delete/
 );
