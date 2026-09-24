@@ -110,6 +110,52 @@ class SpeechMenu {
     static get corrections() { return SpeechMenu.#corrections; }
     static get correctionsRevision() { return SpeechMenu.#correctionsRevision; }
 
+    static async wake({
+        utteranceId,
+        transcript,
+        signal
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        SpeechMenu.#sleeping =
+            false;
+
+        SpeechMenu.#emit(
+            "unmuted",
+            {
+                utteranceId,
+                transcript
+            }
+        );
+
+        return true;
+    }
+
+    static async sleep({
+        utteranceId,
+        transcript,
+        signal
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        SpeechMenu.#sleeping =
+            true;
+
+        SpeechMenu.#emit(
+            "muted",
+            {
+                utteranceId,
+                transcript
+            }
+        );
+
+        return true;
+    }
+
     static isCommandImplemented(element) {
         if (!(element instanceof Element)) {
             return false;
@@ -2215,37 +2261,25 @@ class SpeechMenu {
                 candidate.kind ===
                     "wake"
             ) {
-                SpeechMenu.#sleeping =
-                    false;
-
-                SpeechMenu.#emit(
-                    "unmuted",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        transcript
-                    }
-                );
-
-                committed = true;
+                committed =
+                    await SpeechMenu
+                        .wake({
+                            utteranceId:
+                                utterance.id,
+                            transcript
+                        });
             }
             else if (
                 candidate.kind ===
                     "mute"
             ) {
-                SpeechMenu.#sleeping =
-                    true;
-
-                SpeechMenu.#emit(
-                    "muted",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        transcript
-                    }
-                );
-
-                committed = true;
+                committed =
+                    await SpeechMenu
+                        .sleep({
+                            utteranceId:
+                                utterance.id,
+                            transcript
+                        });
             }
             else {
                 committed =
@@ -2330,17 +2364,12 @@ class SpeechMenu {
                     transcript
                 )
             ) {
-                SpeechMenu.#sleeping =
-                    false;
-
-                SpeechMenu.#emit(
-                    "unmuted",
-                    {
+                await SpeechMenu
+                    .wake({
                         utteranceId:
                             utterance.id,
                         transcript
-                    }
-                );
+                    });
             }
 
             return;
@@ -2352,14 +2381,12 @@ class SpeechMenu {
                 transcript
             )
         ) {
-            SpeechMenu.#emit(
-                "unmuted",
-                {
+            await SpeechMenu
+                .wake({
                     utteranceId:
                         utterance.id,
                     transcript
-                }
-            );
+                });
 
             return;
         }
@@ -2370,17 +2397,12 @@ class SpeechMenu {
                 transcript
             )
         ) {
-            SpeechMenu.#sleeping =
-                true;
-
-            SpeechMenu.#emit(
-                "muted",
-                {
+            await SpeechMenu
+                .sleep({
                     utteranceId:
                         utterance.id,
                     transcript
-                }
-            );
+                });
 
             return;
         }
