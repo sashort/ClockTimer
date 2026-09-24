@@ -1069,6 +1069,20 @@ class SpeechMicBar extends HTMLElement {
         this.#optionsAnimation =
             undefined;
 
+        /*
+         * The command surface is closed as soon as dismissal starts.
+         * Keep the visual collapse running independently so speech can
+         * begin a fresh utterance while the panel is still retracting.
+         */
+        this.removeAttribute(
+            "options-open"
+        );
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
         if (
             duration > 0 &&
             typeof this.#optionsPanel
@@ -1126,15 +1140,6 @@ class SpeechMicBar extends HTMLElement {
                     undefined;
             }
         }
-
-        this.removeAttribute(
-            "options-open"
-        );
-        this.#optionsPanel
-            .setAttribute(
-                "aria-hidden",
-                "true"
-            );
 
         return true;
     }
