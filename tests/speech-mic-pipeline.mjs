@@ -776,6 +776,18 @@ assert.match(
 );
 assert.match(
     app,
+    /speechTrainingExpectedPhraseMatches[\s\S]*placeholders[\s\S]*new RegExp/
+);
+assert.doesNotMatch(
+    app,
+    /speechTrainingEditSimilarity/
+);
+assert.doesNotMatch(
+    app,
+    /overlap >=\s*\.66/
+);
+assert.match(
+    app,
     /utteranceTranscriptChanged[\s\S]*isFinal !==[\s\S]*true[\s\S]*lastLiveTranscript/
 );
 assert.match(
