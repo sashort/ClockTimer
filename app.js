@@ -9690,44 +9690,80 @@
         void purpose;
     }
 
+    function playSemanticSong(name, options = {}) {
+        const audio =
+            globalThis.WMOFAudio;
+
+        if (!audio?.startSong) {
+            return;
+        }
+
+        void audio
+            .startSong(
+                name,
+                {
+                    bpm: 180,
+                    ...options
+                }
+            )
+            .catch(
+                error =>
+                    console.error(
+                        "Audio playback failed:",
+                        name,
+                        error
+                    )
+            );
+    }
+
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
+        playSemanticSong("arpeggio-up");
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
+        playSemanticSong("arpeggio-up");
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
+        playSemanticSong("arpeggio-up");
     }
 
     function onBreakStarted(event) {
         reserveSemanticEvent(event, "Break or lunch started");
+        playSemanticSong("arpeggio-down");
     }
 
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
+        playSemanticSong("arpeggio-up");
     }
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
+        playSemanticSong("arpeggio-up");
     }
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
+        playSemanticSong("arpeggio-up");
     }
 
     function onDownTimeStarted(event) {
         reserveSemanticEvent(event, "Down time started");
+        playSemanticSong("polyharmonic-triplet");
     }
 
     function onTripResumed(event) {
         reserveSemanticEvent(event, "Trip resumed from down time");
+        playSemanticSong("note-up-long");
     }
 
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
+        playSemanticSong("arpeggio-down");
     }
 
     function onTotalGoalSet(event) {
