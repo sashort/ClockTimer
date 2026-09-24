@@ -5398,6 +5398,20 @@ class SpeechMicBar extends HTMLElement {
                 ""
             ).trim();
 
+        const utteranceId =
+            detail?.id ??
+            detail?.utteranceId ??
+            this.#currentUtteranceId;
+
+        const heard =
+            String(
+                detail?.transcript ||
+                detail?.originalTranscript ||
+                this.#currentTranscript ||
+                responseText ||
+                ""
+            ).trim();
+
         this.dispatchEvent(
             new CustomEvent(
                 "speech-training-telemetry",
@@ -5408,6 +5422,8 @@ class SpeechMicBar extends HTMLElement {
                         type,
                         event:
                             detail,
+                        utteranceId,
+                        heard,
                         target:
                             this.trainingTarget,
                         state:
