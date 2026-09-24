@@ -123,104 +123,81 @@
             ? "silero"
             : "raw";
 
-    const clearLegacySpeechAssetCache = async () => {
-        const legacyController =
-            "serviceWorker" in navigator &&
-            String(
-                navigator
-                    .serviceWorker
-                    .controller
-                    ?.scriptURL ||
-                ""
-            )
-                .includes(
-                    "SpeechAssetCacheWorker.js"
-                );
+    const speechAssetCacheReady =
+        (async () => {
+            if (
+                !("serviceWorker" in navigator) ||
+                !globalThis.isSecureContext
+            ) {
+                return false;
+            }
 
-        if ("serviceWorker" in navigator) {
             try {
-                const registrations =
+                const registration =
                     await navigator
                         .serviceWorker
-                        .getRegistrations();
+                        .register(
+                            "SpeechAssetCacheWorker.js" +
+                                speechRuntimeVersion,
+                            {
+                                scope: "./",
+                                updateViaCache:
+                                    "all"
+                            }
+                        );
 
-                await Promise.all(
-                    registrations
-                        .filter(
-                            registration =>
-                                String(
-                                    registration
-                                        .active
-                                        ?.scriptURL ||
-                                    registration
-                                        .waiting
-                                        ?.scriptURL ||
-                                    registration
-                                        .installing
-                                        ?.scriptURL ||
-                                    ""
-                                )
-                                    .includes(
-                                        "SpeechAssetCacheWorker.js"
-                                    )
-                        )
-                        .map(
-                            registration =>
-                                registration
-                                    .unregister()
-                        )
-                );
-            }
-            catch {}
-        }
+                await navigator
+                    .serviceWorker
+                    .ready;
 
-        if ("caches" in globalThis) {
-            try {
-                const names =
-                    await caches.keys();
+                if (
+                    navigator
+                        .serviceWorker
+                        .controller
+                ) {
+                    return true;
+                }
 
-                await Promise.all(
-                    names
-                        .filter(
-                            name =>
-                                name.startsWith(
-                                    "wmof-sherpa-"
-                                )
-                        )
-                        .map(
-                            name =>
-                                caches.delete(
-                                    name
-                                )
-                        )
-                );
-            }
-            catch {}
-        }
+                await new Promise(
+                    resolve => {
+                        const timeout =
+                            setTimeout(
+                                resolve,
+                                1500
+                            );
 
-        if (legacyController) {
-            const reloadKey =
-                "wmof.speechCacheRollbackReloaded";
-
-            if (
-                sessionStorage.getItem(
-                    reloadKey
-                ) !== "1"
-            ) {
-                sessionStorage.setItem(
-                    reloadKey,
-                    "1"
+                        navigator
+                            .serviceWorker
+                            .addEventListener(
+                                "controllerchange",
+                                () => {
+                                    clearTimeout(
+                                        timeout
+                                    );
+                                    resolve();
+                                },
+                                {
+                                    once: true
+                                }
+                            );
+                    }
                 );
 
-                location.reload();
-                return true;
+                return Boolean(
+                    navigator
+                        .serviceWorker
+                        .controller
+                );
             }
-        }
+            catch (error) {
+                console.warn(
+                    "Sherpa asset cache unavailable:",
+                    error
+                );
 
-        return false;
-    };
-
-    void clearLegacySpeechAssetCache();
+                return false;
+            }
+        })();
 
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
@@ -286,6 +263,7 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
+                        await speechAssetCacheReady;
                         if (!globalThis.SherpaRecognizer) {
                             await loadClassicScript(
                                 "SherpaRecognizer.js"
