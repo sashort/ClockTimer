@@ -9716,6 +9716,189 @@
             );
     }
 
+    let lunchClockCueState;
+
+    function clearLunchClockCueState() {
+        if (!lunchClockCueState) {
+            return;
+        }
+
+        clearTimeout(
+            lunchClockCueState.clockOutTimer
+        );
+        clearTimeout(
+            lunchClockCueState.clockInTimer
+        );
+
+        lunchClockCueState =
+            undefined;
+    }
+
+    function scheduleLunchClockCues(detail = {}) {
+        clearLunchClockCueState();
+
+        const isLunch =
+            detail.isLunch === true ||
+            String(
+                detail.breakType ||
+                detail.intervalType ||
+                ""
+            )
+                .toLowerCase() ===
+                "lunch";
+
+        if (!isLunch) {
+            return;
+        }
+
+        const clockOutAt =
+            new Date(
+                detail.startTime
+            ).getTime();
+
+        const clockInAt =
+            new Date(
+                detail.endTime
+            ).getTime();
+
+        const state = {
+            clockOutAt,
+            clockInAt,
+            clockOutFired: false,
+            clockInFired: false,
+            clockOutTimer: undefined,
+            clockInTimer: undefined
+        };
+
+        lunchClockCueState =
+            state;
+
+        const fireClockOut =
+            () => {
+                if (
+                    lunchClockCueState !==
+                        state ||
+                    state.clockOutFired
+                ) {
+                    return;
+                }
+
+                state.clockOutFired =
+                    true;
+
+                playSemanticSong(
+                    "lunch-clock-out",
+                    {
+                        bpm: 120
+                    }
+                );
+            };
+
+        const fireClockIn =
+            () => {
+                if (
+                    lunchClockCueState !==
+                        state ||
+                    state.clockInFired
+                ) {
+                    return;
+                }
+
+                state.clockInFired =
+                    true;
+
+                playSemanticSong(
+                    "lunch-clock-in",
+                    {
+                        bpm: 120
+                    }
+                );
+            };
+
+        if (
+            Number.isFinite(
+                clockOutAt
+            )
+        ) {
+            state.clockOutTimer =
+                setTimeout(
+                    fireClockOut,
+                    Math.max(
+                        0,
+                        clockOutAt -
+                            Date.now()
+                    )
+                );
+        }
+
+        if (
+            Number.isFinite(
+                clockInAt
+            )
+        ) {
+            state.clockInTimer =
+                setTimeout(
+                    fireClockIn,
+                    Math.max(
+                        0,
+                        clockInAt -
+                            Date.now()
+                    )
+                );
+        }
+    }
+
+    function finishLunchClockCues(detail = {}) {
+        const state =
+            lunchClockCueState;
+
+        if (!state) {
+            return;
+        }
+
+        clearTimeout(
+            state.clockOutTimer
+        );
+        clearTimeout(
+            state.clockInTimer
+        );
+
+        const endedAt =
+            new Date(
+                detail.actualEndTime ||
+                detail.endTime ||
+                Date.now()
+            ).getTime();
+
+        if (
+            state.clockOutFired &&
+            !state.clockInFired &&
+            (
+                !Number.isFinite(
+                    state.clockInAt
+                ) ||
+                !Number.isFinite(
+                    endedAt
+                ) ||
+                endedAt <
+                    state.clockInAt
+            )
+        ) {
+            state.clockInFired =
+                true;
+
+            playSemanticSong(
+                "lunch-clock-in",
+                {
+                    bpm: 120
+                }
+            );
+        }
+
+        lunchClockCueState =
+            undefined;
+    }
+
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
         playSemanticSong("arpeggio-up");
@@ -9734,22 +9917,25 @@
     function onBreakStarted(event) {
         reserveSemanticEvent(event, "Break or lunch started");
         playSemanticSong("arpeggio-down");
+        scheduleLunchClockCues(
+            event.detail
+        );
     }
 
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
         playSemanticSong("arpeggio-up");
-    }
+        finishLunchClockCues(\n            event.detail\n        );\n    }
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
         playSemanticSong("arpeggio-up");
-    }
+        finishLunchClockCues(\n            event.detail\n        );\n    }
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
         playSemanticSong("arpeggio-up");
-    }
+        finishLunchClockCues(\n            event.detail\n        );\n    }
 
     function onDownTimeStarted(event) {
         reserveSemanticEvent(event, "Down time started");
