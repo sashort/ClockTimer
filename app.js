@@ -6379,10 +6379,17 @@
 
         if (
             !target ||
-            !observed ||
-            !signedInProfile
+            !observed
         ) {
-            return false;
+            throw new Error(
+                "The pending speech training sample is invalid."
+            );
+        }
+
+        if (!signedInProfile) {
+            throw new Error(
+                "Sign in to commit pending speech training."
+            );
         }
 
         const csrf =
