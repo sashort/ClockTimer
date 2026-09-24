@@ -298,6 +298,47 @@ assert.equal(
 );
 
 
+await SpeechMenu.sleep();
+SpeechMenu.extrapolatePhrases();
+
+assert.deepEqual(
+    [
+        ...SpeechMenu.phrases
+    ],
+    [
+        "wake",
+        "sleep",
+        "off"
+    ],
+    "sleeping should expose only system-modal phrases"
+);
+assert.ok(
+    SpeechMenu.phraseGroups.every(
+        group =>
+            group.modal ===
+                "system"
+    ),
+    "sleeping phrase groups should all be system-modal"
+);
+
+await SpeechMenu.wake();
+SpeechMenu.extrapolatePhrases();
+
+assert.ok(
+    SpeechMenu.phrases.includes(
+        "priority"
+    ),
+    "waking should restore non-system phrases"
+);
+assert.ok(
+    SpeechMenu.phraseGroups.some(
+        group =>
+            group.modal !==
+                "system"
+    ),
+    "waking should restore non-system phrase groups"
+);
+
 assert.ok(
     SpeechMenu.phrases.indexOf(
         "wake"
