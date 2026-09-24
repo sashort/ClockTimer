@@ -129,6 +129,85 @@ assert.equal(
     "defineAll should continue registering actions after continue/cycle/run verbs"
 );
 
+window.WMOFActionFunctions
+    .define(
+        "openEmptyStubProbe",
+        () => {}
+    );
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isImplemented(
+            "openEmptyStubProbe"
+        ),
+    false,
+    "an empty action body should be treated as an unimplemented stub"
+);
+
+window.WMOFActionFunctions
+    .define(
+        "openCommentStubProbe",
+        () => {
+            // Intentionally empty scaffold.
+        }
+    );
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isImplemented(
+            "openCommentStubProbe"
+        ),
+    false,
+    "a comment-only action body should remain unimplemented"
+);
+
+window.WMOFActionFunctions
+    .define(
+        "openExplicitStubProbe",
+        () => true,
+        {
+            implemented:
+                false
+        }
+    );
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isImplemented(
+            "openExplicitStubProbe"
+        ),
+    false,
+    "implemented:false should keep scaffolded actions unimplemented"
+);
+
+window.WMOFActionFunctions
+    .define(
+        "openExplicitImplementationProbe",
+        () => {},
+        {
+            implemented:
+                true
+        }
+    );
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isImplemented(
+            "openExplicitImplementationProbe"
+        ),
+    true,
+    "implemented:true should explicitly override empty-body inference"
+);
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isImplemented(
+            "openMissingProbe"
+        ),
+    false,
+    "undefined actions must remain unimplemented"
+);
+
 let interruptedSignal;
 let interruptedAction;
 
