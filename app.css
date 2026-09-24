@@ -367,6 +367,24 @@ html[data-trip-log-startup="unpinned"] .app {
     display: grid;
 }
 
+/*
+ * Legacy Down-state presentation:
+ * retain the original light desaturation across the visible UI
+ * while allowing the current component layout to remain unchanged.
+ */
+.app[data-interval-state="down"] :is(
+    .app-header,
+    .trip-summary,
+    .trip-action-controls,
+    .clock-region,
+    .trip-log-button,
+    .main-menu,
+    .app-dialog,
+    speech-mic-bar
+) {
+    filter: grayscale(15%);
+}
+
 .trip-action-button {
     margin: 0;
     padding: 0;
