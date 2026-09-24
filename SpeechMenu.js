@@ -4953,20 +4953,6 @@ class SpeechMenu {
             };
         }
 
-        if (
-            target.element &&
-            typeof requestAnimationFrame ===
-                "function"
-        ) {
-            await new Promise(
-                resolve =>
-                    requestAnimationFrame(
-                        () =>
-                            resolve()
-                    )
-            );
-        }
-
         const responseSession =
             globalThis
                 .WMOFPresentationSetters
