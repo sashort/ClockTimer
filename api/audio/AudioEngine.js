@@ -639,10 +639,15 @@
 
             this.#active.delete(entry.id);
 
-            globalThis.SpeechMenu
-                ?.resumeListening?.(
-                    "audio:" + entry.name + ":" + reason
-                );
+            if (
+                entry.suspendsListening !==
+                    false
+            ) {
+                globalThis.SpeechMenu
+                    ?.resumeListening?.(
+                        "audio:" + entry.name + ":" + reason
+                    );
+            }
         }
 
         async startSong(
@@ -795,7 +800,8 @@
             {
                 waveform = "square",
                 volume = 1,
-                reason = "direct-tone"
+                reason = "direct-tone",
+                suspendListening = true
             } = {}
         ) {
             const values =
@@ -834,9 +840,16 @@
                 endTimer: undefined
             };
 
-            globalThis.SpeechMenu
-                ?.suspendListening?.(
-                    "audio:" + reason
+            if (suspendListening) {
+                globalThis.SpeechMenu
+                    ?.suspendListening?.(
+                        "audio:" + reason
+                    );
+            }
+
+            entry.suspendsListening =
+                Boolean(
+                    suspendListening
                 );
 
             this.#active.set(
