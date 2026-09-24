@@ -952,6 +952,42 @@ assert.match(
     /speak\([\s\S]*registerSynthesizedSpeech[\s\S]*synthesis\.speak/
 );
 assert.match(
+    audioEngineSource,
+    /const finished\s*=\s*new Promise[\s\S]*resolveFinished/
+);
+assert.match(
+    audioEngineSource,
+    /entry\.resolveFinished\?\.\([\s\S]*reason[\s\S]*entry\.resolveFinished\s*=\s*undefined/
+);
+assert.match(
+    audioEngineSource,
+    /return Object\.freeze\(\{[\s\S]*finished,[\s\S]*stop:/
+);
+assert.match(
+    app,
+    /confirmSettingChange\s*=\s*async[\s\S]*startSong\?\.\([\s\S]*"info-tone"[\s\S]*await cue[\s\S]*\.finished[\s\S]*\.speak\?\.\(/
+);
+assert.match(
+    app,
+    /" Goal Set to " \+[\s\S]*after/
+);
+assert.match(
+    app,
+    /"Showing " \+[\s\S]*label \+[\s\S]*" Mode"/
+);
+assert.match(
+    app,
+    /"Sync Goals Set to " \+/
+);
+assert.match(
+    app,
+    /"End Time Locked to " \+/
+);
+assert.match(
+    app,
+    /"Showing " \+[\s\S]*"Remaining Time"/
+);
+assert.match(
     speechMenuSource,
     /speechResponse[\s\S]*type\s*===\s*"dictation"[\s\S]*presentSpeechDictation/
 );
