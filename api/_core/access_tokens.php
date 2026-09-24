@@ -201,7 +201,7 @@ function consume_access_token(
     array $requiredPermissions,
     string $scope,
     bool $establishSessionGrant = false,
-    string $mode = 'token_bearer'
+    ?string $mode = null
 ): array {
     if (
         !in_array(
@@ -368,9 +368,12 @@ function consume_access_token(
 
         $authorization = [
             'mode' =>
-                $establishSessionGrant
-                    ? 'token_form'
-                    : $mode,
+                $mode ??
+                (
+                    $establishSessionGrant
+                        ? 'token_form'
+                        : 'token_bearer'
+                ),
             'scope' => $scope,
             'token_id' => (int) $row['id'],
             'token_name' => (string) $row['name'],
@@ -413,7 +416,7 @@ function existing_guarded_access(
                 $queryToken,
                 $requiredPermissions,
                 $scope,
-                false,
+                true,
                 'token_query'
             );
         }
