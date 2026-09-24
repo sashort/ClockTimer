@@ -537,6 +537,15 @@ assert.match(
 );
 assert.match(
     app,
+    /persistInAppSpeechTrainingSample[\s\S]*target\.source ===[\s\S]*"mic-bar"[\s\S]*"system:speech-controls"[\s\S]*commandId[\s\S]*commandKey/
+);
+assert.match(
+    app,
+    /persistInAppSpeechTrainingSample[\s\S]*action:[\s\S]*"sample"[\s\S]*componentKey[\s\S]*phraseKey[\s\S]*observed[\s\S]*trainingStyle:[\s\S]*"in-app"[\s\S]*pipeline[\s\S]*runtimeRevision/
+);
+
+assert.match(
+    app,
     /pendingSpeechTrainingTargetLabel[\s\S]*speechTrainingPendingSamples[\s\S]*\[\s*0\s*\][\s\S]*\.target[\s\S]*speechTrainingTarget/
 );
 assert.match(
