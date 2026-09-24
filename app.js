@@ -627,6 +627,10 @@
                                 enabled
                             )
                         );
+
+                    if (mainMenuIsOpen()) {
+                        scheduleMainMenuLayout();
+                    }
                 }
             );
 
