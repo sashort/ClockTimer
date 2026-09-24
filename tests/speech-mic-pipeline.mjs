@@ -978,3 +978,16 @@ assert.doesNotMatch(
     speechMenuSource,
     /candidateHardCommitAt[\s\S]{0,700}#commitHeldCandidate/
 );
+
+assert.match(
+    speechMenuSource,
+    /exactCandidate[\s\S]*\.continuation[\s\S]*"candidate-silence"[\s\S]*true/
+);
+assert.match(
+    speechMenuSource,
+    /!exactCandidate[\s\S]*hasViableCandidate[\s\S]*lastExactCandidate[\s\S]*"candidate-silence"/
+);
+assert.match(
+    speechMenuSource,
+    /reason ===[\s\S]*"candidate-silence"/
+);
