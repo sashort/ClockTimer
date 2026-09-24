@@ -770,6 +770,22 @@ assert.match(
     app,
     /trainingResultState:[\s\S]*sample\.state[\s\S]*modelAccepted:[\s\S]*sample\.modelAccepted[\s\S]*divergenceStatus/
 );
+assert.match(
+    app,
+    /normalizeSpeechTrainingObserved[\s\S]*lastLiveTranscript[\s\S]*live \+[\s\S]*" " \+[\s\S]*live[\s\S]*normalizedFinalArtifact/
+);
+assert.match(
+    app,
+    /utteranceTranscriptChanged[\s\S]*isFinal !==[\s\S]*true[\s\S]*lastLiveTranscript/
+);
+assert.match(
+    app,
+    /rawObserved:[\s\S]*normalizedObserved[\s\S]*normalizedFinalArtifact/
+);
+assert.match(
+    app,
+    /rawObserved:[\s\S]*sample\.rawObserved[\s\S]*normalizedFinalArtifact:[\s\S]*sample\.normalizedFinalArtifact/
+);
 assert.match(app, /speechTrainingDragHandle[\s\S]*pointerdown[\s\S]*setPointerCapture/);
 assert.match(app, /function showSpeechTrainingWidget[\s\S]*showPopover/);
 assert.match(app, /speech-training-target-selected[\s\S]*showSpeechTrainingWidget\(\{[\s\S]*promote:\s*true/);
