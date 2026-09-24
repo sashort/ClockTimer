@@ -48,6 +48,7 @@ class SpeechMicBar extends HTMLElement {
     #optionsClose;
     #optionsGrid;
     #optionsAnimation;
+    #commandCatalogGroups = [];
     #systemSpeechMenu;
     #wakeCommand;
     #sleepCommand;
@@ -1026,6 +1027,25 @@ class SpeechMicBar extends HTMLElement {
     connectedCallback() {
         this.#ensureSystemSpeechMenu();
         this.#subscribe();
+
+        const groups =
+            globalThis
+                .SpeechMenu
+                ?.phraseGroups;
+
+        if (
+            !globalThis
+                .SpeechMenu
+                ?.muted &&
+            Array.isArray(
+                groups
+            ) &&
+            groups.length
+        ) {
+            this.#commandCatalogGroups =
+                groups.slice();
+        }
+
         this.promoteTopLayer();
     }
 
@@ -1086,8 +1106,31 @@ class SpeechMicBar extends HTMLElement {
             []
     ) {
         this.promoteTopLayer();
+
+        const groups =
+            globalThis
+                .SpeechMenu
+                ?.muted &&
+            this.#commandCatalogGroups
+                .length
+                ? this
+                    .#commandCatalogGroups
+                : phraseGroups;
+
+        if (
+            !globalThis
+                .SpeechMenu
+                ?.muted &&
+            Array.isArray(
+                phraseGroups
+            )
+        ) {
+            this.#commandCatalogGroups =
+                phraseGroups.slice();
+        }
+
         this.#renderOptions(
-            phraseGroups
+            groups
         );
 
         const currentStyle =
@@ -3981,17 +4024,41 @@ class SpeechMicBar extends HTMLElement {
                     );
                 }
                 break;
-            case "phrasesChanged":
+            case "phrasesChanged": {
+                const groups =
+                    detail?.phraseGroups ||
+                    globalThis
+                        .SpeechMenu
+                        ?.phraseGroups ||
+                    [];
+
+                if (
+                    !globalThis
+                        .SpeechMenu
+                        ?.muted &&
+                    Array.isArray(
+                        groups
+                    )
+                ) {
+                    this.#commandCatalogGroups =
+                        groups.slice();
+                }
+
                 if (this.optionsOpen) {
                     this.#renderOptions(
-                        detail?.phraseGroups ||
                         globalThis
                             .SpeechMenu
-                            ?.phraseGroups ||
-                        []
+                            ?.muted &&
+                        this
+                            .#commandCatalogGroups
+                            .length
+                            ? this
+                                .#commandCatalogGroups
+                            : groups
                     );
                 }
                 break;
+            }
             case "speechCommandExecuted":
                 if (
                     detail?.utteranceId ===
