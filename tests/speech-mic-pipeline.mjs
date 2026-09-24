@@ -397,6 +397,7 @@ const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-c
 const sherpaRecognizerSource = fs.readFileSync(new URL("../SherpaRecognizer.js", import.meta.url), "utf8");
 const sherpaWorkerSource = fs.readFileSync(new URL("../speech/SherpaWorker.js", import.meta.url), "utf8");
 const sherpaRuntimeHtaccessSource = fs.readFileSync(new URL("../speech/sherpa/runtime/.htaccess", import.meta.url), "utf8");
+const speechAssetCacheWorkerSource = fs.readFileSync(new URL("../SpeechAssetCacheWorker.js", import.meta.url), "utf8");
 const audioWorkletSource = fs.readFileSync(new URL("../speech/SpeechAudioWorklet.js", import.meta.url), "utf8");
 const audioEngineSource = fs.readFileSync(new URL("../api/audio/AudioEngine.js", import.meta.url), "utf8");
 
@@ -1368,26 +1369,25 @@ assert.match(
     /if \(!config\)[\s\S]*return;[\s\S]*registerMacros/
 );
 
-assert.doesNotMatch(
+assert.match(
     app,
-    /serviceWorker\s*\.register\([\s\S]*SpeechAssetCacheWorker\.js/
+    /serviceWorker[\s\S]*\.register\([\s\S]*SpeechAssetCacheWorker\.js[\s\S]*speechRuntimeVersion[\s\S]*updateViaCache:[\s\S]*"all"/
 );
 assert.match(
     app,
-    /clearLegacySpeechAssetCache[\s\S]*getRegistrations[\s\S]*SpeechAssetCacheWorker\.js[\s\S]*unregister/
+    /serviceWorker[\s\S]*\.ready[\s\S]*controllerchange/
 );
 assert.match(
-    app,
-    /clearLegacySpeechAssetCache[\s\S]*wmof-sherpa-[\s\S]*caches\.delete/
-);
-
-assert.match(
-    app,
-    /legacyController[\s\S]*serviceWorker[\s\S]*controller[\s\S]*SpeechAssetCacheWorker\.js/
+    speechAssetCacheWorkerSource,
+    /params\.get\("sherpa"\)[\s\S]*"wmof-sherpa-"[\s\S]*version/
 );
 assert.match(
-    app,
-    /wmof\.speechCacheRollbackReloaded[\s\S]*location\.reload\(\)/
+    speechAssetCacheWorkerSource,
+    /"activate"[\s\S]*caches\.keys\(\)[\s\S]*name\.startsWith\([\s\S]*"wmof-sherpa-"[\s\S]*caches\.delete/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /"fetch"[\s\S]*caches\.open\([\s\S]*cache\.match\([\s\S]*if \(cached\)[\s\S]*fetch\([\s\S]*cache\.put/
 );
 
 assert.match(
