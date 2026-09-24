@@ -504,6 +504,18 @@ const audioEngineSource = fs.readFileSync(new URL("../api/audio/AudioEngine.js",
 assert.match(speechMenuSource, /static #silenceTimeout = 5000;/);
 assert.match(speechMenuSource, /static #commitSilenceTimeout = 350;/);
 assert.match(speechMenuSource, /new globalThis\.SherpaRecognizer/);
+assert.match(
+    speechMenuSource,
+    /#hotwords\(\)[\s\S]*querySelectorAll\(\s*"\[speech-pattern\]"\s*\)[\s\S]*#expandRegexSource/
+);
+assert.match(
+    speechMenuSource,
+    /#recognizerHotwordKey\s*=\s*""[\s\S]*#refreshRecognizerHotwords\(\)[\s\S]*JSON\.stringify\([\s\S]*key ===[\s\S]*#recognizerHotwordKey[\s\S]*return false[\s\S]*setHotwords/
+);
+assert.match(
+    speechMenuSource,
+    /extrapolatePhrases\(\)[\s\S]*#refreshRecognizerHotwords\(\)[\s\S]*return SpeechMenu\.#phrases/
+);
 assert.match(speechMenuSource, /echoCancellation:\s*true/);
 assert.match(speechMenuSource, /noiseSuppression:\s*false/);
 assert.match(speechMenuSource, /autoGainControl:\s*false/);
