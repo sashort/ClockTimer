@@ -4553,6 +4553,90 @@ class SpeechMenu {
                 if (
                     processed !== text
                 ) {
+                    let contextChange;
+
+                    let prefixLength = 0;
+                    const sharedLength =
+                        Math.min(
+                            text.length,
+                            processed.length
+                        );
+
+                    while (
+                        prefixLength <
+                            sharedLength &&
+                        text[
+                            prefixLength
+                        ] ===
+                            processed[
+                                prefixLength
+                            ]
+                    ) {
+                        prefixLength++;
+                    }
+
+                    let originalSuffix =
+                        text.length;
+                    let processedSuffix =
+                        processed.length;
+
+                    while (
+                        originalSuffix >
+                            prefixLength &&
+                        processedSuffix >
+                            prefixLength &&
+                        text[
+                            originalSuffix -
+                                1
+                        ] ===
+                            processed[
+                                processedSuffix -
+                                    1
+                            ]
+                    ) {
+                        originalSuffix--;
+                        processedSuffix--;
+                    }
+
+                    const sourceText =
+                        text.slice(
+                            prefixLength,
+                            originalSuffix
+                        );
+                    const processedValue =
+                        processed.slice(
+                            prefixLength,
+                            processedSuffix
+                        );
+
+                    if (
+                        sourceText ||
+                        processedValue
+                    ) {
+                        contextChange = {
+                            field:
+                                element.getAttribute(
+                                    "speech-preproc-field"
+                                ) ||
+                                undefined,
+                            kind:
+                                element.getAttribute(
+                                    "speech-preproc-context"
+                                ) ||
+                                undefined,
+                            sourceStart:
+                                prefixLength,
+                            sourceEnd:
+                                originalSuffix,
+                            sourceText,
+                            processedStart:
+                                prefixLength,
+                            processedEnd:
+                                processedSuffix,
+                            processedValue
+                        };
+                    }
+
                     preprocessing = {
                         utteranceId,
                         commandElement:
@@ -4562,6 +4646,7 @@ class SpeechMenu {
                             text,
                         processedText:
                             processed,
+                        contextChange,
                         provisional:
                             !execute
                     };
