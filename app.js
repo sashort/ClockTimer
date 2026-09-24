@@ -6723,9 +6723,26 @@
         return true;
     }
 
-    function disableInAppSpeechTraining() {
+    async function disableInAppSpeechTraining({
+        promptPending = true
+    } = {}) {
         if (speechTrainingActive) {
             return false;
+        }
+
+        if (
+            promptPending &&
+            speechTrainingPendingSamples
+                .length
+        ) {
+            const decision =
+                await promptPendingSpeechTrainingSamples(
+                    "exit"
+                );
+
+            if (decision === "cancel") {
+                return false;
+            }
         }
 
         inAppSpeechTrainingEnabled =
@@ -6762,6 +6779,8 @@
             clearSelection:
                 false
         });
+
+        clearPendingSpeechTrainingSamples();
 
         syncSpeechTrainingControls();
 
@@ -6816,7 +6835,7 @@
     } = {}) {
         if (!speechTrainingActive) {
             if (forced) {
-                disableInAppSpeechTraining();
+                void disableInAppSpeechTraining();
             }
 
             return false;
@@ -6854,7 +6873,7 @@
         syncSpeechTrainingControls();
 
         if (forced) {
-            disableInAppSpeechTraining();
+            void disableInAppSpeechTraining();
         }
 
         return true;
