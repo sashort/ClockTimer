@@ -171,19 +171,18 @@ class SpeechMicBar extends HTMLElement {
                     grid-column: 1 / -1;
                     display: grid;
                     grid-template-columns:
-                        subgrid;
-                    gap: 7px 0;
+                        minmax(0, 1fr);
+                    gap: 8px;
                     min-width: 0;
                 }
 
-                .option-card {
-                    grid-column: 1 / -1;
+                .option-category {
+                    min-width: 0;
                     display: grid;
                     grid-template-columns:
-                        subgrid;
-                    align-content: center;
-                    gap: 3px 0;
-                    padding: 8px 0;
+                        42px
+                        minmax(0, 1fr);
+                    overflow: hidden;
                     border: 1px solid
                         rgb(169 221 247 / 24%);
                     border-radius: 11px;
@@ -198,17 +197,177 @@ class SpeechMicBar extends HTMLElement {
                         rgb(255 255 255 / 7%);
                 }
 
-                .option-phrase {
+                .option-category-rail {
+                    grid-column: 1;
+                    grid-row: 1;
+                    display: grid;
+                    place-items: center;
+                    min-height: 100%;
+                    color: white;
+                }
+
+                .option-category[
+                    data-category="trip-actions"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue-dark
+                        );
+                }
+
+                .option-category[
+                    data-category="goals"
+                ]
+                .option-category-rail {
+                    color:
+                        var(
+                            --wm-blue-dark
+                        );
+                    background:
+                        var(
+                            --wm-yellow
+                        );
+                }
+
+                .option-category[
+                    data-category="settings"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --ui-gray-gradient,
+                            var(--wm-gray)
+                        );
+                }
+
+                .option-category[
+                    data-category="speech"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue
+                        );
+                }
+
+                .option-category-icon {
+                    width: 24px;
+                    height: 24px;
+                    display: grid;
+                    place-items: center;
+                    font:
+                        900 22px/1
+                        system-ui,
+                        sans-serif;
+                }
+
+                .option-category[
+                    data-category="trip-actions"
+                ]
+                .option-category-icon::before {
+                    content: "▶";
+                    font-size: 20px;
+                    transform:
+                        translateX(1px);
+                }
+
+                .option-category[
+                    data-category="goals"
+                ]
+                .option-category-icon::before {
+                    content: "%";
+                    font-size: 22px;
+                }
+
+                .option-category[
+                    data-category="settings"
+                ]
+                .option-category-icon::before {
+                    content: "";
+                    width: 23px;
+                    height: 23px;
+                    background:
+                        currentColor;
+                    -webkit-mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.1 13a7.2 7.2 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.6 7.6 0 0 0-1.7-1L14.6 3h-4l-.4 3a7.6 7.6 0 0 0-1.7 1L6 6 4 9.4 6.1 11a7.2 7.2 0 0 0 0 2L4 14.6 6 18l2.5-1a7.6 7.6 0 0 0 1.7 1l.4 3h4l.4-3a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.4L19.1 13ZM12.6 15.4a3.4 3.4 0 1 1 0-6.8 3.4 3.4 0 0 1 0 6.8Z' fill='black'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                    mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.1 13a7.2 7.2 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.6 7.6 0 0 0-1.7-1L14.6 3h-4l-.4 3a7.6 7.6 0 0 0-1.7 1L6 6 4 9.4 6.1 11a7.2 7.2 0 0 0 0 2L4 14.6 6 18l2.5-1a7.6 7.6 0 0 0 1.7 1l.4 3h4l.4-3a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.4L19.1 13ZM12.6 15.4a3.4 3.4 0 1 1 0-6.8 3.4 3.4 0 0 1 0 6.8Z' fill='black'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                }
+
+                .option-category[
+                    data-category="speech"
+                ]
+                .option-category-icon::before {
+                    content: "";
+                    width: 23px;
+                    height: 23px;
+                    background:
+                        currentColor;
+                    -webkit-mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                    mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                }
+
+                .option-category-content {
                     grid-column: 2;
+                    min-width: 0;
+                    padding: 8px 10px 9px;
+                    display: grid;
+                    gap: 4px;
+                }
+
+                .option-category-title {
+                    margin: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size:
+                        clamp(
+                            14px,
+                            2.2vw,
+                            17px
+                        );
+                    font-weight: 800;
+                    line-height: 1.2;
+                }
+
+                .option-category-cards {
+                    min-width: 0;
+                    display: grid;
+                    gap: 4px;
+                }
+
+                .option-card {
+                    min-width: 0;
+                    display: grid;
+                    gap: 3px;
+                    padding: 3px 0;
+                }
+
+                .option-card +
+                .option-card {
+                    padding-top: 6px;
+                    border-top: 1px solid
+                        rgb(169 221 247 / 16%);
+                }
+
+                .option-phrase {
                     justify-self: start;
                     display: inline-flex;
                     align-items: baseline;
                     width: max-content;
                     min-width: 0;
-                    max-width: min(
-                        82vw,
-                        calc(100vw - 36px)
-                    );
+                    max-width: 100%;
                     overflow: hidden;
                     white-space: nowrap;
                     font-size:
@@ -275,25 +434,10 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 .option-empty {
-                    grid-column: 2;
                     justify-self: start;
-                    padding: 16px 0;
+                    padding: 16px 12px;
                     color:
                         rgb(255 255 255 / 72%);
-                }
-
-                @supports not (
-                    grid-template-columns:
-                        subgrid
-                ) {
-                    #optionsPanel,
-                    #optionsGrid,
-                    .option-card {
-                        grid-template-columns:
-                            minmax(12px, 1fr)
-                            max-content
-                            minmax(12px, 1fr);
-                    }
                 }
 
                 #bar {
@@ -993,6 +1137,7 @@ class SpeechMicBar extends HTMLElement {
             group?.element;
 
         return (
+            group?.optionsGroup ||
             element
                 ?.getAttribute?.(
                     "data-speech-options-group"
@@ -1008,6 +1153,54 @@ class SpeechMicBar extends HTMLElement {
                 index
             )
         );
+    }
+
+    #optionsCategoryKey(
+        group
+    ) {
+        const category =
+            (
+                group
+                    ?.optionsCategory ||
+                group
+                    ?.element
+                    ?.getAttribute?.(
+                        "data-speech-options-category"
+                    ) ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+        return [
+            "trip-actions",
+            "goals",
+            "settings",
+            "speech"
+        ].includes(category)
+            ? category
+            : "settings";
+    }
+
+    #optionCategoryDefinitions() {
+        return [
+            {
+                key: "trip-actions",
+                label: "Trip Actions"
+            },
+            {
+                key: "goals",
+                label: "Goals"
+            },
+            {
+                key: "settings",
+                label: "Settings"
+            },
+            {
+                key: "speech",
+                label: "Speech Commands"
+            }
+        ];
     }
 
     #contextLabel(
@@ -1381,13 +1574,138 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
+    #speechControlItems() {
+        const speechMenu =
+            globalThis
+                .SpeechMenu;
+
+        if (!speechMenu) {
+            return [];
+        }
+
+        const values =
+            [];
+
+        for (
+            const [
+                kind,
+                regex
+            ] of
+            [
+                [
+                    "wake",
+                    speechMenu.wakePhrase
+                ],
+                [
+                    "sleep",
+                    speechMenu.sleepPhrase
+                ]
+            ]
+        ) {
+            const phrases =
+                typeof speechMenu
+                    .extrapolatePattern ===
+                    "function"
+                    ? speechMenu
+                        .extrapolatePattern(
+                            regex?.source ||
+                            ""
+                        )
+                    : [];
+
+            for (const phrase of phrases) {
+                values.push({
+                    phrase,
+                    display:
+                        String(
+                            phrase ||
+                            ""
+                        ),
+                    required:
+                        String(
+                            phrase ||
+                            ""
+                        ),
+                    optionalPrefix: "",
+                    optionalSuffix: "",
+                    element:
+                        undefined,
+                    implemented: true,
+                    kind
+                });
+            }
+        }
+
+        return values;
+    }
+
+    #optionItemText(
+        item
+    ) {
+        return String(
+            (
+                item?.optionalPrefix ||
+                ""
+            ) +
+            (
+                item?.required ||
+                this.#displayPhrase(
+                    item?.phrase,
+                    item?.element
+                )
+            ) +
+            (
+                item?.optionalSuffix ||
+                ""
+            )
+        )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
+    #compareOptionItems(
+        left,
+        right
+    ) {
+        const a =
+            this.#optionItemText(
+                left
+            );
+
+        const b =
+            this.#optionItemText(
+                right
+            );
+
+        const alphabetical =
+            a.localeCompare(
+                b,
+                undefined,
+                {
+                    sensitivity:
+                        "base"
+                }
+            );
+
+        return (
+            alphabetical ||
+            a.length -
+                b.length
+        );
+    }
+
     #phraseNode(
         phrase,
         element,
         {
             required,
             optionalPrefix = "",
-            optionalSuffix = ""
+            optionalSuffix = "",
+            implemented:
+                implementedOverride
         } = {}
     ) {
         const row =
@@ -1399,11 +1717,14 @@ class SpeechMicBar extends HTMLElement {
             "option-phrase";
 
         const implemented =
-            globalThis
-                .SpeechMenu
-                ?.isCommandImplemented?.(
-                    element
-                ) !== false;
+            typeof implementedOverride ===
+                "boolean"
+                ? implementedOverride
+                : globalThis
+                    .SpeechMenu
+                    ?.isCommandImplemented?.(
+                        element
+                    ) !== false;
 
         if (!implemented) {
             row.classList.add(
@@ -1493,7 +1814,57 @@ class SpeechMicBar extends HTMLElement {
     #renderOptions(
         phraseGroups
     ) {
-        const cards = new Map();
+        const definitions =
+            this
+                .#optionCategoryDefinitions();
+
+        const categories =
+            new Map(
+                definitions.map(
+                    definition => [
+                        definition.key,
+                        {
+                            ...definition,
+                            cards:
+                                new Map()
+                        }
+                    ]
+                )
+            );
+
+        const ensureCard =
+            (
+                categoryKey,
+                cardKey
+            ) => {
+                const category =
+                    categories.get(
+                        categoryKey
+                    ) ||
+                    categories.get(
+                        "settings"
+                    );
+
+                let card =
+                    category.cards.get(
+                        cardKey
+                    );
+
+                if (!card) {
+                    card = {
+                        phrases: [],
+                        seen:
+                            new Set()
+                    };
+
+                    category.cards.set(
+                        cardKey,
+                        card
+                    );
+                }
+
+                return card;
+            };
 
         (
             Array.isArray(
@@ -1506,31 +1877,20 @@ class SpeechMicBar extends HTMLElement {
                 group,
                 index
             ) => {
-                const key =
-                    this.#optionsGroupKey(
-                        group,
-                        index
-                    );
+                const categoryKey =
+                    this
+                        .#optionsCategoryKey(
+                            group
+                        );
 
-                let card =
-                    cards.get(
-                        key
+                const card =
+                    ensureCard(
+                        categoryKey,
+                        this.#optionsGroupKey(
+                            group,
+                            index
+                        )
                     );
-
-                if (!card) {
-                    card = {
-                        element:
-                            group?.element,
-                        phrases: [],
-                        seen:
-                            new Set()
-                    };
-
-                    cards.set(
-                        key,
-                        card
-                    );
-                }
 
                 for (
                     const item of
@@ -1566,71 +1926,210 @@ class SpeechMicBar extends HTMLElement {
             }
         );
 
+        const speechCard =
+            ensureCard(
+                "speech",
+                "speech-controls"
+            );
+
+        for (
+            const item of
+            this.#speechControlItems()
+        ) {
+            const signature =
+                item.required
+                    .toLocaleLowerCase();
+
+            if (
+                speechCard.seen.has(
+                    signature
+                )
+            ) {
+                continue;
+            }
+
+            speechCard.seen.add(
+                signature
+            );
+
+            speechCard.phrases.push(
+                item
+            );
+        }
+
         this.#optionsGrid
             .replaceChildren();
 
         let count = 0;
 
         for (
-            const card of
-            cards.values()
+            const definition of
+            definitions
         ) {
-            if (
-                !card.phrases
-                    .length
-            ) {
-                continue;
+            const category =
+                categories.get(
+                    definition.key
+                );
+
+            const cards =
+                [
+                    ...category
+                        .cards
+                        .values()
+                ]
+                    .filter(
+                        card =>
+                            card.phrases
+                                .length
+                    );
+
+            for (const card of cards) {
+                card.phrases.sort(
+                    (
+                        left,
+                        right
+                    ) =>
+                        this
+                            .#compareOptionItems(
+                                left,
+                                right
+                            )
+                );
             }
 
-            card.phrases.sort(
+            cards.sort(
                 (
                     left,
                     right
                 ) =>
                     this
-                        .#displayPhrase(
-                            left.phrase,
-                            left.element
+                        .#compareOptionItems(
+                            left.phrases[0],
+                            right.phrases[0]
                         )
-                        .length -
-                    this
-                        .#displayPhrase(
-                            right.phrase,
-                            right.element
-                        )
-                        .length
             );
 
-            const box =
+            if (!cards.length) {
+                continue;
+            }
+
+            const section =
+                document.createElement(
+                    "section"
+                );
+
+            section.className =
+                "option-category";
+
+            section.dataset.category =
+                definition.key;
+
+            const rail =
                 document.createElement(
                     "div"
                 );
 
-            box.className =
-                "option-card";
+            rail.className =
+                "option-category-rail";
+
+            rail.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+            const icon =
+                document.createElement(
+                    "span"
+                );
+
+            icon.className =
+                "option-category-icon";
+
+            rail.append(
+                icon
+            );
+
+            const content =
+                document.createElement(
+                    "div"
+                );
+
+            content.className =
+                "option-category-content";
+
+            const title =
+                document.createElement(
+                    "h3"
+                );
+
+            title.className =
+                "option-category-title";
+
+            title.textContent =
+                definition.label;
+
+            const cardContainer =
+                document.createElement(
+                    "div"
+                );
+
+            cardContainer.className =
+                "option-category-cards";
 
             for (
-                const item of
-                card.phrases
+                const card of
+                cards
             ) {
-                box.append(
-                    this.#phraseNode(
-                        item.phrase,
-                        item.element,
-                        {
-                            required:
-                                item.required,
-                            optionalPrefix:
-                                item.optionalPrefix,
-                            optionalSuffix:
-                                item.optionalSuffix
-                        }
-                    )
-                );
+                const box =
+                    document.createElement(
+                        "div"
+                    );
+
+                box.className =
+                    "option-card";
+
+                for (
+                    const item of
+                    card.phrases
+                ) {
+                    box.append(
+                        this.#phraseNode(
+                            item.phrase,
+                            item.element,
+                            {
+                                required:
+                                    item.required,
+                                optionalPrefix:
+                                    item.optionalPrefix,
+                                optionalSuffix:
+                                    item.optionalSuffix,
+                                implemented:
+                                    item.implemented
+                            }
+                        )
+                    );
+                }
+
+                cardContainer
+                    .append(
+                        box
+                    );
             }
 
+            content.append(
+                title,
+                cardContainer
+            );
+
+            section.append(
+                rail,
+                content
+            );
+
             this.#optionsGrid
-                .append(box);
+                .append(
+                    section
+                );
 
             count += 1;
         }
@@ -1643,13 +2142,14 @@ class SpeechMicBar extends HTMLElement {
 
             empty.className =
                 "option-empty";
+
             empty.textContent =
                 "No voice options available.";
 
             this.#optionsGrid
-                .append(empty);
-
-            count = 1;
+                .append(
+                    empty
+                );
         }
 
         this.#fitOptions();
