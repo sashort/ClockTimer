@@ -776,11 +776,19 @@ assert.match(
 );
 assert.match(
     app,
-    /speechTrainingExpectedPhraseMatches[\s\S]*placeholders[\s\S]*new RegExp/
+    /speechTrainingTokenBelongsToFamily[\s\S]*observed \+ "s"[\s\S]*expected[\s\S]*observed \+ "es"/
 );
-assert.doesNotMatch(
+assert.match(
     app,
-    /speechTrainingEditSimilarity/
+    /speechTrainingTokenBelongsToFamily[\s\S]*previous\[[\s\S]*expected\.length[\s\S]*<= 1/
+);
+assert.match(
+    app,
+    /speechTrainingExpectedPhraseMatches[\s\S]*heardTokens[\s\S]*templateTokens[\s\S]*speechTrainingTokenBelongsToFamily/
+);
+assert.match(
+    app,
+    /placeholderSet[\s\S]*visit\([\s\S]*heardIndex/
 );
 assert.doesNotMatch(
     app,
