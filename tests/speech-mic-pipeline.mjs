@@ -792,3 +792,24 @@ assert.match(
     speechMenuSource,
     /#clearCandidatePool\([\s\S]*candidateHardCommitTimer[\s\S]*clearTimeout[\s\S]*lastExactCandidate\s*=\s*undefined/
 );
+
+assert.match(
+    speechMicBarSource,
+    /id="optionsClose"[\s\S]*aria-label="Close speech options"[\s\S]*>×<\/button>/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsClose[\s\S]*position:\s*absolute[\s\S]*top:\s*7px[\s\S]*right:\s*9px/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionsClose[\s\S]*addEventListener\([\s\S]*"click"[\s\S]*hideOptions/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /--speech-option-row-height/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-card[\s\S]*padding:\s*8px 0/
+);
