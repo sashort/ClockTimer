@@ -6095,6 +6095,34 @@
             return this.#buildSummarySnapshot(now);
         }
 
+        getRenderedTime(mode = this.#renderedTimeMode, now = new Date()) {
+            if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+                throw new TypeError("now must be a valid Date.");
+            }
+
+            const normalized =
+                String(mode || "")
+                    .trim()
+                    .toLowerCase();
+
+            if (
+                !new Set([
+                    "remaining",
+                    "elapsed",
+                    "calculated-end"
+                ]).has(normalized)
+            ) {
+                throw new RangeError(
+                    "mode must be remaining, elapsed, or calculated-end."
+                );
+            }
+
+            return this.#calculateRenderedTime(
+                now,
+                normalized
+            );
+        }
+
         get autoRestartTripAfterLateBreak() {
             return this.#autoRestartTripAfterLateBreak;
         }
