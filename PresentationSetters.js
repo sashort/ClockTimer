@@ -929,6 +929,50 @@
             return true;
         };
 
+    const presentSpeechDictation =
+        (
+            value,
+            {
+                commandElement,
+                utteranceId
+            } = {}
+        ) => {
+            const text =
+                String(
+                    value ??
+                    ""
+                ).trim();
+
+            if (!text) {
+                return false;
+            }
+
+            clearTimeout(
+                responseTimer
+            );
+
+            responseTimer =
+                undefined;
+
+            const bar =
+                responseBar();
+
+            if (!bar) {
+                return false;
+            }
+
+            bar.setResponse?.(
+                text
+            );
+
+            scheduleDismissal(
+                commandElement,
+                utteranceId
+            );
+
+            return true;
+        };
+
     const cancelSpeechResponse =
         () =>
             false;
@@ -941,6 +985,7 @@
             define,
             beginSpeechResponse,
             finishSpeechResponse,
+            presentSpeechDictation,
             cancelSpeechResponse,
             dismissSpeechResponse
         });
