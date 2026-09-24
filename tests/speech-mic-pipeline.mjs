@@ -1010,6 +1010,10 @@ assert.match(
     /append\(system\)[\s\S]*#sleeping[\s\S]*return result[\s\S]*append\(topLevel\)[\s\S]*dialog\[open\]/
 );
 assert.match(
+    speechMenuSource,
+    /!pool\.length[\s\S]*!utterance\.committing[\s\S]*!utterance\.lastExactCandidate[\s\S]*#finishUtterance/
+);
+assert.match(
     languageSource,
     /wakePhrase:\s*"\^\(\?:wake\|on\)\$"/
 );
@@ -1282,10 +1286,6 @@ assert.match(
     speechMenuSource,
     /if \(committed\)[\s\S]*#clearCandidatePool\(\s*utterance\s*\)/
 );
-assert.match(
-    speechMenuSource,
-    /!pool\.length[\s\S]*!utterance\.committing[\s\S]*!SpeechMenu\.#sleeping/
-);
 
 assert.match(
     speechMenuSource,
@@ -1294,10 +1294,6 @@ assert.match(
 assert.match(
     speechMenuSource,
     /candidateHardCommitTimer:\s*undefined[\s\S]*lastExactCandidate:\s*undefined/
-);
-assert.match(
-    speechMenuSource,
-    /!pool\.length[\s\S]*!utterance\.lastExactCandidate[\s\S]*!SpeechMenu\.#sleeping/
 );
 assert.match(
     speechMenuSource,
