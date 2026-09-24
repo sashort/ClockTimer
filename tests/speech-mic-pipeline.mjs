@@ -545,7 +545,11 @@ assert.match(
 );
 assert.match(
     app,
-    /promptPendingSpeechTrainingSamples[\s\S]*"Commit or discard them before changing phrases\."[\s\S]*"Commit or discard them before leaving Speech Training\."/
+    /renderPendingSpeechTrainingMessage[\s\S]*"Commit or discard them before changing phrases\."[\s\S]*"Commit or discard them before leaving Speech Training\."/
+);
+assert.match(
+    app,
+    /promptPendingSpeechTrainingSamples[\s\S]*renderPendingSpeechTrainingMessage/
 );
 assert.match(
     app,
