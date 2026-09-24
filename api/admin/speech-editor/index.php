@@ -189,6 +189,16 @@ header('Referrer-Policy: no-referrer');
                         <p class="subtle">Available phrases, grouped by candidate and SpeechMenu precedence.</p>
                     </div>
                 </div>
+                <section id="speechTrainingModelSummary" class="speech-training-model-summary" hidden>
+                    <div class="speech-training-section-heading">
+                        <div>
+                            <h3>Model contributors</h3>
+                            <p>Active contributions across this language model.</p>
+                        </div>
+                        <button id="speechTrainingResetModel" type="button" hidden>Reset training</button>
+                    </div>
+                    <div id="speechTrainingModelContributors" class="speech-training-contributors"></div>
+                </section>
                 <div id="phraseList" class="phrase-list" role="tree" aria-label="Configured speech phrases"></div>
             </section>
 
@@ -452,6 +462,16 @@ header('Referrer-Policy: no-referrer');
                     </div>
                 </div>
                 <div id="speechTrainingVariants" class="speech-training-variants"></div>
+            </section>
+
+            <section class="speech-training-section">
+                <div class="speech-training-section-heading">
+                    <div>
+                        <h3>Contributors</h3>
+                        <p>Users whose active training currently affects this phrase.</p>
+                    </div>
+                </div>
+                <div id="speechTrainingContributors" class="speech-training-contributors"></div>
             </section>
 
             <section id="speechCorrectionSection" class="speech-training-section">
