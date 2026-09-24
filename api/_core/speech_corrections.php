@@ -735,6 +735,8 @@ function rebuild_speech_corrections(
             . 'FROM speech_training_contributions '
             . 'WHERE active = 1 '
             . 'AND recognized_correct = 0 '
+            . 'AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, "$.divergenceStatus")), "") '
+            . 'NOT IN ("pending","purged") '
             . 'AND phrase_id IN (' . $placeholders . ') '
             . 'GROUP BY phrase_id, observed_compact, canonical_compact, match_type'
         );
