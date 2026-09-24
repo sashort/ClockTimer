@@ -123,57 +123,70 @@
             ? "silero"
             : "raw";
 
-    let speechAssetCachePromise;
-    const ensureSpeechAssetCache = () => {
-        if (
-            !("serviceWorker" in navigator) ||
-            !globalThis.isSecureContext
-        ) {
-            return Promise.resolve(false);
-        }
+    const clearLegacySpeechAssetCache = async () => {
+        if ("serviceWorker" in navigator) {
+            try {
+                const registrations =
+                    await navigator
+                        .serviceWorker
+                        .getRegistrations();
 
-        if (!speechAssetCachePromise) {
-            const workerUrl =
-                "SpeechAssetCacheWorker.js" +
-                speechRuntimeVersion;
-
-            speechAssetCachePromise =
-                navigator.serviceWorker
-                    .register(
-                        workerUrl,
-                        {
-                            scope: "./",
-                            updateViaCache:
-                                "none"
-                        }
-                    )
-                    .then(
-                        async registration => {
-                            await navigator
-                                .serviceWorker
-                                .ready;
-
-                            return Boolean(
+                await Promise.all(
+                    registrations
+                        .filter(
+                            registration =>
+                                String(
+                                    registration
+                                        .active
+                                        ?.scriptURL ||
+                                    registration
+                                        .waiting
+                                        ?.scriptURL ||
+                                    registration
+                                        .installing
+                                        ?.scriptURL ||
+                                    ""
+                                )
+                                    .includes(
+                                        "SpeechAssetCacheWorker.js"
+                                    )
+                        )
+                        .map(
+                            registration =>
                                 registration
-                            );
-                        }
-                    )
-                    .catch(
-                        error => {
-                            console.warn(
-                                "Sherpa asset cache unavailable.",
-                                error
-                            );
-
-                            return false;
-                        }
-                    );
+                                    .unregister()
+                        )
+                );
+            }
+            catch {}
         }
 
-        return speechAssetCachePromise;
+        if ("caches" in globalThis) {
+            try {
+                const names =
+                    await caches.keys();
+
+                await Promise.all(
+                    names
+                        .filter(
+                            name =>
+                                name.startsWith(
+                                    "wmof-sherpa-"
+                                )
+                        )
+                        .map(
+                            name =>
+                                caches.delete(
+                                    name
+                                )
+                        )
+                );
+            }
+            catch {}
+        }
     };
 
-    void ensureSpeechAssetCache();
+    void clearLegacySpeechAssetCache();
 
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
@@ -239,8 +252,6 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
-                        await ensureSpeechAssetCache();
-
                         if (!globalThis.SherpaRecognizer) {
                             await loadClassicScript(
                                 "SherpaRecognizer.js"
