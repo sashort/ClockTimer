@@ -7186,7 +7186,9 @@
                     waveform: "square",
                     volume: 0.01,
                     reason:
-                        "number-pad-ambient"
+                        "number-pad-ambient",
+                    suspendListening:
+                        false
                 }
             )
             .then(
@@ -8730,7 +8732,9 @@
                                             "square",
                                         volume: 1,
                                         reason:
-                                            "number-pad"
+                                            "number-pad",
+                                        suspendListening:
+                                            false
                                     }
                                 )
                                 .then(
