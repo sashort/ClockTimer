@@ -1362,6 +1362,31 @@ if (
             )
             : null;
 
+    if (
+        $action ===
+            'sample' &&
+        isset(
+            $input['metadata']
+        ) &&
+        is_array(
+            $input['metadata']
+        ) &&
+        array_key_exists(
+            'modelAccepted',
+            $input['metadata']
+        ) &&
+        is_bool(
+            $input['metadata'][
+                'modelAccepted'
+            ]
+        )
+    ) {
+        $recognizedCorrect =
+            $input['metadata'][
+                'modelAccepted'
+            ];
+    }
+
     $metadata =
         isset(
             $input['metadata']
