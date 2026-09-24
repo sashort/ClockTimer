@@ -1154,10 +1154,25 @@
                 undefined;
 
             try {
+                const promptIndex =
+                    trainingSession
+                        .index;
+
                 const data =
                     await recordTrainingSample(
                         pending.canonical,
-                        pending.observed
+                        pending.observed,
+                        {
+                            source:
+                                "guided",
+                            trainingStyle:
+                                TRAINING_STYLES[
+                                    promptIndex %
+                                    TRAINING_STYLES
+                                        .length
+                                ],
+                            promptIndex
+                        }
                     );
 
                 $(
