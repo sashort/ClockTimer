@@ -1246,7 +1246,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /id="optionsClose"[\s\S]*aria-label="Close speech options"[\s\S]*>×<\/button>/
+    /id="optionsClose"[\s\S]*aria-label="Close speech commands"[\s\S]*>×<\/button>/
 );
 assert.match(
     speechMicBarSource,
