@@ -512,6 +512,25 @@ class SpeechMicBar extends HTMLElement {
                     font: 600 12px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
                 }
 
+                #text > code.streaming-context {
+                    display: inline-block;
+                    max-width: none;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    vertical-align: baseline;
+                    color: #ffd86a;
+                    border-color:
+                        rgb(
+                            255 194 32 /
+                            48%
+                        );
+                    background:
+                        rgb(
+                            255 194 32 /
+                            16%
+                        );
+                }
+
                 #response {
                     width: 0;
                     max-width: min(42vw, 360px);
@@ -1838,11 +1857,15 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechPreprocessed":
-                /*
-                 * Preprocessing may run while recognition is still
-                 * provisional.  Keep the raw recognizer transcript
-                 * visible until the command has actually succeeded.
-                 */
+                if (
+                    detail?.utteranceId ===
+                        this.#currentUtteranceId &&
+                    detail?.contextChange
+                ) {
+                    this.#showStreamingContext(
+                        detail
+                    );
+                }
                 break;
             case "speechCommandMatched":
             case "speechMenuMatched":
@@ -2186,6 +2209,105 @@ class SpeechMicBar extends HTMLElement {
 
     #showText(text) {
         this.#showStatus(text);
+    }
+
+    #showStreamingContext(
+        detail
+    ) {
+        const original =
+            String(
+                detail?.originalText ||
+                this.#currentTranscript ||
+                ""
+            );
+
+        const change =
+            detail?.contextChange;
+
+        if (
+            !change ||
+            !Number.isInteger(
+                change.sourceStart
+            ) ||
+            !Number.isInteger(
+                change.sourceEnd
+            ) ||
+            change.sourceStart < 0 ||
+            change.sourceEnd <
+                change.sourceStart ||
+            change.sourceEnd >
+                original.length
+        ) {
+            this.#showText(
+                original
+            );
+            return;
+        }
+
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.id =
+            "text";
+
+        if (
+            change.sourceStart >
+                0
+        ) {
+            span.append(
+                original.slice(
+                    0,
+                    change.sourceStart
+                )
+            );
+        }
+
+        const code =
+            document.createElement(
+                "code"
+            );
+
+        code.className =
+            "streaming-context";
+
+        code.dataset.contextField =
+            change.field ||
+            "";
+
+        code.dataset.contextKind =
+            change.kind ||
+            "";
+
+        code.textContent =
+            String(
+                change.processedValue ??
+                ""
+            );
+
+        span.append(
+            code
+        );
+
+        if (
+            change.sourceEnd <
+                original.length
+        ) {
+            span.append(
+                original.slice(
+                    change.sourceEnd
+                )
+            );
+        }
+
+        this.#activity
+            .replaceChildren(
+                span
+            );
+
+        this.#text =
+            span;
     }
 
     #showPreprocessed(original, processed) {
