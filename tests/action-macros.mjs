@@ -129,6 +129,104 @@ assert.equal(
     "defineAll should continue registering actions after continue/cycle/run verbs"
 );
 
+let interruptedSignal;
+let interruptedAction;
+
+window.WMOFActionFunctions
+    .define(
+        "openInterruptProbe",
+        () => {
+            const context =
+                window
+                    .WMOFActionFunctions
+                    .invocationContext;
+
+            interruptedSignal =
+                context.signal;
+
+            return new Promise(
+                resolve =>
+                    interruptedSignal
+                        .addEventListener(
+                            "abort",
+                            () =>
+                                resolve(
+                                    true
+                                ),
+                            {
+                                once:
+                                    true
+                            }
+                        )
+            );
+        },
+        {
+            interruptGroup:
+                "probe-surface"
+        }
+    );
+
+window.WMOFActionFunctions
+    .define(
+        "closeInterruptProbe",
+        () => {
+            interruptedAction =
+                window
+                    .WMOFActionFunctions
+                    .invocationContext
+                    ?.interruptedAction;
+
+            return true;
+        },
+        {
+            interruptGroup:
+                "probe-surface"
+        }
+    );
+
+const pendingInterrupt =
+    window.WMOFActions
+        .openInterruptProbe();
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isInterruptGroupActive(
+            "probe-surface"
+        ),
+    true,
+    "an async action should keep its interrupt group active"
+);
+
+assert.equal(
+    window.WMOFActions
+        .closeInterruptProbe(),
+    true,
+    "a complementary action should execute without waiting for the first action"
+);
+
+assert.equal(
+    interruptedSignal.aborted,
+    true,
+    "the newer action should abort the older action in the same interrupt group"
+);
+
+assert.equal(
+    interruptedAction,
+    "openInterruptProbe",
+    "the newer action should know which complementary action it interrupted"
+);
+
+await pendingInterrupt;
+
+assert.equal(
+    window.WMOFActionFunctions
+        .isInterruptGroupActive(
+            "probe-surface"
+        ),
+    false,
+    "the interrupt group should settle after the replacement action completes"
+);
+
 window.WMOFActionFunctions
     .startRecording();
 
