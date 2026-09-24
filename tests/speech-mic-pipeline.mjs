@@ -913,3 +913,24 @@ assert.match(
     app,
     /SHERPA_ASSET_VERSION\s*=\s*"2026-09-23-1"[\s\S]*speechRuntimeVersion[\s\S]*\?sherpa=/
 );
+
+assert.match(
+    fs.readFileSync(
+        new URL(
+            "../SpeechEditorRuntime.js",
+            import.meta.url
+        ),
+        "utf8"
+    ),
+    /response\.status === 401[\s\S]*response\.status === 403[\s\S]*return undefined/
+);
+assert.match(
+    fs.readFileSync(
+        new URL(
+            "../SpeechEditorRuntime.js",
+            import.meta.url
+        ),
+        "utf8"
+    ),
+    /if \(!config\)[\s\S]*return;[\s\S]*registerMacros/
+);
