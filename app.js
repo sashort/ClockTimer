@@ -15998,6 +15998,10 @@
                 );
             },
 
+            canUseInformational() {
+                return tripIsLive();
+            },
+
             canOpenBreakMenu() {
                 return !breakButton?.disabled;
             },
@@ -20102,13 +20106,21 @@
                 delete element.dataset.speechTarget;
             }
 
-            if (
+            const availability =
                 key ===
-                "readyAtContinuation"
-            ) {
+                    "readyAtContinuation"
+                    ? "WMOFSpeechAvailability.canContinueStartAt"
+                    : speechOptionCategories[
+                        key
+                    ] ===
+                        "informational"
+                        ? "WMOFSpeechAvailability.canUseInformational"
+                        : "";
+
+            if (availability) {
                 element.setAttribute(
                     "speech-available",
-                    "WMOFSpeechAvailability.canContinueStartAt"
+                    availability
                 );
             }
             else {
