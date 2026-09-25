@@ -877,9 +877,6 @@
         returnTarget: "home",
         numberPadState: undefined
     };
-    let numberPadLongPressTimer;
-    let numberPadLongPressed = false;
-    let numberPadLastClearPointerDown = 0;
     const speechEditorPreview =
         new URLSearchParams(
             globalThis.location
@@ -911,8 +908,6 @@
     let syncOfflineTransitionSequence = 0;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
-    const NUMBER_PAD_LONG_PRESS = 750;
-    const NUMBER_PAD_DOUBLE_PRESS = 350;
     const CLOCK_TIMER_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
     const CONNECTION_UI_TRANSITION_DURATION = 750;
@@ -11079,10 +11074,6 @@
     }
 
     function resetNumberPad() {
-        clearTimeout(numberPadLongPressTimer);
-        numberPadLongPressTimer = undefined;
-        numberPadLongPressed = false;
-        numberPadLastClearPointerDown = 0;
         numberPadState = undefined;
         if (numberPadDisplay) numberPadDisplay.textContent = "";
         if (numberPadContext) numberPadContext.textContent = "Number Pad";
@@ -11508,16 +11499,6 @@
         numberPadState.meridiem = numberPadState.initialMeridiem;
         numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
         refreshNumberPad();
-    }
-
-    function runNumberPadClearShortAction() {
-        if (!numberPadState) return;
-        const action = getNumberPadClearAction();
-        if (action === "close" || action === "back" || action === "home") {
-            void requestNumberPadClose().catch(() => {});
-            return;
-        }
-        resetNumberPadPendingValue();
     }
 
     function changeNumberPadMeridiem(next) {
@@ -12674,185 +12655,43 @@
                     "confirmNumberPad"
             });
 
-        numberPadClear.addEventListener(
-            "pointerdown",
-            globalThis
-                .WMOFInteractionFunctions
-                .define(
-                    "resetNumberPadPointerDown",
-                    event => {
-                        if (
-                            !numberPadState ||
-                            getNumberPadClearAction() !==
-                                "reset"
-                        ) {
-                            return;
-                        }
-
-                        const now =
-                            performance.now();
-
-                        const doublePress =
-                            now -
-                                numberPadLastClearPointerDown <=
-                            NUMBER_PAD_DOUBLE_PRESS;
-
-                        numberPadLastClearPointerDown =
-                            now;
-
-                        numberPadLongPressed =
-                            false;
-
-                        numberPadClear
-                            .setPointerCapture?.(
-                                event.pointerId
-                            );
-
-                        clearTimeout(
-                            numberPadLongPressTimer
-                        );
-
-                        if (doublePress) {
-                            numberPadLongPressed =
-                                true;
-
-                            globalThis
-                                .WMOFActions
-                                .resetNumberPadValue();
-
-                            return;
-                        }
-
-                        numberPadLongPressTimer =
-                            setTimeout(
-                                () => {
-                                    numberPadLongPressTimer =
-                                        undefined;
-
-                                    numberPadLongPressed =
-                                        true;
-
-                                    if (
-                                        !numberPadState
-                                    ) {
-                                        return;
-                                    }
-
-                                    globalThis
-                                        .WMOFActions
-                                        .resetNumberPadValue();
-                                },
-                                NUMBER_PAD_LONG_PRESS
-                            );
-                    }
-                )
-        );
-
-        numberPadClear.addEventListener(
-            "pointerup",
-            globalThis
-                .WMOFInteractionFunctions
-                .define(
-                    "runNumberPadClearPointerUp",
-                    event => {
-                        if (
-                            numberPadClear
-                                .hasPointerCapture?.(
-                                    event.pointerId
-                                )
-                        ) {
-                            numberPadClear
-                                .releasePointerCapture(
-                                    event.pointerId
-                                );
-                        }
-
-                        if (
-                            numberPadLongPressTimer !==
-                            undefined
-                        ) {
-                            clearTimeout(
-                                numberPadLongPressTimer
-                            );
-
-                            numberPadLongPressTimer =
-                                undefined;
-                        }
-
-                        if (
-                            numberPadLongPressed
-                        ) {
-                            numberPadLongPressed =
-                                false;
-
-                            return;
-                        }
-
-                        globalThis
-                            .WMOFActions
-                            .runNumberPadClear();
-                    }
-                )
-        );
-
-        numberPadClear.addEventListener(
-            "pointercancel",
-            () => {
-                clearTimeout(
-                    numberPadLongPressTimer
-                );
-
-                numberPadLongPressTimer =
-                    undefined;
-
-                numberPadLongPressed =
-                    false;
-            }
-        );
-
-        numberPadClear.addEventListener(
-            "click",
-            globalThis
-                .WMOFInteractionFunctions
-                .define(
-                    "runNumberPadClearKeyboardClick",
-                    event => {
-                        if (
-                            event.detail ===
-                            0
-                        ) {
-                            globalThis
-                                .WMOFActions
-                                .runNumberPadClear();
-                        }
-                    }
-                )
-        );
-
         globalThis
             .WMOFInteractionFunctions
             .bindAction({
                 element:
-                    numberPadConnection,
+                    numberPadClear,
                 event:
-                    "click",
+                    "pointerup",
                 name:
-                    "resumeNumberPadConnectionClick",
+                    "clearNumberPadPointerUp",
                 action:
-                    "resumeNumberPadConnection"
+                    "clearNumberPadValue"
             });
 
         globalThis
             .WMOFInteractionFunctions
             .bindAction({
                 element:
-                    numberPadSettings,
+                    numberPadReset,
                 event:
                     "pointerup",
                 name:
-                    "openNumberPadSettingsPointerUp",
+                    "resetNumberPadPointerUp",
                 action:
-                    "openNumberPadSettings"
+                    "resetNumberPadValue"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadCancel,
+                event:
+                    "pointerup",
+                name:
+                    "cancelNumberPadPointerUp",
+                action:
+                    "cancelNumberPadEdit"
             });
 
         numberPadDialog.addEventListener(
@@ -18925,7 +18764,7 @@
             },
 
             runNumberPadClear() {
-                runNumberPadClearShortAction();
+                eraseNumberPadPendingValue();
 
                 return Boolean(
                     numberPadState
