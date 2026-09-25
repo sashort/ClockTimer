@@ -944,6 +944,8 @@ class SpeechMenu {
 
     static extrapolatePhrases() {
         const groups = [];
+        const intentGroups =
+            new Map();
         const phrases = [];
         const seen = new Set();
 
@@ -973,36 +975,85 @@ class SpeechMenu {
                     "speech-menu"
                 );
 
-            groups.push(
-                Object.freeze({
-                    element,
-                    menu: menu || undefined,
-                    modal:
-                        SpeechMenu
-                            .#effectiveModal(
-                                element
-                            ),
-                    pattern,
-                    optionsGroup:
-                        element
-                            .getAttribute(
-                                "data-speech-options-group"
-                            )
-                            ?.trim() ||
-                        undefined,
-                    optionsCategory:
-                        element
-                            .getAttribute(
-                                "data-speech-options-category"
-                            )
-                            ?.trim() ||
-                        undefined,
-                    phrases:
-                        Object.freeze(
-                            extrapolated.slice()
+            const intent =
+                element
+                    .getAttribute(
+                        "data-speech-intent"
+                    )
+                    ?.trim() ||
+                undefined;
+
+            const descriptor = {
+                element,
+                elements: [element],
+                intent,
+                menu: menu || undefined,
+                modal:
+                    SpeechMenu
+                        .#effectiveModal(
+                            element
+                        ),
+                pattern,
+                optionsGroup:
+                    element
+                        .getAttribute(
+                            "data-speech-options-group"
                         )
-                })
-            );
+                        ?.trim() ||
+                    undefined,
+                optionsCategory:
+                    element
+                        .getAttribute(
+                            "data-speech-options-category"
+                        )
+                        ?.trim() ||
+                    undefined,
+                phrases:
+                    extrapolated.slice()
+            };
+
+            if (intent) {
+                const existing =
+                    intentGroups.get(
+                        intent
+                    );
+
+                if (existing) {
+                    existing.elements.push(
+                        element
+                    );
+
+                    for (
+                        const phrase of
+                        extrapolated
+                    ) {
+                        if (
+                            !existing.phrases
+                                .includes(
+                                    phrase
+                                )
+                        ) {
+                            existing.phrases.push(
+                                phrase
+                            );
+                        }
+                    }
+                }
+                else {
+                    intentGroups.set(
+                        intent,
+                        descriptor
+                    );
+                    groups.push(
+                        descriptor
+                    );
+                }
+            }
+            else {
+                groups.push(
+                    descriptor
+                );
+            }
 
             for (const phrase of extrapolated) {
                 if (seen.has(phrase)) continue;
@@ -1017,7 +1068,22 @@ class SpeechMenu {
             SpeechMenu.#phraseGroups;
 
         SpeechMenu.#phraseGroups =
-            Object.freeze(groups);
+            Object.freeze(
+                groups.map(
+                    group =>
+                        Object.freeze({
+                            ...group,
+                            elements:
+                                Object.freeze(
+                                    group.elements.slice()
+                                ),
+                            phrases:
+                                Object.freeze(
+                                    group.phrases.slice()
+                                )
+                        })
+                )
+            );
 
         SpeechMenu.#phrases =
             Object.freeze(phrases);
@@ -1043,6 +1109,8 @@ class SpeechMenu {
                         !next ||
                         group.element !==
                             next.element ||
+                        group.intent !==
+                            next.intent ||
                         group.pattern !==
                             next.pattern ||
                         group.optionsGroup !==
