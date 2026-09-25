@@ -132,10 +132,17 @@
     const SHERPA_ASSET_VERSION =
         "2026-09-24-6";
 
+    const SPEECH_RUNTIME_REVISION =
+        "2026-09-25-1";
+
     const speechRuntimeVersion =
         "?sherpa=" +
         encodeURIComponent(
             SHERPA_ASSET_VERSION
+        ) +
+        "&runtime=" +
+        encodeURIComponent(
+            SPEECH_RUNTIME_REVISION
         );
 
     const speechSearchParams =
@@ -17383,22 +17390,16 @@
                 );
             },
 
-            changeGoalMode() {
+            changeGoalMode(
+                goalMode
+            ) {
                 const mode =
                     String(
-                        globalThis
-                            .SpeechMenu
-                            ?.executionContext
-                            ?.transcript ||
+                        goalMode ||
                         ""
                     )
                         .trim()
-                        .toLowerCase()
-                        .match(
-                            /^(auto|total|trip)(?: mode)?$/
-                        )
-                        ?.[1] ||
-                    "";
+                        .toLowerCase();
 
                 if (
                     !PERCENT_MODES
