@@ -223,7 +223,11 @@
         #autoSyncTripGoal =
             false;
 
-        #matchedTripGoal;
+        #calculatedTripGoal;
+
+        #calculatedTotalGoal;
+
+        #calculatedGoalSource;
 
         #tripGoalMissedState =
             false;
@@ -1386,9 +1390,7 @@
             const ordinaryGoal = scope === "standard"
                 ? Number(this.#getTripGoal())
                 : Number(selected?.percentGoal);
-            const goal = this.#percentMode === "auto" && this.#autoSyncTripGoal
-                ? Number(this.#renderedPercentGoal)
-                : ordinaryGoal;
+            const goal = ordinaryGoal;
             const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties();
             const creationDate = this.#getJSONCreationDate();
@@ -1819,6 +1821,14 @@
                         this.#semanticGoalSetSource ??
                         this.#renderedPercentGoalSourceOverride ??
                         "user";
+
+                    if (
+                        name === "trip-goal" &&
+                        semanticSource === "user" &&
+                        this.#autoSyncTripGoal
+                    ) {
+                        this.autoSyncTripGoal = false;
+                    }
 
                     this.#emitClockTimerEvent("goalChanged", {
                         goal: name === "trip-goal" ? "trip" : "total",
@@ -4191,6 +4201,9 @@
                 return this.#goalChangeFailure(reason);
             }
 
+            this.#calculatedTotalGoal = undefined;
+            this.#calculatedGoalSource = "sync";
+
             const requirements =
                 this.#calculateTotalGoalRequirements({
                     allowMissed: true
@@ -4200,42 +4213,48 @@
                 !Number.isFinite(requirements.tripGoal) ||
                 requirements.tripGoal <= 0
             ) {
+                this.#calculatedTripGoal = undefined;
                 return this.#goalChangeFailure("insufficient-time");
             }
 
-            const previousMatchedTripGoal =
-                this.#matchedTripGoal;
+            const previousCalculatedTripGoal =
+                this.#calculatedTripGoal;
 
-            this.#matchedTripGoal =
+            this.#calculatedTripGoal =
                 requirements.tripGoal;
 
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride === "start"
                     ? "start"
-                    : "automatic"
+                    : "automatic",
+                {
+                    refreshCalculatedGoal: false
+                }
             );
 
             if (
-                previousMatchedTripGoal !==
-                    this.#matchedTripGoal
+                previousCalculatedTripGoal !==
+                    this.#calculatedTripGoal
             ) {
                 this.#emitClockTimerEvent(
                     "tripGoalAutomaticallySet",
                     {
                         previousValue:
-                            Number.isFinite(previousMatchedTripGoal)
-                                ? `${previousMatchedTripGoal * 100}%`
+                            Number.isFinite(previousCalculatedTripGoal)
+                                ? `${previousCalculatedTripGoal * 100}%`
                                 : null,
                         value:
-                            `${this.#matchedTripGoal * 100}%`,
+                            `${this.#calculatedTripGoal * 100}%`,
                         tripGoal:
                             this.#getTripGoal(),
                         userTripGoal:
                             this.#getUserTripGoal(),
-                        matchedTripGoal:
-                            this.#matchedTripGoal,
+                        calculatedTripGoal:
+                            this.#calculatedTripGoal,
                         totalGoal:
                             this.#getTotalGoal(),
+                        userTotalGoal:
+                            this.#getUserTotalGoal(),
                         source:
                             "automatic-total",
                         userInitiated:
@@ -5370,7 +5389,9 @@
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
             }
-            this.#matchedTripGoal = undefined;
+            if (this.#calculatedGoalSource === "sync") {
+                this.#calculatedTripGoal = undefined;
+            }
             this.#handleTripGoalChange("automatic");
             this.#pendingIntervalRecord = undefined;
 
@@ -6184,7 +6205,6 @@
                     this.renderedTimeMode = rendered;
                 }
                 if (has("goal_type")) this.percentMode = configuration.goal_type;
-                if (has("auto_goal")) this.autoSyncTripGoal = Boolean(configuration.auto_goal);
                 if (has("trip_goal")) {
                     const value = this.#configurationGoal(configuration.trip_goal, "trip_goal");
                     if (value === null) this.removeAttribute("trip-goal");
@@ -6195,6 +6215,56 @@
                     if (value === null) this.removeAttribute("total-goal");
                     else this.setAttribute("total-goal", value);
                 }
+                const calculatedGoalChanged =
+                    has("calculated_trip_goal") ||
+                    has("calculated_total_goal") ||
+                    has("calculated_goal_source");
+                if (has("calculated_goal_source")) {
+                    const source = configuration.calculated_goal_source;
+                    this.#calculatedGoalSource =
+                        source === null || source === undefined || source === ""
+                            ? undefined
+                            : String(source);
+                }
+                if (has("calculated_trip_goal")) {
+                    const value = configuration.calculated_trip_goal;
+                    this.#calculatedTripGoal =
+                        value === null || value === undefined
+                            ? undefined
+                            : this.#parseGoalValue(String(value), NaN);
+                    if (
+                        this.#calculatedTripGoal !== undefined &&
+                        (
+                            !Number.isFinite(this.#calculatedTripGoal) ||
+                            this.#calculatedTripGoal <= 0
+                        )
+                    ) {
+                        throw new TypeError(
+                            "calculated_trip_goal must be a positive ratio or percentage."
+                        );
+                    }
+                }
+                if (has("calculated_total_goal")) {
+                    const value = configuration.calculated_total_goal;
+                    this.#calculatedTotalGoal =
+                        value === null || value === undefined
+                            ? undefined
+                            : this.#parseGoalValue(String(value), NaN);
+                    if (
+                        this.#calculatedTotalGoal !== undefined &&
+                        (
+                            !Number.isFinite(this.#calculatedTotalGoal) ||
+                            this.#calculatedTotalGoal <= 0
+                        )
+                    ) {
+                        throw new TypeError(
+                            "calculated_total_goal must be a positive ratio or percentage."
+                        );
+                    }
+                }
+                if (has("auto_goal")) {
+                    this.autoSyncTripGoal = Boolean(configuration.auto_goal);
+                }
                 if (has("external_standard_time")) {
                     this.#externalStandardTime = this.#configurationDuration(
                         configuration.external_standard_time, "external_standard_time");
@@ -6203,8 +6273,16 @@
                     this.#externalCountedTime = this.#configurationDuration(
                         configuration.external_counted_time, "external_counted_time");
                 }
-                if (has("external_standard_time") || has("external_counted_time")) {
-                    this.#handleTripGoalChange("user");
+                if (
+                    calculatedGoalChanged ||
+                    has("external_standard_time") ||
+                    has("external_counted_time")
+                ) {
+                    this.#handleTripGoalChange(
+                        calculatedGoalChanged
+                            ? "automatic"
+                            : "user"
+                    );
                 }
             }
             finally {
@@ -6810,15 +6888,34 @@
             }
 
             if (value === this.#autoSyncTripGoal) {
+                if (
+                    !value &&
+                    this.#calculatedGoalSource !== "end-time" &&
+                    (
+                        this.#calculatedTripGoal !== undefined ||
+                        this.#calculatedTotalGoal !== undefined
+                    )
+                ) {
+                    this.#calculatedTripGoal = undefined;
+                    this.#calculatedTotalGoal = undefined;
+                    this.#calculatedGoalSource = undefined;
+                    this.#handleTripGoalChange("user");
+                }
                 return;
             }
 
             this.#autoSyncTripGoal =
                 value;
 
-            if (!value) {
-                this.#matchedTripGoal =
-                    undefined;
+            if (value) {
+                this.#calculatedTotalGoal = undefined;
+                this.#calculatedGoalSource = "sync";
+                this.#refreshCalculatedTripGoal();
+            }
+            else if (this.#calculatedGoalSource !== "end-time") {
+                this.#calculatedTripGoal = undefined;
+                this.#calculatedTotalGoal = undefined;
+                this.#calculatedGoalSource = undefined;
             }
 
             if (this.#hasStartProperties()) {
@@ -6826,6 +6923,18 @@
                     "user"
                 );
             }
+        }
+
+        get calculatedTripGoal() {
+            return this.#calculatedTripGoal;
+        }
+
+        get calculatedTotalGoal() {
+            return this.#calculatedTotalGoal;
+        }
+
+        get calculatedGoalSource() {
+            return this.#calculatedGoalSource;
         }
 
         get status() {
@@ -13744,7 +13853,13 @@
             this.#started =
                 false;
 
-            this.#matchedTripGoal =
+            this.#calculatedTripGoal =
+                undefined;
+
+            this.#calculatedTotalGoal =
+                undefined;
+
+            this.#calculatedGoalSource =
                 undefined;
 
             if (!this.#preserveInsertedOnClear) {
@@ -22783,38 +22898,37 @@
             }
         }
 
-        #refreshMatchedTripGoal() {
+        #refreshCalculatedTripGoal() {
             const previous =
-                this.#matchedTripGoal;
-
-            let next;
+                this.#calculatedTripGoal;
 
             if (
-                this.#autoSyncTripGoal &&
-                this.#started &&
-                this.#hasStartProperties()
+                !this.#autoSyncTripGoal ||
+                !this.#started ||
+                !this.#hasStartProperties()
             ) {
-                const requirements =
-                    this.#calculateTotalGoalRequirements({
-                        allowMissed: true
-                    });
-
-                if (
-                    Number.isFinite(requirements.tripGoal) &&
-                    requirements.tripGoal > 0
-                ) {
-                    next =
-                        requirements.tripGoal;
+                if (this.#calculatedGoalSource === "sync") {
+                    this.#calculatedTripGoal = undefined;
                 }
+
+                return previous !== this.#calculatedTripGoal;
             }
 
-            this.#matchedTripGoal =
-                next;
+            const requirements =
+                this.#calculateTotalGoalRequirements({
+                    allowMissed: true
+                });
 
-            const changed =
-                previous !== next;
+            this.#calculatedTripGoal =
+                Number.isFinite(requirements.tripGoal) &&
+                requirements.tripGoal > 0
+                    ? requirements.tripGoal
+                    : undefined;
 
-            return changed;
+            this.#calculatedGoalSource =
+                "sync";
+
+            return previous !== this.#calculatedTripGoal;
         }
 
         #handleTripGoalChange(
@@ -22822,12 +22936,12 @@
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic",
             {
-                refreshMatchedGoal = true
+                refreshCalculatedGoal = true
             } = {}
         ) {
 
-            if (refreshMatchedGoal) {
-                this.#refreshMatchedTripGoal();
+            if (refreshCalculatedGoal) {
+                this.#refreshCalculatedTripGoal();
             }
 
             const goal =
@@ -25892,25 +26006,31 @@
             );
         }
 
-        #getTripGoal() {
-            if (
-                this.#autoSyncTripGoal &&
-                Number.isFinite(this.#matchedTripGoal) &&
-                this.#matchedTripGoal > 0
-            ) {
-                return this.#matchedTripGoal;
-            }
-
-            return this.#getUserTripGoal();
-        }
-
-        #getTotalGoal() {
+        #getUserTotalGoal() {
             return this.#parseGoalValue(
                 this.getAttribute(
                     "total-goal"
                 ),
                 1
             );
+        }
+
+        #getTripGoal() {
+            return (
+                Number.isFinite(this.#calculatedTripGoal) &&
+                this.#calculatedTripGoal > 0
+            )
+                ? this.#calculatedTripGoal
+                : this.#getUserTripGoal();
+        }
+
+        #getTotalGoal() {
+            return (
+                Number.isFinite(this.#calculatedTotalGoal) &&
+                this.#calculatedTotalGoal > 0
+            )
+                ? this.#calculatedTotalGoal
+                : this.#getUserTotalGoal();
         }
 
         #emptyGoalRequirements() {
@@ -26467,10 +26587,10 @@
             this.#totalGoalMissedState = totalMissed;
         }
 
-        #calculateTripGoalRequirements({ allowMissed = false } = {}) {
-            const tripGoal =
-                this.#getTripGoal();
-
+        #calculateTripGoalRequirementsForGoal(
+            tripGoal,
+            { allowMissed = false } = {}
+        ) {
             if (
                 !Number.isFinite(tripGoal) ||
                 tripGoal <= 0 ||
@@ -26516,6 +26636,13 @@
             }
 
             return requirements;
+        }
+
+        #calculateTripGoalRequirements({ allowMissed = false } = {}) {
+            return this.#calculateTripGoalRequirementsForGoal(
+                this.#getTripGoal(),
+                { allowMissed }
+            );
         }
 
         #getTotalGoalRequirementFailureReason() {
@@ -26744,79 +26871,81 @@
         }
 
         #getAutoGoalSelection() {
+            const tripGoal =
+                this.#getTripGoal();
+
+            const totalGoal =
+                this.#getTotalGoal();
+
             const tripRequirements =
                 this.#calculateTripGoalRequirements();
 
-            const totalRequirements =
-                this.hasAttribute("total-goal")
-                    ? this.#calculateTotalGoalRequirements()
-                    : this.#emptyGoalRequirements();
-
-            const tripTime =
-                Number(
-                    tripRequirements.adjustedTimeElapsed
-                );
-
-            const totalTime =
-                Number(
-                    totalRequirements.adjustedTimeElapsed
-                );
-
-            const tripValid =
-                Number.isFinite(tripTime) &&
-                tripTime > 0;
-
-            const totalValid =
-                Number.isFinite(totalTime) &&
-                totalTime > 0;
-
-            const tripScope =
-                (
-                    this.#autoSyncTripGoal &&
-                    Number.isFinite(this.#matchedTripGoal) &&
-                    this.#matchedTripGoal > 0
-                ) ||
-                this.hasAttribute("trip-goal")
-                    ? "trip"
-                    : "standard";
-
-            if (!tripValid) {
-                return totalValid
-                    ? {
-                        scope: "total",
-                        requirements: totalRequirements
-                    }
-                    : {
-                        scope: "standard",
-                        requirements:
-                            this.#emptyGoalRequirements()
-                    };
-            }
-
-            if (!totalValid) {
-                return {
-                    scope: tripScope,
-                    requirements: tripRequirements
-                };
-            }
-
             if (
-                totalTime < tripTime ||
-                (
-                    totalTime === tripTime &&
-                    tripScope === "standard"
-                )
+                this.#calculatedGoalSource === "end-time" &&
+                Number.isFinite(this.#calculatedTripGoal) &&
+                this.#calculatedTripGoal > 0
             ) {
                 return {
-                    scope: "total",
-                    requirements: totalRequirements
+                    scope: "trip",
+                    goal: this.#calculatedTripGoal,
+                    requirements:
+                        this.#calculateTripGoalRequirements({
+                            allowMissed: true
+                        })
                 };
             }
 
-            return {
-                scope: tripScope,
-                requirements: tripRequirements
-            };
+            const totalRequirements =
+                this.#calculateTotalGoalRequirements();
+
+            const standardRequirements =
+                this.#calculateTripGoalRequirementsForGoal(
+                    1
+                );
+
+            const candidates = [
+                {
+                    scope: "trip",
+                    goal: tripGoal,
+                    requirements: tripRequirements
+                },
+                {
+                    scope: "total",
+                    goal: totalGoal,
+                    requirements: totalRequirements
+                },
+                {
+                    scope: "standard",
+                    goal: 1,
+                    requirements: standardRequirements
+                }
+            ].filter(
+                candidate =>
+                    Number.isFinite(candidate.goal) &&
+                    candidate.goal > 0 &&
+                    Number.isFinite(
+                        candidate.requirements
+                            ?.adjustedTimeElapsed
+                    ) &&
+                    candidate.requirements
+                        .adjustedTimeElapsed > 0
+            );
+
+            if (!candidates.length) {
+                return {
+                    scope: "standard",
+                    goal: 1,
+                    requirements:
+                        this.#emptyGoalRequirements()
+                };
+            }
+
+            candidates.sort(
+                (left, right) =>
+                    right.goal - left.goal
+            );
+
+            return candidates[0];
         }
 
         #calculateGoalRequirements() {
