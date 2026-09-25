@@ -13603,7 +13603,9 @@
             semanticLayerEnabled(
                 "details"
             ) &&
-            Number.isFinite(milliseconds)
+            Number.isFinite(
+                milliseconds
+            )
         ) {
             parts.push(
                 formatGoalFailureDuration(
@@ -13619,61 +13621,6 @@
 
         return parts.join(
             " "
-        );
-    }
-
-    function formatSpokenPercent(
-        value
-    ) {
-            console.error(
-                "Audio playback failed:",
-                name,
-                error
-            );
-        }
-
-        if (
-            speech &&
-            audio?.speak
-        ) {
-            audio.speak(
-                speech
-            );
-        }
-
-        return played;
-    }
-
-    // Early/late announcements are about the timing gain or loss for
-    // the current trip event. They intentionally never use summary.total.
-    function tripTimingSpeech(
-        detail,
-        lead,
-        disposition
-    ) {
-        const milliseconds =
-            Number(
-                detail
-                    ?.timeDifferenceMilliseconds
-            );
-
-        if (
-            !Number.isFinite(milliseconds)
-        ) {
-            return lead + ".";
-        }
-
-        return (
-            lead +
-            ". " +
-            formatGoalFailureDuration(
-                Math.abs(
-                    milliseconds
-                )
-            ) +
-            " " +
-            disposition +
-            "."
         );
     }
 
