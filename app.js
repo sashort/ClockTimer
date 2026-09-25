@@ -3405,8 +3405,25 @@
     }
 
     function popoverIsOpen(popover) {
-        try { return Boolean(popover?.matches?.(":popover-open")); }
-        catch { return false; }
+        if (
+            popover &&
+            typeof popover.isOpen ===
+                "boolean"
+        ) {
+            return popover.isOpen;
+        }
+
+        try {
+            return Boolean(
+                popover
+                    ?.matches?.(
+                        ":popover-open"
+                    )
+            );
+        }
+        catch {
+            return false;
+        }
     }
 
     function hidePopoverForHandoff(popover) {
@@ -8939,105 +8956,83 @@
             )
     );
 
-    $("#adminMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#adminSubmenu");
-
-                const open =
-                    submenu.hidden;
-
-                submenu.hidden =
-                    !open;
-
-                $("#adminMenuButton")
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
-            }
-        );
-
-    $("#developerMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#developerSubmenu");
-
-                const open =
-                    submenu.hidden;
-
-                submenu.hidden =
-                    !open;
-
-                $("#developerMenuButton")
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
-            }
-        );
-
     let speechBuildTimer;
 
-    $("#speechMenuButton")
-        .addEventListener(
-            "click",
-            () => {
-                const submenu =
-                    $("#speechSubmenu");
+    function runSpeechBuildAnimation(
+        open
+    ) {
+        const button =
+            $("#speechMenuButton");
 
-                const button =
-                    $("#speechMenuButton");
+        clearTimeout(
+            speechBuildTimer
+        );
 
-                const open =
-                    submenu.hidden;
+        button
+            ?.classList
+            .remove(
+                "speech-build-active"
+            );
 
-                submenu.hidden =
-                    !open;
+        if (!open || !button) {
+            return;
+        }
 
-                button
-                    .setAttribute(
-                        "aria-expanded",
-                        String(open)
-                    );
+        void button.offsetWidth;
 
-                clearTimeout(
-                    speechBuildTimer
-                );
+        button
+            .classList
+            .add(
+                "speech-build-active"
+            );
 
-                button
-                    .classList
-                    .remove(
-                        "speech-build-active"
-                    );
-
-                if (open) {
-                    void button.offsetWidth;
-
+        speechBuildTimer =
+            setTimeout(
+                () => {
                     button
                         .classList
-                        .add(
+                        .remove(
                             "speech-build-active"
                         );
+                },
+                1050
+            );
+    }
 
-                    speechBuildTimer =
-                        setTimeout(
-                            () => {
-                                button
-                                    .classList
-                                    .remove(
-                                        "speech-build-active"
-                                    );
-                            },
-                            1050
-                        );
+    mainMenu
+        ?.addEventListener(
+            "parentopening",
+            event => {
+                if (
+                    event.detail
+                        ?.button
+                        ?.id ===
+                    "speechMenuButton"
+                ) {
+                    runSpeechBuildAnimation(
+                        true
+                    );
                 }
             }
         );
+
+    mainMenu
+        ?.addEventListener(
+            "parentclosing",
+            event => {
+                if (
+                    event.detail
+                        ?.button
+                        ?.id ===
+                    "speechMenuButton"
+                ) {
+                    runSpeechBuildAnimation(
+                        false
+                    );
+                }
+            }
+        );
+
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
     globalThis
