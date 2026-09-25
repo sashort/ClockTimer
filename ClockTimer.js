@@ -5387,7 +5387,6 @@
             const aggregateNonProduction =
                 this.#nonProduction;
 
-            this.#checkGoalMisses(stopTimeline);
             const localResult = this.#stopLocal(effectiveStopTime);
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
@@ -5694,10 +5693,6 @@
                     "end"
                 );
 
-            this.#checkGoalMisses(
-                this.#getCurrentTimelineTime()
-            );
-
             const intervalStartedDetail = {
                 ...result,
                 type: record.type,
@@ -6000,8 +5995,6 @@
                     false,
                     record
                 );
-            this.#checkGoalMisses(this.#getCurrentTimelineTime());
-
             const intervalEndedDetail = {
                 ...result,
                 ...this.#getTimingDetail(
@@ -11192,10 +11185,6 @@
                     new Date()
                 );
 
-                this.#checkGoalMisses(
-                    now
-                );
-
                 this.#refreshRingLayout(
                     now,
                     {
@@ -11361,7 +11350,6 @@
                 this.#updateOvertimeRanges(now);
                 this.#updateRemainingRanges(now);
                 this.#updateDisplay(new Date());
-                this.#checkGoalMisses(now);
                 this.#refreshRingLayout(
                     now,
                     {
@@ -12808,8 +12796,6 @@
                     now
                 );
             }
-
-            this.#checkGoalMisses(now);
 
             const activeLatency =
                 this.#openOverwriteRange;
@@ -23055,8 +23041,6 @@
                 stateChangeVisual,
                 this.#getStateChangeAnimationDuration()
             );
-
-            this.#checkGoalMisses(now);
         }
 
         #getRangeAnimationDuration() {
