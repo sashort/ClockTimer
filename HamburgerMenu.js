@@ -3805,6 +3805,38 @@
                     "0px"
             };
 
+            const duration =
+                this
+                    .#fixedMotionDuration(
+                        this
+                            .#duration(
+                                metrics
+                                    .outerHeight
+                            )
+                    );
+
+            if (!duration) {
+                if (opening) {
+                    this.#clearClip(
+                        element
+                    );
+                }
+                else {
+                    this.#setClip(
+                        element,
+                        metrics,
+                        0
+                    );
+
+                    element.classList
+                        .add(
+                            "hamburger-menu-transition-hidden"
+                        );
+                }
+
+                return Promise.resolve();
+            }
+
             const animation =
                 this.#trackAnimation(
                     element.animate(
@@ -3818,11 +3850,7 @@
                                 zero
                             ],
                         {
-                            duration:
-                                this.#duration(
-                                    metrics
-                                        .outerHeight
-                                ),
+                            duration,
                             easing:
                                 "linear",
                             fill:
