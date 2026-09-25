@@ -13811,15 +13811,35 @@
                 ? detail.goals
                 : [];
 
-        const sentences = [];
-
-        if (
+        const standardFailed =
             goals.some(
                 goal =>
                     goal?.type ===
                         "standard"
-            )
-        ) {
+            );
+
+        const belowStandardFailed =
+            goals.some(
+                goal => {
+                    const percent =
+                        Number(
+                            goal?.percent
+                        );
+
+                    return (
+                        goal?.type !==
+                            "standard" &&
+                        Number.isFinite(
+                            percent
+                        ) &&
+                        percent < 1
+                    );
+                }
+            );
+
+        const sentences = [];
+
+        if (standardFailed) {
             sentences.push(
                 "Standard Time Exceeded."
             );
@@ -13848,6 +13868,12 @@
             detail.fallback;
 
         if (!fallback) {
+            if (belowStandardFailed) {
+                sentences.push(
+                    "Overtime in progress."
+                );
+            }
+
             return sentences.join(" ");
         }
 
@@ -13864,11 +13890,24 @@
                 fallback.percent
             );
 
-        if (
+        const percentMode =
             normalizePercentMode(
                 clockTimer.percentMode
-            ) === "auto"
-        ) {
+            );
+
+        const announceFallback =
+            percentMode === "auto" ||
+            (
+                standardFailed &&
+                Number.isFinite(percent) &&
+                percent < 1 &&
+                (
+                    type === "trip" ||
+                    type === "total"
+                )
+            );
+
+        if (announceFallback) {
             if (type === "standard") {
                 sentences.push(
                     "Using Standard."
@@ -13900,12 +13939,9 @@
             }
         }
 
-        if (
-            Number.isFinite(percent) &&
-            percent < 1
-        ) {
+        if (belowStandardFailed) {
             sentences.push(
-                "Overtime started."
+                "Overtime in progress."
             );
 
             return sentences.join(" ");
