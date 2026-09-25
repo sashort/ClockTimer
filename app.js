@@ -2265,6 +2265,16 @@
         const enabled =
             Boolean(value);
 
+        if (
+            enabled &&
+            endTimeGoalOverride
+        ) {
+            endTimeGoalOverride =
+                undefined;
+
+            renderEndTimeGoalLock();
+        }
+
         clockTimer.configure({
             auto_goal: enabled
         });
