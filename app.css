@@ -647,7 +647,7 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 .main-menu > .hamburger-menu-popover[data-placement="below"]::before {
     top: -14px;
     left: 26px;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     border-left: 13px solid transparent;
     border-right: 13px solid transparent;
     border-bottom: 14px solid rgb(255 255 255 / 78%);
@@ -4496,9 +4496,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .speech-training-widget {
     position: fixed;
     inset:
+        50%
         auto
         auto
-        88px
         50%;
     margin: 0;
     z-index: 2147483646;
