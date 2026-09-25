@@ -1986,6 +1986,23 @@ assert.match(
     app,
     /confirmBreakType\([\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*false[\s\S]*closeDialog\([\s\S]*breakDialog/
 );
+
+assert.match(
+    html,
+    /builtin:yes:cancelDownConfirmDialog[^>]*data-speech-intent="confirm"[^>]*speech-pattern="\^\(\?:yes\|ok\(\?:ay\)\?\)\$"/
+);
+assert.match(
+    app,
+    /cancelDownTime\(\)[\s\S]*setOkAllowed\([\s\S]*dialog,[\s\S]*true[\s\S]*openDialog\([\s\S]*"cancelDownConfirmDialog"/
+);
+assert.match(
+    app,
+    /confirmCancelDownTime\(\)[\s\S]*setOkAllowed\([\s\S]*dialog,[\s\S]*false[\s\S]*closeDialog\([\s\S]*dialog/
+);
+assert.match(
+    app,
+    /continueDownTime\(\)[\s\S]*setOkAllowed\([\s\S]*dialog,[\s\S]*false[\s\S]*closeDialog\([\s\S]*dialog/
+);
 assert.doesNotMatch(
     speechMenuSource,
     /exactCandidate\.kind ===\s*"wake"/
