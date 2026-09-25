@@ -17273,6 +17273,10 @@
                         "offline"
                 ) {
                     animateOfflineClouds();
+
+                    return confirmSettingChange(
+                        "Sync Unavailable"
+                    );
                 }
 
                 const current =
@@ -17340,11 +17344,30 @@
                     }
                 }
 
-                setSyncGoals(
-                    enabled
-                );
+                try {
+                    setSyncGoals(
+                        enabled
+                    );
+                }
+                catch {
+                    return confirmSettingChange(
+                        "Sync Fail"
+                    );
+                }
 
                 animateSyncGoalsIcons();
+
+                const applied =
+                    getSyncGoalsState();
+
+                if (
+                    applied !==
+                        enabled
+                ) {
+                    return confirmSettingChange(
+                        "Sync Fail"
+                    );
+                }
 
                 if (
                     current ===
@@ -17354,12 +17377,9 @@
                 }
 
                 return confirmSettingChange(
-                    "Sync Goals Set to " +
-                    (
-                        enabled
-                            ? "On"
-                            : "Off"
-                    )
+                    enabled
+                        ? "Sync On"
+                        : "Sync Off"
                 );
             },
 
