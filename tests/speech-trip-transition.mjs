@@ -24,7 +24,7 @@ const catalog =
 const transition =
     catalog
         .songs
-        ["trip-ended-started"];
+        ["trip-transition"];
 
 assert.ok(
     transition,
@@ -65,7 +65,7 @@ assert.equal(
 
 assert.match(
     app,
-    /endingIntoNewTrip[\s\S]*"trip-ended-started"[\s\S]*tripEndTotalSpeech/
+    /endingIntoNewTrip[\s\S]*"trip-transition"[\s\S]*tripEndTotalSpeech/
 );
 
 assert.match(
@@ -123,7 +123,7 @@ assert.match(
 
 assert.match(
     app,
-    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-ended-started"[\s\S]*endStartTransitionChimePlayed\s*=\s*played/
+    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*endStartTransitionChimePlayed\s*=\s*played/
 );
 
 assert.equal(
