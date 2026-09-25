@@ -83,5 +83,5 @@ assert.match(
 );
 
 console.log(
-    "PASS goal-fail speech keeps the failed-goal sentence and combines fallback goal with remaining time"
+    "PASS goal-fail speech keeps the failed-goal sentence and combines time with the fallback goal"
 );
