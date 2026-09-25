@@ -11307,14 +11307,35 @@
             catch (error) { if (!error.clockTimerOffline) throw error; }
         }
 
-        await clockTimer.start({
-            standardTime,
-            creationDate: draft.creationDate,
-            nonProduction: draft.nonProduction === true,
-            creationTime: draft.creationTime,
-            scheduledStart: draft.scheduledStart,
-            startTime: draft.startTime
-        });
+        const chimeDisableFrame =
+            (
+                draft
+                    .endStartTransitionChimePlayed ===
+                    true &&
+                draft
+                    .startTimeSetToNow !==
+                    true
+            )
+                ? pushSemanticDisable({
+                    chime: true
+                })
+                : undefined;
+
+        try {
+            await clockTimer.start({
+                standardTime,
+                creationDate: draft.creationDate,
+                nonProduction: draft.nonProduction === true,
+                creationTime: draft.creationTime,
+                scheduledStart: draft.scheduledStart,
+                startTime: draft.startTime
+            });
+        }
+        finally {
+            popSemanticDisable(
+                chimeDisableFrame
+            );
+        }
         if (draft.creationDate && clockTimer.creationDate !== draft.creationDate) {
             clockTimer.creationDate = draft.creationDate;
         }
@@ -13960,107 +13981,45 @@
         );
     }
 
-    function tripDraftStartWasPushedBackToNow() {
-        return (
-            tripDraftUsesEndStartTransition() &&
-            tripDraft
-                ?.startTimeSetToNow ===
-            true
-        );
-    }
 
-    function tripDraftStartChimeAlreadyPlayed() {
-        return (
-            tripDraftUsesEndStartTransition() &&
-            tripDraft
-                ?.endStartTransitionChimePlayed ===
-                true &&
-            !tripDraftStartWasPushedBackToNow()
-        );
-    }
 
-    function speakSemanticText(
-        speech
-    ) {
-        if (!speech) {
-            return;
-        }
-
-        globalThis
-            .WMOFAudio
-            ?.speak?.(
-                speech
-            );
-    }
 
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
 
-        if (
-            tripDraftStartChimeAlreadyPlayed()
-        ) {
-            if (
-                semanticLayerEnabled(
-                    "summary"
-                )
-            ) {
-                speakSemanticText(
-                    "Trip started."
-                );
-            }
-            return;
-        }
-
-        playSemanticSong("trip-started");
+        void playSemanticSongThenSpeak(
+            "trip-started",
+            semanticLayerEnabled(
+                "summary"
+            )
+                ? "Trip started."
+                : ""
+        );
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
 
-        const speech =
+        void playSemanticSongThenSpeak(
+            "trip-started-early",
             tripTimingSpeech(
                 event.detail,
                 "Trip started early",
                 "saved"
-            );
-
-        if (
-            tripDraftStartChimeAlreadyPlayed()
-        ) {
-            speakSemanticText(
-                speech
-            );
-            return;
-        }
-
-        void playSemanticSongThenSpeak(
-            "trip-started-early",
-            speech
+            )
         );
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
 
-        const speech =
+        void playSemanticSongThenSpeak(
+            "trip-started-late",
             tripTimingSpeech(
                 event.detail,
                 "Trip started late",
                 "lost"
-            );
-
-        if (
-            tripDraftStartChimeAlreadyPlayed()
-        ) {
-            speakSemanticText(
-                speech
-            );
-            return;
-        }
-
-        void playSemanticSongThenSpeak(
-            "trip-started-late",
-            speech
+            )
         );
     }
 
