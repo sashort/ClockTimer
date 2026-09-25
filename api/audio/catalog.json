@@ -592,6 +592,42 @@
         }
       ]
     },
+    "trip-ended-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ]
+    },
     "down-time-started": {
       "bpm": 120,
       "instrument": "legacy-square",
