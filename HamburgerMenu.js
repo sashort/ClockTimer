@@ -5201,9 +5201,19 @@
             this.#transitionBusy =
                 true;
 
-            this.#freezePane(
-                this.#activePane()
-            );
+            /*
+             * One frozen pane spans the entire promoted stack. Nested
+             * parents reuse the existing lock so opening or closing a
+             * nested level cannot change the pane geometry.
+             */
+            if (
+                !this.#frozenPaneLocks
+                    .length
+            ) {
+                this.#freezePane(
+                    this.#activePane()
+                );
+            }
 
             const generation =
                 ++this.#generation;
@@ -5673,8 +5683,10 @@
                 this.#transitionBusy =
                     false;
 
-                this.#unfreezePane();
-
+                /*
+                 * Preserve the current promotion lock on a failed nested
+                 * restore. A later reset/close can unwind it safely.
+                 */
                 return false;
             }
 
@@ -5871,7 +5883,12 @@
                     0;
             }
 
-            this.#unfreezePane();
+            if (
+                !this.#focusStack
+                    .length
+            ) {
+                this.#unfreezePane();
+            }
 
             this.#transitionBusy =
                 false;
