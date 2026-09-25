@@ -6869,6 +6869,27 @@
             return true;
         }
 
+        const lexicalFamilies = [
+            new Set([
+                "ok",
+                "okay"
+            ])
+        ];
+
+        if (
+            lexicalFamilies.some(
+                family =>
+                    family.has(
+                        observed
+                    ) &&
+                    family.has(
+                        expected
+                    )
+            )
+        ) {
+            return true;
+        }
+
         const singularPluralPair =
             (
                 observed + "s" ===
