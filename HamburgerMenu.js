@@ -906,6 +906,772 @@
                 targets;
         }
 
+        getSafeRegion() {
+            return {
+                ...this
+                    .#safeRegion()
+            };
+        }
+
+        #build() {
+            this.#trigger =
+                this.querySelector(
+                    ":scope > [slot=\"trigger\"]"
+                ) ||
+                this.querySelector(
+                    ":scope > button"
+                );
+
+            if (!this.#trigger) {
+                throw new Error(
+                    "<hamburger-menu> requires a trigger element."
+                );
+            }
+
+            this.#trigger
+                .setAttribute(
+                    "slot",
+                    "trigger"
+                );
+
+            if (
+                this.#trigger
+                    .tagName ===
+                    "BUTTON" &&
+                !this.#trigger
+                    .hasAttribute(
+                        "type"
+                    )
+            ) {
+                this.#trigger
+                    .setAttribute(
+                        "type",
+                        "button"
+                    );
+            }
+
+            this.#trigger
+                .style
+                .setProperty(
+                    "anchor-name",
+                    this.#anchorName
+                );
+
+            this.#popover =
+                this.querySelector(
+                    ":scope > .hamburger-menu-popover"
+                );
+
+            if (!this.#popover) {
+                this.#popover =
+                    document
+                        .createElement(
+                            "nav"
+                        );
+
+                this.#popover
+                    .className =
+                    "hamburger-menu-popover";
+
+                this.#popover
+                    .setAttribute(
+                        "popover",
+                        "auto"
+                    );
+
+                this.#popover
+                    .setAttribute(
+                        "role",
+                        "menu"
+                    );
+
+                this.#popover
+                    .setAttribute(
+                        "aria-label",
+                        this.getAttribute(
+                            "aria-label"
+                        ) ||
+                        "Menu"
+                    );
+
+                this.#popover
+                    .style
+                    .setProperty(
+                        "position-anchor",
+                        this.#anchorName
+                    );
+
+                const content =
+                    [
+                        ...this.children
+                    ]
+                        .filter(
+                            child =>
+                                child !==
+                                    this.#trigger &&
+                                child !==
+                                    this.#popover
+                        );
+
+                this.#viewport =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                this.#viewport
+                    .className =
+                    "hamburger-menu-viewport";
+
+                this.#source =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                this.#source
+                    .className =
+                    "hamburger-menu-source";
+
+                this.#source
+                    .append(
+                        ...content
+                    );
+
+                this.#focusLayer =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                this.#focusLayer
+                    .className =
+                    "hamburger-menu-focus-layer";
+
+                this.#focusLayer.hidden =
+                    true;
+
+                this.#viewport
+                    .append(
+                        this.#source,
+                        this.#focusLayer
+                    );
+
+                this.#indicator =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                this.#indicator
+                    .className =
+                    "hamburger-menu-indicator";
+
+                this.#indicator
+                    .setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+                this.#indicatorThumb =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                this.#indicatorThumb
+                    .className =
+                    "hamburger-menu-indicator-thumb";
+
+                this.#indicator
+                    .append(
+                        this.#indicatorThumb
+                    );
+
+                this.#popover
+                    .append(
+                        this.#viewport,
+                        this.#indicator
+                    );
+
+                this.append(
+                    this.#popover
+                );
+            }
+            else {
+                this.#viewport =
+                    this.#popover
+                        .querySelector(
+                            ":scope > .hamburger-menu-viewport"
+                        );
+
+                this.#source =
+                    this.#viewport
+                        ?.querySelector(
+                            ":scope > .hamburger-menu-source"
+                        );
+
+                this.#focusLayer =
+                    this.#viewport
+                        ?.querySelector(
+                            ":scope > .hamburger-menu-focus-layer"
+                        );
+
+                this.#indicator =
+                    this.#popover
+                        .querySelector(
+                            ":scope > .hamburger-menu-indicator"
+                        );
+
+                this.#indicatorThumb =
+                    this.#indicator
+                        ?.querySelector(
+                            ":scope > .hamburger-menu-indicator-thumb"
+                        );
+            }
+
+            this.#trigger
+                .setAttribute(
+                    "aria-haspopup",
+                    "menu"
+                );
+
+            this.#trigger
+                .setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+        }
+
+        #bind() {
+            this.#trigger
+                .addEventListener(
+                    "click",
+                    event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        this.togglePopover();
+                    }
+                );
+
+            this.#popover
+                .addEventListener(
+                    "toggle",
+                    event =>
+                        this.#handleToggle(
+                            event
+                        )
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "scroll",
+                    () =>
+                        this.#updateIndicator(),
+                    {
+                        passive:
+                            true
+                    }
+                );
+
+            this.addEventListener(
+                "click",
+                event =>
+                    this.#handleParentClick(
+                        event
+                    )
+            );
+
+            this.addEventListener(
+                "keydown",
+                event => {
+                    if (
+                        event.key ===
+                            "Escape" &&
+                        this.#focusStack
+                            .length
+                    ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        void this
+                            .#restoreFocusLevel();
+                    }
+                }
+            );
+
+            globalThis
+                .visualViewport
+                ?.addEventListener(
+                    "resize",
+                    () =>
+                        this.#markLayoutDirty()
+                );
+
+            globalThis
+                .visualViewport
+                ?.addEventListener(
+                    "scroll",
+                    () =>
+                        this.refresh()
+                );
+
+            globalThis
+                .addEventListener(
+                    "resize",
+                    () =>
+                        this.#markLayoutDirty()
+                );
+
+            globalThis
+                .addEventListener(
+                    "scroll",
+                    () =>
+                        this.refresh(),
+                    {
+                        passive:
+                            true
+                    }
+                );
+
+            if (
+                typeof ResizeObserver ===
+                    "function"
+            ) {
+                this.#resizeObserver =
+                    new ResizeObserver(
+                        () =>
+                            this.#markLayoutDirty()
+                    );
+
+                this.#syncResizeObservation();
+            }
+
+            if (
+                typeof MutationObserver ===
+                    "function"
+            ) {
+                this.#observer =
+                    new MutationObserver(
+                        mutations => {
+                            if (
+                                this
+                                    .#handlingMutations
+                            ) {
+                                return;
+                            }
+
+                            const relevant =
+                                mutations
+                                    .some(
+                                        mutation =>
+                                            mutation
+                                                .type ===
+                                                "childList" ||
+                                            mutation
+                                                .type ===
+                                                "characterData" ||
+                                            mutation
+                                                .attributeName ===
+                                                "hidden"
+                                    );
+
+                            if (!relevant) {
+                                return;
+                            }
+
+                            this.#adoptHostChildren();
+                            this.#syncResizeObservation();
+                            this.#markLayoutDirty();
+                        }
+                    );
+
+                this.#observe();
+            }
+        }
+
+        #observe() {
+            if (
+                !this.#observer
+            ) {
+                return;
+            }
+
+            this.#observer
+                .observe(
+                    this.#viewport,
+                    {
+                        subtree:
+                            true,
+                        childList:
+                            true,
+                        characterData:
+                            true,
+                        attributes:
+                            true,
+                        attributeFilter: [
+                            "hidden"
+                        ]
+                    }
+                );
+
+            if (document.body) {
+                this.#observer
+                    .observe(
+                        document.body,
+                        {
+                            subtree:
+                                true,
+                            childList:
+                                true
+                        }
+                    );
+            }
+        }
+
+        #withObservationPaused(
+            callback
+        ) {
+            this.#observer
+                ?.disconnect();
+
+            this.#handlingMutations =
+                true;
+
+            try {
+                return callback();
+            }
+            finally {
+                this.#handlingMutations =
+                    false;
+
+                this.#observe();
+            }
+        }
+
+        #activePane() {
+            if (
+                this.#focusStack
+                    .length
+            ) {
+                return this.#viewport;
+            }
+
+            return (
+                this.#currentPanel() ||
+                this.#viewport
+            );
+        }
+
+        #freezePane(
+            pane =
+                this.#activePane()
+        ) {
+            if (!pane) {
+                return undefined;
+            }
+
+            this.#unfreezePane();
+
+            const paneRect =
+                pane
+                    .getBoundingClientRect();
+
+            const paneWidth =
+                Math.max(
+                    1,
+                    paneRect.width
+                );
+
+            const paneHeight =
+                Math.max(
+                    1,
+                    paneRect.height
+                );
+
+            const targets =
+                new Set([
+                    this.#viewport,
+                    pane
+                ]);
+
+            this.#frozenPaneLocks =
+                [];
+
+            for (
+                const target of
+                targets
+            ) {
+                const rect =
+                    target ===
+                        this.#viewport
+                        ? {
+                            width:
+                                Math.max(
+                                    1,
+                                    this.#viewport
+                                        .getBoundingClientRect()
+                                        .width
+                                ),
+                            height:
+                                paneHeight
+                        }
+                        : {
+                            width:
+                                paneWidth,
+                            height:
+                                paneHeight
+                        };
+
+                const lock = {
+                    target,
+                    classPresent:
+                        target.classList
+                            .contains(
+                                "hamburger-menu-pane-frozen"
+                            ),
+                    width:
+                        target.style.width,
+                    height:
+                        target.style.height,
+                    maxWidth:
+                        target.style.maxWidth,
+                    maxHeight:
+                        target.style.maxHeight,
+                    minWidth:
+                        target.style.minWidth,
+                    minHeight:
+                        target.style.minHeight,
+                    overflow:
+                        target.style.overflow
+                };
+
+                this.#frozenPaneLocks
+                    .push(
+                        lock
+                    );
+
+                target.classList
+                    .add(
+                        "hamburger-menu-pane-frozen"
+                    );
+
+                target.style.width =
+                    rect.width +
+                    "px";
+
+                target.style.height =
+                    rect.height +
+                    "px";
+
+                target.style.minWidth =
+                    rect.width +
+                    "px";
+
+                target.style.minHeight =
+                    rect.height +
+                    "px";
+
+                target.style.maxWidth =
+                    rect.width +
+                    "px";
+
+                target.style.maxHeight =
+                    rect.height +
+                    "px";
+
+                target.style.overflow =
+                    "hidden";
+            }
+
+            this.style
+                .setProperty(
+                    "--hamburger-menu-panel-height",
+                    paneHeight +
+                        "px"
+                );
+
+            this.#frozenPane =
+                pane;
+
+            this.#frozenPaneRect = {
+                width:
+                    paneWidth,
+                height:
+                    paneHeight
+            };
+
+            return {
+                pane,
+                width:
+                    paneWidth,
+                height:
+                    paneHeight
+            };
+        }
+
+        #unfreezePane() {
+            if (
+                !this.#frozenPaneLocks
+                    .length
+            ) {
+                this.#frozenPane =
+                    undefined;
+
+                this.#frozenPaneRect =
+                    undefined;
+
+                return;
+            }
+
+            for (
+                const lock of
+                this.#frozenPaneLocks
+            ) {
+                const {
+                    target
+                } = lock;
+
+                if (
+                    !lock.classPresent
+                ) {
+                    target.classList
+                        .remove(
+                            "hamburger-menu-pane-frozen"
+                        );
+                }
+
+                const styles = {
+                    width:
+                        lock.width,
+                    height:
+                        lock.height,
+                    maxWidth:
+                        lock.maxWidth,
+                    maxHeight:
+                        lock.maxHeight,
+                    minWidth:
+                        lock.minWidth,
+                    minHeight:
+                        lock.minHeight,
+                    overflow:
+                        lock.overflow
+                };
+
+                for (
+                    const [
+                        property,
+                        value
+                    ] of
+                    Object.entries(
+                        styles
+                    )
+                ) {
+                    const cssProperty =
+                        property
+                            .replace(
+                                /[A-Z]/g,
+                                match =>
+                                    "-" +
+                                    match
+                                        .toLowerCase()
+                            );
+
+                    if (value) {
+                        target.style
+                            .setProperty(
+                                cssProperty,
+                                value
+                            );
+                    }
+                    else {
+                        target.style
+                            .removeProperty(
+                                cssProperty
+                            );
+                    }
+                }
+            }
+
+            this.#frozenPaneLocks =
+                [];
+
+            this.#frozenPane =
+                undefined;
+
+            this.#frozenPaneRect =
+                undefined;
+        }
+
+        #beginOpeningMeasurement() {
+            if (
+                this.#openingMeasured
+            ) {
+                return false;
+            }
+
+            this.#popover
+                .dataset
+                .calculating =
+                "true";
+
+            delete this.#popover
+                .dataset
+                .ready;
+
+            return true;
+        }
+
+        #finishOpeningMeasurement() {
+            if (
+                this.#openingMeasured
+            ) {
+                return Promise.resolve();
+            }
+
+            if (
+                this.#openingMeasurementPromise
+            ) {
+                return this
+                    .#openingMeasurementPromise;
+            }
+
+            this.#openingMeasurementPromise =
+                (async () => {
+                    await nextFrame();
+
+                    this.#updateSafeGeometry();
+                    this.#layoutPanels();
+                    this.#reconcilePlacement();
+
+                    await nextFrame();
+
+                    this.#reconcilePlacement();
+
+                    this.#openingMeasured =
+                        true;
+
+                    delete this.#popover
+                        .dataset
+                        .calculating;
+
+                    this.#popover
+                        .dataset
+                        .ready =
+                        "true";
+                })()
+                    .finally(
+                        () => {
+                            this.#openingMeasurementPromise =
+                                undefined;
+                        }
+                    );
+
+            return this
+                .#openingMeasurementPromise;
+        }
+
         #dispatch(
             type,
             detail,
