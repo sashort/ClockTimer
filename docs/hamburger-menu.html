@@ -305,7 +305,7 @@ kbd {
 <li>Freeze the current pane and viewport before changing any child height.</li>
 <li>Collapse all children completely while the pane stays at its frozen dimensions.</li>
 <li>After every child has collapsed, the component waits the same <strong>75 ms</strong> boundary pause used on opening, then begins the 450 ms return motion.</li>
-<li>The previous-level rows are restored underneath a fully applied promotion mask. As the parent returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position, progressively revealing the rows behind it.</li>
+<li>The previous-level rows are restored underneath a fully applied promotion mask. For nested closes, that reverse mask is placed inside the promoted focus layer between the returning child and its restored parent, so the parent cannot pop back early. As the child returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position and progressively reveals the parent level behind it.</li>
 <li>Opposite-side rows return from outside the clipped pane at the same time.</li>
 <li>The mask is removed at the endpoint. Nested closes keep the existing frozen pane lock; it is released only when the promoted stack becomes empty.</li>
 </ol>
