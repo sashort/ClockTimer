@@ -871,6 +871,8 @@
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
+    let englishSpeech;
+    let installSpeechCommand;
     let numberPadDisplay;
     let numberPadSettingsArea;
     let numberPadSettings;
@@ -10418,6 +10420,38 @@
             }));
     }
 
+    function installNumberPadSpeechCommands() {
+        if (
+            !numberPadDialog
+                ?.isConnected ||
+            !englishSpeech ||
+            typeof installSpeechCommand !==
+                "function"
+        ) {
+            return false;
+        }
+
+        installSpeechCommand(
+            "confirm",
+            "confirmNumberPad",
+            numberPadDialog,
+            false
+        );
+
+        installSpeechCommand(
+            "cancel",
+            "cancelNumberPadEdit",
+            numberPadDialog,
+            false
+        );
+
+        globalThis
+            .SpeechMenu
+            ?.refresh?.();
+
+        return true;
+    }
+
     async function ensureNumberPadLoaded() {
         if (numberPadDialog?.isConnected) return;
         if (!numberPadLoadPromise) {
@@ -10462,25 +10496,7 @@
                     false
                 );
 
-                if (
-                    englishSpeech &&
-                    typeof installSpeechCommand ===
-                        "function"
-                ) {
-                    installSpeechCommand(
-                        "confirm",
-                        "confirmNumberPad",
-                        numberPadDialog,
-                        false
-                    );
-                    installSpeechCommand(
-                        "cancel",
-                        "cancelNumberPadEdit",
-                        numberPadDialog,
-                        false
-                    );
-                    SpeechMenu.refresh();
-                }
+                installNumberPadSpeechCommands();
             })().catch(error => {
                 numberPadLoadPromise = undefined;
                 throw error;
@@ -20028,8 +20044,11 @@
         }
 
         const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
-        const englishSpeech = englishLanguage?.speech;
-        const installSpeechCommand = (key, actionName, container = document.body, modal = true, valueKind, valueField) => {
+        englishSpeech =
+            englishLanguage?.speech;
+
+        installSpeechCommand =
+            (key, actionName, container = document.body, modal = true, valueKind, valueField) => {
             const pattern = englishSpeech?.commands?.[key];
             if (!pattern) return;
             const modalMode =
@@ -20241,6 +20260,7 @@
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
             installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
             installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
+            installNumberPadSpeechCommands();
             speechMicBar
                 ?.setSystemSpeechPatterns?.({
                     wake:
