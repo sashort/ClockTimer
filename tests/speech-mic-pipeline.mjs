@@ -1588,7 +1588,7 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\) mode\$"/
+    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\)\(\?: mode\)\?\$"/
 );
 
 assert.match(
