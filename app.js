@@ -12970,11 +12970,50 @@
         await clockTimer
             .resetCompletedTrip();
 
-        await beginNewTripWorkflow({
-            initialValue: "",
-            tripMoment,
-            endStartTransition: true
-        });
+        const opened =
+            await beginNewTripWorkflow({
+                initialValue: "",
+                tripMoment,
+                endStartTransition: true
+            });
+
+        const speech =
+            pendingEndStartTripSpeech;
+
+        pendingEndStartTripSpeech =
+            undefined;
+
+        if (
+            opened &&
+            tripDraftUsesEndStartTransition()
+        ) {
+            const played =
+                await playSemanticSongThenSpeak(
+                    "trip-ended-started",
+                    speech
+                );
+
+            if (
+                tripDraft
+            ) {
+                tripDraft
+                    .endStartTransitionChimePlayed =
+                    played;
+            }
+
+            if (!played) {
+                await playSemanticSongThenSpeak(
+                    "trip-ended",
+                    undefined
+                );
+            }
+        }
+        else if (speech) {
+            await playSemanticSongThenSpeak(
+                "trip-ended",
+                speech
+            );
+        }
     }
 
     let speechBreakPromptState;
@@ -13396,6 +13435,9 @@
         const audio =
             globalThis.WMOFAudio;
 
+        let played =
+            false;
+
         try {
             const song =
                 await audio
@@ -13406,6 +13448,9 @@
                             ...options
                         }
                     );
+
+            played =
+                Boolean(song);
 
             await song
                 ?.finished;
@@ -13426,6 +13471,8 @@
                 speech
             );
         }
+
+        return played;
     }
 
     // Early/late announcements are about the timing gain or loss for
@@ -13766,6 +13813,8 @@
     let endingIntoNewTrip =
         false;
 
+    let pendingEndStartTripSpeech;
+
     function tripDraftUsesEndStartTransition() {
         return (
             tripDraft
@@ -13786,6 +13835,9 @@
     function tripDraftStartChimeAlreadyPlayed() {
         return (
             tripDraftUsesEndStartTransition() &&
+            tripDraft
+                ?.endStartTransitionChimePlayed ===
+                true &&
             !tripDraftStartWasPushedBackToNow()
         );
     }
@@ -13943,13 +13995,23 @@
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
 
-        void playSemanticSongThenSpeak(
-            endingIntoNewTrip
-                ? "trip-ended-started"
-                : "trip-ended",
+        const speech =
             tripEndTotalSpeech(
                 event.detail
-            )
+            );
+
+        if (
+            endingIntoNewTrip
+        ) {
+            pendingEndStartTripSpeech =
+                speech;
+
+            return;
+        }
+
+        void playSemanticSongThenSpeak(
+            "trip-ended",
+            speech
         );
     }
 
