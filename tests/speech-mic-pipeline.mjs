@@ -125,8 +125,11 @@ assert.deepEqual(
             )
     ].sort(),
     [
+        "choices",
         "commands",
-        "speech commands"
+        "options",
+        "speech commands",
+        "what"
     ]
 );
 assert.deepEqual(
@@ -2549,5 +2552,9 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /"commands",[\s\S]*what[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /"commands",[\s\S]*what\|choices\|options[\s\S]*WMOFActions\.toggleSpeechOptions/
+);
+assert.match(
+    speechMicBarSource,
+    /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"what"[\s\S]*"choices"[\s\S]*"options"/
 );
