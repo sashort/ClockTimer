@@ -13636,28 +13636,264 @@
         reserveSemanticEvent(event, "Trip goal derived automatically");
     }
 
+    function formatGoalFailureDuration(
+        milliseconds
+    ) {
+        const totalSeconds =
+            Math.max(
+                0,
+                Math.round(
+                    Number(milliseconds) /
+                        1000
+                )
+            );
+
+        const minutes =
+            Math.floor(
+                totalSeconds / 60
+            );
+
+        const seconds =
+            totalSeconds % 60;
+
+        const parts = [];
+
+        if (minutes > 0) {
+            parts.push(
+                `${minutes} minute${minutes === 1 ? "" : "s"}`
+            );
+        }
+
+        if (
+            seconds > 0 ||
+            !parts.length
+        ) {
+            parts.push(
+                `${seconds} second${seconds === 1 ? "" : "s"}`
+            );
+        }
+
+        return parts.join(" ");
+    }
+
+    function formatGoalFailureClock(
+        milliseconds
+    ) {
+        const totalSeconds =
+            Math.max(
+                0,
+                Math.round(
+                    Number(milliseconds) /
+                        1000
+                )
+            );
+
+        const minutes =
+            Math.floor(
+                totalSeconds / 60
+            );
+
+        const seconds =
+            totalSeconds % 60;
+
+        return (
+            String(minutes) +
+            ":" +
+            String(seconds)
+                .padStart(
+                    2,
+                    "0"
+                )
+        );
+    }
+
+    function buildGoalFailureSpeech(
+        detail = {}
+    ) {
+        const goals =
+            Array.isArray(detail.goals)
+                ? detail.goals
+                : [];
+
+        const sentences = [];
+
+        if (
+            goals.some(
+                goal =>
+                    goal?.type ===
+                        "standard"
+            )
+        ) {
+            sentences.push(
+                "Standard Time Exceeded."
+            );
+        }
+
+        for (const goal of goals) {
+            if (
+                goal?.type ===
+                    "trip"
+            ) {
+                sentences.push(
+                    "Trip Goal Failed."
+                );
+            }
+            else if (
+                goal?.type ===
+                    "total"
+            ) {
+                sentences.push(
+                    "Total Goal Failed."
+                );
+            }
+        }
+
+        const fallback =
+            detail.fallback;
+
+        if (!fallback) {
+            return sentences.join(" ");
+        }
+
+        const type =
+            String(
+                fallback.type ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+        const percent =
+            Number(
+                fallback.percent
+            );
+
+        if (type === "standard") {
+            sentences.push(
+                "Using Standard."
+            );
+        }
+        else if (
+            type === "trip" ||
+            type === "total"
+        ) {
+            const label =
+                type === "trip"
+                    ? "Trip"
+                    : "Total";
+
+            const percentText =
+                Number.isFinite(percent)
+                    ? " " +
+                        Math.round(
+                            percent * 100
+                        ) +
+                        " percent"
+                    : "";
+
+            sentences.push(
+                `Using ${label} Goal${percentText}.`
+            );
+        }
+
+        if (
+            Number.isFinite(percent) &&
+            percent < 1
+        ) {
+            sentences.push(
+                "Overtime started."
+            );
+
+            return sentences.join(" ");
+        }
+
+        const remainingMilliseconds =
+            Number(
+                fallback
+                    .remainingMilliseconds
+            );
+
+        if (
+            Number.isFinite(
+                remainingMilliseconds
+            )
+        ) {
+            const duration =
+                formatGoalFailureDuration(
+                    remainingMilliseconds
+                );
+
+            if (
+                type === "standard"
+            ) {
+                sentences.push(
+                    `${duration} remaining.`
+                );
+            }
+            else {
+                sentences.push(
+                    `${formatGoalFailureClock(
+                        remainingMilliseconds
+                    )} remaining. ${duration}.`
+                );
+            }
+        }
+
+        return sentences.join(" ");
+    }
+
+    async function speakGoalFailure(
+        detail
+    ) {
+        const audio =
+            globalThis
+                .WMOFAudio;
+
+        const speech =
+            buildGoalFailureSpeech(
+                detail
+            );
+
+        try {
+            const song =
+                await audio
+                    ?.startSong?.(
+                        "goal-failed",
+                        {
+                            bpm: 180
+                        }
+                    );
+
+            await song
+                ?.finished;
+        }
+        catch (
+            error
+        ) {
+            console.error(
+                "Audio playback failed:",
+                "goal-failed",
+                error
+            );
+        }
+
+        if (speech) {
+            audio
+                ?.speak?.(
+                    speech
+                );
+        }
+    }
+
     function onGoalFail(event) {
         reserveSemanticEvent(
             event,
             "One or more goals failed"
         );
 
-        void globalThis
-            .WMOFAudio
-            ?.startSong?.(
-                "goal-failed",
-                {
-                    bpm: 180
-                }
-            )
-            .catch(
-                error =>
-                    console.error(
-                        "Audio playback failed:",
-                        "goal-failed",
-                        error
-                    )
-            );
+        void speakGoalFailure(
+            event.detail
+        );
     }
 
     function onPercentModeChanged(event) {
