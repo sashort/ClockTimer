@@ -42,6 +42,31 @@ class SpeechMenu {
     static #recognizerHotwordKey = "";
     static #corrections = Object.freeze([]);
     static #correctionsRevision = "empty";
+    static #builtInCorrections =
+        Object.freeze(
+            [
+                ["red", -101],
+                ["redd", -102],
+                ["rudd", -103]
+            ]
+                .map(
+                    ([observed, id]) =>
+                        Object.freeze({
+                            id,
+                            observed,
+                            observedCompact:
+                                observed,
+                            canonical:
+                                "ready",
+                            canonicalCompact:
+                                "ready",
+                            matchType:
+                                "prefix",
+                            occurrences:
+                                1
+                        })
+                )
+        );
 
     static {
         document.addEventListener("visibilitychange", () => {
@@ -2963,7 +2988,12 @@ class SpeechMenu {
 
         for (
             const correction of
-            SpeechMenu.#corrections
+            [
+                ...SpeechMenu
+                    .#builtInCorrections,
+                ...SpeechMenu
+                    .#corrections
+            ]
         ) {
             if (
                 !SpeechMenu
