@@ -1957,6 +1957,15 @@ assert.match(
     speechMicBarSource,
     /const toggleMic\s*=\s*event => \{[\s\S]*event\.stopPropagation\(\)[\s\S]*SpeechMenu[\s\S]*speechMenu\.muted[\s\S]*wake\?\.\(\)[\s\S]*sleep\?\.\(\)/
 );
+
+assert.match(
+    speechMicBarSource,
+    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*--speech-options-pane-count[\s\S]*grid-auto-flow:\s*row/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /#optionsGrid[\s\S]{0,600}grid-auto-columns:/
+);
 assert.doesNotMatch(
     speechMicBarSource,
     /const toggleMic[\s\S]{0,500}!this\.trainingMode/
