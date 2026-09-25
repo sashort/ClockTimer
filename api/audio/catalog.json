@@ -572,7 +572,7 @@
         }
       ]
     },
-    "trip-ended-started": {
+    "trip-transition": {
       "bpm": 120,
       "instrument": "legacy-square",
       "events": [
@@ -591,17 +591,17 @@
         {
           "offset": "1.04",
           "tone": "G7",
-          "length": "1.04",
+          "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "2.08",
+          "offset": "1.56",
           "tone": "B7",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "2.60",
+          "offset": "2.08",
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
