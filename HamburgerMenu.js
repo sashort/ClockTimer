@@ -666,8 +666,15 @@
                 return;
             }
 
+            this.#adoptHostChildren();
+            this.#syncResizeObservation();
+
             this.#layoutDirty =
                 true;
+
+            if (!this.isOpen) {
+                return;
+            }
 
             if (
                 this.#layoutFrame !==
@@ -691,9 +698,6 @@
 
                         this.#layoutDirty =
                             false;
-
-                        this.#adoptHostChildren();
-                        this.#syncResizeObservation();
 
                         if (
                             this.#focusStack
