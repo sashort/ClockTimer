@@ -7,7 +7,7 @@ const window = new Window({
         "https://wmof.example/"
 });
 
-window.requestAnimationFrame ??=
+window.requestAnimationFrame =
     callback =>
         setTimeout(
             () =>
@@ -17,7 +17,7 @@ window.requestAnimationFrame ??=
             0
         );
 
-window.cancelAnimationFrame ??=
+window.cancelAnimationFrame =
     clearTimeout;
 
 window.matchMedia =
@@ -463,7 +463,12 @@ assert.equal(
     parent
 );
 
-await menu.back();
+menu.hidePopover();
+
+assert.equal(
+    menu.isOpen,
+    false
+);
 
 assert.equal(
     parent.getAttribute(
@@ -475,6 +480,16 @@ assert.equal(
 assert.equal(
     submenu.hidden,
     true
+);
+
+menu.showPopover();
+
+await new Promise(
+    resolve =>
+        setTimeout(
+            resolve,
+            25
+        )
 );
 
 const lateItem =
