@@ -328,6 +328,7 @@
         #openState = false;
         #frozenPane;
         #frozenPaneRect;
+        #frozenPaneBaseSize;
         #frozenPaneLocks = [];
         #openingMeasured = false;
         #openingMeasurementPromise;
@@ -462,10 +463,8 @@
         }
 
         get safeBoundary() {
-            return (
-                this.#boundaryOverride ||
-                this.#resolveBoundary()
-            );
+            return this
+                .#resolveBoundary();
         }
 
         set safeBoundary(
@@ -744,6 +743,14 @@
         #markLayoutDirty() {
             this.#layoutDirty =
                 true;
+
+            if (
+                this.isOpen &&
+                this.#frozenPaneLocks
+                    .length
+            ) {
+                this.#refreshFrozenPaneGeometry();
+            }
 
             if (
                 this.isOpen &&
@@ -1364,6 +1371,185 @@
             );
         }
 
+        #paneWidthFromPopover() {
+            const rect =
+                this.#popover
+                    .getBoundingClientRect();
+
+            const style =
+                getComputedStyle(
+                    this.#popover
+                );
+
+            const horizontalChrome =
+                px(
+                    style.paddingLeft
+                ) +
+                px(
+                    style.paddingRight
+                ) +
+                px(
+                    style.borderLeftWidth
+                ) +
+                px(
+                    style.borderRightWidth
+                );
+
+            return Math.max(
+                1,
+                rect.width -
+                    horizontalChrome
+            );
+        }
+
+        #applyFrozenPaneGeometry(
+            width,
+            height
+        ) {
+            if (
+                !this.#frozenPaneLocks
+                    .length
+            ) {
+                return false;
+            }
+
+            const nextWidth =
+                Math.max(
+                    1,
+                    width
+                );
+
+            const nextHeight =
+                Math.max(
+                    1,
+                    height
+                );
+
+            if (
+                this.#frozenPaneRect &&
+                Math.abs(
+                    this.#frozenPaneRect
+                        .width -
+                    nextWidth
+                ) <=
+                    0.5 &&
+                Math.abs(
+                    this.#frozenPaneRect
+                        .height -
+                    nextHeight
+                ) <=
+                    0.5
+            ) {
+                return false;
+            }
+
+            for (
+                const lock of
+                this.#frozenPaneLocks
+            ) {
+                const {
+                    target
+                } = lock;
+
+                target.style.width =
+                    nextWidth +
+                    "px";
+
+                target.style.height =
+                    nextHeight +
+                    "px";
+
+                target.style.minWidth =
+                    nextWidth +
+                    "px";
+
+                target.style.minHeight =
+                    nextHeight +
+                    "px";
+
+                target.style.maxWidth =
+                    nextWidth +
+                    "px";
+
+                target.style.maxHeight =
+                    nextHeight +
+                    "px";
+
+                target.style.overflow =
+                    "hidden";
+            }
+
+            this.style
+                .setProperty(
+                    "--hamburger-menu-panel-height",
+                    nextHeight +
+                        "px"
+                );
+
+            this.#frozenPaneRect = {
+                width:
+                    nextWidth,
+                height:
+                    nextHeight
+            };
+
+            return true;
+        }
+
+        #refreshFrozenPaneGeometry() {
+            if (
+                !this.#frozenPaneLocks
+                    .length ||
+                !this.#frozenPaneBaseSize
+            ) {
+                return false;
+            }
+
+            const region =
+                this.#updateSafeGeometry();
+
+            const safeHeight =
+                Math.max(
+                    1,
+                    region.bottom -
+                        region.top -
+                        this.#menuChrome(
+                            false
+                        )
+                );
+
+            const currentPaneWidth =
+                this
+                    .#paneWidthFromPopover();
+
+            const width =
+                Math.min(
+                    this.#frozenPaneBaseSize
+                        .width,
+                    currentPaneWidth
+                );
+
+            const height =
+                Math.min(
+                    this.#frozenPaneBaseSize
+                        .height,
+                    safeHeight
+                );
+
+            const changed =
+                this
+                    .#applyFrozenPaneGeometry(
+                        width,
+                        height
+                    );
+
+            if (changed) {
+                this.#reconcilePlacement();
+            }
+
+            return changed;
+        }
+
         #freezePane(
             pane =
                 this.#activePane()
@@ -1403,27 +1589,6 @@
                 const target of
                 targets
             ) {
-                const rect =
-                    target ===
-                        this.#viewport
-                        ? {
-                            width:
-                                Math.max(
-                                    1,
-                                    this.#viewport
-                                        .getBoundingClientRect()
-                                        .width
-                                ),
-                            height:
-                                paneHeight
-                        }
-                        : {
-                            width:
-                                paneWidth,
-                            height:
-                                paneHeight
-                        };
-
                 const lock = {
                     target,
                     classPresent:
@@ -1456,57 +1621,43 @@
                     .add(
                         "hamburger-menu-pane-frozen"
                     );
-
-                target.style.width =
-                    rect.width +
-                    "px";
-
-                target.style.height =
-                    rect.height +
-                    "px";
-
-                target.style.minWidth =
-                    rect.width +
-                    "px";
-
-                target.style.minHeight =
-                    rect.height +
-                    "px";
-
-                target.style.maxWidth =
-                    rect.width +
-                    "px";
-
-                target.style.maxHeight =
-                    rect.height +
-                    "px";
-
-                target.style.overflow =
-                    "hidden";
             }
-
-            this.style
-                .setProperty(
-                    "--hamburger-menu-panel-height",
-                    paneHeight +
-                        "px"
-                );
 
             this.#frozenPane =
                 pane;
 
-            this.#frozenPaneRect = {
+            this.#frozenPaneBaseSize = {
                 width:
                     paneWidth,
                 height:
                     paneHeight
             };
 
+            this.#frozenPaneRect =
+                undefined;
+
+            this
+                .#applyFrozenPaneGeometry(
+                    paneWidth,
+                    paneHeight
+                );
+
+            /*
+             * Immediately clamp the lock against the current live safe
+             * region. Later ResizeObserver / boundary-tracker changes call
+             * the same method while the promotion remains frozen.
+             */
+            this.#refreshFrozenPaneGeometry();
+
             return {
                 pane,
                 width:
+                    this.#frozenPaneRect
+                        ?.width ||
                     paneWidth,
                 height:
+                    this.#frozenPaneRect
+                        ?.height ||
                     paneHeight
             };
         }
@@ -1520,6 +1671,9 @@
                     undefined;
 
                 this.#frozenPaneRect =
+                    undefined;
+
+                this.#frozenPaneBaseSize =
                     undefined;
 
                 return;
@@ -1601,6 +1755,9 @@
                 undefined;
 
             this.#frozenPaneRect =
+                undefined;
+
+            this.#frozenPaneBaseSize =
                 undefined;
         }
 
@@ -2162,6 +2319,174 @@
                 rect,
                 style
             };
+        }
+
+        #boundaryGeometrySnapshot() {
+            const viewport =
+                this.#viewportBounds();
+
+            const boundary =
+                this.#resolveBoundary();
+
+            const rect =
+                boundary
+                    ?.getBoundingClientRect?.();
+
+            return {
+                boundary,
+                top:
+                    rect?.top,
+                right:
+                    rect?.right,
+                bottom:
+                    rect?.bottom,
+                left:
+                    rect?.left,
+                documentBottom:
+                    this
+                        .#documentUsableBottom(
+                            viewport.bottom
+                        )
+            };
+        }
+
+        #boundaryGeometryChanged(
+            previous,
+            next
+        ) {
+            if (!previous) {
+                return false;
+            }
+
+            if (
+                previous.boundary !==
+                next.boundary
+            ) {
+                return true;
+            }
+
+            for (
+                const key of [
+                    "top",
+                    "right",
+                    "bottom",
+                    "left",
+                    "documentBottom"
+                ]
+            ) {
+                const before =
+                    previous[
+                        key
+                    ];
+
+                const after =
+                    next[
+                        key
+                    ];
+
+                if (
+                    before ===
+                        undefined &&
+                    after ===
+                        undefined
+                ) {
+                    continue;
+                }
+
+                if (
+                    !Number.isFinite(
+                        before
+                    ) ||
+                    !Number.isFinite(
+                        after
+                    ) ||
+                    Math.abs(
+                        before -
+                        after
+                    ) >
+                        0.5
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        #startBoundaryTracking() {
+            if (
+                this.#boundaryTrackFrame !==
+                    undefined
+            ) {
+                return;
+            }
+
+            this.#boundarySnapshot =
+                this
+                    .#boundaryGeometrySnapshot();
+
+            const track =
+                () => {
+                    this.#boundaryTrackFrame =
+                        undefined;
+
+                    if (
+                        !this.#connected ||
+                        !this.isOpen
+                    ) {
+                        return;
+                    }
+
+                    const next =
+                        this
+                            .#boundaryGeometrySnapshot();
+
+                    if (
+                        this
+                            .#boundaryGeometryChanged(
+                                this
+                                    .#boundarySnapshot,
+                                next
+                            )
+                    ) {
+                        this.#boundarySnapshot =
+                            next;
+
+                        this
+                            .#markLayoutDirty();
+                    }
+                    else {
+                        this.#boundarySnapshot =
+                            next;
+                    }
+
+                    this.#boundaryTrackFrame =
+                        requestAnimationFrame(
+                            track
+                        );
+                };
+
+            this.#boundaryTrackFrame =
+                requestAnimationFrame(
+                    track
+                );
+        }
+
+        #stopBoundaryTracking() {
+            if (
+                this.#boundaryTrackFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#boundaryTrackFrame
+                );
+
+                this.#boundaryTrackFrame =
+                    undefined;
+            }
+
+            this.#boundarySnapshot =
+                undefined;
         }
 
         #viewportBounds() {
