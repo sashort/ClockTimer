@@ -6344,6 +6344,29 @@
                 );
             }
 
+            if (
+                this.#getRenderedPercentScope() ===
+                    "total"
+            ) {
+                const timelineNow =
+                    this.#getSummaryTimelineNow(
+                        now
+                    );
+                const total =
+                    this.#getTotalSummary(
+                        timelineNow,
+                        now,
+                        normalized
+                    );
+
+                if (
+                    total?.renderedTime !==
+                        undefined
+                ) {
+                    return total.renderedTime;
+                }
+            }
+
             return this.#calculateRenderedTime(
                 now,
                 normalized
@@ -32146,7 +32169,12 @@
             return total;
         }
 
-        #getTotalSummary(timelineNow, nowDate) {
+        #getTotalSummary(
+            timelineNow,
+            nowDate,
+            renderedTimeMode =
+                this.#renderedTimeMode
+        ) {
             const base = this.#hasUsableAggregateSnapshot()
                 ? this.#tripTotals
                 : undefined;
@@ -32218,10 +32246,10 @@
                 standardTimeMilliseconds === 0 && actualTimeMilliseconds === 0 && countedTimeMilliseconds === 0) {
                 renderedTime = undefined;
             }
-            else if (this.#renderedTimeMode === "elapsed") {
+            else if (renderedTimeMode === "elapsed") {
                 renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
-            else if (this.#renderedTimeMode === "calculated-end") {
+            else if (renderedTimeMode === "calculated-end") {
                 if (
                     !activeTrip ||
                     !totalGoalRequirements
@@ -32266,7 +32294,7 @@
                 netTimeMilliseconds:
                     completedNetMilliseconds,
                 renderedTime,
-                renderedTimeMode: this.#renderedTimeMode
+                renderedTimeMode
             };
         }
 
