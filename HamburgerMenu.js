@@ -4813,6 +4813,8 @@
             this.#transitionBusy =
                 false;
 
+            this.#flushLayoutIfDirty();
+
             this.#dispatch(
                 "parentopened",
                 {
@@ -4894,7 +4896,7 @@
                 return false;
             }
 
-            const oldRect =
+            const promotedRect =
                 entry.group
                     .getBoundingClientRect();
 
@@ -4945,58 +4947,60 @@
 
                 record.hiddenByPromotion =
                     false;
+
+                if (
+                    record.inlineVisibility
+                ) {
+                    record.element
+                        .style
+                        .visibility =
+                        record
+                            .inlineVisibility;
+                }
+                else {
+                    record.element
+                        .style
+                        .removeProperty(
+                            "visibility"
+                        );
+                }
             }
 
-            for (
-                const record of
-                entry.toward
-            ) {
-                record.element
-                    .style
-                    .visibility =
-                    "hidden";
+            const destinationRect =
+                entry.placeholder
+                    ?.getBoundingClientRect();
+
+            if (!destinationRect) {
+                this.#transitionBusy =
+                    false;
+
+                this.#unfreezePane();
+
+                return false;
             }
 
-            entry.placeholder
-                ?.remove();
-
-            if (
-                entry.anchor
-                    ?.parentNode
-            ) {
-                entry.anchor
-                    .parentNode
-                    .insertBefore(
-                        entry.group,
-                        entry.anchor
+            const reverseMask =
+                this
+                    .#createPromotionMask(
+                        destinationRect,
+                        promotedRect,
+                        entry.flow,
+                        true
                     );
-            }
+
+            const translateX =
+                destinationRect.left -
+                promotedRect.left;
+
+            const translateY =
+                destinationRect.top -
+                promotedRect.top;
 
             entry.group
                 .classList
                 .add(
                     "hamburger-menu-focus-leaving"
                 );
-
-            const newRect =
-                entry.group
-                    .getBoundingClientRect();
-
-            const translateX =
-                oldRect.left -
-                newRect.left;
-
-            const translateY =
-                oldRect.top -
-                newRect.top;
-
-            entry.group
-                .style
-                .translate =
-                translateX +
-                "px " +
-                translateY +
-                "px";
 
             const duration =
                 this
@@ -5021,14 +5025,14 @@
                                     [
                                         {
                                             translate:
+                                                "0 0"
+                                        },
+                                        {
+                                            translate:
                                                 translateX +
                                                 "px " +
                                                 translateY +
                                                 "px"
-                                        },
-                                        {
-                                            translate:
-                                                "0 0"
                                         }
                                     ],
                                     {
@@ -5051,13 +5055,11 @@
                         )
                     : Promise.resolve();
 
-            const uncoverDone =
+            const maskDone =
                 this
-                    .#watchUncoveredRows(
-                        entry.group,
-                        entry.toward,
-                        movementDone,
-                        generation
+                    .#animatePromotionMask(
+                        reverseMask,
+                        duration
                     );
 
             const zoomBackDone =
@@ -5071,7 +5073,7 @@
 
             await Promise.all([
                 movementDone,
-                uncoverDone,
+                maskDone,
                 zoomBackDone
             ]);
 
@@ -5082,17 +5084,41 @@
                 return false;
             }
 
+            entry.group
+                .style
+                .translate =
+                translateX +
+                "px " +
+                translateY +
+                "px";
+
             try {
                 movement
                     ?.cancel();
             }
             catch {}
 
+            if (
+                entry.anchor
+                    ?.parentNode
+            ) {
+                entry.anchor
+                    .parentNode
+                    .insertBefore(
+                        entry.group,
+                        entry.anchor
+                    );
+            }
+
             entry.group
                 .style
                 .removeProperty(
                     "translate"
                 );
+
+            reverseMask
+                .element
+                ?.remove();
 
             entry.group
                 .style
@@ -5117,6 +5143,9 @@
                     );
             }
 
+            entry.placeholder
+                ?.remove();
+
             entry.anchor
                 ?.remove();
 
@@ -5126,9 +5155,6 @@
             if (parent) {
                 parent.group.hidden =
                     false;
-
-                this
-                    .#updateFocusBounds();
             }
             else {
                 this.#focusLayer.hidden =
@@ -5146,8 +5172,21 @@
                 this.#focusLayer
                     .scrollTop =
                     0;
+            }
 
-                this.#layoutPanels();
+            this.#unfreezePane();
+
+            this.#transitionBusy =
+                false;
+
+            if (
+                this.#focusStack
+                    .length
+            ) {
+                this.#updateFocusBounds();
+            }
+            else {
+                this.#markLayoutDirty();
 
                 this.goToPage(
                     entry
@@ -5159,17 +5198,7 @@
                 );
             }
 
-            this.#unfreezePane();
-
-            if (
-                this.#focusStack
-                    .length
-            ) {
-                this.#updateFocusBounds();
-            }
-
-            this.#transitionBusy =
-                false;
+            this.#flushLayoutIfDirty();
 
             this.#dispatch(
                 "parentclosed",
