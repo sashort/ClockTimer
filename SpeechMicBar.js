@@ -2849,6 +2849,7 @@ class SpeechMicBar extends HTMLElement {
 
         for (
             const phrase of
+            group?.optionPhrases ||
             group?.phrases ||
             []
         ) {
