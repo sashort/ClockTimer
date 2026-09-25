@@ -838,6 +838,7 @@
     const audioMasterVelocity = $("#audioMasterVelocity");
     const audioSpeechVelocity = $("#audioSpeechVelocity");
     const audioToneVelocity = $("#audioToneVelocity");
+    const audioFormalTime = $("#audioFormalTime");
     const audioSpeechVolumeValue = $("#audioSpeechVolumeValue");
     const audioToneVolumeValue = $("#audioToneVolumeValue");
     const audioMasterVelocityValue = $("#audioMasterVelocityValue");
@@ -968,6 +969,7 @@
             masterVelocity: 1,
             speechVelocity: 1,
             toneVelocity: 1,
+            formalTime: false,
             masters: {
                 chime: true,
                 summary: true,
@@ -1001,6 +1003,8 @@
             clamp(value.speechVelocity, 0.5, 3, 1);
         settings.toneVelocity =
             clamp(value.toneVelocity, 0.5, 3, 1);
+        settings.formalTime =
+            value.formalTime === true;
 
         for (const layer of ["chime", "summary", "details"]) {
             if (typeof value.masters?.[layer] === "boolean") {
@@ -1150,6 +1154,8 @@
             String(audioSettings.speechVelocity);
         audioToneVelocity.value =
             String(audioSettings.toneVelocity);
+        audioFormalTime.checked =
+            audioSettings.formalTime === true;
 
         audioSpeechVolumeValue.textContent =
             Math.round(audioSettings.speechVolume * 100) + "%";
@@ -1264,6 +1270,10 @@
             else if (target === audioToneVelocity) {
                 audioSettings.toneVelocity =
                     Number(target.value);
+            }
+            else if (target === audioFormalTime) {
+                audioSettings.formalTime =
+                    target.checked;
             }
             else if (target.matches?.("[data-audio-master]")) {
                 audioSettings.masters[
@@ -15021,6 +15031,45 @@
         const seconds =
             totalSeconds %
                 60;
+
+        if (audioSettings.formalTime) {
+            const formalParts = [];
+
+            if (hours > 0) {
+                formalParts.push(
+                    goalFailureNumberWords(hours) +
+                    (hours === 1 ? " hour" : " hours")
+                );
+            }
+
+            if (minutes > 0) {
+                formalParts.push(
+                    goalFailureNumberWords(minutes) +
+                    (minutes === 1 ? " minute" : " minutes")
+                );
+            }
+
+            if (seconds > 0 || !formalParts.length) {
+                formalParts.push(
+                    goalFailureNumberWords(seconds) +
+                    (seconds === 1 ? " second" : " seconds")
+                );
+            }
+
+            if (formalParts.length === 1) {
+                return formalParts[0];
+            }
+
+            return (
+                formalParts
+                    .slice(0, -1)
+                    .join(", ") +
+                " and " +
+                formalParts[
+                    formalParts.length - 1
+                ]
+            );
+        }
 
         const parts = [];
 
