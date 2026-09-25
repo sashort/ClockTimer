@@ -20,7 +20,7 @@
                 confirm: "^ok(?:ay)?$",
                 yes: "^yes$",
                 no: "^no$",
-                cancel: "^cancel$",
+                cancel: "^(?:cancel|close)$",
                 down: "^down(?: time)?$",
                 breakEnd: "^break end$",
                 resume: "^resume$",
