@@ -10753,20 +10753,6 @@
             numberPadState.meridiem !== numberPadState.initialMeridiem;
     }
 
-    function getNumberPadClearAction() {
-        if (!numberPadState) return "close";
-        if (numberPadHasChanges() || (numberPadState.meridiem ?? null) !== (numberPadState.initialMeridiem ?? null)) return "reset";
-        if (["trip-settings", "scheduled-start"].includes(numberPadState.backTarget)) return "back";
-        if (
-            numberPadState.role === "root" &&
-            numberPadState.source === "standard-time" &&
-            !numberPadState.everEdited
-        ) {
-            return "home";
-        }
-        return "close";
-    }
-
     function refreshNumberPad() {
         if (!numberPadState || !numberPadDialog) return;
         const percentMode = numberPadState.mode === "percent";
@@ -10799,17 +10785,22 @@
                 : "50%"
         );
         const changed = numberPadHasChanges();
-        const clearAction = getNumberPadClearAction();
-        numberPadClear.dataset.action = clearAction;
+
+        numberPadClear.dataset.action =
+            "clear";
         numberPadClear.setAttribute(
             "aria-label",
-            clearAction === "reset"
-                ? "Reset"
-                : clearAction === "back"
-                    ? "Back"
-                    : clearAction === "home"
-                        ? "Home"
-                        : "Close"
+            "Clear"
+        );
+
+        numberPadReset?.setAttribute(
+            "aria-label",
+            "Reset"
+        );
+
+        numberPadCancel?.setAttribute(
+            "aria-label",
+            "Back"
         );
 
         const valid = numberPadValueValid();
@@ -11131,9 +11122,11 @@
         if (numberPadContext) numberPadContext.textContent = "Number Pad";
         if (numberPadDate) numberPadDate.value = "";
         if (numberPadClear) {
-            numberPadClear.dataset.action = "close";
-            numberPadClear.setAttribute("aria-label", "Close");
+            numberPadClear.dataset.action = "clear";
+            numberPadClear.setAttribute("aria-label", "Clear");
         }
+        numberPadReset?.setAttribute("aria-label", "Reset");
+        numberPadCancel?.setAttribute("aria-label", "Back");
         if (numberPadConfirm) {
             numberPadConfirm.dataset.action = "confirm";
             numberPadConfirm.setAttribute("aria-label", "Confirm");
@@ -11195,24 +11188,22 @@
         return true;
     }
 
-    async function requestNumberPadClose() {
-        if (!numberPadState) return false;
-        const action = getNumberPadClearAction();
-        const destination = action === "back"
-            ? numberPadState.backTarget
-            : numberPadState.cancelTarget;
+    async function backNumberPad() {
+        if (!numberPadState) {
+            return false;
+        }
+
+        const destination =
+            numberPadState.backTarget ||
+            numberPadState.cancelTarget ||
+            "home";
+
         return closeNumberPad({
             destination,
-            discardPrepared: destination === "home"
-        });
-    }
-
-    async function cancelNumberPad() {
-        if (!numberPadState) return false;
-        return closeNumberPad({
-            destination: numberPadState.cancelTarget || "home",
-            discardPrepared: true,
-            allowChanged: true
+            discardPrepared:
+                destination === "home",
+            allowChanged:
+                true
         });
     }
 
