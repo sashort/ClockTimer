@@ -181,6 +181,7 @@ jobs:
                -e "s#src=\"RingContainer.js\"#src=\"RingContainer.js?v=$VERSION\"#" \
                -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
+               -e "s#src=\"HamburgerMenu.js\"#src=\"HamburgerMenu.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
                -e "s#src=\"SpeechFunctionRoles.js\"#src=\"SpeechFunctionRoles.js?v=$VERSION\"#" \
                -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
