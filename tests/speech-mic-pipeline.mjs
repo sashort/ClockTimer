@@ -1960,11 +1960,11 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*--speech-options-pane-count[\s\S]*grid-auto-flow:\s*row/
+    /#optionsGrid[\s\S]*display:\s*flex[\s\S]*flex-flow:\s*row wrap[\s\S]*--speech-options-pane-width/
 );
-assert.doesNotMatch(
+assert.match(
     speechMicBarSource,
-    /#optionsGrid[\s\S]{0,600}grid-auto-columns:/
+    /:host\(\[options-collapsed\]\)[\s\S]*#optionsPanel[\s\S]*height:\s*42px[\s\S]*min-height:\s*42px[\s\S]*max-height:\s*42px/
 );
 assert.doesNotMatch(
     speechMicBarSource,
