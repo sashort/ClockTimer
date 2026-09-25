@@ -106,7 +106,7 @@
             "  opacity: 0 !important;",
             "  visibility: hidden !important;",
             "  pointer-events: none !important;",
-            "}"
+            "}",
             ":where(hamburger-menu) .hamburger-menu-pane-frozen {",
             "  overflow: hidden !important;",
             "  flex: none !important;",
@@ -247,7 +247,7 @@
             "  pointer-events: none;",
             "  background: var(--hamburger-menu-mask-background, var(--hamburger-menu-focus-background, Canvas));",
             "  will-change: clip-path;",
-            "}"
+            "}",
             "@position-try --hamburger-above-start {",
             "  position-area: top span-right;",
             "  inset: auto;",
