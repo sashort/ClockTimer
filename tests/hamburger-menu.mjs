@@ -50,7 +50,12 @@ const componentSource =
 
 assert.match(
     componentSource,
-    /const PROMOTION_DURATION\s*=\s*500/
+    /--hamburger-menu-promotion-duration:\s*450ms/
+);
+
+assert.match(
+    componentSource,
+    /#promotionDuration\(/
 );
 
 assert.match(
