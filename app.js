@@ -11469,9 +11469,22 @@
             clockTimer.standardTime =
                 canonical;
 
-            if (
-                clockTimer.standardTime !==
+            const appliedMilliseconds =
+                parseTimelineTime(
+                    clockTimer.standardTime
+                );
+
+            const requestedMilliseconds =
+                parseTimelineTime(
                     canonical
+                );
+
+            if (
+                !Number.isFinite(
+                    appliedMilliseconds
+                ) ||
+                appliedMilliseconds !==
+                    requestedMilliseconds
             ) {
                 return false;
             }
