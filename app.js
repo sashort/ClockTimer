@@ -16844,12 +16844,19 @@
                 return true;
             },
 
+            readyAtContinuationAvailable() {
+                return (
+                    pendingSpeechReady !==
+                    undefined
+                );
+            },
+
             continueStartAt(
                 spokenTime
             ) {
                 if (
-                    pendingSpeechReady ===
-                        undefined
+                    !actions
+                        .readyAtContinuationAvailable()
                 ) {
                     return false;
                 }
@@ -19957,7 +19964,7 @@
                 );
             }
             const speechTargets = {
-                readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
+                readyAt:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton",
                 setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", goalMode:"#scopeToggle",
@@ -20014,7 +20021,29 @@
                 cancel: "trip-actions"
             };
 
-            if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
+            if (speechTargets[key]) {
+                element.dataset.speechTarget =
+                    speechTargets[key];
+            }
+            else {
+                delete element.dataset.speechTarget;
+            }
+
+            if (
+                key ===
+                "readyAtContinuation"
+            ) {
+                element.setAttribute(
+                    "speech-available",
+                    "WMOFActions.readyAtContinuationAvailable"
+                );
+            }
+            else {
+                element.removeAttribute(
+                    "speech-available"
+                );
+            }
+
             if (speechIntents[key]) {
                 element.dataset.speechIntent =
                     speechIntents[key];
