@@ -293,21 +293,18 @@ kbd {
 <ol>
 <li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
 <li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
-<li>Temporarily set the current promoted parent and nested parent to <code>position: relative</code>.</li>
-<li>Compute one translation vector: <code>nestedTarget - nestedStart</code>. Apply that translation only to the current promoted parent. Because the nested parent and all of its children are descendants, they travel together automatically while the frozen pane clips anything that leaves the pane.</li>
-<li>At the endpoint, absolute-lock the nested parent at its visible promoted rectangle, insert a placeholder at its original slot, move the nested parent into the promoted focus layer, then hide the old parent.</li>
-<li>Cancel the temporary parent animation and remove temporary positioning after the reparent has been committed.</li>
+<li>Insert a placeholder in the nested parent's original slot, then move only that nested parent into the focus layer.</li>
+<li>Animate the nested parent's x/y position and width/height from its original bounds to its promoted bounds. The previous parent translates only on the y axis; its x position stays fixed.</li>
+<li>Hide the previous parent once the nested parent reaches its destination.</li>
 <li>Pause for <strong>75 ms</strong>, then open the nested parent's children inside the still-frozen pane.</li>
 </ol>
 
 <h3>Closing a promoted parent</h3>
 <ol>
 <li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
-<li>Temporarily absolute-lock the previous parent at its promoted base rectangle while hidden, then measure the placeholder that marks the nested parent's original slot.</li>
-<li>Translate the previous parent until that placeholder lies exactly underneath the currently visible nested parent.</li>
-<li>Absolute-lock the nested parent at its current visible rectangle, move it back into its original DOM slot, then remove its temporary lock. At this point the nested parent is visually unchanged but is once again a child of the translated parent.</li>
-<li>Animate only the previous parent from that saved translation back to <code>0 0</code>. The nested parent and every other descendant automatically return with it.</li>
-<li>Remove the placeholder, temporary positioning, and animation state. Because close is the same parent translation with the bounds flipped, it is the exact reverse of nested entrance.</li>
+<li>Show the previous parent and measure the placeholder that marks the nested parent's original slot.</li>
+<li>Animate the nested parent's x/y position and width/height back to that slot while the previous parent translates only on the y axis.</li>
+<li>Move the nested parent back into its original DOM slot and remove the placeholder and animation state.</li>
 </ol>
 
 <p class="note"><strong>Terminology:</strong> in this component, a <em>pane</em> is the visible horizontal menu page / promoted viewport whose dimensions are frozen during transition mechanics. A parent menu is the group being promoted inside that pane.</p>

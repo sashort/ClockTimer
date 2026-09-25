@@ -5196,176 +5196,20 @@
                 );
         }
 
-        #motionStyle(
-            element
-        ) {
-            return {
-                position:
-                    element.style.position,
-                left:
-                    element.style.left,
-                top:
-                    element.style.top,
-                width:
-                    element.style.width,
-                height:
-                    element.style.height,
-                translate:
-                    element.style.translate,
-                visibility:
-                    element.style.visibility,
-                willChange:
-                    element.style.willChange,
-                zIndex:
-                    element.style.zIndex
-            };
-        }
-
-        #restoreMotionStyle(
-            element,
-            style
-        ) {
-            if (
-                !element ||
-                !style
-            ) {
-                return;
-            }
-
-            for (
-                const [
-                    property,
-                    value
-                ] of
-                Object.entries(
-                    style
-                )
-            ) {
-                const cssProperty =
-                    property
-                        .replace(
-                            /[A-Z]/g,
-                            match =>
-                                "-" +
-                                match
-                                    .toLowerCase()
-                        );
-
-                if (value) {
-                    element.style
-                        .setProperty(
-                            cssProperty,
-                            value
-                        );
-                }
-                else {
-                    element.style
-                        .removeProperty(
-                            cssProperty
-                        );
-                }
-            }
-        }
-
-        #focusDestinationRect(
-            rect,
-            flow
-        ) {
-            const layer =
-                this.#focusLayer
-                    .getBoundingClientRect();
-
-            const width =
-                Math.max(
-                    1,
-                    layer.width ||
-                    rect.width
-                );
-
-            const height =
-                Math.max(
-                    1,
-                    rect.height
-                );
-
-            const top =
-                flow ===
-                    "start"
-                    ? layer.top
-                    : layer.bottom -
-                        height;
-
-            return {
-                left:
-                    layer.left,
-                top,
-                right:
-                    layer.left +
-                    width,
-                bottom:
-                    top +
-                    height,
-                width,
-                height
-            };
-        }
-
-
-        #lockRect(
-            element,
-            rect,
-            container
-        ) {
-            const base =
-                container
-                    .getBoundingClientRect();
-
-            element.style.position =
-                "absolute";
-
-            element.style.left =
-                (
-                    rect.left -
-                    base.left
-                ) +
-                "px";
-
-            element.style.top =
-                (
-                    rect.top -
-                    base.top
-                ) +
-                "px";
-
-            element.style.width =
-                rect.width +
-                    "px";
-
-            element.style.height =
-                rect.height +
-                    "px";
-
-            element.style.translate =
-                "0 0";
-        }
-
         #translationAnimation(
             element,
             from,
             to,
             duration
         ) {
-            const fromValue =
-                from.x +
-                "px " +
-                from.y +
-                "px";
-
-            const toValue =
-                to.x +
-                "px " +
-                to.y +
-                "px";
+            const frame = rect => ({
+                translate:
+                    rect.x + "px " + rect.y + "px",
+                width:
+                    rect.width + "px",
+                height:
+                    rect.height + "px"
+            });
 
             if (
                 !duration ||
@@ -5373,8 +5217,10 @@
                     .animate !==
                     "function"
             ) {
-                element.style.translate =
-                    toValue;
+                Object.assign(
+                    element.style,
+                    frame(to)
+                );
 
                 return {
                     animation:
@@ -5388,16 +5234,7 @@
                 this
                     .#trackAnimation(
                         element.animate(
-                            [
-                                {
-                                    translate:
-                                        fromValue
-                                },
-                                {
-                                    translate:
-                                        toValue
-                                }
-                            ],
+                            [frame(from), frame(to)],
                             {
                                 duration,
                                 easing:
@@ -5438,51 +5275,13 @@
                 return false;
             }
 
-            const parent =
-                current.group;
-
-            const parentStart =
-                parent
-                    .getBoundingClientRect();
-
             const childStart =
                 group
                     .getBoundingClientRect();
-
-            const childTarget =
-                this
-                    .#focusDestinationRect(
-                        childStart,
-                        flow
-                    );
-
-            /*
-             * The child stays nested during motion. Moving the parent by
-             * the child's start->target delta moves the entire descendant
-             * tree together, while the frozen pane clips the parent as it
-             * leaves the visible area. No child/sibling translation is
-             * required.
-             */
-            const parentTranslation = {
-                x:
-                    childTarget.left -
-                    childStart.left,
-                y:
-                    childTarget.top -
-                    childStart.top
-            };
-
-            const parentStyle =
-                this
-                    .#motionStyle(
-                        parent
-                    );
-
-            const childStyle =
-                this
-                    .#motionStyle(
-                        group
-                    );
+            const parent =
+                current.group;
+            const parentStart =
+                parent.getBoundingClientRect();
 
             const anchor =
                 document
@@ -5505,28 +5304,23 @@
             placeholder.className =
                 "hamburger-menu-focus-placeholder";
 
-            placeholder.hidden =
-                true;
-
             const groupMetrics =
                 this.#measure(
                     group
                 );
+
+            placeholder.style.height =
+                groupMetrics.height + "px";
+            placeholder.style.marginTop =
+                groupMetrics.marginTop + "px";
+            placeholder.style.marginBottom =
+                groupMetrics.marginBottom + "px";
 
             sourceParent
                 .insertBefore(
                     placeholder,
                     anchor
                 );
-
-            parent.style.position =
-                "relative";
-
-            parent.style.willChange =
-                "translate";
-
-            group.style.position =
-                "relative";
 
             this.#focusLayer.hidden =
                 false;
@@ -5551,38 +5345,11 @@
                 originalPanelIndex,
                 flow,
                 nestedMotion: {
-                    parentStart: {
-                        left:
-                            parentStart.left,
-                        top:
-                            parentStart.top,
-                        right:
-                            parentStart.right,
-                        bottom:
-                            parentStart.bottom,
-                        width:
-                            parentStart.width,
-                        height:
-                            parentStart.height
-                    },
-                    childStart: {
-                        left:
-                            childStart.left,
-                        top:
-                            childStart.top,
-                        right:
-                            childStart.right,
-                        bottom:
-                            childStart.bottom,
-                        width:
-                            childStart.width,
-                        height:
-                            childStart.height
-                    },
-                    childTarget,
-                    parentTranslation,
-                    parentStyle,
-                    childStyle
+                    parentHeight: parentStart.height,
+                    parentTranslate: parent.style.translate,
+                    childTranslate: group.style.translate,
+                    childWidth: group.style.width,
+                    childHeight: group.style.height
                 }
             };
 
@@ -5590,54 +5357,6 @@
                 .push(
                     entry
                 );
-
-            const duration =
-                this
-                    .#promotionDuration();
-
-            const parentMotion =
-                this
-                    .#translationAnimation(
-                        parent,
-                        {
-                            x:
-                                0,
-                            y:
-                                0
-                        },
-                        parentTranslation,
-                        duration
-                    );
-
-            await parentMotion.finished;
-
-            if (
-                generation !==
-                this.#generation
-            ) {
-                return false;
-            }
-
-            parent.style.translate =
-                parentTranslation.x +
-                "px " +
-                parentTranslation.y +
-                "px";
-
-            placeholder.hidden =
-                false;
-
-            placeholder.style.height =
-                groupMetrics.height +
-                    "px";
-
-            placeholder.style.marginTop =
-                groupMetrics.marginTop +
-                    "px";
-
-            placeholder.style.marginBottom =
-                groupMetrics.marginBottom +
-                    "px";
 
             group.classList
                 .add(
@@ -5652,44 +5371,73 @@
                         .length
                 );
 
-            /*
-             * Lock the child exactly where the translated parent placed
-             * it, then reparent it without allowing an intervening paint.
-             */
-            this
-                .#lockRect(
-                    group,
-                    childTarget,
-                    this.#focusLayer
-                );
-
             this.#focusLayer
                 .append(
                     group
                 );
 
-            parent.hidden =
-                true;
+            const childTarget =
+                group.getBoundingClientRect();
+
+            const parentOffsetY =
+                childTarget.top - childStart.top;
+
+            const from = {
+                x: childStart.left - childTarget.left,
+                y: childStart.top - childTarget.top,
+                width: childStart.width,
+                height: childStart.height
+            };
+            const to = {
+                x: 0,
+                y: 0,
+                width: childTarget.width,
+                height: childTarget.height
+            };
+
+            Object.assign(group.style, {
+                translate: from.x + "px " + from.y + "px",
+                width: from.width + "px",
+                height: from.height + "px"
+            });
+
+            const duration = this.#promotionDuration();
+            const motion = this.#translationAnimation(
+                group, from, to, duration
+            );
+            const parentMotion = duration &&
+                typeof parent.animate === "function"
+                ? this.#trackAnimation(parent.animate(
+                    [
+                        { translate: "0 0" },
+                        { translate: "0 " + parentOffsetY + "px" }
+                    ],
+                    { duration, easing: "ease-in-out", fill: "both" }
+                ))
+                : undefined;
+
+            await Promise.all([
+                motion.finished,
+                parentMotion?.finished.catch(() => {})
+            ]);
+
+            if (generation !== this.#generation) {
+                return false;
+            }
 
             try {
-                parentMotion.animation
-                    ?.cancel();
+                motion.animation?.cancel();
+                parentMotion?.cancel();
             }
             catch {}
 
-            this
-                .#restoreMotionStyle(
-                    parent,
-                    parentStyle
-                );
+            group.style.translate = entry.nestedMotion.childTranslate;
+            group.style.width = entry.nestedMotion.childWidth;
+            group.style.height = entry.nestedMotion.childHeight;
 
-            await nextFrame();
-
-            this
-                .#restoreMotionStyle(
-                    group,
-                    childStyle
-                );
+            parent.hidden = true;
+            parent.style.translate =
+                entry.nestedMotion.parentTranslate;
 
             group.classList
                 .remove(
@@ -5766,54 +5514,37 @@
         ) {
             const parentGroup =
                 parent.group;
-
             const child =
                 entry.group;
-
-            const parentStyle =
-                this
-                    .#motionStyle(
-                        parentGroup
-                    );
-
-            const childStyle =
-                this
-                    .#motionStyle(
-                        child
-                    );
-
             const childStart =
                 child
                     .getBoundingClientRect();
 
-            const parentTarget =
-                this
-                    .#focusDestinationRect(
-                        entry
-                            .nestedMotion
-                            .parentStart,
-                        entry.flow
-                    );
-
-            /*
-             * Keep the returning parent out of flex layout while its
-             * original child slot is measured. This also prevents the
-             * visible child from being displaced before the reverse move.
-             */
-            this
-                .#lockRect(
-                    parentGroup,
-                    parentTarget,
-                    this.#focusLayer
-                );
-
-            parentGroup.style.visibility =
-                "hidden";
+            // Keep the returning parent out of flex layout so showing it
+            // cannot move the child before either animation starts.
+            const parentStyle = {
+                position: parentGroup.style.position,
+                left: parentGroup.style.left,
+                top: parentGroup.style.top,
+                width: parentGroup.style.width,
+                height: parentGroup.style.height
+            };
+            entry.nestedMotion.restoreParentStyle = parentStyle;
+            const layerRect =
+                this.#focusLayer.getBoundingClientRect();
+            const parentTop = entry.flow === "start"
+                ? layerRect.top
+                : layerRect.bottom - entry.nestedMotion.parentHeight;
+            Object.assign(parentGroup.style, {
+                position: "absolute",
+                left: "0px",
+                top: parentTop - layerRect.top + "px",
+                width: layerRect.width + "px",
+                height: entry.nestedMotion.parentHeight + "px"
+            });
 
             parentGroup.hidden =
                 false;
-
-            await nextFrame();
 
             const destination =
                 entry.placeholder
@@ -5822,112 +5553,49 @@
             if (!destination) {
                 parentGroup.hidden =
                     true;
-
-                this
-                    .#restoreMotionStyle(
-                        parentGroup,
-                        parentStyle
-                    );
-
+                Object.assign(parentGroup.style, parentStyle);
                 this.#transitionBusy =
                     false;
-
                 return false;
             }
 
-            /*
-             * Flip the bounds: translate the parent until its original
-             * child slot sits exactly under the currently promoted child.
-             * The child can then be reinserted without moving on screen.
-             */
-            const reverseStart = {
-                x:
-                    childStart.left -
-                    destination.left,
-                y:
-                    childStart.top -
-                    destination.top
+            const from = {
+                x: 0,
+                y: 0,
+                width: childStart.width,
+                height: childStart.height
+            };
+            const to = {
+                x: destination.left - childStart.left,
+                y: destination.top - childStart.top,
+                width: destination.width,
+                height: destination.height
             };
 
+            const parentOffsetY =
+                childStart.top - destination.top;
             parentGroup.style.translate =
-                reverseStart.x +
-                "px " +
-                reverseStart.y +
-                "px";
+                "0 " + parentOffsetY + "px";
 
-            parentGroup.style.visibility =
-                parentStyle.visibility ||
-                "";
+            const duration = this.#promotionDuration();
+            const motion = this.#translationAnimation(
+                child, from, to, duration
+            );
+            const parentMotion = duration &&
+                typeof parentGroup.animate === "function"
+                ? this.#trackAnimation(parentGroup.animate(
+                    [
+                        { translate: "0 " + parentOffsetY + "px" },
+                        { translate: "0 0" }
+                    ],
+                    { duration, easing: "ease-in-out", fill: "both" }
+                ))
+                : undefined;
 
-            this
-                .#lockRect(
-                    child,
-                    childStart,
-                    this.#focusLayer
-                );
-
-            if (
-                entry.anchor
-                    ?.parentNode
-            ) {
-                entry.anchor
-                    .parentNode
-                    .insertBefore(
-                        child,
-                        entry.anchor
-                    );
-            }
-
-            /*
-             * The translated parent makes the natural child slot coincide
-             * with childStart. Re-lock relative to the new containing block
-             * for one frame, then let the child return to normal flow.
-             */
-            this
-                .#lockRect(
-                    child,
-                    childStart,
-                    parentGroup
-                );
-
-            child.classList
-                .remove(
-                    "hamburger-menu-focus-group",
-                    "hamburger-menu-focus-leaving"
-                );
-
-            child.style
-                .removeProperty(
-                    "z-index"
-                );
-
-            await nextFrame();
-
-            this
-                .#restoreMotionStyle(
-                    child,
-                    childStyle
-                );
-
-            const duration =
-                this
-                    .#promotionDuration();
-
-            const parentMotion =
-                this
-                    .#translationAnimation(
-                        parentGroup,
-                        reverseStart,
-                        {
-                            x:
-                                0,
-                            y:
-                                0
-                        },
-                        duration
-                    );
-
-            await parentMotion.finished;
+            await Promise.all([
+                motion.finished,
+                parentMotion?.finished.catch(() => {})
+            ]);
 
             if (
                 generation !==
@@ -5936,14 +5604,39 @@
                 return false;
             }
 
-            parentGroup.style.translate =
-                "0 0";
+            Object.assign(child.style, {
+                translate: to.x + "px " + to.y + "px",
+                width: to.width + "px",
+                height: to.height + "px"
+            });
 
             try {
-                parentMotion.animation
+                motion.animation
                     ?.cancel();
+                parentMotion?.cancel();
             }
             catch {}
+
+            parentGroup.style.translate =
+                entry.nestedMotion.parentTranslate;
+
+            if (entry.anchor?.parentNode) {
+                entry.anchor.parentNode.insertBefore(
+                    child, entry.anchor
+                );
+            }
+
+            child.classList.remove(
+                "hamburger-menu-focus-group",
+                "hamburger-menu-focus-leaving"
+            );
+            child.style.translate =
+                entry.nestedMotion.childTranslate;
+            child.style.width =
+                entry.nestedMotion.childWidth;
+            child.style.height =
+                entry.nestedMotion.childHeight;
+            child.style.removeProperty("z-index");
 
             entry.placeholder
                 ?.remove();
@@ -5951,14 +5644,11 @@
             entry.anchor
                 ?.remove();
 
+            Object.assign(parentGroup.style, parentStyle);
+            delete entry.nestedMotion.restoreParentStyle;
+
             this.#focusStack
                 .pop();
-
-            this
-                .#restoreMotionStyle(
-                    parentGroup,
-                    parentStyle
-                );
 
             parentGroup.hidden =
                 false;
@@ -7064,11 +6754,29 @@
                         "hamburger-menu-focus-leaving"
                     );
 
-                entry.group
-                    .style
-                    .removeProperty(
-                        "translate"
-                    );
+                if (entry.nestedMotion) {
+                    entry.group.style.translate =
+                        entry.nestedMotion.childTranslate;
+                    entry.group.style.width =
+                        entry.nestedMotion.childWidth;
+                    entry.group.style.height =
+                        entry.nestedMotion.childHeight;
+                    entry.sourceRoot.style.translate =
+                        entry.nestedMotion.parentTranslate;
+                    if (entry.nestedMotion.restoreParentStyle) {
+                        Object.assign(
+                            entry.sourceRoot.style,
+                            entry.nestedMotion.restoreParentStyle
+                        );
+                    }
+                }
+                else {
+                    entry.group
+                        .style
+                        .removeProperty(
+                            "translate"
+                        );
+                }
 
                 entry.group
                     .style
