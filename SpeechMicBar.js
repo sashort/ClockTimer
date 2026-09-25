@@ -59,6 +59,28 @@ class SpeechMicBar extends HTMLElement {
     #offCommand;
     #commandsCommand;
     #trainingSelection;
+    #optionCategories = [
+        {
+            key: "trip-actions",
+            label: "Trip Actions"
+        },
+        {
+            key: "goals",
+            label: "Goals"
+        },
+        {
+            key: "informational",
+            label: "Informational"
+        },
+        {
+            key: "settings",
+            label: "Settings"
+        },
+        {
+            key: "system",
+            label: "System"
+        }
+    ];
 
     constructor() {
         super();
@@ -235,6 +257,19 @@ class SpeechMicBar extends HTMLElement {
                     color: white;
                 }
 
+                .option-category-rail {
+                    background:
+                        var(
+                            --speech-option-category-background,
+                            var(--ui-gray-gradient, var(--wm-gray))
+                        );
+                    color:
+                        var(
+                            --speech-option-category-color,
+                            white
+                        );
+                }
+
                 .option-category[
                     data-category="trip-actions"
                 ]
@@ -299,6 +334,12 @@ class SpeechMicBar extends HTMLElement {
                         900 22px/1
                         system-ui,
                         sans-serif;
+                }
+
+                .option-category-icon[
+                    data-custom-icon="true"
+                ]::before {
+                    content: none !important;
                 }
 
                 .option-category[
@@ -2352,40 +2393,117 @@ class SpeechMicBar extends HTMLElement {
                 .trim()
                 .toLowerCase();
 
-        return [
-            "trip-actions",
-            "goals",
-            "informational",
-            "settings",
-            "system"
-        ].includes(category)
+        return this.#optionCategories.some(
+            definition =>
+                definition.key === category
+        )
             ? category
             : "settings";
     }
 
     #optionCategoryDefinitions() {
-        return [
-            {
-                key: "trip-actions",
-                label: "Trip Actions"
-            },
-            {
-                key: "goals",
-                label: "Goals"
-            },
-            {
-                key: "informational",
-                label: "Informational"
-            },
-            {
-                key: "settings",
-                label: "Settings"
-            },
-            {
-                key: "system",
-                label: "System"
+        return this.#optionCategories.map(
+            definition => ({
+                ...definition
+            })
+        );
+    }
+
+    setOptionCategories(
+        definitions
+    ) {
+        if (!Array.isArray(definitions)) {
+            throw new TypeError(
+                "Option categories must be an array."
+            );
+        }
+
+        const normalized = [];
+        const seen = new Set();
+
+        for (const definition of definitions) {
+            const key =
+                String(
+                    definition?.key ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const label =
+                String(
+                    definition?.label ||
+                    ""
+                )
+                    .trim();
+
+            if (
+                !key ||
+                !label ||
+                seen.has(key)
+            ) {
+                continue;
             }
-        ];
+
+            seen.add(key);
+
+            normalized.push(
+                Object.freeze({
+                    key,
+                    label,
+                    color:
+                        String(
+                            definition?.color ||
+                            ""
+                        ).trim() ||
+                        undefined,
+                    contrast:
+                        String(
+                            definition?.contrast ||
+                            ""
+                        ).trim() ||
+                        undefined,
+                    icon:
+                        String(
+                            definition?.icon ||
+                            ""
+                        ).trim() ||
+                        undefined
+                })
+            );
+        }
+
+        if (
+            !normalized.some(
+                definition =>
+                    definition.key ===
+                    "settings"
+            )
+        ) {
+            normalized.push(
+                Object.freeze({
+                    key: "settings",
+                    label: "Settings"
+                })
+            );
+        }
+
+        this.#optionCategories =
+            normalized;
+
+        if (this.optionsOpen) {
+            this.#renderOptions(
+                globalThis.SpeechMenu
+                    ?.phraseGroups ||
+                []
+            );
+        }
+
+        return this.optionCategories;
+    }
+
+    get optionCategories() {
+        return this.#optionCategoryDefinitions();
     }
 
     #contextLabel(
@@ -3464,6 +3582,20 @@ class SpeechMicBar extends HTMLElement {
         section.dataset.category =
             definition.key;
 
+        if (definition.color) {
+            section.style.setProperty(
+                "--speech-option-category-background",
+                definition.color
+            );
+        }
+
+        if (definition.contrast) {
+            section.style.setProperty(
+                "--speech-option-category-color",
+                definition.contrast
+            );
+        }
+
         const rail =
             document.createElement(
                 "div"
@@ -3484,6 +3616,14 @@ class SpeechMicBar extends HTMLElement {
 
         icon.className =
             "option-category-icon";
+
+        if (definition.icon) {
+            icon.textContent =
+                definition.icon;
+
+            icon.dataset.customIcon =
+                "true";
+        }
 
         rail.append(
             icon
