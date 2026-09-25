@@ -40,7 +40,7 @@
                 deferTrip: "^defer trip$",
                 readRenderedTime: "^(?<timeMode>time remaining|time elapsed|end time)$",
                 renderedTimeMode: "^show (?<timeMode>time remaining|time elapsed|end time)$",
-                keypadValue: "^(?<spokenValue>.+)$"
+                keypadValue: "^(?<spokenValue>(?:(?:zero|oh|one|two|three|four|five|six|seven|eight|nine|[0-9]+)(?:\\s+|$))+)$"
             })
         }),
         ui: Object.freeze({})
