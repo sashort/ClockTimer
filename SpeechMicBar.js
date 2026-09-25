@@ -106,10 +106,7 @@ class SpeechMicBar extends HTMLElement {
                     right: 0;
                     bottom: 100%;
                     box-sizing: border-box;
-                    height:
-                        var(
-                            --speech-options-max-height
-                        );
+                    height: auto;
                     max-height:
                         var(
                             --speech-options-max-height
