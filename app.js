@@ -1525,7 +1525,17 @@
             numberPad:openNumberPad,
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
-                if(change){renderTripActionState();renderSyncGoalsState();updateSummaryValues();}
+                if(change){
+                    if (
+                        endTimeGoalOverride &&
+                        String(id) === String(clockTimer.currentTripId)
+                    ) {
+                        recalculateEndTimeGoalOverride();
+                    }
+                    renderTripActionState();
+                    renderSyncGoalsState();
+                    updateSummaryValues();
+                }
                 return result;
             },
             refresh:()=>dispatchTripListRequest("edit"),
@@ -3939,17 +3949,46 @@
         return true;
     }
 
-    function applyEndTimeGoalOverride(target) {
-        const deadline = target instanceof Date ? new Date(target.getTime()) : new Date(target);
-        if (!tripIsLive() || Number.isNaN(deadline.getTime()) || deadline.getTime() <= Date.now()) {
+    function recalculateEndTimeGoalOverride() {
+        const deadline =
+            endTimeGoalOverride?.deadline;
+
+        if (
+            !(deadline instanceof Date) ||
+            Number.isNaN(deadline.getTime()) ||
+            deadline.getTime() <= Date.now() ||
+            !tripIsLive()
+        ) {
             return false;
         }
-        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
-        const summary = clockTimer.getSummarySnapshot?.(deadline);
+
+        const currentSummary =
+            clockTimer.getSummarySnapshot?.(
+                new Date()
+            );
+
+        const summary =
+            clockTimer.getSummarySnapshot?.(
+                deadline
+            );
+
         const goals = {
-            trip: goalForDeadline(summary, "trip", currentSummary, deadline),
-            total: goalForDeadline(summary, "total", currentSummary, deadline)
+            trip:
+                goalForDeadline(
+                    summary,
+                    "trip",
+                    currentSummary,
+                    deadline
+                ),
+            total:
+                goalForDeadline(
+                    summary,
+                    "total",
+                    currentSummary,
+                    deadline
+                )
         };
+
         if (
             !Number.isFinite(goals.trip) ||
             goals.trip <= 0 ||
@@ -3959,23 +3998,57 @@
             return false;
         }
 
+        clockTimer.configure({
+            auto_goal: false,
+            calculated_trip_goal:
+                percentGoalAttribute(
+                    goals.trip
+                ),
+            calculated_total_goal:
+                percentGoalAttribute(
+                    goals.total
+                ),
+            calculated_goal_source:
+                "end-time"
+        });
+
+        queueSummaryRefresh();
+
+        return true;
+    }
+
+    function applyEndTimeGoalOverride(target) {
+        const deadline =
+            target instanceof Date
+                ? new Date(target.getTime())
+                : new Date(target);
+
+        if (
+            !tripIsLive() ||
+            Number.isNaN(deadline.getTime()) ||
+            deadline.getTime() <= Date.now()
+        ) {
+            return false;
+        }
+
         endTimeGoalOverride = {
             scopes: ["trip", "total"],
             deadline
         };
 
-        clockTimer.configure({
-            auto_goal: false,
-            calculated_trip_goal:
-                percentGoalAttribute(goals.trip),
-            calculated_total_goal:
-                percentGoalAttribute(goals.total),
-            calculated_goal_source: "end-time"
-        });
+        if (!recalculateEndTimeGoalOverride()) {
+            endTimeGoalOverride =
+                undefined;
 
-        applyRenderedTimeMode("calculated-end");
+            return false;
+        }
+
+        applyRenderedTimeMode(
+            "calculated-end"
+        );
+
         renderEndTimeGoalLock();
-        queueSummaryRefresh();
+
         return true;
     }
 
@@ -13167,7 +13240,26 @@
         ) {
             releaseEndTimeGoalOverride();
         }
-        renderTripActionState(event.detail?.now);
+        else if (
+            endTimeGoalOverride &&
+            String(
+                clockTimer
+                    .getActiveIntervalState?.(
+                        event.detail?.now
+                    )
+                    ?.intervalType ||
+                ""
+            )
+                .trim()
+                .toLowerCase() ===
+                    "down"
+        ) {
+            recalculateEndTimeGoalOverride();
+        }
+
+        renderTripActionState(
+            event.detail?.now
+        );
     });
 
     clockTimer.addEventListener("uiStateChanged", event => {
@@ -13204,10 +13296,18 @@
     });
 
     clockTimer.addEventListener("intervalStarted", () => {
+        if (endTimeGoalOverride) {
+            recalculateEndTimeGoalOverride();
+        }
+
         renderTripActionState();
     });
 
     clockTimer.addEventListener("intervalEnded", () => {
+        if (endTimeGoalOverride) {
+            recalculateEndTimeGoalOverride();
+        }
+
         renderTripActionState();
     });
 
@@ -13230,6 +13330,31 @@
         "intervalDeleted",
         "goalChangeFailed"
     ];
+
+    const endTimeGoalRecalculationEvents = [
+        "standardTimeChanged",
+        "creationDateChanged",
+        "creationTimeChanged",
+        "scheduledStartChanged",
+        "startTimeChanged",
+        "intervalExtended",
+        "intervalApprovalToggled",
+        "intervalApprovalChanged",
+        "intervalDeleted"
+    ];
+
+    for (const eventName of endTimeGoalRecalculationEvents) {
+        clockTimer.addEventListener(
+            eventName,
+            () => {
+                if (endTimeGoalOverride) {
+                    recalculateEndTimeGoalOverride();
+                }
+            }
+        );
+    }
+
+
 
     for (const eventName of summaryRefreshEvents) {
         clockTimer.addEventListener(eventName, queueSummaryRefresh);
