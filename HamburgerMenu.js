@@ -1453,9 +1453,12 @@
                 (
                     reserveIndicator
                         ? (
-                            this.#indicator
-                                .getBoundingClientRect()
-                                .height +
+                            px(
+                                getComputedStyle(
+                                    this.#indicator
+                                )
+                                    .height
+                            ) +
                             px(
                                 getComputedStyle(
                                     this.#indicator
@@ -2094,7 +2097,9 @@
             );
         }
 
-        #reconcilePlacement() {
+        #reconcilePlacement(
+            pass = 0
+        ) {
             if (!this.isOpen) {
                 return;
             }
@@ -2110,7 +2115,7 @@
                 this.#trigger
                     .getBoundingClientRect();
 
-            let shift =
+            const currentShift =
                 px(
                     getComputedStyle(
                         this
@@ -2120,74 +2125,83 @@
                         )
                 );
 
-            const shiftedTop =
-                menu.top +
-                shift;
-
-            const shiftedBottom =
-                menu.bottom +
-                shift;
+            let delta =
+                0;
 
             if (
-                shiftedBottom >
+                menu.bottom >
                 region.bottom
             ) {
-                shift -=
-                    shiftedBottom -
+                delta -=
+                    menu.bottom -
                     region.bottom;
             }
 
             if (
-                shiftedTop +
-                    (
-                        shift -
-                        px(
-                            getComputedStyle(
-                                this
-                            )
-                                .getPropertyValue(
-                                    "--hamburger-menu-trigger-shift"
-                                )
-                        )
-                    ) <
+                menu.top +
+                    delta <
                 region.top
             ) {
-                shift +=
+                delta +=
                     region.top -
                     (
                         menu.top +
-                        shift
+                        delta
                     );
             }
 
-            const minimum =
+            const minimumDelta =
                 region.top -
                 trigger.top;
 
-            const maximum =
+            const maximumDelta =
                 region.bottom -
                 trigger.bottom;
 
             if (
-                minimum <=
-                maximum
+                minimumDelta <=
+                maximumDelta
             ) {
-                shift =
+                delta =
                     Math.max(
-                        minimum,
+                        minimumDelta,
                         Math.min(
-                            maximum,
-                            shift
+                            maximumDelta,
+                            delta
                         )
                     );
             }
 
+            const nextShift =
+                currentShift +
+                delta;
+
             this.style
                 .setProperty(
                     "--hamburger-menu-trigger-shift",
-                    shift +
+                    nextShift +
                         "px"
                 );
+
+            if (
+                Math.abs(
+                    delta
+                ) >
+                    0.5 &&
+                pass <
+                    2
+            ) {
+                requestAnimationFrame(
+                    () =>
+                        this
+                            .#reconcilePlacement(
+                                pass +
+                                    1
+                            )
+                );
+
+                return;
+            }
 
             const placement =
                 this.#placement();
@@ -2930,7 +2944,25 @@
                     entry
                 );
 
-            this.#updateFocusBounds();
+            const intendedHeight =
+                Math.max(
+                    targetRect.height,
+                    groupMetrics.height
+                ) +
+                growing.reduce(
+                    (
+                        total,
+                        record
+                    ) =>
+                        total +
+                        record.metrics
+                            .outerHeight,
+                    0
+                );
+
+            this.#updateFocusBounds(
+                intendedHeight
+            );
 
             const promises = [
                 this.#animateHeight(
@@ -3414,7 +3446,9 @@
             return true;
         }
 
-        #updateFocusBounds() {
+        #updateFocusBounds(
+            knownFullHeight
+        ) {
             const current =
                 this.#focusStack
                     .at(-1);
@@ -3432,12 +3466,16 @@
                 current.group;
 
             const fullHeight =
-                Math.max(
-                    group.scrollHeight,
-                    group
-                        .getBoundingClientRect()
-                        .height
-                );
+                Number.isFinite(
+                    knownFullHeight
+                )
+                    ? knownFullHeight
+                    : Math.max(
+                        group.scrollHeight,
+                        group
+                            .getBoundingClientRect()
+                            .height
+                    );
 
             const paneHeight =
                 Math.max(
@@ -3507,9 +3545,6 @@
 
             this.#transitionBusy =
                 false;
-
-            const items =
-                this.#normalItems();
 
             while (
                 this.#focusStack
@@ -3612,6 +3647,9 @@
                 .style
                 .visibility =
                 "visible";
+
+            const items =
+                this.#normalItems();
 
             const allButtons =
                 [
