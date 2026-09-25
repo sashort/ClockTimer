@@ -10400,15 +10400,63 @@
         await numberPadLoadPromise;
     }
 
-    function normalizeTimeDigits(value) {
-        const text = String(value || "").trim();
-        if (!text) return "";
-        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
-        if (!match) return "";
-        const hours = match[1] || "";
-        const minutes = match[2];
-        const seconds = match[3];
-        return hours ? `${hours}${minutes.padStart(2, "0")}${seconds}` : `${minutes}${seconds}`;
+    function durationValueToRawDigits(
+        value
+    ) {
+        const milliseconds =
+            parseTimelineTime(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds < 0
+        ) {
+            return "";
+        }
+
+        const totalSeconds =
+            Math.floor(
+                milliseconds /
+                1000
+            );
+
+        const hours =
+            Math.floor(
+                totalSeconds /
+                3600
+            );
+
+        const minutes =
+            Math.floor(
+                (
+                    totalSeconds %
+                    3600
+                ) /
+                60
+            );
+
+        const seconds =
+            totalSeconds %
+            60;
+
+        if (hours > 0) {
+            return (
+                String(hours) +
+                String(minutes)
+                    .padStart(2, "0") +
+                String(seconds)
+                    .padStart(2, "0")
+            );
+        }
+
+        return (
+            String(minutes) +
+            String(seconds)
+                .padStart(2, "0")
+        );
     }
 
     function canonicalClockTimerDuration(
@@ -10976,7 +11024,7 @@
         else {
             initial = normalizedMode === "percent"
                 ? normalizePercentDigits(initialValue)
-                : normalizeTimeDigits(initialValue);
+                : durationValueToRawDigits(initialValue);
         }
         const state = {
             mode: normalizedMode,
@@ -11588,7 +11636,7 @@
     function syncDraftStandardTimeReturnFrame(formatted) {
         const state = getTripSettingsReturnNumberPadState();
         if (!state || state.source !== "new-trip") return;
-        const digits = normalizeTimeDigits(formatted);
+        const digits = durationValueToRawDigits(formatted);
         state.initial = digits;
         state.pending = digits;
         state.replaceOnNextDigit = false;
@@ -12184,7 +12232,7 @@
         const state = getTripSettingsReturnNumberPadState();
         const standardTime = tripSettingsSession?.values?.standardTime;
         if (!state || state.source !== "standard-time" || !standardTime) return;
-        const digits = normalizeTimeDigits(standardTime);
+        const digits = durationValueToRawDigits(standardTime);
         if (!digits) return;
         const changed = digits !== state.initial;
         state.pending = digits;
@@ -16485,19 +16533,20 @@
                                 "duration"
                             );
 
-                    const formatted =
-                        EnglishDurationParser
-                            .format(
-                                duration
-                            );
-
-                    if (!formatted) {
+                    if (
+                        !Number.isFinite(
+                            duration
+                        ) ||
+                        duration <= 0
+                    ) {
                         return false;
                     }
 
                     pending =
-                        normalizeTimeDigits(
-                            formatted
+                        durationValueToRawDigits(
+                            formatTimelineMilliseconds(
+                                duration
+                            )
                         );
 
                     if (
