@@ -613,7 +613,7 @@ assert.match(
 );
 assert.match(
     app,
-    /const sourceRect =[\s\S]*getTripLogBottomRect\(\)[\s\S]*animateTripLogButton\([\s\S]*topRect\.top - sourceRect\.top/
+    /const sourceRect\s*=\s*tripLogButton\.getBoundingClientRect\(\)[\s\S]*animateTripLogButton\([\s\S]*topRect\.top - sourceRect\.top/
 );
 assert.match(
     app,
