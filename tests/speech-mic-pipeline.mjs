@@ -1590,6 +1590,19 @@ assert.match(
     languageSource,
     /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\) mode\$"/
 );
+
+assert.match(
+    app,
+    /changeGoalMode\([\s\S]*SpeechMenu[\s\S]*executionContext[\s\S]*transcript[\s\S]*\^\(auto\|total\|trip\) mode\$/
+);
+assert.doesNotMatch(
+    app,
+    /goalMode:"#scopeToggle"/
+);
+assert.doesNotMatch(
+    html,
+    /builtin:goalMode:page[^>]*data-speech-target="#scopeToggle"/
+);
 assert.match(
     languageSource,
     /readRenderedTime:\s*"\^\(\?<timeMode>time remaining\|time elapsed\|end time\)\$"/
