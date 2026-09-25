@@ -13435,27 +13435,68 @@
             opened &&
             tripDraftUsesEndStartTransition()
         ) {
-            const played =
-                await playSemanticSongThenSpeak(
-                    "trip-ended-started",
-                    speech
-                );
-
-            if (
-                played
-            ) {
-                // The 5-note cue already contains the Start Trip chime.
-                // Suppress exactly one upcoming start chime. If the user
-                // later pushes Actual Start to Now, startTripDraft cancels
-                // this one-shot suppression before the start event fires.
-                incrementSemanticDisable(
+            const endChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-ended",
                     "chime"
                 );
+            const startChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-started",
+                    "chime"
+                );
+            const audio =
+                globalThis.WMOFAudio;
+            let transitionSong;
+
+            if (
+                endChimeEnabled &&
+                startChimeEnabled
+            ) {
+                transitionSong =
+                    "trip-ended-started";
             }
-            else {
-                await playSemanticSongThenSpeak(
-                    "trip-ended",
-                    undefined
+            else if (endChimeEnabled) {
+                transitionSong =
+                    "trip-ended";
+            }
+            else if (startChimeEnabled) {
+                transitionSong =
+                    "trip-started";
+            }
+
+            if (transitionSong) {
+                try {
+                    const song =
+                        await audio?.startSong?.(
+                            transitionSong,
+                            {
+                                bpm: 180,
+                                includeSpeech: false
+                            }
+                        );
+                    await song?.finished;
+                }
+                catch (error) {
+                    console.error(
+                        "Audio playback failed:",
+                        transitionSong,
+                        error
+                    );
+                }
+            }
+
+            if (speech) {
+                audio?.speak?.(
+                    speech
+                );
+            }
+
+            if (startChimeEnabled) {
+                // Start's chime has already been represented by either
+                // the 5-tone segue or the standalone Start cue.
+                incrementSemanticDisable(
+                    "chime"
                 );
             }
         }
@@ -14117,7 +14158,8 @@
     function tripTimingSpeech(
         detail,
         lead,
-        disposition
+        disposition,
+        announcement
     ) {
         const milliseconds =
             Number(
@@ -14128,9 +14170,10 @@
         const parts = [];
 
         if (
-            consumeSemanticAction(
+            consumeAnnouncementAction(
+                announcement,
                 "summary"
-            )
+            ).perform
         ) {
             parts.push(
                 lead + "."
@@ -14141,9 +14184,10 @@
             Number.isFinite(
                 milliseconds
             ) &&
-            consumeSemanticAction(
+            consumeAnnouncementAction(
+                announcement,
                 "details"
-            )
+            ).perform
         ) {
             parts.push(
                 formatGoalFailureDuration(
@@ -14183,52 +14227,168 @@
         );
     }
 
+    function renderedGoalLabel(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
+            );
+        const percentGoal =
+            Number(
+                selected?.percentGoal
+            );
+        const roundedPercent =
+            Number.isFinite(percentGoal)
+                ? Math.round(
+                    percentGoal * 100
+                )
+                : undefined;
+
+        if (
+            scope === "standard" ||
+            roundedPercent === 100
+        ) {
+            return "Standard Goal";
+        }
+
+        if (!Number.isFinite(roundedPercent)) {
+            return "";
+        }
+
+        const type =
+            scope === "total"
+                ? "Total"
+                : "Trip";
+
+        return (
+            type +
+            " Goal " +
+            goalFailureNumberWords(
+                roundedPercent
+            ) +
+            " percent"
+        );
+    }
+
+    function renderedGoalRemainingMilliseconds(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
+            );
+        const standard =
+            Number(
+                selected?.standardTimeMilliseconds
+            );
+        const counted =
+            Number(
+                selected?.countedTimeElapsedMilliseconds
+            );
+        const percentGoal =
+            Number(
+                selected?.percentGoal
+            );
+        const allowanceCredit =
+            Number(
+                selected?.allowanceCreditMilliseconds ??
+                0
+            );
+
+        if (
+            !Number.isFinite(standard) ||
+            !Number.isFinite(counted) ||
+            !Number.isFinite(percentGoal) ||
+            percentGoal <= 0
+        ) {
+            return undefined;
+        }
+
+        return Math.round(
+            standard /
+                percentGoal +
+            (
+                Number.isFinite(allowanceCredit)
+                    ? allowanceCredit
+                    : 0
+            ) -
+            counted
+        );
+    }
+
+    function tripStartGoalDetailSpeech(
+        detail
+    ) {
+        const remaining =
+            renderedGoalRemainingMilliseconds(
+                detail
+            );
+        const label =
+            renderedGoalLabel(
+                detail
+            );
+
+        if (
+            !Number.isFinite(remaining) ||
+            remaining <= 0 ||
+            !label
+        ) {
+            return "";
+        }
+
+        return (
+            formatGoalFailureDuration(
+                remaining
+            ) +
+            " until " +
+            label +
+            "."
+        );
+    }
+
     function tripEndTotalSpeech(
         detail
     ) {
         const total =
-            detail
-                ?.summary
-                ?.total;
-
-        const standard =
-            Number(
-                total
-                    ?.standardTimeMilliseconds
-            );
-
-        const counted =
-            Number(
-                total
-                    ?.countedTimeElapsedMilliseconds
-            );
-
-        const allowanceCredit =
-            Number(
-                total
-                    ?.allowanceCreditMilliseconds ??
-                0
-            );
-
-        const percentGoal =
-            Number(
-                total
-                    ?.percentGoal
-            );
-
+            detail?.summary?.total;
         const countedPercent =
             Number(
-                total
-                    ?.countedPercent
+                total?.countedPercent
+            );
+        const parts = [];
+        const summary =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "details"
             );
 
-        const parts = [];
-
-        if (
-            consumeSemanticAction(
-                "summary"
-            )
-        ) {
+        if (summary.perform) {
             parts.push(
                 "Trip ended."
             );
@@ -14248,63 +14408,46 @@
             }
         }
 
-        let detailSpeech =
-            "";
-
-        if (
-            Number.isFinite(standard) &&
-            Number.isFinite(counted) &&
-            Number.isFinite(percentGoal) &&
-            percentGoal > 0
-        ) {
-            const allowed =
-                standard /
-                    percentGoal +
-                (
-                    Number.isFinite(
-                        allowanceCredit
-                    )
-                        ? allowanceCredit
-                        : 0
-                );
-
+        if (details.perform) {
             const remaining =
-                Math.round(
-                    allowed - counted
+                renderedGoalRemainingMilliseconds(
+                    detail
+                );
+            const label =
+                renderedGoalLabel(
+                    detail
                 );
 
-            if (remaining > 0) {
-                detailSpeech =
-                    formatGoalFailureDuration(
-                        remaining
-                    ) +
-                    " banked.";
-            }
-            else if (remaining < 0) {
-                detailSpeech =
-                    formatGoalFailureDuration(
-                        Math.abs(
+            if (
+                Number.isFinite(remaining) &&
+                label
+            ) {
+                if (remaining > 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
                             remaining
-                        )
-                    ) +
-                    " over.";
+                        ) +
+                        " banked toward " +
+                        label +
+                        "."
+                    );
+                }
+                else if (remaining < 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
+                            Math.abs(
+                                remaining
+                            )
+                        ) +
+                        " over " +
+                        label +
+                        "."
+                    );
+                }
             }
         }
 
-        if (
-            detailSpeech &&
-            consumeSemanticAction(
-                "details"
-            )
-        ) {
-            parts.push(
-                detailSpeech
-            );
-        }
-
-        return parts.join(
-            " "
-        );
+        return parts.join(" ");
     }
 
     let lunchClockCueState;
@@ -14506,17 +14649,78 @@
 
 
 
-    function onTripStarted(event) {
-        reserveSemanticEvent(event, "Trip started on time");
-
-        void playSemanticSongThenSpeak(
-            "trip-started",
-            consumeSemanticAction(
-                "summary"
-            )
-                ? "Trip started."
-                : ""
+    async function onTripStarted(event) {
+        reserveSemanticEvent(
+            event,
+            "Trip started on time"
         );
+
+        const audio =
+            globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                "trip-started",
+                "chime"
+            );
+        const summary =
+            consumeAnnouncementAction(
+                "trip-started",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-started",
+                "details"
+            );
+        const parts = [];
+
+        if (summary.perform) {
+            parts.push(
+                chime.runtimeSuppressed &&
+                !chime.userDisabled
+                    ? "Trip in Progress."
+                    : "Trip started."
+            );
+        }
+
+        if (details.perform) {
+            const detailSpeech =
+                tripStartGoalDetailSpeech(
+                    event.detail
+                );
+            if (detailSpeech) {
+                parts.push(
+                    detailSpeech
+                );
+            }
+        }
+
+        if (chime.perform) {
+            try {
+                const song =
+                    await audio?.startSong?.(
+                        "trip-started",
+                        {
+                            bpm: 180,
+                            includeSpeech: false
+                        }
+                    );
+                await song?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    "trip-started",
+                    error
+                );
+            }
+        }
+
+        if (parts.length) {
+            audio?.speak?.(
+                parts.join(" ")
+            );
+        }
     }
 
     function onTripStartedEarly(event) {
@@ -14527,7 +14731,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip started early",
-                "saved"
+                "saved",
+                "trip-started-early"
             )
         );
     }
@@ -14540,7 +14745,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip started late",
-                "lost"
+                "lost",
+                "trip-started-late"
             )
         );
     }
@@ -14575,7 +14781,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip resumed early",
-                "saved"
+                "saved",
+                "trip-resumed-early"
             )
         );
         finishLunchClockCues(
@@ -14598,7 +14805,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip resumed",
-                "lost"
+                "lost",
+                "trip-resumed-after-break"
             )
         );
         finishLunchClockCues(
@@ -14634,8 +14842,8 @@
             // Attempting the ordinary End Trip cue here consumes that slot,
             // so the legacy 3-note cue is skipped without special casing the
             // audio helper itself.
-            playSemanticSong(
-                "trip-ended"
+            consumeSemanticAction(
+                "chime"
             );
 
             return;
@@ -15046,9 +15254,10 @@
 
         if (
             summarySentences.length &&
-            consumeSemanticAction(
+            consumeAnnouncementAction(
+                "goal-failed",
                 "summary"
-            )
+            ).perform
         ) {
             spoken.push(
                 ...summarySentences
@@ -15057,9 +15266,10 @@
 
         if (
             detailSentences.length &&
-            consumeSemanticAction(
+            consumeAnnouncementAction(
+                "goal-failed",
                 "details"
-            )
+            ).perform
         ) {
             spoken.push(
                 ...detailSentences
@@ -15084,9 +15294,10 @@
             );
 
         if (
-            consumeSemanticAction(
+            consumeAnnouncementAction(
+                "goal-failed",
                 "chime"
-            )
+            ).perform
         ) {
             try {
                 const song =
