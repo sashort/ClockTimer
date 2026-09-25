@@ -20160,19 +20160,47 @@
                 delete element.dataset.speechTarget;
             }
 
+            const speechAvailability = {
+                readyAt:
+                    "WMOFSpeechAvailability.canStartTrip",
+                ready:
+                    "WMOFSpeechAvailability.canStartTrip",
+                readyAtContinuation:
+                    "WMOFSpeechAvailability.canContinueStartAt",
+                breakStart:
+                    "WMOFSpeechAvailability.canOpenBreakMenu",
+                down:
+                    "WMOFSpeechAvailability.canStartDownTime",
+                breakEnd:
+                    "WMOFSpeechAvailability.canOpenBreakEndMenu",
+                resume:
+                    "WMOFSpeechAvailability.canResumeTrip",
+                lockEndTime:
+                    "WMOFSpeechAvailability.canLockEndTime",
+                showTripLog:
+                    "WMOFSpeechAvailability.canOpenTripLog",
+                hideTripLog:
+                    "WMOFSpeechAvailability.canCloseTripLog",
+                deferTrip:
+                    "WMOFSpeechAvailability.canDeferTrip",
+                renderedTimeMode:
+                    "WMOFSpeechAvailability.canToggleRenderedTime",
+                cancel:
+                    "WMOFSpeechAvailability.canCloseSurface"
+            };
+
             const availability =
-                key ===
-                    "readyAtContinuation"
-                    ? "WMOFSpeechAvailability.canContinueStartAt"
-                    : key ===
-                        "cancel"
-                        ? "WMOFSpeechAvailability.canCloseSurface"
-                        : speechOptionCategories[
-                            key
-                        ] ===
-                            "informational"
-                            ? "WMOFSpeechAvailability.canUseInformational"
-                            : "";
+                speechAvailability[
+                    key
+                ] ||
+                (
+                    speechOptionCategories[
+                        key
+                    ] ===
+                        "informational"
+                        ? "WMOFSpeechAvailability.canUseInformational"
+                        : ""
+                );
 
             if (availability) {
                 element.setAttribute(
