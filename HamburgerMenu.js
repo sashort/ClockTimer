@@ -11,9 +11,6 @@
     const PROMOTION_PAUSE =
         75;
 
-    const ZOOM_DURATION =
-        520;
-
     const wait =
         milliseconds =>
             new Promise(
@@ -244,13 +241,19 @@
             ":where(hamburger-menu) .hamburger-menu-zooming {",
             "  will-change: translate;",
             "}",
-            ":where(hamburger-menu) .hamburger-menu-promotion-mask {",
-            "  position: absolute;",
-            "  inset-inline: 0;",
-            "  z-index: 7;",
-            "  pointer-events: none;",
-            "  background: var(--hamburger-menu-mask-background, var(--hamburger-menu-focus-background, Canvas));",
-            "  will-change: clip-path;",
+            "@keyframes hamburger-menu-cover-row {",
+            "  from { visibility: visible; }",
+            "  to { visibility: hidden; }",
+            "}",
+            "@keyframes hamburger-menu-reveal-row {",
+            "  from { visibility: hidden; }",
+            "  to { visibility: visible; }",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-row-covering {",
+            "  animation: hamburger-menu-cover-row var(--hamburger-menu-row-motion-duration) steps(1, end) calc(var(--hamburger-menu-row-switch-time) - var(--hamburger-menu-row-motion-duration)) both;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-row-revealing {",
+            "  animation: hamburger-menu-reveal-row var(--hamburger-menu-row-motion-duration) steps(1, end) calc(var(--hamburger-menu-row-switch-time) - var(--hamburger-menu-row-motion-duration)) both;",
             "}",
             "@position-try --hamburger-above-start {",
             "  position-area: top span-right;",
@@ -335,6 +338,7 @@
         #frozenPaneRect;
         #frozenPaneBaseSize;
         #frozenPaneLocks = [];
+        #normalPaneHeight;
         #openingMeasured = false;
         #openingMeasurementPromise;
         #layoutDirty = true;
@@ -528,6 +532,8 @@
 
                 this.#beginOpeningMeasurement();
 
+                const prepared = this.#prepareOpeningLayout();
+
                 this.#popover
                     .showPopover();
 
@@ -542,23 +548,16 @@
                         "true"
                     );
 
-                this.style
-                    .setProperty(
-                        "--hamburger-menu-panel-height",
-                        "auto"
+                if (!prepared) {
+                    this.style.setProperty(
+                        "--hamburger-menu-panel-height", "auto"
                     );
-
-                this.#viewport
-                    .style
-                    .removeProperty(
-                        "height"
-                    );
-
-                this.#indicator.hidden =
-                    true;
+                    this.#viewport.style.removeProperty("height");
+                    this.#indicator.hidden = true;
+                }
 
                 void this
-                    .#finishOpeningMeasurement();
+                    .#finishOpeningMeasurement(prepared);
 
                 return;
             }
@@ -567,6 +566,8 @@
                 false;
 
             this.#beginOpeningMeasurement();
+
+            this.#prepareOpeningLayout();
 
             this.#popover
                 .dataset
@@ -848,10 +849,6 @@
                             element.classList
                                 .contains(
                                     "hamburger-menu-focus-placeholder"
-                                ) ||
-                            element.classList
-                                .contains(
-                                    "hamburger-menu-promotion-mask"
                                 )
                         ) {
                             continue;
@@ -1560,7 +1557,8 @@
 
         #freezePane(
             pane =
-                this.#activePane()
+                this.#activePane(),
+            measuredHeight
         ) {
             if (!pane) {
                 return undefined;
@@ -1581,7 +1579,9 @@
             const paneHeight =
                 Math.max(
                     1,
-                    paneRect.height
+                    Number.isFinite(measuredHeight)
+                        ? measuredHeight
+                        : paneRect.height
                 );
 
             const targets =
@@ -1814,7 +1814,29 @@
             return true;
         }
 
-        #finishOpeningMeasurement() {
+        #prepareOpeningLayout() {
+            this.#normalPaneHeight = undefined;
+
+            // A closed popover has no layout box. Show it invisibly in its
+            // normal location, measure the current rows, then restore its
+            // display before entering the top layer.
+            const inlineDisplay = this.#popover.style.display;
+            this.#popover.style.display = "block";
+
+            try {
+                if (!this.#popover.getBoundingClientRect().width) {
+                    return false;
+                }
+
+                this.#updateSafeGeometry();
+                return this.#layoutPanels(true);
+            }
+            finally {
+                this.#popover.style.display = inlineDisplay;
+            }
+        }
+
+        #finishOpeningMeasurement(prepared = false) {
             if (
                 this.#openingMeasured
             ) {
@@ -1833,7 +1855,9 @@
                     await nextFrame();
 
                     this.#updateSafeGeometry();
-                    this.#layoutPanels();
+                    if (!prepared) {
+                        this.#layoutPanels();
+                    }
                     this.#reconcilePlacement();
 
                     await nextFrame();
@@ -1845,7 +1869,8 @@
                             .length
                     ) {
                         this.#freezePane(
-                            this.#viewport
+                            this.#viewport,
+                            this.#normalPaneHeight
                         );
                     }
 
@@ -1920,28 +1945,24 @@
                     false;
 
                 if (
-                    !this.#openingMeasured ||
-                    this.#openingMeasurementPromise
+                    !this.#openingMeasured &&
+                    !this.#openingMeasurementPromise
                 ) {
                     this.#beginOpeningMeasurement();
 
-                    this.style
-                        .setProperty(
-                            "--hamburger-menu-panel-height",
-                            "auto"
-                        );
+                    const prepared =
+                        Number.isFinite(this.#normalPaneHeight);
 
-                    this.#viewport
-                        .style
-                        .removeProperty(
-                            "height"
+                    if (!prepared) {
+                        this.style.setProperty(
+                            "--hamburger-menu-panel-height", "auto"
                         );
-
-                    this.#indicator.hidden =
-                        true;
+                        this.#viewport.style.removeProperty("height");
+                        this.#indicator.hidden = true;
+                    }
 
                     void this
-                        .#finishOpeningMeasurement();
+                        .#finishOpeningMeasurement(prepared);
                 }
             }
             else {
@@ -3094,9 +3115,9 @@
             return pages;
         }
 
-        #layoutPanels() {
+        #layoutPanels(beforeOpen = false) {
             if (
-                !this.isOpen ||
+                (!this.isOpen && !beforeOpen) ||
                 this.#transitionBusy ||
                 this.#focusStack
                     .length
@@ -3111,11 +3132,31 @@
                 return false;
             }
 
+            const wasFrozen =
+                this.#frozenPaneLocks.length > 0;
+
+            if (wasFrozen) {
+                this.#unfreezePane();
+            }
+
             this.style
                 .setProperty(
                     "--hamburger-menu-panel-height",
                     "auto"
                 );
+
+            this.#viewport.style.removeProperty("height");
+            this.#indicator.hidden = true;
+
+            // Measure the current UI state in one unconstrained column.
+            // Existing panes can clip or stretch their children, so their
+            // row rectangles cannot be used for the partition pass.
+            this.#withObservationPaused(() => {
+                const measurementPane = document.createElement("section");
+                measurementPane.className = "hamburger-menu-panel";
+                measurementPane.append(...items);
+                this.#source.replaceChildren(measurementPane);
+            });
 
             let pages =
                 this.#pack(
@@ -3130,6 +3171,7 @@
                 pages.length >
                 1
             ) {
+                this.#indicator.hidden = false;
                 pages =
                     this.#pack(
                         items,
@@ -3184,17 +3226,24 @@
                 }
             );
 
+            // Re-measure after partitioning: the final pane DOM, margins,
+            // and current styles determine the height to freeze.
             const tallest =
                 Math.max(
                     1,
-                    ...pages.map(
-                        page =>
+                    ...this.#panels().map(
+                        panel =>
                             Math.min(
-                                page.height,
+                                Math.max(
+                                    panel.scrollHeight,
+                                    panel.getBoundingClientRect().height
+                                ),
                                 panelLimit
                             )
                     )
                 );
+
+            this.#normalPaneHeight = tallest;
 
             this.style
                 .setProperty(
@@ -3208,6 +3257,10 @@
                 .height =
                 tallest +
                     "px";
+
+            if (wasFrozen) {
+                this.#freezePane(this.#viewport, tallest);
+            }
 
             this.#updateIndicator();
 
@@ -4047,217 +4100,6 @@
             }
         }
 
-        #createPromotionMask(
-            originalRect,
-            promotedRect,
-            flow,
-            reverse = false,
-            container =
-                this.#viewport,
-            zIndex
-        ) {
-            const containerRect =
-                container
-                    .getBoundingClientRect();
-
-            const top =
-                Math.min(
-                    originalRect.top,
-                    promotedRect.top
-                );
-
-            const bottom =
-                Math.max(
-                    originalRect.bottom,
-                    promotedRect.bottom
-                );
-
-            const height =
-                Math.max(
-                    1,
-                    bottom -
-                    top
-                );
-
-            const mask =
-                document
-                    .createElement(
-                        "div"
-                    );
-
-            mask.className =
-                "hamburger-menu-promotion-mask";
-
-            // Snapshot the pane's painted appearance for this transition.
-            // Transparent panes inherit their visible surface from the
-            // popover, so use that surface when the pane paints nothing.
-            const paneStyle = getComputedStyle(
-                this.#currentPanel() || this.#viewport
-            );
-            const popoverStyle = getComputedStyle(this.#popover);
-            const paintsBackground =
-                paneStyle.backgroundImage !== "none" ||
-                !/^(transparent|rgba?\([^)]*,\s*0(?:\.0+)?\))$/.test(
-                    paneStyle.backgroundColor
-                );
-            const surface = paintsBackground
-                ? paneStyle
-                : popoverStyle;
-            const edge =
-                px(paneStyle.borderLeftWidth) > 0
-                    ? paneStyle
-                    : popoverStyle;
-
-            Object.assign(mask.style, {
-                boxSizing: "border-box",
-                background: surface.background,
-                color: surface.color,
-                border: edge.border,
-                borderRadius: edge.borderRadius,
-                boxShadow: paneStyle.boxShadow !== "none"
-                    ? paneStyle.boxShadow
-                    : popoverStyle.boxShadow,
-                backdropFilter: paneStyle.backdropFilter !== "none"
-                    ? paneStyle.backdropFilter
-                    : popoverStyle.backdropFilter
-            });
-
-            mask.style.top =
-                (
-                    top -
-                    containerRect.top
-                ) +
-                "px";
-
-            mask.style.height =
-                height +
-                "px";
-
-            const startClip =
-                flow ===
-                    "start"
-                    ? "inset(" +
-                        Math.max(
-                            0,
-                            originalRect.top -
-                                top
-                        ) +
-                        "px 0 0 0)"
-                    : "inset(0 0 " +
-                        Math.max(
-                            0,
-                            bottom -
-                                originalRect.bottom
-                        ) +
-                        "px 0)";
-
-            const fullClip =
-                "inset(0 0 0 0)";
-
-            mask.style.clipPath =
-                reverse
-                    ? fullClip
-                    : startClip;
-
-            if (
-                Number.isFinite(
-                    zIndex
-                )
-            ) {
-                mask.style.zIndex =
-                    String(
-                        zIndex
-                    );
-            }
-
-            container
-                .append(
-                    mask
-                );
-
-            return {
-                element:
-                    mask,
-                from:
-                    reverse
-                        ? fullClip
-                        : startClip,
-                to:
-                    reverse
-                        ? startClip
-                        : fullClip
-            };
-        }
-
-        #animatePromotionMask(
-            mask,
-            duration
-        ) {
-            if (!mask?.element) {
-                return Promise.resolve();
-            }
-
-            if (
-                !duration ||
-                typeof mask
-                    .element
-                    .animate !==
-                    "function"
-            ) {
-                mask.element
-                    .style
-                    .clipPath =
-                    mask.to;
-
-                return Promise.resolve();
-            }
-
-            const animation =
-                this
-                    .#trackAnimation(
-                        mask.element
-                            .animate(
-                                [
-                                    {
-                                        clipPath:
-                                            mask.from
-                                    },
-                                    {
-                                        clipPath:
-                                            mask.to
-                                    }
-                                ],
-                                {
-                                    duration,
-                                    easing:
-                                        "ease-in-out",
-                                    fill:
-                                        "both"
-                                }
-                            )
-                    );
-
-            return animation
-                .finished
-                .catch(
-                    () => {}
-                )
-                .finally(
-                    () => {
-                        try {
-                            animation
-                                .cancel();
-                        }
-                        catch {}
-
-                        mask.element
-                            .style
-                            .clipPath =
-                            mask.to;
-                    }
-                );
-        }
-
         #cssTimeMilliseconds(
             value,
             fallback
@@ -4404,8 +4246,13 @@
 
             element.classList
                 .remove(
-                    "hamburger-menu-zooming"
+                    "hamburger-menu-zooming",
+                    "hamburger-menu-row-covering",
+                    "hamburger-menu-row-revealing"
                 );
+
+            element.style.removeProperty("--hamburger-menu-row-switch-time");
+            element.style.removeProperty("--hamburger-menu-row-motion-duration");
 
             record.hiddenByPromotion =
                 false;
@@ -4550,218 +4397,76 @@
             };
         }
 
-        #fullyCovers(
-            movingRect,
-            stationaryRect
-        ) {
-            return (
-                movingRect.top <=
-                    stationaryRect.top +
-                        0.5 &&
-                movingRect.bottom >=
-                    stationaryRect.bottom -
-                        0.5 &&
-                movingRect.left <=
-                    stationaryRect.left +
-                        0.5 &&
-                movingRect.right >=
-                    stationaryRect.right -
-                        0.5
-            );
+        #rowVisibilitySwitchTime(progress, duration) {
+            // Invert the parent's ease-in-out timing curve so the CSS
+            // visibility keyframe fires at the matching travel position.
+            let low = 0;
+            let high = 1;
+            const target = Math.max(0, Math.min(1, progress));
+
+            for (let step = 0; step < 20; step += 1) {
+                const t = (low + high) / 2;
+                const eased = 3 * (1 - t) * t * t + t * t * t;
+                if (eased < target) low = t;
+                else high = t;
+            }
+
+            const t = (low + high) / 2;
+            const time = 3 * (1 - t) * (1 - t) * t * .42 +
+                3 * (1 - t) * t * t * .58 + t * t * t;
+            return Math.max(0, Math.round(time * duration));
         }
 
-        #watchCoveredRows(
-            group,
-            records,
-            completion,
-            generation
-        ) {
-            let finished =
-                false;
+        #animateRowVisibility(records, from, to, duration, flow, opening) {
+            if (!duration) return;
 
-            Promise.resolve(
-                completion
-            )
-                .catch(
-                    () => {}
-                )
-                .finally(
-                    () => {
-                        finished =
-                            true;
+            const travel = to.top - from.top;
+            for (const record of records) {
+                const rect = opening
+                    ? record.rect
+                    : record.element.getBoundingClientRect();
+                let progress = 1;
+
+                if (Math.abs(travel) > .5) {
+                    if (opening) {
+                        progress = flow === "start"
+                            ? (rect.top - from.top) / travel
+                            : (rect.bottom - from.bottom) / travel;
+                        const y = from.top + travel * progress;
+                        const fullyCovered = from.left <= rect.left + .5 &&
+                            from.right >= rect.right - .5 &&
+                            y <= rect.top + .5 &&
+                            y + from.height >= rect.bottom - .5;
+                        if (!fullyCovered) progress = 1;
                     }
-                );
-
-            return new Promise(
-                resolve => {
-                    const check =
-                        () => {
-                            if (
-                                generation !==
-                                this
-                                    .#generation
-                            ) {
-                                resolve();
-                                return;
-                            }
-
-                            const movingRect =
-                                group
-                                    .getBoundingClientRect();
-
-                            for (
-                                const record of
-                                records
-                            ) {
-                                if (
-                                    record
-                                        .hiddenByPromotion
-                                ) {
-                                    continue;
-                                }
-
-                                const rect =
-                                    record
-                                        .element
-                                        .getBoundingClientRect();
-
-                                if (
-                                    this
-                                        .#fullyCovers(
-                                            movingRect,
-                                            rect
-                                        )
-                                ) {
-                                    this
-                                        .#hidePromotionRecord(
-                                            record
-                                        );
-                                }
-                            }
-
-                            if (finished) {
-                                resolve();
-                                return;
-                            }
-
-                            setTimeout(
-                                check,
-                                16
-                            );
-                        };
-
-                    check();
-                }
-            );
-        }
-
-        #watchUncoveredRows(
-            group,
-            records,
-            completion,
-            generation
-        ) {
-            let finished =
-                false;
-
-            Promise.resolve(
-                completion
-            )
-                .catch(
-                    () => {}
-                )
-                .finally(
-                    () => {
-                        finished =
-                            true;
+                    else {
+                        // Reveal only after the parent's trailing edge has
+                        // passed the row on its way back to the pane.
+                        progress = flow === "start"
+                            ? (rect.bottom - from.top + 1) / travel
+                            : (rect.top - from.bottom - 1) / travel;
                     }
-                );
-
-            return new Promise(
-                resolve => {
-                    const check =
-                        () => {
-                            if (
-                                generation !==
-                                this
-                                    .#generation
-                            ) {
-                                resolve();
-                                return;
-                            }
-
-                            const movingRect =
-                                group
-                                    .getBoundingClientRect();
-
-                            for (
-                                const record of
-                                records
-                            ) {
-                                if (
-                                    record
-                                        .element
-                                        .style
-                                        .visibility !==
-                                    "hidden"
-                                ) {
-                                    continue;
-                                }
-
-                                const rect =
-                                    record
-                                        .element
-                                        .getBoundingClientRect();
-
-                                if (
-                                    !this
-                                        .#fullyCovers(
-                                            movingRect,
-                                            rect
-                                        )
-                                ) {
-                                    if (
-                                        record
-                                            .inlineVisibility
-                                    ) {
-                                        record
-                                            .element
-                                            .style
-                                            .visibility =
-                                            record
-                                                .inlineVisibility;
-                                    }
-                                    else {
-                                        record
-                                            .element
-                                            .style
-                                            .removeProperty(
-                                                "visibility"
-                                            );
-                                    }
-                                }
-                            }
-
-                            if (finished) {
-                                resolve();
-                                return;
-                            }
-
-                            setTimeout(
-                                check,
-                                16
-                            );
-                        };
-
-                    check();
                 }
-            );
+
+                record.element.style.setProperty(
+                    "--hamburger-menu-row-switch-time",
+                    this.#rowVisibilitySwitchTime(progress, duration) + "ms"
+                );
+                record.element.style.setProperty(
+                    "--hamburger-menu-row-motion-duration",
+                    duration + "ms"
+                );
+                record.element.classList.add(opening
+                    ? "hamburger-menu-row-covering"
+                    : "hamburger-menu-row-revealing");
+            }
         }
 
         #animateZoomAway(
             records,
             flow,
-            generation
+            generation,
+            duration
         ) {
             const viewportRect =
                 this
@@ -4781,12 +4486,6 @@
                     "start"
                     ? 1
                     : -1;
-
-            const duration =
-                this
-                    .#fixedMotionDuration(
-                        ZOOM_DURATION
-                    );
 
             return records.map(
                 record => {
@@ -4881,14 +4580,9 @@
 
         #animateZoomBack(
             records,
-            generation
+            generation,
+            duration
         ) {
-            const duration =
-                this
-                    .#fixedMotionDuration(
-                        ZOOM_DURATION
-                    );
-
             return records.map(
                 record => {
                     if (
@@ -6034,21 +5728,10 @@
                         )
                     : Promise.resolve();
 
-            const promotionMask =
-                this
-                    .#createPromotionMask(
-                        originalRect,
-                        targetRect,
-                        flow,
-                        false
-                    );
-
-            const maskDone =
-                this
-                    .#animatePromotionMask(
-                        promotionMask,
-                        duration
-                    );
+            this.#animateRowVisibility(
+                entry.toward, originalRect, targetRect,
+                duration, flow, true
+            );
 
             const zoomDone =
                 Promise.all(
@@ -6056,13 +5739,13 @@
                         .#animateZoomAway(
                             entry.away,
                             flow,
-                            generation
+                            generation,
+                            duration
                         )
                 );
 
             await Promise.all([
                 movementDone,
-                maskDone,
                 zoomDone
             ]);
 
@@ -6098,10 +5781,6 @@
                         record
                     );
             }
-
-            promotionMask
-                .element
-                ?.remove();
 
             if (current) {
                 current.group.hidden =
@@ -6286,45 +5965,11 @@
 
             let parentZIndex;
 
-            let reverseMaskContainer =
-                this.#viewport;
-
-            let reverseMaskZIndex;
-
             if (parent) {
                 parentZIndex =
                     parent.group
                         .style
                         .zIndex;
-
-                const childZIndex =
-                    Number.parseInt(
-                        entry.group
-                            .style
-                            .zIndex,
-                        10
-                    );
-
-                if (
-                    Number.isFinite(
-                        childZIndex
-                    )
-                ) {
-                    reverseMaskZIndex =
-                        childZIndex -
-                        1;
-
-                    parent.group
-                        .style
-                        .zIndex =
-                        String(
-                            reverseMaskZIndex -
-                                1
-                        );
-                }
-
-                reverseMaskContainer =
-                    this.#focusLayer;
 
                 parent.group.hidden =
                     false;
@@ -6393,17 +6038,6 @@
                 return false;
             }
 
-            const reverseMask =
-                this
-                    .#createPromotionMask(
-                        destinationRect,
-                        promotedRect,
-                        entry.flow,
-                        true,
-                        reverseMaskContainer,
-                        reverseMaskZIndex
-                    );
-
             const translateX =
                 destinationRect.left -
                 promotedRect.left;
@@ -6469,25 +6103,23 @@
                         )
                     : Promise.resolve();
 
-            const maskDone =
-                this
-                    .#animatePromotionMask(
-                        reverseMask,
-                        duration
-                    );
+            this.#animateRowVisibility(
+                entry.toward, promotedRect, destinationRect,
+                duration, entry.flow, false
+            );
 
             const zoomBackDone =
                 Promise.all(
                     this
                         .#animateZoomBack(
                             entry.away,
-                            generation
+                            generation,
+                            duration
                         )
                 );
 
             await Promise.all([
                 movementDone,
-                maskDone,
                 zoomBackDone
             ]);
 
@@ -6529,10 +6161,6 @@
                 .removeProperty(
                     "translate"
                 );
-
-            reverseMask
-                .element
-                ?.remove();
 
             if (parent) {
                 if (parentZIndex) {
@@ -6798,6 +6426,8 @@
         #reset() {
             this.#generation +=
                 1;
+
+            this.#normalPaneHeight = undefined;
 
             this.#cancelAnimations();
 

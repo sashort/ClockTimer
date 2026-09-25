@@ -114,7 +114,7 @@ kbd {
 <div class="grid">
 <div class="card">
 <h3>Invisible opening calculation</h3>
-<p>The popover enters the top layer hidden at <code>opacity: 0</code> and <code>visibility: hidden</code>. The component resolves the safe region, runs <code>position-try</code>, packs panes, calculates the common pane height, and reconciles popover placement before revealing it at full opacity. The hamburger itself never moves.</p>
+<p>Immediately before the popover opens, the component renders it invisibly and measures the current visible menu content. It partitions rows into panes, measures the finished panes again, and records the tallest pane height. Once the popover enters the top layer, it reconciles placement and freezes that measured height before revealing the menu. The hamburger itself never moves.</p>
 </div>
 <div class="card">
 <h3>Natural pane height</h3>
@@ -289,7 +289,7 @@ kbd {
 </figure>
 
 <h3>Opening a parent</h3>
-<p>Top-level promotion retains the mask/row choreography described by the graphical example above. Nested promotion uses a simpler deterministic path because the incoming parent is already a descendant of the currently promoted parent.</p>
+<p>Top-level promotion uses one motion duration for the selected parent and surrounding rows. Each row receives a temporary CSS visibility switch time calculated from when the parent covers it; keyframes hide the row at that time. There is no overlay mask. Nested promotion uses a simpler path because the incoming parent is already a descendant of the currently promoted parent.</p>
 <ol>
 <li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
 <li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
@@ -300,7 +300,7 @@ kbd {
 </ol>
 
 <h3>Closing a promoted parent</h3>
-<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. The promotion mask snapshots the active pane's painted style (or the popover's surface for a transparent pane) when it is created, so it matches the current panel appearance throughout the transition.</p>
+<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. On the reverse trip, rows behind the moving parent use the same duration and CSS visibility keyframes; each becomes visible once the parent's trailing edge passes it. The temporary CSS switch times are removed after the animation.</p>
 <ol>
 <li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
 <li>Show the previous parent and measure the placeholder that marks the nested parent's original slot.</li>
@@ -314,7 +314,7 @@ kbd {
 <p>A normal pane never scrolls vertically. Vertical scrolling is enabled only when the <em>currently promoted parent and its opened children</em> are taller than the available safe region.</p>
 
 <h2>Paging</h2>
-<p>Top-level content is packed into panes according to available height. Horizontal scrolling uses scroll snap and works with touch/pointer swipes. A position indicator tracks fractional scroll progress. The initial visible pane is never stretched merely to meet <code>safe-boundary</code>; its height is the tallest packed pane, capped only when the safe region requires additional paging.</p>
+<p>Top-level content is first measured in one unconstrained column, then packed into panes according to available height. After partitioning, the rendered pane heights are measured again and the tallest becomes the common height. Horizontal scrolling uses scroll snap and works with touch/pointer swipes. A position indicator tracks fractional scroll progress. The safe boundary only caps the measured height.</p>
 
 <figure>
 <svg viewBox="0 0 900 270" role="img" aria-label="Three equal-height swipeable menu pages">
