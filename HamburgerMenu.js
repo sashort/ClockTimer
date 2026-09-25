@@ -4319,48 +4319,61 @@
             };
         }
 
+        #panelItemBounds(panel) {
+            const items = [];
+            const visible = element => {
+                if (element.hidden) return false;
+                const style = getComputedStyle(element);
+                return style.display !== "none" &&
+                    style.visibility !== "hidden" &&
+                    Number(style.opacity) !== 0;
+            };
+            const collect = (element, nested) => {
+                if (!visible(element)) return;
+                const owner = element.querySelector(
+                    ":scope > button[aria-controls]"
+                );
+                const submenu = owner && document.getElementById(
+                    owner.getAttribute("aria-controls")
+                );
+                const children = submenu && element.contains(submenu) &&
+                    visible(submenu)
+                    ? [...submenu.children].filter(visible) : [];
+                items.push({
+                    element,
+                    nested,
+                    hasMenu: !!owner,
+                    hasVisibleChildren: children.length > 0,
+                    rect: this.#visiblePaintBounds(element)
+                });
+                for (const child of children) collect(child, true);
+            };
+            for (const element of panel.children) collect(element, false);
+            return items;
+        }
+
         #promotionRows(
             sourceRoot,
             group,
             groupRect,
-            flow
+            flow,
+            panelItems
         ) {
-            const visible = element =>
-                !element.hidden &&
-                getComputedStyle(element).display !== "none";
-            const expand = (element, nested = false) => {
-                if (!sourceRoot.matches(".hamburger-menu-panel")) {
-                    return [{ element, nested: false }];
-                }
-                const owner = element.querySelector(
-                    ":scope > button[aria-controls]"
-                );
-                if (!owner) return [{ element, nested }];
-
-                // Keep every group with a child menu in place. Descend to
-                // the visible leaves, regardless of their nesting depth.
-                const submenu = document.getElementById(
-                    owner.getAttribute("aria-controls")
-                );
-                if (!submenu || !element.contains(submenu) ||
-                    !visible(submenu)) {
-                    return nested ? [{ element, nested }] : [];
-                }
-                const children = [...submenu.children].filter(visible);
-                if (!children.length) {
-                    return nested ? [{ element, nested }] : [];
-                }
-                return children.flatMap(child => expand(child, true));
-            };
-            const all =
-                this
-                    .#visibleRows(
-                        sourceRoot,
-                        group
-                    )
-                    .flatMap(element => expand(element))
+            const candidates = panelItems
+                ? panelItems.filter(item =>
+                    item.element !== group &&
+                    !group.contains(item.element) &&
+                    !item.hasVisibleChildren &&
+                    (item.nested || !item.hasMenu)
+                )
+                : this.#visibleRows(sourceRoot, group).map(element => ({
+                    element,
+                    nested: false,
+                    rect: this.#visiblePaintBounds(element)
+                }));
+            const all = candidates
                     .map(
-                        ({ element, nested }) => ({
+                        ({ element, nested, rect }) => ({
                             element,
                             nested,
                             metrics:
@@ -4368,8 +4381,7 @@
                                     .#measure(
                                         element
                                     ),
-                            rect:
-                                this.#visiblePaintBounds(element),
+                            rect,
                             inlineDisplay:
                                 element
                                     .style
@@ -5707,7 +5719,12 @@
                     );
             }
 
-            const originalRect =
+            // Measure every rendered item before moving the target or
+            // inserting placeholders. Coverage uses this one panel snapshot.
+            const panelItems = sourceRoot.matches(".hamburger-menu-panel")
+                ? this.#panelItemBounds(sourceRoot) : undefined;
+            const originalRect = panelItems
+                ?.find(item => item.element === group)?.rect ??
                 this.#visiblePaintBounds(group);
 
             const rows =
@@ -5716,7 +5733,8 @@
                         sourceRoot,
                         group,
                         originalRect,
-                        flow
+                        flow,
+                        panelItems
                     );
 
             const sourceParent =
