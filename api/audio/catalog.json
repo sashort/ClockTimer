@@ -663,12 +663,30 @@
       ]
     },
     "goal-failed": {
-      "bpm": 180,
+      "bpm": 100,
       "instrument": "legacy-square",
       "events": [
         {
           "offset": "0",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
           "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
         },
@@ -679,9 +697,33 @@
           "dynamic": "ff"
         },
         {
+          "offset": "0.52",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
           "offset": "1.04",
-          "tone": "G7",
-          "length": "3/4",
+          "tone": "D#8",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G8",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "B8",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#9",
+          "length": "1",
           "dynamic": "ff"
         }
       ]
