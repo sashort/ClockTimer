@@ -1361,6 +1361,188 @@
             return match[1] ? -value : value;
         }
 
+        #getActualTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            const scope =
+                summary.scope ||
+                (
+                    this.#percentMode ===
+                        "total"
+                        ? "total"
+                        : "trip"
+                );
+
+            const selected =
+                scope === "total"
+                    ? summary.total
+                    : scope === "trip"
+                        ? summary.trip
+                        : summary.selected;
+
+            const suffix =
+                this.#renderedTimeMode ===
+                    "elapsed"
+                    ? "Time Elapsed"
+                    : this.#renderedTimeMode ===
+                        "calculated-end"
+                        ? "End Time"
+                        : "Time Remaining";
+
+            const label =
+                scope === "standard"
+                    ? `Standard ${suffix}`
+                    : `${scope === "total" ? "Total" : "Trip"} ${suffix}`;
+
+            let text =
+                selected?.renderedTime;
+
+            let value;
+            let date;
+
+            const totalOutsideTripRemaining =
+                scope === "total" &&
+                this.#renderedTimeMode === "remaining" &&
+                !this.#started;
+
+            if (totalOutsideTripRemaining) {
+                value =
+                    Number(
+                        summary.total
+                            ?.netTimeMilliseconds
+                    );
+
+                text =
+                    Number.isFinite(
+                        value
+                    )
+                        ? this.#formatRemainingRenderedDuration(
+                            value
+                        )
+                        : undefined;
+            }
+            else {
+                date =
+                    this.#renderedDate(
+                        text,
+                        now
+                    );
+
+                value =
+                    this.#renderedTimeValue(
+                        text,
+                        selected,
+                        date
+                    );
+            }
+
+            return Object.freeze({
+                mode:
+                    this.#renderedTimeMode,
+                scope,
+                type:
+                    this.#renderedTimeMode,
+                label,
+                text:
+                    typeof text === "string" &&
+                    text
+                        ? text
+                        : "---",
+                value:
+                    Number.isFinite(
+                        value
+                    )
+                        ? value
+                        : null,
+                date:
+                    date instanceof Date &&
+                    !Number.isNaN(
+                        date.getTime()
+                    )
+                        ? new Date(
+                            date.getTime()
+                        )
+                        : null,
+                available:
+                    typeof text === "string" &&
+                    Boolean(
+                        text
+                    ),
+                virtual:
+                    false
+            });
+        }
+
+        #getVirtualTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            const actual =
+                this.#getActualTimeState(
+                    now,
+                    summary
+                );
+
+            if (
+                actual.scope !== "total" ||
+                actual.mode !== "remaining" ||
+                this.#started ||
+                !Number.isFinite(
+                    actual.value
+                )
+            ) {
+                return null;
+            }
+
+            const over =
+                actual.value > 0;
+
+            const value =
+                Math.abs(
+                    actual.value
+                );
+
+            return Object.freeze({
+                ...actual,
+                type:
+                    over
+                        ? "over"
+                        : "banked",
+                label:
+                    over
+                        ? "Time Over"
+                        : "Banked Time",
+                text:
+                    this.#formatRemainingRenderedDuration(
+                        value
+                    ),
+                value,
+                date:
+                    null,
+                available:
+                    true,
+                virtual:
+                    true
+            });
+        }
+
+        #getEffectiveTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            return (
+                this.#getVirtualTimeState(
+                    now,
+                    summary
+                ) ??
+                this.#getActualTimeState(
+                    now,
+                    summary
+                )
+            );
+        }
+
         #actionClock(milliseconds) {
             const numeric = Number(milliseconds);
             const negative = Number.isFinite(numeric) && numeric < 0;
@@ -1381,35 +1563,24 @@
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
             const standardText = selected?.standardTime;
-            const rawRenderedText = selected?.renderedTime;
-            const totalOutsideTripRemaining =
-                scope === "total" &&
-                this.#renderedTimeMode === "remaining" &&
-                !this.#started;
-            const totalNetMilliseconds =
-                Number(
-                    summary.total
-                        ?.netTimeMilliseconds
+            const effectiveTimeState =
+                this.#getEffectiveTimeState(
+                    now,
+                    summary
                 );
-            const totalOutsideTripLabel =
-                totalOutsideTripRemaining
-                    ? (
-                        Number.isFinite(
-                            totalNetMilliseconds
-                        ) &&
-                        totalNetMilliseconds > 0
-                            ? "Time Over"
-                            : "Banked Time"
-                    )
-                    : undefined;
+            const rawRenderedText =
+                effectiveTimeState
+                    ?.text;
             const renderedText =
                 typeof rawRenderedText === "string" &&
-                !totalOutsideTripRemaining &&
+                !effectiveTimeState?.virtual &&
                 (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed") &&
                 interval?.open === false
                     ? `${rawRenderedText}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}`
                     : rawRenderedText;
-            const renderedDate = this.#renderedDate(renderedText, now);
+            const renderedDate =
+                effectiveTimeState
+                    ?.date;
             const countedPercent = Number(selected?.countedPercent);
             const ordinaryGoal = scope === "standard"
                 ? Number(this.#getTripGoal())
@@ -1470,18 +1641,26 @@
                     typeof standardText === "string" && Boolean(standardText)
                 ),
                 time_header_text:
-                    totalOutsideTripLabel ||
+                    effectiveTimeState
+                        ?.label ||
                     (
                         scope === "standard"
                             ? `Standard ${suffix}`
                             : `${scopeLabel} ${suffix}`
                     ),
-                time_header_short_text: scope === "standard" ? `Std. ${suffix}` : null,
+                time_header_short_text:
+                    scope === "standard" &&
+                    !effectiveTimeState
+                        ?.virtual
+                        ? `Std. ${suffix}`
+                        : null,
                 time_component: this.#component(
                     renderedText,
-                    this.#renderedTimeValue(renderedText, selected, renderedDate),
+                    effectiveTimeState
+                        ?.value,
                     renderedDate,
-                    typeof renderedText === "string" && Boolean(renderedText)
+                    effectiveTimeState
+                        ?.available === true
                 ),
                 current_percent_component: this.#component(
                     Number.isFinite(countedPercent) ? `${Math.round(countedPercent * 100)}%` : undefined,
@@ -6654,6 +6833,88 @@
 
         get renderedTime() {
             return this.#renderedTime;
+        }
+
+        getActualTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getActualTimeState(
+                now
+            );
+        }
+
+        getVirtualTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getVirtualTimeState(
+                now
+            );
+        }
+
+        getEffectiveTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getEffectiveTimeState(
+                now
+            );
+        }
+
+        get actualTimeState() {
+            return this.getActualTimeState();
+        }
+
+        get virtualTimeState() {
+            return this.getVirtualTimeState();
+        }
+
+        get effectiveTimeState() {
+            return this.getEffectiveTimeState();
+        }
+
+        get virtualRenderedTime() {
+            return (
+                this.virtualTimeState
+                    ?.text ??
+                null
+            );
+        }
+
+        get effectiveRenderedTime() {
+            return this.effectiveTimeState
+                ?.text;
         }
 
         get nonProduction() {
