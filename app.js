@@ -17070,6 +17070,11 @@
                 const prompt =
                     "Press/Say OK to Cancel your down time";
 
+                setOkAllowed(
+                    dialog,
+                    true
+                );
+
                 const opened =
                     openDialog(
                         "cancelDownConfirmDialog",
@@ -17078,6 +17083,13 @@
                                 "cancel-down"
                         }
                     );
+
+                if (!opened) {
+                    setOkAllowed(
+                        dialog,
+                        false
+                    );
+                }
 
                 if (
                     opened &&
@@ -17121,6 +17133,11 @@
                         .toLowerCase() !==
                         "down"
                 ) {
+                    setOkAllowed(
+                        dialog,
+                        false
+                    );
+
                     closeDialog(
                         dialog,
                         {
@@ -17134,6 +17151,11 @@
 
                 const transactionTime =
                     speechTransactionDate();
+
+                setOkAllowed(
+                    dialog,
+                    false
+                );
 
                 closeDialog(
                     dialog,
@@ -17164,6 +17186,11 @@
                 if (!dialog?.open) {
                     return false;
                 }
+
+                setOkAllowed(
+                    dialog,
+                    false
+                );
 
                 closeDialog(
                     dialog,
