@@ -4578,11 +4578,14 @@ class SpeechMenu {
             }
         }
 
+        const speechFunction =
+            element.getAttribute(
+                "speech-function"
+            );
+
         const target =
             SpeechMenu.#resolve(
-                element.getAttribute(
-                    "speech-function"
-                )
+                speechFunction
             );
 
         if (!target) {
