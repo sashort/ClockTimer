@@ -273,6 +273,7 @@
         #boundaryElement;
         #connected = false;
         #handlingMutations = false;
+        #openState = false;
 
         constructor() {
             super();
@@ -356,6 +357,10 @@
         }
 
         get isOpen() {
+            if (this.#openState) {
+                return true;
+            }
+
             try {
                 return Boolean(
                     this.#popover
@@ -451,6 +456,17 @@
                 this.#popover
                     .showPopover();
 
+                this.#openState =
+                    true;
+
+                this.#trigger
+                    .setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+
+                this.refresh();
+
                 return;
             }
 
@@ -487,6 +503,17 @@
             ) {
                 this.#popover
                     .hidePopover();
+
+                this.#openState =
+                    false;
+
+                this.#trigger
+                    .setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                this.#reset();
 
                 return;
             }
@@ -1025,6 +1052,9 @@
             const open =
                 event.newState ===
                     "open";
+
+            this.#openState =
+                open;
 
             this.#trigger
                 .setAttribute(
