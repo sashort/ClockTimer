@@ -9,6 +9,7 @@ on:
       - "SpeechMenu.js"
       - "SpeechEditorRuntime.js"
       - "app.js"
+      - "HamburgerMenu.js"
       - "index.html"
       - "app.css"
       - "api/admin/speech-editor/**"
@@ -49,6 +50,7 @@ jobs:
           node --check speech/SpeechAudioWorklet.js
           node --check SpeechEditorRuntime.js
           node --check ActionFunctions.js
+          node --check HamburgerMenu.js
           node --check app.js
           node --check api/admin/speech-editor/EditorActionFunctions.js
           node --check api/admin/speech-editor/RegexBuilder.js
