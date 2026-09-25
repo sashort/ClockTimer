@@ -31,25 +31,17 @@ function calendar_save_record(PDO $pdo, string $profile, array $definition, arra
         ':year' => $record['searchedYear'], ':verified' => $record['verifiedAt'], ':record' => json_encode($record, JSON_THROW_ON_ERROR)]);
 }
 
-/** Share the database lock between discovery and manual changes. */
+/**
+ * Calendar reads/writes must never take an advisory database lock.
+ *
+ * A stalled request must not be able to lock another live production
+ * database session out. Callers still perform their normal validation
+ * and atomic SQL writes; this wrapper now only preserves the existing
+ * call structure.
+ */
 function calendar_with_lock(PDO $pdo, string $profile, callable $callback): mixed
 {
-    $mysql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql';
-    $name = 'calendar:' . substr(hash('sha256', $profile), 0, 48);
-    if ($mysql) {
-        $lock = $pdo->prepare('SELECT GET_LOCK(:name, 0)');
-        $lock->execute([':name' => $name]);
-        if ((int) $lock->fetchColumn() !== 1) throw new RuntimeException('Calendar refresh or edit is already running.');
-        $lock->closeCursor();
-    }
-    try { return $callback(); }
-    finally {
-        if ($mysql) {
-            $release = $pdo->prepare('SELECT RELEASE_LOCK(:name)');
-            $release->execute([':name' => $name]);
-            $release->closeCursor();
-        }
-    }
+    return $callback();
 }
 
 function calendar_refresh_stored(PDO $pdo, string $profile, array $definition, int $year, callable $discover,
