@@ -17626,18 +17626,17 @@
                     return true;
                 }
 
-                const label =
+                const announcement =
                     next ===
                         "calculated-end"
-                        ? "End Time"
+                        ? "Showing End Time"
                         : next ===
                             "elapsed"
-                            ? "Elapsed Time"
-                            : "Remaining Time";
+                            ? "Showing Elapsed Time"
+                            : "Showing Time Left";
 
                 return confirmSettingChange(
-                    "Viewing " +
-                    label
+                    announcement
                 );
             },
 
