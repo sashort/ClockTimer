@@ -604,9 +604,18 @@ hamburger-menu.main-menu {
     margin: 0;
     --hamburger-menu-indicator-color: var(--wm-blue-light, #a9ddf7);
     --hamburger-menu-focus-background: rgb(0 30 96 / 96%);
+    --hamburger-menu-mask-background: rgb(0 30 96);
+}
+
+hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
+    display: none !important;
 }
 
 .main-menu > .hamburger-menu-popover {
+    position-area: bottom span-right;
+    inset: auto;
+    align-self: start;
+    justify-self: start;
     width: min(430px, 74vw);
     margin: 0;
     padding: 8px 0;
