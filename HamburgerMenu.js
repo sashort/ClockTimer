@@ -11,6 +11,8 @@
     const PROMOTION_PAUSE =
         75;
 
+    let coverageAnimationId = 0;
+
     const wait =
         milliseconds =>
             new Promise(
@@ -60,6 +62,16 @@
             STYLE_ID;
 
         style.textContent = [
+            "@property --hamburger-menu-target-x {",
+            "  syntax: '<length>';",
+            "  inherits: true;",
+            "  initial-value: 0px;",
+            "}",
+            "@property --hamburger-menu-target-y {",
+            "  syntax: '<length>';",
+            "  inherits: true;",
+            "  initial-value: 0px;",
+            "}",
             ":where(hamburger-menu) {",
             "  --hamburger-menu-promotion-duration: 450ms;",
             "  display: inline-block;",
@@ -176,6 +188,7 @@
             "  position: absolute;",
             "  inset: 0;",
             "  z-index: 8;",
+            "  visibility: visible;",
             "  width: 100%;",
             "  min-height: 0;",
             "  overflow: hidden;",
@@ -219,6 +232,9 @@
             "  will-change: translate;",
             "  box-sizing: border-box;",
             "}",
+            ":where(hamburger-menu) .hamburger-menu-focus-group.hamburger-menu-panel-driven {",
+            "  translate: var(--hamburger-menu-target-x) var(--hamburger-menu-target-y);",
+            "}",
             ":where(hamburger-menu) .hamburger-menu-focus-group.hamburger-menu-focus-entering {",
             "  position: absolute;",
             "  inset-inline: 0;",
@@ -240,20 +256,6 @@
             "}",
             ":where(hamburger-menu) .hamburger-menu-zooming {",
             "  will-change: translate;",
-            "}",
-            "@keyframes hamburger-menu-cover-row {",
-            "  from { visibility: visible; }",
-            "  to { visibility: hidden; }",
-            "}",
-            "@keyframes hamburger-menu-reveal-row {",
-            "  from { visibility: hidden; }",
-            "  to { visibility: visible; }",
-            "}",
-            ":where(hamburger-menu) .hamburger-menu-row-covering {",
-            "  animation: hamburger-menu-cover-row var(--hamburger-menu-row-motion-duration) steps(1, end) calc(var(--hamburger-menu-row-switch-time) - var(--hamburger-menu-row-motion-duration)) both;",
-            "}",
-            ":where(hamburger-menu) .hamburger-menu-row-revealing {",
-            "  animation: hamburger-menu-reveal-row var(--hamburger-menu-row-motion-duration) steps(1, end) calc(var(--hamburger-menu-row-switch-time) - var(--hamburger-menu-row-motion-duration)) both;",
             "}",
             "@position-try --hamburger-above-start {",
             "  position-area: top span-right;",
@@ -4244,11 +4246,12 @@
                     );
             }
 
+            element.style.animation = record.inlineAnimation || "";
+            element.style.pointerEvents = record.inlinePointerEvents || "";
+
             element.classList
                 .remove(
-                    "hamburger-menu-zooming",
-                    "hamburger-menu-row-covering",
-                    "hamburger-menu-row-revealing"
+                    "hamburger-menu-zooming"
                 );
 
             element.style.removeProperty("--hamburger-menu-row-switch-time");
@@ -4257,6 +4260,8 @@
             element.style.removeProperty("--hamburger-menu-disappear-threshold-2");
             element.style.removeProperty("--hamburger-menu-reappear-threshold-1");
             element.style.removeProperty("--hamburger-menu-reappear-threshold-2");
+            element.style.removeProperty("--hamburger-menu-row-switch-position");
+            element.style.removeProperty("--hamburger-menu-row-switch-percentage");
 
             record.hiddenByPromotion =
                 false;
@@ -4316,6 +4321,12 @@
                                 element
                                     .style
                                     .translate,
+                            inlineAnimation:
+                                element.style.animation,
+                            paintedOpacity:
+                                getComputedStyle(element).opacity,
+                            inlinePointerEvents:
+                                element.style.pointerEvents,
                             hiddenByPromotion:
                                 false,
                             zoomDistance:
@@ -4422,10 +4433,12 @@
         }
 
         #animateRowVisibility(records, from, to, duration, flow, opening) {
-            if (!duration) return;
+            if (!duration || !records.length) return undefined;
 
             const topTravel = to.top - from.top;
             const bottomTravel = to.bottom - from.bottom;
+            const rules = [];
+            const animations = [];
             for (const record of records) {
                 const rect = opening
                     ? record.rect
@@ -4479,10 +4492,36 @@
                     "--hamburger-menu-row-motion-duration",
                     duration + "ms"
                 );
-                record.element.classList.add(opening
-                    ? "hamburger-menu-row-covering"
-                    : "hamburger-menu-row-revealing");
+                const switchTime = covered
+                    ? flow === "start" ? first : second
+                    : duration;
+                const percentage = Math.max(0, Math.min(100,
+                    switchTime / duration * 100
+                ));
+                record.element.style.setProperty(
+                    "--hamburger-menu-row-switch-percentage",
+                    percentage + "%"
+                );
+                const name = "hamburger-menu-coverage-" +
+                    ++coverageAnimationId;
+                const before = Math.max(0, percentage - .001);
+                const initial = opening ? record.paintedOpacity : "0";
+                const final = opening ? "0" : record.paintedOpacity;
+                rules.push(`@keyframes ${name} { ` +
+                    `0%, ${before}% { opacity: ${initial}; } ` +
+                    `${percentage}%, 100% { opacity: ${final}; } }`);
+                animations.push([record, name]);
             }
+
+            const style = document.createElement("style");
+            style.textContent = rules.join("\n");
+            document.head.append(style);
+            for (const [record, name] of animations) {
+                record.element.style.animation =
+                    `${name} var(--hamburger-menu-row-motion-duration) linear both`;
+                record.element.style.pointerEvents = "none";
+            }
+            return style;
         }
 
         #animateZoomAway(
@@ -5634,6 +5673,9 @@
                     anchor
                 );
 
+            // Keep the promoted target and sibling rows beneath the panel
+            // that owns their shared position property.
+            sourceRoot.append(this.#focusLayer);
             this.#focusLayer.hidden =
                 false;
 
@@ -5673,11 +5715,20 @@
                 originalRect.top -
                 targetRect.top;
 
-            group.style.translate =
-                translateX +
-                "px " +
-                translateY +
-                "px";
+            const panelMotion = typeof globalThis.CSS?.registerProperty ===
+                "function";
+            if (panelMotion) {
+                sourceRoot.style.setProperty(
+                    "--hamburger-menu-target-x", translateX + "px"
+                );
+                sourceRoot.style.setProperty(
+                    "--hamburger-menu-target-y", translateY + "px"
+                );
+                group.classList.add("hamburger-menu-panel-driven");
+            }
+            else {
+                group.style.translate = translateX + "px " + translateY + "px";
+            }
 
             const entry = {
                 group,
@@ -5693,6 +5744,8 @@
                     rows.toward,
                 away:
                     rows.away,
+                motionPanel: sourceRoot,
+                panelMotion,
                 originalPanelIndex,
                 flow
             };
@@ -5708,28 +5761,23 @@
 
             let movement;
 
-            if (
-                duration &&
-                typeof group
-                    .animate ===
-                    "function"
-            ) {
+            if (duration && typeof group.animate === "function") {
                 movement =
                     this
                         .#trackAnimation(
-                            group.animate(
-                                [
+                            (panelMotion ? sourceRoot : group).animate(
+                                panelMotion ? [
                                     {
-                                        translate:
-                                            translateX +
-                                            "px " +
-                                            translateY +
-                                            "px"
+                                        "--hamburger-menu-target-x": translateX + "px",
+                                        "--hamburger-menu-target-y": translateY + "px"
                                     },
                                     {
-                                        translate:
-                                            "0 0"
+                                        "--hamburger-menu-target-x": "0px",
+                                        "--hamburger-menu-target-y": "0px"
                                     }
+                                ] : [
+                                    { translate: translateX + "px " + translateY + "px" },
+                                    { translate: "0 0" }
                                 ],
                                 {
                                     duration,
@@ -5751,7 +5799,7 @@
                         )
                     : Promise.resolve();
 
-            this.#animateRowVisibility(
+            entry.rowKeyframes = this.#animateRowVisibility(
                 entry.toward, originalRect, targetRect,
                 duration, flow, true
             );
@@ -5779,6 +5827,10 @@
                 return false;
             }
 
+            if (panelMotion) {
+                sourceRoot.style.setProperty("--hamburger-menu-target-x", "0px");
+                sourceRoot.style.setProperty("--hamburger-menu-target-y", "0px");
+            }
             try {
                 movement
                     ?.cancel();
@@ -5804,6 +5856,9 @@
                         record
                     );
             }
+
+            entry.rowKeyframes?.remove();
+            entry.rowKeyframes = undefined;
 
             if (current) {
                 current.group.hidden =
@@ -6081,30 +6136,25 @@
 
             let movement;
 
-            if (
-                duration &&
-                typeof entry
-                    .group
-                    .animate ===
-                    "function"
-            ) {
+            if (duration && typeof entry.group.animate === "function") {
                 movement =
                     this
                         .#trackAnimation(
-                            entry.group
-                                .animate(
-                                    [
+                            (entry.panelMotion
+                                ? entry.motionPanel
+                                : entry.group).animate(
+                                    entry.panelMotion ? [
                                         {
-                                            translate:
-                                                "0 0"
+                                            "--hamburger-menu-target-x": "0px",
+                                            "--hamburger-menu-target-y": "0px"
                                         },
                                         {
-                                            translate:
-                                                translateX +
-                                                "px " +
-                                                translateY +
-                                                "px"
+                                            "--hamburger-menu-target-x": translateX + "px",
+                                            "--hamburger-menu-target-y": translateY + "px"
                                         }
+                                    ] : [
+                                        { translate: "0 0" },
+                                        { translate: translateX + "px " + translateY + "px" }
                                     ],
                                     {
                                         duration,
@@ -6126,7 +6176,7 @@
                         )
                     : Promise.resolve();
 
-            this.#animateRowVisibility(
+            entry.rowKeyframes = this.#animateRowVisibility(
                 entry.toward, promotedRect, destinationRect,
                 duration, entry.flow, false
             );
@@ -6211,9 +6261,16 @@
                 .classList
                 .remove(
                     "hamburger-menu-focus-group",
-                    "hamburger-menu-focus-leaving"
+                    "hamburger-menu-focus-leaving",
+                    "hamburger-menu-panel-driven"
                 );
 
+            entry.rowKeyframes?.remove();
+            entry.rowKeyframes = undefined;
+            if (entry.panelMotion) {
+                entry.motionPanel.style.removeProperty("--hamburger-menu-target-x");
+                entry.motionPanel.style.removeProperty("--hamburger-menu-target-y");
+            }
             for (
                 const record of
                 entry.rows
@@ -6238,6 +6295,7 @@
                     false;
             }
             else {
+                this.#viewport.append(this.#focusLayer);
                 this.#focusLayer.hidden =
                     true;
 
@@ -6485,8 +6543,15 @@
                     .remove(
                         "hamburger-menu-focus-group",
                         "hamburger-menu-focus-entering",
-                        "hamburger-menu-focus-leaving"
+                        "hamburger-menu-focus-leaving",
+                        "hamburger-menu-panel-driven"
                     );
+
+                entry.rowKeyframes?.remove();
+                if (entry.panelMotion) {
+                    entry.motionPanel.style.removeProperty("--hamburger-menu-target-x");
+                    entry.motionPanel.style.removeProperty("--hamburger-menu-target-y");
+                }
 
                 if (entry.nestedMotion) {
                     entry.group.style.translate =
@@ -6557,6 +6622,7 @@
                     ?.remove();
             }
 
+            this.#viewport.append(this.#focusLayer);
             this.#focusLayer
                 .replaceChildren();
 
