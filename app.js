@@ -16703,16 +16703,52 @@
             },
 
             async scheduleStartAt(
-                spokenTime
+                spokenTime,
+                {
+                    fromReadyContinuation =
+                        false
+                } = {}
             ) {
-                cancelPendingSpeechReady();
+                const continuingReady =
+                    fromReadyContinuation &&
+                    pendingSpeechReady !==
+                        undefined;
 
                 if (
                     tripIsLive() ||
-                    $("#newTripButton")
-                        ?.disabled
+                    (
+                        $("#newTripButton")
+                            ?.disabled &&
+                        !continuingReady
+                    )
                 ) {
+                    cancelPendingSpeechReady();
                     return false;
+                }
+
+                cancelPendingSpeechReady();
+
+                if (
+                    continuingReady &&
+                    numberPadDialog
+                        ?.open &&
+                    numberPadState
+                        ?.workflow ===
+                        "new-trip" &&
+                    numberPadState
+                        ?.role ===
+                        "root"
+                ) {
+                    await closeNumberPad({
+                        discardPrepared:
+                            false,
+                        allowChanged:
+                            true,
+                        immediate:
+                            true,
+                        destination:
+                            "home"
+                    });
                 }
 
                 const now =
@@ -16820,7 +16856,11 @@
 
                 return actions
                     .scheduleStartAt(
-                        spokenTime
+                        spokenTime,
+                        {
+                            fromReadyContinuation:
+                                true
+                        }
                     );
             },
 
