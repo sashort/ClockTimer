@@ -1484,6 +1484,38 @@
         );
     }
 
+    function totalScopeLabel() {
+        switch (getTripLogRange()) {
+            case "day":
+                return "Day";
+            case "week":
+                return "Week";
+            case "pay-period":
+                return "Check";
+            case "month":
+                return "Month";
+            case "year":
+                return "Year";
+            case "custom":
+            default:
+                return "Total";
+        }
+    }
+
+    function userFacingTotalText(value) {
+        const text =
+            String(value ?? "");
+        const label =
+            totalScopeLabel();
+
+        return label === "Total"
+            ? text
+            : text.replace(
+                /\bTotal\b/g,
+                label
+            );
+    }
+
     function setTripLogRange(
         value,
         {
@@ -1557,6 +1589,11 @@
         }
         showTripRangeError();
         window.dispatchEvent(new CustomEvent("wmof:trip-log-range-changed", {detail: {range}}));
+        syncScopeUI();
+        renderClockTimerUIState(
+            clockTimer.uiState
+        );
+        refreshAutoGoalDialog();
         if (getTripListState() === "open") void dispatchTripListRequest("range");
         else void refreshGoalTotalsForRange(range).catch(error => {
             if (!error.clockTimerOffline) {
@@ -4180,7 +4217,7 @@
 
         const label =
             actual === "total"
-                ? "Total"
+                ? totalScopeLabel()
                 : actual === "auto"
                     ? "Auto"
                     : "Trip";
@@ -4516,11 +4553,17 @@
         const renderedLabel = $("#renderedTimeLabel");
         standardLabel.classList.remove("summary-label-responsive");
         renderedLabel.classList.remove("summary-label-responsive");
-        standardLabel.textContent = state.standard_time_header_text;
+        standardLabel.textContent =
+            userFacingTotalText(
+                state.standard_time_header_text
+            );
         if (state.time_header_short_text) {
             const full = document.createElement("span");
             full.className = "summary-label-full";
-            full.textContent = state.time_header_text;
+            full.textContent =
+                userFacingTotalText(
+                    state.time_header_text
+                );
             const short = document.createElement("span");
             short.className = "summary-label-short";
             short.textContent = state.time_header_short_text;
@@ -4528,7 +4571,10 @@
             renderedLabel.replaceChildren(full, short);
         }
         else {
-            renderedLabel.textContent = state.time_header_text;
+            renderedLabel.textContent =
+                userFacingTotalText(
+                    state.time_header_text
+                );
         }
         $("#standardTimeValue").textContent = state.standard_time_component.text;
         $("#renderedTimeValue").textContent = state.time_component.text;
@@ -4537,9 +4583,9 @@
         $("#goalPercentValue").setAttribute(
             "aria-label",
             state.goal_type === "auto"
-                ? "Choose Trip or Total goal"
+                ? "Choose Trip or " + totalScopeLabel() + " goal"
                 : state.goal_type === "total"
-                    ? "Edit Total goal"
+                    ? "Edit " + totalScopeLabel() + " goal"
                     : "Edit Trip goal"
         );
         const controls = state.controls;
@@ -10595,7 +10641,7 @@
             return "Trip Percent";
         }
         if (source === "total-goal") {
-            return "Total Percent";
+            return totalScopeLabel() + " Percent";
         }
         return titles[source] || "Number Pad";
     }
@@ -11178,18 +11224,37 @@
         if (autoTotalGoalValue) {
             autoTotalGoalValue.textContent =
                 getConfiguredGoalDisplay("total");
+
+            const option =
+                autoTotalGoalValue.closest(
+                    "[data-auto-goal-scope='total']"
+                );
+            const label =
+                option?.querySelector(
+                    "span"
+                );
+            if (label) {
+                label.textContent =
+                    "Your " +
+                    totalScopeLabel() +
+                    " Goal";
+            }
         }
 
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
             const scope = button.dataset.autoGoalScope === "total" ? "total" : "trip";
             const locked = lockedScopes.has(scope);
+            const scopeLabel =
+                scope === "total"
+                    ? totalScopeLabel()
+                    : "Trip";
             button.disabled = locked;
             button.setAttribute(
                 "aria-label",
                 locked
-                    ? `${scope === "total" ? "Total" : "Trip"} goal locked to End Time`
-                    : `Edit ${scope === "total" ? "Total" : "Trip"} goal`
+                    ? `${scopeLabel} goal locked to End Time`
+                    : `Edit ${scopeLabel} goal`
             );
         }
     }
@@ -14291,7 +14356,7 @@
 
         const type =
             scope === "total"
-                ? "Total"
+                ? totalScopeLabel()
                 : "Trip";
 
         return (
@@ -14422,7 +14487,7 @@
                 )
             ) {
                 parts.push(
-                    "Total percent: " +
+                    totalScopeLabel() + " percent: " +
                         formatSpokenPercent(
                             countedPercent
                         ) +
@@ -15341,7 +15406,7 @@
                         "total"
                 ) {
                     summarySentences.push(
-                        "Total Goal Failed."
+                        totalScopeLabel() + " Goal Failed."
                     );
                 }
             }
@@ -15398,7 +15463,7 @@
                         ? "Standard"
                         : type === "trip"
                             ? "Trip"
-                            : "Total";
+                            : totalScopeLabel();
 
                 const percentText =
                     !useStandardLabel &&
@@ -17044,7 +17109,7 @@
 
             readTotalGoal() {
                 return dictateSpeechMetric(
-                    "Total Goal",
+                    totalScopeLabel() + " Goal",
                     goalPercentForScope(
                         "total"
                     )
