@@ -225,23 +225,31 @@ class SpeechMicBar extends HTMLElement {
 
                 #optionsGrid {
                     grid-column: 1 / -1;
-                    display: grid;
-                    grid-template-columns:
-                        repeat(
-                            var(
-                                --speech-options-pane-count,
-                                1
-                            ),
-                            minmax(0, 1fr)
-                        );
-                    grid-auto-flow: row;
-                    align-content: start;
-                    align-items: start;
+                    display: flex;
+                    flex-flow: row wrap;
+                    align-content: flex-start;
+                    align-items: flex-start;
                     gap: 8px;
                     min-width: 0;
                 }
 
                 .option-category {
+                    flex:
+                        0 0
+                        var(
+                            --speech-options-pane-width,
+                            100%
+                        );
+                    width:
+                        var(
+                            --speech-options-pane-width,
+                            100%
+                        );
+                    max-width:
+                        var(
+                            --speech-options-pane-width,
+                            100%
+                        );
                     min-width: 0;
                     display: grid;
                     break-inside: avoid;
@@ -5002,10 +5010,10 @@ class SpeechMicBar extends HTMLElement {
                 available + "px"
             );
 
-        const panelWidth =
+        const optionsWidth =
             Math.max(
                 0,
-                this.#optionsPanel
+                this.#optionsGrid
                     .getBoundingClientRect()
                     .width
             );
@@ -5014,17 +5022,32 @@ class SpeechMicBar extends HTMLElement {
             Math.max(
                 1,
                 Math.floor(
-                    panelWidth /
+                    optionsWidth /
                         320
                 )
             );
 
+        const gap = 8;
+
+        const paneWidth =
+            Math.max(
+                0,
+                (
+                    optionsWidth -
+                    gap *
+                        (
+                            paneCount -
+                            1
+                        )
+                ) /
+                    paneCount
+            );
+
         this.#optionsGrid.style
             .setProperty(
-                "--speech-options-pane-count",
-                String(
-                    paneCount
-                )
+                "--speech-options-pane-width",
+                paneWidth +
+                    "px"
             );
     }
 
