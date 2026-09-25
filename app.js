@@ -13671,11 +13671,11 @@
         }
 
         if (
-            consumeSemanticAction(
-                "details"
-            ) &&
             Number.isFinite(
                 milliseconds
+            ) &&
+            consumeSemanticAction(
+                "details"
             )
         ) {
             parts.push(
@@ -13781,52 +13781,57 @@
             }
         }
 
+        let detailSpeech =
+            "";
+
         if (
-            !consumeSemanticAction(
-                "details"
-            ) ||
-            !Number.isFinite(standard) ||
-            !Number.isFinite(counted) ||
-            !Number.isFinite(percentGoal) ||
-            percentGoal <= 0
+            Number.isFinite(standard) &&
+            Number.isFinite(counted) &&
+            Number.isFinite(percentGoal) &&
+            percentGoal > 0
         ) {
-            return parts.join(
-                " "
-            );
-        }
-
-        const allowed =
-            standard /
-                percentGoal +
-            (
-                Number.isFinite(
-                    allowanceCredit
-                )
-                    ? allowanceCredit
-                    : 0
-            );
-
-        const remaining =
-            Math.round(
-                allowed - counted
-            );
-
-        if (remaining > 0) {
-            parts.push(
-                formatGoalFailureDuration(
-                    remaining
-                ) +
-                " banked."
-            );
-        }
-        else if (remaining < 0) {
-            parts.push(
-                formatGoalFailureDuration(
-                    Math.abs(
-                        remaining
+            const allowed =
+                standard /
+                    percentGoal +
+                (
+                    Number.isFinite(
+                        allowanceCredit
                     )
-                ) +
-                " over."
+                        ? allowanceCredit
+                        : 0
+                );
+
+            const remaining =
+                Math.round(
+                    allowed - counted
+                );
+
+            if (remaining > 0) {
+                detailSpeech =
+                    formatGoalFailureDuration(
+                        remaining
+                    ) +
+                    " banked.";
+            }
+            else if (remaining < 0) {
+                detailSpeech =
+                    formatGoalFailureDuration(
+                        Math.abs(
+                            remaining
+                        )
+                    ) +
+                    " over.";
+            }
+        }
+
+        if (
+            detailSpeech &&
+            consumeSemanticAction(
+                "details"
+            )
+        ) {
+            parts.push(
+                detailSpeech
             );
         }
 
@@ -14449,151 +14454,154 @@
                 }
             );
 
-        const sentences = [];
+        const summarySentences = [];
 
+        // In fixed Trip/Total modes, crossing Standard is its own temporal
+        // boundary announcement. Do not combine it with the fixed goal.
         if (
-            consumeSemanticAction(
-                "summary"
+            standardFailed &&
+            (
+                percentMode === "trip" ||
+                percentMode === "total"
             )
         ) {
-            // In fixed Trip/Total modes, crossing Standard is its own temporal
-            // boundary announcement. Do not combine it with the fixed goal.
-            if (
-                standardFailed &&
-                (
-                    percentMode === "trip" ||
-                    percentMode === "total"
-                )
-            ) {
-                sentences.push(
+            summarySentences.push(
+                "Standard Goal Failed."
+            );
+        }
+        else {
+            if (standardFailed) {
+                summarySentences.push(
                     "Standard Goal Failed."
                 );
             }
-            else {
-                if (standardFailed) {
-                    sentences.push(
-                        "Standard Goal Failed."
+
+            for (const goal of announcedGoals) {
+                if (
+                    goal?.type ===
+                        "trip"
+                ) {
+                    summarySentences.push(
+                        "Trip Goal Failed."
                     );
                 }
-
-                for (const goal of announcedGoals) {
-                    if (
-                        goal?.type ===
-                            "trip"
-                    ) {
-                        sentences.push(
-                            "Trip Goal Failed."
-                        );
-                    }
-                    else if (
-                        goal?.type ===
-                            "total"
-                    ) {
-                        sentences.push(
-                            "Total Goal Failed."
-                        );
-                    }
+                else if (
+                    goal?.type ===
+                        "total"
+                ) {
+                    summarySentences.push(
+                        "Total Goal Failed."
+                    );
                 }
             }
         }
 
-        if (
-            !consumeSemanticAction(
-                "details"
-            )
-        ) {
-            return sentences.join(
-                " "
-            );
-        }
-
+        const detailSentences = [];
         const fallback =
             detail.fallback;
 
-        if (!fallback) {
-            if (belowStandardFailed) {
-                sentences.push(
-                    "Overtime in progress."
+        if (fallback) {
+            const type =
+                String(
+                    fallback.type ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const percent =
+                Number(
+                    fallback.percent
+                );
+
+            const remainingMilliseconds =
+                Number(
+                    fallback
+                        .remainingMilliseconds
+                );
+
+            if (
+                percentMode === "auto" &&
+                Number.isFinite(
+                    remainingMilliseconds
+                ) &&
+                (
+                    type === "standard" ||
+                    type === "trip" ||
+                    type === "total"
+                )
+            ) {
+                const roundedPercent =
+                    Number.isFinite(percent)
+                        ? Math.round(
+                            percent * 100
+                        )
+                        : undefined;
+
+                const useStandardLabel =
+                    type === "standard" ||
+                    roundedPercent === 100;
+
+                const label =
+                    useStandardLabel
+                        ? "Standard"
+                        : type === "trip"
+                            ? "Trip"
+                            : "Total";
+
+                const percentText =
+                    !useStandardLabel &&
+                    Number.isFinite(
+                        roundedPercent
+                    )
+                        ? " " +
+                            goalFailureNumberWords(
+                                roundedPercent
+                            ) +
+                            " percent"
+                        : "";
+
+                detailSentences.push(
+                    `${formatGoalFailureDuration(
+                        remainingMilliseconds
+                    )} until ${label} Goal${percentText}.`
                 );
             }
-
-            return sentences.join(" ");
-        }
-
-        const type =
-            String(
-                fallback.type ||
-                ""
-            )
-                .trim()
-                .toLowerCase();
-
-        const percent =
-            Number(
-                fallback.percent
-            );
-
-        const remainingMilliseconds =
-            Number(
-                fallback
-                    .remainingMilliseconds
-            );
-
-        if (
-            percentMode === "auto" &&
-            Number.isFinite(
-                remainingMilliseconds
-            ) &&
-            (
-                type === "standard" ||
-                type === "trip" ||
-                type === "total"
-            )
-        ) {
-            const roundedPercent =
-                Number.isFinite(percent)
-                    ? Math.round(
-                        percent * 100
-                    )
-                    : undefined;
-
-            const useStandardLabel =
-                type === "standard" ||
-                roundedPercent === 100;
-
-            const label =
-                useStandardLabel
-                    ? "Standard"
-                    : type === "trip"
-                        ? "Trip"
-                        : "Total";
-
-            const percentText =
-                !useStandardLabel &&
-                Number.isFinite(
-                    roundedPercent
-                )
-                    ? " " +
-                        goalFailureNumberWords(
-                            roundedPercent
-                        ) +
-                        " percent"
-                    : "";
-
-            sentences.push(
-                `${formatGoalFailureDuration(
-                    remainingMilliseconds
-                )} until ${label} Goal${percentText}.`
-            );
         }
 
         if (belowStandardFailed) {
-            sentences.push(
+            detailSentences.push(
                 "Overtime in progress."
             );
         }
 
-        return sentences.join(" ");
+        const spoken = [];
+
+        if (
+            summarySentences.length &&
+            consumeSemanticAction(
+                "summary"
+            )
+        ) {
+            spoken.push(
+                ...summarySentences
+            );
+        }
+
+        if (
+            detailSentences.length &&
+            consumeSemanticAction(
+                "details"
+            )
+        ) {
+            spoken.push(
+                ...detailSentences
+            );
+        }
+
+        return spoken.join(
+            " "
+        );
     }
 
     async function speakGoalFailure(
