@@ -3840,12 +3840,13 @@
     }
 
     function releaseEndTimeGoalOverride() {
-        const override = endTimeGoalOverride;
-        if (!override) return false;
+        if (!endTimeGoalOverride) return false;
         endTimeGoalOverride = undefined;
-        restoreGoalAttribute("trip-goal", override.tripGoal);
-        restoreGoalAttribute("total-goal", override.totalGoal);
-        clockTimer.configure({auto_goal: override.autoSyncTripGoal});
+        clockTimer.configure({
+            calculated_trip_goal: null,
+            calculated_total_goal: null,
+            calculated_goal_source: null
+        });
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
@@ -3920,15 +3921,18 @@
             goalForDeadline(summary, scope, currentSummary, endTimeGoalOverride.deadline)
         ]));
         if (normalized.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
-        restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
-        restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-        clockTimer.configure({auto_goal: false});
-        for (const scope of normalized) {
-            clockTimer.configure({
-                [scope === "total" ? "total_goal" : "trip_goal"]:
-                    percentGoalAttribute(goals[scope])
-            });
-        }
+        clockTimer.configure({
+            auto_goal: false,
+            calculated_trip_goal:
+                normalized.includes("trip")
+                    ? percentGoalAttribute(goals.trip)
+                    : null,
+            calculated_total_goal:
+                normalized.includes("total")
+                    ? percentGoalAttribute(goals.total)
+                    : null,
+            calculated_goal_source: "end-time"
+        });
         endTimeGoalOverride.scopes = normalized;
         renderEndTimeGoalLock();
         queueSummaryRefresh();
@@ -3942,38 +3946,33 @@
         }
         const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
         const summary = clockTimer.getSummarySnapshot?.(deadline);
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        const scopes = mode === "auto" ? ["trip", "total"] : [mode];
-        const goals = Object.fromEntries(scopes.map(scope => [
-            scope,
-            goalForDeadline(summary, scope, currentSummary, deadline)
-        ]));
-        if (scopes.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
-
-        if (!endTimeGoalOverride) {
-            endTimeGoalOverride = {
-                tripGoal: goalAttributeSnapshot("trip-goal"),
-                totalGoal: goalAttributeSnapshot("total-goal"),
-                autoSyncTripGoal: Boolean(clockTimer.autoSyncTripGoal),
-                scopes: [...scopes],
-                deadline
-            };
-        }
-        else {
-            restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
-            restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-            clockTimer.configure({auto_goal: endTimeGoalOverride.autoSyncTripGoal});
-            endTimeGoalOverride.deadline = deadline;
-            endTimeGoalOverride.scopes = [...scopes];
+        const goals = {
+            trip: goalForDeadline(summary, "trip", currentSummary, deadline),
+            total: goalForDeadline(summary, "total", currentSummary, deadline)
+        };
+        if (
+            !Number.isFinite(goals.trip) ||
+            goals.trip <= 0 ||
+            !Number.isFinite(goals.total) ||
+            goals.total <= 0
+        ) {
+            return false;
         }
 
-        clockTimer.configure({auto_goal: false});
-        for (const scope of scopes) {
-            clockTimer.configure({
-                [scope === "total" ? "total_goal" : "trip_goal"]:
-                    percentGoalAttribute(goals[scope])
-            });
-        }
+        endTimeGoalOverride = {
+            scopes: ["trip", "total"],
+            deadline
+        };
+
+        clockTimer.configure({
+            auto_goal: false,
+            calculated_trip_goal:
+                percentGoalAttribute(goals.trip),
+            calculated_total_goal:
+                percentGoalAttribute(goals.total),
+            calculated_goal_source: "end-time"
+        });
+
         applyRenderedTimeMode("calculated-end");
         renderEndTimeGoalLock();
         queueSummaryRefresh();
