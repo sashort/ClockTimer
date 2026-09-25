@@ -10979,7 +10979,7 @@
         startsTripOnConfirm = false,
         role = "root",
         workflow,
-        cancelTarget = "home",
+        cancelTarget,
         confirmTarget,
         backTarget,
         duration = 250,
@@ -10988,6 +10988,19 @@
     } = {}) {
         if (signal?.aborted) {
             return false;
+        }
+
+        if (
+            typeof confirmTarget !==
+                "string" ||
+            !confirmTarget.trim() ||
+            typeof cancelTarget !==
+                "string" ||
+            !cancelTarget.trim()
+        ) {
+            throw new TypeError(
+                "Number pad requires explicit confirmTarget and cancelTarget."
+            );
         }
 
         await ensureNumberPadLoaded();
@@ -11047,16 +11060,8 @@
                         : null
             ),
             cancelTarget,
-            confirmTarget: confirmTarget || (
-                normalizedRole === "trip-settings-field"
-                    ? "trip-settings"
-                    : "home"
-            ),
-            backTarget: backTarget || (
-                normalizedRole === "trip-settings-field"
-                    ? "trip-settings"
-                    : undefined
-            ),
+            confirmTarget,
+            backTarget,
             everEdited: false,
             allowEmpty: Boolean(allowEmpty)
         };
@@ -11193,10 +11198,15 @@
             return false;
         }
 
+        const destination =
+            numberPadState.cancelTarget;
+
+        if (!destination) {
+            return false;
+        }
+
         return closeNumberPad({
-            destination:
-                numberPadState.cancelTarget ||
-                "home",
+            destination,
             discardPrepared:
                 true,
             allowChanged:
@@ -18777,8 +18787,11 @@
                     ) {
                         const destination =
                             numberPadState
-                                ?.confirmTarget ||
-                            "home";
+                                ?.confirmTarget;
+
+                        if (!destination) {
+                            return false;
+                        }
 
                         await closeNumberPad({
                             discardPrepared:
