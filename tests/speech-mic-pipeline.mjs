@@ -1969,6 +1969,23 @@ assert.match(
     app,
     /numberPadConfirm\.disabled\s*=\s*autocorrect[\s\S]*setOkAllowed\([\s\S]*numberPadDialog,[\s\S]*!numberPadConfirm\.disabled/
 );
+
+assert.match(
+    app,
+    /const breakDialog = \$\("#breakDialog"\);[\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*false/
+);
+assert.match(
+    app,
+    /openBreakMenu\([\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*false[\s\S]*openDialog\([\s\S]*"breakDialog"/
+);
+assert.match(
+    app,
+    /chooseBreakType\([\s\S]*button\.focus\(\);[\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*true/
+);
+assert.match(
+    app,
+    /confirmBreakType\([\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*false[\s\S]*closeDialog\([\s\S]*breakDialog/
+);
 assert.doesNotMatch(
     speechMenuSource,
     /exactCandidate\.kind ===\s*"wake"/
