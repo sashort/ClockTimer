@@ -886,7 +886,6 @@
     const SETTINGS_HELP_FADE_DURATION = 250;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
-    const TRIP_LIST_OFFSCREEN_GAP = 12;
     const TRIP_LIST_BODY_DELAY = 125;
     const TRIP_LIST_BODY_DURATION = 425;
     const TRIP_LIST_MERGE_DURATION = 300;
@@ -1232,14 +1231,6 @@
             top: metrics.rect.top + metrics.paddingTop,
             width: metrics.width,
             height: metrics.height
-        };
-    }
-
-    function getTripLogAboveRect() {
-        const topRect = getTripLogTopRect();
-        return {
-            ...topRect,
-            top: topRect.top - topRect.height - TRIP_LIST_OFFSCREEN_GAP
         };
     }
 
@@ -1903,20 +1894,22 @@
             "true"
         );
 
-        const sourceRect =
-            pinned
-                ? tripLogButton
-                    .getBoundingClientRect()
-                : getTripLogAboveRect();
-
-        setFloatingTripLogRect(
-            sourceRect
-        );
-
-        await animateTripLogButton(
-            "translateY(0px)",
-            `translateY(${topRect.top - sourceRect.top}px)`
-        );
+        if (pinned) {
+            const sourceRect = tripLogButton.getBoundingClientRect();
+            setFloatingTripLogRect(sourceRect);
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(${topRect.top - sourceRect.top}px)`
+            );
+        }
+        else {
+            setFloatingTripLogRect(topRect);
+            const distance = topRect.top + topRect.height + 8;
+            await animateTripLogButton(
+                `translateY(-${distance}px)`,
+                "translateY(0px)"
+            );
+        }
 
         setFloatingTripLogRect(
             topRect
@@ -2037,20 +2030,23 @@
             TRIP_LIST_BODY_DELAY
         );
 
-        const destination =
-            pinned
-                ? getTripLogBottomRect()
-                : getTripLogAboveRect();
-
-        await animateTripLogButton(
-            "translateY(0px)",
-            `translateY(${destination.top - topRect.top}px)`,
-            TRIP_LIST_BUTTON_TRANSITION_DURATION
-        );
-
-        setFloatingTripLogRect(
-            destination
-        );
+        if (pinned) {
+            const destination = getTripLogBottomRect();
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(${destination.top - topRect.top}px)`,
+                TRIP_LIST_BUTTON_TRANSITION_DURATION
+            );
+            setFloatingTripLogRect(destination);
+        }
+        else {
+            const distance = topRect.top + topRect.height + 8;
+            await animateTripLogButton(
+                "translateY(0px)",
+                `translateY(-${distance}px)`,
+                TRIP_LIST_BUTTON_TRANSITION_DURATION
+            );
+        }
 
         app.dataset.tripListState =
             "closed";
