@@ -696,7 +696,23 @@ assert.match(
 );
 assert.match(
     app,
-    /mainMenuFocusLayer[\s\S]*menuScrollable[\s\S]*safeHeight/
+    /updateFocusedMainMenuBounds[\s\S]*safeHeight[\s\S]*mainMenuFocusLayer[\s\S]*menuScrollable/
+);
+assert.match(
+    app,
+    /mainMenuSubmenuWouldOverflow[\s\S]*contentHeight[\s\S]*safeHeight/
+);
+assert.match(
+    app,
+    /mainMenuSubmenuWouldOverflow\([\s\S]*promoteMainMenuGroup[\s\S]*expandMainMenuSubmenuInline/
+);
+assert.match(
+    app,
+    /collapseMainMenuSubmenuInline[\s\S]*animateMainMenuItemHeight[\s\S]*false/
+);
+assert.match(
+    app,
+    /setMainMenuEqualPanelHeight[\s\S]*Math\.max[\s\S]*getMainMenuPanels/
 );
 assert.match(
     app,
@@ -921,6 +937,10 @@ assert.match(
 assert.match(
     css,
     /\.main-menu-focus-layer\[data-menu-scrollable="true"\][\s\S]*overflow-y:\s*auto/
+);
+assert.doesNotMatch(
+    css,
+    /\.main-menu-panel\[data-menu-panel-scrollable="true"\]/
 );
 assert.match(
     css,
