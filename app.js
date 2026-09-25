@@ -13406,6 +13406,7 @@
 
     function semanticTimingSpeech(
         detail,
+        lead,
         disposition
     ) {
         const milliseconds =
@@ -13417,16 +13418,41 @@
         if (
             !Number.isFinite(milliseconds)
         ) {
-            return "";
+            return lead + ".";
         }
 
         return (
+            lead +
+            ". " +
             formatGoalFailureDuration(
-                milliseconds
+                Math.abs(
+                    milliseconds
+                )
             ) +
             " " +
             disposition +
             "."
+        );
+    }
+
+    function formatSpokenPercent(
+        value
+    ) {
+        const percent =
+            Math.round(
+                Number(value) *
+                    100
+            );
+
+        if (!Number.isFinite(percent)) {
+            return "";
+        }
+
+        return (
+            goalFailureNumberWords(
+                percent
+            ) +
+            " percent"
         );
     }
 
@@ -13463,13 +13489,20 @@
                     ?.percentGoal
             );
 
+        const countedPercent =
+            Number(
+                total
+                    ?.countedPercent
+            );
+
         if (
             !Number.isFinite(standard) ||
             !Number.isFinite(counted) ||
             !Number.isFinite(percentGoal) ||
-            percentGoal <= 0
+            percentGoal <= 0 ||
+            !Number.isFinite(countedPercent)
         ) {
-            return "";
+            return "Trip ended.";
         }
 
         const allowed =
@@ -13484,26 +13517,40 @@
             );
 
         const remaining =
-            allowed - counted;
+            Math.round(
+                allowed - counted
+            );
 
-        if (remaining >= 0) {
-            return (
-                "Total time remaining, " +
+        const parts = [
+            "Trip ended.",
+            "Total percent: " +
+                formatSpokenPercent(
+                    countedPercent
+                ) +
+                "."
+        ];
+
+        if (remaining > 0) {
+            parts.push(
                 formatGoalFailureDuration(
                     remaining
                 ) +
-                "."
+                " banked."
+            );
+        }
+        else if (remaining < 0) {
+            parts.push(
+                formatGoalFailureDuration(
+                    Math.abs(
+                        remaining
+                    )
+                ) +
+                " over."
             );
         }
 
-        return (
-            "Total time over, " +
-            formatGoalFailureDuration(
-                Math.abs(
-                    remaining
-                )
-            ) +
-            "."
+        return parts.join(
+            " "
         );
     }
 
@@ -13701,6 +13748,7 @@
             "trip-started-early",
             semanticTimingSpeech(
                 event.detail,
+                "Trip started early",
                 "saved"
             )
         );
@@ -13712,6 +13760,7 @@
             "trip-started-late",
             semanticTimingSpeech(
                 event.detail,
+                "Trip started late",
                 "lost"
             )
         );
@@ -13746,6 +13795,7 @@
             "trip-resumed-early",
             semanticTimingSpeech(
                 event.detail,
+                "Trip resumed early",
                 "saved"
             )
         );
@@ -13768,6 +13818,7 @@
             "trip-resumed-after-break",
             semanticTimingSpeech(
                 event.detail,
+                "Trip resumed",
                 "lost"
             )
         );
@@ -13931,15 +13982,37 @@
                 )
             );
 
+        const hours =
+            Math.floor(
+                totalSeconds /
+                    3600
+            );
+
         const minutes =
             Math.floor(
-                totalSeconds / 60
+                (
+                    totalSeconds %
+                    3600
+                ) /
+                    60
             );
 
         const seconds =
-            totalSeconds % 60;
+            totalSeconds %
+                60;
 
         const parts = [];
+
+        if (hours > 0) {
+            parts.push(
+                hours === 1
+                    ? "an hour"
+                    : goalFailureNumberWords(
+                        hours
+                    ) +
+                        " hours"
+            );
+        }
 
         if (minutes > 0) {
             parts.push(
@@ -13972,7 +14045,22 @@
             );
         }
 
-        return parts.join(" ");
+        if (parts.length < 2) {
+            return parts[0];
+        }
+
+        return (
+            parts
+                .slice(
+                    0,
+                    -1
+                )
+                .join(", ") +
+            " and " +
+            parts[
+                parts.length - 1
+            ]
+        );
     }
 
     function buildGoalFailureSpeech(
