@@ -233,6 +233,8 @@ class SpeechMicBar extends HTMLElement {
                 .option-pane {
                     flex: 1 1 0;
                     min-width: 0;
+                    height: auto;
+                    align-self: flex-start;
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
