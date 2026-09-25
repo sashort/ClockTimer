@@ -165,6 +165,15 @@ const appHtml =
         "utf8"
     );
 
+const appJs =
+    fs.readFileSync(
+        new URL(
+            "../app.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
 assert.match(
     appCss,
     /position-area:\s*bottom span-right/
@@ -183,6 +192,52 @@ assert.match(
 assert.match(
     appHtml,
     /id="menuButton"[^>]*slot="trigger"/
+);
+
+
+assert.match(
+    appHtml,
+    /id="developerDocsButton"[^>]*hidden[^>]*>Docs<\/button>/
+);
+
+assert.match(
+    appHtml,
+    /Speech Recognition — Beta/
+);
+
+assert.match(
+    appHtml,
+    /Developer → Speech → Speech Training/
+);
+
+assert.match(
+    appHtml,
+    /id="speechRecognitionHelpButton"[^>]*>i<\/button>/
+);
+
+assert.match(
+    appHtml,
+    /id="syncGoalsHelpButton"[^>]*>i<\/button>/
+);
+
+assert.match(
+    appCss,
+    /#developerDocsButton::before/
+);
+
+assert.match(
+    appCss,
+    /hamburger-menu-popover \.menu-help-button/
+);
+
+assert.match(
+    appJs,
+    /openDeveloperDocs\(\)/
+);
+
+assert.match(
+    appJs,
+    /api\/docs\//
 );
 
 window.eval(
