@@ -809,39 +809,68 @@
             }
 
             for (
-                const element of
-                this.#source
-                    .querySelectorAll(
-                        "*"
-                    )
+                const item of
+                this.#normalItems()
             ) {
                 targets.add(
-                    element
+                    item
                 );
             }
 
             for (
-                const element of
-                this.#focusLayer
-                    .querySelectorAll(
-                        "*"
-                    )
+                const entry of
+                this.#focusStack
             ) {
                 targets.add(
-                    element
+                    entry.group
                 );
+
+                for (
+                    const child of
+                    entry.submenu
+                        ?.children ||
+                    []
+                ) {
+                    targets.add(
+                        child
+                    );
+                }
             }
 
-            this.#resizeObserver
-                .disconnect();
+            for (
+                const target of
+                this.#sizeTargets
+            ) {
+                if (
+                    targets.has(
+                        target
+                    )
+                ) {
+                    continue;
+                }
 
-            this.#sizeTargets =
-                targets;
+                try {
+                    this.#resizeObserver
+                        .unobserve(
+                            target
+                        );
+                }
+                catch {}
+            }
 
             for (
                 const target of
                 targets
             ) {
+                if (
+                    this.#sizeTargets
+                        .has(
+                            target
+                        )
+                ) {
+                    continue;
+                }
+
                 try {
                     this.#resizeObserver
                         .observe(
@@ -850,6 +879,9 @@
                 }
                 catch {}
             }
+
+            this.#sizeTargets =
+                targets;
         }
 
         getSafeRegion() {
@@ -1208,26 +1240,52 @@
                                 return;
                             }
 
-                            const relevant =
+                            const menuChanged =
+                                mutations
+                                    .some(
+                                        mutation =>
+                                            this.contains(
+                                                mutation.target
+                                            ) &&
+                                            (
+                                                mutation
+                                                    .type ===
+                                                    "childList" ||
+                                                mutation
+                                                    .type ===
+                                                    "characterData" ||
+                                                mutation
+                                                    .attributeName ===
+                                                    "hidden"
+                                            )
+                                    );
+
+                            const externalStructureChanged =
+                                !this.hasAttribute(
+                                    "safe-boundary"
+                                ) &&
                                 mutations
                                     .some(
                                         mutation =>
                                             mutation
                                                 .type ===
-                                                "childList" ||
-                                            mutation
-                                                .type ===
-                                                "characterData" ||
-                                            mutation
-                                                .attributeName ===
-                                                "hidden"
+                                                "childList" &&
+                                            !this.contains(
+                                                mutation.target
+                                            )
                                     );
 
-                            if (!relevant) {
+                            if (
+                                !menuChanged &&
+                                !externalStructureChanged
+                            ) {
                                 return;
                             }
 
-                            this.#adoptHostChildren();
+                            if (menuChanged) {
+                                this.#adoptHostChildren();
+                            }
+
                             this.#syncResizeObservation();
                             this.#markLayoutDirty();
                         }
@@ -1246,7 +1304,7 @@
 
             this.#observer
                 .observe(
-                    this.#viewport,
+                    this,
                     {
                         subtree:
                             true,
@@ -1262,7 +1320,12 @@
                     }
                 );
 
-            if (document.body) {
+            if (
+                document.body &&
+                !this.hasAttribute(
+                    "safe-boundary"
+                )
+            ) {
                 this.#observer
                     .observe(
                         document.body,
