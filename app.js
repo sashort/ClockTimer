@@ -11307,20 +11307,19 @@
             catch (error) { if (!error.clockTimerOffline) throw error; }
         }
 
-        const suppressStartChime =
-            (
-                draft
-                    .endStartTransitionChimePlayed ===
-                    true &&
-                draft
-                    .startTimeSetToNow !==
-                    true
-            );
-
         if (
-            suppressStartChime
+            draft
+                .endStartTransition ===
+                true &&
+            draft
+                .startTimeSetToNow ===
+                true
         ) {
-            incrementSemanticDisable(
+            // The 5-note transition normally preloads one suppression for
+            // the upcoming Start Trip cue. If Actual Start is pushed to Now,
+            // cancel that one-shot suppression so the normal start chime is
+            // allowed to play as the second chime.
+            cancelSemanticDisable(
                 "chime"
             );
         }
@@ -12975,6 +12974,12 @@
         endingIntoNewTrip =
             true;
 
+        // Suppress exactly the next ordinary chime: the legacy 3-note
+        // End Trip cue emitted by tripEnded.
+        incrementSemanticDisable(
+            "chime"
+        );
+
         try {
             await clockTimer.stop(
                 transactionTime
@@ -13012,14 +13017,17 @@
                 );
 
             if (
-                tripDraft
+                played
             ) {
-                tripDraft
-                    .endStartTransitionChimePlayed =
-                    played;
+                // The 5-note cue already contains the Start Trip chime.
+                // Suppress exactly one upcoming start chime. If the user
+                // later pushes Actual Start to Now, startTripDraft cancels
+                // this one-shot suppression before the start event fires.
+                incrementSemanticDisable(
+                    "chime"
+                );
             }
-
-            if (!played) {
+            else {
                 await playSemanticSongThenSpeak(
                     "trip-ended",
                     undefined
@@ -13502,6 +13510,33 @@
         return false;
     }
 
+    function cancelSemanticDisable(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return semanticDisableCounts[layer];
+    }
+
     globalThis.WMOFSemanticNotifications =
         Object.freeze({
             setDisable:
@@ -13510,6 +13545,8 @@
                 incrementSemanticDisable,
             consumeAction:
                 consumeSemanticAction,
+            cancelDisable:
+                cancelSemanticDisable,
             get disableCounts() {
                 return {
                     ...semanticDisableCounts
@@ -14120,6 +14157,14 @@
         ) {
             pendingEndStartTripSpeech =
                 speech;
+
+            // The direct end->start workflow preloads one chime suppression.
+            // Attempting the ordinary End Trip cue here consumes that slot,
+            // so the legacy 3-note cue is skipped without special casing the
+            // audio helper itself.
+            playSemanticSong(
+                "trip-ended"
+            );
 
             return;
         }
