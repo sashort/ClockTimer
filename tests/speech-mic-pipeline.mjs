@@ -1099,6 +1099,10 @@ assert.match(
     speechMicBarSource,
     /#showArguments\(values\)[\s\S]*Object\.keys[\s\S]*length ===[\s\S]*0[\s\S]*continue/
 );
+assert.match(
+    speechMicBarSource,
+    /#showArguments\(values\)[\s\S]*value === undefined[\s\S]*continue/
+);
 assert.match(speechMenuSource, /speechCompactPattern/);
 assert.match(speechMenuSource, /speechCorrectionApplied/);
 assert.match(speechMenuSource, /provisional:\s*!execute/);
