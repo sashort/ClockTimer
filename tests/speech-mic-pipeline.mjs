@@ -891,6 +891,18 @@ assert.match(
     /lexicalFamilies[\s\S]*"ok"[\s\S]*"okay"[\s\S]*family\.has\([\s\S]*observed[\s\S]*family\.has\([\s\S]*expected/
 );
 assert.match(
+    app,
+    /lexicalFamilies[\s\S]*"sync"[\s\S]*"sink"[\s\S]*"sin"/
+);
+assert.match(
+    languageSource,
+    /sync:\s*"\^\(\?:sync\|sink\|sin\)\(\?: \(\?<syncAction>on\|off\)\)\?\$"/
+);
+assert.match(
+    languageSource,
+    /syncStatus:\s*"\^\(\?:sync\|sink\|sin\) status\$"/
+);
+assert.match(
     speechMenuSource,
     /const openEnded\s*=[\s\S]*"speech-open-ended"[\s\S]*const previousOpenEndedExact[\s\S]*Boolean\([\s\S]*exact[\s\S]*previousOpenEndedExact/
 );
