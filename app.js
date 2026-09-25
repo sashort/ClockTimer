@@ -17626,14 +17626,44 @@
                     return true;
                 }
 
-                const announcement =
+                let announcement;
+
+                if (
                     next ===
                         "calculated-end"
-                        ? "Showing End Time"
-                        : next ===
-                            "elapsed"
-                            ? "Showing Elapsed Time"
-                            : "Showing Time Left";
+                ) {
+                    announcement =
+                        "Showing End Time";
+                }
+                else if (
+                    next ===
+                        "elapsed"
+                ) {
+                    announcement =
+                        "Showing Elapsed Time";
+                }
+                else {
+                    let timeHeaderText;
+
+                    try {
+                        timeHeaderText =
+                            clockTimer
+                                .getUIState?.(
+                                    new Date()
+                                )
+                                ?.time_header_text;
+                    }
+                    catch {}
+
+                    announcement =
+                        timeHeaderText ===
+                            "Banked Time"
+                            ? "Showing Banked Time"
+                            : timeHeaderText ===
+                                "Time Over"
+                                ? "Showing Time Over"
+                                : "Showing Time Left";
+                }
 
                 return confirmSettingChange(
                     announcement
