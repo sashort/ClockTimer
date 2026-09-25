@@ -112,6 +112,9 @@
             "  flex: none !important;",
             "  min-width: 0 !important;",
             "  min-height: 0 !important;",
+            "  max-height: none !important;",
+            "  height: var(--hamburger-menu-frozen-pane-height) !important;",
+            "  transition: height var(--hamburger-menu-frozen-height-duration, var(--hamburger-menu-layout-duration, 240ms)) ease-in-out !important;",
             "}",
             ":where(hamburger-menu) .hamburger-menu-viewport {",
             "  position: relative;",
@@ -280,6 +283,7 @@
             "}",
             "@media (prefers-reduced-motion: reduce) {",
             "  :where(hamburger-menu) .hamburger-menu-viewport,",
+            "  :where(hamburger-menu) .hamburger-menu-pane-frozen,",
             "  :where(hamburger-menu) .hamburger-menu-indicator,",
             "  :where(hamburger-menu) .hamburger-menu-indicator-thumb {",
             "    transition: none !important;",
@@ -1455,24 +1459,19 @@
                     nextWidth +
                     "px";
 
-                target.style.height =
-                    nextHeight +
-                    "px";
+                target.style
+                    .setProperty(
+                        "--hamburger-menu-frozen-pane-height",
+                        nextHeight +
+                            "px"
+                    );
 
                 target.style.minWidth =
                     nextWidth +
                     "px";
 
-                target.style.minHeight =
-                    nextHeight +
-                    "px";
-
                 target.style.maxWidth =
                     nextWidth +
-                    "px";
-
-                target.style.maxHeight =
-                    nextHeight +
                     "px";
 
                 target.style.overflow =
@@ -1482,6 +1481,14 @@
             this.style
                 .setProperty(
                     "--hamburger-menu-panel-height",
+                    "var(--hamburger-menu-frozen-pane-height, " +
+                        nextHeight +
+                        "px)"
+                );
+
+            this.style
+                .setProperty(
+                    "--hamburger-menu-frozen-pane-height",
                     nextHeight +
                         "px"
                 );
@@ -1608,6 +1615,11 @@
                         target.style.minWidth,
                     minHeight:
                         target.style.minHeight,
+                    frozenHeight:
+                        target.style
+                            .getPropertyValue(
+                                "--hamburger-menu-frozen-pane-height"
+                            ),
                     overflow:
                         target.style.overflow
                 };
@@ -1713,6 +1725,22 @@
                         lock.overflow
                 };
 
+                if (
+                    lock.frozenHeight
+                ) {
+                    target.style
+                        .setProperty(
+                            "--hamburger-menu-frozen-pane-height",
+                            lock.frozenHeight
+                        );
+                }
+                else {
+                    target.style
+                        .removeProperty(
+                            "--hamburger-menu-frozen-pane-height"
+                        );
+                }
+
                 for (
                     const [
                         property,
@@ -1759,6 +1787,11 @@
 
             this.#frozenPaneBaseSize =
                 undefined;
+
+            this.style
+                .removeProperty(
+                    "--hamburger-menu-frozen-pane-height"
+                );
         }
 
         #beginOpeningMeasurement() {
