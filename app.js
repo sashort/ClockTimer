@@ -13636,6 +13636,117 @@
         reserveSemanticEvent(event, "Trip goal derived automatically");
     }
 
+    function goalFailureNumberWords(
+        value
+    ) {
+        const number =
+            Math.max(
+                0,
+                Math.round(
+                    Number(value)
+                )
+            );
+
+        if (!Number.isFinite(number)) {
+            return "";
+        }
+
+        const small = [
+            "zero", "one", "two", "three", "four",
+            "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen",
+            "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen"
+        ];
+
+        const tens = [
+            "", "", "twenty", "thirty", "forty",
+            "fifty", "sixty", "seventy",
+            "eighty", "ninety"
+        ];
+
+        const underThousand =
+            number => {
+                if (number < 20) {
+                    return small[number];
+                }
+
+                if (number < 100) {
+                    const remainder =
+                        number % 10;
+
+                    return (
+                        tens[
+                            Math.floor(
+                                number / 10
+                            )
+                        ] +
+                        (
+                            remainder
+                                ? "-" +
+                                    small[
+                                        remainder
+                                    ]
+                                : ""
+                        )
+                    );
+                }
+
+                const remainder =
+                    number % 100;
+
+                return (
+                    small[
+                        Math.floor(
+                            number / 100
+                        )
+                    ] +
+                    " hundred" +
+                    (
+                        remainder
+                            ? " and " +
+                                underThousand(
+                                    remainder
+                                )
+                            : ""
+                    )
+                );
+            };
+
+        if (number < 1000) {
+            return underThousand(
+                number
+            );
+        }
+
+        if (number < 1000000) {
+            const thousands =
+                Math.floor(
+                    number / 1000
+                );
+
+            const remainder =
+                number % 1000;
+
+            return (
+                goalFailureNumberWords(
+                    thousands
+                ) +
+                " thousand" +
+                (
+                    remainder
+                        ? " " +
+                            underThousand(
+                                remainder
+                            )
+                        : ""
+                )
+            );
+        }
+
+        return String(number);
+    }
+
     function formatGoalFailureDuration(
         milliseconds
     ) {
@@ -13660,7 +13771,15 @@
 
         if (minutes > 0) {
             parts.push(
-                `${minutes} minute${minutes === 1 ? "" : "s"}`
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " minute" +
+                (
+                    minutes === 1
+                        ? ""
+                        : "s"
+                )
             );
         }
 
@@ -13669,42 +13788,19 @@
             !parts.length
         ) {
             parts.push(
-                `${seconds} second${seconds === 1 ? "" : "s"}`
+                goalFailureNumberWords(
+                    seconds
+                ) +
+                " second" +
+                (
+                    seconds === 1
+                        ? ""
+                        : "s"
+                )
             );
         }
 
         return parts.join(" ");
-    }
-
-    function formatGoalFailureClock(
-        milliseconds
-    ) {
-        const totalSeconds =
-            Math.max(
-                0,
-                Math.round(
-                    Number(milliseconds) /
-                        1000
-                )
-            );
-
-        const minutes =
-            Math.floor(
-                totalSeconds / 60
-            );
-
-        const seconds =
-            totalSeconds % 60;
-
-        return (
-            String(minutes) +
-            ":" +
-            String(seconds)
-                .padStart(
-                    2,
-                    "0"
-                )
-        );
     }
 
     function buildGoalFailureSpeech(
@@ -13768,32 +13864,40 @@
                 fallback.percent
             );
 
-        if (type === "standard") {
-            sentences.push(
-                "Using Standard."
-            );
-        }
-        else if (
-            type === "trip" ||
-            type === "total"
+        if (
+            normalizePercentMode(
+                clockTimer.percentMode
+            ) === "auto"
         ) {
-            const label =
-                type === "trip"
-                    ? "Trip"
-                    : "Total";
+            if (type === "standard") {
+                sentences.push(
+                    "Using Standard."
+                );
+            }
+            else if (
+                type === "trip" ||
+                type === "total"
+            ) {
+                const label =
+                    type === "trip"
+                        ? "Trip"
+                        : "Total";
 
-            const percentText =
-                Number.isFinite(percent)
-                    ? " " +
-                        Math.round(
-                            percent * 100
-                        ) +
-                        " percent"
-                    : "";
+                const percentText =
+                    Number.isFinite(percent)
+                        ? " " +
+                            goalFailureNumberWords(
+                                Math.round(
+                                    percent * 100
+                                )
+                            ) +
+                            " percent"
+                        : "";
 
-            sentences.push(
-                `Using ${label} Goal${percentText}.`
-            );
+                sentences.push(
+                    `Using ${label} Goal${percentText}.`
+                );
+            }
         }
 
         if (
@@ -13818,25 +13922,11 @@
                 remainingMilliseconds
             )
         ) {
-            const duration =
-                formatGoalFailureDuration(
+            sentences.push(
+                `${formatGoalFailureDuration(
                     remainingMilliseconds
-                );
-
-            if (
-                type === "standard"
-            ) {
-                sentences.push(
-                    `${duration} remaining.`
-                );
-            }
-            else {
-                sentences.push(
-                    `${formatGoalFailureClock(
-                        remainingMilliseconds
-                    )} remaining. ${duration}.`
-                );
-            }
+                )} remaining.`
+            );
         }
 
         return sentences.join(" ");
@@ -13860,7 +13950,7 @@
                     ?.startSong?.(
                         "goal-failed",
                         {
-                            bpm: 180
+                            bpm: 100
                         }
                     );
 
