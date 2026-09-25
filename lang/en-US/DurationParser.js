@@ -5,8 +5,14 @@ class EnglishDurationParser {
     static parse(value) {
         let text = String(value ?? "").toLocaleLowerCase("en-US").trim().replace(/[-–—]/g," ").replace(/\band\b/g," ").replace(/\s+/g," ");
         if (!text) return undefined;
-        const clock = text.match(/^(\d+):([0-5]?\d)(?::([0-5]?\d))?$/);
-        if (clock) return ((Number(clock[1])*60+Number(clock[2]))*60+Number(clock[3]||0))*1000;
+        const clock = text.match(/^(?:(\d+):)?([0-5]?\d):([0-5]?\d)$/);
+        if (clock) {
+            const hours = Number(clock[1] || 0);
+            const minutes = Number(clock[2]);
+            const seconds = Number(clock[3]);
+
+            return ((hours * 60 + minutes) * 60 + seconds) * 1000;
+        }
 
         // Bare digit runs greater than 59 are interpreted as HHMM rather than
         // as a single oversized minute value. This keeps each spoken numeric
