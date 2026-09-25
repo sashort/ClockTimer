@@ -806,6 +806,10 @@
     const downResumeButton = $("#downResumeButton");
     const downCancelButton = $("#downCancelButton");
     const breakDialog = $("#breakDialog");
+    setOkAllowed(
+        breakDialog,
+        false
+    );
     const scheduledStartDialog = $("#scheduledStartDialog");
     const scheduledStartCountdown = $("#scheduledStartCountdown");
     const scheduledStartStandard = $("#scheduledStartStandard");
@@ -16819,6 +16823,23 @@
                     return false;
                 }
 
+                breakDialog
+                    .querySelectorAll(
+                        ".speech-focused"
+                    )
+                    .forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    "speech-focused"
+                                )
+                    );
+
+                setOkAllowed(
+                    breakDialog,
+                    false
+                );
+
                 return openDialog(
                     "breakDialog",
                     {
@@ -16883,6 +16904,11 @@
 
                 button.focus();
 
+                setOkAllowed(
+                    breakDialog,
+                    true
+                );
+
                 return true;
             },
 
@@ -16906,6 +16932,11 @@
                 const kind =
                     button.dataset
                         .breakType;
+
+                setOkAllowed(
+                    breakDialog,
+                    false
+                );
 
                 closeDialog(
                     breakDialog,
