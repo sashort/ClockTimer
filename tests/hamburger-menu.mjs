@@ -102,7 +102,7 @@ assert.match(
 
 assert.match(
     componentSource,
-    /#finishOpeningMeasurement\(\)[\s\S]*#freezePane\(\s*this\.#viewport\s*\)/
+    /#finishOpeningMeasurement\([^)]*\)[\s\S]*#freezePane\(\s*this\.#viewport\s*,\s*this\.#normalPaneHeight\s*\)/
 );
 
 assert.match(
