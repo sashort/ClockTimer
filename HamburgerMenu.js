@@ -312,6 +312,8 @@
         #openState = false;
         #frozenPane;
         #frozenPaneRect;
+        #openingMeasured = false;
+        #openingMeasurementPromise;
 
         constructor() {
             super();
@@ -491,6 +493,9 @@
                     .showPopover ===
                     "function"
             ) {
+                this.#openingMeasured =
+                    false;
+
                 this.#beginOpeningMeasurement();
 
                 this.#popover
@@ -525,6 +530,9 @@
 
                 return;
             }
+
+            this.#openingMeasured =
+                false;
 
             this.#beginOpeningMeasurement();
 
@@ -564,6 +572,12 @@
 
                 this.#openState =
                     false;
+
+                this.#openingMeasured =
+                    false;
+
+                this.#openingMeasurementPromise =
+                    undefined;
 
                 this.#trigger
                     .setAttribute(
@@ -1223,6 +1237,12 @@
         }
 
         #beginOpeningMeasurement() {
+            if (
+                this.#openingMeasured
+            ) {
+                return false;
+            }
+
             this.#popover
                 .dataset
                 .calculating =
@@ -1231,26 +1251,56 @@
             this.#popover
                 .style.opacity =
                 "0";
+
+            return true;
         }
 
-        async #finishOpeningMeasurement() {
-            await nextFrame();
+        #finishOpeningMeasurement() {
+            if (
+                this.#openingMeasured
+            ) {
+                return Promise.resolve();
+            }
 
-            this.#updateSafeGeometry();
-            this.#layoutPanels();
-            this.#reconcilePlacement();
+            if (
+                this.#openingMeasurementPromise
+            ) {
+                return this
+                    .#openingMeasurementPromise;
+            }
 
-            await nextFrame();
+            this.#openingMeasurementPromise =
+                (async () => {
+                    await nextFrame();
 
-            this.#reconcilePlacement();
+                    this.#updateSafeGeometry();
+                    this.#layoutPanels();
+                    this.#reconcilePlacement();
 
-            delete this.#popover
-                .dataset
-                .calculating;
+                    await nextFrame();
 
-            this.#popover
-                .style.opacity =
-                "1";
+                    this.#reconcilePlacement();
+
+                    this.#openingMeasured =
+                        true;
+
+                    delete this.#popover
+                        .dataset
+                        .calculating;
+
+                    this.#popover
+                        .style.opacity =
+                        "1";
+                })()
+                    .finally(
+                        () => {
+                            this.#openingMeasurementPromise =
+                                undefined;
+                        }
+                    );
+
+            return this
+                .#openingMeasurementPromise;
         }
 
         #dispatch(
@@ -1319,6 +1369,12 @@
                     .#finishOpeningMeasurement();
             }
             else {
+                this.#openingMeasured =
+                    false;
+
+                this.#openingMeasurementPromise =
+                    undefined;
+
                 this.style
                     .setProperty(
                         "--hamburger-menu-trigger-shift",
@@ -3861,10 +3917,9 @@
             this.#transitionBusy =
                 true;
 
-            const frozenPane =
-                this.#freezePane(
-                    sourceRoot
-                );
+            this.#freezePane(
+                this.#activePane()
+            );
 
             const generation =
                 ++this.#generation;
