@@ -69,7 +69,7 @@
             "  position: relative;",
             "  min-width: 0;",
             "  max-width: 100%;",
-            "}"
+            "}",
             ":where(hamburger-menu) > [slot=\"trigger\"] {",
             "  translate: none;",
             "}",
@@ -88,7 +88,7 @@
             "  bottom: auto;",
             "  margin: 0;",
             "  max-width: calc(100vw - 16px);",
-            "  height: fit-content;",
+            "  height: auto;",
             "  min-height: 0;",
             "  max-height: var(--hamburger-menu-safe-height, calc(100dvh - 16px));",
             "  overflow: visible;",
