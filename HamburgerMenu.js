@@ -94,6 +94,16 @@
             ":where(hamburger-menu) > .hamburger-menu-popover[hidden] {",
             "  display: none;",
             "}",
+            ":where(hamburger-menu) > .hamburger-menu-popover[data-calculating=\"true\"] {",
+            "  opacity: 0 !important;",
+            "  pointer-events: none !important;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-pane-frozen {",
+            "  overflow: hidden !important;",
+            "  flex: none !important;",
+            "  min-width: 0 !important;",
+            "  min-height: 0 !important;",
+            "}",
             ":where(hamburger-menu) .hamburger-menu-viewport {",
             "  position: relative;",
             "  width: 100%;",
@@ -300,6 +310,8 @@
         #connected = false;
         #handlingMutations = false;
         #openState = false;
+        #frozenPane;
+        #frozenPaneRect;
 
         constructor() {
             super();
@@ -479,6 +491,8 @@
                     .showPopover ===
                     "function"
             ) {
+                this.#beginOpeningMeasurement();
+
                 this.#popover
                     .showPopover();
 
@@ -506,10 +520,13 @@
                 this.#indicator.hidden =
                     true;
 
-                this.refresh();
+                void this
+                    .#finishOpeningMeasurement();
 
                 return;
             }
+
+            this.#beginOpeningMeasurement();
 
             this.#popover
                 .dataset
@@ -553,6 +570,18 @@
                         "aria-expanded",
                         "false"
                     );
+
+                delete this.#popover
+                    .dataset
+                    .calculating;
+
+                this.#popover
+                    .style
+                    .removeProperty(
+                        "opacity"
+                    );
+
+                this.#unfreezePane();
 
                 this.#reset();
 
@@ -1065,6 +1094,165 @@
             }
         }
 
+        #activePane() {
+            if (
+                this.#focusStack
+                    .length
+            ) {
+                return this.#viewport;
+            }
+
+            return (
+                this.#currentPanel() ||
+                this.#viewport
+            );
+        }
+
+        #freezePane(
+            pane =
+                this.#activePane()
+        ) {
+            if (!pane) {
+                return undefined;
+            }
+
+            if (
+                this.#frozenPane &&
+                this.#frozenPane !==
+                    pane
+            ) {
+                this.#unfreezePane();
+            }
+
+            const rect =
+                pane
+                    .getBoundingClientRect();
+
+            const width =
+                Math.max(
+                    1,
+                    rect.width
+                );
+
+            const height =
+                Math.max(
+                    1,
+                    rect.height
+                );
+
+            pane.classList
+                .add(
+                    "hamburger-menu-pane-frozen"
+                );
+
+            pane.style.width =
+                width +
+                "px";
+
+            pane.style.height =
+                height +
+                "px";
+
+            pane.style.maxWidth =
+                width +
+                "px";
+
+            pane.style.maxHeight =
+                height +
+                "px";
+
+            this.#viewport
+                .style.height =
+                height +
+                "px";
+
+            this.style
+                .setProperty(
+                    "--hamburger-menu-panel-height",
+                    height +
+                        "px"
+                );
+
+            this.#frozenPane =
+                pane;
+
+            this.#frozenPaneRect = {
+                width,
+                height
+            };
+
+            return {
+                pane,
+                width,
+                height
+            };
+        }
+
+        #unfreezePane() {
+            const pane =
+                this.#frozenPane;
+
+            if (!pane) {
+                return;
+            }
+
+            pane.classList
+                .remove(
+                    "hamburger-menu-pane-frozen"
+                );
+
+            for (
+                const property of [
+                    "width",
+                    "height",
+                    "max-width",
+                    "max-height"
+                ]
+            ) {
+                pane.style
+                    .removeProperty(
+                        property
+                    );
+            }
+
+            this.#frozenPane =
+                undefined;
+
+            this.#frozenPaneRect =
+                undefined;
+        }
+
+        #beginOpeningMeasurement() {
+            this.#popover
+                .dataset
+                .calculating =
+                "true";
+
+            this.#popover
+                .style.opacity =
+                "0";
+        }
+
+        async #finishOpeningMeasurement() {
+            await nextFrame();
+
+            this.#updateSafeGeometry();
+            this.#layoutPanels();
+            this.#reconcilePlacement();
+
+            await nextFrame();
+
+            this.#reconcilePlacement();
+
+            delete this.#popover
+                .dataset
+                .calculating;
+
+            this.#popover
+                .style.opacity =
+                "1";
+        }
+
         #dispatch(
             type,
             detail,
@@ -1110,6 +1298,8 @@
                 this.#popover.hidden =
                     false;
 
+                this.#beginOpeningMeasurement();
+
                 this.style
                     .setProperty(
                         "--hamburger-menu-panel-height",
@@ -1125,18 +1315,8 @@
                 this.#indicator.hidden =
                     true;
 
-                void nextFrame()
-                    .then(
-                        () => {
-                            this.refresh();
-
-                            return nextFrame();
-                        }
-                    )
-                    .then(
-                        () =>
-                            this.#reconcilePlacement()
-                    );
+                void this
+                    .#finishOpeningMeasurement();
             }
             else {
                 this.style
@@ -1145,6 +1325,17 @@
                         "0px"
                     );
 
+                delete this.#popover
+                    .dataset
+                    .calculating;
+
+                this.#popover
+                    .style
+                    .removeProperty(
+                        "opacity"
+                    );
+
+                this.#unfreezePane();
                 this.#reset();
             }
 
@@ -3392,6 +3583,8 @@
             entry,
             generation
         ) {
+            this.#unfreezePane();
+
             const collapsedHeight =
                 entry.group
                     .getBoundingClientRect()
@@ -3667,6 +3860,11 @@
 
             this.#transitionBusy =
                 true;
+
+            const frozenPane =
+                this.#freezePane(
+                    sourceRoot
+                );
 
             const generation =
                 ++this.#generation;
@@ -4010,6 +4208,10 @@
             this.#transitionBusy =
                 true;
 
+            this.#freezePane(
+                this.#viewport
+            );
+
             const generation =
                 ++this.#generation;
 
@@ -4293,6 +4495,15 @@
                 );
             }
 
+            this.#unfreezePane();
+
+            if (
+                this.#focusStack
+                    .length
+            ) {
+                this.#updateFocusBounds();
+            }
+
             this.#transitionBusy =
                 false;
 
@@ -4409,6 +4620,8 @@
         }
 
         #reset() {
+            this.#unfreezePane();
+
             this.#generation +=
                 1;
 
