@@ -13430,59 +13430,81 @@
         );
     }
 
-    function tripEndBankSpeech(
+    function tripEndTotalSpeech(
         detail
     ) {
-        const trip =
+        const total =
             detail
                 ?.summary
-                ?.trip;
+                ?.total;
 
         const standard =
             Number(
-                trip
+                total
                     ?.standardTimeMilliseconds
             );
 
         const counted =
             Number(
-                trip
+                total
                     ?.countedTimeElapsedMilliseconds
+            );
+
+        const allowanceCredit =
+            Number(
+                total
+                    ?.allowanceCreditMilliseconds ??
+                0
+            );
+
+        const percentGoal =
+            Number(
+                total
+                    ?.percentGoal
             );
 
         if (
             !Number.isFinite(standard) ||
-            !Number.isFinite(counted)
+            !Number.isFinite(counted) ||
+            !Number.isFinite(percentGoal) ||
+            percentGoal <= 0
         ) {
             return "";
         }
 
-        const difference =
-            standard - counted;
+        const allowed =
+            standard /
+                percentGoal +
+            (
+                Number.isFinite(
+                    allowanceCredit
+                )
+                    ? allowanceCredit
+                    : 0
+            );
 
-        if (difference > 0) {
+        const remaining =
+            allowed - counted;
+
+        if (remaining >= 0) {
             return (
-                "You banked " +
+                "Total time remaining, " +
                 formatGoalFailureDuration(
-                    difference
+                    remaining
                 ) +
                 "."
             );
         }
 
-        if (difference < 0) {
-            return (
-                "You lost " +
-                formatGoalFailureDuration(
-                    Math.abs(
-                        difference
-                    )
-                ) +
-                "."
-            );
-        }
-
-        return "No time banked or lost.";
+        return (
+            "Total time over, " +
+            formatGoalFailureDuration(
+                Math.abs(
+                    remaining
+                )
+            ) +
+            "."
+        );
     }
 
     let lunchClockCueState;
@@ -13768,7 +13790,7 @@
         reserveSemanticEvent(event, "Trip ended");
         void playSemanticSongThenSpeak(
             "trip-ended",
-            tripEndBankSpeech(
+            tripEndTotalSpeech(
                 event.detail
             )
         );
