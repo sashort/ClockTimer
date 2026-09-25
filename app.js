@@ -14413,18 +14413,6 @@
                         "standard"
             );
 
-        // In fixed Trip/Total modes, crossing Standard is its own temporal
-        // boundary announcement. Do not combine it with the fixed goal.
-        if (
-            standardFailed &&
-            (
-                percentMode === "trip" ||
-                percentMode === "total"
-            )
-        ) {
-            return "Standard Goal Failed.";
-        }
-
         const belowStandardFailed =
             announcedGoals.some(
                 goal => {
@@ -14446,29 +14434,60 @@
 
         const sentences = [];
 
-        if (standardFailed) {
-            sentences.push(
-                "Standard Goal Failed."
-            );
+        if (
+            semanticLayerEnabled(
+                "summary"
+            )
+        ) {
+            // In fixed Trip/Total modes, crossing Standard is its own temporal
+            // boundary announcement. Do not combine it with the fixed goal.
+            if (
+                standardFailed &&
+                (
+                    percentMode === "trip" ||
+                    percentMode === "total"
+                )
+            ) {
+                sentences.push(
+                    "Standard Goal Failed."
+                );
+            }
+            else {
+                if (standardFailed) {
+                    sentences.push(
+                        "Standard Goal Failed."
+                    );
+                }
+
+                for (const goal of announcedGoals) {
+                    if (
+                        goal?.type ===
+                            "trip"
+                    ) {
+                        sentences.push(
+                            "Trip Goal Failed."
+                        );
+                    }
+                    else if (
+                        goal?.type ===
+                            "total"
+                    ) {
+                        sentences.push(
+                            "Total Goal Failed."
+                        );
+                    }
+                }
+            }
         }
 
-        for (const goal of announcedGoals) {
-            if (
-                goal?.type ===
-                    "trip"
-            ) {
-                sentences.push(
-                    "Trip Goal Failed."
-                );
-            }
-            else if (
-                goal?.type ===
-                    "total"
-            ) {
-                sentences.push(
-                    "Total Goal Failed."
-                );
-            }
+        if (
+            !semanticLayerEnabled(
+                "details"
+            )
+        ) {
+            return sentences.join(
+                " "
+            );
         }
 
         const fallback =
