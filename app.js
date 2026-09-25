@@ -17383,10 +17383,8 @@
                 );
             },
 
-            changeGoalMode(
-                goalMode
-            ) {
-                const transcriptMode =
+            changeGoalMode() {
+                const mode =
                     String(
                         globalThis
                             .SpeechMenu
@@ -17397,18 +17395,10 @@
                         .trim()
                         .toLowerCase()
                         .match(
-                            /^(auto|total|trip) mode$/
+                            /^(auto|total|trip)(?: mode)?$/
                         )
-                        ?.[1];
-
-                const mode =
-                    String(
-                        goalMode ??
-                        transcriptMode ??
-                        ""
-                    )
-                        .trim()
-                        .toLowerCase();
+                        ?.[1] ||
+                    "";
 
                 if (
                     !PERCENT_MODES
