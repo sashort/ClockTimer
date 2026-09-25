@@ -3833,30 +3833,8 @@ class SpeechMenu {
                 ) ||
                 element.parentElement;
 
-            const allowConfirm =
-                context
-                    ?.allowConfirm;
-
             if (
-                typeof allowConfirm ===
-                    "function"
-            ) {
-                try {
-                    if (
-                        allowConfirm.call(
-                            context,
-                            element
-                        ) !== true
-                    ) {
-                        return false;
-                    }
-                }
-                catch {
-                    return false;
-                }
-            }
-            else if (
-                allowConfirm ===
+                context?.allowOk ===
                     false
             ) {
                 return false;
