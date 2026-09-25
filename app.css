@@ -611,7 +611,14 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
     display: none !important;
 }
 
+.main-menu > .hamburger-menu-popover:not([data-ready="true"]) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 .main-menu > .hamburger-menu-popover {
+    /* WMOF primary placement: below the hamburger with its left edge anchored there. */
     position-area: bottom span-right;
     inset: auto;
     align-self: start;
