@@ -74,12 +74,22 @@ assert.match(
 
 assert.match(
     appSource,
-    /remaining until \$\{label\} Goal\$\{percentText\}\./
+    /\$\{formatGoalFailureDuration\([\s\S]*?remainingMilliseconds[\s\S]*?\)\} until \$\{label\} Goal\$\{percentText\}\./
 );
 
 assert.match(
     appSource,
-    /type !== "standard"[\s\S]*roundedPercent !== 100/
+    /const useStandardLabel\s*=\s*type === "standard"\s*\|\|\s*roundedPercent === 100/
+);
+
+assert.match(
+    appSource,
+    /const label\s*=\s*useStandardLabel\s*\? "Standard"/
+);
+
+assert.match(
+    appSource,
+    /const percentText\s*=\s*!useStandardLabel/
 );
 
 console.log(
