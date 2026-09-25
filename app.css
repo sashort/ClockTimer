@@ -5577,3 +5577,118 @@ speech-menu,
 speech-command {
     display: none !important;
 }
+
+
+/* audio-settings-v1 */
+.audio-settings-dialog {
+    width: min(860px, calc(100vw - 32px));
+    max-height: min(88dvh, 820px);
+    margin: auto;
+    overflow: auto;
+}
+
+.audio-settings-dialog form {
+    display: grid;
+    gap: 18px;
+}
+
+.audio-settings-levels {
+    display: grid;
+    gap: 12px;
+    margin-inline: 16px;
+}
+
+.audio-settings-levels > label {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 1.6fr) 64px;
+    align-items: center;
+    gap: 12px;
+}
+
+.audio-settings-levels output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.audio-master-velocity {
+    padding-block: 10px;
+    border-block: 1px solid rgb(255 255 255 / 20%);
+}
+
+.audio-settings-announcements {
+    margin-inline: 16px;
+}
+
+.audio-settings-announcements h3 {
+    margin: 0 0 10px;
+}
+
+.audio-settings-table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 8px;
+}
+
+.audio-settings-table {
+    width: 100%;
+    min-width: 590px;
+    border-collapse: collapse;
+}
+
+.audio-settings-table th,
+.audio-settings-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgb(255 255 255 / 14%);
+}
+
+.audio-settings-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--wm-blue-dark);
+}
+
+.audio-settings-table th:first-child {
+    text-align: left;
+}
+
+.audio-settings-table th:not(:first-child),
+.audio-settings-table td {
+    text-align: center;
+}
+
+.audio-settings-table label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.audio-settings-table input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+}
+
+.audio-settings-table input[type="checkbox"]:disabled {
+    opacity: 0.42;
+}
+
+.settings-submenu {
+    display: grid;
+    gap: 2px;
+    padding-left: 14px;
+}
+
+@media (max-width: 620px) {
+    .audio-settings-dialog {
+        width: calc(100vw - 16px);
+    }
+
+    .audio-settings-levels > label {
+        grid-template-columns: 1fr 64px;
+    }
+
+    .audio-settings-levels > label > span {
+        grid-column: 1 / -1;
+    }
+}
