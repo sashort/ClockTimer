@@ -135,6 +135,16 @@ assert.match(
 
 assert.match(
     componentSource,
+    /One frozen pane spans the entire promoted stack/
+);
+
+assert.match(
+    componentSource,
+    /if\s*\(\s*!this\.#focusStack\s*\.length\s*\)\s*\{\s*this\.#unfreezePane\(\)/
+);
+
+assert.match(
+    componentSource,
     /--hamburger-menu-frozen-pane-height/
 );
 
