@@ -75,19 +75,19 @@ assert.match(
 
 assert.match(
     app,
-    /tripDraftUsesEndStartTransition\(\)[\s\S]*return;[\s\S]*playSemanticSong\("trip-started"\)/
+    /function onTripStarted\([\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*"Trip started\."\s*\)[\s\S]*return;[\s\S]*playSemanticSong\("trip-started"\)/
 );
 
 assert.match(
     app,
-    /function onTripStartedEarly[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
+    /function onTripStartedEarly[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*speech\s*\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
 );
 
 assert.match(
     app,
-    /function onTripStartedLate[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
+    /function onTripStartedLate[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*speech\s*\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
 );
 
 console.log(
-    "PASS direct end-to-start transition uses one spliced cue and suppresses individual trip cues"
+    "PASS direct end-to-start transition uses one spliced cue and makes subsequent trip-start notifications speech-only"
 );
