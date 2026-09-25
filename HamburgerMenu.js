@@ -1327,18 +1327,9 @@
                     }
                 );
 
-            if (document.body) {
-                this.#observer
-                    .observe(
-                        document.body,
-                        {
-                            subtree:
-                                true,
-                            childList:
-                                true
-                        }
-                    );
-            }
+            // New direct host children need adopting. Changes elsewhere in
+            // the document (including the clock's one-second render) do not.
+            this.#observer.observe(this, { childList: true });
         }
 
         #withObservationPaused(
@@ -4307,8 +4298,7 @@
                 return true;
             };
 
-            const visit = (group, depth) => {
-                if (depth >= 2) return;
+            const visit = group => {
                 const button = group.querySelector(
                     ":scope > button[aria-controls]"
                 );
@@ -4318,10 +4308,10 @@
                 if (!submenu || !group.contains(submenu) ||
                     !include(submenu)) return;
                 for (const child of submenu.children) {
-                    if (include(child)) visit(child, depth + 1);
+                    if (include(child)) visit(child);
                 }
             };
-            visit(element, 0);
+            visit(element);
             return {
                 top, right, bottom, left,
                 width: right - left,
@@ -4335,42 +4325,40 @@
             groupRect,
             flow
         ) {
+            const visible = element =>
+                !element.hidden &&
+                getComputedStyle(element).display !== "none";
+            const expand = (element, nested = false) => {
+                if (!sourceRoot.matches(".hamburger-menu-panel")) {
+                    return [{ element, nested: false }];
+                }
+                const owner = element.querySelector(
+                    ":scope > button[aria-controls]"
+                );
+                if (!owner) return [{ element, nested }];
+
+                // Keep every group with a child menu in place. Descend to
+                // the visible leaves, regardless of their nesting depth.
+                const submenu = document.getElementById(
+                    owner.getAttribute("aria-controls")
+                );
+                if (!submenu || !element.contains(submenu) ||
+                    !visible(submenu)) {
+                    return nested ? [{ element, nested }] : [];
+                }
+                const children = [...submenu.children].filter(visible);
+                if (!children.length) {
+                    return nested ? [{ element, nested }] : [];
+                }
+                return children.flatMap(child => expand(child, true));
+            };
             const all =
                 this
                     .#visibleRows(
                         sourceRoot,
                         group
                     )
-                    .flatMap(element => {
-                        if (!sourceRoot.matches(
-                            ".hamburger-menu-panel"
-                        )) return [{ element, nested: false }];
-
-                        const owner = element.querySelector(
-                            ":scope > button[aria-controls]"
-                        );
-                        if (!owner) return [{ element, nested: false }];
-
-                        // A sibling with a child menu stays in place. Only
-                        // its currently visible second-level leaf items
-                        // can disappear behind the promoted target.
-                        const submenu = document.getElementById(
-                            owner.getAttribute("aria-controls")
-                        );
-                        if (!submenu || !element.contains(submenu) ||
-                            submenu.hidden ||
-                            getComputedStyle(submenu).display === "none") {
-                            return [];
-                        }
-                        return [...submenu.children].filter(child =>
-                            !child.hidden &&
-                            getComputedStyle(child).display !== "none" &&
-                            !child.matches("button[aria-controls]") &&
-                            !child.querySelector(
-                                ":scope > button[aria-controls]"
-                            )
-                        ).map(child => ({ element: child, nested: true }));
-                    })
+                    .flatMap(element => expand(element))
                     .map(
                         ({ element, nested }) => ({
                             element,
@@ -4494,7 +4482,7 @@
             let high = 1;
             const target = Math.max(0, Math.min(1, progress));
 
-            for (let step = 0; step < 20; step += 1) {
+            for (let step = 0; step < 28; step += 1) {
                 const t = (low + high) / 2;
                 const eased = 3 * (1 - t) * t * t + t * t * t;
                 if (eased < target) low = t;
@@ -4504,63 +4492,51 @@
             const t = (low + high) / 2;
             const time = 3 * (1 - t) * (1 - t) * t * .42 +
                 3 * (1 - t) * t * t * .58 + t * t * t;
-            return Math.max(0, Math.ceil(time * duration));
+            return Math.max(0, Math.min(duration, time * duration));
         }
 
         #animateRowVisibility(records, from, to, duration, flow) {
             if (!duration || !records.length) return undefined;
 
-            const topTravel = to.top - from.top;
-            const bottomTravel = to.bottom - from.bottom;
             const rules = [];
             const animations = [];
             for (const record of records) {
                 const rect = record.rect;
-                // These two edge crossings are the discrete positions of
-                // the selected group relative to this row. Keep both as
-                // temporary CSS values; the direction selects the crossing
-                // where the row's visibility actually changes.
-                const firstProgress = (rect.top - from.top) /
-                    (topTravel || 1);
-                const secondProgress = (rect.bottom - from.bottom) /
-                    (bottomTravel || 1);
                 const prefix = "--hamburger-menu-disappear-threshold-";
+                // Record when the target's leading and trailing edges each
+                // reach this item's hamburger-side edge. Every visible leaf
+                // uses its own measured bound, at any menu nesting depth.
+                const itemBound = flow === "start" ? rect.top : rect.bottom;
+                const leadingFrom = flow === "start" ? from.top : from.bottom;
+                const leadingTo = flow === "start" ? to.top : to.bottom;
+                const trailingFrom = flow === "start"
+                    ? from.bottom : from.top;
+                const trailingTo = flow === "start"
+                    ? to.bottom : to.top;
+                const leadingTravel = leadingTo - leadingFrom;
+                const trailingTravel = trailingTo - trailingFrom;
+                const firstProgress = Math.abs(leadingTravel) > .5
+                    ? (itemBound - leadingFrom) / leadingTravel : 1;
+                const secondProgress = Math.abs(trailingTravel) > .5
+                    ? (itemBound - trailingFrom) / trailingTravel : 1;
                 const first = this.#rowVisibilitySwitchTime(
-                    Math.abs(topTravel) > .5 ? firstProgress : 1,
-                    duration
+                    firstProgress, duration
                 );
                 const second = this.#rowVisibilitySwitchTime(
-                    Math.abs(bottomTravel) > .5 ? secondProgress : 1,
-                    duration
+                    secondProgress, duration
                 );
                 record.element.style.setProperty(prefix + "1", first + "ms");
                 record.element.style.setProperty(prefix + "2", second + "ms");
-
-                const selectedProgress = flow === "start"
-                    ? firstProgress
-                    : secondProgress;
-                const progress = Math.max(0, Math.min(1, selectedProgress));
-                const left = from.left + (to.left - from.left) * progress;
-                const right = from.right + (to.right - from.right) * progress;
-                const top = from.top + topTravel * progress;
-                const bottom = from.bottom + bottomTravel * progress;
-                const covered = left <= rect.left + .5 &&
-                    right >= rect.right - .5 &&
-                    top <= rect.top + .5 &&
-                    bottom >= rect.bottom - .5;
+                const switchTime = second;
 
                 record.element.style.setProperty(
                     "--hamburger-menu-row-switch-time",
-                    covered ? `var(${prefix}${flow === "start" ? 1 : 2})`
-                        : duration + "ms"
+                    switchTime + "ms"
                 );
                 record.element.style.setProperty(
                     "--hamburger-menu-row-motion-duration",
                     duration + "ms"
                 );
-                const switchTime = covered
-                    ? flow === "start" ? first : second
-                    : duration;
                 const percentage = Math.max(0, Math.min(100,
                     switchTime / duration * 100
                 ));
