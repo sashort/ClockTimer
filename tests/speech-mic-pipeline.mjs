@@ -702,24 +702,24 @@ assert.match(
 );
 assert.match(
     app,
-    /readyAtContinuationAvailable\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined/
+    /canContinueStartAt\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined/
 );
 
 assert.match(
     app,
-    /speechRuntimeStarted\(\)[\s\S]*setSpeechButtonState\([\s\S]*true,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*true/
+    /handleSpeechRuntimeStarted\(\)[\s\S]*setSpeechButtonState\([\s\S]*true,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*true/
 );
 assert.match(
     app,
-    /speechRuntimeStopped\(\)[\s\S]*cancelPendingSpeechReady\(\)[\s\S]*setSpeechButtonState\([\s\S]*false,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false/
+    /handleSpeechRuntimeStopped\(\)[\s\S]*cancelPendingSpeechReady\(\)[\s\S]*setSpeechButtonState\([\s\S]*false,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false/
 );
 assert.match(
     app,
-    /speechMicBar\?\.addEventListener\([\s\S]*"stopped"[\s\S]*actions[\s\S]*\.speechRuntimeStopped\(\)/
+    /speechMicBar\?\.addEventListener\([\s\S]*"stopped"[\s\S]*actions[\s\S]*\.handleSpeechRuntimeStopped\(\)/
 );
 assert.match(
     app,
-    /speechMicBar\?\.addEventListener\([\s\S]*"speechCaptureEnded"[\s\S]*actions[\s\S]*\.speechRuntimeStopped\(\)/
+    /speechMicBar\?\.addEventListener\([\s\S]*"speechCaptureEnded"[\s\S]*actions[\s\S]*\.handleSpeechRuntimeStopped\(\)/
 );
 assert.doesNotMatch(
     app,
@@ -727,7 +727,7 @@ assert.doesNotMatch(
 );
 assert.match(
     app,
-    /continueStartAt\([\s\S]*readyAtContinuationAvailable\(\)[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
+    /continueStartAt\([\s\S]*canContinueStartAt\(\)[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
 );
 assert.match(
     app,
@@ -737,9 +737,14 @@ assert.doesNotMatch(
     app,
     /readyAtContinuation:"#newTripButton"/
 );
+
+assert.match(
+    actionFunctionsSource,
+    /"handle"/
+);
 assert.match(
     app,
-    /key ===[\s\S]*"readyAtContinuation"[\s\S]*speech-available[\s\S]*WMOFActions\.readyAtContinuationAvailable/
+    /key ===[\s\S]*"readyAtContinuation"[\s\S]*speech-available[\s\S]*WMOFActions\.canContinueStartAt/
 );
 assert.doesNotMatch(
     app,
