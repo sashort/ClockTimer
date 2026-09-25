@@ -3822,6 +3822,47 @@ class SpeechMenu {
             return false;
         }
 
+        if (
+            element.dataset
+                ?.speechIntent ===
+                "confirm"
+        ) {
+            const context =
+                element.closest(
+                    "dialog, [popover], details"
+                ) ||
+                element.parentElement;
+
+            const allowConfirm =
+                context
+                    ?.allowConfirm;
+
+            if (
+                typeof allowConfirm ===
+                    "function"
+            ) {
+                try {
+                    if (
+                        allowConfirm.call(
+                            context,
+                            element
+                        ) !== true
+                    ) {
+                        return false;
+                    }
+                }
+                catch {
+                    return false;
+                }
+            }
+            else if (
+                allowConfirm ===
+                    false
+            ) {
+                return false;
+            }
+        }
+
         const availability =
             element.getAttribute(
                 "speech-available"
