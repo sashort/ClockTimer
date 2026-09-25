@@ -4863,54 +4863,29 @@
                 .focused =
                 "true";
 
-            const safeHeight =
-                this.#safePanelHeight(
-                    false
-                );
-
-            const intendedHeight =
-                Math.max(
-                    1,
-                    Math.min(
-                        safeHeight,
-                        collapsedHeight +
-                            growing.reduce(
-                                (
-                                    total,
-                                    record
-                                ) =>
-                                    total +
-                                    record
-                                        .metrics
-                                        .outerHeight,
-                                0
-                            )
-                    )
+            const fullHeight =
+                collapsedHeight +
+                growing.reduce(
+                    (
+                        total,
+                        record
+                    ) =>
+                        total +
+                        record
+                            .metrics
+                            .outerHeight,
+                    0
                 );
 
             /*
-             * Commit the promoted pane's destination height while the
-             * old pane geometry is still locked. Releasing the lock only
-             * after this prevents a one-frame collapse to the closed
-             * parent height between the slide and child expansion.
+             * Promotion owns the pane geometry. Keep the pane frozen for
+             * the entire promoted state; submenu growth happens inside the
+             * frozen viewport and may make the focus layer scrollable, but
+             * it never changes the pane height.
              */
-            this.style
-                .setProperty(
-                    "--hamburger-menu-panel-height",
-                    intendedHeight +
-                        "px"
-                );
-
-            this.#unfreezePane();
-
-            this.#viewport
-                .style.height =
-                intendedHeight +
-                    "px";
-
             this
                 .#updateFocusBounds(
-                    intendedHeight
+                    fullHeight
                 );
 
             await Promise.all(
@@ -4925,6 +4900,16 @@
                             )
                 )
             );
+
+            if (
+                generation ===
+                this.#generation
+            ) {
+                this
+                    .#updateFocusBounds(
+                        fullHeight
+                    );
+            }
         }
 
         async #closePromotedSubmenu(
@@ -5516,9 +5501,14 @@
             this.#transitionBusy =
                 true;
 
-            this.#freezePane(
-                this.#viewport
-            );
+            if (
+                !this.#frozenPaneLocks
+                    .length
+            ) {
+                this.#freezePane(
+                    this.#viewport
+                );
+            }
 
             const generation =
                 ++this.#generation;
@@ -5866,13 +5856,6 @@
         #updateFocusBounds(
             knownFullHeight
         ) {
-            if (
-                this.#frozenPaneLocks
-                    .length
-            ) {
-                return true;
-            }
-
             const current =
                 this.#focusStack
                     .at(-1);
@@ -5900,6 +5883,61 @@
                             .getBoundingClientRect()
                             .height
                     );
+
+            if (
+                this.#frozenPaneLocks
+                    .length
+            ) {
+                const paneHeight =
+                    Math.max(
+                        1,
+                        Math.min(
+                            safeHeight,
+                            this.#frozenPaneRect
+                                ?.height ||
+                            this.#frozenPaneBaseSize
+                                ?.height ||
+                            safeHeight
+                        )
+                    );
+
+                if (
+                    fullHeight >
+                    paneHeight +
+                        0.5
+                ) {
+                    this.#focusLayer
+                        .dataset
+                        .scrollable =
+                        "true";
+
+                    if (
+                        current.flow ===
+                            "end"
+                    ) {
+                        requestAnimationFrame(
+                            () => {
+                                this.#focusLayer
+                                    .scrollTop =
+                                    this.#focusLayer
+                                        .scrollHeight;
+                            }
+                        );
+                    }
+                }
+                else {
+                    this.#focusLayer
+                        .removeAttribute(
+                            "data-scrollable"
+                        );
+
+                    this.#focusLayer
+                        .scrollTop =
+                        0;
+                }
+
+                return true;
+            }
 
             const paneHeight =
                 Math.max(
