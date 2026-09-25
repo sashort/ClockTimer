@@ -2513,6 +2513,30 @@ assert.match(
     speechMenuSource,
     /"re" \/ "read" -> "ready"/
 );
+assert.match(
+    speechMenuSource,
+    /#builtInCorrections[\s\S]*"red"[\s\S]*"redd"[\s\S]*"rudd"[\s\S]*canonical:[\s\S]*"ready"[\s\S]*matchType:[\s\S]*"prefix"/
+);
+assert.match(
+    speechMenuSource,
+    /#applyCorrection[\s\S]*#builtInCorrections[\s\S]*#corrections/
+);
+assert.match(
+    app,
+    /canUseReady\(\)[\s\S]*!tripIsLive\(\)[\s\S]*"break"[\s\S]*"lunch"[\s\S]*"down"/
+);
+assert.match(
+    app,
+    /prepareReadyAction\(\)[\s\S]*tripIsLive\(\)[\s\S]*endCurrentIntervalOrTrip[\s\S]*armSpeechReadyContinuation[\s\S]*openStartMenuWorkflow/
+);
+assert.match(
+    app,
+    /ready:[\s\S]*WMOFSpeechAvailability\.canUseReady/
+);
+assert.match(
+    app,
+    /\["ready","prepareReadyAction"\]/
+);
 
 assert.match(
     speechMenuSource,
