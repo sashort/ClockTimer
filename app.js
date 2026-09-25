@@ -13364,6 +13364,127 @@
             );
     }
 
+    async function playSemanticSongThenSpeak(
+        name,
+        speech,
+        options = {}
+    ) {
+        const audio =
+            globalThis.WMOFAudio;
+
+        try {
+            const song =
+                await audio
+                    ?.startSong?.(
+                        name,
+                        {
+                            bpm: 180,
+                            ...options
+                        }
+                    );
+
+            await song
+                ?.finished;
+        }
+        catch (error) {
+            console.error(
+                "Audio playback failed:",
+                name,
+                error
+            );
+        }
+
+        if (
+            speech &&
+            audio?.speak
+        ) {
+            audio.speak(
+                speech
+            );
+        }
+    }
+
+    function semanticTimingSpeech(
+        detail,
+        disposition
+    ) {
+        const milliseconds =
+            Number(
+                detail
+                    ?.timeDifferenceMilliseconds
+            );
+
+        if (
+            !Number.isFinite(milliseconds)
+        ) {
+            return "";
+        }
+
+        return (
+            formatGoalFailureDuration(
+                milliseconds
+            ) +
+            " " +
+            disposition +
+            "."
+        );
+    }
+
+    function tripEndBankSpeech(
+        detail
+    ) {
+        const trip =
+            detail
+                ?.summary
+                ?.trip;
+
+        const standard =
+            Number(
+                trip
+                    ?.standardTimeMilliseconds
+            );
+
+        const counted =
+            Number(
+                trip
+                    ?.countedTimeElapsedMilliseconds
+            );
+
+        if (
+            !Number.isFinite(standard) ||
+            !Number.isFinite(counted)
+        ) {
+            return "";
+        }
+
+        const difference =
+            standard - counted;
+
+        if (difference > 0) {
+            return (
+                "You banked " +
+                formatGoalFailureDuration(
+                    difference
+                ) +
+                "."
+            );
+        }
+
+        if (difference < 0) {
+            return (
+                "You lost " +
+                formatGoalFailureDuration(
+                    Math.abs(
+                        difference
+                    )
+                ) +
+                "."
+            );
+        }
+
+        return "No time banked or lost.";
+    }
+
     let lunchClockCueState;
 
     function clearLunchClockCueState() {
@@ -13554,12 +13675,24 @@
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
-        playSemanticSong("trip-started-early");
+        void playSemanticSongThenSpeak(
+            "trip-started-early",
+            semanticTimingSpeech(
+                event.detail,
+                "saved"
+            )
+        );
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
-        playSemanticSong("trip-started-late");
+        void playSemanticSongThenSpeak(
+            "trip-started-late",
+            semanticTimingSpeech(
+                event.detail,
+                "lost"
+            )
+        );
     }
 
     function onBreakStarted(event) {
@@ -13587,7 +13720,13 @@
 
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
-        playSemanticSong("trip-resumed-early");
+        void playSemanticSongThenSpeak(
+            "trip-resumed-early",
+            semanticTimingSpeech(
+                event.detail,
+                "saved"
+            )
+        );
         finishLunchClockCues(
             event.detail
         );
@@ -13603,7 +13742,13 @@
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
-        playSemanticSong("trip-resumed-after-break");
+        void playSemanticSongThenSpeak(
+            "trip-resumed-after-break",
+            semanticTimingSpeech(
+                event.detail,
+                "lost"
+            )
+        );
         finishLunchClockCues(
             event.detail
         );
@@ -13621,7 +13766,12 @@
 
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
-        playSemanticSong("trip-ended");
+        void playSemanticSongThenSpeak(
+            "trip-ended",
+            tripEndBankSpeech(
+                event.detail
+            )
+        );
     }
 
     function onTotalGoalSet(event) {
