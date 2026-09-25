@@ -13769,6 +13769,44 @@
         );
     }
 
+    function tripDraftStartWasPushedBack() {
+        if (
+            !tripDraftUsesEndStartTransition()
+        ) {
+            return false;
+        }
+
+        const creationTime =
+            parseTimelineTime(
+                tripDraft
+                    ?.creationTime
+            );
+
+        const startTime =
+            parseTimelineTime(
+                tripDraft
+                    ?.startTime
+            );
+
+        return (
+            Number.isFinite(
+                creationTime
+            ) &&
+            Number.isFinite(
+                startTime
+            ) &&
+            startTime >
+                creationTime
+        );
+    }
+
+    function tripDraftStartChimeAlreadyPlayed() {
+        return (
+            tripDraftUsesEndStartTransition() &&
+            !tripDraftStartWasPushedBack()
+        );
+    }
+
     function speakSemanticText(
         speech
     ) {
@@ -13787,7 +13825,7 @@
         reserveSemanticEvent(event, "Trip started on time");
 
         if (
-            tripDraftUsesEndStartTransition()
+            tripDraftStartChimeAlreadyPlayed()
         ) {
             speakSemanticText(
                 "Trip started."
@@ -13809,7 +13847,7 @@
             );
 
         if (
-            tripDraftUsesEndStartTransition()
+            tripDraftStartChimeAlreadyPlayed()
         ) {
             speakSemanticText(
                 speech
@@ -13834,7 +13872,7 @@
             );
 
         if (
-            tripDraftUsesEndStartTransition()
+            tripDraftStartChimeAlreadyPlayed()
         ) {
             speakSemanticText(
                 speech
