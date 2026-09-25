@@ -11356,7 +11356,8 @@
         tripSettingsSession = {
             live: tripIsLive(),
             original: cloneTripSettingsValues(values),
-            values: cloneTripSettingsValues(values)
+            values: cloneTripSettingsValues(values),
+            startTimeSetToNow: false
         };
         return tripSettingsSession;
     }
@@ -11556,13 +11557,17 @@
             if (!tripDraft) return false;
             Object.assign(tripDraft, {
                 deferred: Boolean(values.deferred),
-            nonProduction: values.nonProduction === true,
+                nonProduction: values.nonProduction === true,
                 standardTime: values.standardTime,
                 creationTime: values.creationTime,
                 creationDate: values.creationDate,
                 scheduledStart: values.scheduledStart,
                 startTime: values.startTime,
-                syncGoals: Boolean(values.syncGoals)
+                syncGoals: Boolean(values.syncGoals),
+                startTimeSetToNow:
+                    tripSettingsSession
+                        ?.startTimeSetToNow ===
+                    true
             });
             return true;
         }
@@ -13769,41 +13774,19 @@
         );
     }
 
-    function tripDraftStartWasPushedBack() {
-        if (
-            !tripDraftUsesEndStartTransition()
-        ) {
-            return false;
-        }
-
-        const creationTime =
-            parseTimelineTime(
-                tripDraft
-                    ?.creationTime
-            );
-
-        const startTime =
-            parseTimelineTime(
-                tripDraft
-                    ?.startTime
-            );
-
+    function tripDraftStartWasPushedBackToNow() {
         return (
-            Number.isFinite(
-                creationTime
-            ) &&
-            Number.isFinite(
-                startTime
-            ) &&
-            startTime >
-                creationTime
+            tripDraftUsesEndStartTransition() &&
+            tripDraft
+                ?.startTimeSetToNow ===
+            true
         );
     }
 
     function tripDraftStartChimeAlreadyPlayed() {
         return (
             tripDraftUsesEndStartTransition() &&
-            !tripDraftStartWasPushedBack()
+            !tripDraftStartWasPushedBackToNow()
         );
     }
 
@@ -17928,6 +17911,10 @@
                             .startTime =
                             snapshot
                                 .startTime;
+
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            false;
                     }
                 }
 
@@ -17994,6 +17981,14 @@
                                 .value
                             : snapshot
                                 .startTime;
+
+                    if (
+                        tripSettingsSession
+                    ) {
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            selected;
+                    }
                 }
 
                 refreshTripSettingsValues();
