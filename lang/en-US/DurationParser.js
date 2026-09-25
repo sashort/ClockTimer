@@ -14,17 +14,34 @@ class EnglishDurationParser {
             return ((hours * 60 + minutes) * 60 + seconds) * 1000;
         }
 
-        // Bare digit runs greater than 59 are interpreted as HHMM rather than
-        // as a single oversized minute value. This keeps each spoken numeric
-        // component in the recognizer's 0-59 range: 159 -> 1:59, 530 -> 5:30.
-        if (/^\d{3,4}$/.test(text)) {
-            const digits = text.padStart(4, "0");
-            const hours = Number(digits.slice(0, 2));
-            const minutes = Number(digits.slice(2));
+        // Bare digit runs use the same right-to-left duration semantics as
+        // the number pad: ss, m:ss, mm:ss, h:mm:ss.
+        if (/^\d+$/.test(text) && text.length >= 3) {
+            const seconds = Number(text.slice(-2));
+            const minutes =
+                text.length <= 4
+                    ? Number(text.slice(0, -2))
+                    : Number(text.slice(-4, -2));
+            const hours =
+                text.length <= 4
+                    ? 0
+                    : Number(text.slice(0, -4));
 
-            return minutes <= 59
-                ? (hours * 3600 + minutes * 60) * 1000
-                : undefined;
+            if (
+                seconds <= 59 &&
+                minutes <= 59
+            ) {
+                return (
+                    (
+                        hours * 3600 +
+                        minutes * 60 +
+                        seconds
+                    ) *
+                    1000
+                );
+            }
+
+            return undefined;
         }
 
         let seconds = 0, matched = false;
@@ -55,7 +72,9 @@ class EnglishDurationParser {
     static format(milliseconds) {
         if (!Number.isFinite(milliseconds) || milliseconds <= 0) return undefined;
         const total=Math.round(milliseconds/1000),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
-        return `${hours}:${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+        return hours > 0
+            ? `${hours}:${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`
+            : `${minutes}:${String(seconds).padStart(2,"0")}`;
     }
 
     static #number(value) {
