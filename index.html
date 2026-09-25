@@ -24,102 +24,102 @@
 <body>
     <main id="app" class="app" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true">
         <header class="app-header">
-            <button id="menuButton" class="header-button hamburger-button" type="button" popovertarget="mainMenu" aria-label="Open menu">
-                <span></span><span></span><span></span>
-            </button>
+            <hamburger-menu id="mainMenu" class="main-menu" safe-boundary="#speechMicBar" aria-label="Application menu">
+                <button id="menuButton" class="header-button hamburger-button" type="button" aria-label="Open menu">
+                    <span></span><span></span><span></span>
+                </button>
+
+                <div id="menuAccountRow" class="main-menu-row menu-account-row">
+                    <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
+                    <button id="authButton" type="button">Login</button>
+                </div>
+                <div id="adminMenuGroup" class="admin-menu-group" hidden>
+                    <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu">Admin</button>
+                    <div id="adminSubmenu" class="admin-submenu" hidden>
+                        <button id="newUserButton" type="button" hidden>New User</button>
+                        <button id="accessTokensButton" type="button" hidden>Access Tokens</button>
+                    </div>
+                </div>
+                <div id="menuLogoutSlot"></div>
+                <hr id="accountMenuDivider">
+                <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
+                <div class="main-menu-row speech-recognition-menu-row">
+                    <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled><span>Speech Recognition</span></button>
+                    <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition">?</button>
+                </div>
+                <div class="main-menu-row sync-goals-menu-row">
+                    <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
+                    <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
+                </div>
+                <div class="trip-menu-group">
+                <div class="main-menu-row trip-list-menu-row">
+                    <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
+                    <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="Unpin Trip Log" aria-pressed="true" title="Unpin Trip Log"></button>
+                </div>
+                <label class="trip-log-range-menu" for="tripProductionFilter"><span>Trip Filter</span><select id="tripProductionFilter"><option value="all">All Trips</option><option value="productive">Productive</option><option value="non-productive">Non-productive</option></select></label>
+                <label class="trip-log-range-menu" for="tripLogRangeSelect">
+                    <span>Trip Log Range</span>
+                    <select id="tripLogRangeSelect" aria-label="Trip Log Range">
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="pay-period">Pay Period</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </label>
+                <div class="trip-log-date-menu">
+                    <label for="tripLogStartDate">Start:</label><input id="tripLogStartDate" type="date" aria-label="Trip Log start date" disabled>
+                    <label for="tripLogEndDate">End:</label><input id="tripLogEndDate" type="date" aria-label="Trip Log end date" disabled>
+                </div>
+                <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
+                </div>
+                <hr class="developer-menu-separator">
+                <div id="developerMenuGroup" class="developer-menu-group">
+                    <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu">Developer</button>
+                    <div id="developerSubmenu" class="developer-submenu" hidden>
+                        <div id="speechToolsGroup" class="speech-tools-group">
+                            <button id="speechMenuButton" type="button" aria-expanded="false" aria-controls="speechSubmenu">
+                                <span class="speech-build-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 30 30" focusable="false">
+                                        <path class="speech-build-mic" d="M15 4.5a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0v-6a4 4 0 0 0-4-4Zm-7 9.5a7 7 0 0 0 14 0M15 21v4M11 25h8"/>
+                                        <g class="speech-build-scaffold">
+                                            <path class="scaffold-rail rail-left" pathLength="100" d="M5 25V7"/>
+                                            <path class="scaffold-rail rail-right" pathLength="100" d="M25 25V7"/>
+                                            <path class="scaffold-floor floor-1" pathLength="100" d="M5 23h20"/>
+                                            <path class="scaffold-brace brace-1a" pathLength="100" d="M5 23l20-6"/>
+                                            <path class="scaffold-brace brace-1b" pathLength="100" d="M25 23 5 17"/>
+                                            <path class="scaffold-floor floor-2" pathLength="100" d="M5 17h20"/>
+                                            <path class="scaffold-brace brace-2a" pathLength="100" d="M5 17l20-6"/>
+                                            <path class="scaffold-brace brace-2b" pathLength="100" d="M25 17 5 11"/>
+                                            <path class="scaffold-floor floor-3" pathLength="100" d="M5 11h20"/>
+                                            <path class="scaffold-floor floor-top" pathLength="100" d="M5 7h20"/>
+                                        </g>
+                                        <g class="speech-build-crane">
+                                            <path class="crane-mast" pathLength="100" d="M6 7V2"/>
+                                            <path class="crane-boom" pathLength="100" d="M3 2h24"/>
+                                            <path class="crane-brace" pathLength="100" d="M6 2l7 5M6 7l7-5"/>
+                                            <path class="crane-cable" pathLength="100" d="M24 2v4"/>
+                                            <path class="crane-hook" pathLength="100" d="M22.8 6h2.4c0 1.1-.5 1.7-1.2 1.7s-1.2-.6-1.2-1.7Z"/>
+                                        </g>
+                                    </svg>
+                                </span>
+                                <span>Speech</span>
+                            </button>
+                            <div id="speechSubmenu" class="speech-submenu" hidden>
+                                <button id="speechTrainingButton" type="button" aria-pressed="false" disabled>Speech Training</button>
+                                <button id="speechEditorButton" type="button" hidden>Speech Editor</button>
+                            </div>
+                        </div>
+                        <button id="sqlConsoleButton" type="button" hidden>Database Access</button>
+                    </div>
+                </div>
+            </hamburger-menu>
             <div class="scope-control">
                 <button id="scopeToggle" class="scope-toggle" type="button">Trip</button>
                 <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="Offline. Retry connection" hidden></button>
             </div>
         </header>
-
-        <nav id="mainMenu" class="main-menu" popover aria-label="Application menu">
-            <div id="menuAccountRow" class="main-menu-row menu-account-row">
-                <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden>Profile</button>
-                <button id="authButton" type="button">Login</button>
-            </div>
-            <div id="adminMenuGroup" class="admin-menu-group" hidden>
-                <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu">Admin</button>
-                <div id="adminSubmenu" class="admin-submenu" hidden>
-                    <button id="newUserButton" type="button" hidden>New User</button>
-                    <button id="accessTokensButton" type="button" hidden>Access Tokens</button>
-                </div>
-            </div>
-            <div id="menuLogoutSlot"></div>
-            <hr id="accountMenuDivider">
-            <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
-            <div class="main-menu-row speech-recognition-menu-row">
-                <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled><span>Speech Recognition</span></button>
-                <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition">?</button>
-            </div>
-            <div class="main-menu-row sync-goals-menu-row">
-                <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
-                <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">?</button>
-            </div>
-            <div class="trip-menu-group">
-            <div class="main-menu-row trip-list-menu-row">
-                <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
-                <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="Unpin Trip Log" aria-pressed="true" title="Unpin Trip Log"></button>
-            </div>
-            <label class="trip-log-range-menu" for="tripProductionFilter"><span>Trip Filter</span><select id="tripProductionFilter"><option value="all">All Trips</option><option value="productive">Productive</option><option value="non-productive">Non-productive</option></select></label>
-            <label class="trip-log-range-menu" for="tripLogRangeSelect">
-                <span>Trip Log Range</span>
-                <select id="tripLogRangeSelect" aria-label="Trip Log Range">
-                    <option value="day">Day</option>
-                    <option value="week">Week</option>
-                    <option value="pay-period">Pay Period</option>
-                    <option value="month">Month</option>
-                    <option value="year">Year</option>
-                    <option value="custom">Custom</option>
-                </select>
-            </label>
-            <div class="trip-log-date-menu">
-                <label for="tripLogStartDate">Start:</label><input id="tripLogStartDate" type="date" aria-label="Trip Log start date" disabled>
-                <label for="tripLogEndDate">End:</label><input id="tripLogEndDate" type="date" aria-label="Trip Log end date" disabled>
-            </div>
-            <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
-            </div>
-            <hr class="developer-menu-separator">
-            <div id="developerMenuGroup" class="developer-menu-group">
-                <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu">Developer</button>
-                <div id="developerSubmenu" class="developer-submenu" hidden>
-                    <div id="speechToolsGroup" class="speech-tools-group">
-                        <button id="speechMenuButton" type="button" aria-expanded="false" aria-controls="speechSubmenu">
-                            <span class="speech-build-icon" aria-hidden="true">
-                                <svg viewBox="0 0 30 30" focusable="false">
-                                    <path class="speech-build-mic" d="M15 4.5a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0v-6a4 4 0 0 0-4-4Zm-7 9.5a7 7 0 0 0 14 0M15 21v4M11 25h8"/>
-                                    <g class="speech-build-scaffold">
-                                        <path class="scaffold-rail rail-left" pathLength="100" d="M5 25V7"/>
-                                        <path class="scaffold-rail rail-right" pathLength="100" d="M25 25V7"/>
-                                        <path class="scaffold-floor floor-1" pathLength="100" d="M5 23h20"/>
-                                        <path class="scaffold-brace brace-1a" pathLength="100" d="M5 23l20-6"/>
-                                        <path class="scaffold-brace brace-1b" pathLength="100" d="M25 23 5 17"/>
-                                        <path class="scaffold-floor floor-2" pathLength="100" d="M5 17h20"/>
-                                        <path class="scaffold-brace brace-2a" pathLength="100" d="M5 17l20-6"/>
-                                        <path class="scaffold-brace brace-2b" pathLength="100" d="M25 17 5 11"/>
-                                        <path class="scaffold-floor floor-3" pathLength="100" d="M5 11h20"/>
-                                        <path class="scaffold-floor floor-top" pathLength="100" d="M5 7h20"/>
-                                    </g>
-                                    <g class="speech-build-crane">
-                                        <path class="crane-mast" pathLength="100" d="M6 7V2"/>
-                                        <path class="crane-boom" pathLength="100" d="M3 2h24"/>
-                                        <path class="crane-brace" pathLength="100" d="M6 2l7 5M6 7l7-5"/>
-                                        <path class="crane-cable" pathLength="100" d="M24 2v4"/>
-                                        <path class="crane-hook" pathLength="100" d="M22.8 6h2.4c0 1.1-.5 1.7-1.2 1.7s-1.2-.6-1.2-1.7Z"/>
-                                    </g>
-                                </svg>
-                            </span>
-                            <span>Speech</span>
-                        </button>
-                        <div id="speechSubmenu" class="speech-submenu" hidden>
-                            <button id="speechTrainingButton" type="button" aria-pressed="false" disabled>Speech Training</button>
-                            <button id="speechEditorButton" type="button" hidden>Speech Editor</button>
-                        </div>
-                    </div>
-                    <button id="sqlConsoleButton" type="button" hidden>Database Access</button>
-                </div>
-            </div>
-        </nav>
 
         <section class="trip-summary" aria-label="Trip summary">
             <button id="standardTimeButton" class="summary-cell" type="button">
@@ -871,6 +871,7 @@
     <script src="InteractionFunctions.js"></script>
     <script src="PresentationSetters.js"></script>
     <script src="api/audio/AudioEngine.js?v=4"></script>
+    <script src="HamburgerMenu.js"></script>
     <script src="app.js?v=speech-fast1"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
