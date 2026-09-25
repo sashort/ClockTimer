@@ -5,8 +5,8 @@
     const STYLE_ID =
         "hamburger-menu-base-styles";
 
-    const PROMOTION_DURATION =
-        500;
+    const DEFAULT_PROMOTION_DURATION =
+        450;
 
     const PROMOTION_PAUSE =
         75;
@@ -64,11 +64,12 @@
 
         style.textContent = [
             ":where(hamburger-menu) {",
+            "  --hamburger-menu-promotion-duration: 450ms;",
             "  display: inline-block;",
             "  position: relative;",
             "  min-width: 0;",
             "  max-width: 100%;",
-            "}",
+            "}"
             ":where(hamburger-menu) > [slot=\"trigger\"] {",
             "  translate: none;",
             "}",
@@ -4165,6 +4166,74 @@
                 );
         }
 
+        #cssTimeMilliseconds(
+            value,
+            fallback
+        ) {
+            const text =
+                String(
+                    value ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const match =
+                text.match(
+                    /^(-?(?:\d+\.?\d*|\.\d+))(ms|s)$/
+                );
+
+            if (!match) {
+                return fallback;
+            }
+
+            const number =
+                Number(
+                    match[
+                        1
+                    ]
+                );
+
+            if (
+                !Number.isFinite(
+                    number
+                ) ||
+                number <
+                    0
+            ) {
+                return fallback;
+            }
+
+            return (
+                match[
+                    2
+                ] ===
+                    "s"
+                    ? number *
+                        1000
+                    : number
+            );
+        }
+
+        #promotionDuration() {
+            const value =
+                getComputedStyle(
+                    this
+                )
+                    .getPropertyValue(
+                        "--hamburger-menu-promotion-duration"
+                    );
+
+            return this
+                .#fixedMotionDuration(
+                    this
+                        .#cssTimeMilliseconds(
+                            value,
+                            DEFAULT_PROMOTION_DURATION
+                        )
+                );
+        }
+
         #fixedMotionDuration(
             milliseconds
         ) {
@@ -5275,9 +5344,7 @@
 
             const duration =
                 this
-                    .#fixedMotionDuration(
-                        PROMOTION_DURATION
-                    );
+                    .#promotionDuration();
 
             let movement;
 
@@ -5636,9 +5703,7 @@
 
             const duration =
                 this
-                    .#fixedMotionDuration(
-                        PROMOTION_DURATION
-                    );
+                    .#promotionDuration();
 
             let movement;
 
