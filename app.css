@@ -1380,8 +1380,8 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 }
 
 .number-pad-clear[data-action="clear"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h12v12H6z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='m8 8 8 8M16 8l-8 8' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h12v12H6z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='m8 8 8 8M16 8l-8 8' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 15 8.8-10a2 2 0 0 1 2.8-.2l4 3.5a2 2 0 0 1 .2 2.8L11 21H7.2L4 18.2A2.2 2.2 0 0 1 4 15Z' fill='none' stroke='black' stroke-width='2.1' stroke-linejoin='round'/%3E%3Cpath d='m9 18 7-8' stroke='black' stroke-width='2.1'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 15 8.8-10a2 2 0 0 1 2.8-.2l4 3.5a2 2 0 0 1 .2 2.8L11 21H7.2L4 18.2A2.2 2.2 0 0 1 4 15Z' fill='none' stroke='black' stroke-width='2.1' stroke-linejoin='round'/%3E%3Cpath d='m9 18 7-8' stroke='black' stroke-width='2.1'/%3E%3C/svg%3E");
 }
 
 .number-pad-clear[data-action="close"]::before {
@@ -1404,8 +1404,8 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 }
 
 .number-pad-clear[data-action="reset"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7V3L2 6l3 3V7a8 8 0 1 1-1.2 9.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7V3L2 6l3 3V7a8 8 0 1 1-1.2 9.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 7.1A7.5 7.5 0 1 1 4.8 15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M6.5 3.5v4.2H2.3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 7.1A7.5 7.5 0 1 1 4.8 15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M6.5 3.5v4.2H2.3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3C/svg%3E");
 }
 
 .number-pad-confirm[data-action="confirm"]::before {
@@ -5799,8 +5799,8 @@ speech-command {
 .number-pad-reset::before {
     right: 18%;
     bottom: 18%;
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7V3L2 6l3 3V7a8 8 0 1 1-1.2 9.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7V3L2 6l3 3V7a8 8 0 1 1-1.2 9.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 7.1A7.5 7.5 0 1 1 4.8 15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M6.5 3.5v4.2H2.3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 7.1A7.5 7.5 0 1 1 4.8 15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M6.5 3.5v4.2H2.3' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3C/svg%3E");
 }
 
 .number-pad-clear-reset::after {
