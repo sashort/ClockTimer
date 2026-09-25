@@ -6,6 +6,12 @@
         #context;
         #active = new Map();
         #sequence = 0;
+        #outputSettings = {
+            speechVolume: 1,
+            toneVolume: 1,
+            speechVelocity: 1,
+            toneVelocity: 1
+        };
 
         constructor() {
             const unlock = () => {
@@ -33,6 +39,50 @@
 
         get activeSongs() {
             return Array.from(this.#active.values()).map(entry => entry.name);
+        }
+
+        get outputSettings() {
+            return {...this.#outputSettings};
+        }
+
+        configureOutput(settings = {}) {
+            const clamp = (value, minimum, maximum, fallback) => {
+                const numeric = Number(value);
+                return Number.isFinite(numeric)
+                    ? Math.max(minimum, Math.min(maximum, numeric))
+                    : fallback;
+            };
+
+            const current = this.#outputSettings;
+
+            this.#outputSettings = {
+                speechVolume: clamp(
+                    settings.speechVolume,
+                    0,
+                    1,
+                    current.speechVolume
+                ),
+                toneVolume: clamp(
+                    settings.toneVolume,
+                    0,
+                    1,
+                    current.toneVolume
+                ),
+                speechVelocity: clamp(
+                    settings.speechVelocity,
+                    0.5,
+                    2,
+                    current.speechVelocity
+                ),
+                toneVelocity: clamp(
+                    settings.toneVelocity,
+                    0.5,
+                    2,
+                    current.toneVelocity
+                )
+            };
+
+            return this.outputSettings;
         }
 
         async unlock() {
@@ -495,18 +545,19 @@
                                 ? event.lang.trim()
                                 : "en-US";
 
-                        if (
-                            Number.isFinite(
-                                Number(
-                                    event.rate
+                        utterance.rate =
+                            (
+                                Number.isFinite(
+                                    Number(
+                                        event.rate
+                                    )
                                 )
-                            )
-                        ) {
-                            utterance.rate =
-                                Number(
-                                    event.rate
-                                );
-                        }
+                                    ? Number(
+                                        event.rate
+                                    )
+                                    : 1
+                            ) *
+                            this.#outputSettings.speechVelocity;
 
                         if (
                             Number.isFinite(
@@ -521,24 +572,25 @@
                                 );
                         }
 
-                        if (
-                            Number.isFinite(
-                                Number(
-                                    event.volume
-                                )
-                            )
-                        ) {
-                            utterance.volume =
-                                Math.max(
-                                    0,
-                                    Math.min(
-                                        1,
-                                        Number(
-                                            event.volume
+                        utterance.volume =
+                            Math.max(
+                                0,
+                                Math.min(
+                                    1,
+                                    (
+                                        Number.isFinite(
+                                            Number(
+                                                event.volume
+                                            )
                                         )
-                                    )
-                                );
-                        }
+                                            ? Number(
+                                                event.volume
+                                            )
+                                            : 1
+                                    ) *
+                                    this.#outputSettings.speechVolume
+                                )
+                            );
 
                         entry.utterances.add(
                             utterance
@@ -704,16 +756,21 @@
             }
 
             const context = await this.#audioContext();
-            const tempo = Number(bpm ?? song.bpm ?? 120);
+            const tempo =
+                Number(bpm ?? song.bpm ?? 120) *
+                this.#outputSettings.toneVelocity;
 
             if (!Number.isFinite(tempo) || tempo <= 0) {
                 throw new RangeError("Song BPM must be greater than zero.");
             }
 
             const songGain =
-                Number.isFinite(Number(volume))
-                    ? Math.max(0, Number(volume))
-                    : 1;
+                (
+                    Number.isFinite(Number(volume))
+                        ? Math.max(0, Number(volume))
+                        : 1
+                ) *
+                this.#outputSettings.toneVolume;
             const shouldLoop =
                 loop === undefined
                     ? Boolean(song.loop)
@@ -896,14 +953,15 @@
                     "en-US"
                 );
 
-            if (
-                Number.isFinite(
-                    Number(rate)
-                )
-            ) {
-                utterance.rate =
-                    Number(rate);
-            }
+            utterance.rate =
+                (
+                    Number.isFinite(
+                        Number(rate)
+                    )
+                        ? Number(rate)
+                        : 1
+                ) *
+                this.#outputSettings.speechVelocity;
 
             if (
                 Number.isFinite(
@@ -914,20 +972,21 @@
                     Number(pitch);
             }
 
-            if (
-                Number.isFinite(
-                    Number(volume)
-                )
-            ) {
-                utterance.volume =
-                    Math.max(
-                        0,
-                        Math.min(
-                            1,
-                            Number(volume)
-                        )
-                    );
-            }
+            utterance.volume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        (
+                            Number.isFinite(
+                                Number(volume)
+                            )
+                                ? Number(volume)
+                                : 1
+                        ) *
+                        this.#outputSettings.speechVolume
+                    )
+                );
 
             let synthesizedSpeechToken;
 
@@ -1074,8 +1133,11 @@
                                 0,
                                 Math.min(
                                     1,
-                                    Number(volume) ||
-                                    0
+                                    (
+                                        Number(volume) ||
+                                        0
+                                    ) *
+                                    this.#outputSettings.toneVolume
                                 )
                             ),
                             context.currentTime
