@@ -1275,7 +1275,7 @@ class SpeechMicBar extends HTMLElement {
         this.#commandsCommand =
             ensureCommand(
                 "commands",
-                "^(?:speech )?commands$",
+                "^(?:(?:speech )?commands|what)$",
                 "WMOFActions.toggleSpeechOptions"
             );
 
