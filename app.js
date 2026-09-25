@@ -15162,6 +15162,28 @@
             );
         }
 
+        if (
+            hours === 0 &&
+            minutes > 0 &&
+            seconds > 0
+        ) {
+            return (
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " minute" +
+                (
+                    minutes === 1
+                        ? ""
+                        : "s"
+                ) +
+                " and " +
+                goalFailureNumberWords(
+                    seconds
+                )
+            );
+        }
+
         return (
             parts
                 .slice(
