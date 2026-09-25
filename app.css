@@ -5735,7 +5735,7 @@ speech-command {
 
 .number-pad-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     background: var(--wm-blue-dark);
 }
@@ -5753,4 +5753,17 @@ speech-command {
 
 .number-pad-action:disabled {
     opacity: .38;
+}
+
+
+.number-pad-shell {
+    position: relative;
+}
+
+.number-pad-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 4;
+    color: var(--wm-blue-dark);
 }
