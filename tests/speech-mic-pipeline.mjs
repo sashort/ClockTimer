@@ -1954,6 +1954,23 @@ assert.match(
 );
 
 assert.match(
+    speechMicBarSource,
+    /const toggleMic\s*=\s*event => \{[\s\S]*event\.stopPropagation\(\)[\s\S]*SpeechMenu[\s\S]*speechMenu\.muted[\s\S]*wake\?\.\(\)[\s\S]*sleep\?\.\(\)/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /const toggleMic[\s\S]{0,500}!this\.trainingMode/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /const toggleMic[\s\S]{0,500}this\.trainingLocked/
+);
+assert.match(
+    app,
+    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*collapseOptions[\s\S]*optionsCollapsed[\s\S]*expandOptions/
+);
+
+assert.match(
     speechMenuSource,
     /for \(const type of \["toggle", "close", "cancel", "okStatusChanged"\]\)[\s\S]*#schedulePhraseRefresh/
 );
