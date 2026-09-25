@@ -69,11 +69,6 @@ assert.match(
 
 assert.match(
     appSource,
-    /return "Standard Goal Failed\."/
-);
-
-assert.match(
-    appSource,
     /\$\{formatGoalFailureDuration\([\s\S]*?remainingMilliseconds[\s\S]*?\)\} until \$\{label\} Goal\$\{percentText\}\./
 );
 
@@ -124,17 +119,17 @@ console.log(
 
 assert.match(
     appSource,
-    /semanticLayerEnabled\(\s*"summary"\s*\)[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*"Total Goal Failed\."/
+    /consumeSemanticAction\(\s*"summary"\s*\)[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*"Total Goal Failed\."/
 );
 
 assert.match(
     appSource,
-    /!semanticLayerEnabled\(\s*"details"\s*\)[\s\S]*return sentences\.join/
+    /!consumeSemanticAction\(\s*"details"\s*\)[\s\S]*return sentences\.join/
 );
 
 assert.match(
     appSource,
-    /semanticLayerEnabled\(\s*"chime"\s*\)[\s\S]*"goal-failed"/
+    /consumeSemanticAction\(\s*"chime"\s*\)[\s\S]*"goal-failed"/
 );
 
 console.log(
