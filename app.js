@@ -3822,6 +3822,39 @@
         }));
     }
 
+    function setOkAllowed(
+        context,
+        allowed
+    ) {
+        if (!context) {
+            return false;
+        }
+
+        const next =
+            allowed === true;
+
+        if (
+            context.allowOk ===
+                next
+        ) {
+            return next;
+        }
+
+        context.allowOk =
+            next;
+
+        emitUIEvent(
+            context,
+            "okStatusChanged",
+            {
+                okAllowed:
+                    next
+            }
+        );
+
+        return next;
+    }
+
     function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
         if (
             !dialog ||
@@ -10392,6 +10425,10 @@
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
                 bindNumberPadEvents();
+                setOkAllowed(
+                    numberPadDialog,
+                    false
+                );
 
                 if (
                     englishSpeech &&
@@ -10838,6 +10875,11 @@
                 ? !valid
                 : ((!changed && !numberPadState.allowEmpty) || !valid);
 
+        setOkAllowed(
+            numberPadDialog,
+            !numberPadConfirm.disabled
+        );
+
         const settingsVisible =
             !percentMode &&
             !numberPadState.onConfirm &&
@@ -11157,6 +11199,11 @@
             numberPadConfirm.setAttribute("aria-label", "Confirm");
             numberPadConfirm.disabled = true;
         }
+
+        setOkAllowed(
+            numberPadDialog,
+            false
+        );
     }
 
     async function closeNumberPad({
