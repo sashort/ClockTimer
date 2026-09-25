@@ -17,53 +17,6 @@ class EnglishSpeechValuePreprocessor {
             .trim();
     }
 
-    static #normalizeKeypadDigits(value) {
-        const tokens =
-            String(value ?? "")
-                .trim()
-                .toLowerCase()
-                .split(/\s+/)
-                .filter(Boolean);
-
-        if (!tokens.length) {
-            return undefined;
-        }
-
-        const digitWords = {
-            zero: "0",
-            oh: "0",
-            one: "1",
-            two: "2",
-            three: "3",
-            four: "4",
-            five: "5",
-            six: "6",
-            seven: "7",
-            eight: "8",
-            nine: "9"
-        };
-
-        let digits = "";
-
-        for (const token of tokens) {
-            if (/^\d+$/.test(token)) {
-                digits += token;
-                continue;
-            }
-
-            const digit =
-                digitWords[token];
-
-            if (digit === undefined) {
-                return undefined;
-            }
-
-            digits += digit;
-        }
-
-        return digits || undefined;
-    }
-
     static normalize(value, kind) {
         const raw = String(value ?? "").trim();
         const phrase =
@@ -73,8 +26,6 @@ class EnglishSpeechValuePreprocessor {
                 ? EnglishSpeechValuePreprocessor.#normalizeTimeArticles(raw)
                 : raw;
         switch (kind) {
-            case "keypad":
-                return EnglishSpeechValuePreprocessor.#normalizeKeypadDigits(raw);
             case "duration": {
                 const duration = EnglishDurationParser.parse(phrase);
                 return EnglishDurationParser.format(duration);
@@ -106,8 +57,6 @@ class EnglishSpeechValuePreprocessor {
                 ? EnglishSpeechValuePreprocessor.#normalizeTimeArticles(raw)
                 : raw;
         switch (kind) {
-            case "keypad":
-                return EnglishSpeechValuePreprocessor.#normalizeKeypadDigits(raw);
             case "duration":
                 return EnglishDurationParser.parse(phrase);
             case "clock":

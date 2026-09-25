@@ -15732,6 +15732,25 @@
                     pattern
                 }
             ) => {
+                if (kind === "keypad") {
+                    if (
+                        !numberPadDialog
+                            ?.open ||
+                        !numberPadState
+                    ) {
+                        return text;
+                    }
+
+                    kind =
+                        numberPadState.mode ===
+                            "absolute"
+                            ? "clock-parts"
+                            : numberPadState.mode ===
+                                "percent"
+                                ? "percent"
+                                : "duration";
+                }
+
                 if (
                     !field ||
                     !pattern
@@ -16475,33 +16494,157 @@
                     return false;
                 }
 
-                const digits =
-                    EnglishSpeechValuePreprocessor
-                        .normalize(
-                            spokenValue,
-                            "keypad"
-                        );
+                let pending;
+                let meridiem =
+                    numberPadState
+                        .meridiem;
 
-                if (!digits) {
-                    return false;
-                }
+                if (
+                    numberPadState.mode ===
+                        "percent"
+                ) {
+                    const percent =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "percent"
+                            );
 
-                let entered = false;
-
-                for (const digit of digits) {
                     if (
-                        !actions
-                            .enterNumberPadDigit(
-                                digit
-                            )
+                        !Number.isInteger(
+                            percent
+                        ) ||
+                        percent <= 0
                     ) {
-                        return entered;
+                        return false;
                     }
 
-                    entered = true;
+                    pending =
+                        String(percent);
+                }
+                else if (
+                    numberPadState.mode ===
+                        "absolute"
+                ) {
+                    const parts =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "clock-parts"
+                            );
+
+                    if (!parts) {
+                        return false;
+                    }
+
+                    if (parts.meridiem) {
+                        meridiem =
+                            parts.meridiem
+                                .toUpperCase();
+                    }
+                    else if (
+                        parts.hour > 12
+                    ) {
+                        meridiem =
+                            undefined;
+                    }
+
+                    const hour =
+                        meridiem &&
+                        parts.hour > 12
+                            ? (
+                                parts.hour %
+                                    12 ||
+                                12
+                            )
+                            : parts.hour;
+
+                    pending =
+                        absoluteDigits(
+                            hour,
+                            parts.minute,
+                            0
+                        );
+
+                    if (parts.day) {
+                        const date =
+                            new Date();
+
+                        if (
+                            parts.day ===
+                                "tomorrow"
+                        ) {
+                            date.setDate(
+                                date.getDate() +
+                                    1
+                            );
+                        }
+
+                        numberPadState
+                            .pendingDate =
+                            formatDateInput(
+                                date
+                            );
+                    }
+
+                    if (
+                        !absoluteDigitsValid(
+                            pending,
+                            meridiem
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+                else {
+                    const duration =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "duration"
+                            );
+
+                    if (
+                        !Number.isFinite(
+                            duration
+                        ) ||
+                        duration <= 0
+                    ) {
+                        return false;
+                    }
+
+                    pending =
+                        durationValueToRawDigits(
+                            formatTimelineMilliseconds(
+                                duration
+                            )
+                        );
+
+                    if (
+                        !timeDigitsValid(
+                            pending
+                        )
+                    ) {
+                        return false;
+                    }
                 }
 
-                return entered;
+                numberPadState.pending =
+                    pending;
+
+                numberPadState.meridiem =
+                    meridiem;
+
+                numberPadState
+                    .replaceOnNextDigit =
+                    false;
+
+                numberPadState.everEdited =
+                    true;
+
+                refreshNumberPad();
+
+                return true;
             },
 
             openStartMenu() {
