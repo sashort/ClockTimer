@@ -120,3 +120,23 @@ assert.match(
 console.log(
     "PASS fixed Trip/Total modes announce only Standard plus their selected goal scope"
 );
+
+
+assert.match(
+    appSource,
+    /semanticLayerEnabled\(\s*"summary"\s*\)[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*"Total Goal Failed\."/
+);
+
+assert.match(
+    appSource,
+    /!semanticLayerEnabled\(\s*"details"\s*\)[\s\S]*return sentences\.join/
+);
+
+assert.match(
+    appSource,
+    /semanticLayerEnabled\(\s*"chime"\s*\)[\s\S]*"goal-failed"/
+);
+
+console.log(
+    "PASS goal-fail layers separate chime, failed-goal summary, and fallback/overtime details"
+);
