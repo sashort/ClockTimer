@@ -4921,6 +4921,17 @@
                             .submenu
                     );
 
+            entry.submenuAnimationRecords =
+                growing.map(
+                    record => ({
+                        element:
+                            record.element,
+                        metrics: {
+                            ...record.metrics
+                        }
+                    })
+                );
+
             entry.button
                 .setAttribute(
                     "aria-expanded",
@@ -4985,6 +4996,21 @@
             entry,
             generation
         ) {
+            const openingMetrics =
+                new Map(
+                    (
+                        entry
+                            .submenuAnimationRecords ||
+                        []
+                    )
+                        .map(
+                            record => [
+                                record.element,
+                                record.metrics
+                            ]
+                        )
+                );
+
             const shrinking =
                 [
                     ...entry
@@ -5003,6 +5029,10 @@
                         element => ({
                             element,
                             metrics:
+                                openingMetrics
+                                    .get(
+                                        element
+                                    ) ||
                                 this
                                     .#measure(
                                         element
@@ -5597,6 +5627,23 @@
                     entry,
                     generation
                 );
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            const pause =
+                this
+                    .#promotionPause();
+
+            if (pause) {
+                await wait(
+                    pause
+                );
+            }
 
             if (
                 generation !==
