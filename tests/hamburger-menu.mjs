@@ -50,7 +50,7 @@ const componentSource =
 
 assert.match(
     componentSource,
-    /const PROMOTION_DURATION\s*=\s*750/
+    /const PROMOTION_DURATION\s*=\s*500/
 );
 
 assert.match(
