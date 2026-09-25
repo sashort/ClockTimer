@@ -26,6 +26,7 @@ on:
       - "tests/speech-*.mjs"
       - "tests/spoken-duration.mjs"
       - "tests/package.json"
+      - "tests/hamburger-menu.mjs"
 
 jobs:
   test:
@@ -86,6 +87,7 @@ jobs:
           npm run test:speech-phrases
           npm run test:action-macros
           npm run test:editor-actions
+          npm run test:hamburger-menu
           php admin_permissions.php
           php access_tokens.php
           php new_user_invites.php
