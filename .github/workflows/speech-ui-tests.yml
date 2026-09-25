@@ -9,6 +9,7 @@ on:
       - "SpeechMenu.js"
       - "SpeechEditorRuntime.js"
       - "app.js"
+      - "ClockTimer.js"
       - "HamburgerMenu.js"
       - "index.html"
       - "app.css"
@@ -102,6 +103,7 @@ jobs:
           node new-user-qr.mjs
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
+          node speech-goal-fail.mjs
           node speech-value-preprocessor.mjs
           node speech-training-model.mjs
           node spoken-duration.mjs
