@@ -998,11 +998,11 @@
         settings.toneVolume =
             clamp(value.toneVolume, 0, 1, 1);
         settings.masterVelocity =
-            clamp(value.masterVelocity, 0.5, 3, 1);
+            clamp(value.masterVelocity, 0.5, 4, 1);
         settings.speechVelocity =
-            clamp(value.speechVelocity, 0.5, 3, 1);
+            clamp(value.speechVelocity, 0.5, 4, 1);
         settings.toneVelocity =
-            clamp(value.toneVelocity, 0.5, 3, 1);
+            clamp(value.toneVelocity, 0.5, 1.5, 1);
         settings.formalTime =
             value.formalTime === true;
 
@@ -1202,7 +1202,7 @@
             Math.max(
                 0.5,
                 Math.min(
-                    3,
+                    4,
                     Number(value)
                 )
             );
@@ -1219,7 +1219,7 @@
             Math.max(
                 0.5,
                 Math.min(
-                    3,
+                    4,
                     audioSettings.speechVelocity +
                         delta
                 )
@@ -1228,7 +1228,7 @@
             Math.max(
                 0.5,
                 Math.min(
-                    3,
+                    1.5,
                     audioSettings.toneVelocity +
                         delta
                 )
