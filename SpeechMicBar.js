@@ -65,12 +65,12 @@ class SpeechMicBar extends HTMLElement {
             label: "Trip Actions"
         },
         {
-            key: "goals",
-            label: "Goals"
-        },
-        {
             key: "informational",
             label: "Informational"
+        },
+        {
+            key: "goals",
+            label: "Goals"
         },
         {
             key: "settings",
