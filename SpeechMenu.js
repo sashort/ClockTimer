@@ -3990,15 +3990,23 @@ class SpeechMenu {
             catch {
                 return false;
             }
+
+            /*
+             * An explicit semantic availability function is authoritative.
+             * data-speech-target remains useful for training and response
+             * presentation, but it must not veto a command whose semantic
+             * runtime state says it is available.
+             */
+            return true;
         }
 
         /*
          * Confirm/cancel targets are retained as command metadata for
          * training and response presentation.  Their runtime scope comes
          * from the active speech context instead: confirm is gated above by
-         * allowOk, and cancel may use speech-available.  A shared training
-         * target must not make a contextual OK/Cancel command unavailable
-         * merely because that representative target is on another surface.
+         * allowOk.  A shared training target must not make a contextual
+         * OK/Cancel command unavailable merely because that representative
+         * target is on another surface.
          */
         const intent =
             element.dataset
