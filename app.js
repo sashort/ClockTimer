@@ -10800,7 +10800,7 @@
 
         numberPadCancel?.setAttribute(
             "aria-label",
-            "Back"
+            "Cancel"
         );
 
         const valid = numberPadValueValid();
@@ -11126,7 +11126,7 @@
             numberPadClear.setAttribute("aria-label", "Clear");
         }
         numberPadReset?.setAttribute("aria-label", "Reset");
-        numberPadCancel?.setAttribute("aria-label", "Back");
+        numberPadCancel?.setAttribute("aria-label", "Cancel");
         if (numberPadConfirm) {
             numberPadConfirm.dataset.action = "confirm";
             numberPadConfirm.setAttribute("aria-label", "Confirm");
@@ -11188,20 +11188,17 @@
         return true;
     }
 
-    async function backNumberPad() {
+    async function cancelNumberPad() {
         if (!numberPadState) {
             return false;
         }
 
-        const destination =
-            numberPadState.backTarget ||
-            numberPadState.cancelTarget ||
-            "home";
-
         return closeNumberPad({
-            destination,
+            destination:
+                numberPadState.cancelTarget ||
+                "home",
             discardPrepared:
-                destination === "home",
+                true,
             allowChanged:
                 true
         });
