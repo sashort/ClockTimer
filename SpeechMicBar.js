@@ -106,6 +106,10 @@ class SpeechMicBar extends HTMLElement {
                     right: 0;
                     bottom: 100%;
                     box-sizing: border-box;
+                    height:
+                        var(
+                            --speech-options-max-height
+                        );
                     max-height:
                         var(
                             --speech-options-max-height
@@ -231,6 +235,9 @@ class SpeechMicBar extends HTMLElement {
                             minmax(0, 1fr)
                         );
                     grid-auto-flow: column;
+                    grid-auto-columns:
+                        minmax(0, 1fr);
+                    align-content: start;
                     align-items: start;
                     gap: 8px;
                     min-width: 0;
@@ -239,6 +246,7 @@ class SpeechMicBar extends HTMLElement {
                 .option-category {
                     min-width: 0;
                     display: grid;
+                    break-inside: avoid;
                     grid-template-columns:
                         42px
                         minmax(0, 1fr);
@@ -3192,20 +3200,7 @@ class SpeechMicBar extends HTMLElement {
     }
 
     #optionMutationDuration() {
-        const reduceMotion =
-            this.ownerDocument
-                ?.defaultView
-                ?.matchMedia?.(
-                    "(prefers-reduced-motion: reduce)"
-                )
-                ?.matches;
-
-        return (
-            this.optionsOpen &&
-            !reduceMotion
-        )
-            ? 750
-            : 0;
+        return 0;
     }
 
     #optionItemKey(
