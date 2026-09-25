@@ -886,6 +886,7 @@
     const SETTINGS_HELP_FADE_DURATION = 250;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
+    const TRIP_LIST_OFFSCREEN_GAP = 12;
     const TRIP_LIST_BODY_DELAY = 125;
     const TRIP_LIST_BODY_DURATION = 425;
     const TRIP_LIST_MERGE_DURATION = 300;
@@ -1231,6 +1232,14 @@
             top: metrics.rect.top + metrics.paddingTop,
             width: metrics.width,
             height: metrics.height
+        };
+    }
+
+    function getTripLogAboveRect() {
+        const topRect = getTripLogTopRect();
+        return {
+            ...topRect,
+            top: topRect.top - topRect.height - TRIP_LIST_OFFSCREEN_GAP
         };
     }
 
@@ -1898,7 +1907,7 @@
             pinned
                 ? tripLogButton
                     .getBoundingClientRect()
-                : getTripLogBottomRect();
+                : getTripLogAboveRect();
 
         setFloatingTripLogRect(
             sourceRect
@@ -2029,7 +2038,9 @@
         );
 
         const destination =
-            getTripLogBottomRect();
+            pinned
+                ? getTripLogBottomRect()
+                : getTripLogAboveRect();
 
         await animateTripLogButton(
             "translateY(0px)",
