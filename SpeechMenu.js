@@ -3890,6 +3890,25 @@ class SpeechMenu {
             }
         }
 
+        /*
+         * Confirm/cancel targets are retained as command metadata for
+         * training and response presentation.  Their runtime scope comes
+         * from the active speech context instead: confirm is gated above by
+         * allowOk, and cancel may use speech-available.  A shared training
+         * target must not make a contextual OK/Cancel command unavailable
+         * merely because that representative target is on another surface.
+         */
+        const intent =
+            element.dataset
+                ?.speechIntent;
+
+        if (
+            intent === "confirm" ||
+            intent === "cancel"
+        ) {
+            return true;
+        }
+
         const target =
             SpeechMenu
                 .#resolveSpeechTarget(
