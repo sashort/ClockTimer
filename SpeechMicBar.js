@@ -5191,19 +5191,39 @@ class SpeechMicBar extends HTMLElement {
                     tallest -
                     shortest;
 
+                const horizontalPreference =
+                    48;
+
+                const prefersMorePanes =
+                    best &&
+                    paneCount >
+                        best.paneCount &&
+                    tallest <=
+                        best.tallest +
+                            horizontalPreference;
+
+                const samePaneCountBetter =
+                    best &&
+                    paneCount ===
+                        best.paneCount &&
+                    (
+                        tallest <
+                            best.tallest -
+                                .5 ||
+                        (
+                            Math.abs(
+                                tallest -
+                                best.tallest
+                            ) < .5 &&
+                            imbalance <
+                                best.imbalance
+                        )
+                    );
+
                 if (
                     !best ||
-                    tallest <
-                        best.tallest -
-                            .5 ||
-                    (
-                        Math.abs(
-                            tallest -
-                            best.tallest
-                        ) < .5 &&
-                        imbalance <
-                            best.imbalance
-                    )
+                    prefersMorePanes ||
+                    samePaneCountBetter
                 ) {
                     best = {
                         paneCount,
