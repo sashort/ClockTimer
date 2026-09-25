@@ -15141,7 +15141,11 @@
                     goalFailureNumberWords(
                         seconds
                     ) +
-                    " seconds"
+                    (
+                        seconds === 1
+                            ? " second"
+                            : " seconds"
+                    )
                 );
             }
 
