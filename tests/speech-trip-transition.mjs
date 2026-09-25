@@ -116,3 +116,32 @@ assert.match(
 console.log(
     "PASS second start chime is allowed only when Actual Start is explicitly set to Now"
 );
+
+
+assert.match(
+    app,
+    /pendingEndStartTripSpeech[\s\S]*function onTripEnded[\s\S]*endingIntoNewTrip[\s\S]*pendingEndStartTripSpeech\s*=\s*speech[\s\S]*return;/
+);
+
+assert.match(
+    app,
+    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-ended-started"[\s\S]*endStartTransitionChimePlayed\s*=\s*played/
+);
+
+assert.match(
+    app,
+    /tripDraftStartChimeAlreadyPlayed\(\)[\s\S]*endStartTransitionChimePlayed ===\s*true/
+);
+
+assert.equal(
+    catalog.songs["trip-ended"].events.some(
+        event =>
+            typeof event.speech ===
+            "string"
+    ),
+    false
+);
+
+console.log(
+    "PASS combined cue is played in the new-trip number pad and trip-ended speech is not duplicated"
+);
