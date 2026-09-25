@@ -1795,6 +1795,86 @@
             );
         }
 
+        #isUsableBoundaryElement(
+            element,
+            style =
+                element
+                    ? getComputedStyle(
+                        element
+                    )
+                    : undefined
+        ) {
+            if (
+                !element ||
+                !element.isConnected ||
+                !style
+            ) {
+                return false;
+            }
+
+            const display =
+                String(
+                    style.display ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            if (
+                !display ||
+                display ===
+                    "none" ||
+                display ===
+                    "contents" ||
+                display.startsWith(
+                    "inline"
+                ) ||
+                display.startsWith(
+                    "table-"
+                )
+            ) {
+                return false;
+            }
+
+            const blockDisplays =
+                new Set([
+                    "block",
+                    "flow-root",
+                    "flex",
+                    "grid",
+                    "table",
+                    "list-item"
+                ]);
+
+            if (
+                blockDisplays.has(
+                    display
+                )
+            ) {
+                return true;
+            }
+
+            const tokens =
+                display
+                    .split(
+                        /\s+/
+                    );
+
+            return (
+                tokens.includes(
+                    "block"
+                ) ||
+                (
+                    tokens.includes(
+                        "list-item"
+                    ) &&
+                    !tokens.includes(
+                        "inline"
+                    )
+                )
+            );
+        }
+
         #discoverBoundary() {
             const triggerRect =
                 this.#trigger
@@ -1841,10 +1921,13 @@
                         );
 
                     if (
-                        style.display ===
-                            "none" ||
                         style.visibility ===
-                            "hidden"
+                            "hidden" ||
+                        !this
+                            .#isUsableBoundaryElement(
+                                element,
+                                style
+                            )
                     ) {
                         return;
                     }
@@ -1993,7 +2076,11 @@
 
         #resolveBoundary() {
             if (
-                this.#boundaryOverride
+                this.#boundaryOverride &&
+                this
+                    .#isUsableBoundaryElement(
+                        this.#boundaryOverride
+                    )
             ) {
                 return this
                     .#boundaryOverride;
@@ -2016,7 +2103,13 @@
                                 selector
                             );
 
-                    if (explicit) {
+                    if (
+                        explicit &&
+                        this
+                            .#isUsableBoundaryElement(
+                                explicit
+                            )
+                    ) {
                         return explicit;
                     }
                 }
@@ -2031,11 +2124,7 @@
             const boundary =
                 this.#resolveBoundary();
 
-            if (
-                !boundary ||
-                !boundary
-                    .isConnected
-            ) {
+            if (!boundary) {
                 return undefined;
             }
 
@@ -2045,10 +2134,13 @@
                 );
 
             if (
-                style.display ===
-                    "none" ||
                 style.visibility ===
-                    "hidden"
+                    "hidden" ||
+                !this
+                    .#isUsableBoundaryElement(
+                        boundary,
+                        style
+                    )
             ) {
                 return undefined;
             }
@@ -2058,7 +2150,7 @@
                     .getBoundingClientRect();
 
             if (
-                rect.width <= 0 &&
+                rect.width <= 0 ||
                 rect.height <= 0
             ) {
                 return undefined;
@@ -2070,178 +2162,6 @@
                 rect,
                 style
             };
-        }
-
-        #boundaryGeometrySnapshot() {
-            const viewport =
-                this.#viewportBounds();
-
-            const boundary =
-                this.#boundaryElement &&
-                this.#boundaryElement
-                    .isConnected
-                    ? this.#boundaryElement
-                    : this.#resolveBoundary();
-
-            const rect =
-                boundary
-                    ?.getBoundingClientRect?.();
-
-            return {
-                boundary,
-                top:
-                    rect?.top,
-                right:
-                    rect?.right,
-                bottom:
-                    rect?.bottom,
-                left:
-                    rect?.left,
-                documentBottom:
-                    this
-                        .#documentUsableBottom(
-                            viewport.bottom
-                        )
-            };
-        }
-
-        #boundaryGeometryChanged(
-            previous,
-            next
-        ) {
-            if (!previous) {
-                return false;
-            }
-
-            if (
-                previous.boundary !==
-                next.boundary
-            ) {
-                return true;
-            }
-
-            for (
-                const key of [
-                    "top",
-                    "right",
-                    "bottom",
-                    "left",
-                    "documentBottom"
-                ]
-            ) {
-                const before =
-                    previous[
-                        key
-                    ];
-
-                const after =
-                    next[
-                        key
-                    ];
-
-                if (
-                    before ===
-                        undefined &&
-                    after ===
-                        undefined
-                ) {
-                    continue;
-                }
-
-                if (
-                    !Number.isFinite(
-                        before
-                    ) ||
-                    !Number.isFinite(
-                        after
-                    ) ||
-                    Math.abs(
-                        before -
-                        after
-                    ) >
-                        0.5
-                ) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        #startBoundaryTracking() {
-            if (
-                this.#boundaryTrackFrame !==
-                    undefined
-            ) {
-                return;
-            }
-
-            this.#boundarySnapshot =
-                this
-                    .#boundaryGeometrySnapshot();
-
-            const track =
-                () => {
-                    this.#boundaryTrackFrame =
-                        undefined;
-
-                    if (
-                        !this.#connected ||
-                        !this.isOpen
-                    ) {
-                        return;
-                    }
-
-                    const next =
-                        this
-                            .#boundaryGeometrySnapshot();
-
-                    if (
-                        this
-                            .#boundaryGeometryChanged(
-                                this
-                                    .#boundarySnapshot,
-                                next
-                            )
-                    ) {
-                        this.#boundarySnapshot =
-                            next;
-
-                        this
-                            .#markLayoutDirty();
-                    }
-                    else {
-                        this.#boundarySnapshot =
-                            next;
-                    }
-
-                    this.#boundaryTrackFrame =
-                        requestAnimationFrame(
-                            track
-                        );
-                };
-
-            this.#boundaryTrackFrame =
-                requestAnimationFrame(
-                    track
-                );
-        }
-
-        #stopBoundaryTracking() {
-            if (
-                this.#boundaryTrackFrame !==
-                    undefined
-            ) {
-                cancelAnimationFrame(
-                    this.#boundaryTrackFrame
-                );
-
-                this.#boundaryTrackFrame =
-                    undefined;
-            }
-
-            this.#boundarySnapshot =
-                undefined;
         }
 
         #viewportBounds() {
