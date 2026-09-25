@@ -134,7 +134,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Frozen transition pane</h3>
-<p>The active pane freezes its measured width and height before promotion or return animation begins. It stays frozen through the motion phase. On collapse it remains frozen until every child has finished collapsing and the return transition has completed.</p>
+<p>The active pane freezes a <em>base</em> width and height before promotion or return animation begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. On collapse it remains locked until every child has finished collapsing and the return transition has completed.</p>
 </div>
 <div class="card">
 <h3>Live DOM and size response</h3>
@@ -177,7 +177,7 @@ kbd {
 <p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
 
 <h2>Safe boundary</h2>
-<p><code>safe-boundary</code> accepts a document selector. When it resolves, the element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary. While the menu is open, the component samples the boundary's live <code>getBoundingClientRect()</code> each animation frame, so CSS transforms and animations that move the boundary without resizing it still update pane limits.</p>
+<p><code>safe-boundary</code> accepts a document selector. The resolved element must generate a usable <strong>block-level box</strong> such as <code>block</code>, <code>flex</code>, <code>grid</code>, <code>flow-root</code>, <code>table</code>, or <code>list-item</code>. Inline boxes, <code>display: contents</code>, hidden elements, table-internal boxes, and zero-size boxes are rejected. If the explicit boundary is invalid, the component falls back to automatic boundary discovery and finally the usable document edge. While the menu is open, the component samples the accepted boundary's live <code>getBoundingClientRect()</code> each animation frame, so CSS transforms and animations that move the boundary without resizing it still update pane limits.</p>
 
 <figure>
 <svg viewBox="0 0 900 330" role="img" aria-label="Boundary below the hamburger">
@@ -289,7 +289,7 @@ kbd {
 
 <h3>Opening a parent</h3>
 <ol>
-<li>Freeze both the active pane and its viewport box at their measured width and height. No pane resizing is allowed during the motion phase.</li>
+<li>Freeze both the active pane and its viewport box at their measured base width and height. Promotion content cannot resize the pane during the motion phase; external geometry changes may dynamically re-clamp that lock.</li>
 <li>Move the target parent to the promoted layer while it is still <strong>closed</strong>.</li>
 <li>The target takes exactly <strong>750 ms</strong> to reach its promoted position toward the hamburger.</li>
 <li>A background-colored promotion mask sits below the target and above the previous rows. Its <code>clip-path</code> expands with the same duration/easing as the target, leaving an erased trail exactly where the target has swept. This makes rows appear to disappear progressively as they are covered without changing their layout during the slide.</li>
@@ -335,7 +335,7 @@ kbd {
 <table>
 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th></tr></thead>
 <tbody>
-<tr><td><code>safe-boundary</code></td><td>CSS selector</td><td>Optional external element that the menu must not cross. The component determines whether it is above or below.</td></tr>
+<tr><td><code>safe-boundary</code></td><td>CSS selector</td><td>Optional external block-level element that the menu must not cross. Invalid/non-block candidates are ignored and fallback discovery is used.</td></tr>
 <tr><td><code>item-rate</code></td><td>positive number</td><td>Pixels per millisecond for child grow/shrink height animations. Parent promotion itself is fixed at 750 ms. Default: <code>0.5</code>.</td></tr>
 <tr><td><code>safeBoundary</code></td><td>Element | string | null</td><td>Property form of <code>safe-boundary</code>. An Element may be supplied directly.</td></tr>
 <tr><td><code>trigger</code></td><td>Element</td><td>The active hamburger/trigger element.</td></tr>
