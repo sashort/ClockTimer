@@ -2146,6 +2146,27 @@ assert.match(
     app,
     /numberPadConfirm\.disabled\s*=\s*autocorrect[\s\S]*setOkAllowed\([\s\S]*numberPadDialog,[\s\S]*!numberPadConfirm\.disabled/
 );
+assert.match(
+    app,
+    /let englishSpeech;[\s\S]*let installSpeechCommand;/
+);
+assert.match(
+    app,
+    /function installNumberPadSpeechCommands\(\)[\s\S]*"confirm"[\s\S]*"confirmNumberPad"[\s\S]*"cancel"[\s\S]*"cancelNumberPadEdit"/
+);
+assert.match(
+    app,
+    /ensureNumberPadLoaded\(\)[\s\S]*bindNumberPadEvents\(\)[\s\S]*installNumberPadSpeechCommands\(\)/
+);
+assert.match(
+    app,
+    /englishSpeech\s*=\s*[\s\S]*englishLanguage\?\.speech[\s\S]*installSpeechCommand\s*=/
+);
+assert.match(
+    app,
+    /installSpeechCommand\("cancel", "closeActiveSurface"[\s\S]*installNumberPadSpeechCommands\(\)/
+);
+
 
 assert.match(
     app,
