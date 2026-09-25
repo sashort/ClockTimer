@@ -20,6 +20,14 @@ window.requestAnimationFrame ??=
 window.cancelAnimationFrame ??=
     clearTimeout;
 
+window.matchMedia =
+    () => ({
+        matches:
+            true,
+        addEventListener() {},
+        removeEventListener() {}
+    });
+
 const componentSource =
     fs.readFileSync(
         new URL(
@@ -235,7 +243,7 @@ await new Promise(
     resolve =>
         setTimeout(
             resolve,
-            120
+            25
         )
 );
 
