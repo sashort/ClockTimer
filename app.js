@@ -15076,6 +15076,11 @@
             seconds === 0 &&
             parts.length === 2
         ) {
+            const minuteNumber =
+                goalFailureNumberWords(
+                    minutes
+                );
+
             return (
                 parts[0] +
                 (
@@ -15083,7 +15088,7 @@
                         ? " and "
                         : " "
                 ) +
-                parts[1]
+                minuteNumber
             );
         }
 
