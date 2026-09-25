@@ -196,7 +196,7 @@
             "  width: 100%;",
             "  margin: 0;",
             "  background: var(--hamburger-menu-focus-background, transparent);",
-            "  will-change: transform;",
+            "  will-change: translate;",
             "  box-sizing: border-box;",
             "}",
             ":where(hamburger-menu) .hamburger-menu-focus-group.hamburger-menu-focus-entering {",
@@ -219,7 +219,7 @@
             "  pointer-events: none !important;",
             "}",
             ":where(hamburger-menu) .hamburger-menu-zooming {",
-            "  will-change: transform;",
+            "  will-change: translate;",
             "}",
             "@position-try --hamburger-above-start {",
             "  top: auto;",
@@ -2717,6 +2717,817 @@
             return records;
         }
 
+        #fixedMotionDuration(
+            milliseconds
+        ) {
+            try {
+                if (
+                    globalThis
+                        .matchMedia?.(
+                            "(prefers-reduced-motion: reduce)"
+                        )
+                        .matches
+                ) {
+                    return 0;
+                }
+            }
+            catch {}
+
+            return milliseconds;
+        }
+
+        #promotionPause() {
+            return this
+                .#fixedMotionDuration(
+                    PROMOTION_PAUSE
+                );
+        }
+
+        #restoreRecordStyle(
+            record
+        ) {
+            if (!record?.element) {
+                return;
+            }
+
+            const {
+                element
+            } = record;
+
+            if (
+                record.inlineDisplay
+            ) {
+                element.style.display =
+                    record.inlineDisplay;
+            }
+            else {
+                element.style
+                    .removeProperty(
+                        "display"
+                    );
+            }
+
+            if (
+                record.inlineVisibility
+            ) {
+                element.style.visibility =
+                    record.inlineVisibility;
+            }
+            else {
+                element.style
+                    .removeProperty(
+                        "visibility"
+                    );
+            }
+
+            if (
+                record.inlineTranslate
+            ) {
+                element.style.translate =
+                    record.inlineTranslate;
+            }
+            else {
+                element.style
+                    .removeProperty(
+                        "translate"
+                    );
+            }
+
+            element.classList
+                .remove(
+                    "hamburger-menu-zooming"
+                );
+
+            record.hiddenByPromotion =
+                false;
+        }
+
+        #hidePromotionRecord(
+            record
+        ) {
+            if (
+                !record?.element ||
+                record
+                    .hiddenByPromotion
+            ) {
+                return;
+            }
+
+            record.element
+                .style.display =
+                "none";
+
+            record.hiddenByPromotion =
+                true;
+        }
+
+        #promotionRows(
+            sourceRoot,
+            group,
+            groupRect,
+            flow
+        ) {
+            const all =
+                this
+                    .#visibleRows(
+                        sourceRoot,
+                        group
+                    )
+                    .map(
+                        element => ({
+                            element,
+                            metrics:
+                                this
+                                    .#measure(
+                                        element
+                                    ),
+                            rect:
+                                element
+                                    .getBoundingClientRect(),
+                            inlineDisplay:
+                                element
+                                    .style
+                                    .display,
+                            inlineVisibility:
+                                element
+                                    .style
+                                    .visibility,
+                            inlineTranslate:
+                                element
+                                    .style
+                                    .translate,
+                            hiddenByPromotion:
+                                false,
+                            zoomDistance:
+                                0
+                        })
+                    )
+                    .filter(
+                        record =>
+                            record
+                                .metrics
+                                .outerHeight >
+                            0
+                    );
+
+            const toward = [];
+            const away = [];
+
+            for (
+                const record of
+                all
+            ) {
+                if (
+                    flow ===
+                    "start"
+                ) {
+                    if (
+                        record
+                            .rect
+                            .bottom <=
+                        groupRect
+                            .top +
+                            0.5
+                    ) {
+                        toward.push(
+                            record
+                        );
+                    }
+                    else if (
+                        record
+                            .rect
+                            .top >=
+                        groupRect
+                            .bottom -
+                            0.5
+                    ) {
+                        away.push(
+                            record
+                        );
+                    }
+                }
+                else {
+                    if (
+                        record
+                            .rect
+                            .top >=
+                        groupRect
+                            .bottom -
+                            0.5
+                    ) {
+                        toward.push(
+                            record
+                        );
+                    }
+                    else if (
+                        record
+                            .rect
+                            .bottom <=
+                        groupRect
+                            .top +
+                            0.5
+                    ) {
+                        away.push(
+                            record
+                        );
+                    }
+                }
+            }
+
+            return {
+                all,
+                toward,
+                away
+            };
+        }
+
+        #fullyCovers(
+            movingRect,
+            stationaryRect
+        ) {
+            return (
+                movingRect.top <=
+                    stationaryRect.top +
+                        0.5 &&
+                movingRect.bottom >=
+                    stationaryRect.bottom -
+                        0.5 &&
+                movingRect.left <=
+                    stationaryRect.left +
+                        0.5 &&
+                movingRect.right >=
+                    stationaryRect.right -
+                        0.5
+            );
+        }
+
+        #watchCoveredRows(
+            group,
+            records,
+            completion,
+            generation
+        ) {
+            let finished =
+                false;
+
+            Promise.resolve(
+                completion
+            )
+                .catch(
+                    () => {}
+                )
+                .finally(
+                    () => {
+                        finished =
+                            true;
+                    }
+                );
+
+            return new Promise(
+                resolve => {
+                    const check =
+                        () => {
+                            if (
+                                generation !==
+                                this
+                                    .#generation
+                            ) {
+                                resolve();
+                                return;
+                            }
+
+                            const movingRect =
+                                group
+                                    .getBoundingClientRect();
+
+                            for (
+                                const record of
+                                records
+                            ) {
+                                if (
+                                    record
+                                        .hiddenByPromotion
+                                ) {
+                                    continue;
+                                }
+
+                                const rect =
+                                    record
+                                        .element
+                                        .getBoundingClientRect();
+
+                                if (
+                                    this
+                                        .#fullyCovers(
+                                            movingRect,
+                                            rect
+                                        )
+                                ) {
+                                    this
+                                        .#hidePromotionRecord(
+                                            record
+                                        );
+                                }
+                            }
+
+                            if (finished) {
+                                resolve();
+                                return;
+                            }
+
+                            setTimeout(
+                                check,
+                                16
+                            );
+                        };
+
+                    check();
+                }
+            );
+        }
+
+        #watchUncoveredRows(
+            group,
+            records,
+            completion,
+            generation
+        ) {
+            let finished =
+                false;
+
+            Promise.resolve(
+                completion
+            )
+                .catch(
+                    () => {}
+                )
+                .finally(
+                    () => {
+                        finished =
+                            true;
+                    }
+                );
+
+            return new Promise(
+                resolve => {
+                    const check =
+                        () => {
+                            if (
+                                generation !==
+                                this
+                                    .#generation
+                            ) {
+                                resolve();
+                                return;
+                            }
+
+                            const movingRect =
+                                group
+                                    .getBoundingClientRect();
+
+                            for (
+                                const record of
+                                records
+                            ) {
+                                if (
+                                    record
+                                        .element
+                                        .style
+                                        .visibility !==
+                                    "hidden"
+                                ) {
+                                    continue;
+                                }
+
+                                const rect =
+                                    record
+                                        .element
+                                        .getBoundingClientRect();
+
+                                if (
+                                    !this
+                                        .#fullyCovers(
+                                            movingRect,
+                                            rect
+                                        )
+                                ) {
+                                    if (
+                                        record
+                                            .inlineVisibility
+                                    ) {
+                                        record
+                                            .element
+                                            .style
+                                            .visibility =
+                                            record
+                                                .inlineVisibility;
+                                    }
+                                    else {
+                                        record
+                                            .element
+                                            .style
+                                            .removeProperty(
+                                                "visibility"
+                                            );
+                                    }
+                                }
+                            }
+
+                            if (finished) {
+                                resolve();
+                                return;
+                            }
+
+                            setTimeout(
+                                check,
+                                16
+                            );
+                        };
+
+                    check();
+                }
+            );
+        }
+
+        #animateZoomAway(
+            records,
+            flow,
+            generation
+        ) {
+            const viewportRect =
+                this
+                    .#viewport
+                    .getBoundingClientRect();
+
+            const distance =
+                Math.max(
+                    80,
+                    viewportRect
+                        .height +
+                        64
+                );
+
+            const direction =
+                flow ===
+                    "start"
+                    ? 1
+                    : -1;
+
+            const duration =
+                this
+                    .#fixedMotionDuration(
+                        ZOOM_DURATION
+                    );
+
+            return records.map(
+                record => {
+                    record.zoomDistance =
+                        direction *
+                        distance;
+
+                    record.element
+                        .classList
+                        .add(
+                            "hamburger-menu-zooming"
+                        );
+
+                    if (
+                        !duration ||
+                        typeof record
+                            .element
+                            .animate !==
+                            "function"
+                    ) {
+                        this
+                            .#hidePromotionRecord(
+                                record
+                            );
+
+                        return Promise.resolve();
+                    }
+
+                    const animation =
+                        this
+                            .#trackAnimation(
+                                record
+                                    .element
+                                    .animate(
+                                        [
+                                            {
+                                                translate:
+                                                    "0 0"
+                                            },
+                                            {
+                                                translate:
+                                                    "0 " +
+                                                    record
+                                                        .zoomDistance +
+                                                    "px"
+                                            }
+                                        ],
+                                        {
+                                            duration,
+                                            easing:
+                                                "cubic-bezier(.55,0,1,.45)",
+                                            fill:
+                                                "both"
+                                        }
+                                    )
+                            );
+
+                    return animation
+                        .finished
+                        .catch(
+                            () => {}
+                        )
+                        .finally(
+                            () => {
+                                if (
+                                    generation ===
+                                    this
+                                        .#generation
+                                ) {
+                                    this
+                                        .#hidePromotionRecord(
+                                            record
+                                        );
+                                }
+
+                                try {
+                                    animation
+                                        .cancel();
+                                }
+                                catch {}
+
+                                record.element
+                                    .classList
+                                    .remove(
+                                        "hamburger-menu-zooming"
+                                    );
+                            }
+                        );
+                }
+            );
+        }
+
+        #animateZoomBack(
+            records,
+            generation
+        ) {
+            const duration =
+                this
+                    .#fixedMotionDuration(
+                        ZOOM_DURATION
+                    );
+
+            return records.map(
+                record => {
+                    if (
+                        record
+                            .inlineDisplay
+                    ) {
+                        record.element
+                            .style
+                            .display =
+                            record
+                                .inlineDisplay;
+                    }
+                    else {
+                        record.element
+                            .style
+                            .removeProperty(
+                                "display"
+                            );
+                    }
+
+                    record.hiddenByPromotion =
+                        false;
+
+                    record.element
+                        .style
+                        .visibility =
+                        record.inlineVisibility ||
+                        "";
+
+                    record.element
+                        .classList
+                        .add(
+                            "hamburger-menu-zooming"
+                        );
+
+                    if (
+                        !duration ||
+                        typeof record
+                            .element
+                            .animate !==
+                            "function"
+                    ) {
+                        this
+                            .#restoreRecordStyle(
+                                record
+                            );
+
+                        return Promise.resolve();
+                    }
+
+                    const animation =
+                        this
+                            .#trackAnimation(
+                                record
+                                    .element
+                                    .animate(
+                                        [
+                                            {
+                                                translate:
+                                                    "0 " +
+                                                    record
+                                                        .zoomDistance +
+                                                    "px"
+                                            },
+                                            {
+                                                translate:
+                                                    "0 0"
+                                            }
+                                        ],
+                                        {
+                                            duration,
+                                            easing:
+                                                "cubic-bezier(0,.55,.45,1)",
+                                            fill:
+                                                "both"
+                                        }
+                                    )
+                            );
+
+                    return animation
+                        .finished
+                        .catch(
+                            () => {}
+                        )
+                        .finally(
+                            () => {
+                                try {
+                                    animation
+                                        .cancel();
+                                }
+                                catch {}
+
+                                if (
+                                    generation ===
+                                    this
+                                        .#generation
+                                ) {
+                                    this
+                                        .#restoreRecordStyle(
+                                            record
+                                        );
+                                }
+                            }
+                        );
+                }
+            );
+        }
+
+        async #openPromotedSubmenu(
+            entry,
+            generation
+        ) {
+            const growing =
+                this
+                    .#prepareGrowth(
+                        entry
+                            .submenu
+                    );
+
+            entry.button
+                .setAttribute(
+                    "aria-expanded",
+                    "true"
+                );
+
+            this.#popover
+                .dataset
+                .focused =
+                "true";
+
+            const groupHeight =
+                Math.max(
+                    entry.group
+                        .getBoundingClientRect()
+                        .height,
+                    entry.group
+                        .scrollHeight
+                );
+
+            const intendedHeight =
+                groupHeight +
+                growing.reduce(
+                    (
+                        total,
+                        record
+                    ) =>
+                        total +
+                        record
+                            .metrics
+                            .outerHeight,
+                    0
+                );
+
+            this
+                .#updateFocusBounds(
+                    intendedHeight
+                );
+
+            await Promise.all(
+                growing.map(
+                    record =>
+                        this
+                            .#animateHeight(
+                                record.element,
+                                record.metrics,
+                                true,
+                                generation
+                            )
+                )
+            );
+        }
+
+        async #closePromotedSubmenu(
+            entry,
+            generation
+        ) {
+            const shrinking =
+                [
+                    ...entry
+                        .submenu
+                        .children
+                ]
+                    .filter(
+                        child =>
+                            !child.hidden &&
+                            getComputedStyle(
+                                child
+                            ).display !==
+                                "none"
+                    )
+                    .map(
+                        element => ({
+                            element,
+                            metrics:
+                                this
+                                    .#measure(
+                                        element
+                                    )
+                        })
+                    )
+                    .filter(
+                        record =>
+                            record
+                                .metrics
+                                .outerHeight >
+                            0
+                    );
+
+            await Promise.all(
+                shrinking.map(
+                    record =>
+                        this
+                            .#animateHeight(
+                                record.element,
+                                record.metrics,
+                                false,
+                                generation
+                            )
+                )
+            );
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return;
+            }
+
+            entry.submenu.hidden =
+                true;
+
+            entry.button
+                .setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+            for (
+                const record of
+                shrinking
+            ) {
+                this
+                    .#clearClip(
+                        record.element
+                    );
+            }
+        }
+
         #handleParentClick(
             event
         ) {
@@ -2817,6 +3628,10 @@
                 return false;
             }
 
+            const flow =
+                this
+                    .#flowDirection();
+
             const opening =
                 this.#dispatch(
                     "parentopening",
@@ -2829,9 +3644,7 @@
                                 .#focusStack
                                 .length +
                             1,
-                        flow:
-                            this
-                                .#flowDirection()
+                        flow
                     },
                     true
                 );
@@ -2871,6 +3684,15 @@
                 group
                     .getBoundingClientRect();
 
+            const rows =
+                this
+                    .#promotionRows(
+                        sourceRoot,
+                        group,
+                        originalRect,
+                        flow
+                    );
+
             const sourceParent =
                 group.parentNode;
 
@@ -2901,11 +3723,17 @@
                     group
                 );
 
-            this.#setClip(
-                placeholder,
-                groupMetrics,
-                1
-            );
+            placeholder.style.height =
+                groupMetrics.height +
+                "px";
+
+            placeholder.style.marginTop =
+                groupMetrics.marginTop +
+                "px";
+
+            placeholder.style.marginBottom =
+                groupMetrics.marginBottom +
+                "px";
 
             sourceParent
                 .insertBefore(
@@ -2913,55 +3741,8 @@
                     anchor
                 );
 
-            const hiding =
-                this.#visibleRows(
-                    sourceRoot,
-                    group
-                )
-                    .filter(
-                        element =>
-                            element !==
-                            placeholder
-                    )
-                    .map(
-                        element => ({
-                            element,
-                            metrics:
-                                this
-                                    .#measure(
-                                        element
-                                    )
-                        })
-                    )
-                    .filter(
-                        record =>
-                            record
-                                .metrics
-                                .outerHeight >
-                            0
-                    );
-
-            for (
-                const record of
-                hiding
-            ) {
-                this.#setClip(
-                    record.element,
-                    record.metrics,
-                    1
-                );
-            }
-
             this.#focusLayer.hidden =
                 false;
-
-            this.#popover
-                .dataset
-                .focused =
-                "true";
-
-            const flow =
-                this.#flowDirection();
 
             this.#focusLayer
                 .dataset
@@ -2991,26 +3772,19 @@
                 group
                     .getBoundingClientRect();
 
+            const translateX =
+                originalRect.left -
+                targetRect.left;
+
             const translateY =
                 originalRect.top -
                 targetRect.top;
 
-            group.style
-                .transform =
-                "translateY(" +
+            group.style.translate =
+                translateX +
+                "px " +
                 translateY +
-                "px)";
-
-            const growing =
-                this.#prepareGrowth(
-                    submenu
-                );
-
-            button
-                .setAttribute(
-                    "aria-expanded",
-                    "true"
-                );
+                "px";
 
             const entry = {
                 group,
@@ -3020,9 +3794,17 @@
                 sourceParent,
                 anchor,
                 placeholder,
-                hiding,
+                rows:
+                    rows.all,
+                toward:
+                    rows.toward,
+                away:
+                    rows.away,
                 originalPanelIndex,
-                flow
+                flow,
+                groupInlineTranslate:
+                    group.style
+                        .translate
             };
 
             this.#focusStack
@@ -3030,101 +3812,81 @@
                     entry
                 );
 
-            const intendedHeight =
-                Math.max(
-                    targetRect.height,
-                    groupMetrics.height
-                ) +
-                growing.reduce(
-                    (
-                        total,
-                        record
-                    ) =>
-                        total +
-                        record.metrics
-                            .outerHeight,
-                    0
-                );
-
-            this.#updateFocusBounds(
-                intendedHeight
-            );
-
-            const promises = [
-                this.#animateHeight(
-                    placeholder,
-                    groupMetrics,
-                    false,
-                    generation
-                ),
-                ...hiding.map(
-                    record =>
-                        this.#animateHeight(
-                            record.element,
-                            record.metrics,
-                            false,
-                            generation
-                        )
-                ),
-                ...growing.map(
-                    record =>
-                        this.#animateHeight(
-                            record.element,
-                            record.metrics,
-                            true,
-                            generation
-                        )
-                )
-            ];
+            const duration =
+                this
+                    .#fixedMotionDuration(
+                        PROMOTION_DURATION
+                    );
 
             let movement;
 
             if (
+                duration &&
                 typeof group
                     .animate ===
                     "function"
             ) {
                 movement =
-                    this.#trackAnimation(
-                        group.animate(
-                            [
+                    this
+                        .#trackAnimation(
+                            group.animate(
+                                [
+                                    {
+                                        translate:
+                                            translateX +
+                                            "px " +
+                                            translateY +
+                                            "px"
+                                    },
+                                    {
+                                        translate:
+                                            "0 0"
+                                    }
+                                ],
                                 {
-                                    transform:
-                                        "translateY(" +
-                                        translateY +
-                                        "px)"
-                                },
-                                {
-                                    transform:
-                                        "translateY(0px)"
+                                    duration,
+                                    easing:
+                                        "ease-in-out",
+                                    fill:
+                                        "both"
                                 }
-                            ],
-                            {
-                                duration:
-                                    this.#duration(
-                                        Math.abs(
-                                            translateY
-                                        )
-                                    ),
-                                easing:
-                                    "ease-in-out",
-                                fill:
-                                    "both"
-                            }
-                        )
-                    );
+                            )
+                        );
+            }
 
-                promises.push(
-                    movement.finished
+            const movementDone =
+                movement
+                    ? movement
+                        .finished
                         .catch(
                             () => {}
                         )
-                );
-            }
+                    : Promise.resolve();
 
-            await Promise.all(
-                promises
-            );
+            const coverageDone =
+                this
+                    .#watchCoveredRows(
+                        group,
+                        entry.toward,
+                        movementDone,
+                        generation
+                    );
+
+            const zoomDone =
+                Promise.all(
+                    this
+                        .#animateZoomAway(
+                            entry.away,
+                            flow,
+                            generation
+                        )
+                );
+
+            await Promise.all([
+                movementDone,
+                coverageDone,
+                zoomDone
+            ]);
 
             if (
                 generation !==
@@ -3141,7 +3903,7 @@
 
             group.style
                 .removeProperty(
-                    "transform"
+                    "translate"
                 );
 
             group.classList
@@ -3160,7 +3922,38 @@
                     "hidden";
             }
 
-            this.#updateFocusBounds();
+            const pause =
+                this
+                    .#promotionPause();
+
+            if (pause) {
+                await wait(
+                    pause
+                );
+            }
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            await this
+                .#openPromotedSubmenu(
+                    entry,
+                    generation
+                );
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            this
+                .#updateFocusBounds();
 
             this.#transitionBusy =
                 false;
@@ -3229,41 +4022,22 @@
 
             this.#cancelAnimations();
 
+            await this
+                .#closePromotedSubmenu(
+                    entry,
+                    generation
+                );
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
             const oldRect =
                 entry.group
                     .getBoundingClientRect();
-
-            const submenuItems =
-                [
-                    ...entry
-                        .submenu
-                        .children
-                ]
-                    .filter(
-                        child =>
-                            !child.hidden &&
-                            getComputedStyle(
-                                child
-                            ).display !==
-                                "none"
-                    )
-                    .map(
-                        element => ({
-                            element,
-                            metrics:
-                                this
-                                    .#measure(
-                                        element
-                                    )
-                        })
-                    )
-                    .filter(
-                        record =>
-                            record
-                                .metrics
-                                .outerHeight >
-                            0
-                    );
 
             const parent =
                 this.#focusStack
@@ -3291,19 +4065,37 @@
 
             for (
                 const record of
-                entry.hiding
+                entry.rows
+            ) {
+                if (
+                    record.inlineDisplay
+                ) {
+                    record.element
+                        .style
+                        .display =
+                        record
+                            .inlineDisplay;
+                }
+                else {
+                    record.element
+                        .style
+                        .removeProperty(
+                            "display"
+                        );
+                }
+
+                record.hiddenByPromotion =
+                    false;
+            }
+
+            for (
+                const record of
+                entry.toward
             ) {
                 record.element
-                    .classList
-                    .remove(
-                        "hamburger-menu-transition-hidden"
-                    );
-
-                this.#setClip(
-                    record.element,
-                    record.metrics,
-                    0
-                );
+                    .style
+                    .visibility =
+                    "hidden";
             }
 
             entry.placeholder
@@ -3331,91 +4123,98 @@
                 entry.group
                     .getBoundingClientRect();
 
+            const translateX =
+                oldRect.left -
+                newRect.left;
+
             const translateY =
                 oldRect.top -
                 newRect.top;
 
             entry.group
                 .style
-                .transform =
-                "translateY(" +
+                .translate =
+                translateX +
+                "px " +
                 translateY +
-                "px)";
+                "px";
 
-            const promises = [
-                ...entry
-                    .hiding
-                    .map(
-                        record =>
-                            this.#animateHeight(
-                                record.element,
-                                record.metrics,
-                                true,
-                                generation
-                            )
-                    ),
-                ...submenuItems
-                    .map(
-                        record =>
-                            this.#animateHeight(
-                                record.element,
-                                record.metrics,
-                                false,
-                                generation
-                            )
-                    )
-            ];
+            const duration =
+                this
+                    .#fixedMotionDuration(
+                        PROMOTION_DURATION
+                    );
 
             let movement;
 
             if (
+                duration &&
                 typeof entry
                     .group
                     .animate ===
                     "function"
             ) {
                 movement =
-                    this.#trackAnimation(
-                        entry.group
-                            .animate(
-                                [
+                    this
+                        .#trackAnimation(
+                            entry.group
+                                .animate(
+                                    [
+                                        {
+                                            translate:
+                                                translateX +
+                                                "px " +
+                                                translateY +
+                                                "px"
+                                        },
+                                        {
+                                            translate:
+                                                "0 0"
+                                        }
+                                    ],
                                     {
-                                        transform:
-                                            "translateY(" +
-                                            translateY +
-                                            "px)"
-                                    },
-                                    {
-                                        transform:
-                                            "translateY(0px)"
+                                        duration,
+                                        easing:
+                                            "ease-in-out",
+                                        fill:
+                                            "both"
                                     }
-                                ],
-                                {
-                                    duration:
-                                        this.#duration(
-                                            Math.abs(
-                                                translateY
-                                            )
-                                        ),
-                                    easing:
-                                        "ease-in-out",
-                                    fill:
-                                        "both"
-                                }
-                            )
-                    );
+                                )
+                        );
+            }
 
-                promises.push(
-                    movement.finished
+            const movementDone =
+                movement
+                    ? movement
+                        .finished
                         .catch(
                             () => {}
                         )
-                );
-            }
+                    : Promise.resolve();
 
-            await Promise.all(
-                promises
-            );
+            const uncoverDone =
+                this
+                    .#watchUncoveredRows(
+                        entry.group,
+                        entry.toward,
+                        movementDone,
+                        generation
+                    );
+
+            const zoomBackDone =
+                Promise.all(
+                    this
+                        .#animateZoomBack(
+                            entry.away,
+                            generation
+                        )
+                );
+
+            await Promise.all([
+                movementDone,
+                uncoverDone,
+                zoomBackDone
+            ]);
 
             if (
                 generation !==
@@ -3433,7 +4232,7 @@
             entry.group
                 .style
                 .removeProperty(
-                    "transform"
+                    "translate"
                 );
 
             entry.group
@@ -3451,21 +4250,13 @@
 
             for (
                 const record of
-                submenuItems
+                entry.rows
             ) {
-                this.#clearClip(
-                    record.element
-                );
+                this
+                    .#restoreRecordStyle(
+                        record
+                    );
             }
-
-            entry.submenu.hidden =
-                true;
-
-            entry.button
-                .setAttribute(
-                    "aria-expanded",
-                    "false"
-                );
 
             entry.anchor
                 ?.remove();
@@ -3477,7 +4268,8 @@
                 parent.group.hidden =
                     false;
 
-                this.#updateFocusBounds();
+                this
+                    .#updateFocusBounds();
             }
             else {
                 this.#focusLayer.hidden =
@@ -3686,11 +4478,13 @@
 
                 for (
                     const record of
-                    entry.hiding
+                    entry.rows ||
+                    []
                 ) {
-                    this.#clearClip(
-                        record.element
-                    );
+                    this
+                        .#restoreRecordStyle(
+                            record
+                        );
                 }
 
                 for (
