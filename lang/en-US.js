@@ -31,6 +31,7 @@
                 readGoalMode: "^mode$",
                 goalMode: "^(?<goalMode>auto|total|trip) mode$",
                 sync: "^sync(?: (?<syncAction>on|off))?$",
+                syncStatus: "^sync status$",
                 lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
                 showTripLog: "^(?:show )?trip log$",
                 hideTripLog: "^(?:hide|close) trip log$",
