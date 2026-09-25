@@ -650,3 +650,5 @@ window.close();
 console.log(
     "hamburger-menu tests passed"
 );
+
+process.exit(0);
