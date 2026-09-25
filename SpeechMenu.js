@@ -56,7 +56,7 @@ class SpeechMenu {
         const refreshPhrases =
             () => SpeechMenu.#schedulePhraseRefresh();
 
-        for (const type of ["toggle", "close", "cancel"]) {
+        for (const type of ["toggle", "close", "cancel", "okStatusChanged"]) {
             document.addEventListener(
                 type,
                 refreshPhrases,
@@ -3833,10 +3833,11 @@ class SpeechMenu {
                 ) ||
                 element.parentElement;
 
-            if (
-                context?.allowOk ===
-                    false
-            ) {
+            const okAllowed =
+                context?.allowOk !==
+                    false;
+
+            if (!okAllowed) {
                 return false;
             }
         }
