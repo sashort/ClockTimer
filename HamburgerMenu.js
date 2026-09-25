@@ -3534,6 +3534,8 @@
 
             if (
                 this.#focusStack
+                    .length &&
+                !this.#frozenPaneLocks
                     .length
             ) {
                 this.#updateFocusBounds();
@@ -5803,6 +5805,13 @@
         #updateFocusBounds(
             knownFullHeight
         ) {
+            if (
+                this.#frozenPaneLocks
+                    .length
+            ) {
+                return true;
+            }
+
             const current =
                 this.#focusStack
                     .at(-1);
