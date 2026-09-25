@@ -83,7 +83,8 @@ class SpeechMenu {
                             "disabled",
                             "inert",
                             "aria-hidden",
-                            "speech-available"
+                            "speech-available",
+                            "speech-open-ended"
                         ]
                     }
                 );
@@ -3145,10 +3146,18 @@ class SpeechMenu {
             revision
         };
 
-        SpeechMenu
-            .#armCandidateHardDeadline(
-                utterance
-            );
+        if (
+            !exactCandidate
+                .commandElement
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                )
+        ) {
+            SpeechMenu
+                .#armCandidateHardDeadline(
+                    utterance
+                );
+        }
 
         if (
             utterance
@@ -3331,6 +3340,15 @@ class SpeechMenu {
         element,
         transcript
     ) {
+        if (
+            element
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                )
+        ) {
+            return 1;
+        }
+
         const group =
             SpeechMenu.#phraseGroups
                 .find(
