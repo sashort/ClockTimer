@@ -4452,8 +4452,6 @@
             entry,
             generation
         ) {
-            this.#unfreezePane();
-
             const collapsedHeight =
                 entry.group
                     .getBoundingClientRect()
@@ -4477,19 +4475,50 @@
                 .focused =
                 "true";
 
-            const intendedHeight =
-                collapsedHeight +
-                growing.reduce(
-                    (
-                        total,
-                        record
-                    ) =>
-                        total +
-                        record
-                            .metrics
-                            .outerHeight,
-                    0
+            const safeHeight =
+                this.#safePanelHeight(
+                    false
                 );
+
+            const intendedHeight =
+                Math.max(
+                    1,
+                    Math.min(
+                        safeHeight,
+                        collapsedHeight +
+                            growing.reduce(
+                                (
+                                    total,
+                                    record
+                                ) =>
+                                    total +
+                                    record
+                                        .metrics
+                                        .outerHeight,
+                                0
+                            )
+                    )
+                );
+
+            /*
+             * Commit the promoted pane's destination height while the
+             * old pane geometry is still locked. Releasing the lock only
+             * after this prevents a one-frame collapse to the closed
+             * parent height between the slide and child expansion.
+             */
+            this.style
+                .setProperty(
+                    "--hamburger-menu-panel-height",
+                    intendedHeight +
+                        "px"
+                );
+
+            this.#unfreezePane();
+
+            this.#viewport
+                .style.height =
+                intendedHeight +
+                    "px";
 
             this
                 .#updateFocusBounds(
