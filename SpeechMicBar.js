@@ -260,6 +260,16 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 .option-category[
+                    data-category="informational"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue
+                        );
+                }
+
+                .option-category[
                     data-category="settings"
                 ]
                 .option-category-rail {
@@ -307,6 +317,23 @@ class SpeechMicBar extends HTMLElement {
                 .option-category-icon::before {
                     content: "%";
                     font-size: 22px;
+                }
+
+                .option-category[
+                    data-category="informational"
+                ]
+                .option-category-icon::before {
+                    content: "i";
+                    width: 23px;
+                    height: 23px;
+                    display: grid;
+                    place-items: center;
+                    border: 2px solid currentColor;
+                    border-radius: 50%;
+                    font-size: 17px;
+                    font-family: Georgia, serif;
+                    font-style: italic;
+                    line-height: 1;
                 }
 
                 .option-category[
@@ -1340,6 +1367,8 @@ class SpeechMicBar extends HTMLElement {
                     "--wm-blue-dark",
                 goals:
                     "--wm-yellow",
+                informational:
+                    "--wm-blue",
                 settings:
                     "--wm-gray",
                 system:
@@ -1355,6 +1384,8 @@ class SpeechMicBar extends HTMLElement {
                     "#001e60",
                 goals:
                     "#ffc220",
+                informational:
+                    "#0053e2",
                 settings:
                     "#a7a8aa",
                 system:
@@ -2324,6 +2355,7 @@ class SpeechMicBar extends HTMLElement {
         return [
             "trip-actions",
             "goals",
+            "informational",
             "settings",
             "system"
         ].includes(category)
@@ -2340,6 +2372,10 @@ class SpeechMicBar extends HTMLElement {
             {
                 key: "goals",
                 label: "Goals"
+            },
+            {
+                key: "informational",
+                label: "Informational"
             },
             {
                 key: "settings",
