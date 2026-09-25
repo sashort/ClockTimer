@@ -862,7 +862,6 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
 }
 
 
-.main-menu-panel[data-menu-panel-scrollable="true"],
 .main-menu-focus-layer[data-menu-scrollable="true"] {
     overflow-y: auto;
     overscroll-behavior-y: contain;
@@ -870,7 +869,6 @@ html[data-trip-log-startup="unpinned"] .clock-region > #clockTimer {
     touch-action: pan-y;
 }
 
-.main-menu-panel:not([data-menu-panel-scrollable="true"]),
 .main-menu-focus-layer:not([data-menu-scrollable="true"]) {
     overflow-y: hidden;
 }
