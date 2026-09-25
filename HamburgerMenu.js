@@ -4258,10 +4258,9 @@
             element.style.removeProperty("--hamburger-menu-row-motion-duration");
             element.style.removeProperty("--hamburger-menu-disappear-threshold-1");
             element.style.removeProperty("--hamburger-menu-disappear-threshold-2");
-            element.style.removeProperty("--hamburger-menu-reappear-threshold-1");
-            element.style.removeProperty("--hamburger-menu-reappear-threshold-2");
-            element.style.removeProperty("--hamburger-menu-row-switch-position");
             element.style.removeProperty("--hamburger-menu-row-switch-percentage");
+            record.slot?.remove();
+            record.slot = undefined;
 
             record.hiddenByPromotion =
                 false;
@@ -4286,6 +4285,50 @@
                 true;
         }
 
+        #visiblePaintBounds(element) {
+            const base = element.getBoundingClientRect();
+            let top = base.top;
+            let right = base.right;
+            let bottom = base.bottom;
+            let left = base.left;
+
+            const include = node => {
+                if (!node || node.hidden) return false;
+                const style = getComputedStyle(node);
+                if (style.display === "none" ||
+                    style.visibility === "hidden" ||
+                    Number(style.opacity) === 0) return false;
+                const rect = node.getBoundingClientRect();
+                if (!rect.width || !rect.height) return false;
+                top = Math.min(top, rect.top);
+                right = Math.max(right, rect.right);
+                bottom = Math.max(bottom, rect.bottom);
+                left = Math.min(left, rect.left);
+                return true;
+            };
+
+            const visit = (group, depth) => {
+                if (depth >= 2) return;
+                const button = group.querySelector(
+                    ":scope > button[aria-controls]"
+                );
+                const submenu = button && document.getElementById(
+                    button.getAttribute("aria-controls")
+                );
+                if (!submenu || !group.contains(submenu) ||
+                    !include(submenu)) return;
+                for (const child of submenu.children) {
+                    if (include(child)) visit(child, depth + 1);
+                }
+            };
+            visit(element, 0);
+            return {
+                top, right, bottom, left,
+                width: right - left,
+                height: bottom - top
+            };
+        }
+
         #promotionRows(
             sourceRoot,
             group,
@@ -4298,17 +4341,47 @@
                         sourceRoot,
                         group
                     )
+                    .flatMap(element => {
+                        if (!sourceRoot.matches(
+                            ".hamburger-menu-panel"
+                        )) return [{ element, nested: false }];
+
+                        const owner = element.querySelector(
+                            ":scope > button[aria-controls]"
+                        );
+                        if (!owner) return [{ element, nested: false }];
+
+                        // A sibling with a child menu stays in place. Only
+                        // its currently visible second-level leaf items
+                        // can disappear behind the promoted target.
+                        const submenu = document.getElementById(
+                            owner.getAttribute("aria-controls")
+                        );
+                        if (!submenu || !element.contains(submenu) ||
+                            submenu.hidden ||
+                            getComputedStyle(submenu).display === "none") {
+                            return [];
+                        }
+                        return [...submenu.children].filter(child =>
+                            !child.hidden &&
+                            getComputedStyle(child).display !== "none" &&
+                            !child.matches("button[aria-controls]") &&
+                            !child.querySelector(
+                                ":scope > button[aria-controls]"
+                            )
+                        ).map(child => ({ element: child, nested: true }));
+                    })
                     .map(
-                        element => ({
+                        ({ element, nested }) => ({
                             element,
+                            nested,
                             metrics:
                                 this
                                     .#measure(
                                         element
                                     ),
                             rect:
-                                element
-                                    .getBoundingClientRect(),
+                                this.#visiblePaintBounds(element),
                             inlineDisplay:
                                 element
                                     .style
@@ -4325,6 +4398,8 @@
                                 element.style.animation,
                             paintedOpacity:
                                 getComputedStyle(element).opacity,
+                            paintedDisplay:
+                                getComputedStyle(element).display,
                             inlinePointerEvents:
                                 element.style.pointerEvents,
                             hiddenByPromotion:
@@ -4414,7 +4489,7 @@
 
         #rowVisibilitySwitchTime(progress, duration) {
             // Invert the parent's ease-in-out timing curve so the CSS
-            // visibility keyframe fires at the matching travel position.
+            // opacity keyframe fires at the matching travel position.
             let low = 0;
             let high = 1;
             const target = Math.max(0, Math.min(1, progress));
@@ -4432,7 +4507,7 @@
             return Math.max(0, Math.ceil(time * duration));
         }
 
-        #animateRowVisibility(records, from, to, duration, flow, opening) {
+        #animateRowVisibility(records, from, to, duration, flow) {
             if (!duration || !records.length) return undefined;
 
             const topTravel = to.top - from.top;
@@ -4440,22 +4515,16 @@
             const rules = [];
             const animations = [];
             for (const record of records) {
-                const rect = opening
-                    ? record.rect
-                    : record.element.getBoundingClientRect();
+                const rect = record.rect;
                 // These two edge crossings are the discrete positions of
                 // the selected group relative to this row. Keep both as
                 // temporary CSS values; the direction selects the crossing
                 // where the row's visibility actually changes.
-                const firstProgress = opening
-                    ? (rect.top - from.top) / (topTravel || 1)
-                    : (rect.bottom - from.top + 1) / (topTravel || 1);
-                const secondProgress = opening
-                    ? (rect.bottom - from.bottom) / (bottomTravel || 1)
-                    : (rect.top - from.bottom - 1) / (bottomTravel || 1);
-                const prefix = opening
-                    ? "--hamburger-menu-disappear-threshold-"
-                    : "--hamburger-menu-reappear-threshold-";
+                const firstProgress = (rect.top - from.top) /
+                    (topTravel || 1);
+                const secondProgress = (rect.bottom - from.bottom) /
+                    (bottomTravel || 1);
+                const prefix = "--hamburger-menu-disappear-threshold-";
                 const first = this.#rowVisibilitySwitchTime(
                     Math.abs(topTravel) > .5 ? firstProgress : 1,
                     duration
@@ -4470,18 +4539,15 @@
                 const selectedProgress = flow === "start"
                     ? firstProgress
                     : secondProgress;
-                let covered = true;
-                if (opening) {
-                    const progress = Math.max(0, Math.min(1, selectedProgress));
-                    const left = from.left + (to.left - from.left) * progress;
-                    const right = from.right + (to.right - from.right) * progress;
-                    const top = from.top + topTravel * progress;
-                    const bottom = from.bottom + bottomTravel * progress;
-                    covered = left <= rect.left + .5 &&
-                        right >= rect.right - .5 &&
-                        top <= rect.top + .5 &&
-                        bottom >= rect.bottom - .5;
-                }
+                const progress = Math.max(0, Math.min(1, selectedProgress));
+                const left = from.left + (to.left - from.left) * progress;
+                const right = from.right + (to.right - from.right) * progress;
+                const top = from.top + topTravel * progress;
+                const bottom = from.bottom + bottomTravel * progress;
+                const covered = left <= rect.left + .5 &&
+                    right >= rect.right - .5 &&
+                    top <= rect.top + .5 &&
+                    bottom >= rect.bottom - .5;
 
                 record.element.style.setProperty(
                     "--hamburger-menu-row-switch-time",
@@ -4505,23 +4571,76 @@
                 const name = "hamburger-menu-coverage-" +
                     ++coverageAnimationId;
                 const before = Math.max(0, percentage - .001);
-                const initial = opening ? record.paintedOpacity : "0";
-                const final = opening ? "0" : record.paintedOpacity;
-                rules.push(`@keyframes ${name} { ` +
-                    `0%, ${before}% { opacity: ${initial}; } ` +
-                    `${percentage}%, 100% { opacity: ${final}; } }`);
-                animations.push([record, name]);
+                const initial = record.paintedOpacity;
+                const final = "0";
+                if (record.nested) {
+                    const slot = document.createElement("div");
+                    slot.setAttribute("aria-hidden", "true");
+                    Object.assign(slot.style, {
+                        display: "none",
+                        visibility: "hidden",
+                        pointerEvents: "none",
+                        boxSizing: "border-box",
+                        width: record.rect.width + "px",
+                        height: record.metrics.height + "px",
+                        marginTop: record.metrics.marginTop + "px",
+                        marginBottom: record.metrics.marginBottom + "px"
+                    });
+                    record.element.before(slot);
+                    record.slot = slot;
+                    const slotName = name + "-slot";
+                    rules.push(`@keyframes ${name} { ` +
+                        `0%, ${before}% { opacity: ${initial}; display: ${record.paintedDisplay}; } ` +
+                        `${percentage}%, 100% { opacity: 0; display: none; } }`);
+                    rules.push(`@keyframes ${slotName} { ` +
+                        `0%, ${before}% { display: none; } ` +
+                        `${percentage}%, 100% { display: block; } }`);
+                    animations.push([record, name, slotName]);
+                }
+                else {
+                    rules.push(`@keyframes ${name} { ` +
+                        `0%, ${before}% { opacity: ${initial}; } ` +
+                        `${percentage}%, 100% { opacity: ${final}; } }`);
+                    animations.push([record, name]);
+                }
             }
 
             const style = document.createElement("style");
             style.textContent = rules.join("\n");
             document.head.append(style);
-            for (const [record, name] of animations) {
+            for (const [record, name, slotName] of animations) {
                 record.element.style.animation =
                     `${name} var(--hamburger-menu-row-motion-duration) linear both`;
                 record.element.style.pointerEvents = "none";
+                if (slotName) {
+                    record.slot.style.animation =
+                        `${slotName} ${duration}ms linear both`;
+                }
             }
-            return style;
+            return { style, animations };
+        }
+
+        #reverseRowVisibility(entry, duration) {
+            if (!entry.rowKeyframes || !duration) return;
+            // Changing direction on a finished CSS animation does not
+            // restart it. Clear all rows, flush once, then play in reverse.
+            for (const [record, , slotName] of entry.rowKeyframes.animations) {
+                record.element.style.animation = "none";
+                if (slotName) record.slot.style.animation = "none";
+            }
+            void entry.sourceRoot.offsetWidth;
+            for (const [record, name, slotName] of entry.rowKeyframes.animations) {
+                record.element.style.setProperty(
+                    "--hamburger-menu-row-motion-duration", duration + "ms"
+                );
+                record.element.style.animation =
+                    `${name} var(--hamburger-menu-row-motion-duration) ` +
+                    "linear reverse both";
+                if (slotName) {
+                    record.slot.style.animation =
+                        `${slotName} ${duration}ms linear reverse both`;
+                }
+            }
         }
 
         #animateZoomAway(
@@ -5613,8 +5732,7 @@
             }
 
             const originalRect =
-                group
-                    .getBoundingClientRect();
+                this.#visiblePaintBounds(group);
 
             const rows =
                 this
@@ -5704,8 +5822,7 @@
                 );
 
             const targetRect =
-                group
-                    .getBoundingClientRect();
+                this.#visiblePaintBounds(group);
 
             const translateX =
                 originalRect.left -
@@ -5801,7 +5918,7 @@
 
             entry.rowKeyframes = this.#animateRowVisibility(
                 entry.toward, originalRect, targetRect,
-                duration, flow, true
+                duration, flow
             );
 
             const zoomDone =
@@ -5856,9 +5973,6 @@
                         record
                     );
             }
-
-            entry.rowKeyframes?.remove();
-            entry.rowKeyframes = undefined;
 
             if (current) {
                 current.group.hidden =
@@ -6176,10 +6290,7 @@
                         )
                     : Promise.resolve();
 
-            entry.rowKeyframes = this.#animateRowVisibility(
-                entry.toward, promotedRect, destinationRect,
-                duration, entry.flow, false
-            );
+            this.#reverseRowVisibility(entry, duration);
 
             const zoomBackDone =
                 Promise.all(
@@ -6265,7 +6376,7 @@
                     "hamburger-menu-panel-driven"
                 );
 
-            entry.rowKeyframes?.remove();
+            entry.rowKeyframes?.style.remove();
             entry.rowKeyframes = undefined;
             if (entry.panelMotion) {
                 entry.motionPanel.style.removeProperty("--hamburger-menu-target-x");
@@ -6547,7 +6658,7 @@
                         "hamburger-menu-panel-driven"
                     );
 
-                entry.rowKeyframes?.remove();
+                entry.rowKeyframes?.style.remove();
                 if (entry.panelMotion) {
                     entry.motionPanel.style.removeProperty("--hamburger-menu-target-x");
                     entry.motionPanel.style.removeProperty("--hamburger-menu-target-y");
