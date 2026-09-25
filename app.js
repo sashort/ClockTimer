@@ -14216,7 +14216,7 @@
             sentences.push(
                 `${formatGoalFailureDuration(
                     remainingMilliseconds
-                )} remaining until ${label} Goal${percentText}.`
+                )} until ${label} Goal${percentText}.`
             );
         }
 
