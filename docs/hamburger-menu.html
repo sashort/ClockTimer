@@ -134,7 +134,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Frozen transition pane</h3>
-<p>The active pane freezes a <em>base</em> width and height before promotion begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. The current locked height is exposed through <code>--hamburger-menu-frozen-pane-height</code>; when observers retarget it mid-transition, the pane interpolates to the new height instead of snapping. The same lock is retained for the entire promoted stack, including nested parents, and is released only after the final promoted parent returns to the normal pane.</p>
+<p>The pane freezes its measured base width and height during the invisible opening calculation, before the hamburger is revealed. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. The current locked height is exposed through <code>--hamburger-menu-frozen-pane-height</code>; when observers retarget it mid-transition, the pane interpolates to the new height instead of snapping. The same lock is retained for the entire open hamburger session and is released only when the hamburger closes.</p>
 </div>
 <div class="card">
 <h3>Live DOM and size response</h3>
@@ -289,25 +289,25 @@ kbd {
 </figure>
 
 <h3>Opening a parent</h3>
+<p>Top-level promotion retains the mask/row choreography described by the graphical example above. Nested promotion uses a simpler deterministic path because the incoming parent is already a descendant of the currently promoted parent.</p>
 <ol>
-<li>Freeze both the active pane and its viewport box at their measured base width and height. Promotion content cannot resize the pane during the motion phase; external geometry changes may dynamically re-clamp that lock.</li>
-<li>Move the target parent to the promoted layer while it is still <strong>closed</strong>.</li>
-<li>The target takes exactly <strong>450 ms</strong> to reach its promoted position toward the hamburger.</li>
-<li>A background-colored promotion mask sits below the target and above the previous rows. Its <code>clip-path</code> expands with the same duration/easing as the target, leaving an erased trail exactly where the target has swept. This makes rows appear to disappear progressively as they are covered without changing their layout during the slide.</li>
-<li>Rows on the opposite side of the target zoom off in the direction away from the hamburger. They remain nested in the frozen pane and are clipped as they leave.</li>
-<li>At the target endpoint, all previous-level rows are switched to <code>display: none</code> together and the promotion mask is removed.</li>
-<li>The component waits for the later of the 450 ms parent slide and the opposite-side zoom animation, then pauses for <strong>75 ms</strong>.</li>
-<li>The pane remains frozen while the promoted parent's children open. Child expansion is clipped inside that fixed pane; if the promoted content exceeds the available pane, promoted scrolling is enabled instead of resizing the pane.</li>
+<li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
+<li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
+<li>Temporarily set the current promoted parent and nested parent to <code>position: relative</code>.</li>
+<li>Compute one translation vector: <code>nestedTarget - nestedStart</code>. Apply that translation only to the current promoted parent. Because the nested parent and all of its children are descendants, they travel together automatically while the frozen pane clips anything that leaves the pane.</li>
+<li>At the endpoint, absolute-lock the nested parent at its visible promoted rectangle, insert a placeholder at its original slot, move the nested parent into the promoted focus layer, then hide the old parent.</li>
+<li>Cancel the temporary parent animation and remove temporary positioning after the reparent has been committed.</li>
+<li>Pause for <strong>75 ms</strong>, then open the nested parent's children inside the still-frozen pane.</li>
 </ol>
 
 <h3>Closing a promoted parent</h3>
 <ol>
-<li>Freeze the current pane and viewport before changing any child height.</li>
-<li>Collapse all children completely while the pane stays at its frozen dimensions.</li>
-<li>After every child has collapsed, the component waits the same <strong>75 ms</strong> boundary pause used on opening, then begins the 450 ms return motion.</li>
-<li>The previous-level rows are restored underneath a fully applied promotion mask. For nested closes, that reverse mask is placed inside the promoted focus layer between the returning child and its restored parent, so the parent cannot pop back early. As the child returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position and progressively reveals the parent level behind it.</li>
-<li>Opposite-side rows return from outside the clipped pane at the same time.</li>
-<li>The mask is removed at the endpoint. Nested closes keep the existing frozen pane lock; it is released only when the promoted stack becomes empty.</li>
+<li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
+<li>Temporarily absolute-lock the previous parent at its promoted base rectangle while hidden, then measure the placeholder that marks the nested parent's original slot.</li>
+<li>Translate the previous parent until that placeholder lies exactly underneath the currently visible nested parent.</li>
+<li>Absolute-lock the nested parent at its current visible rectangle, move it back into its original DOM slot, then remove its temporary lock. At this point the nested parent is visually unchanged but is once again a child of the translated parent.</li>
+<li>Animate only the previous parent from that saved translation back to <code>0 0</code>. The nested parent and every other descendant automatically return with it.</li>
+<li>Remove the placeholder, temporary positioning, and animation state. Because close is the same parent translation with the bounds flipped, it is the exact reverse of nested entrance.</li>
 </ol>
 
 <p class="note"><strong>Terminology:</strong> in this component, a <em>pane</em> is the visible horizontal menu page / promoted viewport whose dimensions are frozen during transition mechanics. A parent menu is the group being promoted inside that pane.</p>
