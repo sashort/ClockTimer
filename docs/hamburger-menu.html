@@ -134,7 +134,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Frozen transition pane</h3>
-<p>The active pane freezes a <em>base</em> width and height before promotion or return animation begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. On collapse it remains locked until every child has finished collapsing and the return transition has completed.</p>
+<p>The active pane freezes a <em>base</em> width and height before promotion or return animation begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. The current locked height is exposed through <code>--hamburger-menu-frozen-pane-height</code>; when observers retarget it mid-transition, the pane interpolates to the new height instead of snapping. On collapse it remains locked until every child has finished collapsing and the return transition has completed.</p>
 </div>
 <div class="card">
 <h3>Live DOM and size response</h3>
@@ -397,6 +397,8 @@ kbd {
 <tbody>
 <tr><td><code>--hamburger-menu-trigger-duration</code></td><td><code>240ms</code>; movement duration for safe-region trigger shifts.</td></tr>
 <tr><td><code>--hamburger-menu-layout-duration</code></td><td><code>240ms</code>; equal-page-height transition.</td></tr>
+<tr><td><code>--hamburger-menu-frozen-pane-height</code></td><td>Live locked pane height during promotion/collapse. Managed by the component and updated by observers/boundary tracking.</td></tr>
+<tr><td><code>--hamburger-menu-frozen-height-duration</code></td><td>Duration used when a frozen pane's live target height changes. Defaults to <code>--hamburger-menu-layout-duration</code> (240ms).</td></tr>
 <tr><td><code>--hamburger-menu-indicator-height</code></td><td><code>4px</code>.</td></tr>
 <tr><td><code>--hamburger-menu-indicator-gap</code></td><td><code>8px</code>.</td></tr>
 <tr><td><code>--hamburger-menu-indicator-color</code></td><td><code>currentColor</code>.</td></tr>
