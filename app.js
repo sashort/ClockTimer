@@ -13392,9 +13392,97 @@
     for(const element of [scopeConnectionButton,toggleSyncGoalButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
 
     // Semantic ClockTimer event integration points.
-    // These bodies intentionally do not change UI yet; future speech synthesis and
-    // other user-facing reactions should be implemented here rather than decoding
-    // lower-level ClockTimer events elsewhere.
+    // Notification layers use nestable disable counts so callers can suppress
+    // one layer temporarily without disturbing another caller's suppression.
+    const semanticDisableCounts = {
+        chime: 0,
+        summary: 0,
+        details: 0
+    };
+
+    const semanticDisableFrames =
+        new Set();
+
+    function pushSemanticDisable(
+        frame = {}
+    ) {
+        const normalized = {
+            chime:
+                Boolean(
+                    frame.chime
+                ),
+            summary:
+                Boolean(
+                    frame.summary
+                ),
+            details:
+                Boolean(
+                    frame.details
+                )
+        };
+
+        semanticDisableFrames.add(
+            normalized
+        );
+
+        for (const key of Object.keys(normalized)) {
+            if (normalized[key]) {
+                semanticDisableCounts[key] += 1;
+            }
+        }
+
+        return normalized;
+    }
+
+    function popSemanticDisable(
+        frame
+    ) {
+        if (
+            !frame ||
+            !semanticDisableFrames
+                .delete(
+                    frame
+                )
+        ) {
+            return false;
+        }
+
+        for (const key of Object.keys(semanticDisableCounts)) {
+            if (frame[key]) {
+                semanticDisableCounts[key] =
+                    Math.max(
+                        0,
+                        semanticDisableCounts[key] - 1
+                    );
+            }
+        }
+
+        return true;
+    }
+
+    function semanticLayerEnabled(
+        layer
+    ) {
+        return (
+            semanticDisableCounts[
+                layer
+            ] === 0
+        );
+    }
+
+    globalThis.WMOFSemanticNotifications =
+        Object.freeze({
+            pushDisable:
+                pushSemanticDisable,
+            popDisable:
+                popSemanticDisable,
+            get disableCounts() {
+                return {
+                    ...semanticDisableCounts
+                };
+            }
+        });
+
     function reserveSemanticEvent(event, purpose) {
         const detail = event.detail;
         void detail;
@@ -13405,7 +13493,12 @@
         const audio =
             globalThis.WMOFAudio;
 
-        if (!audio?.startSong) {
+        if (
+            !semanticLayerEnabled(
+                "chime"
+            ) ||
+            !audio?.startSong
+        ) {
             return;
         }
 
@@ -13438,24 +13531,100 @@
         let played =
             false;
 
-        try {
-            const song =
-                await audio
-                    ?.startSong?.(
-                        name,
-                        {
-                            bpm: 180,
-                            ...options
-                        }
-                    );
+        if (
+            semanticLayerEnabled(
+                "chime"
+            )
+        ) {
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            name,
+                            {
+                                bpm: 180,
+                                ...options
+                            }
+                        );
 
-            played =
-                Boolean(song);
+                played =
+                    Boolean(song);
 
-            await song
-                ?.finished;
+                await song
+                    ?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    name,
+                    error
+                );
+            }
         }
-        catch (error) {
+
+        if (
+            speech &&
+            audio?.speak
+        ) {
+            audio.speak(
+                speech
+            );
+        }
+
+        return played;
+    }
+
+    // Early/late announcements are about the timing gain or loss for
+    // the current trip event. They intentionally never use summary.total.
+    function tripTimingSpeech(
+        detail,
+        lead,
+        disposition
+    ) {
+        const milliseconds =
+            Number(
+                detail
+                    ?.timeDifferenceMilliseconds
+            );
+
+        const parts = [];
+
+        if (
+            semanticLayerEnabled(
+                "summary"
+            )
+        ) {
+            parts.push(
+                lead + "."
+            );
+        }
+
+        if (
+            semanticLayerEnabled(
+                "details"
+            ) &&
+            Number.isFinite(milliseconds)
+        ) {
+            parts.push(
+                formatGoalFailureDuration(
+                    Math.abs(
+                        milliseconds
+                    )
+                ) +
+                " " +
+                disposition +
+                "."
+            );
+        }
+
+        return parts.join(
+            " "
+        );
+    }
+
+    function formatSpokenPercent(
+        value
+    ) {
             console.error(
                 "Audio playback failed:",
                 name,
@@ -13568,14 +13737,44 @@
                     ?.countedPercent
             );
 
+        const parts = [];
+
         if (
+            semanticLayerEnabled(
+                "summary"
+            )
+        ) {
+            parts.push(
+                "Trip ended."
+            );
+
+            if (
+                Number.isFinite(
+                    countedPercent
+                )
+            ) {
+                parts.push(
+                    "Total percent: " +
+                        formatSpokenPercent(
+                            countedPercent
+                        ) +
+                        "."
+                );
+            }
+        }
+
+        if (
+            !semanticLayerEnabled(
+                "details"
+            ) ||
             !Number.isFinite(standard) ||
             !Number.isFinite(counted) ||
             !Number.isFinite(percentGoal) ||
-            percentGoal <= 0 ||
-            !Number.isFinite(countedPercent)
+            percentGoal <= 0
         ) {
-            return "Trip ended.";
+            return parts.join(
+                " "
+            );
         }
 
         const allowed =
@@ -13593,15 +13792,6 @@
             Math.round(
                 allowed - counted
             );
-
-        const parts = [
-            "Trip ended.",
-            "Total percent: " +
-                formatSpokenPercent(
-                    countedPercent
-                ) +
-                "."
-        ];
 
         if (remaining > 0) {
             parts.push(
@@ -13862,9 +14052,15 @@
         if (
             tripDraftStartChimeAlreadyPlayed()
         ) {
-            speakSemanticText(
-                "Trip started."
-            );
+            if (
+                semanticLayerEnabled(
+                    "summary"
+                )
+            ) {
+                speakSemanticText(
+                    "Trip started."
+                );
+            }
             return;
         }
 
@@ -14429,27 +14625,33 @@
                 detail
             );
 
-        try {
-            const song =
-                await audio
-                    ?.startSong?.(
-                        "goal-failed",
-                        {
-                            bpm: 100
-                        }
-                    );
-
-            await song
-                ?.finished;
-        }
-        catch (
-            error
+        if (
+            semanticLayerEnabled(
+                "chime"
+            )
         ) {
-            console.error(
-                "Audio playback failed:",
-                "goal-failed",
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            "goal-failed",
+                            {
+                                bpm: 100
+                            }
+                        );
+
+                await song
+                    ?.finished;
+            }
+            catch (
                 error
-            );
+            ) {
+                console.error(
+                    "Audio playback failed:",
+                    "goal-failed",
+                    error
+                );
+            }
         }
 
         if (speech) {
