@@ -17220,7 +17220,7 @@
                         .slice(1);
 
                 return confirmSettingChange(
-                    "Showing " +
+                    "Viewing " +
                     label +
                     " Mode"
                 );
@@ -17259,7 +17259,7 @@
                         .slice(1);
 
                 return confirmSettingChange(
-                    "Showing " +
+                    "Viewing " +
                     label +
                     " Mode"
                 );
@@ -17636,7 +17636,7 @@
                             : "Remaining Time";
 
                 return confirmSettingChange(
-                    "Showing " +
+                    "Viewing " +
                     label
                 );
             },
