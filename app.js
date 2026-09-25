@@ -10392,6 +10392,26 @@
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
                 bindNumberPadEvents();
+
+                if (
+                    englishSpeech &&
+                    typeof installSpeechCommand ===
+                        "function"
+                ) {
+                    installSpeechCommand(
+                        "confirm",
+                        "confirmNumberPad",
+                        numberPadDialog,
+                        false
+                    );
+                    installSpeechCommand(
+                        "cancel",
+                        "cancelNumberPadEdit",
+                        numberPadDialog,
+                        false
+                    );
+                    SpeechMenu.refresh();
+                }
             })().catch(error => {
                 numberPadLoadPromise = undefined;
                 throw error;
@@ -19803,6 +19823,11 @@
                 renderedTimeMode: "time"
             };
 
+            const speechIntents = {
+                confirm: "confirm",
+                cancel: "cancel"
+            };
+
             const speechOptionCategories = {
                 readyAt: "trip-actions",
                 readyAtContinuation: "trip-actions",
@@ -19835,6 +19860,13 @@
             };
 
             if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
+            if (speechIntents[key]) {
+                element.dataset.speechIntent =
+                    speechIntents[key];
+            }
+            else {
+                delete element.dataset.speechIntent;
+            }
             if (speechOptionGroups[key]) {
                 element.dataset.speechOptionsGroup =
                     speechOptionGroups[key];
@@ -19882,6 +19914,8 @@
             }
             installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
+            installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
+            installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
             speechMicBar
                 ?.setSystemSpeechPatterns?.({
                     wake:
