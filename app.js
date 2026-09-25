@@ -13637,7 +13637,27 @@
     }
 
     function onGoalFail(event) {
-        reserveSemanticEvent(event, "One or more goals failed");
+        reserveSemanticEvent(
+            event,
+            "One or more goals failed"
+        );
+
+        void globalThis
+            .WMOFAudio
+            ?.startSong?.(
+                "goal-failed",
+                {
+                    bpm: 180
+                }
+            )
+            .catch(
+                error =>
+                    console.error(
+                        "Audio playback failed:",
+                        "goal-failed",
+                        error
+                    )
+            );
     }
 
     function onPercentModeChanged(event) {
