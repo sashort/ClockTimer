@@ -5961,11 +5961,28 @@ class SpeechMicBar extends HTMLElement {
             case "speechMenuMatched":
                 if (
                     detail?.utteranceId ===
-                    this.#currentUtteranceId &&
+                        this.#currentUtteranceId &&
                     !detail?.provisional &&
-                    this.getAttribute("phase") !== "preprocessed"
+                    this.getAttribute("phase") !==
+                        "preprocessed"
                 ) {
-                    this.setAttribute("phase", "matched");
+                    this.setAttribute(
+                        "phase",
+                        "matched"
+                    );
+
+                    if (
+                        detail
+                            ?.canonicalTranscript &&
+                        detail
+                            .canonicalTranscript !==
+                            detail.transcript
+                    ) {
+                        this.#showStreamingPhrase(
+                            detail
+                                .canonicalTranscript
+                        );
+                    }
                 }
                 break;
             case "speechArgumentsPrepared":
@@ -6006,19 +6023,36 @@ class SpeechMicBar extends HTMLElement {
                     this.#currentUtteranceId
                 ) {
                     const formatted =
+                        detail
+                            .canonicalTranscript ||
                         detail.transcript ||
                         this.#currentTranscript;
 
                     this.#currentTranscriptFinal =
                         true;
+
                     this.setAttribute(
                         "phase",
                         "preprocessed"
                     );
-                    this.#showPreprocessed(
-                        this.#currentTranscript,
-                        formatted
-                    );
+
+                    if (
+                        detail
+                            ?.canonicalTranscript &&
+                        detail
+                            .canonicalTranscript !==
+                            detail.transcript
+                    ) {
+                        this.#showStreamingPhrase(
+                            formatted
+                        );
+                    }
+                    else {
+                        this.#showPreprocessed(
+                            this.#currentTranscript,
+                            formatted
+                        );
+                    }
                 }
                 break;
         }
@@ -6709,17 +6743,43 @@ class SpeechMicBar extends HTMLElement {
 
     #showArguments(values) {
         this.#codes.replaceChildren();
+
         for (const value of values) {
-            const code = document.createElement("code");
+            if (
+                value &&
+                typeof value ===
+                    "object" &&
+                !Array.isArray(
+                    value
+                ) &&
+                Object.keys(
+                    value
+                ).length ===
+                    0
+            ) {
+                continue;
+            }
+
+            const code =
+                document.createElement(
+                    "code"
+                );
+
             code.textContent =
                 value === undefined
                     ? "undefined"
                     : value === null
                         ? "null"
-                        : typeof value === "string"
+                        : typeof value ===
+                            "string"
                             ? value
-                            : JSON.stringify(value);
-            this.#codes.append(code);
+                            : JSON.stringify(
+                                value
+                            );
+
+            this.#codes.append(
+                code
+            );
         }
     }
 
