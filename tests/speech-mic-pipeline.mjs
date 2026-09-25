@@ -661,7 +661,7 @@ assert.match(
 );
 assert.match(
     app,
-    /keepDownTime\(\)[\s\S]*cancel-down-declined/
+    /continueDownTime\(\)[\s\S]*cancel-down-declined/
 );
 assert.doesNotMatch(
     app,
