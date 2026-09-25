@@ -333,6 +333,8 @@
         #openingMeasurementPromise;
         #layoutDirty = true;
         #sizeTargets = new Set();
+        #boundaryTrackFrame;
+        #boundarySnapshot;
 
         constructor() {
             super();
@@ -371,6 +373,8 @@
 
             this.#sizeTargets
                 .clear();
+
+            this.#stopBoundaryTracking();
 
             if (
                 this.#layoutFrame !==
@@ -526,6 +530,8 @@
                 this.#openState =
                     true;
 
+                this.#startBoundaryTracking();
+
                 this.#trigger
                     .setAttribute(
                         "aria-expanded",
@@ -594,6 +600,8 @@
 
                 this.#openState =
                     false;
+
+                this.#stopBoundaryTracking();
 
                 this.#openingMeasured =
                     false;
@@ -940,6 +948,8 @@
                 );
 
             if (open) {
+                this.#startBoundaryTracking();
+
                 this.#popover.hidden =
                     false;
 
@@ -969,6 +979,8 @@
                 }
             }
             else {
+                this.#stopBoundaryTracking();
+
                 this.#openingMeasured =
                     false;
 
@@ -1294,6 +1306,178 @@
             };
         }
 
+        #boundaryGeometrySnapshot() {
+            const viewport =
+                this.#viewportBounds();
+
+            const boundary =
+                this.#boundaryElement &&
+                this.#boundaryElement
+                    .isConnected
+                    ? this.#boundaryElement
+                    : this.#resolveBoundary();
+
+            const rect =
+                boundary
+                    ?.getBoundingClientRect?.();
+
+            return {
+                boundary,
+                top:
+                    rect?.top,
+                right:
+                    rect?.right,
+                bottom:
+                    rect?.bottom,
+                left:
+                    rect?.left,
+                documentBottom:
+                    this
+                        .#documentUsableBottom(
+                            viewport.bottom
+                        )
+            };
+        }
+
+        #boundaryGeometryChanged(
+            previous,
+            next
+        ) {
+            if (!previous) {
+                return false;
+            }
+
+            if (
+                previous.boundary !==
+                next.boundary
+            ) {
+                return true;
+            }
+
+            for (
+                const key of [
+                    "top",
+                    "right",
+                    "bottom",
+                    "left",
+                    "documentBottom"
+                ]
+            ) {
+                const before =
+                    previous[
+                        key
+                    ];
+
+                const after =
+                    next[
+                        key
+                    ];
+
+                if (
+                    before ===
+                        undefined &&
+                    after ===
+                        undefined
+                ) {
+                    continue;
+                }
+
+                if (
+                    !Number.isFinite(
+                        before
+                    ) ||
+                    !Number.isFinite(
+                        after
+                    ) ||
+                    Math.abs(
+                        before -
+                        after
+                    ) >
+                        0.5
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        #startBoundaryTracking() {
+            if (
+                this.#boundaryTrackFrame !==
+                    undefined
+            ) {
+                return;
+            }
+
+            this.#boundarySnapshot =
+                this
+                    .#boundaryGeometrySnapshot();
+
+            const track =
+                () => {
+                    this.#boundaryTrackFrame =
+                        undefined;
+
+                    if (
+                        !this.#connected ||
+                        !this.isOpen
+                    ) {
+                        return;
+                    }
+
+                    const next =
+                        this
+                            .#boundaryGeometrySnapshot();
+
+                    if (
+                        this
+                            .#boundaryGeometryChanged(
+                                this
+                                    .#boundarySnapshot,
+                                next
+                            )
+                    ) {
+                        this.#boundarySnapshot =
+                            next;
+
+                        this
+                            .#markLayoutDirty();
+                    }
+                    else {
+                        this.#boundarySnapshot =
+                            next;
+                    }
+
+                    this.#boundaryTrackFrame =
+                        requestAnimationFrame(
+                            track
+                        );
+                };
+
+            this.#boundaryTrackFrame =
+                requestAnimationFrame(
+                    track
+                );
+        }
+
+        #stopBoundaryTracking() {
+            if (
+                this.#boundaryTrackFrame !==
+                    undefined
+            ) {
+                cancelAnimationFrame(
+                    this.#boundaryTrackFrame
+                );
+
+                this.#boundaryTrackFrame =
+                    undefined;
+            }
+
+            this.#boundarySnapshot =
+                undefined;
+        }
+
         #viewportBounds() {
             const viewport =
                 globalThis
@@ -1391,6 +1575,12 @@
             const viewport =
                 this.#viewportBounds();
 
+            const documentBottom =
+                this
+                    .#documentUsableBottom(
+                        viewport.bottom
+                    );
+
             const triggerRect =
                 this.#trigger
                     .getBoundingClientRect();
@@ -1408,10 +1598,7 @@
                     top:
                         viewport.top,
                     bottom:
-                        this
-                            .#documentUsableBottom(
-                                viewport.bottom
-                            ),
+                        documentBottom,
                     direction:
                         "document",
                     boundary:
@@ -1446,7 +1633,7 @@
                         viewport.top,
                     bottom:
                         Math.min(
-                            viewport.bottom,
+                            documentBottom,
                             boundary
                                 .rect
                                 .top -
@@ -1486,7 +1673,7 @@
                             )
                     ),
                 bottom:
-                    viewport.bottom,
+                    documentBottom,
                 direction:
                     "above",
                 boundary:
@@ -1538,6 +1725,9 @@
 
                 this.#boundaryElement =
                     region.boundary;
+
+                this.#boundarySnapshot =
+                    undefined;
 
                 if (
                     this.#resizeObserver &&
