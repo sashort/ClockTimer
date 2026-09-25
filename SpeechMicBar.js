@@ -1637,6 +1637,7 @@ class SpeechMicBar extends HTMLElement {
             required,
             optionalPrefix,
             optionalSuffix,
+            intent,
             element,
             row
         }
@@ -1725,7 +1726,15 @@ class SpeechMicBar extends HTMLElement {
                     "speech-pattern"
                 ) ||
                 "",
+            intent:
+                intent ||
+                element.dataset
+                    .speechIntent ||
+                undefined,
             commandId:
+                intent ||
+                element.dataset
+                    .speechIntent ||
                 element.dataset
                     .speechEditorId ||
                 undefined,
@@ -2880,6 +2889,8 @@ class SpeechMicBar extends HTMLElement {
             items.push({
                 phrase,
                 display,
+                intent:
+                    group?.intent,
                 element:
                     group?.element
             });
@@ -4043,6 +4054,8 @@ class SpeechMicBar extends HTMLElement {
                         item.optionalPrefix,
                     optionalSuffix:
                         item.optionalSuffix,
+                    intent:
+                        item.intent,
                     element:
                         item.element,
                     row
