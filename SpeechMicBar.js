@@ -170,9 +170,10 @@ class SpeechMicBar extends HTMLElement {
 
                 :host([options-collapsed])
                 #optionsPanel {
+                    height: 42px;
+                    min-height: 42px;
                     max-height: 42px;
-                    padding:
-                        42px 8px 0;
+                    padding: 0 8px;
                     overflow: hidden;
                 }
 
