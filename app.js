@@ -16667,10 +16667,20 @@
                     speechMicBar
                         ?.optionsOpen
                 ) {
-                    void speechMicBar
-                        .hideOptions?.();
+                    return Boolean(
+                        speechMicBar
+                            .collapseOptions?.()
+                    );
+                }
 
-                    return true;
+                if (
+                    speechMicBar
+                        ?.optionsCollapsed
+                ) {
+                    return Boolean(
+                        speechMicBar
+                            .expandOptions?.()
+                    );
                 }
 
                 globalThis
