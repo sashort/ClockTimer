@@ -75,12 +75,12 @@ assert.match(
 
 assert.match(
     app,
-    /const chimeDisableFrame[\s\S]*endStartTransitionChimePlayed ===[\s\S]*true[\s\S]*startTimeSetToNow !==[\s\S]*true[\s\S]*pushSemanticDisable\(\{[\s\S]*chime:\s*true[\s\S]*\}\)[\s\S]*clockTimer\.start\([\s\S]*finally[\s\S]*popSemanticDisable\(\s*chimeDisableFrame\s*\)/
+    /const suppressStartChime[\s\S]*endStartTransitionChimePlayed ===[\s\S]*true[\s\S]*startTimeSetToNow !==[\s\S]*true[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)[\s\S]*clockTimer\.start\(/
 );
 
 assert.match(
     app,
-    /function onTripStarted\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started"[\s\S]*semanticLayerEnabled\(\s*"summary"\s*\)/
+    /function onTripStarted\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started"[\s\S]*consumeSemanticAction\(\s*"summary"\s*\)/
 );
 
 assert.match(
@@ -126,11 +126,6 @@ assert.match(
     /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-ended-started"[\s\S]*endStartTransitionChimePlayed\s*=\s*played/
 );
 
-assert.match(
-    app,
-    /tripDraftStartChimeAlreadyPlayed\(\)[\s\S]*endStartTransitionChimePlayed ===\s*true/
-);
-
 assert.equal(
     catalog.songs["trip-ended"].events.some(
         event =>
@@ -142,4 +137,19 @@ assert.equal(
 
 console.log(
     "PASS combined cue is played in the new-trip number pad and trip-ended speech is not duplicated"
+);
+
+
+assert.match(
+    app,
+    /function consumeSemanticAction\([\s\S]*state === 0[\s\S]*return true[\s\S]*state > 0[\s\S]*state - 1[\s\S]*return false/
+);
+
+assert.match(
+    app,
+    /function setSemanticDisable\([\s\S]*next < -1[\s\S]*semanticDisableCounts\[layer\]\s*=\s*next/
+);
+
+console.log(
+    "PASS semantic suppression uses consumable accumulators: 0 performs, -1 stays user-disabled, positive counts decrement and suppress"
 );
