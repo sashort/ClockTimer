@@ -584,11 +584,6 @@
           "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "1.74",
-          "speech": "Trip ended",
-          "lang": "en-US"
         }
       ]
     },
