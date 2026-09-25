@@ -26607,6 +26607,40 @@
                 )
             );
 
+            if (
+                this.#percentMode === "trip"
+            ) {
+                return (
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "trip"
+                    ) ??
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "standard"
+                    )
+                );
+            }
+
+            if (
+                this.#percentMode === "total"
+            ) {
+                return (
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "total"
+                    ) ??
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "standard"
+                    )
+                );
+            }
+
             candidates.sort(
                 (left, right) =>
                     right.percent -
