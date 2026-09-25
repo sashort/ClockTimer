@@ -1402,6 +1402,17 @@ class SpeechMicBar extends HTMLElement {
     #trainingCategoryColor(
         category
     ) {
+        const custom =
+            this.#optionCategories.find(
+                definition =>
+                    definition.key ===
+                    category
+            );
+
+        if (custom?.color) {
+            return custom.color;
+        }
+
         const variable =
             {
                 "trip-actions":
@@ -2504,6 +2515,45 @@ class SpeechMicBar extends HTMLElement {
 
     get optionCategories() {
         return this.#optionCategoryDefinitions();
+    }
+
+    defineOptionCategory(
+        definition
+    ) {
+        const key =
+            String(
+                definition?.key ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+        if (!key) {
+            throw new TypeError(
+                "Option category key is required."
+            );
+        }
+
+        const definitions =
+            this.optionCategories.filter(
+                current =>
+                    current.key !==
+                    key
+            );
+
+        definitions.push(
+            definition
+        );
+
+        this.setOptionCategories(
+            definitions
+        );
+
+        return this.optionCategories.find(
+            current =>
+                current.key ===
+                key
+        );
     }
 
     #contextLabel(
