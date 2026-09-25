@@ -11325,25 +11325,14 @@
             );
         }
 
-        try {
-            await clockTimer.start({
-                standardTime,
-                creationDate: draft.creationDate,
-                nonProduction: draft.nonProduction === true,
-                creationTime: draft.creationTime,
-                scheduledStart: draft.scheduledStart,
-                startTime: draft.startTime
-            });
-        }
-        finally {
-            if (
-                suppressStartChime
-            ) {
-                decrementSemanticDisable(
-                    "chime"
-                );
-            }
-        }
+        await clockTimer.start({
+            standardTime,
+            creationDate: draft.creationDate,
+            nonProduction: draft.nonProduction === true,
+            creationTime: draft.creationTime,
+            scheduledStart: draft.scheduledStart,
+            startTime: draft.startTime
+        });
         if (draft.creationDate && clockTimer.creationDate !== draft.creationDate) {
             clockTimer.creationDate = draft.creationDate;
         }
@@ -13429,9 +13418,9 @@
         details: 0
     };
 
-    function adjustSemanticDisable(
+    function setSemanticDisable(
         layer,
-        amount
+        value
     ) {
         if (
             !Object.hasOwn(
@@ -13445,63 +13434,82 @@
             );
         }
 
-        const delta =
-            Number(amount);
+        const next =
+            Number(value);
 
         if (
-            !Number.isInteger(delta)
+            !Number.isInteger(next) ||
+            next < -1
         ) {
             throw new TypeError(
-                "Semantic disable adjustments must be integers."
+                "Semantic disable values must be -1 or a non-negative integer."
             );
         }
 
         semanticDisableCounts[layer] =
-            Math.max(
-                0,
-                semanticDisableCounts[layer] +
-                    delta
-            );
+            next;
 
-        return semanticDisableCounts[layer];
+        return next;
     }
 
     function incrementSemanticDisable(
         layer
     ) {
-        return adjustSemanticDisable(
-            layer,
-            1
-        );
-    }
-
-    function decrementSemanticDisable(
-        layer
-    ) {
-        return adjustSemanticDisable(
-            layer,
-            -1
-        );
-    }
-
-    function semanticLayerEnabled(
-        layer
-    ) {
-        return (
+        if (
             semanticDisableCounts[
                 layer
-            ] === 0
-        );
+            ] < 0
+        ) {
+            return -1;
+        }
+
+        semanticDisableCounts[layer] +=
+            1;
+
+        return semanticDisableCounts[layer];
+    }
+
+    function consumeSemanticAction(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state === 0
+        ) {
+            return true;
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return false;
     }
 
     globalThis.WMOFSemanticNotifications =
         Object.freeze({
+            setDisable:
+                setSemanticDisable,
             incrementDisable:
                 incrementSemanticDisable,
-            decrementDisable:
-                decrementSemanticDisable,
-            adjustDisable:
-                adjustSemanticDisable,
+            consumeAction:
+                consumeSemanticAction,
             get disableCounts() {
                 return {
                     ...semanticDisableCounts
@@ -13520,7 +13528,7 @@
             globalThis.WMOFAudio;
 
         if (
-            !semanticLayerEnabled(
+            !consumeSemanticAction(
                 "chime"
             ) ||
             !audio?.startSong
@@ -13558,7 +13566,7 @@
             false;
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "chime"
             )
         ) {
@@ -13616,7 +13624,7 @@
         const parts = [];
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "summary"
             )
         ) {
@@ -13626,7 +13634,7 @@
         }
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "details"
             ) &&
             Number.isFinite(
@@ -13713,7 +13721,7 @@
         const parts = [];
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "summary"
             )
         ) {
@@ -13737,7 +13745,7 @@
         }
 
         if (
-            !semanticLayerEnabled(
+            !consumeSemanticAction(
                 "details"
             ) ||
             !Number.isFinite(standard) ||
@@ -13994,7 +14002,7 @@
 
         void playSemanticSongThenSpeak(
             "trip-started",
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "summary"
             )
                 ? "Trip started."
@@ -14399,7 +14407,7 @@
         const sentences = [];
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "summary"
             )
         ) {
@@ -14445,7 +14453,7 @@
         }
 
         if (
-            !semanticLayerEnabled(
+            !consumeSemanticAction(
                 "details"
             )
         ) {
@@ -14556,7 +14564,7 @@
             );
 
         if (
-            semanticLayerEnabled(
+            consumeSemanticAction(
                 "chime"
             )
         ) {
