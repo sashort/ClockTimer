@@ -2440,6 +2440,87 @@ class SpeechMenu {
         }
     }
 
+    static #terminalPrefixRecovery(
+        transcript
+    ) {
+        const spoken =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                );
+
+        if (
+            spoken.length < 4 ||
+            spoken.includes(
+                " "
+            )
+        ) {
+            return undefined;
+        }
+
+        const matches = [];
+
+        for (
+            const element of
+            SpeechMenu
+                .#availableCandidates()
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
+                );
+
+            if (!pattern) {
+                continue;
+            }
+
+            for (
+                const phrase of
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
+                    )
+            ) {
+                const canonical =
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            phrase
+                        );
+
+                if (
+                    !canonical ||
+                    canonical.includes(
+                        " "
+                    ) ||
+                    canonical ===
+                        spoken ||
+                    !canonical.startsWith(
+                        spoken
+                    ) ||
+                    spoken.length * 3 <
+                        canonical.length * 2
+                ) {
+                    continue;
+                }
+
+                matches.push({
+                    element,
+                    phrase:
+                        canonical
+                });
+            }
+        }
+
+        if (
+            matches.length !==
+                1
+        ) {
+            return undefined;
+        }
+
+        return matches[0];
+    }
+
     static async #handleCompletedTranscript(
         utterance,
         transcript
@@ -2472,12 +2553,50 @@ class SpeechMenu {
             }
         );
 
-        const matched =
+        let matched =
             await SpeechMenu.#processTranscript(
                 transcript,
                 utterance.id,
                 SpeechMenu.#executionEnabled
             );
+
+        if (!matched) {
+            const recovery =
+                SpeechMenu
+                    .#terminalPrefixRecovery(
+                        transcript
+                    );
+
+            if (recovery) {
+                SpeechMenu.#emit(
+                    "speechTerminalPrefixRecovered",
+                    {
+                        utteranceId:
+                            utterance.id,
+                        observed:
+                            transcript,
+                        canonical:
+                            recovery.phrase,
+                        commandElement:
+                            recovery.element
+                    }
+                );
+
+                matched =
+                    await SpeechMenu
+                        .#processElement(
+                            recovery.element,
+                            recovery.phrase,
+                            utterance.id,
+                            SpeechMenu
+                                .#candidateMenu(
+                                    recovery.element
+                                ),
+                            SpeechMenu
+                                .#executionEnabled
+                        );
+            }
+        }
 
         if (!matched) {
             SpeechMenu.#emit(
