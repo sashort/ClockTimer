@@ -13769,12 +13769,29 @@
         );
     }
 
+    function speakSemanticText(
+        speech
+    ) {
+        if (!speech) {
+            return;
+        }
+
+        globalThis
+            .WMOFAudio
+            ?.speak?.(
+                speech
+            );
+    }
+
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
 
         if (
             tripDraftUsesEndStartTransition()
         ) {
+            speakSemanticText(
+                "Trip started."
+            );
             return;
         }
 
@@ -13784,38 +13801,50 @@
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
 
+        const speech =
+            tripTimingSpeech(
+                event.detail,
+                "Trip started early",
+                "saved"
+            );
+
         if (
             tripDraftUsesEndStartTransition()
         ) {
+            speakSemanticText(
+                speech
+            );
             return;
         }
 
         void playSemanticSongThenSpeak(
             "trip-started-early",
-            tripTimingSpeech(
-                event.detail,
-                "Trip started early",
-                "saved"
-            )
+            speech
         );
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
 
+        const speech =
+            tripTimingSpeech(
+                event.detail,
+                "Trip started late",
+                "lost"
+            );
+
         if (
             tripDraftUsesEndStartTransition()
         ) {
+            speakSemanticText(
+                speech
+            );
             return;
         }
 
         void playSemanticSongThenSpeak(
             "trip-started-late",
-            tripTimingSpeech(
-                event.detail,
-                "Trip started late",
-                "lost"
-            )
+            speech
         );
     }
 
