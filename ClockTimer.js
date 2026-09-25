@@ -32156,18 +32156,35 @@
                 ? standardTimeMilliseconds / countedTimeMilliseconds
                 : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
-            const allowedTimeMilliseconds =
-                (
-                    Number.isFinite(percentGoal) &&
-                    percentGoal > 0
-                        ? Math.round(
-                            standardTimeMilliseconds /
-                            percentGoal
-                        )
-                        : standardTimeMilliseconds
-                ) +
-                allowanceCreditMilliseconds;
-            const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
+            const activeTrip =
+                this.#started &&
+                this.#hasStartProperties();
+            const totalGoalRequirements =
+                activeTrip
+                    ? this.#calculateTotalGoalRequirements({
+                        allowMissed: true
+                    })
+                    : undefined;
+            const activeTripCountedMilliseconds =
+                activeTrip
+                    ? this.#getCountedTimeElapsed(
+                        timelineNow
+                    )
+                    : 0;
+            const activeTripRemainingMilliseconds =
+                Number.isFinite(
+                    totalGoalRequirements
+                        ?.adjustedTimeElapsed
+                )
+                    ? (
+                        totalGoalRequirements
+                            .adjustedTimeElapsed -
+                        activeTripCountedMilliseconds
+                    )
+                    : undefined;
+            const completedNetMilliseconds =
+                countedTimeMilliseconds -
+                standardTimeMilliseconds;
 
             let renderedTime;
             if (!this.#hasStartProperties() &&
@@ -32178,48 +32195,33 @@
                 renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
             else if (this.#renderedTimeMode === "calculated-end") {
-                if (!this.#hasStartProperties()) {
+                if (
+                    !activeTrip ||
+                    !totalGoalRequirements
+                        ?.adjustedEndTime
+                ) {
                     renderedTime = undefined;
                 }
                 else {
-                    let intervalAdjustmentMilliseconds = 0;
-
-                    const activeInterval =
-                        this.getActiveIntervalState(
-                            nowDate
+                    renderedTime =
+                        this.#formatSummaryEndTime(
+                            new Date(
+                                totalGoalRequirements
+                                    .adjustedEndTime
+                            )
                         );
-
-                    const activeIntervalType =
-                        String(
-                            activeInterval?.intervalType ?? ""
-                        ).trim().toLowerCase();
-
-                    if (
-                        (
-                            activeIntervalType === "break" ||
-                            activeIntervalType === "lunch"
-                        ) &&
-                        Number.isFinite(
-                            activeInterval?.remainingMilliseconds
-                        )
-                    ) {
-                        intervalAdjustmentMilliseconds =
-                            activeInterval.remainingMilliseconds;
-                    }
-
-                    renderedTime = this.#formatSummaryEndTime(
-                        new Date(
-                            nowDate.getTime() +
-                            remainingMilliseconds +
-                            intervalAdjustmentMilliseconds
-                        )
-                    );
                 }
             }
             else {
-                renderedTime = this.#formatRemainingRenderedDuration(
-                    remainingMilliseconds
-                );
+                renderedTime =
+                    this.#formatRemainingRenderedDuration(
+                        activeTrip &&
+                        Number.isFinite(
+                            activeTripRemainingMilliseconds
+                        )
+                            ? activeTripRemainingMilliseconds
+                            : completedNetMilliseconds
+                    );
             }
 
             return {
