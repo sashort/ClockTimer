@@ -17065,6 +17065,8 @@
                             "short-break",
                         "15":
                             "break",
+                        break:
+                            "break",
                         long:
                             "break",
                         lunch:
