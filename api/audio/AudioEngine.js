@@ -744,6 +744,8 @@
                 bpm,
                 volume = 1,
                 loop,
+                includeTones = true,
+                includeSpeech = true,
                 suspendListening =
                     false
             } = {}
@@ -840,7 +842,7 @@
                     entry.startedAt;
 
                 for (const event of song.events || []) {
-                    if (event?.tone) {
+                    if (includeTones && event?.tone) {
                         endAt =
                             Math.max(
                                 endAt,
@@ -855,7 +857,7 @@
                             );
                     }
 
-                    if (event?.speech) {
+                    if (includeSpeech && event?.speech) {
                         endAt =
                             Math.max(
                                 endAt,
