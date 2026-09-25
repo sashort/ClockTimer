@@ -12474,7 +12474,8 @@
     async function beginNewTripWorkflow({
         initialValue,
         tripMoment,
-        signal
+        signal,
+        endStartTransition = false
     } = {}) {
         if (signal?.aborted) {
             return false;
@@ -12509,12 +12510,20 @@
         tripDraft = deferredDraft ? {
             ...deferredDraft,
             deferred: false,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                ),
             ...resumedTripStarts(deferredDraft, moment)
         } : {
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
-            syncGoals: tripPreferences.syncGoals
+            syncGoals: tripPreferences.syncGoals,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                )
         };
 
         renderDeferredTrip();
@@ -12940,16 +12949,26 @@
         const tripMoment =
             effectiveTime;
 
-        await clockTimer.stop(
-            transactionTime
-        );
+        endingIntoNewTrip =
+            true;
+
+        try {
+            await clockTimer.stop(
+                transactionTime
+            );
+        }
+        finally {
+            endingIntoNewTrip =
+                false;
+        }
 
         await clockTimer
             .resetCompletedTrip();
 
         await beginNewTripWorkflow({
             initialValue: "",
-            tripMoment
+            tripMoment,
+            endStartTransition: true
         });
     }
 
@@ -13739,13 +13758,38 @@
             undefined;
     }
 
+    let endingIntoNewTrip =
+        false;
+
+    function tripDraftUsesEndStartTransition() {
+        return (
+            tripDraft
+                ?.endStartTransition ===
+            true
+        );
+    }
+
     function onTripStarted(event) {
         reserveSemanticEvent(event, "Trip started on time");
+
+        if (
+            tripDraftUsesEndStartTransition()
+        ) {
+            return;
+        }
+
         playSemanticSong("trip-started");
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
+
+        if (
+            tripDraftUsesEndStartTransition()
+        ) {
+            return;
+        }
+
         void playSemanticSongThenSpeak(
             "trip-started-early",
             tripTimingSpeech(
@@ -13758,6 +13802,13 @@
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
+
+        if (
+            tripDraftUsesEndStartTransition()
+        ) {
+            return;
+        }
+
         void playSemanticSongThenSpeak(
             "trip-started-late",
             tripTimingSpeech(
@@ -13841,8 +13892,11 @@
 
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
+
         void playSemanticSongThenSpeak(
-            "trip-ended",
+            endingIntoNewTrip
+                ? "trip-ended-started"
+                : "trip-ended",
             tripEndTotalSpeech(
                 event.detail
             )
