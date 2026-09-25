@@ -224,30 +224,22 @@ class SpeechMicBar extends HTMLElement {
                 #optionsGrid {
                     grid-column: 1 / -1;
                     display: flex;
-                    flex-flow: row wrap;
-                    align-content: flex-start;
+                    flex-flow: row nowrap;
                     align-items: flex-start;
                     gap: 8px;
                     min-width: 0;
                 }
 
+                .option-pane {
+                    flex: 1 1 0;
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
                 .option-category {
-                    flex:
-                        0 0
-                        var(
-                            --speech-options-pane-width,
-                            100%
-                        );
-                    width:
-                        var(
-                            --speech-options-pane-width,
-                            100%
-                        );
-                    max-width:
-                        var(
-                            --speech-options-pane-width,
-                            100%
-                        );
+                    width: 100%;
                     min-width: 0;
                     display: grid;
                     break-inside: avoid;
@@ -4486,6 +4478,25 @@ class SpeechMicBar extends HTMLElement {
     #renderOptions(
         phraseGroups
     ) {
+        for (
+            const pane of
+            [
+                ...this.#optionsGrid
+                    ?.querySelectorAll?.(
+                        ":scope > .option-pane"
+                    ) ||
+                []
+            ]
+        ) {
+            while (pane.firstChild) {
+                this.#optionsGrid.insertBefore(
+                    pane.firstChild,
+                    pane
+                );
+            }
+            pane.remove();
+        }
+
         const definitions =
             this
                 .#optionCategoryDefinitions();
@@ -4982,6 +4993,276 @@ class SpeechMicBar extends HTMLElement {
         this.#fitOptions();
     }
 
+    #optionPanePartitions(
+        count,
+        paneCount
+    ) {
+        const result = [];
+
+        const visit =
+            (
+                start,
+                panesLeft,
+                cuts
+            ) => {
+                if (panesLeft === 1) {
+                    result.push(
+                        [
+                            ...cuts,
+                            count
+                        ]
+                    );
+                    return;
+                }
+
+                const lastStart =
+                    count -
+                    panesLeft +
+                    1;
+
+                for (
+                    let end =
+                        start + 1;
+                    end <= lastStart;
+                    end++
+                ) {
+                    visit(
+                        end,
+                        panesLeft - 1,
+                        [
+                            ...cuts,
+                            end
+                        ]
+                    );
+                }
+            };
+
+        visit(
+            0,
+            paneCount,
+            []
+        );
+
+        return result;
+    }
+
+    #layoutOptionPanes() {
+        const categories =
+            [
+                ...this.#optionsGrid
+                    .querySelectorAll(
+                        ":scope > .option-category"
+                    )
+            ];
+
+        if (!categories.length) {
+            return;
+        }
+
+        const panelWidth =
+            Math.max(
+                0,
+                this.#optionsPanel
+                    .getBoundingClientRect()
+                    .width
+            );
+
+        const gap = 8;
+
+        const maximumPanes =
+            Math.max(
+                1,
+                Math.min(
+                    categories.length,
+                    Math.floor(
+                        panelWidth /
+                            320
+                    ) ||
+                    1
+                )
+            );
+
+        let best;
+
+        for (
+            let paneCount = 1;
+            paneCount <=
+                maximumPanes;
+            paneCount++
+        ) {
+            const paneWidth =
+                Math.max(
+                    0,
+                    (
+                        this.#optionsGrid
+                            .getBoundingClientRect()
+                            .width -
+                        gap *
+                            (
+                                paneCount -
+                                1
+                            )
+                    ) /
+                        paneCount
+                );
+
+            const heights =
+                categories.map(
+                    category => {
+                        const previousWidth =
+                            category.style.width;
+
+                        category.style.width =
+                            paneWidth +
+                            "px";
+
+                        const height =
+                            Math.max(
+                                0,
+                                category
+                                    .getBoundingClientRect()
+                                    .height
+                            );
+
+                        category.style.width =
+                            previousWidth;
+
+                        return height;
+                    }
+                );
+
+            for (
+                const cuts of
+                this.#optionPanePartitions(
+                    categories.length,
+                    paneCount
+                )
+            ) {
+                const columnHeights = [];
+                let start = 0;
+
+                for (
+                    const end of
+                    cuts
+                ) {
+                    const length =
+                        end - start;
+
+                    const height =
+                        heights
+                            .slice(
+                                start,
+                                end
+                            )
+                            .reduce(
+                                (
+                                    total,
+                                    value
+                                ) =>
+                                    total +
+                                    value,
+                                0
+                            ) +
+                        gap *
+                            Math.max(
+                                0,
+                                length - 1
+                            );
+
+                    columnHeights.push(
+                        height
+                    );
+                    start = end;
+                }
+
+                const tallest =
+                    Math.max(
+                        ...columnHeights
+                    );
+
+                const shortest =
+                    Math.min(
+                        ...columnHeights
+                    );
+
+                const imbalance =
+                    tallest -
+                    shortest;
+
+                if (
+                    !best ||
+                    tallest <
+                        best.tallest -
+                            .5 ||
+                    (
+                        Math.abs(
+                            tallest -
+                            best.tallest
+                        ) < .5 &&
+                        imbalance <
+                            best.imbalance
+                    )
+                ) {
+                    best = {
+                        paneCount,
+                        cuts,
+                        tallest,
+                        imbalance
+                    };
+                }
+            }
+        }
+
+        if (!best) {
+            return;
+        }
+
+        let start = 0;
+
+        for (
+            let paneIndex = 0;
+            paneIndex <
+                best.cuts.length;
+            paneIndex++
+        ) {
+            const end =
+                best.cuts[
+                    paneIndex
+                ];
+
+            const pane =
+                document.createElement(
+                    "div"
+                );
+
+            pane.className =
+                "option-pane";
+
+            pane.dataset.optionPane =
+                String(
+                    paneIndex
+                );
+
+            for (
+                let index = start;
+                index < end;
+                index++
+            ) {
+                pane.append(
+                    categories[
+                        index
+                    ]
+                );
+            }
+
+            this.#optionsGrid.append(
+                pane
+            );
+
+            start = end;
+        }
+    }
+
     #fitOptions() {
         const rect =
             this.getBoundingClientRect();
@@ -5008,45 +5289,7 @@ class SpeechMicBar extends HTMLElement {
                 available + "px"
             );
 
-        const optionsWidth =
-            Math.max(
-                0,
-                this.#optionsGrid
-                    .getBoundingClientRect()
-                    .width
-            );
-
-        const paneCount =
-            Math.max(
-                1,
-                Math.floor(
-                    optionsWidth /
-                        320
-                )
-            );
-
-        const gap = 8;
-
-        const paneWidth =
-            Math.max(
-                0,
-                (
-                    optionsWidth -
-                    gap *
-                        (
-                            paneCount -
-                            1
-                        )
-                ) /
-                    paneCount
-            );
-
-        this.#optionsGrid.style
-            .setProperty(
-                "--speech-options-pane-width",
-                paneWidth +
-                    "px"
-            );
+        this.#layoutOptionPanes();
     }
 
     #responseVisual(value) {
