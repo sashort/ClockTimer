@@ -78,7 +78,7 @@
             "  visibility: hidden;",
             "  pointer-events: none;",
             "  translate: var(--hamburger-menu-popover-shift-x, 0px) var(--hamburger-menu-popover-shift-y, 0px);",
-            "  position-try-order: most-height;"
+            "  position-try-order: most-height;",
             "  position-try-fallbacks: --hamburger-above-start, --hamburger-below-end, --hamburger-above-end, --hamburger-right-start, --hamburger-left-start;",
             "  inset: auto;",
             "  top: anchor(bottom);",
