@@ -704,6 +704,27 @@ assert.match(
     app,
     /readyAtContinuationAvailable\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined/
 );
+
+assert.match(
+    app,
+    /speechRuntimeStarted\(\)[\s\S]*setSpeechButtonState\([\s\S]*true,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*true/
+);
+assert.match(
+    app,
+    /speechRuntimeStopped\(\)[\s\S]*cancelPendingSpeechReady\(\)[\s\S]*setSpeechButtonState\([\s\S]*false,[\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false/
+);
+assert.match(
+    app,
+    /speechMicBar\?\.addEventListener\([\s\S]*"stopped"[\s\S]*actions[\s\S]*\.speechRuntimeStopped\(\)/
+);
+assert.match(
+    app,
+    /speechMicBar\?\.addEventListener\([\s\S]*"speechCaptureEnded"[\s\S]*actions[\s\S]*\.speechRuntimeStopped\(\)/
+);
+assert.doesNotMatch(
+    app,
+    /addEventListener\("speechCaptureEnded"[\s\S]{0,500}setSpeechButtonState/
+);
 assert.match(
     app,
     /continueStartAt\([\s\S]*readyAtContinuationAvailable\(\)[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
