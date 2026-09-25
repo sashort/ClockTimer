@@ -26,7 +26,7 @@
                 readyAtContinuation: "^at (?<spokenTime>.+)$",
                 ready: "^ready$",
                 breakStart: "^break start$",
-                breakChoice: "^(?<breakChoice>10|15|long|short|lunch)$",
+                breakChoice: "^(?<breakChoice>10|15|break|long|short|lunch)$",
                 confirm: "^ok(?:ay)?$",
                 yes: "^yes$",
                 no: "^no$",
