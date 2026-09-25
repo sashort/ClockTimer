@@ -75,12 +75,12 @@ assert.match(
 
 assert.match(
     app,
-    /const suppressStartChime[\s\S]*endStartTransitionChimePlayed ===[\s\S]*true[\s\S]*startTimeSetToNow !==[\s\S]*true[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)[\s\S]*clockTimer\.start\(/
+    /transitionChimePlayed[\s\S]*startChimeEnabled[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)/
 );
 
 assert.match(
     app,
-    /function onTripStarted\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started"[\s\S]*consumeSemanticAction\(\s*"summary"\s*\)/
+    /async function onTripStarted\([\s\S]*consumeAnnouncementAction\(\s*"trip-started",\s*"chime"[\s\S]*consumeAnnouncementAction\(\s*"trip-started",\s*"summary"/
 );
 
 assert.match(
@@ -112,7 +112,7 @@ for (
 }
 
 console.log(
-    "PASS five-note workflow suppresses the three start chimes through the disable stack while preserving speech layers"
+    "PASS standalone five-note transition suppresses the later start chime while preserving speech layers"
 );
 
 
@@ -123,7 +123,7 @@ assert.match(
 
 assert.match(
     app,
-    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*endStartTransitionChimePlayed\s*=\s*played/
+    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*transitionChimePlayed\s*=\s*Boolean\(song\)/
 );
 
 assert.equal(
@@ -136,7 +136,7 @@ assert.equal(
 );
 
 console.log(
-    "PASS combined cue is played in the new-trip number pad and trip-ended speech is not duplicated"
+    "PASS standalone transition cue is played in the new-trip workflow and trip-ended speech is not duplicated"
 );
 
 
