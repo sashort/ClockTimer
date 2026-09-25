@@ -356,11 +356,101 @@ assert.equal(
     true
 );
 
+const lateItem =
+    window.document
+        .createElement(
+            "button"
+        );
+
+lateItem.textContent =
+    "Late item";
+
+menu.append(
+    lateItem
+);
+
+menu.refresh();
+
+await new Promise(
+    resolve =>
+        setTimeout(
+            resolve,
+            25
+        )
+);
+
+assert.equal(
+    lateItem.parentElement
+        ?.classList
+        .contains(
+            "hamburger-menu-source"
+        ) ||
+    Boolean(
+        lateItem.closest(
+            ".hamburger-menu-panel"
+        )
+    ),
+    true
+);
+
 menu.hidePopover();
 
 assert.equal(
     menu.isOpen,
     false
+);
+
+const automaticBoundary =
+    window.document
+        .createElement(
+            "div"
+        );
+
+automaticBoundary
+    .setAttribute(
+        "data-hamburger-safe-boundary",
+        ""
+    );
+
+automaticBoundary.style.height =
+    "16px";
+
+window.document.body
+    .append(
+        automaticBoundary
+    );
+
+const autoMenu =
+    window.document
+        .createElement(
+            "hamburger-menu"
+        );
+
+const autoTrigger =
+    window.document
+        .createElement(
+            "button"
+        );
+
+autoTrigger.textContent =
+    "Auto";
+
+autoMenu.append(
+    autoTrigger,
+    window.document
+        .createElement(
+            "button"
+        )
+);
+
+window.document.body
+    .append(
+        autoMenu
+    );
+
+assert.equal(
+    autoMenu.safeBoundary,
+    automaticBoundary
 );
 
 console.log(
