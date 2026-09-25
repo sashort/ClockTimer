@@ -13465,7 +13465,15 @@
                     "trip-started";
             }
 
-            if (transitionSong) {
+            let transitionChimePlayed =
+                false;
+
+            if (
+                transitionSong &&
+                consumeSemanticAction(
+                    "chime"
+                )
+            ) {
                 try {
                     const song =
                         await audio?.startSong?.(
@@ -13475,6 +13483,8 @@
                                 includeSpeech: false
                             }
                         );
+                    transitionChimePlayed =
+                        Boolean(song);
                     await song?.finished;
                 }
                 catch (error) {
@@ -13492,7 +13502,10 @@
                 );
             }
 
-            if (startChimeEnabled) {
+            if (
+                transitionChimePlayed &&
+                startChimeEnabled
+            ) {
                 // Start's chime has already been represented by either
                 // the 5-tone segue or the standalone Start cue.
                 incrementSemanticDisable(
