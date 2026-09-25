@@ -2242,6 +2242,12 @@ class SpeechMenu {
         if (
             pool.length &&
             utterance.lastExactCandidate &&
+            !utterance
+                .lastExactCandidate
+                .commandElement
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                ) &&
             !utterance.committed &&
             !utterance.committing
         ) {
@@ -3340,15 +3346,6 @@ class SpeechMenu {
         element,
         transcript
     ) {
-        if (
-            element
-                ?.hasAttribute?.(
-                    "speech-open-ended"
-                )
-        ) {
-            return 1;
-        }
-
         const group =
             SpeechMenu.#phraseGroups
                 .find(
@@ -3470,10 +3467,51 @@ class SpeechMenu {
                             return false;
                         }
 
+                        const openEnded =
+                            element
+                                .hasAttribute?.(
+                                    "speech-open-ended"
+                                );
+
+                        const previousOpenEndedExact =
+                            openEnded &&
+                            utterance
+                                .lastExactCandidate
+                                ?.commandElement ===
+                                    element &&
+                            String(
+                                transcript ||
+                                ""
+                            )
+                                .toLocaleLowerCase()
+                                .startsWith(
+                                    String(
+                                        utterance
+                                            .lastExactCandidate
+                                            ?.transcript ||
+                                        ""
+                                    )
+                                        .toLocaleLowerCase()
+                                        .trim() +
+                                    " "
+                                );
+
+                        const continuation =
+                            continuationDepth !==
+                                undefined ||
+                            (
+                                openEnded &&
+                                (
+                                    Boolean(
+                                        exact
+                                    ) ||
+                                    previousOpenEndedExact
+                                )
+                            );
+
                         if (
                             !exact &&
-                            continuationDepth ===
-                                undefined
+                            !continuation
                         ) {
                             return false;
                         }
@@ -3488,12 +3526,15 @@ class SpeechMenu {
                             transcript,
                             exact:
                                 Boolean(exact),
-                            continuation:
-                                continuationDepth !==
-                                undefined,
+                            continuation,
                             depth:
                                 continuationDepth ??
-                                Number.MAX_SAFE_INTEGER,
+                                (
+                                    openEnded &&
+                                    continuation
+                                        ? 1
+                                        : Number.MAX_SAFE_INTEGER
+                                ),
                             order
                         };
                     }
