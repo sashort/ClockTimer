@@ -222,7 +222,14 @@ class SpeechMicBar extends HTMLElement {
                     grid-column: 1 / -1;
                     display: grid;
                     grid-template-columns:
-                        minmax(0, 1fr);
+                        repeat(
+                            auto-fit,
+                            minmax(
+                                min(340px, 100%),
+                                1fr
+                            )
+                        );
+                    align-items: start;
                     gap: 8px;
                     min-width: 0;
                 }
@@ -447,8 +454,22 @@ class SpeechMicBar extends HTMLElement {
                 .option-card {
                     min-width: 0;
                     display: grid;
-                    gap: 3px;
+                    grid-template-columns:
+                        repeat(
+                            auto-fit,
+                            minmax(
+                                min(220px, 100%),
+                                1fr
+                            )
+                        );
+                    align-items: start;
+                    column-gap: 14px;
+                    row-gap: 3px;
                     padding: 3px 0;
+                }
+
+                .option-card > .option-phrase {
+                    min-width: 0;
                 }
 
                 .option-card +
