@@ -94,6 +94,21 @@ assert.match(
 
 assert.match(
     componentSource,
+    /#startBoundaryTracking\(/
+);
+
+assert.match(
+    componentSource,
+    /#boundaryGeometrySnapshot\(/
+);
+
+assert.match(
+    componentSource,
+    /#documentUsableBottom\([\s\S]*boundary[\s\S]*Math\.min/
+);
+
+assert.match(
+    componentSource,
     /#unfreezePane\(\)[\s\S]*parentclosed/
 );
 
