@@ -2392,24 +2392,32 @@
         }
 
         #normalItems() {
-            const panels =
-                this.#panels();
+            const items = [];
 
-            if (panels.length) {
-                return panels
-                    .flatMap(
-                        panel => [
-                            ...panel
-                                .children
-                        ]
+            for (
+                const child of
+                this.#source
+                    .children
+            ) {
+                if (
+                    child.classList
+                        .contains(
+                            "hamburger-menu-panel"
+                        )
+                ) {
+                    items.push(
+                        ...child.children
                     );
+
+                    continue;
+                }
+
+                items.push(
+                    child
+                );
             }
 
-            return [
-                ...this
-                    .#source
-                    .children
-            ];
+            return items;
         }
 
         #panels() {
