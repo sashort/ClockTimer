@@ -114,6 +114,21 @@ assert.match(
 
 assert.match(
     componentSource,
+    /--hamburger-menu-frozen-pane-height/
+);
+
+assert.match(
+    componentSource,
+    /hamburger-menu-frozen-height-duration/
+);
+
+assert.match(
+    componentSource,
+    /height:\s*var\(--hamburger-menu-frozen-pane-height\)/
+);
+
+assert.match(
+    componentSource,
     /#startBoundaryTracking\(/
 );
 
