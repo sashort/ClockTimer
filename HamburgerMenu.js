@@ -4352,8 +4352,55 @@
             return items;
         }
 
-        #hasVisibleChild(element, panelItems) {
-            return panelItems.some(child => child.parent === element);
+        #hasVisibleChild(element, target, panelItems) {
+            const item =
+                panelItems.find(
+                    candidate =>
+                        candidate.element ===
+                        element
+                );
+
+            const targetItem =
+                panelItems.find(
+                    candidate =>
+                        candidate.element ===
+                        target
+                );
+
+            if (
+                !item ||
+                !targetItem
+            ) {
+                return false;
+            }
+
+            if (
+                panelItems.some(
+                    child =>
+                        child.parent ===
+                        element
+                )
+            ) {
+                return true;
+            }
+
+            if (
+                item.parent ===
+                targetItem.parent
+            ) {
+                return undefined;
+            }
+
+            if (targetItem.parent) {
+                return this
+                    .#hasVisibleChild(
+                        element,
+                        targetItem.parent,
+                        panelItems
+                    );
+            }
+
+            return false;
         }
 
         #promotionRows(
@@ -4364,22 +4411,46 @@
             panelItems
         ) {
             const candidates = panelItems
-                ? panelItems.filter(item =>
-                    item.element !== group &&
-                    !group.contains(item.element) &&
-                    !this.#hasVisibleChild(item.element, panelItems) &&
-                    (item.nested || !item.hasMenu)
-                )
+                ? panelItems
+                    .filter(
+                        item =>
+                            item.element !== group &&
+                            !group.contains(
+                                item.element
+                            )
+                    )
+                    .map(
+                        item => ({
+                            ...item,
+                            coverageState:
+                                this
+                                    .#hasVisibleChild(
+                                        item.element,
+                                        group,
+                                        panelItems
+                                    )
+                        })
+                    )
+                    .filter(
+                        item =>
+                            item.coverageState !== true &&
+                            (
+                                item.nested ||
+                                !item.hasMenu
+                            )
+                    )
                 : this.#visibleRows(sourceRoot, group).map(element => ({
                     element,
                     nested: false,
+                    coverageState: undefined,
                     rect: this.#visiblePaintBounds(element)
                 }));
             const all = candidates
                     .map(
-                        ({ element, nested, rect }) => ({
+                        ({ element, nested, coverageState, rect }) => ({
                             element,
                             nested,
+                            coverageState,
                             metrics:
                                 this
                                     .#measure(
@@ -4565,7 +4636,7 @@
                 const before = Math.max(0, percentage - .001);
                 const initial = record.paintedOpacity;
                 const final = "0";
-                if (record.nested) {
+                if (record.coverageState === false) {
                     const slot = document.createElement("div");
                     slot.setAttribute("aria-hidden", "true");
                     Object.assign(slot.style, {
