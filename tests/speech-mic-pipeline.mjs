@@ -702,7 +702,23 @@ assert.match(
 );
 assert.match(
     app,
-    /continueStartAt\([\s\S]*pendingSpeechReady[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
+    /readyAtContinuationAvailable\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined/
+);
+assert.match(
+    app,
+    /continueStartAt\([\s\S]*readyAtContinuationAvailable\(\)[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
+);
+assert.match(
+    app,
+    /readyAt:"#newTripButton", ready:"#newTripButton"/
+);
+assert.doesNotMatch(
+    app,
+    /readyAtContinuation:"#newTripButton"/
+);
+assert.match(
+    app,
+    /key ===[\s\S]*"readyAtContinuation"[\s\S]*speech-available[\s\S]*WMOFActions\.readyAtContinuationAvailable/
 );
 assert.doesNotMatch(
     app,
