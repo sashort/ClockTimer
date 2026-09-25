@@ -888,6 +888,19 @@ assert.match(
 );
 assert.match(
     app,
+    /lexicalFamilies[\s\S]*"ok"[\s\S]*"okay"[\s\S]*family\.has\([\s\S]*observed[\s\S]*family\.has\([\s\S]*expected/
+);
+assert.match(
+    speechMenuSource,
+    /const openEnded\s*=[\s\S]*"speech-open-ended"[\s\S]*const previousOpenEndedExact[\s\S]*Boolean\([\s\S]*exact[\s\S]*previousOpenEndedExact/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /#elementContinuationDepth\([\s\S]{0,500}"speech-open-ended"[\s\S]{0,200}return 1/
+);
+
+assert.match(
+    app,
     /speechTrainingExpectedPhraseMatches[\s\S]*heardTokens[\s\S]*templateTokens[\s\S]*speechTrainingTokenBelongsToFamily/
 );
 assert.match(
