@@ -1273,6 +1273,19 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /data-speech-options-phrase[\s\S]*optionPhrases/
+);
+assert.match(
+    speechMicBarSource,
+    /group\?\.optionPhrases\s*\|\|[\s\S]*group\?\.phrases/
+);
+assert.match(
+    app,
+    /speechOptionsPhrase\s*=\s*[\s\S]*"<spokenValue>"/
+);
+
+assert.match(
+    speechMenuSource,
     /#candidateCommitTimeout[\s\S]*candidatePool[\s\S]*continuation/
 );
 assert.match(
