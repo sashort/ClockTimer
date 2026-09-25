@@ -77,7 +77,7 @@
                 toneVelocity: clamp(
                     settings.toneVelocity,
                     0.5,
-                    2,
+                    3,
                     current.toneVelocity
                 )
             };
