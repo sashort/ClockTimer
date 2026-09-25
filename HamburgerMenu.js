@@ -658,13 +658,14 @@
                 return;
             }
 
+            this.#layoutDirty =
+                true;
+
             if (
                 this.#layoutFrame !==
-                    undefined
+                undefined
             ) {
-                cancelAnimationFrame(
-                    this.#layoutFrame
-                );
+                return;
             }
 
             this.#layoutFrame =
@@ -679,6 +680,11 @@
                         ) {
                             return;
                         }
+
+                        this.#layoutDirty =
+                            false;
+
+                        this.#syncResizeObservation();
 
                         if (
                             this.#focusStack
@@ -709,6 +715,97 @@
                         this.#reconcilePlacement();
                     }
                 );
+        }
+
+        #markLayoutDirty() {
+            this.#layoutDirty =
+                true;
+
+            if (
+                this.isOpen &&
+                !this.#transitionBusy
+            ) {
+                this.refresh();
+            }
+        }
+
+        #flushLayoutIfDirty() {
+            if (
+                this.#layoutDirty &&
+                this.isOpen &&
+                !this.#transitionBusy
+            ) {
+                this.refresh();
+            }
+        }
+
+        #syncResizeObservation() {
+            if (
+                !this.#resizeObserver
+            ) {
+                return;
+            }
+
+            const targets =
+                new Set([
+                    this,
+                    this.#trigger,
+                    this.#source,
+                    this.#viewport,
+                    document.documentElement
+                ]);
+
+            const boundary =
+                this.#resolveBoundary();
+
+            if (boundary) {
+                targets.add(
+                    boundary
+                );
+            }
+
+            for (
+                const element of
+                this.#source
+                    .querySelectorAll(
+                        "*"
+                    )
+            ) {
+                targets.add(
+                    element
+                );
+            }
+
+            for (
+                const element of
+                this.#focusLayer
+                    .querySelectorAll(
+                        "*"
+                    )
+            ) {
+                targets.add(
+                    element
+                );
+            }
+
+            this.#resizeObserver
+                .disconnect();
+
+            this.#sizeTargets =
+                targets;
+
+            for (
+                const target of
+                targets
+            ) {
+                try {
+                    this.#resizeObserver
+                        .observe(
+                            target
+                        );
+                }
+                catch {}
+            }
         }
 
         getSafeRegion() {
@@ -938,6 +1035,7 @@
                     "click",
                     event => {
                         event.preventDefault();
+                        event.stopPropagation();
 
                         this.togglePopover();
                     }
@@ -994,7 +1092,7 @@
                 ?.addEventListener(
                     "resize",
                     () =>
-                        this.refresh()
+                        this.#markLayoutDirty()
                 );
 
             globalThis
@@ -1009,7 +1107,7 @@
                 .addEventListener(
                     "resize",
                     () =>
-                        this.refresh()
+                        this.#markLayoutDirty()
                 );
 
             globalThis
@@ -1030,18 +1128,10 @@
                 this.#resizeObserver =
                     new ResizeObserver(
                         () =>
-                            this.refresh()
+                            this.#markLayoutDirty()
                     );
 
-                this.#resizeObserver
-                    .observe(
-                        this
-                    );
-
-                this.#resizeObserver
-                    .observe(
-                        this.#trigger
-                    );
+                this.#syncResizeObservation();
             }
 
             if (
@@ -1058,7 +1148,7 @@
                                 return;
                             }
 
-                            if (
+                            const relevant =
                                 mutations
                                     .some(
                                         mutation =>
@@ -1066,12 +1156,19 @@
                                                 .type ===
                                                 "childList" ||
                                             mutation
+                                                .type ===
+                                                "characterData" ||
+                                            mutation
                                                 .attributeName ===
                                                 "hidden"
-                                    )
-                            ) {
-                                this.refresh();
+                                    );
+
+                            if (!relevant) {
+                                return;
                             }
+
+                            this.#syncResizeObservation();
+                            this.#markLayoutDirty();
                         }
                     );
 
@@ -1080,13 +1177,21 @@
         }
 
         #observe() {
+            if (
+                !this.#observer
+            ) {
+                return;
+            }
+
             this.#observer
-                ?.observe(
-                    this.#source,
+                .observe(
+                    this.#viewport,
                     {
                         subtree:
                             true,
                         childList:
+                            true,
+                        characterData:
                             true,
                         attributes:
                             true,
@@ -1095,6 +1200,19 @@
                         ]
                     }
                 );
+
+            if (document.body) {
+                this.#observer
+                    .observe(
+                        document.body,
+                        {
+                            subtree:
+                                true,
+                            childList:
+                                true
+                        }
+                    );
+            }
         }
 
         #withObservationPaused(
@@ -1139,60 +1257,123 @@
                 return undefined;
             }
 
-            if (
-                this.#frozenPane &&
-                this.#frozenPane !==
-                    pane
-            ) {
-                this.#unfreezePane();
-            }
+            this.#unfreezePane();
 
-            const rect =
+            const paneRect =
                 pane
                     .getBoundingClientRect();
 
-            const width =
+            const paneWidth =
                 Math.max(
                     1,
-                    rect.width
+                    paneRect.width
                 );
 
-            const height =
+            const paneHeight =
                 Math.max(
                     1,
-                    rect.height
+                    paneRect.height
                 );
 
-            pane.classList
-                .add(
-                    "hamburger-menu-pane-frozen"
-                );
+            const targets =
+                new Set([
+                    this.#viewport,
+                    pane
+                ]);
 
-            pane.style.width =
-                width +
-                "px";
+            this.#frozenPaneLocks =
+                [];
 
-            pane.style.height =
-                height +
-                "px";
+            for (
+                const target of
+                targets
+            ) {
+                const rect =
+                    target ===
+                        this.#viewport
+                        ? {
+                            width:
+                                Math.max(
+                                    1,
+                                    this.#viewport
+                                        .getBoundingClientRect()
+                                        .width
+                                ),
+                            height:
+                                paneHeight
+                        }
+                        : {
+                            width:
+                                paneWidth,
+                            height:
+                                paneHeight
+                        };
 
-            pane.style.maxWidth =
-                width +
-                "px";
+                const lock = {
+                    target,
+                    classPresent:
+                        target.classList
+                            .contains(
+                                "hamburger-menu-pane-frozen"
+                            ),
+                    width:
+                        target.style.width,
+                    height:
+                        target.style.height,
+                    maxWidth:
+                        target.style.maxWidth,
+                    maxHeight:
+                        target.style.maxHeight,
+                    minWidth:
+                        target.style.minWidth,
+                    minHeight:
+                        target.style.minHeight,
+                    overflow:
+                        target.style.overflow
+                };
 
-            pane.style.maxHeight =
-                height +
-                "px";
+                this.#frozenPaneLocks
+                    .push(
+                        lock
+                    );
 
-            this.#viewport
-                .style.height =
-                height +
-                "px";
+                target.classList
+                    .add(
+                        "hamburger-menu-pane-frozen"
+                    );
+
+                target.style.width =
+                    rect.width +
+                    "px";
+
+                target.style.height =
+                    rect.height +
+                    "px";
+
+                target.style.minWidth =
+                    rect.width +
+                    "px";
+
+                target.style.minHeight =
+                    rect.height +
+                    "px";
+
+                target.style.maxWidth =
+                    rect.width +
+                    "px";
+
+                target.style.maxHeight =
+                    rect.height +
+                    "px";
+
+                target.style.overflow =
+                    "hidden";
+            }
 
             this.style
                 .setProperty(
                     "--hamburger-menu-panel-height",
-                    height +
+                    paneHeight +
                         "px"
                 );
 
@@ -1200,43 +1381,106 @@
                 pane;
 
             this.#frozenPaneRect = {
-                width,
-                height
+                width:
+                    paneWidth,
+                height:
+                    paneHeight
             };
 
             return {
                 pane,
-                width,
-                height
+                width:
+                    paneWidth,
+                height:
+                    paneHeight
             };
         }
 
         #unfreezePane() {
-            const pane =
-                this.#frozenPane;
+            if (
+                !this.#frozenPaneLocks
+                    .length
+            ) {
+                this.#frozenPane =
+                    undefined;
 
-            if (!pane) {
+                this.#frozenPaneRect =
+                    undefined;
+
                 return;
             }
 
-            pane.classList
-                .remove(
-                    "hamburger-menu-pane-frozen"
-                );
-
             for (
-                const property of [
-                    "width",
-                    "height",
-                    "max-width",
-                    "max-height"
-                ]
+                const lock of
+                this.#frozenPaneLocks
             ) {
-                pane.style
-                    .removeProperty(
+                const {
+                    target
+                } = lock;
+
+                if (
+                    !lock.classPresent
+                ) {
+                    target.classList
+                        .remove(
+                            "hamburger-menu-pane-frozen"
+                        );
+                }
+
+                const styles = {
+                    width:
+                        lock.width,
+                    height:
+                        lock.height,
+                    maxWidth:
+                        lock.maxWidth,
+                    maxHeight:
+                        lock.maxHeight,
+                    minWidth:
+                        lock.minWidth,
+                    minHeight:
+                        lock.minHeight,
+                    overflow:
+                        lock.overflow
+                };
+
+                for (
+                    const [
+                        property,
+                        value
+                    ] of
+                    Object.entries(
+                        styles
+                    )
+                ) {
+                    const cssProperty =
                         property
-                    );
+                            .replace(
+                                /[A-Z]/g,
+                                match =>
+                                    "-" +
+                                    match
+                                        .toLowerCase()
+                            );
+
+                    if (value) {
+                        target.style
+                            .setProperty(
+                                cssProperty,
+                                value
+                            );
+                    }
+                    else {
+                        target.style
+                            .removeProperty(
+                                cssProperty
+                            );
+                    }
+                }
             }
+
+            this.#frozenPaneLocks =
+                [];
 
             this.#frozenPane =
                 undefined;
@@ -1432,6 +1676,194 @@
             );
         }
 
+        #discoverBoundary() {
+            const triggerRect =
+                this.#trigger
+                    ?.getBoundingClientRect();
+
+            if (!triggerRect) {
+                return undefined;
+            }
+
+            const viewport =
+                this.#viewportBounds();
+
+            const centerX =
+                (
+                    triggerRect.left +
+                    triggerRect.right
+                ) /
+                2;
+
+            const candidates = [];
+
+            const consider =
+                (
+                    element,
+                    priority
+                ) => {
+                    if (
+                        !element ||
+                        element ===
+                            this ||
+                        this.contains(
+                            element
+                        ) ||
+                        element.contains(
+                            this
+                        )
+                    ) {
+                        return;
+                    }
+
+                    const style =
+                        getComputedStyle(
+                            element
+                        );
+
+                    if (
+                        style.display ===
+                            "none" ||
+                        style.visibility ===
+                            "hidden"
+                    ) {
+                        return;
+                    }
+
+                    const rect =
+                        element
+                            .getBoundingClientRect();
+
+                    if (
+                        rect.width <=
+                            0 ||
+                        rect.height <=
+                            0
+                    ) {
+                        return;
+                    }
+
+                    const above =
+                        rect.bottom <=
+                        triggerRect.top;
+
+                    const below =
+                        rect.top >=
+                        triggerRect.bottom;
+
+                    if (
+                        !above &&
+                        !below
+                    ) {
+                        return;
+                    }
+
+                    const broad =
+                        rect.width >=
+                        (
+                            viewport.bottom -
+                            viewport.top
+                        ) *
+                        0.35;
+
+                    const intersectsX =
+                        centerX >=
+                            rect.left &&
+                        centerX <=
+                            rect.right;
+
+                    if (
+                        priority >
+                            0 &&
+                        !intersectsX &&
+                        !broad
+                    ) {
+                        return;
+                    }
+
+                    const distance =
+                        above
+                            ? triggerRect.top -
+                                rect.bottom
+                            : rect.top -
+                                triggerRect.bottom;
+
+                    candidates.push({
+                        element,
+                        priority,
+                        distance
+                    });
+                };
+
+            for (
+                const element of
+                document.querySelectorAll(
+                    "[data-hamburger-safe-boundary]"
+                )
+            ) {
+                consider(
+                    element,
+                    0
+                );
+            }
+
+            for (
+                const element of
+                document.querySelectorAll(
+                    "footer,[role=\"toolbar\"],[role=\"status\"]"
+                )
+            ) {
+                consider(
+                    element,
+                    1
+                );
+            }
+
+            for (
+                const element of
+                document.body
+                    ?.querySelectorAll(
+                        "*"
+                    ) ||
+                []
+            ) {
+                const style =
+                    getComputedStyle(
+                        element
+                    );
+
+                if (
+                    style.position !==
+                        "fixed" &&
+                    style.position !==
+                        "sticky"
+                ) {
+                    continue;
+                }
+
+                consider(
+                    element,
+                    2
+                );
+            }
+
+            candidates.sort(
+                (
+                    left,
+                    right
+                ) =>
+                    left.priority -
+                        right.priority ||
+                    left.distance -
+                        right.distance
+            );
+
+            return candidates[
+                0
+            ]
+                ?.element;
+        }
+
         #resolveBoundary() {
             if (
                 this.#boundaryOverride
@@ -1449,20 +1881,23 @@
                 )
                     .trim();
 
-            if (!selector) {
-                return undefined;
+            if (selector) {
+                try {
+                    const explicit =
+                        document
+                            .querySelector(
+                                selector
+                            );
+
+                    if (explicit) {
+                        return explicit;
+                    }
+                }
+                catch {}
             }
 
-            try {
-                return document
-                    .querySelector(
-                        selector
-                    ) ||
-                    undefined;
-            }
-            catch {
-                return undefined;
-            }
+            return this
+                .#discoverBoundary();
         }
 
         #visibleBoundary() {
