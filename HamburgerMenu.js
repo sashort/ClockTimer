@@ -1840,6 +1840,15 @@
 
                     this.#reconcilePlacement();
 
+                    if (
+                        !this.#frozenPaneLocks
+                            .length
+                    ) {
+                        this.#freezePane(
+                            this.#viewport
+                        );
+                    }
+
                     this.#openingMeasured =
                         true;
 
@@ -5187,6 +5196,895 @@
                 );
         }
 
+        #motionStyle(
+            element
+        ) {
+            return {
+                position:
+                    element.style.position,
+                left:
+                    element.style.left,
+                top:
+                    element.style.top,
+                width:
+                    element.style.width,
+                height:
+                    element.style.height,
+                translate:
+                    element.style.translate,
+                visibility:
+                    element.style.visibility,
+                willChange:
+                    element.style.willChange,
+                zIndex:
+                    element.style.zIndex
+            };
+        }
+
+        #restoreMotionStyle(
+            element,
+            style
+        ) {
+            if (
+                !element ||
+                !style
+            ) {
+                return;
+            }
+
+            for (
+                const [
+                    property,
+                    value
+                ] of
+                Object.entries(
+                    style
+                )
+            ) {
+                const cssProperty =
+                    property
+                        .replace(
+                            /[A-Z]/g,
+                            match =>
+                                "-" +
+                                match
+                                    .toLowerCase()
+                        );
+
+                if (value) {
+                    element.style
+                        .setProperty(
+                            cssProperty,
+                            value
+                        );
+                }
+                else {
+                    element.style
+                        .removeProperty(
+                            cssProperty
+                        );
+                }
+            }
+        }
+
+        #focusDestinationRect(
+            rect,
+            flow
+        ) {
+            const layer =
+                this.#focusLayer
+                    .getBoundingClientRect();
+
+            const width =
+                Math.max(
+                    1,
+                    layer.width ||
+                    rect.width
+                );
+
+            const height =
+                Math.max(
+                    1,
+                    rect.height
+                );
+
+            const top =
+                flow ===
+                    "start"
+                    ? layer.top
+                    : layer.bottom -
+                        height;
+
+            return {
+                left:
+                    layer.left,
+                top,
+                right:
+                    layer.left +
+                    width,
+                bottom:
+                    top +
+                    height,
+                width,
+                height
+            };
+        }
+
+        #offPaneTranslation(
+            rect,
+            flow
+        ) {
+            const pane =
+                this.#viewport
+                    .getBoundingClientRect();
+
+            return {
+                x:
+                    0,
+                y:
+                    flow ===
+                        "start"
+                        ? pane.bottom -
+                            rect.top +
+                            1
+                        : pane.top -
+                            rect.bottom -
+                            1
+            };
+        }
+
+        #lockRect(
+            element,
+            rect,
+            container
+        ) {
+            const base =
+                container
+                    .getBoundingClientRect();
+
+            element.style.position =
+                "absolute";
+
+            element.style.left =
+                (
+                    rect.left -
+                    base.left
+                ) +
+                "px";
+
+            element.style.top =
+                (
+                    rect.top -
+                    base.top
+                ) +
+                "px";
+
+            element.style.width =
+                rect.width +
+                    "px";
+
+            element.style.height =
+                rect.height +
+                    "px";
+
+            element.style.translate =
+                "0 0";
+        }
+
+        #translationAnimation(
+            element,
+            from,
+            to,
+            duration
+        ) {
+            const fromValue =
+                from.x +
+                "px " +
+                from.y +
+                "px";
+
+            const toValue =
+                to.x +
+                "px " +
+                to.y +
+                "px";
+
+            if (
+                !duration ||
+                typeof element
+                    .animate !==
+                    "function"
+            ) {
+                element.style.translate =
+                    toValue;
+
+                return {
+                    animation:
+                        undefined,
+                    finished:
+                        Promise.resolve()
+                };
+            }
+
+            const animation =
+                this
+                    .#trackAnimation(
+                        element.animate(
+                            [
+                                {
+                                    translate:
+                                        fromValue
+                                },
+                                {
+                                    translate:
+                                        toValue
+                                }
+                            ],
+                            {
+                                duration,
+                                easing:
+                                    "ease-in-out",
+                                fill:
+                                    "both"
+                            }
+                        )
+                    );
+
+            return {
+                animation,
+                finished:
+                    animation
+                        .finished
+                        .catch(
+                            () => {}
+                        )
+            };
+        }
+
+        async #promoteNested(
+            current,
+            group,
+            button,
+            submenu,
+            flow,
+            generation,
+            originalPanelIndex
+        ) {
+            const sourceParent =
+                group.parentNode;
+
+            if (!sourceParent) {
+                this.#transitionBusy =
+                    false;
+
+                return false;
+            }
+
+            const parent =
+                current.group;
+
+            const parentStart =
+                parent
+                    .getBoundingClientRect();
+
+            const childStart =
+                group
+                    .getBoundingClientRect();
+
+            const childTarget =
+                this
+                    .#focusDestinationRect(
+                        childStart,
+                        flow
+                    );
+
+            const parentExit =
+                this
+                    .#offPaneTranslation(
+                        parentStart,
+                        flow
+                    );
+
+            /*
+             * The child is still nested inside the moving parent during
+             * this phase. Counter the inherited parent motion so its
+             * global endpoint lands exactly on the promoted target.
+             */
+            const childCompensation = {
+                x:
+                    childTarget.left -
+                    childStart.left -
+                    parentExit.x,
+                y:
+                    childTarget.top -
+                    childStart.top -
+                    parentExit.y
+            };
+
+            const parentStyle =
+                this
+                    .#motionStyle(
+                        parent
+                    );
+
+            const childStyle =
+                this
+                    .#motionStyle(
+                        group
+                    );
+
+            const anchor =
+                document
+                    .createComment(
+                        "hamburger-menu-focus-anchor"
+                    );
+
+            sourceParent
+                .insertBefore(
+                    anchor,
+                    group
+                );
+
+            const placeholder =
+                document
+                    .createElement(
+                        "div"
+                    );
+
+            placeholder.className =
+                "hamburger-menu-focus-placeholder";
+
+            placeholder.hidden =
+                true;
+
+            const groupMetrics =
+                this.#measure(
+                    group
+                );
+
+            sourceParent
+                .insertBefore(
+                    placeholder,
+                    anchor
+                );
+
+            parent.style.position =
+                "relative";
+
+            parent.style.willChange =
+                "translate";
+
+            group.style.position =
+                "relative";
+
+            group.style.willChange =
+                "translate";
+
+            this.#focusLayer.hidden =
+                false;
+
+            this.#focusLayer
+                .dataset
+                .flow =
+                flow;
+
+            const entry = {
+                group,
+                button,
+                submenu,
+                sourceRoot:
+                    parent,
+                sourceParent,
+                anchor,
+                placeholder,
+                rows: [],
+                toward: [],
+                away: [],
+                originalPanelIndex,
+                flow,
+                nestedMotion: {
+                    parentStart: {
+                        left:
+                            parentStart.left,
+                        top:
+                            parentStart.top,
+                        right:
+                            parentStart.right,
+                        bottom:
+                            parentStart.bottom,
+                        width:
+                            parentStart.width,
+                        height:
+                            parentStart.height
+                    },
+                    childStart: {
+                        left:
+                            childStart.left,
+                        top:
+                            childStart.top,
+                        right:
+                            childStart.right,
+                        bottom:
+                            childStart.bottom,
+                        width:
+                            childStart.width,
+                        height:
+                            childStart.height
+                    },
+                    childTarget,
+                    parentExit,
+                    parentStyle,
+                    childStyle
+                }
+            };
+
+            this.#focusStack
+                .push(
+                    entry
+                );
+
+            const duration =
+                this
+                    .#promotionDuration();
+
+            const parentMotion =
+                this
+                    .#translationAnimation(
+                        parent,
+                        {
+                            x:
+                                0,
+                            y:
+                                0
+                        },
+                        parentExit,
+                        duration
+                    );
+
+            const childMotion =
+                this
+                    .#translationAnimation(
+                        group,
+                        {
+                            x:
+                                0,
+                            y:
+                                0
+                        },
+                        childCompensation,
+                        duration
+                    );
+
+            await Promise.all([
+                parentMotion.finished,
+                childMotion.finished
+            ]);
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            parent.style.translate =
+                parentExit.x +
+                "px " +
+                parentExit.y +
+                "px";
+
+            group.style.translate =
+                childCompensation.x +
+                "px " +
+                childCompensation.y +
+                "px";
+
+            placeholder.hidden =
+                false;
+
+            placeholder.style.height =
+                groupMetrics.height +
+                    "px";
+
+            placeholder.style.marginTop =
+                groupMetrics.marginTop +
+                    "px";
+
+            placeholder.style.marginBottom =
+                groupMetrics.marginBottom +
+                    "px";
+
+            group.classList
+                .add(
+                    "hamburger-menu-focus-group",
+                    "hamburger-menu-focus-entering"
+                );
+
+            group.style.zIndex =
+                String(
+                    20 +
+                    this.#focusStack
+                        .length
+                );
+
+            /*
+             * Absolute-lock the child at its visual endpoint before
+             * reparenting it. No paint can occur between the lock and
+             * the DOM move, so changing ancestry cannot move it.
+             */
+            this
+                .#lockRect(
+                    group,
+                    childTarget,
+                    this.#focusLayer
+                );
+
+            this.#focusLayer
+                .append(
+                    group
+                );
+
+            parent.hidden =
+                true;
+
+            try {
+                parentMotion.animation
+                    ?.cancel();
+            }
+            catch {}
+
+            try {
+                childMotion.animation
+                    ?.cancel();
+            }
+            catch {}
+
+            this
+                .#restoreMotionStyle(
+                    parent,
+                    parentStyle
+                );
+
+            await nextFrame();
+
+            this
+                .#restoreMotionStyle(
+                    group,
+                    childStyle
+                );
+
+            group.classList
+                .remove(
+                    "hamburger-menu-focus-entering"
+                );
+
+            group.style.zIndex =
+                String(
+                    20 +
+                    this.#focusStack
+                        .length -
+                    1
+                );
+
+            const pause =
+                this
+                    .#promotionPause();
+
+            if (pause) {
+                await wait(
+                    pause
+                );
+            }
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            await this
+                .#openPromotedSubmenu(
+                    entry,
+                    generation
+                );
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            this
+                .#updateFocusBounds();
+
+            this.#transitionBusy =
+                false;
+
+            this.#flushLayoutIfDirty();
+
+            this.#dispatch(
+                "parentopened",
+                {
+                    group,
+                    button,
+                    submenu,
+                    depth:
+                        this
+                            .#focusStack
+                            .length,
+                    flow
+                }
+            );
+
+            return true;
+        }
+
+        async #restoreNestedFocusLevel(
+            entry,
+            parent,
+            generation
+        ) {
+            const parentGroup =
+                parent.group;
+
+            const child =
+                entry.group;
+
+            const parentStyle =
+                this
+                    .#motionStyle(
+                        parentGroup
+                    );
+
+            const childStyle =
+                this
+                    .#motionStyle(
+                        child
+                    );
+
+            const childStart =
+                child
+                    .getBoundingClientRect();
+
+            const parentTarget =
+                this
+                    .#focusDestinationRect(
+                        entry
+                            .nestedMotion
+                            .parentStart,
+                        entry.flow
+                    );
+
+            this
+                .#lockRect(
+                    parentGroup,
+                    parentTarget,
+                    this.#focusLayer
+                );
+
+            parentGroup.style.visibility =
+                "hidden";
+
+            parentGroup.hidden =
+                false;
+
+            await nextFrame();
+
+            const destination =
+                entry.placeholder
+                    ?.getBoundingClientRect();
+
+            if (!destination) {
+                parentGroup.hidden =
+                    true;
+
+                this
+                    .#restoreMotionStyle(
+                        parentGroup,
+                        parentStyle
+                    );
+
+                this.#transitionBusy =
+                    false;
+
+                return false;
+            }
+
+            const parentExit =
+                this
+                    .#offPaneTranslation(
+                        parentTarget,
+                        entry.flow
+                    );
+
+            parentGroup.style.translate =
+                parentExit.x +
+                "px " +
+                parentExit.y +
+                "px";
+
+            parentGroup.style.visibility =
+                parentStyle.visibility ||
+                "";
+
+            child.style.position =
+                "relative";
+
+            child.style.willChange =
+                "translate";
+
+            const childReturn = {
+                x:
+                    destination.left -
+                    childStart.left,
+                y:
+                    destination.top -
+                    childStart.top
+            };
+
+            const duration =
+                this
+                    .#promotionDuration();
+
+            const parentMotion =
+                this
+                    .#translationAnimation(
+                        parentGroup,
+                        parentExit,
+                        {
+                            x:
+                                0,
+                            y:
+                                0
+                        },
+                        duration
+                    );
+
+            const childMotion =
+                this
+                    .#translationAnimation(
+                        child,
+                        {
+                            x:
+                                0,
+                            y:
+                                0
+                        },
+                        childReturn,
+                        duration
+                    );
+
+            await Promise.all([
+                parentMotion.finished,
+                childMotion.finished
+            ]);
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            parentGroup.style.translate =
+                "0 0";
+
+            child.style.translate =
+                childReturn.x +
+                "px " +
+                childReturn.y +
+                "px";
+
+            /*
+             * Lock the child on its return endpoint, put it back into
+             * the parent's original slot, then drop the temporary lock.
+             */
+            this
+                .#lockRect(
+                    child,
+                    destination,
+                    this.#focusLayer
+                );
+
+            try {
+                childMotion.animation
+                    ?.cancel();
+            }
+            catch {}
+
+            if (
+                entry.anchor
+                    ?.parentNode
+            ) {
+                entry.anchor
+                    .parentNode
+                    .insertBefore(
+                        child,
+                        entry.anchor
+                    );
+            }
+
+            this
+                .#lockRect(
+                    child,
+                    destination,
+                    parentGroup
+                );
+
+            try {
+                parentMotion.animation
+                    ?.cancel();
+            }
+            catch {}
+
+            entry.placeholder
+                ?.remove();
+
+            entry.anchor
+                ?.remove();
+
+            this.#focusStack
+                .pop();
+
+            child.classList
+                .remove(
+                    "hamburger-menu-focus-group",
+                    "hamburger-menu-focus-leaving"
+                );
+
+            child.style
+                .removeProperty(
+                    "z-index"
+                );
+
+            await nextFrame();
+
+            this
+                .#restoreMotionStyle(
+                    child,
+                    childStyle
+                );
+
+            this
+                .#restoreMotionStyle(
+                    parentGroup,
+                    parentStyle
+                );
+
+            parentGroup.hidden =
+                false;
+
+            this.#transitionBusy =
+                false;
+
+            this
+                .#updateFocusBounds();
+
+            this.#flushLayoutIfDirty();
+
+            this.#dispatch(
+                "parentclosed",
+                {
+                    group:
+                        child,
+                    button:
+                        entry.button,
+                    submenu:
+                        entry.submenu,
+                    depth:
+                        this
+                            .#focusStack
+                            .length,
+                    flow:
+                        entry.flow
+                }
+            );
+
+            return true;
+        }
+
         async #promote(
             group,
             button,
@@ -5266,6 +6164,19 @@
 
             const originalPanelIndex =
                 this.#panelIndex;
+
+            if (current) {
+                return this
+                    .#promoteNested(
+                        current,
+                        group,
+                        button,
+                        submenu,
+                        flow,
+                        generation,
+                        originalPanelIndex
+                    );
+            }
 
             const originalRect =
                 group
@@ -5683,6 +6594,18 @@
                         ]
                     : undefined;
 
+            if (
+                parent &&
+                entry.nestedMotion
+            ) {
+                return this
+                    .#restoreNestedFocusLevel(
+                        entry,
+                        parent,
+                        generation
+                    );
+            }
+
             let parentZIndex;
 
             let reverseMaskContainer =
@@ -6003,13 +6926,6 @@
                     0;
             }
 
-            if (
-                !this.#focusStack
-                    .length
-            ) {
-                this.#unfreezePane();
-            }
-
             this.#transitionBusy =
                 false;
 
@@ -6202,8 +7118,6 @@
         }
 
         #reset() {
-            this.#unfreezePane();
-
             this.#generation +=
                 1;
 
