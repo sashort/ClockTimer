@@ -17382,10 +17382,28 @@
             changeGoalMode(
                 goalMode
             ) {
+                const transcriptMode =
+                    String(
+                        globalThis
+                            .SpeechMenu
+                            ?.executionContext
+                            ?.transcript ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase()
+                        .match(
+                            /^(auto|total|trip) mode$/
+                        )
+                        ?.[1];
+
                 const mode =
                     String(
-                        goalMode
+                        goalMode ??
+                        transcriptMode ??
+                        ""
                     )
+                        .trim()
                         .toLowerCase();
 
                 if (
@@ -20022,7 +20040,7 @@
                 readyAt:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton",
-                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", goalMode:"#scopeToggle",
+                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
