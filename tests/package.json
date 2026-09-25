@@ -16,7 +16,8 @@
     "test:speech-editor": "node speech-editor.mjs",
     "test:speech-phrases": "node speech-phrases.mjs",
     "test:action-macros": "node action-macros.mjs",
-    "test:editor-actions": "node editor-actions.mjs"
+    "test:editor-actions": "node editor-actions.mjs",
+    "test:hamburger-menu": "node hamburger-menu.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
