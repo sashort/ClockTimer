@@ -57,6 +57,26 @@ assert.doesNotMatch(
     /hamburger-menu-source \{[\s\S]{0,120}min-height: 100%/
 );
 
+assert.match(
+    componentSource,
+    /data-calculating/
+);
+
+assert.match(
+    componentSource,
+    /#freezePane\(/
+);
+
+assert.match(
+    componentSource,
+    /hamburger-menu-pane-frozen/
+);
+
+assert.match(
+    componentSource,
+    /#unfreezePane\(\)[\s\S]*parentclosed/
+);
+
 window.eval(
     componentSource
 );
