@@ -177,6 +177,7 @@ kbd {
 <p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
 
 <h2>Safe boundary</h2>
+<p>The safe boundary is a <strong>maximum available height constraint</strong>; it never becomes the pane's starting height. On open, pane height is measured from its contents (or the tallest generated panel) and is only clamped if that natural height exceeds the safe region.</p>
 <p><code>safe-boundary</code> accepts a document selector. The resolved element must generate a usable <strong>block-level box</strong> such as <code>block</code>, <code>flex</code>, <code>grid</code>, <code>flow-root</code>, <code>table</code>, or <code>list-item</code>. Inline boxes, <code>display: contents</code>, hidden elements, table-internal boxes, and zero-size boxes are rejected. If the explicit boundary is invalid, the component falls back to automatic boundary discovery and finally the usable document edge. While the menu is open, the component samples the accepted boundary's live <code>getBoundingClientRect()</code> each animation frame, so CSS transforms and animations that move the boundary without resizing it still update pane limits.</p>
 
 <figure>
