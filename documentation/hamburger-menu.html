@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>&lt;hamburger-menu&gt; Developer Guide</title>
+<style>
+:root {
+    color-scheme: dark;
+    --navy: #001e60;
+    --blue: #0071ce;
+    --light: #a9ddf7;
+    --yellow: #ffc220;
+    --paper: #f7fbff;
+    --ink: #14202b;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: #e9f1f8;
+}
+main {
+    width: min(1120px, calc(100% - 32px));
+    margin: 32px auto;
+    padding: 40px;
+    border-radius: 22px;
+    background: var(--paper);
+    box-shadow: 0 18px 60px rgb(0 30 96 / 16%);
+}
+h1, h2, h3 { color: var(--navy); line-height: 1.15; }
+h1 { margin-top: 0; font-size: clamp(2rem, 4vw, 3.4rem); }
+h2 { margin-top: 2.4em; border-bottom: 2px solid #d7e6f4; padding-bottom: .3em; }
+code, pre {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+code {
+    padding: .1em .35em;
+    border-radius: 5px;
+    background: #e7f0f8;
+}
+pre {
+    overflow: auto;
+    padding: 18px;
+    border-radius: 12px;
+    color: #fff;
+    background: #10253b;
+}
+.note {
+    padding: 16px 18px;
+    border-left: 5px solid var(--blue);
+    border-radius: 8px;
+    background: #eaf5ff;
+}
+.warning {
+    padding: 16px 18px;
+    border-left: 5px solid #c47b00;
+    border-radius: 8px;
+    background: #fff4d6;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+.card {
+    padding: 20px;
+    border: 1px solid #cbdceb;
+    border-radius: 14px;
+    background: #fff;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+th, td {
+    padding: 11px 12px;
+    border: 1px solid #cbdceb;
+    text-align: left;
+    vertical-align: top;
+}
+th { background: #eaf3fb; color: var(--navy); }
+figure {
+    margin: 24px 0;
+    padding: 16px;
+    border: 1px solid #cbdceb;
+    border-radius: 14px;
+    background: #fff;
+}
+figcaption { margin-top: 10px; color: #4a5b6c; }
+svg { width: 100%; height: auto; }
+.small { font-size: .9em; color: #526579; }
+kbd {
+    padding: 2px 6px;
+    border: 1px solid #adbdca;
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: #fff;
+}
+</style>
+</head>
+<body>
+<main>
+<h1>&lt;hamburger-menu&gt;</h1>
+<p><strong>Reusable anchored hamburger menu custom element.</strong> It owns popover placement, horizontal paging, parent-menu promotion, directional animation, safe-boundary geometry, and promoted-menu scrolling. Application-specific commands and visual styling stay outside the component.</p>
+
+<div class="note">
+<strong>WMOF integration:</strong> the main UI uses this custom element with <code>safe-boundary="#speechMicBar"</code>. The same element is intended for reuse in unrelated projects.
+</div>
+
+<h2>Core behavior</h2>
+<div class="grid">
+<div class="card">
+<h3>Anchor positioning</h3>
+<p>The trigger is a CSS anchor. The popover uses <code>position-try</code> fallbacks to find a valid location above, below, left, or right of the hamburger.</p>
+</div>
+<div class="card">
+<h3>Horizontal paging</h3>
+<p>Normal menu content never vertically scrolls. If it is too tall, the element packs top-level rows into horizontally swipeable pages. Every page is the height of the tallest page.</p>
+</div>
+<div class="card">
+<h3>Parent promotion</h3>
+<p>Opening <em>any</em> parent menu promotes it. Promotion is no longer conditional on overflow. Nested parents create a promotion stack.</p>
+</div>
+<div class="card">
+<h3>Directional animation</h3>
+<p>Promotion moves toward the hamburger. If the hamburger is below the menu, the promoted group moves toward the bottom. If it is above, promotion moves toward the top.</p>
+</div>
+</div>
+
+<h2>Basic markup</h2>
+<pre>&lt;hamburger-menu
+    id="applicationMenu"
+    safe-boundary="#statusBar"
+    aria-label="Application menu"
+&gt;
+    &lt;button slot="trigger" type="button" aria-label="Open menu"&gt;
+        ☰
+    &lt;/button&gt;
+
+    &lt;button type="button"&gt;Home&lt;/button&gt;
+
+    &lt;div class="settings-group"&gt;
+        &lt;button
+            type="button"
+            aria-expanded="false"
+            aria-controls="settingsSubmenu"
+        &gt;Settings&lt;/button&gt;
+
+        &lt;div id="settingsSubmenu" hidden&gt;
+            &lt;button type="button"&gt;Display&lt;/button&gt;
+            &lt;button type="button"&gt;Sound&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/hamburger-menu&gt;
+
+&lt;script src="HamburgerMenu.js"&gt;&lt;/script&gt;</pre>
+
+<p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
+
+<h2>Safe boundary</h2>
+<p><code>safe-boundary</code> accepts a document selector. The element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary.</p>
+
+<figure>
+<svg viewBox="0 0 900 330" role="img" aria-label="Boundary below the hamburger">
+<rect x="25" y="20" width="850" height="290" rx="20" fill="#edf5fb" stroke="#9fb8cc" stroke-width="2"/>
+<rect x="70" y="55" width="120" height="52" rx="12" fill="#001e60"/>
+<text x="130" y="88" text-anchor="middle" fill="white" font-size="20" font-family="system-ui">☰ trigger</text>
+<rect x="70" y="118" width="360" height="120" rx="15" fill="#0b4a87" opacity=".92"/>
+<text x="250" y="154" text-anchor="middle" fill="white" font-size="20" font-family="system-ui">menu / pages</text>
+<text x="250" y="188" text-anchor="middle" fill="#a9ddf7" font-size="16" font-family="system-ui">safe usable region</text>
+<rect x="25" y="260" width="850" height="32" fill="#ffc220"/>
+<text x="450" y="282" text-anchor="middle" fill="#14202b" font-size="17" font-family="system-ui">safe-boundary below</text>
+<line x1="455" y1="238" x2="455" y2="258" stroke="#0071ce" stroke-width="4"/>
+<text x="470" y="251" fill="#14202b" font-size="14" font-family="system-ui">boundary margin + hamburger-menu margin are preserved</text>
+</svg>
+<figcaption>Boundary below: the menu must remain above it. If placement would cross the boundary, the hamburger itself may shift upward so the anchored popover remains valid.</figcaption>
+</figure>
+
+<figure>
+<svg viewBox="0 0 900 330" role="img" aria-label="Boundary above the hamburger">
+<rect x="25" y="20" width="850" height="290" rx="20" fill="#edf5fb" stroke="#9fb8cc" stroke-width="2"/>
+<rect x="25" y="38" width="850" height="32" fill="#ffc220"/>
+<text x="450" y="60" text-anchor="middle" fill="#14202b" font-size="17" font-family="system-ui">safe-boundary above</text>
+<rect x="70" y="92" width="120" height="52" rx="12" fill="#001e60"/>
+<text x="130" y="125" text-anchor="middle" fill="white" font-size="20" font-family="system-ui">☰ trigger</text>
+<rect x="70" y="156" width="360" height="120" rx="15" fill="#0b4a87" opacity=".92"/>
+<text x="250" y="192" text-anchor="middle" fill="white" font-size="20" font-family="system-ui">menu / pages</text>
+<text x="250" y="226" text-anchor="middle" fill="#a9ddf7" font-size="16" font-family="system-ui">safe usable region</text>
+</svg>
+<figcaption>Boundary above: the component uses the region below the boundary. The same API therefore works for headers, toolbars, trays, mic bars, and other layout constraints.</figcaption>
+</figure>
+
+<h3>Margin rule</h3>
+<p>When a safe boundary exists, the external gap is calculated from the <strong>hamburger-menu element's margin</strong> plus the <strong>safe-boundary element's margin</strong>. The margin of the last menu item is <em>not</em> separately added to the boundary calculation.</p>
+
+<h3>No safe boundary</h3>
+<p>If <code>safe-boundary</code> is omitted, invalid, disconnected, or not rendered, the lower usable edge is the document/viewport bottom. The calculation accounts for document and body bottom margin and padding.</p>
+
+<h2>Positioning and position-try</h2>
+<p>The popover starts below the trigger and exposes multiple <code>@position-try</code> alternatives. The browser may place it:</p>
+<ul>
+<li>below-start,</li>
+<li>above-start,</li>
+<li>below-end,</li>
+<li>above-end,</li>
+<li>to the right, or</li>
+<li>to the left.</li>
+</ul>
+
+<p>The final popover receives <code>data-placement="above|below|left|right"</code>. Projects can use this to orient arrows or other decoration.</p>
+
+<pre>.my-menu &gt; .hamburger-menu-popover[data-placement="above"]::after {
+    /* point the callout arrow down toward the trigger */
+}</pre>
+
+<h2>Promotion model</h2>
+
+<figure>
+<svg viewBox="0 0 960 400" role="img" aria-label="Parent promotion toward hamburger">
+<rect x="30" y="25" width="400" height="330" rx="18" fill="#eef5fb" stroke="#9fb8cc" stroke-width="2"/>
+<text x="230" y="55" text-anchor="middle" fill="#001e60" font-size="20" font-family="system-ui" font-weight="700">Hamburger above</text>
+<rect x="170" y="70" width="120" height="45" rx="10" fill="#001e60"/>
+<text x="230" y="99" text-anchor="middle" fill="white" font-size="18" font-family="system-ui">☰</text>
+<rect x="85" y="145" width="290" height="52" rx="10" fill="#0071ce"/>
+<text x="230" y="178" text-anchor="middle" fill="white" font-size="17" font-family="system-ui">Promoted parent</text>
+<rect x="105" y="205" width="250" height="42" rx="8" fill="#a9ddf7"/>
+<rect x="105" y="255" width="250" height="42" rx="8" fill="#a9ddf7"/>
+<path d="M230 136V120" stroke="#001e60" stroke-width="5" marker-end="url(#arrow)"/>
+
+<rect x="530" y="25" width="400" height="330" rx="18" fill="#eef5fb" stroke="#9fb8cc" stroke-width="2"/>
+<text x="730" y="55" text-anchor="middle" fill="#001e60" font-size="20" font-family="system-ui" font-weight="700">Hamburger below</text>
+<rect x="585" y="80" width="290" height="52" rx="10" fill="#0071ce"/>
+<text x="730" y="113" text-anchor="middle" fill="white" font-size="17" font-family="system-ui">Promoted parent/group</text>
+<rect x="605" y="140" width="250" height="42" rx="8" fill="#a9ddf7"/>
+<rect x="605" y="190" width="250" height="42" rx="8" fill="#a9ddf7"/>
+<rect x="670" y="285" width="120" height="45" rx="10" fill="#001e60"/>
+<text x="730" y="314" text-anchor="middle" fill="white" font-size="18" font-family="system-ui">☰</text>
+<path d="M730 240V275" stroke="#001e60" stroke-width="5" marker-end="url(#arrow)"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#001e60"/></marker></defs>
+</svg>
+<figcaption>Opening a parent always promotes it. The promoted group moves toward the hamburger rather than always moving to the top.</figcaption>
+</figure>
+
+<p>During promotion:</p>
+<ol>
+<li>The selected parent group moves to the focus layer at a higher z-index.</li>
+<li>Unrelated rows in the current level collapse toward zero height.</li>
+<li>Child rows grow from zero height to their measured height.</li>
+<li>Height animations use a common pixel-per-millisecond rate.</li>
+<li>Content is clipped while height changes; content itself is not scaled or reflowed to fit the shrinking box.</li>
+<li>Opening another parent inside the promoted group creates another promotion level.</li>
+<li>Closing returns to the immediately previous promotion level.</li>
+</ol>
+
+<h3>Promoted scrolling</h3>
+<p>A normal menu page never scrolls vertically. Vertical scrolling is enabled only when the <em>currently promoted menu itself</em> is taller than the available safe region.</p>
+
+<h2>Paging</h2>
+<p>Top-level content is packed into pages according to available height. Horizontal scrolling uses scroll snap and works with touch/pointer swipes. A position indicator tracks fractional scroll progress.</p>
+
+<figure>
+<svg viewBox="0 0 900 270" role="img" aria-label="Three equal-height swipeable menu pages">
+<rect x="45" y="35" width="230" height="165" rx="14" fill="#0b4a87"/>
+<rect x="335" y="35" width="230" height="165" rx="14" fill="#0b4a87"/>
+<rect x="625" y="35" width="230" height="165" rx="14" fill="#0b4a87"/>
+<text x="160" y="120" text-anchor="middle" fill="white" font-size="24" font-family="system-ui">Page 1</text>
+<text x="450" y="120" text-anchor="middle" fill="white" font-size="24" font-family="system-ui">Page 2</text>
+<text x="740" y="120" text-anchor="middle" fill="white" font-size="24" font-family="system-ui">Page 3</text>
+<line x1="45" y1="215" x2="855" y2="215" stroke="#9fb8cc" stroke-width="4"/>
+<rect x="45" y="210" width="270" height="10" rx="5" fill="#0071ce"/>
+<text x="450" y="252" text-anchor="middle" fill="#14202b" font-size="16" font-family="system-ui">All pages use the tallest required page height</text>
+</svg>
+</figure>
+
+<h2>Attributes and properties</h2>
+<table>
+<thead><tr><th>Name</th><th>Type</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>safe-boundary</code></td><td>CSS selector</td><td>Optional external element that the menu must not cross. The component determines whether it is above or below.</td></tr>
+<tr><td><code>item-rate</code></td><td>positive number</td><td>Pixels per millisecond for grow/shrink and promotion-distance timing. Default: <code>0.5</code>.</td></tr>
+<tr><td><code>safeBoundary</code></td><td>Element | string | null</td><td>Property form of <code>safe-boundary</code>. An Element may be supplied directly.</td></tr>
+<tr><td><code>trigger</code></td><td>Element</td><td>The active hamburger/trigger element.</td></tr>
+<tr><td><code>popoverElement</code></td><td>HTMLElement</td><td>The generated internal popover, useful for project-specific styling or inspection.</td></tr>
+<tr><td><code>isOpen</code></td><td>boolean</td><td>Whether the popover is open.</td></tr>
+<tr><td><code>page</code></td><td>number</td><td>Current zero-based page.</td></tr>
+<tr><td><code>pageCount</code></td><td>number</td><td>Current number of normal pages.</td></tr>
+<tr><td><code>promotionDepth</code></td><td>number</td><td>Number of active promoted parent levels.</td></tr>
+</tbody>
+</table>
+
+<h2>Methods</h2>
+<table>
+<thead><tr><th>Method</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>showPopover()</code></td><td>Open the menu.</td></tr>
+<tr><td><code>hidePopover()</code></td><td>Close the menu and restore its normal hierarchy.</td></tr>
+<tr><td><code>togglePopover()</code></td><td>Toggle open/closed.</td></tr>
+<tr><td><code>back()</code></td><td>Close one promoted parent level; if no promoted level remains, close the popover.</td></tr>
+<tr><td><code>refresh()</code></td><td>Re-measure safe geometry and repack pages. Useful after application-specific layout changes.</td></tr>
+<tr><td><code>goToPage(index, options)</code></td><td>Navigate to a normal page. <code>options.smooth</code> defaults to true.</td></tr>
+<tr><td><code>getSafeRegion()</code></td><td>Return the current viewport-coordinate safe region and boundary direction.</td></tr>
+</tbody>
+</table>
+
+<h2>Events</h2>
+<table>
+<thead><tr><th>Event</th><th>Cancelable</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>parentopening</code></td><td>Yes</td><td>Fires immediately before promotion. Detail includes <code>group</code>, <code>button</code>, <code>submenu</code>, <code>depth</code>, and <code>flow</code>.</td></tr>
+<tr><td><code>parentopened</code></td><td>No</td><td>Promotion completed.</td></tr>
+<tr><td><code>parentclosing</code></td><td>Yes</td><td>Fires before a promoted level collapses.</td></tr>
+<tr><td><code>parentclosed</code></td><td>No</td><td>Return to the prior level completed.</td></tr>
+<tr><td><code>pagechanged</code></td><td>No</td><td>Current horizontal page changed.</td></tr>
+<tr><td><code>layoutchanged</code></td><td>No</td><td>Normal pages were repacked or resized.</td></tr>
+<tr><td><code>opened</code></td><td>No</td><td>Popover opened.</td></tr>
+<tr><td><code>closed</code></td><td>No</td><td>Popover closed.</td></tr>
+<tr><td><code>toggle</code></td><td>No</td><td>Forwarded native-style toggle event for compatibility with existing application code.</td></tr>
+</tbody>
+</table>
+
+<h2>CSS hooks</h2>
+<p>The generated popover and internal layout nodes use public class names so projects can skin them without modifying the component:</p>
+<ul>
+<li><code>.hamburger-menu-popover</code></li>
+<li><code>.hamburger-menu-viewport</code></li>
+<li><code>.hamburger-menu-source</code></li>
+<li><code>.hamburger-menu-panel</code></li>
+<li><code>.hamburger-menu-indicator</code></li>
+<li><code>.hamburger-menu-indicator-thumb</code></li>
+<li><code>.hamburger-menu-focus-layer</code></li>
+<li><code>.hamburger-menu-focus-group</code></li>
+</ul>
+
+<p>Useful CSS custom properties include:</p>
+<table>
+<thead><tr><th>Variable</th><th>Default / meaning</th></tr></thead>
+<tbody>
+<tr><td><code>--hamburger-menu-trigger-duration</code></td><td><code>240ms</code>; movement duration for safe-region trigger shifts.</td></tr>
+<tr><td><code>--hamburger-menu-layout-duration</code></td><td><code>240ms</code>; equal-page-height transition.</td></tr>
+<tr><td><code>--hamburger-menu-indicator-height</code></td><td><code>4px</code>.</td></tr>
+<tr><td><code>--hamburger-menu-indicator-gap</code></td><td><code>8px</code>.</td></tr>
+<tr><td><code>--hamburger-menu-indicator-color</code></td><td><code>currentColor</code>.</td></tr>
+</tbody>
+</table>
+
+<h2>WMOF-specific integration</h2>
+<pre>&lt;hamburger-menu
+    id="mainMenu"
+    class="main-menu"
+    safe-boundary="#speechMicBar"
+    aria-label="Application menu"
+&gt;
+    &lt;button id="menuButton" class="header-button hamburger-button" type="button"&gt;
+        &lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;
+    &lt;/button&gt;
+
+    ...WMOF menu rows...
+&lt;/hamburger-menu&gt;</pre>
+
+<p>WMOF keeps Speech's crane/scaffolding animation outside the custom element and listens to <code>parentopening</code>/<code>parentclosing</code>. This is intentional: the reusable element owns navigation mechanics, while applications own semantic effects.</p>
+
+<h2>Design rules for reusable menus</h2>
+<ul>
+<li>Use a wrapper around every parent button and its controlled submenu.</li>
+<li>The parent button must reference the submenu with <code>aria-controls</code>.</li>
+<li>The submenu should start with <code>hidden</code> and the button with <code>aria-expanded="false"</code>.</li>
+<li>Do not implement a second click handler that manually toggles <code>hidden</code>; let <code>&lt;hamburger-menu&gt;</code> own parent expansion.</li>
+<li>Application code may freely hide/show permission-dependent rows. The component observes <code>hidden</code> changes and repacks.</li>
+<li>Call <code>refresh()</code> after unusual external geometry changes that do not naturally generate resize/scroll/mutation signals.</li>
+</ul>
+
+<h2>Reduced motion and accessibility</h2>
+<p>The base stylesheet disables structural transitions when <code>prefers-reduced-motion: reduce</code> is active. The trigger receives <code>aria-haspopup="menu"</code> and an updated <code>aria-expanded</code>. Parent buttons retain their existing <code>aria-controls</code> and <code>aria-expanded</code> semantics.</p>
+
+<div class="warning">
+<strong>Do not serve this file publicly.</strong> The repository's <code>documentation/.htaccess</code> denies HTTP access to the entire documentation directory. It is intended for developers reading the repository directly.
+</div>
+
+<p class="small">Component source: <code>HamburgerMenu.js</code>. Custom element name: <code>hamburger-menu</code>.</p>
+</main>
+</body>
+</html>
