@@ -17516,13 +17516,12 @@
                     return false;
                 }
 
-                let rendered;
+                let state;
 
                 try {
-                    rendered =
+                    state =
                         clockTimer
-                            .getRenderedTime?.(
-                                mode,
+                            .getEffectiveTimeState?.(
                                 new Date()
                             );
                 }
@@ -17530,18 +17529,18 @@
                     return false;
                 }
 
-                const label =
-                    mode ===
-                        "calculated-end"
-                        ? "End Time"
-                        : mode ===
-                            "elapsed"
-                            ? "Time Elapsed"
-                            : "Time Remaining";
+                if (
+                    !state ||
+                    state.mode !==
+                        mode ||
+                    !state.available
+                ) {
+                    return false;
+                }
 
                 return dictateSpeechMetric(
-                    label,
-                    rendered
+                    state.label,
+                    state.text
                 );
             },
 
@@ -17643,23 +17642,24 @@
                         "Showing Elapsed Time";
                 }
                 else {
-                    let timeHeaderText;
+                    let effectiveTimeState;
 
                     try {
-                        timeHeaderText =
+                        effectiveTimeState =
                             clockTimer
-                                .getUIState?.(
+                                .getEffectiveTimeState?.(
                                     new Date()
-                                )
-                                ?.time_header_text;
+                                );
                     }
                     catch {}
 
                     announcement =
-                        timeHeaderText ===
+                        effectiveTimeState
+                            ?.label ===
                             "Banked Time"
                             ? "Showing Banked Time"
-                            : timeHeaderText ===
+                            : effectiveTimeState
+                                ?.label ===
                                 "Time Over"
                                 ? "Showing Time Over"
                                 : "Showing Time Left";
