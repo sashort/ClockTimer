@@ -729,6 +729,11 @@ assert.match(
     app,
     /continueStartAt\([\s\S]*canContinueStartAt\(\)[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
 );
+
+assert.match(
+    app,
+    /installSpeechCommand\([\s\S]*"readyAtContinuation"[\s\S]*"continueStartAt"[\s\S]*numberPadDialog[\s\S]*false[\s\S]*"clock"[\s\S]*"spokenTime"[\s\S]*speech-index[\s\S]*"10"/
+);
 assert.match(
     app,
     /readyAt:"#newTripButton", ready:"#newTripButton"/
