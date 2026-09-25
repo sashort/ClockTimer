@@ -26503,6 +26503,112 @@
             return state;
         }
 
+        #getGoalFailFallback(
+            failedTypes
+        ) {
+            const failed =
+                new Set(failedTypes);
+
+            const candidates = [];
+
+            if (
+                !failed.has("trip") &&
+                (
+                    Number.isFinite(
+                        this.#calculatedTripGoal
+                    ) ||
+                    this.hasAttribute(
+                        "trip-goal"
+                    )
+                )
+            ) {
+                const percent =
+                    this.#getTripGoal();
+
+                const requirements =
+                    this.#calculateTripGoalRequirements();
+
+                if (
+                    Number.isFinite(percent) &&
+                    percent > 0 &&
+                    Number.isFinite(
+                        requirements
+                            .adjustedTimeElapsed
+                    ) &&
+                    requirements
+                        .adjustedTimeElapsed > 0
+                ) {
+                    candidates.push({
+                        type: "trip",
+                        percent
+                    });
+                }
+            }
+
+            if (
+                !failed.has("total") &&
+                (
+                    Number.isFinite(
+                        this.#calculatedTotalGoal
+                    ) ||
+                    this.hasAttribute(
+                        "total-goal"
+                    )
+                )
+            ) {
+                const percent =
+                    this.#getTotalGoal();
+
+                const requirements =
+                    this.#calculateTotalGoalRequirements();
+
+                if (
+                    Number.isFinite(percent) &&
+                    percent > 0 &&
+                    Number.isFinite(
+                        requirements
+                            .adjustedTimeElapsed
+                    ) &&
+                    requirements
+                        .adjustedTimeElapsed > 0
+                ) {
+                    candidates.push({
+                        type: "total",
+                        percent
+                    });
+                }
+            }
+
+            if (!failed.has("standard")) {
+                const requirements =
+                    this.#calculateTripGoalRequirementsForGoal(
+                        1
+                    );
+
+                if (
+                    Number.isFinite(
+                        requirements
+                            .adjustedTimeElapsed
+                    ) &&
+                    requirements
+                        .adjustedTimeElapsed > 0
+                ) {
+                    candidates.push({
+                        type: "standard",
+                        percent: 1
+                    });
+                }
+            }
+
+            candidates.sort(
+                (left, right) =>
+                    right.percent -
+                    left.percent
+            );
+
+            return candidates[0];
+        }
+
         #checkGoalMisses(now) {
             if (!this.#started || !Number.isFinite(now)) {
                 this.#tripGoalMissedState = false;
@@ -26525,66 +26631,118 @@
                 );
             }
 
-            const tripGoal = this.#getTripGoal();
-            const tripAdjusted = Number.isFinite(tripGoal) && tripGoal > 0 &&
-                Number.isFinite(this.#standardDuration)
-                    ? this.#standardDuration / tripGoal
+            const failures = [];
+
+            const tripGoal =
+                this.#getTripGoal();
+
+            const tripAdjusted =
+                Number.isFinite(tripGoal) &&
+                tripGoal > 0 &&
+                Number.isFinite(
+                    this.#standardDuration
+                )
+                    ? this.#standardDuration /
+                        tripGoal
                     : undefined;
-            const tripDeadline = Number.isFinite(tripAdjusted)
-                ? this.#calculateAdjustedEndTimeline(tripAdjusted)
-                : undefined;
-            const tripMissed = Number.isFinite(tripDeadline) && now > tripDeadline;
 
-            if (tripMissed && !this.#tripGoalMissedState) {
-                const detail = {
-                    goal: tripGoal,
-                    deadline: this.#timelineToISO(tripDeadline),
-                    currentTime: this.#timelineToISO(now)
-                };
+            const tripDeadline =
+                Number.isFinite(tripAdjusted)
+                    ? this.#calculateAdjustedEndTimeline(
+                        tripAdjusted
+                    )
+                    : undefined;
 
-                this.#emitClockTimerEvent(
-                    "tripGoalMissed",
-                    detail
-                );
+            const tripMissed =
+                Number.isFinite(tripDeadline) &&
+                now > tripDeadline;
 
-                this.#emitClockTimerEvent(
-                    "tripGoalFailed",
-                    detail
-                );
+            if (
+                tripMissed &&
+                !this.#tripGoalMissedState
+            ) {
+                failures.push({
+                    type: "trip",
+                    percent: tripGoal,
+                    deadline:
+                        this.#timelineToISO(
+                            tripDeadline
+                        )
+                });
             }
-            this.#tripGoalMissedState = tripMissed;
 
-            const totalGoal = this.#getTotalGoal();
-            const totalAdjusted = this.#getTotalGoalAdjustedTimeElapsed();
-            const totalDeadline = Number.isFinite(totalAdjusted)
-                ? this.#calculateAdjustedEndTimeline(totalAdjusted)
-                : undefined;
+            this.#tripGoalMissedState =
+                tripMissed;
+
+            const totalGoal =
+                this.#getTotalGoal();
+
+            const totalAdjusted =
+                this.#getTotalGoalAdjustedTimeElapsed();
+
+            const totalDeadline =
+                Number.isFinite(totalAdjusted)
+                    ? this.#calculateAdjustedEndTimeline(
+                        totalAdjusted
+                    )
+                    : undefined;
+
             const totalGoalActive =
                 this.#percentMode === "total" ||
                 this.#autoSyncTripGoal ||
-                this.hasAttribute("total-goal");
-
-            const totalMissed = totalGoalActive &&
-                Number.isFinite(totalDeadline) && now > totalDeadline;
-
-            if (totalMissed && !this.#totalGoalMissedState) {
-                const detail = {
-                    goal: totalGoal,
-                    deadline: this.#timelineToISO(totalDeadline),
-                    currentTime: this.#timelineToISO(now)
-                };
-
-                this.#emitClockTimerEvent(
-                    "totalGoalMissed",
-                    detail
+                Number.isFinite(
+                    this.#calculatedTotalGoal
+                ) ||
+                this.hasAttribute(
+                    "total-goal"
                 );
 
+            const totalMissed =
+                totalGoalActive &&
+                Number.isFinite(totalDeadline) &&
+                now > totalDeadline;
+
+            if (
+                totalMissed &&
+                !this.#totalGoalMissedState
+            ) {
+                failures.push({
+                    type: "total",
+                    percent: totalGoal,
+                    deadline:
+                        this.#timelineToISO(
+                            totalDeadline
+                        )
+                });
+            }
+
+            this.#totalGoalMissedState =
+                totalMissed;
+
+            if (failures.length) {
+                const fallback =
+                    this.#getGoalFailFallback(
+                        failures.map(
+                            goal => goal.type
+                        )
+                    );
+
                 this.#emitClockTimerEvent(
-                    "totalGoalFailed",
-                    detail
+                    "goalFail",
+                    {
+                        goals: failures,
+                        currentTime:
+                            this.#timelineToISO(
+                                now
+                            ),
+                        ...(
+                            fallback
+                                ? { fallback }
+                                : {}
+                        )
+                    }
                 );
             }
-            this.#totalGoalMissedState = totalMissed;
         }
 
         #calculateTripGoalRequirementsForGoal(
