@@ -15070,6 +15070,23 @@
             return parts[0];
         }
 
+        if (
+            hours > 0 &&
+            minutes > 0 &&
+            seconds === 0 &&
+            parts.length === 2
+        ) {
+            return (
+                parts[0] +
+                (
+                    minutes < 10
+                        ? " and "
+                        : " "
+                ) +
+                parts[1]
+            );
+        }
+
         return (
             parts
                 .slice(
