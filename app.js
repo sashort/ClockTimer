@@ -12687,9 +12687,9 @@
             event:
                 "click",
             name:
-                "keepDownTimeClick",
+                "continueDownTimeClick",
             action:
-                "keepDownTime"
+                "continueDownTime"
         });
 
     breakDialog
@@ -15091,7 +15091,7 @@
                 );
             },
 
-            keepDownTime() {
+            continueDownTime() {
                 const dialog =
                     $("#cancelDownConfirmDialog");
 
