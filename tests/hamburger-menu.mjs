@@ -74,7 +74,60 @@ assert.match(
 
 assert.match(
     componentSource,
+    /hamburger-menu-promotion-mask/
+);
+
+assert.doesNotMatch(
+    componentSource,
+    /hamburger-menu-trigger-shift/
+);
+
+assert.match(
+    componentSource,
+    /MutationObserver/
+);
+
+assert.match(
+    componentSource,
+    /ResizeObserver/
+);
+
+assert.match(
+    componentSource,
     /#unfreezePane\(\)[\s\S]*parentclosed/
+);
+
+const appCss =
+    fs.readFileSync(
+        new URL(
+            "../app.css",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+const appHtml =
+    fs.readFileSync(
+        new URL(
+            "../index.html",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+assert.match(
+    appCss,
+    /position-area:\s*bottom span-right/
+);
+
+assert.match(
+    appCss,
+    /hamburger-menu\.main-menu:not\(:defined\)/
+);
+
+assert.match(
+    appHtml,
+    /id="menuButton"[^>]*slot="trigger"/
 );
 
 window.eval(
