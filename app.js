@@ -17514,7 +17514,7 @@
                 return true;
             },
 
-            when() {
+            readEndTime() {
                 let rendered;
 
                 try {
@@ -17543,7 +17543,7 @@
                 );
             },
 
-            howLong() {
+            readTimeRemaining() {
                 let state;
 
                 try {
@@ -19887,7 +19887,7 @@
                 ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["readRenderedTime","readRenderedTime"],
-                ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["howLong","howLong"], ["when","when"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["howLong","readTimeRemaining"], ["when","readEndTime"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
