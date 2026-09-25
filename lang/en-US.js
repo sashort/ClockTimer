@@ -39,7 +39,7 @@
                 setTripGoal: "^trip goal (?<percent>.+)$",
                 setTotalGoal: "^total goal (?<percent>.+)$",
                 readGoalMode: "^mode$",
-                goalMode: "^(?:auto|total|trip)(?: mode)?$",
+                goalMode: "^(?<goalMode>auto|total|trip)(?: mode)?$",
                 sync: "^sync(?: (?<syncAction>on|off))?$",
                 syncStatus: "^sync status$",
                 howLong: "^(?:how long|time)$",
