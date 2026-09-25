@@ -1593,6 +1593,27 @@ assert.match(
 
 assert.match(
     app,
+    /canUseInformational\(\)[\s\S]*return tripIsLive\(\)/
+);
+assert.match(
+    app,
+    /speechOptionCategories[\s\S]*readGoalMode:\s*"informational"[\s\S]*readRenderedTime:\s*"informational"[\s\S]*syncStatus:\s*"informational"[\s\S]*howLong:\s*"informational"[\s\S]*when:\s*"informational"/
+);
+assert.match(
+    app,
+    /speechOptionCategories\[[\s\S]*key[\s\S]*\][\s\S]*===\s*"informational"[\s\S]*WMOFSpeechAvailability\.canUseInformational/
+);
+assert.match(
+    html,
+    /builtin:readGoalMode:page[^>]*data-speech-options-category="informational"[^>]*speech-available="WMOFSpeechAvailability\.canUseInformational"/
+);
+assert.match(
+    html,
+    /builtin:readRenderedTime:page[^>]*data-speech-options-category="informational"[^>]*speech-available="WMOFSpeechAvailability\.canUseInformational"/
+);
+
+assert.match(
+    app,
     /changeGoalMode\([\s\S]*SpeechMenu[\s\S]*executionContext[\s\S]*transcript[\s\S]*\^\(auto\|total\|trip\) mode\$/
 );
 assert.doesNotMatch(
