@@ -677,7 +677,14 @@ assert.match(app, /api\/admin\/speech-editor\/\?training=1/);
 assert.match(app, /speechToolsGroup[\s\S]*speechTrainingButton[\s\S]*speechEditorButton/);
 assert.match(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]*PERMISSION_DEVELOPER_PREVIEW[\s\S]*PERMISSION_DEVELOPER/);
 assert.doesNotMatch(app, /DEVELOPER_MENU_PERMISSION_MASK\s*=\s*[\s\S]{0,120}PERMISSION_SUPERUSER/);
-assert.match(app, /developerMenuButton[\s\S]*developerSubmenu[\s\S]*aria-expanded/);
+assert.match(
+    html,
+    /id="developerMenuButton"[^>]*aria-expanded="false"[^>]*aria-controls="developerSubmenu"/
+);
+assert.match(
+    html,
+    /id="developerSubmenu"[^>]*hidden/
+);
 assert.match(app, /menuLogoutSlot\?\.append\(authButton\)/);
 assert.match(app, /menuAccountRow\?\.append\(authButton\)/);
 assert.match(
