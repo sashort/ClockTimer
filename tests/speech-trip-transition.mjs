@@ -91,3 +91,28 @@ assert.match(
 console.log(
     "PASS direct end-to-start transition uses one spliced cue and makes subsequent trip-start notifications speech-only"
 );
+
+
+assert.match(
+    app,
+    /startTimeSetToNow:\s*false/
+);
+
+assert.match(
+    app,
+    /tripDraftStartWasPushedBackToNow\(\)[\s\S]*startTimeSetToNow ===\s*true/
+);
+
+assert.match(
+    app,
+    /toggleTripStartsNowTarget[\s\S]*startTimeSetToNow\s*=\s*selected/
+);
+
+assert.match(
+    app,
+    /startTimeSetToNow:[\s\S]*tripSettingsSession[\s\S]*\.startTimeSetToNow ===[\s\S]*true/
+);
+
+console.log(
+    "PASS second start chime is allowed only when Actual Start is explicitly set to Now"
+);
