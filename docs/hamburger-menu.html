@@ -270,7 +270,7 @@ kbd {
 <rect x="115" y="258" width="250" height="38" rx="8" fill="#a9ddf7"/>
 <rect x="115" y="306" width="250" height="38" rx="8" fill="#a9ddf7"/>
 <path d="M240 142V118" stroke="#001e60" stroke-width="5" marker-end="url(#arrow)"/>
-<text x="265" y="132" fill="#14202b" font-size="14" font-family="system-ui">750 ms</text>
+<text x="265" y="132" fill="#14202b" font-size="14" font-family="system-ui">500 ms</text>
 
 <rect x="505" y="20" width="430" height="370" rx="18" fill="#eef5fb" stroke="#9fb8cc" stroke-width="2"/>
 <text x="720" y="50" text-anchor="middle" fill="#001e60" font-size="20" font-family="system-ui" font-weight="700">Hamburger below</text>
@@ -282,7 +282,7 @@ kbd {
 <rect x="660" y="315" width="120" height="44" rx="10" fill="#001e60"/>
 <text x="720" y="344" text-anchor="middle" fill="white" font-size="18" font-family="system-ui">☰</text>
 <path d="M720 144V303" stroke="#001e60" stroke-width="5" marker-end="url(#arrow)"/>
-<text x="742" y="232" fill="#14202b" font-size="14" font-family="system-ui">750 ms</text>
+<text x="742" y="232" fill="#14202b" font-size="14" font-family="system-ui">500 ms</text>
 </svg>
 <figcaption>The parent remains closed while it travels toward the hamburger. The active pane is frozen for this motion phase.</figcaption>
 </figure>
@@ -291,11 +291,11 @@ kbd {
 <ol>
 <li>Freeze both the active pane and its viewport box at their measured base width and height. Promotion content cannot resize the pane during the motion phase; external geometry changes may dynamically re-clamp that lock.</li>
 <li>Move the target parent to the promoted layer while it is still <strong>closed</strong>.</li>
-<li>The target takes exactly <strong>750 ms</strong> to reach its promoted position toward the hamburger.</li>
+<li>The target takes exactly <strong>500 ms</strong> to reach its promoted position toward the hamburger.</li>
 <li>A background-colored promotion mask sits below the target and above the previous rows. Its <code>clip-path</code> expands with the same duration/easing as the target, leaving an erased trail exactly where the target has swept. This makes rows appear to disappear progressively as they are covered without changing their layout during the slide.</li>
 <li>Rows on the opposite side of the target zoom off in the direction away from the hamburger. They remain nested in the frozen pane and are clipped as they leave.</li>
 <li>At the target endpoint, all previous-level rows are switched to <code>display: none</code> together and the promotion mask is removed.</li>
-<li>The component waits for the later of the 750 ms parent slide and the opposite-side zoom animation, then pauses for <strong>75 ms</strong>.</li>
+<li>The component waits for the later of the 500 ms parent slide and the opposite-side zoom animation, then pauses for <strong>75 ms</strong>.</li>
 <li>The pane lock is released, then the promoted parent's children open. Any resulting pane resize happens only in this child-opening phase, never during the slide.</li>
 </ol>
 
@@ -303,7 +303,7 @@ kbd {
 <ol>
 <li>Freeze the current pane and viewport before changing any child height.</li>
 <li>Collapse all children completely while the pane stays at its frozen dimensions.</li>
-<li>Only after every child has collapsed does the parent begin its 750 ms return motion.</li>
+<li>Only after every child has collapsed does the parent begin its 500 ms return motion.</li>
 <li>The previous-level rows are restored underneath a fully applied promotion mask. As the parent returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position, progressively revealing the rows behind it.</li>
 <li>Opposite-side rows return from outside the clipped pane at the same time.</li>
 <li>The mask is removed at the endpoint. The pane remains frozen until the entire collapse/return sequence has completed, then layout may be recalculated.</li>
@@ -336,7 +336,7 @@ kbd {
 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th></tr></thead>
 <tbody>
 <tr><td><code>safe-boundary</code></td><td>CSS selector</td><td>Optional external block-level element that the menu must not cross. Invalid/non-block candidates are ignored and fallback discovery is used.</td></tr>
-<tr><td><code>item-rate</code></td><td>positive number</td><td>Pixels per millisecond for child grow/shrink height animations. Parent promotion itself is fixed at 750 ms. Default: <code>0.5</code>.</td></tr>
+<tr><td><code>item-rate</code></td><td>positive number</td><td>Pixels per millisecond for child grow/shrink height animations. Parent promotion itself is fixed at 500 ms. Default: <code>0.5</code>.</td></tr>
 <tr><td><code>safeBoundary</code></td><td>Element | string | null</td><td>Property form of <code>safe-boundary</code>. An Element may be supplied directly.</td></tr>
 <tr><td><code>trigger</code></td><td>Element</td><td>The active hamburger/trigger element.</td></tr>
 <tr><td><code>popoverElement</code></td><td>HTMLElement</td><td>The generated internal popover, useful for project-specific styling or inspection.</td></tr>
