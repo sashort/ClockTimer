@@ -5310,28 +5310,6 @@
             };
         }
 
-        #offPaneTranslation(
-            rect,
-            flow
-        ) {
-            const pane =
-                this.#viewport
-                    .getBoundingClientRect();
-
-            return {
-                x:
-                    0,
-                y:
-                    flow ===
-                        "start"
-                        ? pane.bottom -
-                            rect.top +
-                            1
-                        : pane.top -
-                            rect.bottom -
-                            1
-            };
-        }
 
         #lockRect(
             element,
@@ -5478,27 +5456,20 @@
                         flow
                     );
 
-            const parentExit =
-                this
-                    .#offPaneTranslation(
-                        parentStart,
-                        flow
-                    );
-
             /*
-             * The child is still nested inside the moving parent during
-             * this phase. Counter the inherited parent motion so its
-             * global endpoint lands exactly on the promoted target.
+             * The child stays nested during motion. Moving the parent by
+             * the child's start->target delta moves the entire descendant
+             * tree together, while the frozen pane clips the parent as it
+             * leaves the visible area. No child/sibling translation is
+             * required.
              */
-            const childCompensation = {
+            const parentTranslation = {
                 x:
                     childTarget.left -
-                    childStart.left -
-                    parentExit.x,
+                    childStart.left,
                 y:
                     childTarget.top -
-                    childStart.top -
-                    parentExit.y
+                    childStart.top
             };
 
             const parentStyle =
@@ -5557,9 +5528,6 @@
             group.style.position =
                 "relative";
 
-            group.style.willChange =
-                "translate";
-
             this.#focusLayer.hidden =
                 false;
 
@@ -5612,7 +5580,7 @@
                             childStart.height
                     },
                     childTarget,
-                    parentExit,
+                    parentTranslation,
                     parentStyle,
                     childStyle
                 }
@@ -5637,28 +5605,11 @@
                             y:
                                 0
                         },
-                        parentExit,
+                        parentTranslation,
                         duration
                     );
 
-            const childMotion =
-                this
-                    .#translationAnimation(
-                        group,
-                        {
-                            x:
-                                0,
-                            y:
-                                0
-                        },
-                        childCompensation,
-                        duration
-                    );
-
-            await Promise.all([
-                parentMotion.finished,
-                childMotion.finished
-            ]);
+            await parentMotion.finished;
 
             if (
                 generation !==
@@ -5668,15 +5619,9 @@
             }
 
             parent.style.translate =
-                parentExit.x +
+                parentTranslation.x +
                 "px " +
-                parentExit.y +
-                "px";
-
-            group.style.translate =
-                childCompensation.x +
-                "px " +
-                childCompensation.y +
+                parentTranslation.y +
                 "px";
 
             placeholder.hidden =
@@ -5708,9 +5653,8 @@
                 );
 
             /*
-             * Absolute-lock the child at its visual endpoint before
-             * reparenting it. No paint can occur between the lock and
-             * the DOM move, so changing ancestry cannot move it.
+             * Lock the child exactly where the translated parent placed
+             * it, then reparent it without allowing an intervening paint.
              */
             this
                 .#lockRect(
@@ -5729,12 +5673,6 @@
 
             try {
                 parentMotion.animation
-                    ?.cancel();
-            }
-            catch {}
-
-            try {
-                childMotion.animation
                     ?.cancel();
             }
             catch {}
@@ -5857,6 +5795,11 @@
                         entry.flow
                     );
 
+            /*
+             * Keep the returning parent out of flex layout while its
+             * original child slot is measured. This also prevents the
+             * visible child from being displaced before the reverse move.
+             */
             this
                 .#lockRect(
                     parentGroup,
@@ -5892,107 +5835,36 @@
                 return false;
             }
 
-            const parentExit =
-                this
-                    .#offPaneTranslation(
-                        parentTarget,
-                        entry.flow
-                    );
+            /*
+             * Flip the bounds: translate the parent until its original
+             * child slot sits exactly under the currently promoted child.
+             * The child can then be reinserted without moving on screen.
+             */
+            const reverseStart = {
+                x:
+                    childStart.left -
+                    destination.left,
+                y:
+                    childStart.top -
+                    destination.top
+            };
 
             parentGroup.style.translate =
-                parentExit.x +
+                reverseStart.x +
                 "px " +
-                parentExit.y +
+                reverseStart.y +
                 "px";
 
             parentGroup.style.visibility =
                 parentStyle.visibility ||
                 "";
 
-            child.style.position =
-                "relative";
-
-            child.style.willChange =
-                "translate";
-
-            const childReturn = {
-                x:
-                    destination.left -
-                    childStart.left,
-                y:
-                    destination.top -
-                    childStart.top
-            };
-
-            const duration =
-                this
-                    .#promotionDuration();
-
-            const parentMotion =
-                this
-                    .#translationAnimation(
-                        parentGroup,
-                        parentExit,
-                        {
-                            x:
-                                0,
-                            y:
-                                0
-                        },
-                        duration
-                    );
-
-            const childMotion =
-                this
-                    .#translationAnimation(
-                        child,
-                        {
-                            x:
-                                0,
-                            y:
-                                0
-                        },
-                        childReturn,
-                        duration
-                    );
-
-            await Promise.all([
-                parentMotion.finished,
-                childMotion.finished
-            ]);
-
-            if (
-                generation !==
-                this.#generation
-            ) {
-                return false;
-            }
-
-            parentGroup.style.translate =
-                "0 0";
-
-            child.style.translate =
-                childReturn.x +
-                "px " +
-                childReturn.y +
-                "px";
-
-            /*
-             * Lock the child on its return endpoint, put it back into
-             * the parent's original slot, then drop the temporary lock.
-             */
             this
                 .#lockRect(
                     child,
-                    destination,
+                    childStart,
                     this.#focusLayer
                 );
-
-            try {
-                childMotion.animation
-                    ?.cancel();
-            }
-            catch {}
 
             if (
                 entry.anchor
@@ -6006,27 +5878,17 @@
                     );
             }
 
+            /*
+             * The translated parent makes the natural child slot coincide
+             * with childStart. Re-lock relative to the new containing block
+             * for one frame, then let the child return to normal flow.
+             */
             this
                 .#lockRect(
                     child,
-                    destination,
+                    childStart,
                     parentGroup
                 );
-
-            try {
-                parentMotion.animation
-                    ?.cancel();
-            }
-            catch {}
-
-            entry.placeholder
-                ?.remove();
-
-            entry.anchor
-                ?.remove();
-
-            this.#focusStack
-                .pop();
 
             child.classList
                 .remove(
@@ -6046,6 +5908,51 @@
                     child,
                     childStyle
                 );
+
+            const duration =
+                this
+                    .#promotionDuration();
+
+            const parentMotion =
+                this
+                    .#translationAnimation(
+                        parentGroup,
+                        reverseStart,
+                        {
+                            x:
+                                0,
+                            y:
+                                0
+                        },
+                        duration
+                    );
+
+            await parentMotion.finished;
+
+            if (
+                generation !==
+                this.#generation
+            ) {
+                return false;
+            }
+
+            parentGroup.style.translate =
+                "0 0";
+
+            try {
+                parentMotion.animation
+                    ?.cancel();
+            }
+            catch {}
+
+            entry.placeholder
+                ?.remove();
+
+            entry.anchor
+                ?.remove();
+
+            this.#focusStack
+                .pop();
 
             this
                 .#restoreMotionStyle(
