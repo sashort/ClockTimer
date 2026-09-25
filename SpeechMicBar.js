@@ -6750,16 +6750,19 @@ class SpeechMicBar extends HTMLElement {
 
         for (const value of values) {
             if (
-                value &&
-                typeof value ===
-                    "object" &&
-                !Array.isArray(
-                    value
-                ) &&
-                Object.keys(
-                    value
-                ).length ===
-                    0
+                value === undefined ||
+                (
+                    value &&
+                    typeof value ===
+                        "object" &&
+                    !Array.isArray(
+                        value
+                    ) &&
+                    Object.keys(
+                        value
+                    ).length ===
+                        0
+                )
             ) {
                 continue;
             }
@@ -6770,16 +6773,14 @@ class SpeechMicBar extends HTMLElement {
                 );
 
             code.textContent =
-                value === undefined
-                    ? "undefined"
-                    : value === null
-                        ? "null"
-                        : typeof value ===
-                            "string"
-                            ? value
-                            : JSON.stringify(
-                                value
-                            );
+                value === null
+                    ? "null"
+                    : typeof value ===
+                        "string"
+                        ? value
+                        : JSON.stringify(
+                            value
+                        );
 
             this.#codes.append(
                 code
