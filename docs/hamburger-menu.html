@@ -289,7 +289,7 @@ kbd {
 </figure>
 
 <h3>Opening a parent</h3>
-<p>Top-level promotion places the focus layer inside the active panel. An inherited, registered CSS position property on that panel animates the selected parent, while the surrounding rows share its duration. Each row receives two temporary disappearance thresholds for the parent's edge crossings. The selected crossing is converted into a percentage of the animation, and a temporary keyframe changes that row's opacity to zero at that point without changing the pane layout. There is no overlay mask. Nested promotion uses a simpler path because the incoming parent is already a descendant of the currently promoted parent.</p>
+<p>Primary promotion starts with the pane's menu items visible. An inherited, registered CSS position property on the active panel animates the selected parent. Coverage measurements enumerate visible leaf submenu items through the second menu nesting level; their rendered bounds affect the calculated keyframe percentages. Sibling groups that own child menus are not animated or hidden. A temporary keyframe changes each affected item's opacity to zero when the selected parent covers it, keeping the pane layout stable during motion; nested leaf items then become <code>display: none</code> when the motion ends. Deeper menu items and decorative markup are not animated as separate rows. There is no overlay mask. Promotion of a child within an already promoted parent follows its separate nested motion path.</p>
 <ol>
 <li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
 <li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
@@ -300,7 +300,7 @@ kbd {
 </ol>
 
 <h3>Closing a promoted parent</h3>
-<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. On the reverse trip, two temporary reappearance thresholds track the parent's trailing edge passing each row; the selected percentage changes its opacity back to the original value. Temporary keyframes and CSS threshold values are removed after the animation.</p>
+<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. Returning from primary promotion restores affected leaf items' display before running their saved opacity keyframes in reverse. Sibling groups with child menus remain untouched. Temporary keyframes and CSS threshold values are removed after the animation.</p>
 <ol>
 <li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
 <li>Show the previous parent and measure the placeholder that marks the nested parent's original slot.</li>
