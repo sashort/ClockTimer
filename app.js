@@ -17265,6 +17265,14 @@
                 );
             },
 
+            readSyncStatus() {
+                return confirmSettingChange(
+                    getSyncGoalsState()
+                        ? "Sync On"
+                        : "Sync Off"
+                );
+            },
+
             toggleSync(
                 syncState
             ) {
@@ -17296,7 +17304,7 @@
                         ""
                 ) {
                     enabled =
-                        !current;
+                        true;
                 }
                 else if (
                     typeof syncState ===
@@ -19502,6 +19510,15 @@
     globalThis
         .WMOFActionFunctions
         .setMetadata(
+            "readSyncStatus",
+            {
+                parameters: []
+            }
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
             "toggleSync",
             {
                 parameters: [
@@ -19722,7 +19739,7 @@
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton",
                 setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue", goalMode:"#scopeToggle",
-                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
+                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
                 yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
@@ -19755,6 +19772,7 @@
                 goalMode: "settings",
                 readRenderedTime: "settings",
                 sync: "settings",
+                syncStatus: "settings",
                 lockEndTime: "settings",
                 showTripLog: "trip-actions",
                 hideTripLog: "trip-actions",
@@ -19803,7 +19821,7 @@
                 ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["readRenderedTime","readRenderedTime"],
-                ["sync","toggleSync"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
