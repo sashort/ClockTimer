@@ -240,6 +240,14 @@
             ":where(hamburger-menu) .hamburger-menu-zooming {",
             "  will-change: translate;",
             "}",
+            ":where(hamburger-menu) .hamburger-menu-promotion-mask {",
+            "  position: absolute;",
+            "  inset-inline: 0;",
+            "  z-index: 7;",
+            "  pointer-events: none;",
+            "  background: var(--hamburger-menu-mask-background, var(--hamburger-menu-focus-background, Canvas));",
+            "  will-change: clip-path;",
+            "}"
             "@position-try --hamburger-above-start {",
             "  top: auto;",
             "  bottom: anchor(top);",
@@ -3381,6 +3389,169 @@
             return records;
         }
 
+        #createPromotionMask(
+            originalRect,
+            promotedRect,
+            flow,
+            reverse = false
+        ) {
+            const viewportRect =
+                this.#viewport
+                    .getBoundingClientRect();
+
+            const top =
+                Math.min(
+                    originalRect.top,
+                    promotedRect.top
+                );
+
+            const bottom =
+                Math.max(
+                    originalRect.bottom,
+                    promotedRect.bottom
+                );
+
+            const height =
+                Math.max(
+                    1,
+                    bottom -
+                    top
+                );
+
+            const mask =
+                document
+                    .createElement(
+                        "div"
+                    );
+
+            mask.className =
+                "hamburger-menu-promotion-mask";
+
+            mask.style.top =
+                (
+                    top -
+                    viewportRect.top
+                ) +
+                "px";
+
+            mask.style.height =
+                height +
+                "px";
+
+            const startClip =
+                flow ===
+                    "start"
+                    ? "inset(" +
+                        Math.max(
+                            0,
+                            originalRect.top -
+                                top
+                        ) +
+                        "px 0 0 0)"
+                    : "inset(0 0 " +
+                        Math.max(
+                            0,
+                            bottom -
+                                originalRect.bottom
+                        ) +
+                        "px 0)";
+
+            const fullClip =
+                "inset(0 0 0 0)";
+
+            mask.style.clipPath =
+                reverse
+                    ? fullClip
+                    : startClip;
+
+            this.#viewport
+                .append(
+                    mask
+                );
+
+            return {
+                element:
+                    mask,
+                from:
+                    reverse
+                        ? fullClip
+                        : startClip,
+                to:
+                    reverse
+                        ? startClip
+                        : fullClip
+            };
+        }
+
+        #animatePromotionMask(
+            mask,
+            duration
+        ) {
+            if (!mask?.element) {
+                return Promise.resolve();
+            }
+
+            if (
+                !duration ||
+                typeof mask
+                    .element
+                    .animate !==
+                    "function"
+            ) {
+                mask.element
+                    .style
+                    .clipPath =
+                    mask.to;
+
+                return Promise.resolve();
+            }
+
+            const animation =
+                this
+                    .#trackAnimation(
+                        mask.element
+                            .animate(
+                                [
+                                    {
+                                        clipPath:
+                                            mask.from
+                                    },
+                                    {
+                                        clipPath:
+                                            mask.to
+                                    }
+                                ],
+                                {
+                                    duration,
+                                    easing:
+                                        "ease-in-out",
+                                    fill:
+                                        "both"
+                                }
+                            )
+                    );
+
+            return animation
+                .finished
+                .catch(
+                    () => {}
+                )
+                .finally(
+                    () => {
+                        try {
+                            animation
+                                .cancel();
+                        }
+                        catch {}
+
+                        mask.element
+                            .style
+                            .clipPath =
+                            mask.to;
+                    }
+                );
+        }
+
         #fixedMotionDuration(
             milliseconds
         ) {
@@ -4526,13 +4697,20 @@
                         )
                     : Promise.resolve();
 
-            const coverageDone =
+            const promotionMask =
                 this
-                    .#watchCoveredRows(
-                        group,
-                        entry.toward,
-                        movementDone,
-                        generation
+                    .#createPromotionMask(
+                        originalRect,
+                        targetRect,
+                        flow,
+                        false
+                    );
+
+            const maskDone =
+                this
+                    .#animatePromotionMask(
+                        promotionMask,
+                        duration
                     );
 
             const zoomDone =
@@ -4547,7 +4725,7 @@
 
             await Promise.all([
                 movementDone,
-                coverageDone,
+                maskDone,
                 zoomDone
             ]);
 
@@ -4573,6 +4751,20 @@
                 .remove(
                     "hamburger-menu-focus-entering"
                 );
+
+            for (
+                const record of
+                entry.rows
+            ) {
+                this
+                    .#hidePromotionRecord(
+                        record
+                    );
+            }
+
+            promotionMask
+                .element
+                ?.remove();
 
             if (current) {
                 current.group.hidden =
