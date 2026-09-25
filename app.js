@@ -16062,6 +16062,35 @@
                 );
             },
 
+            canUseReady() {
+                if (!tripIsLive()) {
+                    return (
+                        !$("#newTripButton")
+                            ?.disabled
+                    );
+                }
+
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return ![
+                    "break",
+                    "lunch",
+                    "down"
+                ].includes(
+                    type
+                );
+            },
+
             canContinueStartAt() {
                 return (
                     pendingSpeechReady !==
@@ -16733,6 +16762,21 @@
 
             openStartMenu() {
                 return openStartMenuWorkflow();
+            },
+
+            async prepareReadyAction() {
+                if (tripIsLive()) {
+                    return endCurrentIntervalOrTrip(
+                        speechTransactionDate()
+                    );
+                }
+
+                armSpeechReadyContinuation();
+
+                return openStartMenuWorkflow({
+                    preserveSpeechContinuation:
+                        true
+                });
             },
 
             prepareStartMenu() {
@@ -19868,6 +19912,7 @@
         const actionName of
         [
             "openStartMenu",
+            "prepareReadyAction",
             "prepareStartMenu",
             "closeActiveSurface"
         ]
@@ -20183,7 +20228,7 @@
                 readyAt:
                     "WMOFSpeechAvailability.canStartTrip",
                 ready:
-                    "WMOFSpeechAvailability.canStartTrip",
+                    "WMOFSpeechAvailability.canUseReady",
                 readyAtContinuation:
                     "WMOFSpeechAvailability.canContinueStartAt",
                 breakStart:
@@ -20271,7 +20316,7 @@
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareStartMenu"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
                 ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"],
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
                 ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
