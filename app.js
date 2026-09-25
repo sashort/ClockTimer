@@ -15732,25 +15732,6 @@
                     pattern
                 }
             ) => {
-                if (kind === "keypad") {
-                    if (
-                        !numberPadDialog
-                            ?.open ||
-                        !numberPadState
-                    ) {
-                        return text;
-                    }
-
-                    kind =
-                        numberPadState.mode ===
-                            "absolute"
-                            ? "clock-parts"
-                            : numberPadState.mode ===
-                                "percent"
-                                ? "percent"
-                                : "duration";
-                }
-
                 if (
                     !field ||
                     !pattern
@@ -16494,157 +16475,33 @@
                     return false;
                 }
 
-                let pending;
-                let meridiem =
-                    numberPadState
-                        .meridiem;
-
-                if (
-                    numberPadState.mode ===
-                        "percent"
-                ) {
-                    const percent =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "percent"
-                            );
-
-                    if (
-                        !Number.isInteger(
-                            percent
-                        ) ||
-                        percent <= 0
-                    ) {
-                        return false;
-                    }
-
-                    pending =
-                        String(percent);
-                }
-                else if (
-                    numberPadState.mode ===
-                        "absolute"
-                ) {
-                    const parts =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "clock-parts"
-                            );
-
-                    if (!parts) {
-                        return false;
-                    }
-
-                    if (parts.meridiem) {
-                        meridiem =
-                            parts.meridiem
-                                .toUpperCase();
-                    }
-                    else if (
-                        parts.hour > 12
-                    ) {
-                        meridiem =
-                            undefined;
-                    }
-
-                    const hour =
-                        meridiem &&
-                        parts.hour > 12
-                            ? (
-                                parts.hour %
-                                    12 ||
-                                12
-                            )
-                            : parts.hour;
-
-                    pending =
-                        absoluteDigits(
-                            hour,
-                            parts.minute,
-                            0
+                const digits =
+                    EnglishSpeechValuePreprocessor
+                        .normalize(
+                            spokenValue,
+                            "keypad"
                         );
 
-                    if (parts.day) {
-                        const date =
-                            new Date();
-
-                        if (
-                            parts.day ===
-                                "tomorrow"
-                        ) {
-                            date.setDate(
-                                date.getDate() +
-                                    1
-                            );
-                        }
-
-                        numberPadState
-                            .pendingDate =
-                            formatDateInput(
-                                date
-                            );
-                    }
-
-                    if (
-                        !absoluteDigitsValid(
-                            pending,
-                            meridiem
-                        )
-                    ) {
-                        return false;
-                    }
+                if (!digits) {
+                    return false;
                 }
-                else {
-                    const duration =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "duration"
-                            );
 
+                let entered = false;
+
+                for (const digit of digits) {
                     if (
-                        !Number.isFinite(
-                            duration
-                        ) ||
-                        duration <= 0
-                    ) {
-                        return false;
-                    }
-
-                    pending =
-                        durationValueToRawDigits(
-                            formatTimelineMilliseconds(
-                                duration
+                        !actions
+                            .enterNumberPadDigit(
+                                digit
                             )
-                        );
-
-                    if (
-                        !timeDigitsValid(
-                            pending
-                        )
                     ) {
-                        return false;
+                        return entered;
                     }
+
+                    entered = true;
                 }
 
-                numberPadState.pending =
-                    pending;
-
-                numberPadState.meridiem =
-                    meridiem;
-
-                numberPadState
-                    .replaceOnNextDigit =
-                    false;
-
-                numberPadState.everEdited =
-                    true;
-
-                refreshNumberPad();
-
-                return true;
+                return entered;
             },
 
             openStartMenu() {
