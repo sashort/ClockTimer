@@ -2244,6 +2244,14 @@ assert.match(
     /chooseBreakType\([\s\S]*button\.focus\(\);[\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*true/
 );
 assert.match(
+    languageSource,
+    /breakChoice:\s*"\^\(\?<breakChoice>10\|15\|break\|long\|short\|lunch\)\$"/
+);
+assert.match(
+    app,
+    /chooseBreakType\([\s\S]*"15":[\s\S]*"break"[\s\S]*break:[\s\S]*"break"[\s\S]*long:[\s\S]*"break"/
+);
+assert.match(
     app,
     /confirmBreakType\([\s\S]*setOkAllowed\([\s\S]*breakDialog,[\s\S]*false[\s\S]*closeDialog\([\s\S]*breakDialog/
 );
