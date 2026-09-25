@@ -11706,7 +11706,27 @@
     }
 
     function tripIsLive() {
-        return app.dataset.tripState === "running";
+        const timerState =
+            clockTimer
+                ?.uiState;
+
+        if (
+            typeof timerState
+                ?.trip_active ===
+                "boolean"
+        ) {
+            return timerState
+                .trip_active;
+        }
+
+        return (
+            clockTimer
+                ?.status ===
+                "running" ||
+            app.dataset
+                .tripState ===
+                "running"
+        );
     }
 
     function syncDraftStandardTimeReturnFrame(formatted) {
