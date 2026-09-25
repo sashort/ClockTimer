@@ -1966,6 +1966,11 @@ assert.match(
     speechMicBarSource,
     /:host\(\[options-collapsed\]\)[\s\S]*#optionsPanel[\s\S]*height:\s*42px[\s\S]*min-height:\s*42px[\s\S]*max-height:\s*42px/
 );
+
+assert.match(
+    speechMicBarSource,
+    /#optionsPanel[\s\S]*height:\s*auto[\s\S]*max-height:[\s\S]*--speech-options-max-height/
+);
 assert.doesNotMatch(
     speechMicBarSource,
     /const toggleMic[\s\S]{0,500}!this\.trainingMode/
