@@ -20,14 +20,37 @@ window.requestAnimationFrame ??=
 window.cancelAnimationFrame ??=
     clearTimeout;
 
-window.eval(
+const componentSource =
     fs.readFileSync(
         new URL(
             "../HamburgerMenu.js",
             import.meta.url
         ),
         "utf8"
-    )
+    );
+
+assert.match(
+    componentSource,
+    /const PROMOTION_DURATION\s*=\s*750/
+);
+
+assert.match(
+    componentSource,
+    /const PROMOTION_PAUSE\s*=\s*75/
+);
+
+assert.match(
+    componentSource,
+    /height: fit-content/
+);
+
+assert.doesNotMatch(
+    componentSource,
+    /hamburger-menu-source \{[\s\S]{0,120}min-height: 100%/
+);
+
+window.eval(
+    componentSource
 );
 
 assert.equal(
@@ -212,7 +235,7 @@ await new Promise(
     resolve =>
         setTimeout(
             resolve,
-            25
+            120
         )
 );
 
