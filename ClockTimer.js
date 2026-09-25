@@ -31775,6 +31775,10 @@
 
             this.#reapplyOverwriteRanges();
 
+            this.#checkGoalMisses(
+                now
+            );
+
             this.#refreshRingLayout(
                 now
             );
