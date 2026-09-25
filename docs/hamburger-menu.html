@@ -289,7 +289,7 @@ kbd {
 </figure>
 
 <h3>Opening a parent</h3>
-<p>Top-level promotion uses one motion duration for the selected parent and surrounding rows. Each row receives a temporary CSS visibility switch time calculated from when the parent covers it; keyframes hide the row at that time. There is no overlay mask. Nested promotion uses a simpler path because the incoming parent is already a descendant of the currently promoted parent.</p>
+<p>Top-level promotion uses one motion duration for the selected parent and surrounding rows. Each row receives two temporary CSS disappearance thresholds for the moments when the selected parent's top and bottom edges meet that row's edges. The direction selects the threshold at which the parent covers the row; the CSS visibility switch time refers to that threshold and keyframes hide the row. There is no overlay mask. Nested promotion uses a simpler path because the incoming parent is already a descendant of the currently promoted parent.</p>
 <ol>
 <li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
 <li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
@@ -300,7 +300,7 @@ kbd {
 </ol>
 
 <h3>Closing a promoted parent</h3>
-<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. On the reverse trip, rows behind the moving parent use the same duration and CSS visibility keyframes; each becomes visible once the parent's trailing edge passes it. The temporary CSS switch times are removed after the animation.</p>
+<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. On the reverse trip, two temporary reappearance thresholds track the parent's trailing edge passing each row; the direction selects the crossing that reveals it. The temporary CSS thresholds and switch times are removed after the animation.</p>
 <ol>
 <li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
 <li>Show the previous parent and measure the placeholder that marks the nested parent's original slot.</li>

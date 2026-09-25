@@ -4253,6 +4253,10 @@
 
             element.style.removeProperty("--hamburger-menu-row-switch-time");
             element.style.removeProperty("--hamburger-menu-row-motion-duration");
+            element.style.removeProperty("--hamburger-menu-disappear-threshold-1");
+            element.style.removeProperty("--hamburger-menu-disappear-threshold-2");
+            element.style.removeProperty("--hamburger-menu-reappear-threshold-1");
+            element.style.removeProperty("--hamburger-menu-reappear-threshold-2");
 
             record.hiddenByPromotion =
                 false;
@@ -4414,43 +4418,62 @@
             const t = (low + high) / 2;
             const time = 3 * (1 - t) * (1 - t) * t * .42 +
                 3 * (1 - t) * t * t * .58 + t * t * t;
-            return Math.max(0, Math.round(time * duration));
+            return Math.max(0, Math.ceil(time * duration));
         }
 
         #animateRowVisibility(records, from, to, duration, flow, opening) {
             if (!duration) return;
 
-            const travel = to.top - from.top;
+            const topTravel = to.top - from.top;
+            const bottomTravel = to.bottom - from.bottom;
             for (const record of records) {
                 const rect = opening
                     ? record.rect
                     : record.element.getBoundingClientRect();
-                let progress = 1;
+                // These two edge crossings are the discrete positions of
+                // the selected group relative to this row. Keep both as
+                // temporary CSS values; the direction selects the crossing
+                // where the row's visibility actually changes.
+                const firstProgress = opening
+                    ? (rect.top - from.top) / (topTravel || 1)
+                    : (rect.bottom - from.top + 1) / (topTravel || 1);
+                const secondProgress = opening
+                    ? (rect.bottom - from.bottom) / (bottomTravel || 1)
+                    : (rect.top - from.bottom - 1) / (bottomTravel || 1);
+                const prefix = opening
+                    ? "--hamburger-menu-disappear-threshold-"
+                    : "--hamburger-menu-reappear-threshold-";
+                const first = this.#rowVisibilitySwitchTime(
+                    Math.abs(topTravel) > .5 ? firstProgress : 1,
+                    duration
+                );
+                const second = this.#rowVisibilitySwitchTime(
+                    Math.abs(bottomTravel) > .5 ? secondProgress : 1,
+                    duration
+                );
+                record.element.style.setProperty(prefix + "1", first + "ms");
+                record.element.style.setProperty(prefix + "2", second + "ms");
 
-                if (Math.abs(travel) > .5) {
-                    if (opening) {
-                        progress = flow === "start"
-                            ? (rect.top - from.top) / travel
-                            : (rect.bottom - from.bottom) / travel;
-                        const y = from.top + travel * progress;
-                        const fullyCovered = from.left <= rect.left + .5 &&
-                            from.right >= rect.right - .5 &&
-                            y <= rect.top + .5 &&
-                            y + from.height >= rect.bottom - .5;
-                        if (!fullyCovered) progress = 1;
-                    }
-                    else {
-                        // Reveal only after the parent's trailing edge has
-                        // passed the row on its way back to the pane.
-                        progress = flow === "start"
-                            ? (rect.bottom - from.top + 1) / travel
-                            : (rect.top - from.bottom - 1) / travel;
-                    }
+                const selectedProgress = flow === "start"
+                    ? firstProgress
+                    : secondProgress;
+                let covered = true;
+                if (opening) {
+                    const progress = Math.max(0, Math.min(1, selectedProgress));
+                    const left = from.left + (to.left - from.left) * progress;
+                    const right = from.right + (to.right - from.right) * progress;
+                    const top = from.top + topTravel * progress;
+                    const bottom = from.bottom + bottomTravel * progress;
+                    covered = left <= rect.left + .5 &&
+                        right >= rect.right - .5 &&
+                        top <= rect.top + .5 &&
+                        bottom >= rect.bottom - .5;
                 }
 
                 record.element.style.setProperty(
                     "--hamburger-menu-row-switch-time",
-                    this.#rowVisibilitySwitchTime(progress, duration) + "ms"
+                    covered ? `var(${prefix}${flow === "start" ? 1 : 2})`
+                        : duration + "ms"
                 );
                 record.element.style.setProperty(
                     "--hamburger-menu-row-motion-duration",
