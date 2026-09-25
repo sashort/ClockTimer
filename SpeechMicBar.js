@@ -111,7 +111,8 @@ class SpeechMicBar extends HTMLElement {
                             --speech-options-max-height
                         );
                     padding: 42px 8px 8px;
-                    overflow: auto;
+                    overflow-y: auto;
+                    overflow-x: hidden;
                     overscroll-behavior: contain;
                     display: grid;
                     grid-template-columns:
@@ -223,12 +224,13 @@ class SpeechMicBar extends HTMLElement {
                     display: grid;
                     grid-template-columns:
                         repeat(
-                            auto-fit,
-                            minmax(
-                                min(340px, 100%),
-                                1fr
-                            )
+                            var(
+                                --speech-options-pane-count,
+                                1
+                            ),
+                            minmax(0, 1fr)
                         );
+                    grid-auto-flow: column;
                     align-items: start;
                     gap: 8px;
                     min-width: 0;
@@ -5014,6 +5016,31 @@ class SpeechMicBar extends HTMLElement {
             .setProperty(
                 "--speech-options-max-height",
                 available + "px"
+            );
+
+        const panelWidth =
+            Math.max(
+                0,
+                this.#optionsPanel
+                    .getBoundingClientRect()
+                    .width
+            );
+
+        const paneCount =
+            Math.max(
+                1,
+                Math.floor(
+                    panelWidth /
+                        320
+                )
+            );
+
+        this.#optionsGrid.style
+            .setProperty(
+                "--speech-options-pane-count",
+                String(
+                    paneCount
+                )
             );
     }
 
