@@ -11017,6 +11017,12 @@
             });
         }
 
+        queueMicrotask(
+            () =>
+                speechMicBar
+                    ?.promoteTopLayer?.()
+        );
+
         startNumberPadAmbientTone();
 
         if (source === "new-trip") {
@@ -11040,6 +11046,12 @@
                 reason: "trip-settings-return"
             });
         }
+
+        queueMicrotask(
+            () =>
+                speechMicBar
+                    ?.promoteTopLayer?.()
+        );
 
         startNumberPadAmbientTone();
     }
