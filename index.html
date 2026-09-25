@@ -325,22 +325,6 @@
         </form>
     </dialog>
 
-    <dialog id="endTimeLockDialog" class="app-dialog end-time-lock-dialog">
-        <form id="endTimeLockForm" method="dialog">
-            <header class="dialog-header">
-                <h2>End Time Locks</h2>
-                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
-            </header>
-            <fieldset>
-                <legend>Goals locked to this end time</legend>
-                <label><span>Trip</span><input id="endTimeTripLock" type="checkbox"></label>
-                <label><span>Total</span><input id="endTimeTotalLock" type="checkbox"></label>
-            </fieldset>
-            <p id="endTimeLockReleaseMessage" class="end-time-lock-release-message" role="status" hidden>The lock will be removed and the previous percentages will be reinstated.</p>
-            <button class="dialog-primary" type="submit">OK</button>
-        </form>
-    </dialog>
-
     <dialog id="newUserDialog" class="app-dialog new-user-dialog">
         <header class="dialog-header"><h2>New User Access</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button></header>
         <iframe id="newUserFrame" title="New user invitation" loading="lazy"></iframe>
