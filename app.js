@@ -10412,6 +10412,28 @@
         return hours ? `${hours}${minutes.padStart(2, "0")}${seconds}` : `${minutes}${seconds}`;
     }
 
+    function canonicalClockTimerDuration(
+        value
+    ) {
+        const milliseconds =
+            parseTimelineTime(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds <= 0
+        ) {
+            return undefined;
+        }
+
+        return formatTimelineMilliseconds(
+            milliseconds
+        );
+    }
+
     function parseTimelineTime(value) {
         const text = String(value || "").trim();
         const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
@@ -11435,8 +11457,24 @@
         }
 
         if (clockTimer.standardTime !== undefined) {
-            clockTimer.standardTime = formatted;
-            if (clockTimer.standardTime !== formatted) return false;
+            const canonical =
+                canonicalClockTimerDuration(
+                    formatted
+                );
+
+            if (!canonical) {
+                return false;
+            }
+
+            clockTimer.standardTime =
+                canonical;
+
+            if (
+                clockTimer.standardTime !==
+                    canonical
+            ) {
+                return false;
+            }
         }
         return true;
     }
@@ -11804,8 +11842,20 @@
     async function startTripDraft() {
         const draft = tripDraft;
         if (draft?.deferred) return false;
-        const standardTime = String(draft?.standardTime || "").trim();
-        if (!tripDraftCanStart(draft)) return false;
+        const standardTime =
+            canonicalClockTimerDuration(
+                String(
+                    draft?.standardTime ||
+                    ""
+                ).trim()
+            );
+
+        if (
+            !standardTime ||
+            !tripDraftCanStart(draft)
+        ) {
+            return false;
+        }
 
         clockTimer.configure({auto_goal: Boolean(draft.syncGoals)});
         clockTimer.intervalElapsedBehavior = "startLatency";
@@ -12106,7 +12156,22 @@
             if (clockTimer.creationTime !== values.creationTime) clockTimer.creationTime = values.creationTime;
             if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
-            if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
+            if (
+                clockTimer.standardTime !==
+                    values.standardTime
+            ) {
+                const canonicalStandardTime =
+                    canonicalClockTimerDuration(
+                        values.standardTime
+                    );
+
+                if (!canonicalStandardTime) {
+                    return false;
+                }
+
+                clockTimer.standardTime =
+                    canonicalStandardTime;
+            }
             clockTimer.nonProduction = values.nonProduction === true;
             clockTimer.configure({auto_goal: Boolean(values.syncGoals)});
             stagedStandardTime = values.standardTime || stagedStandardTime;
