@@ -465,6 +465,9 @@
         $("#speechEditorButton").hidden =
             !canUseSpeechEditor;
 
+        $("#developerDocsButton").hidden =
+            !canUseDeveloperTools;
+
         $("#sqlConsoleButton").hidden =
             !canUseDeveloperTools;
 
@@ -2690,6 +2693,9 @@
         $("#speechEditorButton").hidden =
             !canUseSpeechEditor;
 
+        $("#developerDocsButton").hidden =
+            !canUseDeveloperTools;
+
         $("#sqlConsoleButton").hidden =
             !canUseDeveloperTools;
 
@@ -2706,6 +2712,8 @@
 
         if (!canUseDeveloperTools) {
             $("#speechEditorButton").hidden =
+                true;
+            $("#developerDocsButton").hidden =
                 true;
             $("#sqlConsoleButton").hidden =
                 true;
@@ -9774,6 +9782,21 @@
         .WMOFInteractionFunctions
         .bindAction({
             element:
+                $("#developerDocsButton"),
+            event:
+                "click",
+            name:
+                "openDeveloperDocsClick",
+            action:
+                "openDeveloperDocs",
+            preventDefault:
+                true
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
                 $("#sqlConsoleButton"),
             event:
                 "click",
@@ -16168,6 +16191,44 @@
 
                     throw error;
                 }
+            },
+
+            openDeveloperDocs() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        DEVELOPER_MENU_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/docs/",
+                        "wmofDeveloperDocs"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Developer Docs window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
             },
 
             openSqlConsole() {
