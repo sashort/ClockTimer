@@ -16097,10 +16097,22 @@
             },
 
             canResumeTrip() {
-                return Boolean(
-                    downResumeButton &&
-                    !downResumeButton.hidden &&
-                    !downResumeButton.disabled
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return (
+                    type === "down" ||
+                    type === "break" ||
+                    type === "lunch"
                 );
             },
 
