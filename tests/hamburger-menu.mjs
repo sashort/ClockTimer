@@ -94,6 +94,26 @@ assert.match(
 
 assert.match(
     componentSource,
+    /#isUsableBoundaryElement\(/
+);
+
+assert.match(
+    componentSource,
+    /display ===\s*"contents"/
+);
+
+assert.match(
+    componentSource,
+    /#refreshFrozenPaneGeometry\(/
+);
+
+assert.match(
+    componentSource,
+    /#frozenPaneBaseSize/
+);
+
+assert.match(
+    componentSource,
     /#startBoundaryTracking\(/
 );
 
