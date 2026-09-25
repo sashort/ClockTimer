@@ -2404,3 +2404,8 @@ assert.match(
     speechMenuSource,
     /#onVadSpeechStart[\s\S]*#hasOpenContinuation[\s\S]*resumed:\s*true/
 );
+
+assert.match(
+    speechMicBarSource,
+    /"commands",[\s\S]*what[\s\S]*WMOFActions\.toggleSpeechOptions/
+);
