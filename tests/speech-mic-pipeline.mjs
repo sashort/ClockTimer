@@ -1029,7 +1029,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#optionsGrid[\s\S]*grid-template-columns:[\s\S]*minmax\(0, 1fr\)/
+    /#optionsGrid[\s\S]*display:\s*flex[\s\S]*flex-flow:\s*row nowrap/
+);
+assert.match(
+    speechMicBarSource,
+    /\.option-pane[\s\S]*flex:\s*1 1 0[\s\S]*align-self:\s*flex-start/
 );
 assert.match(
     speechMicBarSource,
@@ -1960,7 +1964,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /#optionsGrid[\s\S]*display:\s*flex[\s\S]*flex-flow:\s*row wrap[\s\S]*--speech-options-pane-width/
+    /#optionsGrid[\s\S]*display:\s*flex[\s\S]*flex-flow:\s*row nowrap[\s\S]*\.option-pane/
 );
 assert.match(
     speechMicBarSource,
@@ -1970,6 +1974,15 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /#optionsPanel[\s\S]*height:\s*auto[\s\S]*max-height:[\s\S]*--speech-options-max-height/
+);
+
+assert.match(
+    speechMicBarSource,
+    /#optionPanePartitions\([\s\S]*#layoutOptionPanes\([\s\S]*finalCategoryHeights|#optionPanePartitions\([\s\S]*#layoutOptionPanes\(/
+);
+assert.match(
+    speechMicBarSource,
+    /horizontalPreference\s*=\s*48[\s\S]*prefersMorePanes[\s\S]*paneCount\s*>[\s\S]*best\.paneCount[\s\S]*best\.tallest\s*\+[\s\S]*horizontalPreference/
 );
 assert.doesNotMatch(
     speechMicBarSource,
@@ -2100,7 +2113,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /collapseOptions\(\)[\s\S]*trainingMode[\s\S]*options-collapsed/
+    /collapseOptions\(\)[\s\S]*options-open[\s\S]*options-collapsed/
 );
 assert.match(
     speechMicBarSource,
@@ -2112,7 +2125,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#optionsClose[\s\S]*addEventListener\([\s\S]*"click"[\s\S]*hideOptions/
+    /#optionsClose[\s\S]*addEventListener\([\s\S]*"click"[\s\S]*optionsCollapsed[\s\S]*expandOptions\(\)[\s\S]*collapseOptions\(\)/
 );
 assert.doesNotMatch(
     speechMicBarSource,
