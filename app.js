@@ -15134,39 +15134,26 @@
             hours > 0 &&
             seconds > 0
         ) {
-            const tail = [];
-
-            if (minutes > 0) {
-                tail.push(
+            if (minutes === 0) {
+                return (
+                    parts[0] +
+                    " " +
                     goalFailureNumberWords(
-                        minutes
-                    )
+                        seconds
+                    ) +
+                    " seconds"
                 );
             }
-
-            tail.push(
-                goalFailureNumberWords(
-                    seconds
-                )
-            );
 
             return (
                 parts[0] +
                 " " +
-                (
-                    tail.length > 1
-                        ? tail
-                            .slice(
-                                0,
-                                -1
-                            )
-                            .join(" ") +
-                            " and " +
-                            tail[
-                                tail.length - 1
-                            ]
-                        : "and " +
-                            tail[0]
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " and " +
+                goalFailureNumberWords(
+                    seconds
                 )
             );
         }
