@@ -11307,7 +11307,7 @@
             catch (error) { if (!error.clockTimerOffline) throw error; }
         }
 
-        const chimeDisableFrame =
+        const suppressStartChime =
             (
                 draft
                     .endStartTransitionChimePlayed ===
@@ -11315,11 +11315,15 @@
                 draft
                     .startTimeSetToNow !==
                     true
-            )
-                ? pushSemanticDisable({
-                    chime: true
-                })
-                : undefined;
+            );
+
+        if (
+            suppressStartChime
+        ) {
+            incrementSemanticDisable(
+                "chime"
+            );
+        }
 
         try {
             await clockTimer.start({
@@ -11332,9 +11336,13 @@
             });
         }
         finally {
-            popSemanticDisable(
-                chimeDisableFrame
-            );
+            if (
+                suppressStartChime
+            ) {
+                decrementSemanticDisable(
+                    "chime"
+                );
+            }
         }
         if (draft.creationDate && clockTimer.creationDate !== draft.creationDate) {
             clockTimer.creationDate = draft.creationDate;
@@ -13421,64 +13429,59 @@
         details: 0
     };
 
-    const semanticDisableFrames =
-        new Set();
-
-    function pushSemanticDisable(
-        frame = {}
-    ) {
-        const normalized = {
-            chime:
-                Boolean(
-                    frame.chime
-                ),
-            summary:
-                Boolean(
-                    frame.summary
-                ),
-            details:
-                Boolean(
-                    frame.details
-                )
-        };
-
-        semanticDisableFrames.add(
-            normalized
-        );
-
-        for (const key of Object.keys(normalized)) {
-            if (normalized[key]) {
-                semanticDisableCounts[key] += 1;
-            }
-        }
-
-        return normalized;
-    }
-
-    function popSemanticDisable(
-        frame
+    function adjustSemanticDisable(
+        layer,
+        amount
     ) {
         if (
-            !frame ||
-            !semanticDisableFrames
-                .delete(
-                    frame
-                )
+            !Object.hasOwn(
+                semanticDisableCounts,
+                layer
+            )
         ) {
-            return false;
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
         }
 
-        for (const key of Object.keys(semanticDisableCounts)) {
-            if (frame[key]) {
-                semanticDisableCounts[key] =
-                    Math.max(
-                        0,
-                        semanticDisableCounts[key] - 1
-                    );
-            }
+        const delta =
+            Number(amount);
+
+        if (
+            !Number.isInteger(delta)
+        ) {
+            throw new TypeError(
+                "Semantic disable adjustments must be integers."
+            );
         }
 
-        return true;
+        semanticDisableCounts[layer] =
+            Math.max(
+                0,
+                semanticDisableCounts[layer] +
+                    delta
+            );
+
+        return semanticDisableCounts[layer];
+    }
+
+    function incrementSemanticDisable(
+        layer
+    ) {
+        return adjustSemanticDisable(
+            layer,
+            1
+        );
+    }
+
+    function decrementSemanticDisable(
+        layer
+    ) {
+        return adjustSemanticDisable(
+            layer,
+            -1
+        );
     }
 
     function semanticLayerEnabled(
@@ -13493,10 +13496,12 @@
 
     globalThis.WMOFSemanticNotifications =
         Object.freeze({
-            pushDisable:
-                pushSemanticDisable,
-            popDisable:
-                popSemanticDisable,
+            incrementDisable:
+                incrementSemanticDisable,
+            decrementDisable:
+                decrementSemanticDisable,
+            adjustDisable:
+                adjustSemanticDisable,
             get disableCounts() {
                 return {
                     ...semanticDisableCounts
