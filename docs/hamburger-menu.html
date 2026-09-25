@@ -134,7 +134,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Frozen transition pane</h3>
-<p>The active pane freezes a <em>base</em> width and height before promotion or return animation begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. The current locked height is exposed through <code>--hamburger-menu-frozen-pane-height</code>; when observers retarget it mid-transition, the pane interpolates to the new height instead of snapping. On collapse it remains locked until every child has finished collapsing and the return transition has completed.</p>
+<p>The active pane freezes a <em>base</em> width and height before promotion begins. Promotion DOM changes cannot resize that pane, but the lock remains externally responsive: viewport resize, live safe-boundary motion, and observer-driven layout constraints can re-clamp the frozen dimensions in place. The current locked height is exposed through <code>--hamburger-menu-frozen-pane-height</code>; when observers retarget it mid-transition, the pane interpolates to the new height instead of snapping. The same lock is retained for the entire promoted stack, including nested parents, and is released only after the final promoted parent returns to the normal pane.</p>
 </div>
 <div class="card">
 <h3>Live DOM and size response</h3>
@@ -297,17 +297,17 @@ kbd {
 <li>Rows on the opposite side of the target zoom off in the direction away from the hamburger. They remain nested in the frozen pane and are clipped as they leave.</li>
 <li>At the target endpoint, all previous-level rows are switched to <code>display: none</code> together and the promotion mask is removed.</li>
 <li>The component waits for the later of the 450 ms parent slide and the opposite-side zoom animation, then pauses for <strong>75 ms</strong>.</li>
-<li>The pane lock is released, then the promoted parent's children open. Any resulting pane resize happens only in this child-opening phase, never during the slide.</li>
+<li>The pane remains frozen while the promoted parent's children open. Child expansion is clipped inside that fixed pane; if the promoted content exceeds the available pane, promoted scrolling is enabled instead of resizing the pane.</li>
 </ol>
 
 <h3>Closing a promoted parent</h3>
 <ol>
 <li>Freeze the current pane and viewport before changing any child height.</li>
 <li>Collapse all children completely while the pane stays at its frozen dimensions.</li>
-<li>Only after every child has collapsed does the parent begin its 450 ms return motion.</li>
+<li>After every child has collapsed, the component waits the same <strong>75 ms</strong> boundary pause used on opening, then begins the 450 ms return motion.</li>
 <li>The previous-level rows are restored underneath a fully applied promotion mask. As the parent returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position, progressively revealing the rows behind it.</li>
 <li>Opposite-side rows return from outside the clipped pane at the same time.</li>
-<li>The mask is removed at the endpoint. The pane remains frozen until the entire collapse/return sequence has completed, then layout may be recalculated.</li>
+<li>The mask is removed at the endpoint. Nested closes keep the existing frozen pane lock; it is released only when the promoted stack becomes empty.</li>
 </ol>
 
 <p class="note"><strong>Terminology:</strong> in this component, a <em>pane</em> is the visible horizontal menu page / promoted viewport whose dimensions are frozen during transition mechanics. A parent menu is the group being promoted inside that pane.</p>
