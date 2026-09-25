@@ -58,6 +58,17 @@ assert.match(
     /#promotionDuration\(/
 );
 
+
+assert.match(
+    componentSource,
+    /submenuAnimationRecords/
+);
+
+assert.match(
+    componentSource,
+    /#closePromotedSubmenu\([\s\S]*#promotionPause\(\)/
+);
+
 assert.match(
     componentSource,
     /const PROMOTION_PAUSE\s*=\s*75/
