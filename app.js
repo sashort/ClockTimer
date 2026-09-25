@@ -13404,7 +13404,9 @@
         }
     }
 
-    function semanticTimingSpeech(
+    // Early/late announcements are about the timing gain or loss for
+    // the current trip event. They intentionally never use summary.total.
+    function tripTimingSpeech(
         detail,
         lead,
         disposition
@@ -13746,7 +13748,7 @@
         reserveSemanticEvent(event, "Trip started early");
         void playSemanticSongThenSpeak(
             "trip-started-early",
-            semanticTimingSpeech(
+            tripTimingSpeech(
                 event.detail,
                 "Trip started early",
                 "saved"
@@ -13758,7 +13760,7 @@
         reserveSemanticEvent(event, "Trip started late");
         void playSemanticSongThenSpeak(
             "trip-started-late",
-            semanticTimingSpeech(
+            tripTimingSpeech(
                 event.detail,
                 "Trip started late",
                 "lost"
@@ -13793,7 +13795,7 @@
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
         void playSemanticSongThenSpeak(
             "trip-resumed-early",
-            semanticTimingSpeech(
+            tripTimingSpeech(
                 event.detail,
                 "Trip resumed early",
                 "saved"
@@ -13816,7 +13818,7 @@
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
         void playSemanticSongThenSpeak(
             "trip-resumed-after-break",
-            semanticTimingSpeech(
+            tripTimingSpeech(
                 event.detail,
                 "Trip resumed",
                 "lost"
