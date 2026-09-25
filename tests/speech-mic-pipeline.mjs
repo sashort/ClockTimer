@@ -1952,6 +1952,23 @@ assert.match(
     speechMicBarSource,
     /case "phrasesChanged":[\s\S]*#renderOptions\([\s\S]*detail\?\.phraseGroups[\s\S]*SpeechMenu[\s\S]*phraseGroups/
 );
+
+assert.match(
+    speechMenuSource,
+    /for \(const type of \["toggle", "close", "cancel", "okStatusChanged"\]\)[\s\S]*#schedulePhraseRefresh/
+);
+assert.match(
+    speechMenuSource,
+    /const okAllowed\s*=\s*context\?\.allowOk !==\s*false[\s\S]*if \(!okAllowed\)/
+);
+assert.match(
+    app,
+    /function setOkAllowed\([\s\S]*context\.allowOk\s*=\s*next[\s\S]*"okStatusChanged"[\s\S]*okAllowed:\s*next/
+);
+assert.match(
+    app,
+    /numberPadConfirm\.disabled\s*=\s*autocorrect[\s\S]*setOkAllowed\([\s\S]*numberPadDialog,[\s\S]*!numberPadConfirm\.disabled/
+);
 assert.doesNotMatch(
     speechMenuSource,
     /exactCandidate\.kind ===\s*"wake"/
