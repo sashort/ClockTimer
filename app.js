@@ -14177,16 +14177,35 @@
                 ? detail.goals
                 : [];
 
-        const standardFailed =
-            goals.some(
-                goal =>
-                    goal?.type ===
-                        "standard"
-            );
-
         const percentMode =
             normalizePercentMode(
                 clockTimer.percentMode
+            );
+
+        const announcedGoals =
+            percentMode === "trip"
+                ? goals.filter(
+                    goal =>
+                        goal?.type ===
+                            "standard" ||
+                        goal?.type ===
+                            "trip"
+                )
+                : percentMode === "total"
+                    ? goals.filter(
+                        goal =>
+                            goal?.type ===
+                                "standard" ||
+                            goal?.type ===
+                                "total"
+                    )
+                    : goals;
+
+        const standardFailed =
+            announcedGoals.some(
+                goal =>
+                    goal?.type ===
+                        "standard"
             );
 
         // In fixed Trip/Total modes, crossing Standard is its own temporal
@@ -14202,7 +14221,7 @@
         }
 
         const belowStandardFailed =
-            goals.some(
+            announcedGoals.some(
                 goal => {
                     const percent =
                         Number(
@@ -14228,7 +14247,7 @@
             );
         }
 
-        for (const goal of goals) {
+        for (const goal of announcedGoals) {
             if (
                 goal?.type ===
                     "trip"
