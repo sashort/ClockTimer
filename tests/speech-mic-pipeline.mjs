@@ -1060,6 +1060,30 @@ assert.match(speechMenuSource, /while\s*\([\s\S]*next\.shift\(\)/);
 assert.match(speechMenuSource, /await Promise\.resolve\([\s\S]*speechPreprocFunc[\s\S]*signal/s);
 assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition|createScriptProcessor/);
 assert.match(speechMenuSource, /#compactTranscript/);
+assert.match(
+    speechMenuSource,
+    /#canonicalMatchTranscript[\s\S]*matchingMode !==[\s\S]*"compact"[\s\S]*#expandRegexSource[\s\S]*values\[[\s\S]*name/
+);
+assert.match(
+    speechMenuSource,
+    /const canonicalTranscript =[\s\S]*#canonicalMatchTranscript[\s\S]*matchingMode/
+);
+assert.match(
+    speechMenuSource,
+    /"speechCommandExecuted"[\s\S]*canonicalTranscript/
+);
+assert.match(
+    speechMicBarSource,
+    /case "speechCommandMatched":[\s\S]*canonicalTranscript[\s\S]*#showStreamingPhrase/
+);
+assert.match(
+    speechMicBarSource,
+    /case "speechCommandExecuted":[\s\S]*canonicalTranscript[\s\S]*#showStreamingPhrase/
+);
+assert.match(
+    speechMicBarSource,
+    /#showArguments\(values\)[\s\S]*Object\.keys[\s\S]*length ===[\s\S]*0[\s\S]*continue/
+);
 assert.match(speechMenuSource, /speechCompactPattern/);
 assert.match(speechMenuSource, /speechCorrectionApplied/);
 assert.match(speechMenuSource, /provisional:\s*!execute/);
