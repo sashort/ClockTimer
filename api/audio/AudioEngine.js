@@ -71,13 +71,13 @@
                 speechVelocity: clamp(
                     settings.speechVelocity,
                     0.5,
-                    3,
+                    4,
                     current.speechVelocity
                 ),
                 toneVelocity: clamp(
                     settings.toneVelocity,
                     0.5,
-                    3,
+                    1.5,
                     current.toneVelocity
                 )
             };
@@ -545,19 +545,32 @@
                                 ? event.lang.trim()
                                 : "en-US";
 
-                        utterance.rate =
-                            (
-                                Number.isFinite(
-                                    Number(
-                                        event.rate
-                                    )
-                                )
-                                    ? Number(
-                                        event.rate
-                                    )
-                                    : 1
-                            ) *
-                            this.#outputSettings.speechVelocity;
+                        const eventRate =
+                            Number(
+                                event.rate
+                            );
+                        const speechVelocity =
+                            this.#outputSettings
+                                .speechVelocity;
+
+                        if (
+                            Number.isFinite(
+                                eventRate
+                            )
+                        ) {
+                            utterance.rate =
+                                eventRate *
+                                speechVelocity;
+                        }
+                        else if (
+                            speechVelocity !==
+                                1
+                        ) {
+                            // At exactly 1x, leave rate unset so the voice
+                            // uses its true browser/native default.
+                            utterance.rate =
+                                speechVelocity;
+                        }
 
                         if (
                             Number.isFinite(
@@ -955,15 +968,29 @@
                     "en-US"
                 );
 
-            utterance.rate =
-                (
-                    Number.isFinite(
-                        Number(rate)
-                    )
-                        ? Number(rate)
-                        : 1
-                ) *
-                this.#outputSettings.speechVelocity;
+            const explicitRate =
+                Number(rate);
+            const speechVelocity =
+                this.#outputSettings
+                    .speechVelocity;
+
+            if (
+                Number.isFinite(
+                    explicitRate
+                )
+            ) {
+                utterance.rate =
+                    explicitRate *
+                    speechVelocity;
+            }
+            else if (
+                speechVelocity !==
+                    1
+            ) {
+                // Preserve the browser/voice native default at neutral 1x.
+                utterance.rate =
+                    speechVelocity;
+            }
 
             if (
                 Number.isFinite(
