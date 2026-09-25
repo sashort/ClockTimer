@@ -15081,12 +15081,50 @@
                     minutes
                 );
 
+            const minuteSyllables =
+                minuteNumber
+                    .toLowerCase()
+                    .replace(
+                        /[^a-z\s-]/g,
+                        ""
+                    )
+                    .split(
+                        /[\s-]+/
+                    )
+                    .filter(Boolean)
+                    .reduce(
+                        (total, word) => {
+                            const normalized =
+                                word
+                                    .replace(
+                                        /(?:e|es|ed)$/,
+                                        ""
+                                    );
+                            const groups =
+                                normalized.match(
+                                    /[aeiouy]+/g
+                                );
+                            return (
+                                total +
+                                Math.max(
+                                    1,
+                                    groups?.length ||
+                                        0
+                                )
+                            );
+                        },
+                        0
+                    );
+            const omitAnd =
+                minutes > 9 &&
+                minuteSyllables > 1;
+
             return (
                 parts[0] +
                 (
-                    minutes < 10
-                        ? " and "
-                        : " "
+                    omitAnd
+                        ? " "
+                        : " and "
                 ) +
                 minuteNumber
             );
