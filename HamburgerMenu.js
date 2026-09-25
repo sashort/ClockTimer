@@ -6,7 +6,7 @@
         "hamburger-menu-base-styles";
 
     const PROMOTION_DURATION =
-        750;
+        500;
 
     const PROMOTION_PAUSE =
         75;
