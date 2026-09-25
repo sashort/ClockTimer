@@ -102,7 +102,7 @@ assert.match(
 
 assert.match(
     componentSource,
-    /#finishOpeningMeasurement\(\)[\s\S]*#freezePane\(\s*this\.#viewport\s*\)/
+    /#finishOpeningMeasurement\([^)]*\)[\s\S]*#freezePane\(\s*this\.#viewport\s*,\s*this\.#normalPaneHeight\s*\)/
 );
 
 assert.match(
@@ -112,22 +112,17 @@ assert.match(
 
 assert.match(
     componentSource,
-    /async #promoteNested\([\s\S]*const parentTranslation\s*=/
+    /async #promoteNested\([\s\S]*const parentOffsetY\s*=\s*childTarget\.top\s*-\s*childStart\.top/
 );
 
 assert.match(
     componentSource,
-    /#translationAnimation\(\s*parent,/
-);
-
-assert.doesNotMatch(
-    componentSource,
-    /async #promoteNested\([\s\S]*#translationAnimation\(\s*group,/
+    /async #promoteNested\([\s\S]*#translationAnimation\(\s*group,\s*from,\s*to,\s*duration\s*\)[\s\S]*parent\.animate\(/
 );
 
 assert.match(
     componentSource,
-    /async #restoreNestedFocusLevel\([\s\S]*reverseStart/
+    /async #restoreNestedFocusLevel\([\s\S]*const parentOffsetY\s*=\s*childStart\.top\s*-\s*destination\.top[\s\S]*#translationAnimation\(\s*child,\s*from,\s*to,\s*duration\s*\)/
 );
 
 assert.match(
@@ -137,7 +132,17 @@ assert.match(
 
 assert.match(
     componentSource,
-    /hamburger-menu-promotion-mask/
+    /#hasVisibleChild\(/
+);
+
+assert.match(
+    componentSource,
+    /coverageState/
+);
+
+assert.match(
+    componentSource,
+    /coverageAnimationId/
 );
 
 assert.doesNotMatch(
