@@ -114,7 +114,7 @@ kbd {
 <div class="grid">
 <div class="card">
 <h3>Invisible opening calculation</h3>
-<p>The popover enters the top layer at <code>opacity: 0</code>. The component resolves the safe region, runs <code>position-try</code>, packs panes, calculates the common pane height, and reconciles trigger placement before revealing the popover at full opacity.</p>
+<p>The popover enters the top layer hidden at <code>opacity: 0</code> and <code>visibility: hidden</code>. The component resolves the safe region, runs <code>position-try</code>, packs panes, calculates the common pane height, and reconciles popover placement before revealing it at full opacity. The hamburger itself never moves.</p>
 </div>
 <div class="card">
 <h3>Natural pane height</h3>
@@ -135,6 +135,14 @@ kbd {
 <div class="card">
 <h3>Frozen transition pane</h3>
 <p>The active pane freezes its measured width and height before promotion or return animation begins. It stays frozen through the motion phase. On collapse it remains frozen until every child has finished collapsing and the return transition has completed.</p>
+</div>
+<div class="card">
+<h3>Live DOM and size response</h3>
+<p><code>MutationObserver</code> and <code>ResizeObserver</code> feed one coalesced layout pass. Added, removed, moved, hidden, resized, and text-changed menu content is remeasured automatically; direct children added to <code>&lt;hamburger-menu&gt;</code> are adopted into the internal source.</p>
+</div>
+<div class="card">
+<h3>Immutable hamburger anchor</h3>
+<p>The trigger is never translated to make the popover fit. Safe-region corrections are applied to the popover, preserving the hamburger's document position.</p>
 </div>
 </div>
 
@@ -169,7 +177,7 @@ kbd {
 <p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
 
 <h2>Safe boundary</h2>
-<p><code>safe-boundary</code> accepts a document selector. The element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary.</p>
+<p><code>safe-boundary</code> accepts a document selector. When it resolves, the element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary.</p>
 
 <figure>
 <svg viewBox="0 0 900 330" role="img" aria-label="Boundary below the hamburger">
@@ -184,7 +192,7 @@ kbd {
 <line x1="455" y1="238" x2="455" y2="258" stroke="#0071ce" stroke-width="4"/>
 <text x="470" y="251" fill="#14202b" font-size="14" font-family="system-ui">boundary margin + hamburger-menu margin are preserved</text>
 </svg>
-<figcaption>Boundary below: the menu must remain above it. If placement would cross the boundary, the hamburger itself may shift upward so the anchored popover remains valid.</figcaption>
+<figcaption>Boundary below: the popover must remain above it. If the chosen anchor placement crosses the boundary, the popover is corrected inside the safe region; the hamburger remains fixed.</figcaption>
 </figure>
 
 <figure>
@@ -204,8 +212,8 @@ kbd {
 <h3>Margin rule</h3>
 <p>When a safe boundary exists, the external gap is calculated from the <strong>hamburger-menu element's margin</strong> plus the <strong>safe-boundary element's margin</strong>. The margin of the last menu item is <em>not</em> separately added to the boundary calculation.</p>
 
-<h3>No safe boundary</h3>
-<p>If <code>safe-boundary</code> is omitted, invalid, disconnected, or not rendered, the lower usable edge is the document/viewport bottom. The calculation accounts for document and body bottom margin and padding.</p>
+<h3>No explicit safe boundary</h3>
+<p>If <code>safe-boundary</code> is omitted or cannot be resolved, the component first tries to discover a useful boundary. It prefers elements explicitly marked with <code>data-hamburger-safe-boundary</code>, then nearby semantic toolbar/status/footer elements and visible fixed or sticky layout elements. If no suitable boundary is found, the component falls back to the usable document/viewport edge, accounting for document and body bottom margin and padding.</p>
 
 <h2>Positioning and position-try</h2>
 <p>The popover starts below the trigger and exposes multiple <code>@position-try</code> alternatives. The browser may place it:</p>
@@ -224,15 +232,26 @@ kbd {
     /* point the callout arrow down toward the trigger */
 }</pre>
 
+<h3>Application-selected primary position</h3>
+<p>The reusable element does not force one application layout. A project should choose its preferred <code>position-area</code> in its own stylesheet; the component's <code>position-try</code> options remain available as fallbacks.</p>
+<pre>/* WMOF: below the hamburger, with the pane's left edge aligned from the anchor side. */
+.main-menu &gt; .hamburger-menu-popover {
+    position-area: bottom span-right;
+    inset: auto;
+    align-self: start;
+    justify-self: start;
+}</pre>
+
 <h2>Opening lifecycle</h2>
 <ol>
 <li>The popover is marked as calculating and rendered at <code>opacity: 0</code>.</li>
 <li>The component measures the safe region and the visible top-level rows.</li>
 <li>Rows are packed into horizontal panes. If multiple panes are required, every pane is assigned the height of the tallest packed pane.</li>
-<li>The browser's anchor-positioning / <code>position-try</code> result is reconciled against <code>safe-boundary</code>. The hamburger may move if needed to keep the anchored popover inside the safe region.</li>
+<li>The browser's anchor-positioning / <code>position-try</code> result is reconciled against the safe region. Any correction moves the popover, never the hamburger.</li>
 <li>After a second frame confirms placement, the popover is revealed at <code>opacity: 1</code>.</li>
 </ol>
-<p>This prevents the user from seeing the temporary full-safe-boundary geometry used during measurement.</p>
+<p>This prevents the user from seeing temporary measurement geometry.</p>
+<p>Applications should also cloak pre-upgrade light-DOM menu rows so they cannot flash before the custom-element script runs. WMOF marks the button with <code>slot="trigger"</code> in static HTML and hides the other direct children while <code>hamburger-menu:not(:defined)</code>.</p>
 
 <h2>Promotion model</h2>
 
@@ -270,23 +289,24 @@ kbd {
 
 <h3>Opening a parent</h3>
 <ol>
-<li>Freeze the active pane's measured width and height. No pane resizing is allowed during the motion phase.</li>
+<li>Freeze both the active pane and its viewport box at their measured width and height. No pane resizing is allowed during the motion phase.</li>
 <li>Move the target parent to the promoted layer while it is still <strong>closed</strong>.</li>
 <li>The target takes exactly <strong>750 ms</strong> to reach its promoted position toward the hamburger.</li>
-<li>Rows between the target and the hamburger stay at full size. When the moving target completely covers one, that covered row changes to <code>display: none</code>.</li>
-<li>Rows on the opposite side of the target zoom off in the direction away from the hamburger. They remain descendants of the pane, so the frozen pane clips them as they leave.</li>
-<li>The component waits for the later of the 750 ms parent slide and the opposite-side zoom animation.</li>
-<li>A short <strong>75 ms</strong> pause marks the promotion boundary.</li>
+<li>A background-colored promotion mask sits below the target and above the previous rows. Its <code>clip-path</code> expands with the same duration/easing as the target, leaving an erased trail exactly where the target has swept. This makes rows appear to disappear progressively as they are covered without changing their layout during the slide.</li>
+<li>Rows on the opposite side of the target zoom off in the direction away from the hamburger. They remain nested in the frozen pane and are clipped as they leave.</li>
+<li>At the target endpoint, all previous-level rows are switched to <code>display: none</code> together and the promotion mask is removed.</li>
+<li>The component waits for the later of the 750 ms parent slide and the opposite-side zoom animation, then pauses for <strong>75 ms</strong>.</li>
 <li>The pane lock is released, then the promoted parent's children open. Any resulting pane resize happens only in this child-opening phase, never during the slide.</li>
 </ol>
 
 <h3>Closing a promoted parent</h3>
 <ol>
-<li>Freeze the current pane before changing any child height.</li>
+<li>Freeze the current pane and viewport before changing any child height.</li>
 <li>Collapse all children completely while the pane stays at its frozen dimensions.</li>
-<li>Only after every child has collapsed does the parent begin its return motion.</li>
-<li>The covered rows reappear as the returning parent no longer covers them; opposite-side rows return from outside the clipped pane.</li>
-<li>The pane remains frozen through the return motion and is not unlocked until the entire collapse/return sequence is complete.</li>
+<li>Only after every child has collapsed does the parent begin its 750 ms return motion.</li>
+<li>The previous-level rows are restored underneath a fully applied promotion mask. As the parent returns, the mask's <code>clip-path</code> shrinks toward the collapsed parent's original position, progressively revealing the rows behind it.</li>
+<li>Opposite-side rows return from outside the clipped pane at the same time.</li>
+<li>The mask is removed at the endpoint. The pane remains frozen until the entire collapse/return sequence has completed, then layout may be recalculated.</li>
 </ol>
 
 <p class="note"><strong>Terminology:</strong> in this component, a <em>pane</em> is the visible horizontal menu page / promoted viewport whose dimensions are frozen during transition mechanics. A parent menu is the group being promoted inside that pane.</p>
@@ -405,8 +425,10 @@ kbd {
 <li>The parent button must reference the submenu with <code>aria-controls</code>.</li>
 <li>The submenu should start with <code>hidden</code> and the button with <code>aria-expanded="false"</code>.</li>
 <li>Do not implement a second click handler that manually toggles <code>hidden</code>; let <code>&lt;hamburger-menu&gt;</code> own parent expansion.</li>
-<li>Application code may freely hide/show permission-dependent rows. The component observes <code>hidden</code> changes and repacks.</li>
-<li>Call <code>refresh()</code> after unusual external geometry changes that do not naturally generate resize/scroll/mutation signals.</li>
+<li>Application code may freely add, remove, move, hide, resize, or change text in menu rows. Mutation and size observers schedule a coalesced repack automatically.</li>
+<li>Direct children appended to <code>&lt;hamburger-menu&gt;</code> after connection are automatically adopted into the internal menu source.</li>
+<li>Use <code>data-hamburger-safe-boundary</code> on a preferred discoverable boundary when you do not want to hard-code a <code>safe-boundary</code> selector.</li>
+<li><code>refresh()</code> remains available for unusual external geometry changes that do not produce resize, scroll, or DOM mutation signals.</li>
 </ul>
 
 <h2>Reduced motion and accessibility</h2>
