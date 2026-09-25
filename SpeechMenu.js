@@ -984,6 +984,14 @@ class SpeechMenu {
                     ?.trim() ||
                 undefined;
 
+            const optionsPhrase =
+                element
+                    .getAttribute(
+                        "data-speech-options-phrase"
+                    )
+                    ?.trim() ||
+                undefined;
+
             const descriptor = {
                 element,
                 elements: [element],
@@ -1009,6 +1017,10 @@ class SpeechMenu {
                         )
                         ?.trim() ||
                     undefined,
+                optionPhrases:
+                    optionsPhrase
+                        ? [optionsPhrase]
+                        : undefined,
                 phrases:
                     extrapolated.slice()
             };
@@ -1037,6 +1049,25 @@ class SpeechMenu {
                             existing.phrases.push(
                                 phrase
                             );
+                        }
+                    }
+
+                    if (optionsPhrase) {
+                        existing.optionPhrases ??=
+                            [];
+
+                        if (
+                            !existing
+                                .optionPhrases
+                                .includes(
+                                    optionsPhrase
+                                )
+                        ) {
+                            existing
+                                .optionPhrases
+                                .push(
+                                    optionsPhrase
+                                );
                         }
                     }
                 }
@@ -1078,6 +1109,14 @@ class SpeechMenu {
                                 Object.freeze(
                                     group.elements.slice()
                                 ),
+                            optionPhrases:
+                                group.optionPhrases
+                                    ? Object.freeze(
+                                        group
+                                            .optionPhrases
+                                            .slice()
+                                    )
+                                    : undefined,
                             phrases:
                                 Object.freeze(
                                     group.phrases.slice()
@@ -1118,6 +1157,28 @@ class SpeechMenu {
                             next.optionsGroup ||
                         group.optionsCategory !==
                             next.optionsCategory ||
+                        (
+                            group.optionPhrases
+                                ?.length ||
+                            0
+                        ) !==
+                            (
+                                next.optionPhrases
+                                    ?.length ||
+                                0
+                            ) ||
+                        group.optionPhrases
+                            ?.some(
+                                (
+                                    phrase,
+                                    phraseIndex
+                                ) =>
+                                    phrase !==
+                                    next
+                                        .optionPhrases?.[
+                                            phraseIndex
+                                        ]
+                            ) ||
                         group.phrases.length !==
                             next.phrases.length ||
                         group.phrases.some(
