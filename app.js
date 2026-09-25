@@ -14080,6 +14080,23 @@
                         "standard"
             );
 
+        const percentMode =
+            normalizePercentMode(
+                clockTimer.percentMode
+            );
+
+        // In fixed Trip/Total modes, crossing Standard is its own temporal
+        // boundary announcement. Do not combine it with the fixed goal.
+        if (
+            standardFailed &&
+            (
+                percentMode === "trip" ||
+                percentMode === "total"
+            )
+        ) {
+            return "Standard Goal Failed.";
+        }
+
         const belowStandardFailed =
             goals.some(
                 goal => {
@@ -14103,7 +14120,7 @@
 
         if (standardFailed) {
             sentences.push(
-                "Standard Time Exceeded."
+                "Standard Goal Failed."
             );
         }
 
@@ -14152,63 +14169,6 @@
                 fallback.percent
             );
 
-        const percentMode =
-            normalizePercentMode(
-                clockTimer.percentMode
-            );
-
-        const announceFallback =
-            percentMode === "auto" ||
-            (
-                standardFailed &&
-                Number.isFinite(percent) &&
-                percent < 1 &&
-                (
-                    type === "trip" ||
-                    type === "total"
-                )
-            );
-
-        if (announceFallback) {
-            if (type === "standard") {
-                sentences.push(
-                    "Using Standard."
-                );
-            }
-            else if (
-                type === "trip" ||
-                type === "total"
-            ) {
-                const label =
-                    type === "trip"
-                        ? "Trip"
-                        : "Total";
-
-                const percentText =
-                    Number.isFinite(percent)
-                        ? " " +
-                            goalFailureNumberWords(
-                                Math.round(
-                                    percent * 100
-                                )
-                            ) +
-                            " percent"
-                        : "";
-
-                sentences.push(
-                    `Using ${label} Goal${percentText}.`
-                );
-            }
-        }
-
-        if (belowStandardFailed) {
-            sentences.push(
-                "Overtime in progress."
-            );
-
-            return sentences.join(" ");
-        }
-
         const remainingMilliseconds =
             Number(
                 fallback
@@ -14216,14 +14176,53 @@
             );
 
         if (
+            percentMode === "auto" &&
             Number.isFinite(
                 remainingMilliseconds
+            ) &&
+            (
+                type === "standard" ||
+                type === "trip" ||
+                type === "total"
             )
         ) {
+            const label =
+                type === "standard"
+                    ? "Standard"
+                    : type === "trip"
+                        ? "Trip"
+                        : "Total";
+
+            const roundedPercent =
+                Number.isFinite(percent)
+                    ? Math.round(
+                        percent * 100
+                    )
+                    : undefined;
+
+            const percentText =
+                type !== "standard" &&
+                Number.isFinite(
+                    roundedPercent
+                ) &&
+                roundedPercent !== 100
+                    ? " " +
+                        goalFailureNumberWords(
+                            roundedPercent
+                        ) +
+                        " percent"
+                    : "";
+
             sentences.push(
                 `${formatGoalFailureDuration(
                     remainingMilliseconds
-                )} remaining.`
+                )} remaining until ${label} Goal${percentText}.`
+            );
+        }
+
+        if (belowStandardFailed) {
+            sentences.push(
+                "Overtime in progress."
             );
         }
 
