@@ -4007,10 +4007,13 @@
             originalRect,
             promotedRect,
             flow,
-            reverse = false
+            reverse = false,
+            container =
+                this.#viewport,
+            zIndex
         ) {
-            const viewportRect =
-                this.#viewport
+            const containerRect =
+                container
                     .getBoundingClientRect();
 
             const top =
@@ -4044,7 +4047,7 @@
             mask.style.top =
                 (
                     top -
-                    viewportRect.top
+                    containerRect.top
                 ) +
                 "px";
 
@@ -4078,7 +4081,18 @@
                     ? fullClip
                     : startClip;
 
-            this.#viewport
+            if (
+                Number.isFinite(
+                    zIndex
+                )
+            ) {
+                mask.style.zIndex =
+                    String(
+                        zIndex
+                    );
+            }
+
+            container
                 .append(
                     mask
                 );
@@ -5669,7 +5683,48 @@
                         ]
                     : undefined;
 
+            let parentZIndex;
+
+            let reverseMaskContainer =
+                this.#viewport;
+
+            let reverseMaskZIndex;
+
             if (parent) {
+                parentZIndex =
+                    parent.group
+                        .style
+                        .zIndex;
+
+                const childZIndex =
+                    Number.parseInt(
+                        entry.group
+                            .style
+                            .zIndex,
+                        10
+                    );
+
+                if (
+                    Number.isFinite(
+                        childZIndex
+                    )
+                ) {
+                    reverseMaskZIndex =
+                        childZIndex -
+                        1;
+
+                    parent.group
+                        .style
+                        .zIndex =
+                        String(
+                            reverseMaskZIndex -
+                                1
+                        );
+                }
+
+                reverseMaskContainer =
+                    this.#focusLayer;
+
                 parent.group.hidden =
                     false;
             }
@@ -5743,7 +5798,9 @@
                         destinationRect,
                         promotedRect,
                         entry.flow,
-                        true
+                        true,
+                        reverseMaskContainer,
+                        reverseMaskZIndex
                     );
 
             const translateX =
@@ -5875,6 +5932,22 @@
             reverseMask
                 .element
                 ?.remove();
+
+            if (parent) {
+                if (parentZIndex) {
+                    parent.group
+                        .style
+                        .zIndex =
+                        parentZIndex;
+                }
+                else {
+                    parent.group
+                        .style
+                        .removeProperty(
+                            "z-index"
+                        );
+                }
+            }
 
             entry.group
                 .style
