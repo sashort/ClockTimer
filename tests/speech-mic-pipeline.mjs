@@ -1681,6 +1681,10 @@ assert.match(
 );
 assert.match(
     app,
+    /canResumeTrip\(\)[\s\S]*getActiveIntervalState[\s\S]*type === "down"[\s\S]*type === "break"[\s\S]*type === "lunch"/
+);
+assert.match(
+    app,
     /speechOptionCategories[\s\S]*readGoalMode:\s*"informational"[\s\S]*readRenderedTime:\s*"informational"[\s\S]*syncStatus:\s*"informational"[\s\S]*howLong:\s*"informational"[\s\S]*when:\s*"informational"/
 );
 assert.match(
