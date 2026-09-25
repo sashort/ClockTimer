@@ -234,9 +234,7 @@ class SpeechMicBar extends HTMLElement {
                             ),
                             minmax(0, 1fr)
                         );
-                    grid-auto-flow: column;
-                    grid-auto-columns:
-                        minmax(0, 1fr);
+                    grid-auto-flow: row;
                     align-content: start;
                     align-items: start;
                     gap: 8px;
