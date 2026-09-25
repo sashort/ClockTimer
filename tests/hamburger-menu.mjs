@@ -65,7 +65,12 @@ assert.match(
 
 assert.match(
     componentSource,
-    /height: fit-content/
+    /height: auto/
+);
+
+assert.match(
+    componentSource,
+    /max-height: var\(--hamburger-menu-safe-height/
 );
 
 assert.doesNotMatch(
