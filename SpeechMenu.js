@@ -4615,7 +4615,7 @@ class SpeechMenu {
             target.fn;
 
         const actionName =
-            source
+            speechFunction
                 .match(
                     /^WMOFActions\.([A-Za-z_$][\w$]*)$/
                 )
