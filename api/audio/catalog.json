@@ -704,24 +704,18 @@
       "events": [
         {
           "offset": "0",
-          "tone": "B7",
-          "length": "1/2",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "0",
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
           "offset": "0",
-          "tone": "G8",
+          "tone": "B7",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "0.52",
+          "offset": "0",
           "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
@@ -734,14 +728,14 @@
         },
         {
           "offset": "0.52",
-          "tone": "D#8",
+          "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "1.04",
-          "tone": "D#8",
-          "length": "1",
+          "offset": "0.52",
+          "tone": "D#7",
+          "length": "1/2",
           "dynamic": "ff"
         },
         {
@@ -752,13 +746,13 @@
         },
         {
           "offset": "1.04",
-          "tone": "B8",
+          "tone": "D#8",
           "length": "1",
           "dynamic": "ff"
         },
         {
           "offset": "1.04",
-          "tone": "D#9",
+          "tone": "B7",
           "length": "1",
           "dynamic": "ff"
         }
