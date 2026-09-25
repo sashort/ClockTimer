@@ -16702,6 +16702,69 @@
                 return closeActiveSpeechSurface();
             },
 
+            speechRuntimeStarted() {
+                setSpeechButtonState(
+                    true,
+                    false
+                );
+
+                setSpeechLayoutState(
+                    true
+                );
+
+                return true;
+            },
+
+            speechRuntimeStopped() {
+                cancelPendingSpeechReady();
+
+                setSpeechButtonState(
+                    false,
+                    false
+                );
+
+                setSpeechLayoutState(
+                    false
+                );
+
+                if (speechTrainingActive) {
+                    stopInAppSpeechTraining({
+                        forced:
+                            true
+                    });
+                }
+
+                syncSpeechTrainingControls();
+
+                return true;
+            },
+
+            speechRuntimeMuted(
+                muted = true
+            ) {
+                setSpeechButtonState(
+                    true,
+                    Boolean(
+                        muted
+                    )
+                );
+
+                syncSpeechTrainingControls();
+
+                return true;
+            },
+
+            speechUtteranceStarted() {
+                void globalThis
+                    .WMOFPresentationSetters
+                    ?.dismissSpeechResponse?.({
+                        fast:
+                            true
+                    });
+
+                return true;
+            },
+
             async scheduleStartAt(
                 spokenTime,
                 {
@@ -20122,59 +20185,51 @@
 
         syncSpeechTrainingControls();
 
-        speechMicBar?.addEventListener("started", () => {
-            setSpeechButtonState(true, false);
-            setSpeechLayoutState(true);
-        });
+        speechMicBar?.addEventListener(
+            "started",
+            () =>
+                actions
+                    .speechRuntimeStarted()
+        );
 
         speechMicBar?.addEventListener(
             "utteranceStarted",
-            () => {
-                void globalThis
-                    .WMOFPresentationSetters
-                    ?.dismissSpeechResponse?.({
-                        fast: true
-                    });
-            }
+            () =>
+                actions
+                    .speechUtteranceStarted()
         );
 
-        speechMicBar?.addEventListener("stopped", () => {
-            cancelPendingSpeechReady();
-            setSpeechButtonState(false, false);
-            setSpeechLayoutState(false);
+        speechMicBar?.addEventListener(
+            "stopped",
+            () =>
+                actions
+                    .speechRuntimeStopped()
+        );
 
-            if (speechTrainingActive) {
-                stopInAppSpeechTraining({
-                    forced: true
-                });
-            }
+        speechMicBar?.addEventListener(
+            "speechCaptureEnded",
+            () =>
+                actions
+                    .speechRuntimeStopped()
+        );
 
-            syncSpeechTrainingControls();
-        });
+        speechMicBar?.addEventListener(
+            "muted",
+            () =>
+                actions
+                    .speechRuntimeMuted(
+                        true
+                    )
+        );
 
-        speechMicBar?.addEventListener("speechCaptureEnded", () => {
-            cancelPendingSpeechReady();
-            setSpeechButtonState(false, false);
-            setSpeechLayoutState(false);
-
-            if (speechTrainingActive) {
-                stopInAppSpeechTraining({
-                    forced: true
-                });
-            }
-
-            syncSpeechTrainingControls();
-        });
-
-        speechMicBar?.addEventListener("muted", () => {
-            setSpeechButtonState(true, true);
-            syncSpeechTrainingControls();
-        });
-
-        speechMicBar?.addEventListener("unmuted", () => {
-            setSpeechButtonState(true, false);
-            syncSpeechTrainingControls();
-        });
+        speechMicBar?.addEventListener(
+            "unmuted",
+            () =>
+                actions
+                    .speechRuntimeMuted(
+                        false
+                    )
+        );
 
         if (
             englishSpeech &&
