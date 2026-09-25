@@ -14186,13 +14186,6 @@
                 type === "total"
             )
         ) {
-            const label =
-                type === "standard"
-                    ? "Standard"
-                    : type === "trip"
-                        ? "Trip"
-                        : "Total";
-
             const roundedPercent =
                 Number.isFinite(percent)
                     ? Math.round(
@@ -14200,12 +14193,22 @@
                     )
                     : undefined;
 
+            const useStandardLabel =
+                type === "standard" ||
+                roundedPercent === 100;
+
+            const label =
+                useStandardLabel
+                    ? "Standard"
+                    : type === "trip"
+                        ? "Trip"
+                        : "Total";
+
             const percentText =
-                type !== "standard" &&
+                !useStandardLabel &&
                 Number.isFinite(
                     roundedPercent
-                ) &&
-                roundedPercent !== 100
+                )
                     ? " " +
                         goalFailureNumberWords(
                             roundedPercent
