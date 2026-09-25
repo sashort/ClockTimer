@@ -67,21 +67,6 @@ assert.match(
 
 assert.match(
     componentSource,
-    /reverseMaskContainer\s*=\s*this\.#focusLayer/
-);
-
-assert.match(
-    componentSource,
-    /reverseMaskZIndex\s*=\s*childZIndex\s*-\s*1/
-);
-
-assert.match(
-    componentSource,
-    /parent\.group[\s\S]*zIndex[\s\S]*reverseMaskZIndex\s*-\s*1/
-);
-
-assert.match(
-    componentSource,
     /#closePromotedSubmenu\([\s\S]*#promotionPause\(\)/
 );
 
@@ -113,6 +98,36 @@ assert.match(
 assert.match(
     componentSource,
     /#freezePane\(/
+);
+
+assert.match(
+    componentSource,
+    /#finishOpeningMeasurement\(\)[\s\S]*#freezePane\(\s*this\.#viewport\s*\)/
+);
+
+assert.match(
+    componentSource,
+    /#handleToggle\([\s\S]*#unfreezePane\(\)[\s\S]*#reset\(\)/
+);
+
+assert.match(
+    componentSource,
+    /async #promoteNested\([\s\S]*const parentTranslation\s*=/
+);
+
+assert.match(
+    componentSource,
+    /#translationAnimation\(\s*parent,/
+);
+
+assert.doesNotMatch(
+    componentSource,
+    /async #promoteNested\([\s\S]*#translationAnimation\(\s*group,/
+);
+
+assert.match(
+    componentSource,
+    /async #restoreNestedFocusLevel\([\s\S]*reverseStart/
 );
 
 assert.match(
@@ -167,11 +182,6 @@ assert.match(
 
 assert.match(
     componentSource,
-    /if\s*\(\s*!this\.#focusStack\s*\.length\s*\)\s*\{\s*this\.#unfreezePane\(\)/
-);
-
-assert.match(
-    componentSource,
     /--hamburger-menu-frozen-pane-height/
 );
 
@@ -198,11 +208,6 @@ assert.match(
 assert.match(
     componentSource,
     /#documentUsableBottom\([\s\S]*boundary[\s\S]*Math\.min/
-);
-
-assert.match(
-    componentSource,
-    /#unfreezePane\(\)[\s\S]*parentclosed/
 );
 
 const appCss =
