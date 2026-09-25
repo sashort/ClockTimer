@@ -20140,6 +20140,8 @@
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
+
+            return element;
         };
         if (englishSpeech) {
             for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
@@ -20171,6 +20173,22 @@
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
+            const readyAtNumberPadCommand =
+                installSpeechCommand(
+                    "readyAtContinuation",
+                    "continueStartAt",
+                    numberPadDialog,
+                    false,
+                    "clock",
+                    "spokenTime"
+                );
+
+            readyAtNumberPadCommand
+                ?.setAttribute(
+                    "speech-index",
+                    "10"
+                );
+
             installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
             installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
