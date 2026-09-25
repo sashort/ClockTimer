@@ -5,6 +5,25 @@
     const STYLE_ID =
         "hamburger-menu-base-styles";
 
+    const PROMOTION_DURATION =
+        750;
+
+    const PROMOTION_PAUSE =
+        75;
+
+    const ZOOM_DURATION =
+        520;
+
+    const wait =
+        milliseconds =>
+            new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        milliseconds
+                    )
+            );
+
     const px =
         value => {
             const number =
@@ -65,6 +84,8 @@
             "  bottom: auto;",
             "  margin: 0;",
             "  max-width: calc(100vw - 16px);",
+            "  height: fit-content;",
+            "  min-height: 0;",
             "  max-height: var(--hamburger-menu-safe-height, calc(100dvh - 16px));",
             "  overflow: visible;",
             "  box-sizing: border-box;",
@@ -93,7 +114,7 @@
             "}",
             ":where(hamburger-menu) .hamburger-menu-source {",
             "  width: 100%;",
-            "  min-height: 100%;",
+            "  min-height: 0;",
             "  display: flex;",
             "  align-items: stretch;",
             "}",
@@ -137,7 +158,7 @@
             "  z-index: 8;",
             "  width: 100%;",
             "  min-height: 0;",
-            "  overflow-y: hidden;",
+            "  overflow: hidden;",
             "  pointer-events: auto;",
             "  box-sizing: border-box;",
             "  display: flex;",
@@ -153,6 +174,7 @@
             "  justify-content: flex-start;",
             "}",
             ":where(hamburger-menu) .hamburger-menu-focus-layer[data-scrollable=\"true\"] {",
+            "  overflow-x: hidden;",
             "  overflow-y: auto;",
             "  overscroll-behavior-y: contain;",
             "  scrollbar-width: thin;",
@@ -173,6 +195,7 @@
             "  z-index: 9;",
             "  width: 100%;",
             "  margin: 0;",
+            "  background: var(--hamburger-menu-focus-background, transparent);",
             "  will-change: transform;",
             "  box-sizing: border-box;",
             "}",
@@ -194,6 +217,9 @@
             "}",
             ":where(hamburger-menu) .hamburger-menu-transition-hidden {",
             "  pointer-events: none !important;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-zooming {",
+            "  will-change: transform;",
             "}",
             "@position-try --hamburger-above-start {",
             "  top: auto;",
@@ -465,6 +491,21 @@
                         "true"
                     );
 
+                this.style
+                    .setProperty(
+                        "--hamburger-menu-panel-height",
+                        "auto"
+                    );
+
+                this.#viewport
+                    .style
+                    .removeProperty(
+                        "height"
+                    );
+
+                this.#indicator.hidden =
+                    true;
+
                 this.refresh();
 
                 return;
@@ -580,7 +621,10 @@
                         this.#layoutFrame =
                             undefined;
 
-                        if (!this.isOpen) {
+                        if (
+                            !this.isOpen ||
+                            this.#transitionBusy
+                        ) {
                             return;
                         }
 
@@ -1066,13 +1110,25 @@
                 this.#popover.hidden =
                     false;
 
-                this.#updateSafeGeometry();
-                this.#layoutPanels();
+                this.style
+                    .setProperty(
+                        "--hamburger-menu-panel-height",
+                        "auto"
+                    );
+
+                this.#viewport
+                    .style
+                    .removeProperty(
+                        "height"
+                    );
+
+                this.#indicator.hidden =
+                    true;
 
                 void nextFrame()
                     .then(
                         () => {
-                            this.#reconcilePlacement();
+                            this.refresh();
 
                             return nextFrame();
                         }
