@@ -132,7 +132,17 @@ assert.match(
 
 assert.match(
     componentSource,
-    /hamburger-menu-promotion-mask/
+    /#hasVisibleChild\(/
+);
+
+assert.match(
+    componentSource,
+    /coverageState/
+);
+
+assert.match(
+    componentSource,
+    /coverageAnimationId/
 );
 
 assert.doesNotMatch(
