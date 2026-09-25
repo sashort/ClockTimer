@@ -71,7 +71,7 @@
                 speechVelocity: clamp(
                     settings.speechVelocity,
                     0.5,
-                    2,
+                    3,
                     current.speechVelocity
                 ),
                 toneVelocity: clamp(
