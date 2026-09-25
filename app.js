@@ -14,7 +14,8 @@
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
-        customTripLogDates: "wmof.clock.customTripLogDates"
+        customTripLogDates: "wmof.clock.customTripLogDates",
+        audioSettings: "wmof.clock.audioSettings"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
@@ -23,6 +24,37 @@
         lateBreakBehavior: "showLateWindow",
         syncGoals: false
     };
+    const AUDIO_ANNOUNCEMENTS = Object.freeze([
+        ["trip-started", "Trip Started"],
+        ["trip-started-early", "Trip Started Early"],
+        ["trip-started-late", "Trip Started Late"],
+        ["break-started", "Break Started"],
+        ["short-break-started", "Short Break Started"],
+        ["lunch-started", "Lunch Started"],
+        ["trip-resumed-early", "Trip Resumed Early"],
+        ["trip-resumed-automatically", "Trip Resumed Automatically"],
+        ["trip-resumed-after-break", "Trip Resumed After Break"],
+        ["down-time-started", "Down Time Started"],
+        ["trip-resumed-from-down", "Trip Resumed From Down"],
+        ["trip-ended", "Trip Ended"],
+        ["goal-failed", "Goal Failed"],
+        ["lunch-clock-out", "Lunch Clock Out"],
+        ["lunch-clock-in", "Lunch Clock In"]
+    ]);
+
+    const AUDIO_DEFAULTS = Object.freeze({
+        speechVolume: 1,
+        toneVolume: 1,
+        masterVelocity: 1,
+        speechVelocity: 1,
+        toneVelocity: 1,
+        masters: Object.freeze({
+            chime: true,
+            summary: true,
+            details: true
+        })
+    });
+
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
         timerMode: "elapsed",
@@ -798,6 +830,20 @@
     const tripSetStartsNowTimestampLabel = tripSetStartsNow.querySelector(".trip-now-timestamp-label");
     const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
+    const audioSettingsDialog = $("#audioSettingsDialog");
+    const audioSettingsForm = $("#audioSettingsForm");
+    const audioAnnouncementRows = $("#audioAnnouncementRows");
+    const audioSpeechVolume = $("#audioSpeechVolume");
+    const audioToneVolume = $("#audioToneVolume");
+    const audioMasterVelocity = $("#audioMasterVelocity");
+    const audioSpeechVelocity = $("#audioSpeechVelocity");
+    const audioToneVelocity = $("#audioToneVelocity");
+    const audioSpeechVolumeValue = $("#audioSpeechVolumeValue");
+    const audioToneVolumeValue = $("#audioToneVolumeValue");
+    const audioMasterVelocityValue = $("#audioMasterVelocityValue");
+    const audioSpeechVelocityValue = $("#audioSpeechVelocityValue");
+    const audioToneVelocityValue = $("#audioToneVelocityValue");
+    const audioSettingsReset = $("#audioSettingsReset");
 
     let loginPromptTimeout;
     let loginPending = false;
@@ -903,6 +949,385 @@
     let settingsHelpAnimation;
     let tripListButtonAnimation;
     let tripListBodyAnimationFrame;
+
+    function defaultAudioSettings() {
+        const rows = {};
+
+        for (const [key] of AUDIO_ANNOUNCEMENTS) {
+            rows[key] = {
+                enabled: true,
+                chime: 0,
+                summary: 0,
+                details: 0
+            };
+        }
+
+        return {
+            speechVolume: 1,
+            toneVolume: 1,
+            masterVelocity: 1,
+            speechVelocity: 1,
+            toneVelocity: 1,
+            masters: {
+                chime: true,
+                summary: true,
+                details: true
+            },
+            rows
+        };
+    }
+
+    function normalizeAudioSettings(source) {
+        const settings = defaultAudioSettings();
+        const value =
+            source && typeof source === "object"
+                ? source
+                : {};
+        const clamp =
+            (candidate, minimum, maximum, fallback) => {
+                const numeric = Number(candidate);
+                return Number.isFinite(numeric)
+                    ? Math.max(minimum, Math.min(maximum, numeric))
+                    : fallback;
+            };
+
+        settings.speechVolume =
+            clamp(value.speechVolume, 0, 1, 1);
+        settings.toneVolume =
+            clamp(value.toneVolume, 0, 1, 1);
+        settings.masterVelocity =
+            clamp(value.masterVelocity, 0.5, 3, 1);
+        settings.speechVelocity =
+            clamp(value.speechVelocity, 0.5, 3, 1);
+        settings.toneVelocity =
+            clamp(value.toneVelocity, 0.5, 3, 1);
+
+        for (const layer of ["chime", "summary", "details"]) {
+            if (typeof value.masters?.[layer] === "boolean") {
+                settings.masters[layer] =
+                    value.masters[layer];
+            }
+        }
+
+        for (const [key] of AUDIO_ANNOUNCEMENTS) {
+            const row = value.rows?.[key];
+            if (!row || typeof row !== "object") continue;
+
+            if (typeof row.enabled === "boolean") {
+                settings.rows[key].enabled =
+                    row.enabled;
+            }
+
+            for (const layer of ["chime", "summary", "details"]) {
+                if (row[layer] === -1 || row[layer] === 0) {
+                    settings.rows[key][layer] =
+                        row[layer];
+                }
+            }
+        }
+
+        return settings;
+    }
+
+    function loadAudioSettings() {
+        try {
+            const raw =
+                safeStorageGet(
+                    STORAGE.audioSettings
+                );
+            return normalizeAudioSettings(
+                raw ? JSON.parse(raw) : undefined
+            );
+        }
+        catch {
+            return defaultAudioSettings();
+        }
+    }
+
+    let audioSettings =
+        loadAudioSettings();
+
+    function saveAudioSettings() {
+        safeStorageSet(
+            STORAGE.audioSettings,
+            JSON.stringify(audioSettings)
+        );
+    }
+
+    function applyAudioOutputSettings() {
+        globalThis.WMOFAudio?.configureOutput?.({
+            speechVolume:
+                audioSettings.speechVolume,
+            toneVolume:
+                audioSettings.toneVolume,
+            speechVelocity:
+                audioSettings.speechVelocity,
+            toneVelocity:
+                audioSettings.toneVelocity
+        });
+    }
+
+    function audioCellUserEnabled(
+        announcement,
+        layer
+    ) {
+        const row =
+            audioSettings.rows[
+                announcement
+            ];
+
+        return Boolean(
+            row &&
+            row.enabled !== false &&
+            audioSettings.masters[layer] !== false &&
+            row[layer] !== -1
+        );
+    }
+
+    function buildAudioAnnouncementRows() {
+        if (!audioAnnouncementRows) return;
+
+        const fragment =
+            document.createDocumentFragment();
+
+        for (const [key, label] of AUDIO_ANNOUNCEMENTS) {
+            const row =
+                document.createElement("tr");
+            row.dataset.audioAnnouncement =
+                key;
+
+            const heading =
+                document.createElement("th");
+            heading.scope = "row";
+
+            const labelElement =
+                document.createElement("label");
+            const master =
+                document.createElement("input");
+            master.type = "checkbox";
+            master.dataset.audioRowMaster = "";
+            labelElement.append(
+                master,
+                document.createTextNode(" " + label)
+            );
+            heading.append(labelElement);
+            row.append(heading);
+
+            for (const layer of ["chime", "summary", "details"]) {
+                const cell =
+                    document.createElement("td");
+                const input =
+                    document.createElement("input");
+                input.type = "checkbox";
+                input.dataset.audioLayer =
+                    layer;
+                input.setAttribute(
+                    "aria-label",
+                    label + " " + layer
+                );
+                cell.append(input);
+                row.append(cell);
+            }
+
+            fragment.append(row);
+        }
+
+        audioAnnouncementRows.replaceChildren(
+            fragment
+        );
+    }
+
+    function renderAudioSettings() {
+        if (!audioSettingsDialog) return;
+
+        audioSpeechVolume.value =
+            String(audioSettings.speechVolume);
+        audioToneVolume.value =
+            String(audioSettings.toneVolume);
+        audioMasterVelocity.value =
+            String(audioSettings.masterVelocity);
+        audioSpeechVelocity.value =
+            String(audioSettings.speechVelocity);
+        audioToneVelocity.value =
+            String(audioSettings.toneVelocity);
+
+        audioSpeechVolumeValue.textContent =
+            Math.round(audioSettings.speechVolume * 100) + "%";
+        audioToneVolumeValue.textContent =
+            Math.round(audioSettings.toneVolume * 100) + "%";
+        audioMasterVelocityValue.textContent =
+            audioSettings.masterVelocity.toFixed(2) + "×";
+        audioSpeechVelocityValue.textContent =
+            audioSettings.speechVelocity.toFixed(2) + "×";
+        audioToneVelocityValue.textContent =
+            audioSettings.toneVelocity.toFixed(2) + "×";
+
+        for (const input of audioSettingsDialog.querySelectorAll("[data-audio-master]")) {
+            input.checked =
+                audioSettings.masters[
+                    input.dataset.audioMaster
+                ] !== false;
+        }
+
+        for (const row of audioAnnouncementRows?.querySelectorAll("[data-audio-announcement]") || []) {
+            const key =
+                row.dataset.audioAnnouncement;
+            const state =
+                audioSettings.rows[key];
+            if (!state) continue;
+
+            row.querySelector("[data-audio-row-master]").checked =
+                state.enabled !== false;
+
+            for (const input of row.querySelectorAll("[data-audio-layer]")) {
+                const layer =
+                    input.dataset.audioLayer;
+                input.checked =
+                    state[layer] !== -1;
+                input.disabled =
+                    state.enabled === false ||
+                    audioSettings.masters[layer] === false;
+            }
+        }
+    }
+
+    function shiftMasterVelocity(value) {
+        const next =
+            Math.max(
+                0.5,
+                Math.min(
+                    3,
+                    Number(value)
+                )
+            );
+
+        if (!Number.isFinite(next)) return;
+
+        const delta =
+            next -
+            audioSettings.masterVelocity;
+
+        audioSettings.masterVelocity =
+            next;
+        audioSettings.speechVelocity =
+            Math.max(
+                0.5,
+                Math.min(
+                    3,
+                    audioSettings.speechVelocity +
+                        delta
+                )
+            );
+        audioSettings.toneVelocity =
+            Math.max(
+                0.5,
+                Math.min(
+                    3,
+                    audioSettings.toneVelocity +
+                        delta
+                )
+            );
+    }
+
+    buildAudioAnnouncementRows();
+    renderAudioSettings();
+    applyAudioOutputSettings();
+
+    audioSettingsDialog?.addEventListener(
+        "opening",
+        renderAudioSettings
+    );
+
+    audioSettingsForm?.addEventListener(
+        "input",
+        event => {
+            const target =
+                event.target;
+
+            if (target === audioSpeechVolume) {
+                audioSettings.speechVolume =
+                    Number(target.value);
+            }
+            else if (target === audioToneVolume) {
+                audioSettings.toneVolume =
+                    Number(target.value);
+            }
+            else if (target === audioMasterVelocity) {
+                shiftMasterVelocity(
+                    target.value
+                );
+            }
+            else if (target === audioSpeechVelocity) {
+                audioSettings.speechVelocity =
+                    Number(target.value);
+            }
+            else if (target === audioToneVelocity) {
+                audioSettings.toneVelocity =
+                    Number(target.value);
+            }
+            else if (target.matches?.("[data-audio-master]")) {
+                audioSettings.masters[
+                    target.dataset.audioMaster
+                ] =
+                    target.checked;
+            }
+            else {
+                const row =
+                    target.closest?.(
+                        "[data-audio-announcement]"
+                    );
+                const state =
+                    audioSettings.rows[
+                        row?.dataset
+                            .audioAnnouncement
+                    ];
+
+                if (
+                    state &&
+                    target.matches?.(
+                        "[data-audio-row-master]"
+                    )
+                ) {
+                    state.enabled =
+                        target.checked;
+                }
+                else if (
+                    state &&
+                    target.matches?.(
+                        "[data-audio-layer]"
+                    )
+                ) {
+                    // Only this table toggles persistent user-disabled state.
+                    state[
+                        target.dataset.audioLayer
+                    ] =
+                        target.checked
+                            ? 0
+                            : -1;
+                }
+            }
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+        }
+    );
+
+    audioSettingsReset?.addEventListener(
+        "click",
+        () => {
+            audioSettings =
+                defaultAudioSettings();
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+        }
+    );
+
+    audioSettingsForm?.addEventListener(
+        "submit",
+        saveAudioSettings
+    );
 
     function getPressedShadow(baseShadow, pressedShadow) {
         return !baseShadow || baseShadow === "none"
@@ -11307,6 +11732,23 @@
             catch (error) { if (!error.clockTimerOffline) throw error; }
         }
 
+        if (
+            draft
+                .endStartTransition ===
+                true &&
+            draft
+                .startTimeSetToNow ===
+                true
+        ) {
+            // The 5-note transition normally preloads one suppression for
+            // the upcoming Start Trip cue. If Actual Start is pushed to Now,
+            // cancel that one-shot suppression so the normal start chime is
+            // allowed to play as the second chime.
+            cancelSemanticDisable(
+                "chime"
+            );
+        }
+
         await clockTimer.start({
             standardTime,
             creationDate: draft.creationDate,
@@ -11356,7 +11798,8 @@
         tripSettingsSession = {
             live: tripIsLive(),
             original: cloneTripSettingsValues(values),
-            values: cloneTripSettingsValues(values)
+            values: cloneTripSettingsValues(values),
+            startTimeSetToNow: false
         };
         return tripSettingsSession;
     }
@@ -11556,13 +11999,17 @@
             if (!tripDraft) return false;
             Object.assign(tripDraft, {
                 deferred: Boolean(values.deferred),
-            nonProduction: values.nonProduction === true,
+                nonProduction: values.nonProduction === true,
                 standardTime: values.standardTime,
                 creationTime: values.creationTime,
                 creationDate: values.creationDate,
                 scheduledStart: values.scheduledStart,
                 startTime: values.startTime,
-                syncGoals: Boolean(values.syncGoals)
+                syncGoals: Boolean(values.syncGoals),
+                startTimeSetToNow:
+                    tripSettingsSession
+                        ?.startTimeSetToNow ===
+                    true
             });
             return true;
         }
@@ -12474,7 +12921,8 @@
     async function beginNewTripWorkflow({
         initialValue,
         tripMoment,
-        signal
+        signal,
+        endStartTransition = false
     } = {}) {
         if (signal?.aborted) {
             return false;
@@ -12509,12 +12957,20 @@
         tripDraft = deferredDraft ? {
             ...deferredDraft,
             deferred: false,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                ),
             ...resumedTripStarts(deferredDraft, moment)
         } : {
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
-            syncGoals: tripPreferences.syncGoals
+            syncGoals: tripPreferences.syncGoals,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                )
         };
 
         renderDeferredTrip();
@@ -12940,17 +13396,129 @@
         const tripMoment =
             effectiveTime;
 
-        await clockTimer.stop(
-            transactionTime
+        endingIntoNewTrip =
+            true;
+
+        // Suppress exactly the next ordinary chime: the legacy 3-note
+        // End Trip cue emitted by tripEnded.
+        incrementSemanticDisable(
+            "chime"
         );
+
+        try {
+            await clockTimer.stop(
+                transactionTime
+            );
+        }
+        finally {
+            endingIntoNewTrip =
+                false;
+        }
 
         await clockTimer
             .resetCompletedTrip();
 
-        await beginNewTripWorkflow({
-            initialValue: "",
-            tripMoment
-        });
+        const opened =
+            await beginNewTripWorkflow({
+                initialValue: "",
+                tripMoment,
+                endStartTransition: true
+            });
+
+        const speech =
+            pendingEndStartTripSpeech;
+
+        pendingEndStartTripSpeech =
+            undefined;
+
+        if (
+            opened &&
+            tripDraftUsesEndStartTransition()
+        ) {
+            const endChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-ended",
+                    "chime"
+                );
+            const startChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-started",
+                    "chime"
+                );
+            const audio =
+                globalThis.WMOFAudio;
+            let transitionSong;
+
+            if (
+                endChimeEnabled &&
+                startChimeEnabled
+            ) {
+                transitionSong =
+                    "trip-ended-started";
+            }
+            else if (endChimeEnabled) {
+                transitionSong =
+                    "trip-ended";
+            }
+            else if (startChimeEnabled) {
+                transitionSong =
+                    "trip-started";
+            }
+
+            let transitionChimePlayed =
+                false;
+
+            if (
+                transitionSong &&
+                consumeSemanticAction(
+                    "chime"
+                )
+            ) {
+                try {
+                    const song =
+                        await audio?.startSong?.(
+                            transitionSong,
+                            {
+                                bpm: 180,
+                                includeSpeech: false
+                            }
+                        );
+                    transitionChimePlayed =
+                        Boolean(song);
+                    await song?.finished;
+                }
+                catch (error) {
+                    console.error(
+                        "Audio playback failed:",
+                        transitionSong,
+                        error
+                    );
+                }
+            }
+
+            if (speech) {
+                audio?.speak?.(
+                    speech
+                );
+            }
+
+            if (
+                transitionChimePlayed &&
+                startChimeEnabled
+            ) {
+                // Start's chime has already been represented by either
+                // the 5-tone segue or the standalone Start cue.
+                incrementSemanticDisable(
+                    "chime"
+                );
+            }
+        }
+        else if (speech) {
+            await playSemanticSongThenSpeak(
+                "trip-ended",
+                speech
+            );
+        }
     }
 
     let speechBreakPromptState;
@@ -13329,9 +13897,172 @@
     for(const element of [scopeConnectionButton,toggleSyncGoalButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
 
     // Semantic ClockTimer event integration points.
-    // These bodies intentionally do not change UI yet; future speech synthesis and
-    // other user-facing reactions should be implemented here rather than decoding
-    // lower-level ClockTimer events elsewhere.
+    // Notification layers use nestable disable counts so callers can suppress
+    // one layer temporarily without disturbing another caller's suppression.
+    const semanticDisableCounts = {
+        chime: 0,
+        summary: 0,
+        details: 0
+    };
+
+    function setSemanticDisable(
+        layer,
+        value
+    ) {
+        if (
+            !Object.hasOwn(
+                semanticDisableCounts,
+                layer
+            )
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        const next =
+            Number(value);
+
+        if (
+            !Number.isInteger(next) ||
+            next < -1
+        ) {
+            throw new TypeError(
+                "Semantic disable values must be -1 or a non-negative integer."
+            );
+        }
+
+        semanticDisableCounts[layer] =
+            next;
+
+        return next;
+    }
+
+    function incrementSemanticDisable(
+        layer
+    ) {
+        if (
+            semanticDisableCounts[
+                layer
+            ] < 0
+        ) {
+            return -1;
+        }
+
+        semanticDisableCounts[layer] +=
+            1;
+
+        return semanticDisableCounts[layer];
+    }
+
+    function consumeSemanticAction(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state === 0
+        ) {
+            return true;
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return false;
+    }
+
+    function cancelSemanticDisable(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return semanticDisableCounts[layer];
+    }
+
+    globalThis.WMOFSemanticNotifications =
+        Object.freeze({
+            setDisable:
+                setSemanticDisable,
+            incrementDisable:
+                incrementSemanticDisable,
+            consumeAction:
+                consumeSemanticAction,
+            cancelDisable:
+                cancelSemanticDisable,
+            get disableCounts() {
+                return {
+                    ...semanticDisableCounts
+                };
+            }
+        });
+
+    function consumeAnnouncementAction(
+        announcement,
+        layer
+    ) {
+        if (
+            !audioCellUserEnabled(
+                announcement,
+                layer
+            )
+        ) {
+            return {
+                perform: false,
+                userDisabled: true,
+                runtimeSuppressed: false
+            };
+        }
+
+        const before =
+            semanticDisableCounts[layer];
+        const perform =
+            consumeSemanticAction(layer);
+
+        return {
+            perform,
+            userDisabled: false,
+            runtimeSuppressed:
+                !perform && before > 0
+        };
+    }
+
     function reserveSemanticEvent(event, purpose) {
         const detail = event.detail;
         void detail;
@@ -13341,8 +14072,21 @@
     function playSemanticSong(name, options = {}) {
         const audio =
             globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                name,
+                "chime"
+            );
+        const summary =
+            consumeAnnouncementAction(
+                name,
+                "summary"
+            );
 
-        if (!audio?.startSong) {
+        if (
+            (!chime.perform && !summary.perform) ||
+            !audio?.startSong
+        ) {
             return;
         }
 
@@ -13351,6 +14095,10 @@
                 name,
                 {
                     bpm: 180,
+                    includeTones:
+                        chime.perform,
+                    includeSpeech:
+                        summary.perform,
                     ...options
                 }
             )
@@ -13371,37 +14119,51 @@
     ) {
         const audio =
             globalThis.WMOFAudio;
-
-        try {
-            const song =
-                await audio
-                    ?.startSong?.(
-                        name,
-                        {
-                            bpm: 180,
-                            ...options
-                        }
-                    );
-
-            await song
-                ?.finished;
-        }
-        catch (error) {
-            console.error(
-                "Audio playback failed:",
+        const chime =
+            consumeAnnouncementAction(
                 name,
-                error
+                "chime"
             );
+
+        let played =
+            false;
+
+        if (chime.perform) {
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            name,
+                            {
+                                bpm: 180,
+                                includeSpeech: false,
+                                ...options
+                            }
+                        );
+
+                played =
+                    Boolean(song);
+
+                await song
+                    ?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    name,
+                    error
+                );
+            }
         }
 
-        if (
-            speech &&
-            audio?.speak
-        ) {
-            audio.speak(
-                speech
-            );
+        if (speech && audio?.speak) {
+            audio.speak(speech);
         }
+
+        return {
+            played,
+            chime
+        };
     }
 
     // Early/late announcements are about the timing gain or loss for
@@ -13409,7 +14171,8 @@
     function tripTimingSpeech(
         detail,
         lead,
-        disposition
+        disposition,
+        announcement
     ) {
         const milliseconds =
             Number(
@@ -13417,23 +14180,42 @@
                     ?.timeDifferenceMilliseconds
             );
 
+        const parts = [];
+
         if (
-            !Number.isFinite(milliseconds)
+            consumeAnnouncementAction(
+                announcement,
+                "summary"
+            ).perform
         ) {
-            return lead + ".";
+            parts.push(
+                lead + "."
+            );
         }
 
-        return (
-            lead +
-            ". " +
-            formatGoalFailureDuration(
-                Math.abs(
-                    milliseconds
-                )
-            ) +
-            " " +
-            disposition +
-            "."
+        if (
+            Number.isFinite(
+                milliseconds
+            ) &&
+            consumeAnnouncementAction(
+                announcement,
+                "details"
+            ).perform
+        ) {
+            parts.push(
+                formatGoalFailureDuration(
+                    Math.abs(
+                        milliseconds
+                    )
+                ) +
+                " " +
+                disposition +
+                "."
+            );
+        }
+
+        return parts.join(
+            " "
         );
     }
 
@@ -13458,102 +14240,227 @@
         );
     }
 
-    function tripEndTotalSpeech(
+    function renderedGoalLabel(
         detail
     ) {
-        const total =
-            detail
-                ?.summary
-                ?.total;
-
-        const standard =
-            Number(
-                total
-                    ?.standardTimeMilliseconds
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
             );
-
-        const counted =
-            Number(
-                total
-                    ?.countedTimeElapsedMilliseconds
-            );
-
-        const allowanceCredit =
-            Number(
-                total
-                    ?.allowanceCreditMilliseconds ??
-                0
-            );
-
         const percentGoal =
             Number(
-                total
-                    ?.percentGoal
+                selected?.percentGoal
             );
+        const roundedPercent =
+            Number.isFinite(percentGoal)
+                ? Math.round(
+                    percentGoal * 100
+                )
+                : undefined;
 
-        const countedPercent =
+        if (
+            scope === "standard" ||
+            roundedPercent === 100
+        ) {
+            return "Standard Goal";
+        }
+
+        if (!Number.isFinite(roundedPercent)) {
+            return "";
+        }
+
+        const type =
+            scope === "total"
+                ? "Total"
+                : "Trip";
+
+        return (
+            type +
+            " Goal " +
+            goalFailureNumberWords(
+                roundedPercent
+            ) +
+            " percent"
+        );
+    }
+
+    function renderedGoalRemainingMilliseconds(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
+            );
+        const standard =
             Number(
-                total
-                    ?.countedPercent
+                selected?.standardTimeMilliseconds
+            );
+        const counted =
+            Number(
+                selected?.countedTimeElapsedMilliseconds
+            );
+        const percentGoal =
+            Number(
+                selected?.percentGoal
+            );
+        const allowanceCredit =
+            Number(
+                selected?.allowanceCreditMilliseconds ??
+                0
             );
 
         if (
             !Number.isFinite(standard) ||
             !Number.isFinite(counted) ||
             !Number.isFinite(percentGoal) ||
-            percentGoal <= 0 ||
-            !Number.isFinite(countedPercent)
+            percentGoal <= 0
         ) {
-            return "Trip ended.";
+            return undefined;
         }
 
-        const allowed =
+        return Math.round(
             standard /
                 percentGoal +
             (
-                Number.isFinite(
-                    allowanceCredit
-                )
+                Number.isFinite(allowanceCredit)
                     ? allowanceCredit
                     : 0
-            );
-
-        const remaining =
-            Math.round(
-                allowed - counted
-            );
-
-        const parts = [
-            "Trip ended.",
-            "Total percent: " +
-                formatSpokenPercent(
-                    countedPercent
-                ) +
-                "."
-        ];
-
-        if (remaining > 0) {
-            parts.push(
-                formatGoalFailureDuration(
-                    remaining
-                ) +
-                " banked."
-            );
-        }
-        else if (remaining < 0) {
-            parts.push(
-                formatGoalFailureDuration(
-                    Math.abs(
-                        remaining
-                    )
-                ) +
-                " over."
-            );
-        }
-
-        return parts.join(
-            " "
+            ) -
+            counted
         );
+    }
+
+    function tripStartGoalDetailSpeech(
+        detail
+    ) {
+        const remaining =
+            renderedGoalRemainingMilliseconds(
+                detail
+            );
+        const label =
+            renderedGoalLabel(
+                detail
+            );
+
+        if (
+            !Number.isFinite(remaining) ||
+            remaining <= 0 ||
+            !label
+        ) {
+            return "";
+        }
+
+        return (
+            formatGoalFailureDuration(
+                remaining
+            ) +
+            " until " +
+            label +
+            "."
+        );
+    }
+
+    function tripEndTotalSpeech(
+        detail
+    ) {
+        const total =
+            detail?.summary?.total;
+        const countedPercent =
+            Number(
+                total?.countedPercent
+            );
+        const parts = [];
+        const summary =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "details"
+            );
+
+        if (summary.perform) {
+            parts.push(
+                "Trip ended."
+            );
+
+            if (
+                Number.isFinite(
+                    countedPercent
+                )
+            ) {
+                parts.push(
+                    "Total percent: " +
+                        formatSpokenPercent(
+                            countedPercent
+                        ) +
+                        "."
+                );
+            }
+        }
+
+        if (details.perform) {
+            const remaining =
+                renderedGoalRemainingMilliseconds(
+                    detail
+                );
+            const label =
+                renderedGoalLabel(
+                    detail
+                );
+
+            if (
+                Number.isFinite(remaining) &&
+                label
+            ) {
+                if (remaining > 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
+                            remaining
+                        ) +
+                        " banked toward " +
+                        label +
+                        "."
+                    );
+                }
+                else if (remaining < 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
+                            Math.abs(
+                                remaining
+                            )
+                        ) +
+                        " over " +
+                        label +
+                        "."
+                    );
+                }
+            }
+        }
+
+        return parts.join(" ");
     }
 
     let lunchClockCueState;
@@ -13739,31 +14646,120 @@
             undefined;
     }
 
-    function onTripStarted(event) {
-        reserveSemanticEvent(event, "Trip started on time");
-        playSemanticSong("trip-started");
+    let endingIntoNewTrip =
+        false;
+
+    let pendingEndStartTripSpeech;
+
+    function tripDraftUsesEndStartTransition() {
+        return (
+            tripDraft
+                ?.endStartTransition ===
+            true
+        );
+    }
+
+
+
+
+    async function onTripStarted(event) {
+        reserveSemanticEvent(
+            event,
+            "Trip started on time"
+        );
+
+        const audio =
+            globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                "trip-started",
+                "chime"
+            );
+        const summary =
+            consumeAnnouncementAction(
+                "trip-started",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-started",
+                "details"
+            );
+        const parts = [];
+
+        if (summary.perform) {
+            parts.push(
+                chime.runtimeSuppressed &&
+                !chime.userDisabled
+                    ? "Trip in Progress."
+                    : "Trip started."
+            );
+        }
+
+        if (details.perform) {
+            const detailSpeech =
+                tripStartGoalDetailSpeech(
+                    event.detail
+                );
+            if (detailSpeech) {
+                parts.push(
+                    detailSpeech
+                );
+            }
+        }
+
+        if (chime.perform) {
+            try {
+                const song =
+                    await audio?.startSong?.(
+                        "trip-started",
+                        {
+                            bpm: 180,
+                            includeSpeech: false
+                        }
+                    );
+                await song?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    "trip-started",
+                    error
+                );
+            }
+        }
+
+        if (parts.length) {
+            audio?.speak?.(
+                parts.join(" ")
+            );
+        }
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
+
         void playSemanticSongThenSpeak(
             "trip-started-early",
             tripTimingSpeech(
                 event.detail,
                 "Trip started early",
-                "saved"
+                "saved",
+                "trip-started-early"
             )
         );
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
+
         void playSemanticSongThenSpeak(
             "trip-started-late",
             tripTimingSpeech(
                 event.detail,
                 "Trip started late",
-                "lost"
+                "lost",
+                "trip-started-late"
             )
         );
     }
@@ -13798,7 +14794,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip resumed early",
-                "saved"
+                "saved",
+                "trip-resumed-early"
             )
         );
         finishLunchClockCues(
@@ -13821,7 +14818,8 @@
             tripTimingSpeech(
                 event.detail,
                 "Trip resumed",
-                "lost"
+                "lost",
+                "trip-resumed-after-break"
             )
         );
         finishLunchClockCues(
@@ -13841,11 +14839,32 @@
 
     function onTripEnded(event) {
         reserveSemanticEvent(event, "Trip ended");
-        void playSemanticSongThenSpeak(
-            "trip-ended",
+
+        const speech =
             tripEndTotalSpeech(
                 event.detail
-            )
+            );
+
+        if (
+            endingIntoNewTrip
+        ) {
+            pendingEndStartTripSpeech =
+                speech;
+
+            // The direct end->start workflow preloads one chime suppression.
+            // Attempting the ordinary End Trip cue here consumes that slot,
+            // so the legacy 3-note cue is skipped without special casing the
+            // audio helper itself.
+            consumeSemanticAction(
+                "chime"
+            );
+
+            return;
+        }
+
+        void playSemanticSongThenSpeak(
+            "trip-ended",
+            speech
         );
     }
 
@@ -14073,32 +15092,39 @@
                 ? detail.goals
                 : [];
 
-        const standardFailed =
-            goals.some(
-                goal =>
-                    goal?.type ===
-                        "standard"
-            );
-
         const percentMode =
             normalizePercentMode(
                 clockTimer.percentMode
             );
 
-        // In fixed Trip/Total modes, crossing Standard is its own temporal
-        // boundary announcement. Do not combine it with the fixed goal.
-        if (
-            standardFailed &&
-            (
-                percentMode === "trip" ||
-                percentMode === "total"
-            )
-        ) {
-            return "Standard Goal Failed.";
-        }
+        const announcedGoals =
+            percentMode === "trip"
+                ? goals.filter(
+                    goal =>
+                        goal?.type ===
+                            "standard" ||
+                        goal?.type ===
+                            "trip"
+                )
+                : percentMode === "total"
+                    ? goals.filter(
+                        goal =>
+                            goal?.type ===
+                                "standard" ||
+                            goal?.type ===
+                                "total"
+                    )
+                    : goals;
+
+        const standardFailed =
+            announcedGoals.some(
+                goal =>
+                    goal?.type ===
+                        "standard"
+            );
 
         const belowStandardFailed =
-            goals.some(
+            announcedGoals.some(
                 goal => {
                     const percent =
                         Number(
@@ -14116,120 +15142,156 @@
                 }
             );
 
-        const sentences = [];
+        const summarySentences = [];
 
-        if (standardFailed) {
-            sentences.push(
+        // In fixed Trip/Total modes, crossing Standard is its own temporal
+        // boundary announcement. Do not combine it with the fixed goal.
+        if (
+            standardFailed &&
+            (
+                percentMode === "trip" ||
+                percentMode === "total"
+            )
+        ) {
+            summarySentences.push(
                 "Standard Goal Failed."
             );
         }
-
-        for (const goal of goals) {
-            if (
-                goal?.type ===
-                    "trip"
-            ) {
-                sentences.push(
-                    "Trip Goal Failed."
+        else {
+            if (standardFailed) {
+                summarySentences.push(
+                    "Standard Goal Failed."
                 );
             }
-            else if (
-                goal?.type ===
-                    "total"
-            ) {
-                sentences.push(
-                    "Total Goal Failed."
-                );
+
+            for (const goal of announcedGoals) {
+                if (
+                    goal?.type ===
+                        "trip"
+                ) {
+                    summarySentences.push(
+                        "Trip Goal Failed."
+                    );
+                }
+                else if (
+                    goal?.type ===
+                        "total"
+                ) {
+                    summarySentences.push(
+                        "Total Goal Failed."
+                    );
+                }
             }
         }
 
+        const detailSentences = [];
         const fallback =
             detail.fallback;
 
-        if (!fallback) {
-            if (belowStandardFailed) {
-                sentences.push(
-                    "Overtime in progress."
+        if (fallback) {
+            const type =
+                String(
+                    fallback.type ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const percent =
+                Number(
+                    fallback.percent
+                );
+
+            const remainingMilliseconds =
+                Number(
+                    fallback
+                        .remainingMilliseconds
+                );
+
+            if (
+                percentMode === "auto" &&
+                Number.isFinite(
+                    remainingMilliseconds
+                ) &&
+                (
+                    type === "standard" ||
+                    type === "trip" ||
+                    type === "total"
+                )
+            ) {
+                const roundedPercent =
+                    Number.isFinite(percent)
+                        ? Math.round(
+                            percent * 100
+                        )
+                        : undefined;
+
+                const useStandardLabel =
+                    type === "standard" ||
+                    roundedPercent === 100;
+
+                const label =
+                    useStandardLabel
+                        ? "Standard"
+                        : type === "trip"
+                            ? "Trip"
+                            : "Total";
+
+                const percentText =
+                    !useStandardLabel &&
+                    Number.isFinite(
+                        roundedPercent
+                    )
+                        ? " " +
+                            goalFailureNumberWords(
+                                roundedPercent
+                            ) +
+                            " percent"
+                        : "";
+
+                detailSentences.push(
+                    `${formatGoalFailureDuration(
+                        remainingMilliseconds
+                    )} until ${label} Goal${percentText}.`
                 );
             }
-
-            return sentences.join(" ");
-        }
-
-        const type =
-            String(
-                fallback.type ||
-                ""
-            )
-                .trim()
-                .toLowerCase();
-
-        const percent =
-            Number(
-                fallback.percent
-            );
-
-        const remainingMilliseconds =
-            Number(
-                fallback
-                    .remainingMilliseconds
-            );
-
-        if (
-            percentMode === "auto" &&
-            Number.isFinite(
-                remainingMilliseconds
-            ) &&
-            (
-                type === "standard" ||
-                type === "trip" ||
-                type === "total"
-            )
-        ) {
-            const roundedPercent =
-                Number.isFinite(percent)
-                    ? Math.round(
-                        percent * 100
-                    )
-                    : undefined;
-
-            const useStandardLabel =
-                type === "standard" ||
-                roundedPercent === 100;
-
-            const label =
-                useStandardLabel
-                    ? "Standard"
-                    : type === "trip"
-                        ? "Trip"
-                        : "Total";
-
-            const percentText =
-                !useStandardLabel &&
-                Number.isFinite(
-                    roundedPercent
-                )
-                    ? " " +
-                        goalFailureNumberWords(
-                            roundedPercent
-                        ) +
-                        " percent"
-                    : "";
-
-            sentences.push(
-                `${formatGoalFailureDuration(
-                    remainingMilliseconds
-                )} until ${label} Goal${percentText}.`
-            );
         }
 
         if (belowStandardFailed) {
-            sentences.push(
+            detailSentences.push(
                 "Overtime in progress."
             );
         }
 
-        return sentences.join(" ");
+        const spoken = [];
+
+        if (
+            summarySentences.length &&
+            consumeAnnouncementAction(
+                "goal-failed",
+                "summary"
+            ).perform
+        ) {
+            spoken.push(
+                ...summarySentences
+            );
+        }
+
+        if (
+            detailSentences.length &&
+            consumeAnnouncementAction(
+                "goal-failed",
+                "details"
+            ).perform
+        ) {
+            spoken.push(
+                ...detailSentences
+            );
+        }
+
+        return spoken.join(
+            " "
+        );
     }
 
     async function speakGoalFailure(
@@ -14244,27 +15306,34 @@
                 detail
             );
 
-        try {
-            const song =
-                await audio
-                    ?.startSong?.(
-                        "goal-failed",
-                        {
-                            bpm: 100
-                        }
-                    );
-
-            await song
-                ?.finished;
-        }
-        catch (
-            error
-        ) {
-            console.error(
-                "Audio playback failed:",
+        if (
+            consumeAnnouncementAction(
                 "goal-failed",
+                "chime"
+            ).perform
+        ) {
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            "goal-failed",
+                            {
+                                bpm: 100
+                            }
+                        );
+
+                await song
+                    ?.finished;
+            }
+            catch (
                 error
-            );
+            ) {
+                console.error(
+                    "Audio playback failed:",
+                    "goal-failed",
+                    error
+                );
+            }
         }
 
         if (speech) {
@@ -17807,6 +18876,10 @@
                             .startTime =
                             snapshot
                                 .startTime;
+
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            false;
                     }
                 }
 
@@ -17873,6 +18946,14 @@
                                 .value
                             : snapshot
                                 .startTime;
+
+                    if (
+                        tripSettingsSession
+                    ) {
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            selected;
+                    }
                 }
 
                 refreshTripSettingsValues();

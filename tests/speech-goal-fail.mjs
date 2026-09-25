@@ -69,11 +69,6 @@ assert.match(
 
 assert.match(
     appSource,
-    /return "Standard Goal Failed\."/
-);
-
-assert.match(
-    appSource,
     /\$\{formatGoalFailureDuration\([\s\S]*?remainingMilliseconds[\s\S]*?\)\} until \$\{label\} Goal\$\{percentText\}\./
 );
 
@@ -94,4 +89,49 @@ assert.match(
 
 console.log(
     "PASS goal-fail speech keeps the failed-goal sentence and combines time with the fallback goal"
+);
+
+
+assert.match(
+    appSource,
+    /const announcedGoals\s*=\s*percentMode === "trip"[\s\S]*goal\?\.type ===\s*"standard"[\s\S]*goal\?\.type ===\s*"trip"[\s\S]*percentMode === "total"[\s\S]*goal\?\.type ===\s*"standard"[\s\S]*goal\?\.type ===\s*"total"/
+);
+
+assert.match(
+    appSource,
+    /const standardFailed\s*=\s*announcedGoals\.some/
+);
+
+assert.match(
+    appSource,
+    /const belowStandardFailed\s*=\s*announcedGoals\.some/
+);
+
+assert.match(
+    appSource,
+    /for \(const goal of announcedGoals\)/
+);
+
+console.log(
+    "PASS fixed Trip/Total modes announce only Standard plus their selected goal scope"
+);
+
+
+assert.match(
+    appSource,
+    /consumeSemanticAction\(\s*"summary"\s*\)[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*"Total Goal Failed\."/
+);
+
+assert.match(
+    appSource,
+    /!consumeSemanticAction\(\s*"details"\s*\)[\s\S]*return sentences\.join/
+);
+
+assert.match(
+    appSource,
+    /consumeSemanticAction\(\s*"chime"\s*\)[\s\S]*"goal-failed"/
+);
+
+console.log(
+    "PASS goal-fail layers separate chime, failed-goal summary, and fallback/overtime details"
 );

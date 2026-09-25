@@ -20,6 +20,7 @@ on:
       - "api/_core/sql_console.php"
       - "api/_core/developer_docs.php"
       - "api/docs/**"
+      - "api/audio/**"
       - "docs/**"
       - "api/speech-editor-config/**"
       - "api/speech-corrections/**"
@@ -104,6 +105,7 @@ jobs:
           node regex-builder.mjs
           node speech-mic-pipeline.mjs
           node speech-goal-fail.mjs
+          node speech-trip-transition.mjs
           node speech-value-preprocessor.mjs
           node speech-training-model.mjs
           node spoken-duration.mjs

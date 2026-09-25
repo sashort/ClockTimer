@@ -42,7 +42,13 @@
                 </div>
                 <div id="menuLogoutSlot"></div>
                 <hr id="accountMenuDivider">
-                <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
+                <div class="settings-menu-group">
+                    <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu">Settings</button>
+                    <div id="settingsSubmenu" class="settings-submenu" hidden>
+                        <button type="button" data-dialog="graphicalSettingsDialog">Clock/Timer Settings</button>
+                        <button id="audioSettingsButton" type="button" data-dialog="audioSettingsDialog">Audio Settings</button>
+                    </div>
+                </div>
                 <div class="main-menu-row speech-recognition-menu-row">
                     <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled><span>Speech Recognition</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition">i</button>
@@ -655,6 +661,65 @@
         </div>
         <p><strong>Leave this field blank to hide tick marks.</strong> Fixed values can be from <code>1</code> through <code>60</code>. Every 5-second tick is visually emphasized as a major tick.</p>
     </template>
+
+    <dialog id="audioSettingsDialog" class="app-dialog audio-settings-dialog">
+        <form id="audioSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <h2>Audio Settings</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+
+            <section class="audio-settings-levels" aria-label="Audio levels">
+                <label>
+                    <span>Speech Volume</span>
+                    <input id="audioSpeechVolume" type="range" min="0" max="1" step="0.05" value="1">
+                    <output id="audioSpeechVolumeValue">100%</output>
+                </label>
+                <label>
+                    <span>Tone Volume</span>
+                    <input id="audioToneVolume" type="range" min="0" max="1" step="0.05" value="1">
+                    <output id="audioToneVolumeValue">100%</output>
+                </label>
+                <label class="audio-master-velocity">
+                    <span>Master Velocity</span>
+                    <input id="audioMasterVelocity" type="range" min="0.5" max="3" step="0.05" value="1">
+                    <output id="audioMasterVelocityValue">1.00×</output>
+                </label>
+                <label>
+                    <span>Speech Velocity</span>
+                    <input id="audioSpeechVelocity" type="range" min="0.5" max="3" step="0.05" value="1">
+                    <output id="audioSpeechVelocityValue">1.00×</output>
+                </label>
+                <label>
+                    <span>Tone Velocity</span>
+                    <input id="audioToneVelocity" type="range" min="0.5" max="3" step="0.05" value="1">
+                    <output id="audioToneVelocityValue">1.00×</output>
+                </label>
+            </section>
+
+            <section class="audio-settings-announcements" aria-labelledby="audioAnnouncementsTitle">
+                <h3 id="audioAnnouncementsTitle">Announcements</h3>
+                <div class="audio-settings-table-wrap">
+                    <table class="audio-settings-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Announcement</th>
+                                <th scope="col"><label><input type="checkbox" data-audio-master="chime" checked> Chime</label></th>
+                                <th scope="col"><label><input type="checkbox" data-audio-master="summary" checked> Summary</label></th>
+                                <th scope="col"><label><input type="checkbox" data-audio-master="details" checked> Details</label></th>
+                            </tr>
+                        </thead>
+                        <tbody id="audioAnnouncementRows"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="dialog-actions two-actions">
+                <button type="button" id="audioSettingsReset">Defaults</button>
+                <button type="submit" class="primary-action">Done</button>
+            </div>
+        </form>
+    </dialog>
 
     <dialog id="stateSettingsDialog" class="app-dialog settings-dialog state-dialog">
         <form id="stateSettingsForm" method="dialog">

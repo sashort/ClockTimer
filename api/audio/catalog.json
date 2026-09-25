@@ -323,11 +323,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started",
-          "lang": "en-US"
         }
       ]
     },
@@ -352,11 +347,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started early",
-          "lang": "en-US"
         }
       ]
     },
@@ -381,11 +371,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started late",
-          "lang": "en-US"
         }
       ]
     },
@@ -584,11 +569,42 @@
           "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
+        }
+      ]
+    },
+    "trip-ended-started": {
+      "bpm": 120,
+      "instrument": "legacy-square",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
         },
         {
-          "offset": "1.74",
-          "speech": "Trip ended",
-          "lang": "en-US"
+          "offset": "0.52",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G7",
+          "length": "1.04",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.08",
+          "tone": "B7",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.60",
+          "tone": "D#8",
+          "length": "1/2",
+          "dynamic": "ff"
         }
       ]
     },
@@ -668,24 +684,18 @@
       "events": [
         {
           "offset": "0",
-          "tone": "B7",
-          "length": "1/2",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "0",
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
           "offset": "0",
-          "tone": "G8",
+          "tone": "B7",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "0.52",
+          "offset": "0",
           "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
@@ -698,14 +708,14 @@
         },
         {
           "offset": "0.52",
-          "tone": "D#8",
+          "tone": "G7",
           "length": "1/2",
           "dynamic": "ff"
         },
         {
-          "offset": "1.04",
-          "tone": "D#8",
-          "length": "1",
+          "offset": "0.52",
+          "tone": "D#7",
+          "length": "1/2",
           "dynamic": "ff"
         },
         {
@@ -716,13 +726,13 @@
         },
         {
           "offset": "1.04",
-          "tone": "B8",
+          "tone": "D#8",
           "length": "1",
           "dynamic": "ff"
         },
         {
           "offset": "1.04",
-          "tone": "D#9",
+          "tone": "B7",
           "length": "1",
           "dynamic": "ff"
         }
