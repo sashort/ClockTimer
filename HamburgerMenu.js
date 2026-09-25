@@ -70,12 +70,15 @@
             "  max-width: 100%;",
             "}",
             ":where(hamburger-menu) > [slot=\"trigger\"] {",
-            "  translate: 0 var(--hamburger-menu-trigger-shift, 0px);",
-            "  transition: translate var(--hamburger-menu-trigger-duration, 240ms) ease-in-out;",
+            "  translate: none;",
             "}",
             ":where(hamburger-menu) > .hamburger-menu-popover {",
             "  position: fixed;",
-            "  position-try-order: most-height;",
+            "  opacity: 0;",
+            "  visibility: hidden;",
+            "  pointer-events: none;",
+            "  translate: var(--hamburger-menu-popover-shift-x, 0px) var(--hamburger-menu-popover-shift-y, 0px);",
+            "  position-try-order: most-height;"
             "  position-try-fallbacks: --hamburger-above-start, --hamburger-below-end, --hamburger-above-end, --hamburger-right-start, --hamburger-left-start;",
             "  inset: auto;",
             "  top: anchor(bottom);",
@@ -94,10 +97,16 @@
             ":where(hamburger-menu) > .hamburger-menu-popover[hidden] {",
             "  display: none;",
             "}",
+            ":where(hamburger-menu) > .hamburger-menu-popover[data-ready=\"true\"] {",
+            "  opacity: 1;",
+            "  visibility: visible;",
+            "  pointer-events: auto;",
+            "}",
             ":where(hamburger-menu) > .hamburger-menu-popover[data-calculating=\"true\"] {",
             "  opacity: 0 !important;",
+            "  visibility: hidden !important;",
             "  pointer-events: none !important;",
-            "}",
+            "}"
             ":where(hamburger-menu) .hamburger-menu-pane-frozen {",
             "  overflow: hidden !important;",
             "  flex: none !important;",
@@ -262,7 +271,6 @@
             "  right: anchor(left);",
             "}",
             "@media (prefers-reduced-motion: reduce) {",
-            "  :where(hamburger-menu) > [slot=\"trigger\"],",
             "  :where(hamburger-menu) .hamburger-menu-viewport,",
             "  :where(hamburger-menu) .hamburger-menu-indicator,",
             "  :where(hamburger-menu) .hamburger-menu-indicator-thumb {",
@@ -312,8 +320,11 @@
         #openState = false;
         #frozenPane;
         #frozenPaneRect;
+        #frozenPaneLocks = [];
         #openingMeasured = false;
         #openingMeasurementPromise;
+        #layoutDirty = true;
+        #sizeTargets = new Set();
 
         constructor() {
             super();
@@ -589,11 +600,9 @@
                     .dataset
                     .calculating;
 
-                this.#popover
-                    .style
-                    .removeProperty(
-                        "opacity"
-                    );
+                delete this.#popover
+                    .dataset
+                    .ready;
 
                 this.#unfreezePane();
 
@@ -1248,9 +1257,9 @@
                 .calculating =
                 "true";
 
-            this.#popover
-                .style.opacity =
-                "0";
+            delete this.#popover
+                .dataset
+                .ready;
 
             return true;
         }
@@ -1289,8 +1298,9 @@
                         .calculating;
 
                     this.#popover
-                        .style.opacity =
-                        "1";
+                        .dataset
+                        .ready =
+                        "true";
                 })()
                     .finally(
                         () => {
@@ -1380,21 +1390,13 @@
                 this.#openingMeasurementPromise =
                     undefined;
 
-                this.style
-                    .setProperty(
-                        "--hamburger-menu-trigger-shift",
-                        "0px"
-                    );
-
                 delete this.#popover
                     .dataset
                     .calculating;
 
-                this.#popover
-                    .style
-                    .removeProperty(
-                        "opacity"
-                    );
+                delete this.#popover
+                    .dataset
+                    .ready;
 
                 this.#unfreezePane();
                 this.#reset();
@@ -2449,81 +2451,56 @@
                 this.#popover
                     .getBoundingClientRect();
 
-            const trigger =
-                this.#trigger
-                    .getBoundingClientRect();
-
-            const currentShift =
+            const currentShiftY =
                 px(
                     getComputedStyle(
-                        this
+                        this.#popover
                     )
                         .getPropertyValue(
-                            "--hamburger-menu-trigger-shift"
+                            "--hamburger-menu-popover-shift-y"
                         )
                 );
 
-            let delta =
+            let deltaY =
                 0;
 
             if (
                 menu.bottom >
                 region.bottom
             ) {
-                delta -=
+                deltaY -=
                     menu.bottom -
                     region.bottom;
             }
 
             if (
                 menu.top +
-                    delta <
+                    deltaY <
                 region.top
             ) {
-                delta +=
+                deltaY +=
                     region.top -
                     (
                         menu.top +
-                        delta
+                        deltaY
                     );
             }
 
-            const minimumDelta =
-                region.top -
-                trigger.top;
+            const nextShiftY =
+                currentShiftY +
+                deltaY;
 
-            const maximumDelta =
-                region.bottom -
-                trigger.bottom;
-
-            if (
-                minimumDelta <=
-                maximumDelta
-            ) {
-                delta =
-                    Math.max(
-                        minimumDelta,
-                        Math.min(
-                            maximumDelta,
-                            delta
-                        )
-                    );
-            }
-
-            const nextShift =
-                currentShift +
-                delta;
-
-            this.style
+            this.#popover
+                .style
                 .setProperty(
-                    "--hamburger-menu-trigger-shift",
-                    nextShift +
+                    "--hamburger-menu-popover-shift-y",
+                    nextShiftY +
                         "px"
                 );
 
             if (
                 Math.abs(
-                    delta
+                    deltaY
                 ) >
                     0.5 &&
                 pass <
