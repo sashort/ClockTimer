@@ -2359,6 +2359,345 @@
         );
     }
 
+    function getMainMenuRootContentHeight(
+        root
+    ) {
+        return getMainMenuVisibleRows(
+            root
+        ).reduce(
+            (
+                total,
+                row
+            ) =>
+                total +
+                measureMainMenuElement(
+                    row
+                )
+                    .outerHeight,
+            0
+        );
+    }
+
+    function setMainMenuEqualPanelHeight(
+        height
+    ) {
+        const panels =
+            getMainMenuPanels();
+
+        const safeHeight =
+            getMainMenuSafePanelHeight(
+                panels.length >
+                    1
+            );
+
+        const nextHeight =
+            Math.max(
+                1,
+                Math.min(
+                    safeHeight,
+                    Number(height) ||
+                        1
+                )
+            );
+
+        mainMenuLayoutState
+            .panelHeight =
+            nextHeight;
+
+        mainMenu
+            .style
+            .setProperty(
+                "--main-menu-panel-height",
+                nextHeight +
+                    "px"
+            );
+
+        return nextHeight;
+    }
+
+    function refreshMainMenuEqualPanelHeight() {
+        if (
+            mainMenuLayoutState
+                .focusStack
+                .length
+        ) {
+            return updateFocusedMainMenuBounds();
+        }
+
+        const heights =
+            getMainMenuPanels()
+                .map(
+                    panel =>
+                        getMainMenuRootContentHeight(
+                            panel
+                        )
+                );
+
+        return setMainMenuEqualPanelHeight(
+            Math.max(
+                1,
+                ...heights
+            )
+        );
+    }
+
+    function measureMainMenuSubmenuProjection(
+        group,
+        submenu
+    ) {
+        const active =
+            mainMenuLayoutState
+                .focusStack
+                .at(-1);
+
+        const sourceRoot =
+            active
+                ?.group ||
+            getMainMenuCurrentPanel();
+
+        if (
+            !sourceRoot ||
+            !sourceRoot.contains(
+                group
+            )
+        ) {
+            return undefined;
+        }
+
+        const wasHidden =
+            submenu.hidden;
+
+        submenu.hidden =
+            false;
+
+        const contentHeight =
+            getMainMenuRootContentHeight(
+                sourceRoot
+            );
+
+        submenu.hidden =
+            wasHidden;
+
+        const safeHeight =
+            getMainMenuSafePanelHeight(
+                !active &&
+                getMainMenuPanels()
+                    .length >
+                    1
+            );
+
+        return {
+            sourceRoot,
+            contentHeight,
+            safeHeight
+        };
+    }
+
+    function mainMenuSubmenuWouldOverflow(
+        group,
+        submenu
+    ) {
+        const projection =
+            measureMainMenuSubmenuProjection(
+                group,
+                submenu
+            );
+
+        if (!projection) {
+            return true;
+        }
+
+        return (
+            projection
+                .contentHeight >
+            projection
+                .safeHeight +
+                0.5
+        );
+    }
+
+    async function expandMainMenuSubmenuInline(
+        group,
+        button,
+        submenu
+    ) {
+        if (
+            !group ||
+            !button ||
+            !submenu ||
+            mainMenuLayoutState
+                .transitionBusy
+        ) {
+            return false;
+        }
+
+        const projection =
+            measureMainMenuSubmenuProjection(
+                group,
+                submenu
+            );
+
+        if (!projection) {
+            return false;
+        }
+
+        mainMenuLayoutState
+            .transitionBusy =
+            true;
+
+        const generation =
+            ++mainMenuLayoutState
+                .generation;
+
+        cancelMainMenuAnimations();
+
+        setMainMenuEqualPanelHeight(
+            Math.max(
+                mainMenuLayoutState
+                    .panelHeight,
+                projection
+                    .contentHeight
+            )
+        );
+
+        const growing =
+            prepareSubmenuForGrowth(
+                submenu
+            );
+
+        button.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+        await Promise.all(
+            growing.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        true,
+                        generation
+                    )
+            )
+        );
+
+        if (
+            generation !==
+            mainMenuLayoutState
+                .generation
+        ) {
+            return false;
+        }
+
+        refreshMainMenuEqualPanelHeight();
+
+        mainMenuLayoutState
+            .transitionBusy =
+            false;
+
+        return true;
+    }
+
+    async function collapseMainMenuSubmenuInline(
+        button,
+        submenu
+    ) {
+        if (
+            !button ||
+            !submenu ||
+            submenu.hidden ||
+            mainMenuLayoutState
+                .transitionBusy
+        ) {
+            return false;
+        }
+
+        mainMenuLayoutState
+            .transitionBusy =
+            true;
+
+        const generation =
+            ++mainMenuLayoutState
+                .generation;
+
+        cancelMainMenuAnimations();
+
+        const shrinking =
+            [
+                ...submenu
+                    .children
+            ]
+                .filter(
+                    child =>
+                        !child.hidden &&
+                        getComputedStyle(
+                            child
+                        ).display !==
+                            "none"
+                )
+                .map(
+                    element => ({
+                        element,
+                        metrics:
+                            measureMainMenuElement(
+                                element
+                            )
+                    })
+                )
+                .filter(
+                    record =>
+                        record.metrics
+                            .outerHeight >
+                        0
+                );
+
+        await Promise.all(
+            shrinking.map(
+                record =>
+                    animateMainMenuItemHeight(
+                        record.element,
+                        record.metrics,
+                        false,
+                        generation
+                    )
+            )
+        );
+
+        if (
+            generation !==
+            mainMenuLayoutState
+                .generation
+        ) {
+            return false;
+        }
+
+        submenu.hidden =
+            true;
+
+        button.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        for (
+            const record of
+            shrinking
+        ) {
+            clearMainMenuClipStyles(
+                record.element
+            );
+        }
+
+        refreshMainMenuEqualPanelHeight();
+
+        mainMenuLayoutState
+            .transitionBusy =
+            false;
+
+        return true;
+    }
+
     function updateFocusedMainMenuBounds(
         knownFullHeight
     ) {
@@ -11191,6 +11530,19 @@
                 }
 
                 if (!submenu.hidden) {
+                    if (
+                        button.id ===
+                            "speechMenuButton"
+                    ) {
+                        runSpeechBuildAnimation(
+                            false
+                        );
+                    }
+
+                    void collapseMainMenuSubmenuInline(
+                        button,
+                        submenu
+                    );
                     return;
                 }
 
@@ -11203,7 +11555,21 @@
                     );
                 }
 
-                void promoteMainMenuGroup(
+                if (
+                    mainMenuSubmenuWouldOverflow(
+                        group,
+                        submenu
+                    )
+                ) {
+                    void promoteMainMenuGroup(
+                        group,
+                        button,
+                        submenu
+                    );
+                    return;
+                }
+
+                void expandMainMenuSubmenuInline(
                     group,
                     button,
                     submenu
