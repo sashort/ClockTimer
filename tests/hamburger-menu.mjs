@@ -64,6 +64,22 @@ assert.match(
     /submenuAnimationRecords/
 );
 
+
+assert.match(
+    componentSource,
+    /reverseMaskContainer\s*=\s*this\.#focusLayer/
+);
+
+assert.match(
+    componentSource,
+    /reverseMaskZIndex\s*=\s*childZIndex\s*-\s*1/
+);
+
+assert.match(
+    componentSource,
+    /parent\.group[\s\S]*zIndex[\s\S]*reverseMaskZIndex\s*-\s*1/
+);
+
 assert.match(
     componentSource,
     /#closePromotedSubmenu\([\s\S]*#promotionPause\(\)/
