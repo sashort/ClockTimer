@@ -1959,6 +1959,10 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /if \(availability\)[\s\S]*resolved\.fn\.call[\s\S]*return true;[\s\S]*#resolveSpeechTarget/
+);
+assert.match(
+    speechMenuSource,
     /#targetIsAvailable[\s\S]*getComputedStyle/
 );
 assert.match(
