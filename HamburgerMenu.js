@@ -249,34 +249,34 @@
             "  will-change: clip-path;",
             "}"
             "@position-try --hamburger-above-start {",
-            "  top: auto;",
-            "  bottom: anchor(top);",
-            "  left: anchor(left);",
-            "  right: auto;",
+            "  position-area: top span-right;",
+            "  inset: auto;",
+            "  align-self: end;",
+            "  justify-self: start;",
             "}",
             "@position-try --hamburger-below-end {",
-            "  top: anchor(bottom);",
-            "  bottom: auto;",
-            "  left: auto;",
-            "  right: anchor(right);",
+            "  position-area: bottom span-left;",
+            "  inset: auto;",
+            "  align-self: start;",
+            "  justify-self: end;",
             "}",
             "@position-try --hamburger-above-end {",
-            "  top: auto;",
-            "  bottom: anchor(top);",
-            "  left: auto;",
-            "  right: anchor(right);",
+            "  position-area: top span-left;",
+            "  inset: auto;",
+            "  align-self: end;",
+            "  justify-self: end;",
             "}",
             "@position-try --hamburger-right-start {",
-            "  top: anchor(top);",
-            "  bottom: auto;",
-            "  left: anchor(right);",
-            "  right: auto;",
+            "  position-area: right span-bottom;",
+            "  inset: auto;",
+            "  align-self: start;",
+            "  justify-self: start;",
             "}",
             "@position-try --hamburger-left-start {",
-            "  top: anchor(top);",
-            "  bottom: auto;",
-            "  left: auto;",
-            "  right: anchor(left);",
+            "  position-area: left span-bottom;",
+            "  inset: auto;",
+            "  align-self: start;",
+            "  justify-self: end;",
             "}",
             "@media (prefers-reduced-motion: reduce) {",
             "  :where(hamburger-menu) .hamburger-menu-viewport,",
@@ -692,6 +692,7 @@
                         this.#layoutDirty =
                             false;
 
+                        this.#adoptHostChildren();
                         this.#syncResizeObservation();
 
                         if (
@@ -745,6 +746,37 @@
             ) {
                 this.refresh();
             }
+        }
+
+        #adoptHostChildren() {
+            const children =
+                [
+                    ...this.children
+                ]
+                    .filter(
+                        child =>
+                            child !==
+                                this.#trigger &&
+                            child !==
+                                this.#popover
+                    );
+
+            if (!children.length) {
+                return false;
+            }
+
+            this.#withObservationPaused(
+                () => {
+                    this.#source
+                        .append(
+                            ...children
+                        );
+                }
+            );
+
+            this.#syncResizeObservation();
+
+            return true;
         }
 
         #syncResizeObservation() {
@@ -843,6 +875,22 @@
                     "slot",
                     "trigger"
                 );
+
+            if (
+                this.#trigger
+                    .tagName ===
+                    "BUTTON" &&
+                !this.#trigger
+                    .hasAttribute(
+                        "type"
+                    )
+            ) {
+                this.#trigger
+                    .setAttribute(
+                        "type",
+                        "button"
+                    );
+            }
 
             this.#trigger
                 .style
@@ -1175,6 +1223,7 @@
                                 return;
                             }
 
+                            this.#adoptHostChildren();
                             this.#syncResizeObservation();
                             this.#markLayoutDirty();
                         }
@@ -1766,12 +1815,20 @@
                         return;
                     }
 
+                    const viewportWidth =
+                        globalThis
+                            .visualViewport
+                            ?.width ||
+                        globalThis
+                            .innerWidth ||
+                        document
+                            .documentElement
+                            .clientWidth ||
+                        0;
+
                     const broad =
                         rect.width >=
-                        (
-                            viewport.bottom -
-                            viewport.top
-                        ) *
+                        viewportWidth *
                         0.35;
 
                     const intersectsX =
