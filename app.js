@@ -6875,6 +6875,11 @@
             new Set([
                 "ok",
                 "okay"
+            ]),
+            new Set([
+                "sync",
+                "sink",
+                "sin"
             ])
         ];
 
