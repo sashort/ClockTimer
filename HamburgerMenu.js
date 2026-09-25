@@ -3392,6 +3392,11 @@
             entry,
             generation
         ) {
+            const collapsedHeight =
+                entry.group
+                    .getBoundingClientRect()
+                    .height;
+
             const growing =
                 this
                     .#prepareGrowth(
@@ -3410,17 +3415,8 @@
                 .focused =
                 "true";
 
-            const groupHeight =
-                Math.max(
-                    entry.group
-                        .getBoundingClientRect()
-                        .height,
-                    entry.group
-                        .scrollHeight
-                );
-
             const intendedHeight =
-                groupHeight +
+                collapsedHeight +
                 growing.reduce(
                     (
                         total,
@@ -3801,10 +3797,7 @@
                 away:
                     rows.away,
                 originalPanelIndex,
-                flow,
-                groupInlineTranslate:
-                    group.style
-                        .translate
+                flow
             };
 
             this.#focusStack
@@ -4458,7 +4451,7 @@
                 entry.group
                     .style
                     .removeProperty(
-                        "transform"
+                        "translate"
                     );
 
                 entry.group
