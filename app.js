@@ -20059,8 +20059,8 @@
                 setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
-                breakChoice:"#breakDialog [data-break-type]",
-                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo"
+                breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
+                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
             };
 
             const speechOptionGroups = {
@@ -20122,12 +20122,15 @@
                 key ===
                     "readyAtContinuation"
                     ? "WMOFSpeechAvailability.canContinueStartAt"
-                    : speechOptionCategories[
-                        key
-                    ] ===
-                        "informational"
-                        ? "WMOFSpeechAvailability.canUseInformational"
-                        : "";
+                    : key ===
+                        "cancel"
+                        ? "WMOFSpeechAvailability.canCloseSurface"
+                        : speechOptionCategories[
+                            key
+                        ] ===
+                            "informational"
+                            ? "WMOFSpeechAvailability.canUseInformational"
+                            : "";
 
             if (availability) {
                 element.setAttribute(
