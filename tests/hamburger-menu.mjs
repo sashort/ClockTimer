@@ -28,6 +28,17 @@ window.matchMedia =
         removeEventListener() {}
     });
 
+Object.defineProperty(
+    window.HTMLElement.prototype,
+    "animate",
+    {
+        configurable:
+            true,
+        value:
+            undefined
+    }
+);
+
 const componentSource =
     fs.readFileSync(
         new URL(
