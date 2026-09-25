@@ -289,13 +289,13 @@ kbd {
 </figure>
 
 <h3>Opening a parent</h3>
-<p>Primary promotion starts with all current pane items visible. An inherited, registered CSS position property on the active panel animates the selected parent. Items closer to the hamburger than that parent follow three paths. Coverage measurements include visible submenu leaves through the second menu nesting level. Their edge crossings are converted through the parent's <code>ease-in-out</code> curve into exact keyframe percentages:</p>
+<p>Primary promotion starts with all current pane items visible. An inherited, registered CSS position property on the active panel animates the selected parent. Items closer to the hamburger than that parent follow three paths. Coverage measurements descend through every visible submenu level. For a hamburger above the pane, the target's top and bottom edges are each compared with the item's top edge; the bottom-edge crossing hides the item. Below the pane, these comparisons use the target's bottom and top edges and the item's bottom edge. Each crossing is converted through the target's <code>ease-in-out</code> curve into a keyframe percentage:</p>
 <table><thead><tr><th>Item closer to hamburger</th><th>At the coverage percentage</th></tr></thead><tbody>
 <tr><td>Sibling without a child menu</td><td>Its opacity changes to zero; its box keeps its place.</td></tr>
 <tr><td>Sibling with a child menu</td><td>No animation or hiding applies to the sibling itself.</td></tr>
-<tr><td>Visible direct child of that sibling</td><td>Its display changes to <code>none</code>. A temporary slot takes over its dimensions at the same percentage so other rows do not shift.</td></tr>
+<tr><td>Visible leaf inside that sibling, at any depth</td><td>Each leaf gets its own percentage from its measured hamburger-side edge and the selected parent's path. Its display changes to <code>none</code> at that percentage. A temporary slot takes over its dimensions so other rows do not shift.</td></tr>
 </tbody></table>
-<p>The saved keyframes run in reverse when primary promotion closes. Deeper menu items and decorative markup are not animated as separate rows. There is no overlay mask. Promotion of a child within an already promoted parent follows its separate nested motion path.</p>
+<p>The saved keyframes run in reverse when primary promotion closes. Menu rows with visible children stay in place while their visible leaves animate individually. Decorative markup is not animated as a separate row. There is no overlay mask. Promotion of a child within an already promoted parent follows its separate nested motion path.</p>
 <ol>
 <li>The pane is already frozen from hamburger open; nested promotion does not create or replace the lock.</li>
 <li>Measure the nested parent's current rectangle and its promoted rectangle at the hamburger-side edge of the focus layer.</li>
