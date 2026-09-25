@@ -1382,8 +1382,29 @@
             const interval = this.getActiveIntervalState?.(now);
             const standardText = selected?.standardTime;
             const rawRenderedText = selected?.renderedTime;
+            const totalOutsideTripRemaining =
+                scope === "total" &&
+                this.#renderedTimeMode === "remaining" &&
+                !this.#started;
+            const totalNetMilliseconds =
+                Number(
+                    summary.total
+                        ?.netTimeMilliseconds
+                );
+            const totalOutsideTripLabel =
+                totalOutsideTripRemaining
+                    ? (
+                        Number.isFinite(
+                            totalNetMilliseconds
+                        ) &&
+                        totalNetMilliseconds > 0
+                            ? "Time Over"
+                            : "Banked Time"
+                    )
+                    : undefined;
             const renderedText =
                 typeof rawRenderedText === "string" &&
+                !totalOutsideTripRemaining &&
                 (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed") &&
                 interval?.open === false
                     ? `${rawRenderedText}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}`
@@ -1448,7 +1469,13 @@
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
-                time_header_text: scope === "standard" ? `Standard ${suffix}` : `${scopeLabel} ${suffix}`,
+                time_header_text:
+                    totalOutsideTripLabel ||
+                    (
+                        scope === "standard"
+                            ? `Standard ${suffix}`
+                            : `${scopeLabel} ${suffix}`
+                    ),
                 time_header_short_text: scope === "standard" ? `Std. ${suffix}` : null,
                 time_component: this.#component(
                     renderedText,
@@ -32220,7 +32247,9 @@
                             activeTripRemainingMilliseconds
                         )
                             ? activeTripRemainingMilliseconds
-                            : completedNetMilliseconds
+                            : Math.abs(
+                                completedNetMilliseconds
+                            )
                     );
             }
 
@@ -32234,6 +32263,8 @@
                 allowanceCreditMilliseconds,
                 countedPercent,
                 percentGoal,
+                netTimeMilliseconds:
+                    completedNetMilliseconds,
                 renderedTime,
                 renderedTimeMode: this.#renderedTimeMode
             };
