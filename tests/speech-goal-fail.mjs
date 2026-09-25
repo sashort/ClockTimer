@@ -18,3 +18,31 @@ assert.match(
 console.log(
     "PASS cadence ticks evaluate goal failures before rendering the next frame"
 );
+
+
+const strippedDefinition =
+    source.replace(
+        /#checkGoalMisses\(now\)\s*\{[\s\S]*?\n        \}\n\n        #calculateTripGoalRequirementsForGoal/,
+        "#calculateTripGoalRequirementsForGoal"
+    );
+
+const callMatches =
+    [
+        ...strippedDefinition.matchAll(
+            /#checkGoalMisses\(/g
+        )
+    ];
+
+assert.equal(
+    callMatches.length,
+    1
+);
+
+assert.match(
+    strippedDefinition,
+    /#tick\(\)\s*\{[\s\S]*#checkGoalMisses\(\s*now\s*\)/
+);
+
+console.log(
+    "PASS goalFail evaluation is temporal-only and not mutation-driven"
+);
