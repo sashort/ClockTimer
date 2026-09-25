@@ -2495,6 +2495,22 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /#terminalPrefixRecovery[\s\S]*spoken\.length < 4[\s\S]*spoken\.includes\([\s\S]*" "[\s\S]*canonical\.includes\([\s\S]*" "/
+);
+assert.match(
+    speechMenuSource,
+    /#terminalPrefixRecovery[\s\S]*canonical\.startsWith\([\s\S]*spoken[\s\S]*spoken\.length \* 3[\s\S]*canonical\.length \* 2/
+);
+assert.match(
+    speechMenuSource,
+    /#terminalPrefixRecovery[\s\S]*matches\.length !==[\s\S]*1/
+);
+assert.match(
+    speechMenuSource,
+    /#handleCompletedTranscript[\s\S]*#terminalPrefixRecovery\([\s\S]*transcript[\s\S]*speechTerminalPrefixRecovered[\s\S]*#processElement\([\s\S]*recovery\.phrase/
+);
+assert.match(
+    speechMenuSource,
     /"re" \/ "read" -> "ready"/
 );
 
