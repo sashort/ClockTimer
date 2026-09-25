@@ -453,6 +453,11 @@ assert.equal(
     automaticBoundary
 );
 
+autoMenu.remove();
+automaticBoundary.remove();
+menu.remove();
+boundary.remove();
+
 console.log(
     "hamburger-menu tests passed"
 );
