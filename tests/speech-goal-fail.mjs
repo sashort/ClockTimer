@@ -95,3 +95,28 @@ assert.match(
 console.log(
     "PASS goal-fail speech keeps the failed-goal sentence and combines time with the fallback goal"
 );
+
+
+assert.match(
+    appSource,
+    /const announcedGoals\s*=\s*percentMode === "trip"[\s\S]*goal\?\.type ===\s*"standard"[\s\S]*goal\?\.type ===\s*"trip"[\s\S]*percentMode === "total"[\s\S]*goal\?\.type ===\s*"standard"[\s\S]*goal\?\.type ===\s*"total"/
+);
+
+assert.match(
+    appSource,
+    /const standardFailed\s*=\s*announcedGoals\.some/
+);
+
+assert.match(
+    appSource,
+    /const belowStandardFailed\s*=\s*announcedGoals\.some/
+);
+
+assert.match(
+    appSource,
+    /for \(const goal of announcedGoals\)/
+);
+
+console.log(
+    "PASS fixed Trip/Total modes announce only Standard plus their selected goal scope"
+);
