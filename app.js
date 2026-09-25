@@ -13454,7 +13454,7 @@
                 startChimeEnabled
             ) {
                 transitionSong =
-                    "trip-ended-started";
+                    "trip-transition";
             }
             else if (endChimeEnabled) {
                 transitionSong =
