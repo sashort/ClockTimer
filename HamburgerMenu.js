@@ -4328,7 +4328,7 @@
                     style.visibility !== "hidden" &&
                     Number(style.opacity) !== 0;
             };
-            const collect = (element, nested) => {
+            const collect = (element, parent) => {
                 if (!visible(element)) return;
                 const owner = element.querySelector(
                     ":scope > button[aria-controls]"
@@ -4341,15 +4341,19 @@
                     ? [...submenu.children].filter(visible) : [];
                 items.push({
                     element,
-                    nested,
+                    parent,
+                    nested: !!parent,
                     hasMenu: !!owner,
-                    hasVisibleChildren: children.length > 0,
                     rect: this.#visiblePaintBounds(element)
                 });
-                for (const child of children) collect(child, true);
+                for (const child of children) collect(child, element);
             };
-            for (const element of panel.children) collect(element, false);
+            for (const element of panel.children) collect(element, null);
             return items;
+        }
+
+        #hasVisibleChild(element, panelItems) {
+            return panelItems.some(child => child.parent === element);
         }
 
         #promotionRows(
@@ -4363,7 +4367,7 @@
                 ? panelItems.filter(item =>
                     item.element !== group &&
                     !group.contains(item.element) &&
-                    !item.hasVisibleChildren &&
+                    !this.#hasVisibleChild(item.element, panelItems) &&
                     (item.nested || !item.hasMenu)
                 )
                 : this.#visibleRows(sourceRoot, group).map(element => ({
