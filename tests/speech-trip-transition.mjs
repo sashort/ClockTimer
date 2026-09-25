@@ -75,46 +75,44 @@ assert.match(
 
 assert.match(
     app,
-    /function onTripStarted\([\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*"Trip started\."\s*\)[\s\S]*return;[\s\S]*playSemanticSong\("trip-started"\)/
+    /const chimeDisableFrame[\s\S]*endStartTransitionChimePlayed ===[\s\S]*true[\s\S]*startTimeSetToNow !==[\s\S]*true[\s\S]*pushSemanticDisable\(\{[\s\S]*chime:\s*true[\s\S]*\}\)[\s\S]*clockTimer\.start\([\s\S]*finally[\s\S]*popSemanticDisable\(\s*chimeDisableFrame\s*\)/
 );
 
 assert.match(
     app,
-    /function onTripStartedEarly[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*speech\s*\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
+    /function onTripStarted\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started"[\s\S]*semanticLayerEnabled\(\s*"summary"\s*\)/
 );
 
 assert.match(
     app,
-    /function onTripStartedLate[\s\S]*tripDraftUsesEndStartTransition\(\)[\s\S]*speakSemanticText\(\s*speech\s*\)[\s\S]*return;[\s\S]*playSemanticSongThenSpeak/
+    /function onTripStartedEarly\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started-early"/
 );
+
+assert.match(
+    app,
+    /function onTripStartedLate\([\s\S]*playSemanticSongThenSpeak\(\s*"trip-started-late"/
+);
+
+for (
+    const name of
+        [
+            "trip-started",
+            "trip-started-early",
+            "trip-started-late"
+        ]
+) {
+    assert.equal(
+        catalog.songs[name].events.some(
+            event =>
+                typeof event.speech ===
+                "string"
+        ),
+        false
+    );
+}
 
 console.log(
-    "PASS direct end-to-start transition uses one spliced cue and makes subsequent trip-start notifications speech-only"
-);
-
-
-assert.match(
-    app,
-    /startTimeSetToNow:\s*false/
-);
-
-assert.match(
-    app,
-    /tripDraftStartWasPushedBackToNow\(\)[\s\S]*startTimeSetToNow ===\s*true/
-);
-
-assert.match(
-    app,
-    /toggleTripStartsNowTarget[\s\S]*startTimeSetToNow\s*=\s*selected/
-);
-
-assert.match(
-    app,
-    /startTimeSetToNow:[\s\S]*tripSettingsSession[\s\S]*\.startTimeSetToNow ===[\s\S]*true/
-);
-
-console.log(
-    "PASS second start chime is allowed only when Actual Start is explicitly set to Now"
+    "PASS five-note workflow suppresses the three start chimes through the disable stack while preserving speech layers"
 );
 
 
