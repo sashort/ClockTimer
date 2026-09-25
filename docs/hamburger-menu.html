@@ -138,7 +138,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Live DOM and size response</h3>
-<p><code>MutationObserver</code> and <code>ResizeObserver</code> feed one coalesced layout pass. Added, removed, moved, hidden, resized, and text-changed menu content is remeasured automatically; direct children added to <code>&lt;hamburger-menu&gt;</code> are adopted into the internal source.</p>
+<p><code>MutationObserver</code> and <code>ResizeObserver</code> feed one coalesced layout pass. Added, removed, moved, hidden, resized, and text-changed menu content is remeasured automatically; direct children added to <code>&lt;hamburger-menu&gt;</code> are adopted into the internal source. Resize targets are diffed instead of repeatedly disconnected/re-observed, avoiding observer feedback loops.</p>
 </div>
 <div class="card">
 <h3>Immutable hamburger anchor</h3>
@@ -177,7 +177,7 @@ kbd {
 <p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
 
 <h2>Safe boundary</h2>
-<p><code>safe-boundary</code> accepts a document selector. When it resolves, the element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary.</p>
+<p><code>safe-boundary</code> accepts a document selector. When it resolves, the element determines whether that boundary is above or below the hamburger and preserves the safe region on the hamburger's side of the boundary. While the menu is open, the component samples the boundary's live <code>getBoundingClientRect()</code> each animation frame, so CSS transforms and animations that move the boundary without resizing it still update pane limits.</p>
 
 <figure>
 <svg viewBox="0 0 900 330" role="img" aria-label="Boundary below the hamburger">
@@ -210,7 +210,7 @@ kbd {
 </figure>
 
 <h3>Margin rule</h3>
-<p>When a safe boundary exists, the external gap is calculated from the <strong>hamburger-menu element's margin</strong> plus the <strong>safe-boundary element's margin</strong>. The margin of the last menu item is <em>not</em> separately added to the boundary calculation.</p>
+<p>When a safe boundary exists, the external gap is calculated from the <strong>hamburger-menu element's margin</strong> plus the <strong>safe-boundary element's margin</strong>. The margin of the last menu item is <em>not</em> separately added to the boundary calculation. The resulting safe region is always clamped to the usable document/viewport edge, including document and body bottom margin and padding. If an animated boundary reaches that usable edge, panes stop there rather than extending past it.</p>
 
 <h3>No explicit safe boundary</h3>
 <p>If <code>safe-boundary</code> is omitted or cannot be resolved, the component first tries to discover a useful boundary. It prefers elements explicitly marked with <code>data-hamburger-safe-boundary</code>, then nearby semantic toolbar/status/footer elements and visible fixed or sticky layout elements. If no suitable boundary is found, the component falls back to the usable document/viewport edge, accounting for document and body bottom margin and padding.</p>
