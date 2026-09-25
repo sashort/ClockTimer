@@ -4665,6 +4665,85 @@ class SpeechMenu {
             .slice(0, limit);
     }
 
+    static #canonicalMatchTranscript(
+        element,
+        text,
+        groups,
+        matchingMode
+    ) {
+        if (
+            matchingMode !==
+                "compact"
+        ) {
+            return text;
+        }
+
+        const values =
+            groups &&
+            typeof groups ===
+                "object"
+                ? groups
+                : {};
+
+        const compact =
+            SpeechMenu
+                .#compactTranscript(
+                    text
+                );
+
+        for (
+            const phrase of
+            SpeechMenu
+                .#expandRegexSource(
+                    element
+                        .getAttribute(
+                            "speech-pattern"
+                        ) ||
+                    ""
+                )
+        ) {
+            const candidate =
+                SpeechMenu
+                    .#normalizeTranscript(
+                        String(
+                            phrase ||
+                            ""
+                        )
+                            .replace(
+                                /<([A-Za-z_$][\w$]*)>/g,
+                                (
+                                    token,
+                                    name
+                                ) =>
+                                    values[
+                                        name
+                                    ] ??
+                                    token
+                            )
+                    );
+
+            if (
+                /<[^>]+>/.test(
+                    candidate
+                )
+            ) {
+                continue;
+            }
+
+            if (
+                SpeechMenu
+                    .#compactTranscript(
+                        candidate
+                    ) ===
+                    compact
+            ) {
+                return candidate;
+            }
+        }
+
+        return text;
+    }
+
     static #prepare(
         element,
         force = false
@@ -5141,6 +5220,9 @@ class SpeechMenu {
         let matchingMode =
             "normal";
 
+        let matchedGroups =
+            {};
+
         for (
             const candidate of
             [
@@ -5181,6 +5263,10 @@ class SpeechMenu {
                 const values =
                     result.groups ||
                     {};
+
+                matchedGroups = {
+                    ...values
+                };
 
                 const named =
                     new Set(
@@ -5280,6 +5366,15 @@ class SpeechMenu {
             return false;
         }
 
+        const canonicalTranscript =
+            SpeechMenu
+                .#canonicalMatchTranscript(
+                    element,
+                    text,
+                    matchedGroups,
+                    matchingMode
+                );
+
         const matchDetail = {
             utteranceId,
             commandElement:
@@ -5289,6 +5384,7 @@ class SpeechMenu {
                 transcript,
             transcript:
                 text,
+            canonicalTranscript,
             matchingMode,
             correctionId:
                 correction?.correction
@@ -5359,6 +5455,7 @@ class SpeechMenu {
                 speechMenuElement,
                 transcript:
                     text,
+                canonicalTranscript,
                 arguments:
                     argumentValues.slice(),
                 targetSelector:
@@ -5381,6 +5478,7 @@ class SpeechMenu {
                 speechMenuElement,
                 transcript:
                     text,
+                canonicalTranscript,
                 arguments:
                     argumentValues.slice(),
                 targetSelector:
@@ -5534,6 +5632,7 @@ class SpeechMenu {
                     speechMenuElement,
                     transcript:
                         text,
+                    canonicalTranscript,
                     arguments:
                         argumentValues.slice(),
                     targetSelector:
@@ -5552,6 +5651,7 @@ class SpeechMenu {
                         element,
                     transcript:
                         text,
+                    canonicalTranscript,
                     utteranceId
                 }
             );
