@@ -15994,9 +15994,7 @@
                 return (
                     pendingSpeechReady !==
                         undefined &&
-                    !tripIsLive() &&
-                    !$("#newTripButton")
-                        ?.disabled
+                    !tripIsLive()
                 );
             },
 
@@ -16702,7 +16700,7 @@
                 return closeActiveSpeechSurface();
             },
 
-            speechRuntimeStarted() {
+            handleSpeechRuntimeStarted() {
                 setSpeechButtonState(
                     true,
                     false
@@ -16715,7 +16713,7 @@
                 return true;
             },
 
-            speechRuntimeStopped() {
+            handleSpeechRuntimeStopped() {
                 cancelPendingSpeechReady();
 
                 setSpeechButtonState(
@@ -16739,7 +16737,7 @@
                 return true;
             },
 
-            speechRuntimeMuted(
+            handleSpeechRuntimeMuted(
                 muted = true
             ) {
                 setSpeechButtonState(
@@ -16754,7 +16752,7 @@
                 return true;
             },
 
-            speechUtteranceStarted() {
+            handleSpeechUtteranceStarted() {
                 void globalThis
                     .WMOFPresentationSetters
                     ?.dismissSpeechResponse?.({
@@ -16907,19 +16905,13 @@
                 return true;
             },
 
-            readyAtContinuationAvailable() {
-                return (
-                    pendingSpeechReady !==
-                    undefined
-                );
-            },
-
             continueStartAt(
                 spokenTime
             ) {
                 if (
-                    !actions
-                        .readyAtContinuationAvailable()
+                    !globalThis
+                        .WMOFSpeechAvailability
+                        .canContinueStartAt()
                 ) {
                     return false;
                 }
@@ -20098,7 +20090,7 @@
             ) {
                 element.setAttribute(
                     "speech-available",
-                    "WMOFActions.readyAtContinuationAvailable"
+                    "WMOFSpeechAvailability.canContinueStartAt"
                 );
             }
             else {
@@ -20189,35 +20181,35 @@
             "started",
             () =>
                 actions
-                    .speechRuntimeStarted()
+                    .handleSpeechRuntimeStarted()
         );
 
         speechMicBar?.addEventListener(
             "utteranceStarted",
             () =>
                 actions
-                    .speechUtteranceStarted()
+                    .handleSpeechUtteranceStarted()
         );
 
         speechMicBar?.addEventListener(
             "stopped",
             () =>
                 actions
-                    .speechRuntimeStopped()
+                    .handleSpeechRuntimeStopped()
         );
 
         speechMicBar?.addEventListener(
             "speechCaptureEnded",
             () =>
                 actions
-                    .speechRuntimeStopped()
+                    .handleSpeechRuntimeStopped()
         );
 
         speechMicBar?.addEventListener(
             "muted",
             () =>
                 actions
-                    .speechRuntimeMuted(
+                    .handleSpeechRuntimeMuted(
                         true
                     )
         );
@@ -20226,7 +20218,7 @@
             "unmuted",
             () =>
                 actions
-                    .speechRuntimeMuted(
+                    .handleSpeechRuntimeMuted(
                         false
                     )
         );
