@@ -1348,25 +1348,30 @@
                 this.#popover.hidden =
                     false;
 
-                this.#beginOpeningMeasurement();
+                if (
+                    !this.#openingMeasured ||
+                    this.#openingMeasurementPromise
+                ) {
+                    this.#beginOpeningMeasurement();
 
-                this.style
-                    .setProperty(
-                        "--hamburger-menu-panel-height",
-                        "auto"
-                    );
+                    this.style
+                        .setProperty(
+                            "--hamburger-menu-panel-height",
+                            "auto"
+                        );
 
-                this.#viewport
-                    .style
-                    .removeProperty(
-                        "height"
-                    );
+                    this.#viewport
+                        .style
+                        .removeProperty(
+                            "height"
+                        );
 
-                this.#indicator.hidden =
-                    true;
+                    this.#indicator.hidden =
+                        true;
 
-                void this
-                    .#finishOpeningMeasurement();
+                    void this
+                        .#finishOpeningMeasurement();
+                }
             }
             else {
                 this.#openingMeasured =
