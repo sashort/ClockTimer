@@ -4012,6 +4012,41 @@
             return records;
         }
 
+        #rememberLeftBorders(entry) {
+            entry.leftBorderRecords = [
+                entry.submenu,
+                ...entry.submenu.querySelectorAll("*")
+            ]
+                .filter(element => element.getClientRects().length)
+                .map(element => ({
+                    element,
+                    style: getComputedStyle(element)
+                }))
+                .filter(record =>
+                    px(record.style.borderLeftWidth) > 0 &&
+                    record.style.borderLeftStyle !== "none"
+                )
+                .map(({ element, style }) => ({
+                    element,
+                    border: style.borderLeft,
+                    inline: element.style.getPropertyValue("border-left"),
+                    priority: element.style.getPropertyPriority("border-left")
+                }));
+        }
+
+        #restoreLeftBorders(entry) {
+            for (const record of entry.leftBorderRecords || []) {
+                if (record.inline) {
+                    record.element.style.setProperty(
+                        "border-left", record.inline, record.priority
+                    );
+                }
+                else {
+                    record.element.style.removeProperty("border-left");
+                }
+            }
+        }
+
         #createPromotionMask(
             originalRect,
             promotedRect,
@@ -4052,6 +4087,40 @@
 
             mask.className =
                 "hamburger-menu-promotion-mask";
+
+            // Snapshot the pane's painted appearance for this transition.
+            // Transparent panes inherit their visible surface from the
+            // popover, so use that surface when the pane paints nothing.
+            const paneStyle = getComputedStyle(
+                this.#currentPanel() || this.#viewport
+            );
+            const popoverStyle = getComputedStyle(this.#popover);
+            const paintsBackground =
+                paneStyle.backgroundImage !== "none" ||
+                !/^(transparent|rgba?\([^)]*,\s*0(?:\.0+)?\))$/.test(
+                    paneStyle.backgroundColor
+                );
+            const surface = paintsBackground
+                ? paneStyle
+                : popoverStyle;
+            const edge =
+                px(paneStyle.borderLeftWidth) > 0
+                    ? paneStyle
+                    : popoverStyle;
+
+            Object.assign(mask.style, {
+                boxSizing: "border-box",
+                background: surface.background,
+                color: surface.color,
+                border: edge.border,
+                borderRadius: edge.borderRadius,
+                boxShadow: paneStyle.boxShadow !== "none"
+                    ? paneStyle.boxShadow
+                    : popoverStyle.boxShadow,
+                backdropFilter: paneStyle.backdropFilter !== "none"
+                    ? paneStyle.backdropFilter
+                    : popoverStyle.backdropFilter
+            });
 
             mask.style.top =
                 (
@@ -4937,6 +5006,9 @@
                     .getBoundingClientRect()
                     .height;
 
+            entry.submenu.hidden = false;
+            this.#rememberLeftBorders(entry);
+
             const growing =
                 this
                     .#prepareGrowth(
@@ -5019,6 +5091,13 @@
             entry,
             generation
         ) {
+            // Restore the original line before the first collapse frame.
+            for (const record of entry.leftBorderRecords || []) {
+                record.element.style.setProperty(
+                    "border-left", record.border, "important"
+                );
+            }
+
             const openingMetrics =
                 new Map(
                     (
@@ -5092,6 +5171,8 @@
 
             entry.submenu.hidden =
                 true;
+
+            this.#restoreLeftBorders(entry);
 
             entry.button
                 .setAttribute(
@@ -6786,6 +6867,8 @@
 
                 entry.submenu.hidden =
                     true;
+
+                this.#restoreLeftBorders(entry);
 
                 entry.button
                     .setAttribute(

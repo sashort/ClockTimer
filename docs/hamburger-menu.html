@@ -300,6 +300,7 @@ kbd {
 </ol>
 
 <h3>Closing a promoted parent</h3>
+<p>Visible submenu borders on the left are recorded when children open and restored before their collapse animation begins. The promotion mask snapshots the active pane's painted style (or the popover's surface for a transparent pane) when it is created, so it matches the current panel appearance throughout the transition.</p>
 <ol>
 <li>Collapse the promoted parent's children completely while the pane remains frozen, then wait the same <strong>75 ms</strong> boundary pause.</li>
 <li>Show the previous parent and measure the placeholder that marks the nested parent's original slot.</li>
