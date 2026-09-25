@@ -13636,12 +13636,8 @@
         reserveSemanticEvent(event, "Trip goal derived automatically");
     }
 
-    function onTripGoalFailed(event) {
-        reserveSemanticEvent(event, "Trip goal failed");
-    }
-
-    function onTotalGoalFailed(event) {
-        reserveSemanticEvent(event, "Total goal failed");
+    function onGoalFail(event) {
+        reserveSemanticEvent(event, "One or more goals failed");
     }
 
     function onPercentModeChanged(event) {
@@ -13714,8 +13710,7 @@
         totalGoalSet: onTotalGoalSet,
         tripGoalSet: onTripGoalSet,
         tripGoalAutomaticallySet: onTripGoalAutomaticallySet,
-        tripGoalFailed: onTripGoalFailed,
-        totalGoalFailed: onTotalGoalFailed,
+        goalFail: onGoalFail,
         percentModeChanged: onPercentModeChanged,
         goalAutomaticallyAdjusted: onGoalAutomaticallyAdjusted,
         standardTimeChanged: onStandardTimeChanged,
