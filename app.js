@@ -865,6 +865,8 @@
     let numberPadSettings;
     let numberPadConnection;
     let numberPadClear;
+    let numberPadReset;
+    let numberPadCancel;
     let numberPadConfirm;
     let numberPadContext;
     let numberPadReadout;
@@ -10380,6 +10382,8 @@
                 numberPadSettings = $("#numberPadSettings");
                 numberPadConnection = $("#numberPadConnection");
                 numberPadClear = $("#numberPadClear");
+                numberPadReset = $("#numberPadReset");
+                numberPadCancel = $("#numberPadCancel");
                 numberPadConfirm = $("#numberPadConfirm");
                 numberPadContext = $("#numberPadContext");
                 numberPadReadout = $("#numberPadReadout");
