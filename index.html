@@ -881,7 +881,7 @@
                 <button id="cancelDownConfirmNo" type="button">No</button>
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
-                <speech-command data-speech-editor-id="builtin:yes:cancelDownConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^(?:yes|ok(?:ay)?)$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
+                <speech-command data-speech-editor-id="builtin:yes:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^(?:yes|ok(?:ay)?)$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
                 <speech-command data-speech-editor-id="builtin:no:cancelDownConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmNo" speech-pattern="^no$" speech-function="WMOFActions.keepDownTime"></speech-command>
             </speech-menu>
         </form>
