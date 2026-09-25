@@ -157,7 +157,7 @@ class SpeechMicBar extends HTMLElement {
 
                 :host([options-open])
                 #optionsPanel,
-                :host([training-mode][options-collapsed])
+                :host([options-collapsed])
                 #optionsPanel {
                     clip-path:
                         inset(
@@ -168,7 +168,7 @@ class SpeechMicBar extends HTMLElement {
                     pointer-events: auto;
                 }
 
-                :host([training-mode][options-collapsed])
+                :host([options-collapsed])
                 #optionsPanel {
                     max-height: 42px;
                     padding:
@@ -176,7 +176,7 @@ class SpeechMicBar extends HTMLElement {
                     overflow: hidden;
                 }
 
-                :host([training-mode][options-collapsed])
+                :host([options-collapsed])
                 #optionsGrid {
                     display: none;
                 }
@@ -1090,19 +1090,14 @@ class SpeechMicBar extends HTMLElement {
             ?.addEventListener(
                 "click",
                 () => {
-                    if (this.trainingMode) {
-                        if (
-                            this.optionsCollapsed
-                        ) {
-                            this.expandOptions();
-                        } else {
-                            this.collapseOptions();
-                        }
-
-                        return;
+                    if (
+                        this.optionsCollapsed
+                    ) {
+                        this.expandOptions();
                     }
-
-                    void this.hideOptions();
+                    else {
+                        this.collapseOptions();
+                    }
                 }
             );
         this.#bar = this.#shadow.querySelector("#bar");
@@ -2223,11 +2218,8 @@ class SpeechMicBar extends HTMLElement {
 
     collapseOptions() {
         if (
-            !this.trainingMode ||
-            (
-                !this.optionsOpen &&
-                !this.optionsCollapsed
-            )
+            !this.optionsOpen &&
+            !this.optionsCollapsed
         ) {
             return false;
         }
@@ -2258,7 +2250,6 @@ class SpeechMicBar extends HTMLElement {
 
     expandOptions() {
         if (
-            !this.trainingMode ||
             !this.optionsCollapsed
         ) {
             return false;
