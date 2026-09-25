@@ -1561,6 +1561,19 @@ assert.match(
     speechMenuSource,
     /static isCommandImplemented\(element\)/
 );
+
+assert.match(
+    speechMenuSource,
+    /const speechFunction\s*=\s*element\.getAttribute\([\s\S]*"speech-function"[\s\S]*const actionName\s*=\s*speechFunction[\s\S]*WMOFActions/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /const actionName\s*=\s*source[\s\S]{0,160}WMOFActions/
+);
+assert.match(
+    speechMenuSource,
+    /getImplementation\?\.\([\s\S]*actionName[\s\S]*element\.speechParameterFunc\s*=\s*implementation/
+);
 assert.doesNotMatch(
     speechMenuSource,
     /speech-implemented/
