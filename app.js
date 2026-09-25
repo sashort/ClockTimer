@@ -12525,6 +12525,7 @@
             speechField.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
+            speechField.setAttribute("speech-open-ended", "");
             ensureSpeechMenu(numberPadDialog).append(speechField);
         }
         const backspace =
