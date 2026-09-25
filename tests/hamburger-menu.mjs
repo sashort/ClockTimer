@@ -122,6 +122,11 @@ assert.match(
 
 assert.match(
     appCss,
+    /hamburger-menu-popover:not\(\[data-ready="true"\]\)/
+);
+
+assert.match(
+    appCss,
     /hamburger-menu\.main-menu:not\(:defined\)/
 );
 
@@ -457,6 +462,12 @@ autoMenu.remove();
 automaticBoundary.remove();
 menu.remove();
 boundary.remove();
+
+menu.remove();
+autoMenu.remove();
+automaticBoundary.remove();
+
+window.close();
 
 console.log(
     "hamburger-menu tests passed"
