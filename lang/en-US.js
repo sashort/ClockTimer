@@ -33,6 +33,7 @@
                 sync: "^sync(?: (?<syncAction>on|off))?$",
                 syncStatus: "^sync status$",
                 howLong: "^(?:how long|time)$",
+                when: "^when$",
                 lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
                 showTripLog: "^(?:show )?trip log$",
                 hideTripLog: "^(?:hide|close) trip log$",
