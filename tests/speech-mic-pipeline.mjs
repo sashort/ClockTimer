@@ -691,6 +691,19 @@ assert.match(
     app,
     /prepareStartMenu\(\)[\s\S]*armSpeechReadyContinuation\(\)[\s\S]*openStartMenuWorkflow/
 );
+
+assert.match(
+    app,
+    /scheduleStartAt\([\s\S]*fromReadyContinuation[\s\S]*pendingSpeechReady[\s\S]*newTripButton[\s\S]*!continuingReady/
+);
+assert.match(
+    app,
+    /continuingReady[\s\S]*numberPadDialog[\s\S]*workflow ===[\s\S]*"new-trip"[\s\S]*closeNumberPad\([\s\S]*discardPrepared:[\s\S]*false/
+);
+assert.match(
+    app,
+    /continueStartAt\([\s\S]*pendingSpeechReady[\s\S]*scheduleStartAt\([\s\S]*fromReadyContinuation:[\s\S]*true/
+);
 assert.doesNotMatch(
     app,
     /prepareStartMenu\(\)[\s\S]{0,700}1100/
