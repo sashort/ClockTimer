@@ -859,7 +859,6 @@
     let renderedTimeLongPressTimer;
     let renderedTimeLongPressed = false;
     let endTimeGoalOverride;
-    let endTimeLockDialogInitialScopes = [];
     let endTimeGoalLockFlashTimer;
     let syncNetworkStatus;
     let syncOfflineTransitionSequence = 0;
@@ -3813,33 +3812,38 @@
     function renderEndTimeGoalLock() {
         const lock = $("#endTimeGoalLock");
         if (!lock) return;
-        const scopes = endTimeGoalOverride?.scopes || [];
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        const appliesToMode = mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
-        const temporarilyVisible = endTimeGoalLockFlashTimer !== undefined && appliesToMode;
-        const hidden = !endTimeGoalOverride ||
-            (!temporarilyVisible && (
-                clockTimer.renderedTimeMode !== "calculated-end" ||
-                !appliesToMode
-            ));
-        const visibilityChanged = lock.hidden !== hidden;
+
+        const temporarilyVisible =
+            endTimeGoalLockFlashTimer !== undefined;
+
+        const hidden =
+            !endTimeGoalOverride ||
+            (
+                !temporarilyVisible &&
+                clockTimer.renderedTimeMode !==
+                    "calculated-end"
+            );
+
+        const visibilityChanged =
+            lock.hidden !== hidden;
+
         lock.hidden = hidden;
-        lock.setAttribute("aria-pressed", String(Boolean(endTimeGoalOverride)));
-        if (!hidden && visibilityChanged) requestAnimationFrame(alignStatusIcons);
+        lock.setAttribute(
+            "aria-pressed",
+            String(Boolean(endTimeGoalOverride))
+        );
+
+        if (!hidden && visibilityChanged) {
+            requestAnimationFrame(
+                alignStatusIcons
+            );
+        }
     }
 
-    function endTimeGoalDisplayScope(snapshot) {
-        if (!endTimeGoalOverride) return undefined;
-        const scopes = endTimeGoalOverride.scopes || [];
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        if (mode !== "auto") return scopes.includes(mode) ? mode : undefined;
-        if (scopes.includes(snapshot?.scope)) return snapshot.scope;
-        return scopes.includes("trip") ? "trip" : scopes.includes("total") ? "total" : undefined;
-    }
-
-    function endTimeGoalLockedForMode(mode = normalizePercentMode(clockTimer.percentMode)) {
-        const scopes = endTimeGoalOverride?.scopes || [];
-        return mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
+    function endTimeGoalLockedForMode() {
+        return Boolean(
+            endTimeGoalOverride
+        );
     }
 
     function flashEndTimeGoalLock() {
@@ -3870,25 +3874,6 @@
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
-    }
-
-    function selectedEndTimeLockScopes() {
-        return [
-            $("#endTimeTripLock")?.checked ? "trip" : undefined,
-            $("#endTimeTotalLock")?.checked ? "total" : undefined
-        ].filter(Boolean);
-    }
-
-    function refreshEndTimeLockDialog() {
-        const scopes = new Set(endTimeGoalOverride?.scopes || []);
-        endTimeLockDialogInitialScopes = [...scopes].sort();
-        $("#endTimeTripLock").checked = scopes.has("trip");
-        $("#endTimeTotalLock").checked = scopes.has("total");
-        $("#endTimeLockReleaseMessage").hidden = scopes.size !== 0;
-    }
-
-    function updateEndTimeLockReleaseMessage() {
-        $("#endTimeLockReleaseMessage").hidden = selectedEndTimeLockScopes().length !== 0;
     }
 
     function goalForDeadline(summary, scope, currentSummary, deadline) {
@@ -3928,35 +3913,6 @@
 
     function percentGoalAttribute(value) {
         return `${Number((value * 100).toFixed(6))}%`;
-    }
-
-    function setEndTimeGoalScopes(scopes) {
-        if (!endTimeGoalOverride) return false;
-        const normalized = [...new Set(scopes)].filter(scope => scope === "trip" || scope === "total");
-        if (normalized.length === 0) return releaseEndTimeGoalOverride();
-        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
-        const summary = clockTimer.getSummarySnapshot?.(endTimeGoalOverride.deadline);
-        const goals = Object.fromEntries(normalized.map(scope => [
-            scope,
-            goalForDeadline(summary, scope, currentSummary, endTimeGoalOverride.deadline)
-        ]));
-        if (normalized.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
-        clockTimer.configure({
-            auto_goal: false,
-            calculated_trip_goal:
-                normalized.includes("trip")
-                    ? percentGoalAttribute(goals.trip)
-                    : null,
-            calculated_total_goal:
-                normalized.includes("total")
-                    ? percentGoalAttribute(goals.total)
-                    : null,
-            calculated_goal_source: "end-time"
-        });
-        endTimeGoalOverride.scopes = normalized;
-        renderEndTimeGoalLock();
-        queueSummaryRefresh();
-        return true;
     }
 
     function recalculateEndTimeGoalOverride() {
@@ -4042,7 +3998,6 @@
         }
 
         endTimeGoalOverride = {
-            scopes: ["trip", "total"],
             deadline
         };
 
@@ -8548,75 +8503,11 @@
 
     $("#endTimeGoalLock")?.addEventListener("click", event => {
         event.stopPropagation();
-        if (clockTimer.percentMode !== "auto") {
-            globalThis
-                .WMOFActions
-                .releaseEndTimeGoal();
 
-            return;
-        }
-        refreshEndTimeLockDialog();
-        openDialogElement($("#endTimeLockDialog"), {
-            duration: 250,
-            reason: "end-time-lock-scopes"
-        });
-    });
-
-    for (const checkbox of [$("#endTimeTripLock"), $("#endTimeTotalLock")]) {
-        checkbox?.addEventListener("change", updateEndTimeLockReleaseMessage);
-    }
-
-    $("#endTimeLockForm")?.addEventListener(
-        "submit",
         globalThis
-            .WMOFInteractionFunctions
-            .define(
-                "changeEndTimeGoalScopesSubmit",
-                event => {
-                    event.preventDefault();
-
-                    const scopes =
-                        selectedEndTimeLockScopes()
-                            .sort();
-
-                    const unchanged =
-                        scopes.length ===
-                            endTimeLockDialogInitialScopes
-                                .length &&
-                        scopes.every(
-                            (
-                                scope,
-                                index
-                            ) =>
-                                scope ===
-                                endTimeLockDialogInitialScopes[
-                                    index
-                                ]
-                        );
-
-                    if (
-                        !unchanged &&
-                        !globalThis
-                            .WMOFActions
-                            .changeEndTimeGoalScopes(
-                                scopes
-                            )
-                    ) {
-                        return false;
-                    }
-
-                    closeDialog(
-                        $("#endTimeLockDialog"),
-                        {
-                            reason:
-                                "end-time-lock-scopes-saved"
-                        }
-                    );
-
-                    return true;
-                }
-            )
-    );
+            .WMOFActions
+            .releaseEndTimeGoal();
+    });
 
     function toggleClockTimerTypeFromTap() {
         if (!tripIsLive()) return false;
@@ -15846,20 +15737,20 @@
 
             openGoalEditor() {
                 if (
+                    endTimeGoalLockedForMode()
+                ) {
+                    flashEndTimeGoalLock();
+
+                    return false;
+                }
+
+                if (
                     clockTimer.percentMode ===
                         "auto"
                 ) {
                     openAutoGoalDialog();
 
                     return true;
-                }
-
-                if (
-                    endTimeGoalLockedForMode()
-                ) {
-                    flashEndTimeGoalLock();
-
-                    return false;
                 }
 
                 void openPercentGoalNumberPad(
@@ -17084,31 +16975,6 @@
                 );
 
                 return true;
-            },
-
-            changeEndTimeGoalScopes(
-                scopes
-            ) {
-                const normalized =
-                    Array.isArray(
-                        scopes
-                    )
-                        ? [
-                            ...new Set(
-                                scopes.filter(
-                                    scope =>
-                                        scope ===
-                                            "trip" ||
-                                        scope ===
-                                            "total"
-                                )
-                            )
-                        ].sort()
-                        : [];
-
-                return setEndTimeGoalScopes(
-                    normalized
-                );
             },
 
             releaseEndTimeGoal() {
