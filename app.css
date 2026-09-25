@@ -603,6 +603,7 @@ hamburger-menu.main-menu {
     justify-self: start;
     margin: 0;
     --hamburger-menu-indicator-color: var(--wm-blue-light, #a9ddf7);
+    --hamburger-menu-focus-background: rgb(0 30 96 / 96%);
 }
 
 .main-menu > .hamburger-menu-popover {
