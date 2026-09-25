@@ -756,14 +756,8 @@ class SpeechMicBar extends HTMLElement {
                     transition: color 180ms linear, background 180ms linear;
                 }
 
-                :host([training-mode]:not([training-locked]))
                 #mic {
                     cursor: pointer;
-                }
-
-                :host([training-mode][training-locked])
-                #mic {
-                    cursor: default;
                 }
 
                 #mic::before {
@@ -1145,17 +1139,9 @@ class SpeechMicBar extends HTMLElement {
                 }
             );
         this.#mic = this.#shadow.querySelector("#mic");
-        const toggleTrainingMic =
+        const toggleMic =
             event => {
-                if (!this.trainingMode) {
-                    return;
-                }
-
                 event.stopPropagation();
-
-                if (this.trainingLocked) {
-                    return;
-                }
 
                 const speechMenu =
                     globalThis.SpeechMenu;
@@ -1166,7 +1152,8 @@ class SpeechMicBar extends HTMLElement {
 
                 if (speechMenu.muted) {
                     void speechMenu.wake?.();
-                } else {
+                }
+                else {
                     void speechMenu.sleep?.();
                 }
             };
@@ -1174,7 +1161,7 @@ class SpeechMicBar extends HTMLElement {
         this.#mic
             ?.addEventListener(
                 "click",
-                toggleTrainingMic
+                toggleMic
             );
 
         this.#mic
@@ -1191,7 +1178,7 @@ class SpeechMicBar extends HTMLElement {
                     }
 
                     event.preventDefault();
-                    toggleTrainingMic(
+                    toggleMic(
                         event
                     );
                 }
