@@ -323,11 +323,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started",
-          "lang": "en-US"
         }
       ]
     },
@@ -352,11 +347,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started early",
-          "lang": "en-US"
         }
       ]
     },
@@ -381,11 +371,6 @@
           "tone": "D#8",
           "length": "1/2",
           "dynamic": "ff"
-        },
-        {
-          "offset": "3.99",
-          "speech": "Trip started late",
-          "lang": "en-US"
         }
       ]
     },
