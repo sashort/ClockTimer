@@ -20090,7 +20090,7 @@
                 totalGoal: "goals",
                 setTripGoal: "goals",
                 setTotalGoal: "goals",
-                readGoalMode: "informational",
+                readGoalMode: "settings",
                 goalMode: "settings",
                 readRenderedTime: "informational",
                 sync: "settings",
