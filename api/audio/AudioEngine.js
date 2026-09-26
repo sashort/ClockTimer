@@ -7,6 +7,8 @@
         #active = new Map();
         #sequence = 0;
         #reverbImpulses = new Map();
+        #noiseBuffers = new Map();
+        #distortionCurves = new Map();
         #outputSettings = {
             speechVolume: 1,
             toneVolume: 1,
@@ -780,6 +782,172 @@
             }
         }
 
+        #noiseBuffer(context, minimumSeconds = 0.25) {
+            const sampleRate =
+                Math.max(
+                    8000,
+                    Number(
+                        context.sampleRate
+                    ) ||
+                    48000
+                );
+            const seconds =
+                Math.max(
+                    0.25,
+                    Math.min(
+                        4,
+                        Math.ceil(
+                            Math.max(
+                                0,
+                                Number(
+                                    minimumSeconds
+                                ) ||
+                                0
+                            ) *
+                                4
+                        ) /
+                            4
+                    )
+                );
+            const key =
+                sampleRate +
+                ":" +
+                seconds.toFixed(
+                    2
+                );
+
+            if (
+                this.#noiseBuffers.has(
+                    key
+                )
+            ) {
+                return this.#noiseBuffers.get(
+                    key
+                );
+            }
+
+            const frameCount =
+                Math.max(
+                    1,
+                    Math.ceil(
+                        sampleRate *
+                        seconds
+                    )
+                );
+            const buffer =
+                context.createBuffer(
+                    1,
+                    frameCount,
+                    sampleRate
+                );
+            const samples =
+                buffer.getChannelData(
+                    0
+                );
+            let seed =
+                0x7f4a7c15;
+
+            for (
+                let index = 0;
+                index <
+                    samples.length;
+                index++
+            ) {
+                seed =
+                    (
+                        seed *
+                            1664525 +
+                        1013904223
+                    ) >>>
+                    0;
+
+                samples[index] =
+                    seed /
+                        0x100000000 *
+                        2 -
+                    1;
+            }
+
+            this.#noiseBuffers.set(
+                key,
+                buffer
+            );
+
+            return buffer;
+        }
+
+        #distortionCurve(amount) {
+            const clamped =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        Number(amount) ||
+                        0
+                    )
+                );
+            const key =
+                clamped.toFixed(
+                    4
+                );
+
+            if (
+                this.#distortionCurves.has(
+                    key
+                )
+            ) {
+                return this.#distortionCurves.get(
+                    key
+                );
+            }
+
+            const curve =
+                new Float32Array(
+                    1024
+                );
+            const drive =
+                1 +
+                clamped *
+                    24;
+
+            for (
+                let index = 0;
+                index <
+                    curve.length;
+                index++
+            ) {
+                const x =
+                    index *
+                        2 /
+                        (
+                            curve.length -
+                            1
+                        ) -
+                    1;
+
+                curve[index] =
+                    (
+                        1 +
+                        drive
+                    ) *
+                    x /
+                    (
+                        1 +
+                        drive *
+                            Math.abs(
+                                x
+                            )
+                    );
+            }
+
+            this.#distortionCurves.set(
+                key,
+                curve
+            );
+
+            return curve;
+        }
+
         #reverbImpulse(context, decay) {
             const seconds =
                 Math.max(
@@ -886,6 +1054,10 @@
         }
 
         #scheduleTone(context, entry, event, instrument, bpm, songGain) {
+            const nodesBefore =
+                new Set(
+                    entry.nodes
+                );
             const beatSeconds =
                 60 /
                 bpm;
@@ -1290,47 +1462,11 @@
                 const shaper =
                     context
                         .createWaveShaper();
-                const curve =
-                    new Float32Array(
-                        1024
-                    );
-                const drive =
-                    1 +
-                    amount *
-                        24;
-
-                for (
-                    let index = 0;
-                    index <
-                        curve.length;
-                    index++
-                ) {
-                    const x =
-                        index *
-                            2 /
-                            (
-                                curve.length -
-                                1
-                            ) -
-                        1;
-
-                    curve[index] =
-                        (
-                            1 +
-                            drive
-                        ) *
-                        x /
-                        (
-                            1 +
-                            drive *
-                                Math.abs(
-                                    x
-                                )
-                        );
-                }
 
                 shaper.curve =
-                    curve;
+                    this.#distortionCurve(
+                        amount
+                    );
                 shaper.oversample =
                     "2x";
 
@@ -1814,50 +1950,11 @@
                         startAt +
                             noiseDecay
                     );
-                const sampleRate =
-                    Math.max(
-                        8000,
-                        Number(
-                            context.sampleRate
-                        ) ||
-                        48000
-                    );
-                const frameCount =
-                    Math.max(
-                        1,
-                        Math.ceil(
-                            (
-                                noiseEnd -
-                                startAt
-                            ) *
-                                sampleRate
-                        )
-                    );
                 const buffer =
-                    context
-                        .createBuffer(
-                            1,
-                            frameCount,
-                            sampleRate
-                        );
-                const samples =
-                    buffer
-                        .getChannelData(
-                            0
-                        );
-
-                for (
-                    let index = 0;
-                    index <
-                    samples.length;
-                    index++
-                ) {
-                    samples[index] =
-                        Math.random() *
-                            2 -
-                        1;
-                }
-
+                    this.#noiseBuffer(
+                        context,
+                        noiseDecay
+                    );
                 const source =
                     context
                         .createBufferSource();
@@ -1928,6 +2025,59 @@
                     }
                 );
             }
+
+            const toneNodes =
+                Array.from(
+                    entry.nodes
+                ).filter(
+                    node =>
+                        !nodesBefore.has(
+                            node
+                        )
+                );
+            const cleanupDelay =
+                Math.max(
+                    0,
+                    (
+                        endAt +
+                        effectTail +
+                        0.05 -
+                        context.currentTime
+                    ) *
+                        1000
+                );
+            const cleanupTimer =
+                setTimeout(
+                    () => {
+                        entry.timers.delete(
+                            cleanupTimer
+                        );
+
+                        for (
+                            const node of
+                            toneNodes
+                        ) {
+                            entry.nodes.delete(
+                                node
+                            );
+
+                            try {
+                                node.stop?.();
+                            }
+                            catch {}
+
+                            try {
+                                node.disconnect?.();
+                            }
+                            catch {}
+                        }
+                    },
+                    cleanupDelay
+                );
+
+            entry.timers.add(
+                cleanupTimer
+            );
 
             return endAt + effectTail;
         }
