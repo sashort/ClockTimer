@@ -15701,12 +15701,12 @@
     function showTripEndTransitionOverlay(
         detail
     ) {
-        const summary =
-            detail?.summary;
-        const trip =
-            summary?.trip;
         const total =
-            summary?.total;
+            detail?.summary?.total;
+        const countedPercent =
+            Number(
+                total?.countedPercent
+            );
         const remaining =
             renderedGoalRemainingMilliseconds(
                 detail
@@ -15715,7 +15715,23 @@
             renderedGoalLabel(
                 detail
             );
-        let goalStateRow;
+        const rows = [];
+
+        if (
+            Number.isFinite(
+                countedPercent
+            )
+        ) {
+            rows.push(
+                tripTransitionRow(
+                    totalScopeLabel() +
+                        " Percent",
+                    formatSummaryPercent(
+                        countedPercent
+                    )
+                )
+            );
+        }
 
         if (
             Number.isFinite(
@@ -15723,73 +15739,39 @@
             ) &&
             goalLabel
         ) {
-            goalStateRow =
-                tripTransitionRow(
-                    remaining >=
-                        0
-                        ? "Banked Toward " +
-                            goalLabel
-                        : "Over " +
+            if (
+                remaining >
+                0
+            ) {
+                rows.push(
+                    tripTransitionRow(
+                        "Banked Toward " +
                             goalLabel,
-                    formatTripTransitionDuration(
-                        remaining
+                        formatTripTransitionDuration(
+                            remaining
+                        )
                     )
                 );
+            }
+            else if (
+                remaining <
+                0
+            ) {
+                rows.push(
+                    tripTransitionRow(
+                        "Over " +
+                            goalLabel,
+                        formatTripTransitionDuration(
+                            remaining
+                        )
+                    )
+                );
+            }
         }
 
         enqueueTripTransitionOverlay(
             "Trip Ended",
-            [
-                tripTransitionRow(
-                    "Stop Time",
-                    formatTripTransitionMoment(
-                        detail
-                            ?.stopTime
-                    )
-                ),
-                tripTransitionRow(
-                    "Actual Time",
-                    formatTripTransitionDuration(
-                        trip
-                            ?.actualTimeElapsedMilliseconds
-                    )
-                ),
-                tripTransitionRow(
-                    "Counted Time",
-                    formatTripTransitionDuration(
-                        trip
-                            ?.countedTimeElapsedMilliseconds
-                    )
-                ),
-                tripTransitionRow(
-                    "Standard Time",
-                    trip
-                        ?.standardTime
-                ),
-                tripTransitionRow(
-                    "Trip Percent",
-                    formatSummaryPercent(
-                        trip
-                            ?.countedPercent
-                    )
-                ),
-                tripTransitionRow(
-                    "Trip Goal",
-                    formatSummaryPercent(
-                        trip
-                            ?.percentGoal
-                    )
-                ),
-                tripTransitionRow(
-                    totalScopeLabel() +
-                        " Percent",
-                    formatSummaryPercent(
-                        total
-                            ?.countedPercent
-                    )
-                ),
-                goalStateRow
-            ]
+            rows
         );
     }
 
