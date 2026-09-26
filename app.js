@@ -1199,6 +1199,10 @@
     const audioAnnouncementSelectedLabel = $("#audioAnnouncementSelectedLabel");
     const audioAnnouncementMobileAttributeRow = $("#audioAnnouncementMobileAttributeRow");
     const audioAnnouncementMobileOverrides = $("#audioAnnouncementMobileOverrides");
+    const audioAnnouncementPreview = $("#audioAnnouncementPreview");
+    const audioAnnouncementApplyCustom = $("#audioAnnouncementApplyCustom");
+    const audioAnnouncementResetCustom = $("#audioAnnouncementResetCustom");
+    const audioAnnouncementCancelCustom = $("#audioAnnouncementCancelCustom");
     const audioSpeechVolume = $("#audioSpeechVolume");
     const audioToneVolume = $("#audioToneVolume");
     const audioInstrument = $("#audioInstrument");
@@ -1225,6 +1229,7 @@
     let tripTransitionOverlayActive = false;
     let tripTransitionOverlayTimer;
     let tripTransitionOverlayHideTimer;
+    let audioAnnouncementDraft;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
@@ -1548,12 +1553,17 @@
     }
 
     function audioAnnouncementOutput(
-        announcement
+        announcement,
+        rowOverride
     ) {
-        const custom =
+        const row =
+            rowOverride ||
             audioSettings.rows[
                 announcement
-            ]?.custom ||
+            ] ||
+            {};
+        const custom =
+            row.custom ||
             {};
 
         const resolve =
@@ -1601,6 +1611,67 @@
                 )
         };
     }
+
+    function cloneAudioAnnouncementRow(
+        row
+    ) {
+        return row
+            ? structuredClone(
+                row
+            )
+            : undefined;
+    }
+
+    function selectedAudioAnnouncement() {
+        return audioAnnouncementMobileAttributeRow
+            ?.dataset
+            .audioAnnouncement;
+    }
+
+    function selectedAudioAnnouncementState() {
+        const announcement =
+            selectedAudioAnnouncement();
+
+        if (!announcement) {
+            return undefined;
+        }
+
+        return audioAnnouncementDraft?.announcement ===
+            announcement
+            ? audioAnnouncementDraft.row
+            : audioSettings.rows[
+                announcement
+            ];
+    }
+
+    function beginAudioAnnouncementDraft(
+        announcement
+    ) {
+        const row =
+            audioSettings.rows[
+                announcement
+            ];
+
+        if (!row) {
+            audioAnnouncementDraft =
+                undefined;
+            return;
+        }
+
+        audioAnnouncementDraft = {
+            announcement,
+            row:
+                cloneAudioAnnouncementRow(
+                    row
+                )
+        };
+    }
+
+    function discardAudioAnnouncementDraft() {
+        audioAnnouncementDraft =
+            undefined;
+    }
+
 
     async function populateAudioInstrumentOptions() {
         if (!audioInstrument) return;
@@ -1859,6 +1930,8 @@
                 : entry[1];
 
         if (master) {
+            discardAudioAnnouncementDraft();
+
             audioAnnouncementMobileAttributeRow
                 .removeAttribute(
                     "data-audio-announcement"
@@ -1876,6 +1949,10 @@
             }
         }
         else {
+            beginAudioAnnouncementDraft(
+                selection
+            );
+
             audioAnnouncementMobileAttributeRow
                 .dataset
                 .audioAnnouncement =
@@ -1950,7 +2027,12 @@
             const key =
                 row.dataset.audioAnnouncement;
             const state =
-                audioSettings.rows[key];
+                row ===
+                    audioAnnouncementMobileAttributeRow &&
+                audioAnnouncementDraft?.announcement ===
+                    key
+                    ? audioAnnouncementDraft.row
+                    : audioSettings.rows[key];
             if (!state) continue;
 
             const rowMaster =
@@ -1975,15 +2057,9 @@
         }
 
         const selectedAnnouncement =
-            audioAnnouncementMobileAttributeRow
-                ?.dataset
-                .audioAnnouncement;
+            selectedAudioAnnouncement();
         const selectedState =
-            selectedAnnouncement
-                ? audioSettings.rows[
-                    selectedAnnouncement
-                ]
-                : undefined;
+            selectedAudioAnnouncementState();
 
         for (
             const control of
@@ -2115,6 +2191,8 @@
     audioSettingsDialog?.addEventListener(
         "opening",
         () => {
+            discardAudioAnnouncementDraft();
+
             audioAnnouncementPage
                 ?.reset?.();
             audioAnnouncementMobileAttributeRow
@@ -2160,8 +2238,179 @@
         ?.addEventListener(
             "click",
             () => {
+                discardAudioAnnouncementDraft();
+                renderAudioSettings();
+
                 void audioAnnouncementPage
                     ?.back?.();
+            }
+        );
+
+    audioAnnouncementPreview
+        ?.addEventListener(
+            "click",
+            async () => {
+                const announcement =
+                    selectedAudioAnnouncement();
+                const row =
+                    selectedAudioAnnouncementState();
+                const audio =
+                    globalThis.WMOFAudio;
+
+                if (
+                    !announcement ||
+                    !row ||
+                    !audio
+                ) {
+                    return;
+                }
+
+                const label =
+                    AUDIO_ANNOUNCEMENTS
+                        .find(
+                            ([key]) =>
+                                key ===
+                                announcement
+                        )?.[1] ||
+                    "Announcement";
+                const output =
+                    audioAnnouncementOutput(
+                        announcement,
+                        row
+                    );
+                const chimeEnabled =
+                    row.enabled !== false &&
+                    row.chime !== -1 &&
+                    audioSettings.masters.chime !==
+                        false;
+                const speechEnabled =
+                    row.enabled !== false &&
+                    row.summary !== -1 &&
+                    audioSettings.masters.summary !==
+                        false;
+
+                try {
+                    let chimePlayed =
+                        false;
+
+                    if (chimeEnabled) {
+                        const song =
+                            await audio.startSong?.(
+                                announcement,
+                                {
+                                    bpm: 180,
+                                    includeTones: true,
+                                    includeSpeech: false,
+                                    toneVolume:
+                                        output.toneVolume,
+                                    toneVelocity:
+                                        output.toneVelocity,
+                                    speechVolume:
+                                        output.speechVolume,
+                                    speechVelocity:
+                                        output.speechVelocity
+                                }
+                            );
+
+                        chimePlayed =
+                            Boolean(
+                                song?.hasChime
+                            );
+
+                        if (chimePlayed) {
+                            await song?.finished;
+
+                            if (
+                                speechEnabled &&
+                                output.speechDelayMs >
+                                    0
+                            ) {
+                                await wait(
+                                    output.speechDelayMs
+                                );
+                            }
+                        }
+                    }
+
+                    if (speechEnabled) {
+                        audio.speak?.(
+                            label,
+                            {
+                                speechVolume:
+                                    output.speechVolume,
+                                speechVelocity:
+                                    output.speechVelocity
+                            }
+                        );
+                    }
+                }
+                catch (error) {
+                    console.error(
+                        "Audio preview failed:",
+                        announcement,
+                        error
+                    );
+                }
+            }
+        );
+
+    audioAnnouncementApplyCustom
+        ?.addEventListener(
+            "click",
+            () => {
+                const draft =
+                    audioAnnouncementDraft;
+
+                if (!draft) {
+                    return;
+                }
+
+                audioSettings.rows[
+                    draft.announcement
+                ] =
+                    cloneAudioAnnouncementRow(
+                        draft.row
+                    );
+
+                saveAudioSettings();
+                beginAudioAnnouncementDraft(
+                    draft.announcement
+                );
+                renderAudioSettings();
+            }
+        );
+
+    audioAnnouncementResetCustom
+        ?.addEventListener(
+            "click",
+            () => {
+                const state =
+                    selectedAudioAnnouncementState();
+
+                if (!state) {
+                    return;
+                }
+
+                delete state.custom;
+                renderAudioSettings();
+            }
+        );
+
+    audioAnnouncementCancelCustom
+        ?.addEventListener(
+            "click",
+            () => {
+                const announcement =
+                    selectedAudioAnnouncement();
+
+                if (!announcement) {
+                    return;
+                }
+
+                beginAudioAnnouncementDraft(
+                    announcement
+                );
+                renderAudioSettings();
             }
         );
 
@@ -2186,9 +2435,10 @@
                         ?.dataset
                         .audioAnnouncement;
                 const state =
-                    audioSettings.rows[
+                    audioAnnouncementDraft?.announcement ===
                         announcement
-                    ];
+                        ? audioAnnouncementDraft.row
+                        : undefined;
                 const property =
                     customControl.dataset
                         .audioCustomSetting;
@@ -2259,7 +2509,6 @@
                 }
 
                 renderAudioSettings();
-                saveAudioSettings();
                 return;
             }
 
@@ -2299,11 +2548,20 @@
                     target.closest?.(
                         "[data-audio-announcement]"
                     );
+                const rowAnnouncement =
+                    row?.dataset
+                        .audioAnnouncement;
+                const isDraftRow =
+                    row ===
+                        audioAnnouncementMobileAttributeRow &&
+                    audioAnnouncementDraft?.announcement ===
+                        rowAnnouncement;
                 const state =
-                    audioSettings.rows[
-                        row?.dataset
-                            .audioAnnouncement
-                    ];
+                    isDraftRow
+                        ? audioAnnouncementDraft.row
+                        : audioSettings.rows[
+                            rowAnnouncement
+                        ];
 
                 if (
                     state &&
@@ -2332,7 +2590,15 @@
 
             renderAudioSettings();
             applyAudioOutputSettings();
-            saveAudioSettings();
+
+            const selectedDraftRow =
+                target.closest?.(
+                    "#audioAnnouncementMobileAttributeRow"
+                );
+
+            if (!selectedDraftRow) {
+                saveAudioSettings();
+            }
         }
     );
 
