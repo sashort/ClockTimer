@@ -2162,23 +2162,83 @@
     }
 
     function getAppContentMetrics() {
-        const rect = app.getBoundingClientRect();
+        const appRect = app.getBoundingClientRect();
         const style = getComputedStyle(app);
         const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
         const paddingRight = Number.parseFloat(style.paddingRight) || 0;
         const paddingTop = Number.parseFloat(style.paddingTop) || 0;
         const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
         const height = tripLogButton?.offsetHeight || 74;
+        const visualViewport =
+            globalThis.visualViewport;
+        const viewportLeft =
+            visualViewport?.offsetLeft ??
+            0;
+        const viewportTop =
+            visualViewport?.offsetTop ??
+            0;
+        const viewportRight =
+            viewportLeft +
+            (
+                visualViewport?.width ??
+                globalThis.innerWidth
+            );
+        const viewportBottom =
+            viewportTop +
+            (
+                visualViewport?.height ??
+                globalThis.innerHeight
+            );
+        const left =
+            Math.max(
+                appRect.left +
+                    paddingLeft,
+                viewportLeft
+            );
+        const right =
+            Math.min(
+                appRect.right -
+                    paddingRight,
+                viewportRight
+            );
+        const top =
+            Math.max(
+                appRect.top +
+                    paddingTop,
+                viewportTop
+            );
+        const bottom =
+            Math.min(
+                appRect.bottom -
+                    paddingBottom,
+                viewportBottom
+            );
+        const rect = {
+            left,
+            top,
+            right,
+            bottom,
+            width:
+                Math.max(
+                    0,
+                    right - left
+                ),
+            height:
+                Math.max(
+                    0,
+                    bottom - top
+                )
+        };
 
         return {
             rect,
-            paddingLeft,
-            paddingRight,
-            paddingTop,
-            paddingBottom,
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
             height,
-            left: rect.left + paddingLeft,
-            width: Math.max(0, rect.width - paddingLeft - paddingRight)
+            left,
+            width: rect.width
         };
     }
 
