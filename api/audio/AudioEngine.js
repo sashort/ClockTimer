@@ -138,8 +138,7 @@
                     await this.prepare();
 
                 this.#prepareAudioResources(
-                    context,
-                    catalog
+                    context
                 );
 
                 return true;
@@ -306,8 +305,7 @@
         }
 
         #prepareAudioResources(
-            context,
-            catalog
+            context
         ) {
             if (
                 this.#audioResourcesReady
@@ -319,22 +317,6 @@
                 context,
                 0.25
             );
-
-            for (
-                const [
-                    name,
-                    instrument
-                ] of Object.entries(
-                    catalog?.instruments ||
-                    {}
-                )
-            ) {
-                this.#instrumentResource(
-                    context,
-                    name,
-                    instrument
-                );
-            }
 
             this.#audioResourcesReady =
                 true;
@@ -2840,8 +2822,7 @@
             const context = await this.#audioContext();
 
             this.#prepareAudioResources(
-                context,
-                catalog
+                context
             );
 
             const tempo =
