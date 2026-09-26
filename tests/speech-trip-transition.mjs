@@ -225,3 +225,18 @@ assert.match(
 console.log(
     "PASS trip-end overlay shows for seven seconds with emphasized code values and the intended stacking order"
 );
+
+
+assert.match(
+    app,
+    /async function waitForTripTransitionOverlay\([\s\S]*tripTransitionOverlayActive[\s\S]*setTimeout/
+);
+
+assert.match(
+    app,
+    /resetCompletedTrip\(\)[\s\S]*await waitForTripTransitionOverlay\(\)[\s\S]*beginNewTripWorkflow/
+);
+
+console.log(
+    "PASS new-trip keypad waits until the trip-end summary closes"
+);
