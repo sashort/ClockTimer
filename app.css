@@ -41,6 +41,7 @@ button {
     --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
     --trip-log-layout-duration: 1000ms;
+    --trip-log-shell-radius: 14px;
 
     width: 100vw;
     height: 100dvh;
@@ -540,7 +541,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
     padding: 0;
     align-self: start;
     border: 3px solid #000;
-    border-radius: 14px;
+    border-radius: var(--trip-log-shell-radius);
     color: var(--wm-white);
     background: var(--wm-gray);
     font-size: 48px;
@@ -3683,7 +3684,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    border-radius: 14px;
+    border-radius: var(--trip-log-shell-radius);
     transform: none;
     opacity: 0.58;
     transition:
@@ -3703,12 +3704,20 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 .trip-log-button.trip-log-merged {
     border-bottom-color: transparent;
-    border-radius: 14px 14px 0 0;
+    border-radius:
+        var(--trip-log-shell-radius)
+        var(--trip-log-shell-radius)
+        0
+        0;
 }
 
 .trip-log-body.trip-log-merged {
     border-top-color: transparent;
-    border-radius: 0 0 14px 14px;
+    border-radius:
+        0
+        0
+        var(--trip-log-shell-radius)
+        var(--trip-log-shell-radius);
     opacity: 1;
 }
 
