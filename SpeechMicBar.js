@@ -87,6 +87,11 @@ class SpeechMicBar extends HTMLElement {
         this.#shadow.innerHTML = `
             <style>
                 :host {
+                    --speech-shell-radius:
+                        var(
+                            --trip-log-shell-radius,
+                            14px
+                        );
                     box-sizing: border-box;
                     width: 100%;
                     height: 74px;
@@ -125,7 +130,10 @@ class SpeechMicBar extends HTMLElement {
                         rgb(255 255 255 / 38%);
                     border-bottom: 0;
                     border-radius:
-                        14px 14px 0 0;
+                        var(--speech-shell-radius)
+                        var(--speech-shell-radius)
+                        0
+                        0;
                     background:
                         linear-gradient(
                             180deg,
@@ -139,7 +147,11 @@ class SpeechMicBar extends HTMLElement {
                     clip-path:
                         inset(
                             100% 0 0 0
-                            round 14px 14px 0 0
+                            round
+                                var(--speech-shell-radius)
+                                var(--speech-shell-radius)
+                                0
+                                0
                         );
                     opacity: 0;
                     pointer-events: none;
@@ -159,7 +171,11 @@ class SpeechMicBar extends HTMLElement {
                     clip-path:
                         inset(
                             0
-                            round 14px 14px 0 0
+                            round
+                                var(--speech-shell-radius)
+                                var(--speech-shell-radius)
+                                0
+                                0
                         );
                     opacity: 1;
                     pointer-events: auto;
@@ -645,7 +661,7 @@ class SpeechMicBar extends HTMLElement {
                     --speech-mic-bar-bottom-radius:
                         var(
                             --speech-mic-bar-border-radius,
-                            14px
+                            var(--speech-shell-radius)
                         );
                     --speech-mic-bar-seam-width:
                         var(
