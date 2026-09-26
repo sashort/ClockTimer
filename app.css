@@ -5625,6 +5625,22 @@ speech-command {
     font-variant-numeric: tabular-nums;
 }
 
+.audio-instrument-setting select {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    color: inherit;
+    font: inherit;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 7px;
+    background: var(--wm-blue-dark);
+}
+
+.audio-setting-spacer {
+    display: block;
+}
+
 .audio-master-velocity {
     padding-block: 10px;
     border-block: 1px solid rgb(255 255 255 / 20%);
@@ -5705,6 +5721,14 @@ speech-command {
 
     .audio-settings-levels > label > span {
         grid-column: 1 / -1;
+    }
+
+    .audio-instrument-setting select {
+        grid-column: 1 / -1;
+    }
+
+    .audio-instrument-setting .audio-setting-spacer {
+        display: none;
     }
 }
 
