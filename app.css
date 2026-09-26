@@ -2191,15 +2191,14 @@ body:has(.app[data-interval-state="down"])::after {
     position: fixed;
     inset: 0;
     z-index: 2147483644;
-    width: auto;
-    height: auto;
+    width: 100vw;
+    height: 100dvh;
     max-width: none;
     max-height: none;
     margin: 0;
     padding: 18px;
     border: 0;
     background: transparent;
-    display: grid;
     place-items: center;
     pointer-events: none;
     opacity: 0;
@@ -2209,8 +2208,12 @@ body:has(.app[data-interval-state="down"])::after {
         visibility 260ms step-end;
 }
 
-.trip-transition-overlay[hidden] {
-    display: none;
+.trip-transition-overlay[open] {
+    display: grid;
+}
+
+.trip-transition-overlay::backdrop {
+    background: transparent;
 }
 
 .trip-transition-overlay.is-visible {
