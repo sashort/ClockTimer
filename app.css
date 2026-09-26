@@ -550,6 +550,11 @@ clock-timer[hide-second-hand]::part(second-hand) {
     will-change: transform;
 }
 
+.app:has(> speech-mic-bar:is([options-collapsed], [options-open]))
+.trip-log-button:not(.trip-log-floating) {
+    transform: translateY(-42px);
+}
+
 .app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
     visibility: hidden;
     pointer-events: none;
