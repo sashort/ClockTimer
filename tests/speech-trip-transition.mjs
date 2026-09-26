@@ -10,6 +10,24 @@ const app =
         "utf8"
     );
 
+const index =
+    fs.readFileSync(
+        new URL(
+            "../index.html",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+const css =
+    fs.readFileSync(
+        new URL(
+            "../app.css",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
 const catalog =
     JSON.parse(
         fs.readFileSync(
@@ -152,4 +170,48 @@ assert.match(
 
 console.log(
     "PASS semantic suppression uses consumable accumulators: 0 performs, -1 stays user-disabled, positive counts decrement and suppress"
+);
+
+assert.match(
+    index,
+    /id="tripTransitionOverlay"[\s\S]*id="tripTransitionOverlayDetails"/
+);
+
+assert.match(
+    css,
+    /\.trip-transition-overlay-panel[\s\S]*border:\s*5px solid rgb\(169 221 247 \/ 92%\)/
+);
+
+assert.match(
+    app,
+    /setTimeout\([\s\S]*5000[\s\S]*tripTransitionOverlayQueue/
+);
+
+assert.match(
+    app,
+    /onTripStarted\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"on-time"/
+);
+
+assert.match(
+    app,
+    /onTripStartedEarly\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"early"/
+);
+
+assert.match(
+    app,
+    /onTripStartedLate\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"late"/
+);
+
+assert.match(
+    app,
+    /onTripEnded\([\s\S]*showTripEndTransitionOverlay/
+);
+
+assert.match(
+    app,
+    /document\.createElement\(\s*"code"\s*\)/
+);
+
+console.log(
+    "PASS trip start/end overlays are queued for five seconds and emphasize values with code elements"
 );
