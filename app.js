@@ -2175,6 +2175,94 @@
                 return;
             }
 
+            const customControl =
+                target.closest?.(
+                    "[data-audio-custom-setting]"
+                );
+
+            if (customControl) {
+                const announcement =
+                    audioAnnouncementMobileAttributeRow
+                        ?.dataset
+                        .audioAnnouncement;
+                const state =
+                    audioSettings.rows[
+                        announcement
+                    ];
+                const property =
+                    customControl.dataset
+                        .audioCustomSetting;
+                const enabled =
+                    customControl.querySelector(
+                        "[data-audio-custom-enabled]"
+                    );
+                const slider =
+                    customControl.querySelector(
+                        "[data-audio-custom-value]"
+                    );
+
+                if (
+                    !state ||
+                    !property ||
+                    !enabled ||
+                    !slider
+                ) {
+                    return;
+                }
+
+                if (
+                    target.matches?.(
+                        "[data-audio-custom-enabled]"
+                    )
+                ) {
+                    if (target.checked) {
+                        state.custom ||=
+                            {};
+                        state.custom[property] =
+                            Number(
+                                slider.value ||
+                                audioSettings[
+                                    property
+                                ]
+                            );
+                    }
+                    else if (state.custom) {
+                        delete state
+                            .custom[
+                                property
+                            ];
+
+                        if (
+                            !Object.keys(
+                                state.custom
+                            ).length
+                        ) {
+                            delete state.custom;
+                        }
+                    }
+                }
+                else if (
+                    target.matches?.(
+                        "[data-audio-custom-value]"
+                    )
+                ) {
+                    if (!enabled.checked) {
+                        return;
+                    }
+
+                    state.custom ||=
+                        {};
+                    state.custom[property] =
+                        Number(
+                            target.value
+                        );
+                }
+
+                renderAudioSettings();
+                saveAudioSettings();
+                return;
+            }
+
             if (target === audioSpeechVolume) {
                 audioSettings.speechVolume =
                     Number(target.value);
@@ -15419,6 +15507,11 @@
             return;
         }
 
+        const output =
+            audioAnnouncementOutput(
+                name
+            );
+
         void audio
             .startSong(
                 name,
@@ -15428,6 +15521,18 @@
                         chime.perform,
                     includeSpeech:
                         summary.perform,
+                    speechVolume:
+                        output.speechVolume,
+                    toneVolume:
+                        output.toneVolume,
+                    speechVelocity:
+                        output.speechVelocity,
+                    toneVelocity:
+                        output.toneVelocity,
+                    speechDelayMs:
+                        chime.perform
+                            ? output.speechDelayMs
+                            : 0,
                     ...options
                 }
             )
@@ -15454,6 +15559,10 @@
                 "chime"
             );
 
+        const output =
+            audioAnnouncementOutput(
+                name
+            );
         let played =
             false;
 
@@ -15466,15 +15575,36 @@
                             {
                                 bpm: 180,
                                 includeSpeech: false,
+                                speechVolume:
+                                    output.speechVolume,
+                                toneVolume:
+                                    output.toneVolume,
+                                speechVelocity:
+                                    output.speechVelocity,
+                                toneVelocity:
+                                    output.toneVelocity,
                                 ...options
                             }
                         );
 
                 played =
-                    Boolean(song);
+                    Boolean(
+                        song?.hasChime
+                    );
 
-                await song
-                    ?.finished;
+                if (played) {
+                    await song
+                        ?.finished;
+
+                    if (
+                        output.speechDelayMs >
+                            0
+                    ) {
+                        await wait(
+                            output.speechDelayMs
+                        );
+                    }
+                }
             }
             catch (error) {
                 console.error(
@@ -15486,7 +15616,15 @@
         }
 
         if (speech && audio?.speak) {
-            audio.speak(speech);
+            audio.speak(
+                speech,
+                {
+                    speechVolume:
+                        output.speechVolume,
+                    speechVelocity:
+                        output.speechVelocity
+                }
+            );
         }
 
         return {
