@@ -213,6 +213,21 @@ assert.match(
 );
 
 assert.match(
+    app,
+    /numberPadDialog[\s\S]*classList[\s\S]*add\([\s\S]*"trip-transition-suppressed"/
+);
+
+assert.match(
+    app,
+    /numberPadDialog[\s\S]*classList[\s\S]*remove\([\s\S]*"trip-transition-suppressed"/
+);
+
+assert.match(
+    css,
+    /\.number-pad-dialog\.trip-transition-suppressed[\s\S]*visibility:\s*hidden/
+);
+
+assert.match(
     css,
     /\.trip-transition-overlay\s*\{[\s\S]*z-index:\s*2147483644/
 );
