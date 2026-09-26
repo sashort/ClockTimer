@@ -111,7 +111,7 @@ kbd {
 </div>
 
 <div class="note">
-<strong>Component boundary:</strong> <code>HamburgerMenu.js</code> depends on <code>PanePage.js</code> and creates each packed horizontal menu panel as a <code>&lt;pane-page class="hamburger-menu-panel pane-page-horizontal-item"&gt;</code>. <code>&lt;pane-page&gt;</code> is the reusable page/view primitive. Hamburger-specific horizontal swiping, page indexing, indicator behavior, safe-boundary packing, and menu-parent promotion remain owned by <code>&lt;hamburger-menu&gt;</code>.
+<strong>Component boundary:</strong> <code>HamburgerMenu.js</code> depends on <code>PanePage.js</code> and creates each packed horizontal menu panel as a <code>&lt;pane-page class="hamburger-menu-panel pane-page-horizontal-item"&gt;</code>. <code>&lt;pane-page&gt;</code> is the reusable page/view primitive. Hamburger-specific horizontal swiping, page indexing, indicator behavior, safe-boundary packing, and menu-parent promotion remain owned by <code>&lt;hamburger-menu&gt;</code>. Hamburger does not set, enable, disable, or interpret PanePage's optional <code>overflow</code> attribute.
 </div>
 
 <h2>Core behavior</h2>
@@ -130,7 +130,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Horizontal paging</h3>
-<p>Normal content never vertically scrolls. If it is too tall, the element packs top-level rows into horizontally swipeable <code>&lt;pane-page&gt;</code> elements. Every normal page uses the height of the tallest page in that layout. <strong>The left/right swipe gesture, current-page calculation, scroll snapping, and page indicator are HamburgerMenu behavior, not PanePage behavior.</strong></p>
+<p>Normal Hamburger content never vertically scrolls. If it is too tall, Hamburger packs top-level rows into horizontally swipeable <code>&lt;pane-page&gt;</code> elements. Every normal page uses the height of the tallest page in that layout. <strong>The left/right sibling-page swipe gesture, current-page calculation, scroll snapping, and page indicator are HamburgerMenu behavior, not PanePage behavior.</strong> Hamburger leaves PanePage's generic content-overflow option untouched.</p>
 <p>Once a touch/pen gesture commits horizontally, the menu displays a vertical target strip at the destination edge: left edge for the next page, right edge for the previous page. The strip both confirms that the gesture has entered panel-swipe mode and marks the region the pointer must reach to complete the page switch. If the target is not reached, release returns to the current page. The cue is omitted when there is no sibling page in that direction.</p>
 </div>
 <div class="card">
