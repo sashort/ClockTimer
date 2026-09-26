@@ -4249,12 +4249,24 @@ class SpeechMenu {
                 }
             };
 
-        append(system);
-
         if (SpeechMenu.#sleeping) {
+            append(
+                system.filter(
+                    element =>
+                        element.dataset
+                            ?.speechSystemCommand ===
+                            "wake" ||
+                        element.getAttribute(
+                            "speech-function"
+                        ) ===
+                            "SpeechMenu.wake"
+                )
+            );
+
             return result;
         }
 
+        append(system);
         append(topLevel);
 
         const dialog =
