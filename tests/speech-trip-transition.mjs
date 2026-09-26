@@ -214,6 +214,16 @@ assert.match(
 
 assert.match(
     app,
+    /function promoteTripTransitionOverlayTopLayer\([\s\S]*tripTransitionOverlay\.close\(\)[\s\S]*tripTransitionOverlay\.showModal\(\)/
+);
+
+assert.match(
+    app,
+    /openNumberPad[\s\S]*speechMicBar[\s\S]*promoteTripTransitionOverlayTopLayer/
+);
+
+assert.match(
+    app,
     /numberPadDialog[\s\S]*classList[\s\S]*add\([\s\S]*"trip-transition-suppressed"/
 );
 
