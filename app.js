@@ -2692,8 +2692,37 @@
                                 song?.hasChime
                             );
 
-                        if (chimePlayed) {
-                            await song?.finished;
+                        if (
+                            speechEnabled &&
+                            chimePlayed
+                        ) {
+                            const speechStartDelayMs =
+                                Math.max(
+                                    0,
+                                    Number(
+                                        song
+                                            ?.chimeEndsInMs
+                                    ) ||
+                                    0
+                                ) +
+                                Math.max(
+                                    0,
+                                    output.speechDelayMs
+                                );
+
+                            setTimeout(
+                                () =>
+                                    audio.speak?.(
+                                        label,
+                                        {
+                                            speechVolume:
+                                                output.speechVolume,
+                                            speechVelocity:
+                                                output.speechVelocity
+                                        }
+                                    ),
+                                speechStartDelayMs
+                            );
                         }
                     }
                     catch (error) {
@@ -2707,16 +2736,8 @@
 
                 if (
                     speechEnabled &&
-                    chimePlayed &&
-                    output.speechDelayMs >
-                        0
+                    !chimePlayed
                 ) {
-                    await wait(
-                        output.speechDelayMs
-                    );
-                }
-
-                if (speechEnabled) {
                     audio.speak?.(
                         label,
                         {
@@ -16260,6 +16281,9 @@
         let played =
             false;
 
+        let speechStartDelayMs =
+            0;
+
         if (chime.perform) {
             try {
                 const song =
@@ -16287,17 +16311,19 @@
                     );
 
                 if (played) {
-                    await song
-                        ?.finished;
-
-                    if (
-                        output.speechDelayMs >
+                    speechStartDelayMs =
+                        Math.max(
+                            0,
+                            Number(
+                                song
+                                    ?.chimeEndsInMs
+                            ) ||
                             0
-                    ) {
-                        await wait(
+                        ) +
+                        Math.max(
+                            0,
                             output.speechDelayMs
                         );
-                    }
                 }
             }
             catch (error) {
@@ -16310,15 +16336,35 @@
         }
 
         if (speech && audio?.speak) {
-            audio.speak(
-                speech,
-                {
-                    speechVolume:
-                        output.speechVolume,
-                    speechVelocity:
-                        output.speechVelocity
-                }
-            );
+            if (
+                speechStartDelayMs >
+                    0
+            ) {
+                setTimeout(
+                    () =>
+                        audio.speak(
+                            speech,
+                            {
+                                speechVolume:
+                                    output.speechVolume,
+                                speechVelocity:
+                                    output.speechVelocity
+                            }
+                        ),
+                    speechStartDelayMs
+                );
+            }
+            else {
+                audio.speak(
+                    speech,
+                    {
+                        speechVolume:
+                            output.speechVolume,
+                        speechVelocity:
+                            output.speechVelocity
+                    }
+                );
+            }
         }
 
         return {
@@ -17258,14 +17304,33 @@
                     );
 
                 if (chimePlayed) {
-                    await song?.finished;
-
-                    if (
-                        output.speechDelayMs >
+                    const speechStartDelayMs =
+                        Math.max(
+                            0,
+                            Number(
+                                song
+                                    ?.chimeEndsInMs
+                            ) ||
                             0
-                    ) {
-                        await wait(
+                        ) +
+                        Math.max(
+                            0,
                             output.speechDelayMs
+                        );
+
+                    if (parts.length) {
+                        setTimeout(
+                            () =>
+                                audio?.speak?.(
+                                    parts.join(" "),
+                                    {
+                                        speechVolume:
+                                            output.speechVolume,
+                                        speechVelocity:
+                                            output.speechVelocity
+                                    }
+                                ),
+                            speechStartDelayMs
                         );
                     }
                 }
@@ -17279,7 +17344,10 @@
             }
         }
 
-        if (parts.length) {
+        if (
+            parts.length &&
+            !chimePlayed
+        ) {
             audio?.speak?.(
                 parts.join(" "),
                 {
