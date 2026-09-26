@@ -11,7 +11,8 @@
             speechVolume: 1,
             toneVolume: 1,
             speechVelocity: 1,
-            toneVelocity: 1
+            toneVelocity: 1,
+            instrument: ""
         };
 
         constructor() {
@@ -80,7 +81,12 @@
                     0.5,
                     1.5,
                     current.toneVelocity
-                )
+                ),
+                instrument:
+                    typeof settings.instrument ===
+                        "string"
+                        ? settings.instrument.trim()
+                        : current.instrument
             };
 
             return this.outputSettings;
@@ -2333,10 +2339,25 @@
                         requestedStartBeat
                     )
                     : 0;
+            const selectedInstrumentName =
+                this.#outputSettings
+                    .instrument;
+            const selectedInstrument =
+                selectedInstrumentName
+                    ? catalog
+                        ?.instruments?.[
+                            selectedInstrumentName
+                        ]
+                    : undefined;
             const requestedInstrument =
+                selectedInstrument ||
                 catalog?.instruments?.[
                     song.instrument
                 ];
+            const requestedInstrumentName =
+                selectedInstrument
+                    ? selectedInstrumentName
+                    : song.instrument;
             const phoneFallbackName =
                 this.#isPhone()
                     ? requestedInstrument
@@ -2361,7 +2382,17 @@
             if (!instrument) {
                 throw new Error(
                     "Unknown instrument: " +
-                    song.instrument
+                    requestedInstrumentName
+                );
+            }
+
+            if (
+                selectedInstrumentName &&
+                !selectedInstrument
+            ) {
+                console.warn(
+                    "Unknown selected instrument; using song default:",
+                    selectedInstrumentName
                 );
             }
 
@@ -2381,7 +2412,7 @@
             ) {
                 console.warn(
                     "Unknown instrument; using legacy-square fallback:",
-                    song.instrument
+                    requestedInstrumentName
                 );
             }
 
