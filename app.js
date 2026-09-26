@@ -1230,6 +1230,7 @@
     let tripTransitionOverlayTimer;
     let tripTransitionOverlayHideTimer;
     let audioAnnouncementDraft;
+    let audioSettingsBoundaryResizeObserver;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
@@ -1756,6 +1757,136 @@
         }
     }
 
+    function getAudioSettingsSafeBottom() {
+        const visualViewport =
+            globalThis.visualViewport;
+        const viewportTop =
+            visualViewport?.offsetTop ??
+            0;
+        const viewportBottom =
+            viewportTop +
+            (
+                visualViewport?.height ??
+                globalThis.innerHeight
+            );
+
+        const speechTop =
+            Number(
+                speechMicBar
+                    ?.getSafeTop?.()
+            );
+
+        if (
+            Number.isFinite(
+                speechTop
+            )
+        ) {
+            return Math.max(
+                viewportTop,
+                Math.min(
+                    viewportBottom,
+                    speechTop
+                )
+            );
+        }
+
+        const fallbackTop =
+            speechMicBar
+                ?.getBoundingClientRect?.()
+                ?.top;
+
+        return Number.isFinite(
+            fallbackTop
+        )
+            ? Math.max(
+                viewportTop,
+                Math.min(
+                    viewportBottom,
+                    fallbackTop
+                )
+            )
+            : viewportBottom;
+    }
+
+    function refreshAudioSettingsBoundary() {
+        if (!audioSettingsDialog) {
+            return false;
+        }
+
+        const visualViewport =
+            globalThis.visualViewport;
+        const viewportTop =
+            visualViewport?.offsetTop ??
+            0;
+        const safeBottom =
+            getAudioSettingsSafeBottom();
+        const safeHeight =
+            Math.max(
+                0,
+                safeBottom -
+                    viewportTop
+            );
+
+        audioSettingsDialog
+            .style
+            .setProperty(
+                "--audio-settings-safe-top",
+                viewportTop +
+                    "px"
+            );
+
+        audioSettingsDialog
+            .style
+            .setProperty(
+                "--audio-settings-safe-height",
+                safeHeight +
+                    "px"
+            );
+
+        return true;
+    }
+
+    function bindAudioSettingsBoundary() {
+        speechMicBar
+            ?.addEventListener(
+                "speech-surface-boundary-change",
+                refreshAudioSettingsBoundary
+            );
+
+        globalThis.visualViewport
+            ?.addEventListener(
+                "resize",
+                refreshAudioSettingsBoundary
+            );
+
+        globalThis.visualViewport
+            ?.addEventListener(
+                "scroll",
+                refreshAudioSettingsBoundary
+            );
+
+        globalThis.addEventListener(
+            "resize",
+            refreshAudioSettingsBoundary
+        );
+
+        if (
+            typeof ResizeObserver ===
+                "function" &&
+            speechMicBar
+        ) {
+            audioSettingsBoundaryResizeObserver =
+                new ResizeObserver(
+                    refreshAudioSettingsBoundary
+                );
+
+            audioSettingsBoundaryResizeObserver
+                .observe(
+                    speechMicBar
+                );
+        }
+    }
+
     function buildAudioAnnouncementRows() {
         if (!audioAnnouncementRows) return;
 
@@ -2184,6 +2315,8 @@
     }
 
     buildAudioAnnouncementRows();
+    bindAudioSettingsBoundary();
+    refreshAudioSettingsBoundary();
     void populateAudioInstrumentOptions();
     renderAudioSettings();
     applyAudioOutputSettings();
@@ -2191,6 +2324,7 @@
     audioSettingsDialog?.addEventListener(
         "opening",
         () => {
+            refreshAudioSettingsBoundary();
             discardAudioAnnouncementDraft();
 
             audioAnnouncementPage
