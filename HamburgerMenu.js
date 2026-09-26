@@ -6125,9 +6125,10 @@
                     anchor
                 );
 
-            // Keep the promoted target and sibling rows beneath the panel
-            // that owns their shared position property.
-            sourceRoot.append(this.#focusLayer);
+            // Keep the promoted focus layer at viewport level. Reparenting it
+            // into the source panel makes the promoted group inherit panel
+            // visibility/clipping when the source is hidden after promotion.
+            this.#viewport.append(this.#focusLayer);
             this.#focusLayer.hidden =
                 false;
 
@@ -6166,20 +6167,12 @@
                 originalRect.top -
                 targetRect.top;
 
-            const panelMotion = typeof globalThis.CSS?.registerProperty ===
-                "function";
-            if (panelMotion) {
-                sourceRoot.style.setProperty(
-                    "--hamburger-menu-target-x", translateX + "px"
-                );
-                sourceRoot.style.setProperty(
-                    "--hamburger-menu-target-y", translateY + "px"
-                );
-                group.classList.add("hamburger-menu-panel-driven");
-            }
-            else {
-                group.style.translate = translateX + "px " + translateY + "px";
-            }
+            // Promotion motion belongs to the promoted group, not its source
+            // panel. Keeping the motion local lets the source panel disappear
+            // without taking the promoted group and its submenu with it.
+            const panelMotion = false;
+            group.style.translate =
+                translateX + "px " + translateY + "px";
 
             const entry = {
                 group,
