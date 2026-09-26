@@ -3409,8 +3409,8 @@
             // Existing panes can clip or stretch their children, so their
             // row rectangles cannot be used for the partition pass.
             this.#withObservationPaused(() => {
-                const measurementPane = document.createElement("section");
-                measurementPane.className = "hamburger-menu-panel";
+                const measurementPane = document.createElement("pane-page");
+                measurementPane.className = "hamburger-menu-panel pane-page-horizontal-item";
                 measurementPane.append(...items);
                 this.#source.replaceChildren(measurementPane);
             });
@@ -3456,11 +3456,11 @@
                                 const panel =
                                     document
                                         .createElement(
-                                            "section"
+                                            "pane-page"
                                         );
 
                                 panel.className =
-                                    "hamburger-menu-panel";
+                                    "hamburger-menu-panel pane-page-horizontal-item";
 
                                 panel.dataset
                                     .menuPanel =
