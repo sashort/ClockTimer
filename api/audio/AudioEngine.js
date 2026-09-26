@@ -2199,6 +2199,21 @@
                 undefined;
 
             if (
+                entry.chimeListeningSuspended
+            ) {
+                entry.chimeListeningSuspended =
+                    false;
+
+                globalThis.SpeechMenu
+                    ?.resumeListening?.(
+                        "audio-chime:" +
+                        entry.name +
+                        ":" +
+                        reason
+                    );
+            }
+
+            if (
                 entry.suspendsListening !==
                     false
             ) {
@@ -2306,6 +2321,8 @@
                     0.015,
                 released: false,
                 endTimer: undefined,
+                chimeListeningSuspended:
+                    false,
                 suspendsListening:
                     Boolean(
                         suspendListening
@@ -2320,6 +2337,26 @@
                     );
             }
 
+            const hasChime =
+                Boolean(
+                    includeTones &&
+                    song.events?.some?.(
+                        event =>
+                            event?.tone
+                    )
+                );
+
+            if (hasChime) {
+                entry.chimeListeningSuspended =
+                    true;
+
+                globalThis.SpeechMenu
+                    ?.suspendListening?.(
+                        "audio-chime:" +
+                        name
+                    );
+            }
+
             this.#active.set(
                 entry.id,
                 entry
@@ -2328,20 +2365,30 @@
             try {
                 let endAt =
                     entry.startedAt;
+                let chimeEndAt =
+                    entry.startedAt;
 
                 for (const event of song.events || []) {
                     if (includeTones && event?.tone) {
+                        const toneEndAt =
+                            this.#scheduleTone(
+                                context,
+                                entry,
+                                event,
+                                instrument,
+                                tempo,
+                                songGain
+                            );
+
+                        chimeEndAt =
+                            Math.max(
+                                chimeEndAt,
+                                toneEndAt
+                            );
                         endAt =
                             Math.max(
                                 endAt,
-                                this.#scheduleTone(
-                                    context,
-                                    entry,
-                                    event,
-                                    instrument,
-                                    tempo,
-                                    songGain
-                                )
+                                toneEndAt
                             );
                     }
 
@@ -2357,6 +2404,51 @@
                                 )
                             );
                     }
+                }
+
+                if (
+                    entry.chimeListeningSuspended
+                ) {
+                    const chimeDelayMilliseconds =
+                        Math.max(
+                            0,
+                            (
+                                chimeEndAt -
+                                context.currentTime
+                            ) *
+                                1000
+                        );
+
+                    const chimeResumeTimer =
+                        setTimeout(
+                            () => {
+                                entry.timers.delete(
+                                    chimeResumeTimer
+                                );
+
+                                if (
+                                    entry.released ||
+                                    !entry.chimeListeningSuspended
+                                ) {
+                                    return;
+                                }
+
+                                entry.chimeListeningSuspended =
+                                    false;
+
+                                globalThis.SpeechMenu
+                                    ?.resumeListening?.(
+                                        "audio-chime:" +
+                                        name +
+                                        ":ended"
+                                    );
+                            },
+                            chimeDelayMilliseconds
+                        );
+
+                    entry.timers.add(
+                        chimeResumeTimer
+                    );
                 }
 
                 const durationMilliseconds =
