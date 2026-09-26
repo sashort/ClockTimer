@@ -1901,6 +1901,34 @@ assert.match(
 );
 assert.match(
     audioEngineSource,
+    /#instrumentEnvelope\([\s\S]*attack:[\s\S]*decay:[\s\S]*sustain:[\s\S]*release:/
+);
+assert.match(
+    audioEngineSource,
+    /#instrumentPartials\([\s\S]*partial\.ratio[\s\S]*partial\.gain[\s\S]*partial\.detune[\s\S]*partial[\s\S]*\.waveform/
+);
+assert.match(
+    audioEngineSource,
+    /velocitySensitivity[\s\S]*#velocityDynamic/
+);
+assert.match(
+    audioEngineSource,
+    /pitchEnvelope[\s\S]*oscillator\.detune[\s\S]*linearRampToValueAtTime/
+);
+assert.match(
+    audioEngineSource,
+    /createBiquadFilter[\s\S]*filter\.frequency[\s\S]*filter\.envelopeAmount[\s\S]*filterNode\.Q/
+);
+assert.match(
+    audioEngineSource,
+    /instrument[\s\S]*\.noise[\s\S]*createBuffer\([\s\S]*createBufferSource\([\s\S]*noiseGain/
+);
+assert.match(
+    audioEngineSource,
+    /envelope\.release[\s\S]*endAt[\s\S]*exponentialRampToValueAtTime/
+);
+assert.match(
+    audioEngineSource,
     /entry\.resolveFinished\?\.\([\s\S]*reason[\s\S]*entry\.resolveFinished\s*=\s*undefined/
 );
 assert.match(
