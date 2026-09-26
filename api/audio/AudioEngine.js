@@ -264,152 +264,1096 @@
             };
         }
 
-        #scheduleTone(context, entry, event, instrument, bpm, songGain) {
-            const beatSeconds = 60 / bpm;
-            const offsetBeats = this.#beats(event.offset);
-            const lengthParts = String(event.length ?? "1")
-                .split(",")
-                .map(part => part.trim());
+        #instrumentEnvelope(instrument) {
+            const source =
+                instrument?.envelope &&
+                typeof instrument.envelope === "object"
+                    ? instrument.envelope
+                    : {};
 
-            if (lengthParts.length > 2) {
-                throw new Error("A tone length may contain at most two values.");
+            const number = (
+                value,
+                fallback,
+                minimum = 0,
+                maximum = Infinity
+            ) => {
+                const numeric = Number(value);
+                return Number.isFinite(numeric)
+                    ? Math.max(
+                        minimum,
+                        Math.min(
+                            maximum,
+                            numeric
+                        )
+                    )
+                    : fallback;
+            };
+
+            return {
+                attack:
+                    number(
+                        source.attack,
+                        0
+                    ),
+                decay:
+                    number(
+                        source.decay,
+                        0
+                    ),
+                sustain:
+                    number(
+                        source.sustain,
+                        1,
+                        0,
+                        1
+                    ),
+                release:
+                    number(
+                        source.release,
+                        0
+                    )
+            };
+        }
+
+        #instrumentPartials(instrument) {
+            if (
+                !Array.isArray(
+                    instrument?.partials
+                ) ||
+                instrument.partials.length === 0
+            ) {
+                return [
+                    {
+                        ratio: 1,
+                        gain: 1,
+                        detune: 0
+                    }
+                ];
             }
 
-            const effectBeats = this.#beats(lengthParts[0]);
-            const sustainBeats =
-                lengthParts.length === 2
-                    ? this.#beats(lengthParts[1])
-                    : 0;
+            const partials =
+                instrument.partials
+                    .map(
+                        partial => {
+                            if (
+                                !partial ||
+                                typeof partial !==
+                                    "object"
+                            ) {
+                                return undefined;
+                            }
 
-            const tone = this.#parseTone(event.tone);
+                            const ratio =
+                                Number(
+                                    partial.ratio
+                                );
+                            const gain =
+                                Number(
+                                    partial.gain
+                                );
+                            const detune =
+                                Number(
+                                    partial.detune
+                                );
 
-            if (sustainBeats && !tone.sustain) {
-                throw new Error("A second tone length requires ... sustain notation.");
-            }
+                            if (
+                                !Number.isFinite(
+                                    ratio
+                                ) ||
+                                ratio <= 0
+                            ) {
+                                return undefined;
+                            }
 
-            const startAt =
-                entry.startedAt +
-                offsetBeats * beatSeconds;
-            const effectEnd =
-                startAt +
-                Math.max(0, effectBeats * beatSeconds);
-            const endAt =
-                effectEnd +
-                Math.max(0, sustainBeats * beatSeconds);
+                            return {
+                                ratio,
+                                gain:
+                                    Number.isFinite(
+                                        gain
+                                    )
+                                        ? Math.max(
+                                            0,
+                                            gain
+                                        )
+                                        : 1,
+                                detune:
+                                    Number.isFinite(
+                                        detune
+                                    )
+                                        ? detune
+                                        : 0,
+                                waveform:
+                                    typeof partial
+                                        .waveform ===
+                                        "string"
+                                        ? partial
+                                            .waveform
+                                        : undefined
+                            };
+                        }
+                    )
+                    .filter(
+                        Boolean
+                    );
 
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-            const dynamic = this.#dynamic(event.dynamic);
-            const volume =
-                Number.isFinite(Number(instrument.volume))
-                    ? Number(instrument.volume)
+            return partials.length
+                ? partials
+                : [
+                    {
+                        ratio: 1,
+                        gain: 1,
+                        detune: 0
+                    }
+                ];
+        }
+
+        #velocityDynamic(
+            value,
+            instrument
+        ) {
+            const sensitivity =
+                Number(
+                    instrument
+                        ?.velocitySensitivity
+                );
+            const amount =
+                Number.isFinite(
+                    sensitivity
+                )
+                    ? Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            sensitivity
+                        )
+                    )
                     : 1;
 
-            oscillator.type =
-                typeof instrument.waveform === "string"
-                    ? instrument.waveform
-                    : "sine";
-
-            gain.gain.setValueAtTime(
-                Math.max(0.0001, dynamic.start * volume * songGain),
-                startAt
+            return (
+                1 -
+                amount *
+                    (
+                        1 -
+                        value
+                    )
             );
+        }
 
-            if (dynamic.end !== dynamic.start) {
-                gain.gain.linearRampToValueAtTime(
-                    Math.max(0.0001, dynamic.end * volume * songGain),
-                    effectEnd
-                );
-            }
+        #schedulePitch(
+            oscillator,
+            tone,
+            startAt,
+            effectEnd,
+            instrument,
+            ratio,
+            partialDetune
+        ) {
+            const scale =
+                frequency =>
+                    frequency *
+                    ratio;
 
             if (tone.kind === "note") {
-                oscillator.frequency.setValueAtTime(
-                    this.#frequency(tone.note),
-                    startAt
-                );
+                oscillator.frequency
+                    .setValueAtTime(
+                        scale(
+                            this.#frequency(
+                                tone.note
+                            )
+                        ),
+                        startAt
+                    );
             }
             else if (tone.kind === "bend") {
-                const fromFrequency = this.#frequency(tone.from);
-                const toFrequency = this.#frequency(tone.to);
+                const fromFrequency =
+                    this.#frequency(
+                        tone.from
+                    );
+                const toFrequency =
+                    this.#frequency(
+                        tone.to
+                    );
 
                 if (
-                    (tone.direction === "up" && toFrequency <= fromFrequency) ||
-                    (tone.direction === "down" && toFrequency >= fromFrequency)
+                    (
+                        tone.direction ===
+                            "up" &&
+                        toFrequency <=
+                            fromFrequency
+                    ) ||
+                    (
+                        tone.direction ===
+                            "down" &&
+                        toFrequency >=
+                            fromFrequency
+                    )
                 ) {
-                    throw new Error("Bend direction does not match its note order: " + event.tone);
+                    throw new Error(
+                        "Bend direction does not match its note order: " +
+                        tone.from +
+                        (
+                            tone.direction ===
+                                "up"
+                                ? "/"
+                                : "\\"
+                        ) +
+                        tone.to
+                    );
                 }
 
-                oscillator.frequency.setValueAtTime(
-                    fromFrequency,
-                    startAt
-                );
-                oscillator.frequency.exponentialRampToValueAtTime(
-                    toFrequency,
-                    effectEnd
-                );
+                oscillator.frequency
+                    .setValueAtTime(
+                        scale(
+                            fromFrequency
+                        ),
+                        startAt
+                    );
+                oscillator.frequency
+                    .exponentialRampToValueAtTime(
+                        scale(
+                            toFrequency
+                        ),
+                        effectEnd
+                    );
             }
             else {
-                const fromFrequency = this.#frequency(tone.from);
-                const toFrequency = this.#frequency(tone.to);
+                const fromFrequency =
+                    this.#frequency(
+                        tone.from
+                    );
+                const toFrequency =
+                    this.#frequency(
+                        tone.to
+                    );
                 const semitoneDistance =
                     Math.abs(
                         12 *
-                        Math.log2(toFrequency / fromFrequency)
+                        Math.log2(
+                            toFrequency /
+                            fromFrequency
+                        )
                     );
 
-                if (Math.abs(semitoneDistance - 1) > 0.01) {
-                    throw new Error("Trill notes must be exactly one semitone apart.");
+                if (
+                    Math.abs(
+                        semitoneDistance -
+                        1
+                    ) >
+                    0.01
+                ) {
+                    throw new Error(
+                        "Trill notes must be exactly one semitone apart."
+                    );
                 }
 
                 const subdivision =
                     Math.max(
                         1 / 64,
-                        this.#beats(instrument.trillStep ?? "1/8")
+                        this.#beats(
+                            instrument
+                                .trillStep ??
+                            "1/8"
+                        )
+                    );
+                const beatSeconds =
+                    Number(
+                        instrument
+                            .__beatSeconds
                     );
                 const stepSeconds =
-                    subdivision * beatSeconds;
-                let cursor = startAt;
-                let alternate = false;
+                    subdivision *
+                    (
+                        Number.isFinite(
+                            beatSeconds
+                        )
+                            ? beatSeconds
+                            : 0.5
+                    );
+                let cursor =
+                    startAt;
+                let alternate =
+                    false;
 
-                oscillator.frequency.setValueAtTime(
-                    fromFrequency,
+                oscillator.frequency
+                    .setValueAtTime(
+                        scale(
+                            fromFrequency
+                        ),
+                        startAt
+                    );
+
+                while (
+                    cursor +
+                        stepSeconds <
+                    effectEnd
+                ) {
+                    cursor +=
+                        stepSeconds;
+                    alternate =
+                        !alternate;
+                    oscillator.frequency
+                        .setValueAtTime(
+                            scale(
+                                alternate
+                                    ? toFrequency
+                                    : fromFrequency
+                            ),
+                            cursor
+                        );
+                }
+
+                oscillator.frequency
+                    .setValueAtTime(
+                        scale(
+                            toFrequency
+                        ),
+                        effectEnd
+                    );
+            }
+
+            const baseDetune =
+                (
+                    Number.isFinite(
+                        Number(
+                            instrument
+                                ?.detune
+                        )
+                    )
+                        ? Number(
+                            instrument
+                                .detune
+                        )
+                        : 0
+                ) +
+                partialDetune;
+
+            oscillator.detune
+                ?.setValueAtTime?.(
+                    baseDetune,
                     startAt
                 );
 
-                while (cursor + stepSeconds < effectEnd) {
-                    cursor += stepSeconds;
-                    alternate = !alternate;
-                    oscillator.frequency.setValueAtTime(
-                        alternate ? toFrequency : fromFrequency,
-                        cursor
-                    );
-                }
+            const pitchEnvelope =
+                instrument
+                    ?.pitchEnvelope;
 
-                oscillator.frequency.setValueAtTime(
-                    toFrequency,
-                    effectEnd
+            if (
+                !pitchEnvelope ||
+                typeof pitchEnvelope !==
+                    "object" ||
+                !oscillator.detune
+            ) {
+                return;
+            }
+
+            const amount =
+                Number(
+                    pitchEnvelope.amount
+                );
+
+            if (
+                !Number.isFinite(
+                    amount
+                ) ||
+                amount === 0
+            ) {
+                return;
+            }
+
+            const attack =
+                Math.max(
+                    0,
+                    Number(
+                        pitchEnvelope.attack
+                    ) ||
+                    0
+                );
+            const decay =
+                Math.max(
+                    0,
+                    Number(
+                        pitchEnvelope.decay
+                    ) ||
+                    0
+                );
+            const peakAt =
+                Math.min(
+                    effectEnd,
+                    startAt +
+                        attack
+                );
+            const settleAt =
+                Math.min(
+                    effectEnd,
+                    peakAt +
+                        decay
+                );
+
+            if (attack > 0) {
+                oscillator.detune
+                    .linearRampToValueAtTime(
+                        baseDetune +
+                            amount,
+                        peakAt
+                    );
+            }
+            else {
+                oscillator.detune
+                    .setValueAtTime(
+                        baseDetune +
+                            amount,
+                        startAt
+                    );
+            }
+
+            if (
+                decay > 0 &&
+                settleAt >
+                    peakAt
+            ) {
+                oscillator.detune
+                    .linearRampToValueAtTime(
+                        baseDetune,
+                        settleAt
+                    );
+            }
+        }
+
+        #scheduleTone(context, entry, event, instrument, bpm, songGain) {
+            const beatSeconds =
+                60 /
+                bpm;
+            const offsetBeats =
+                this.#beats(
+                    event.offset
+                );
+            const lengthParts =
+                String(
+                    event.length ??
+                    "1"
+                )
+                    .split(",")
+                    .map(
+                        part =>
+                            part.trim()
+                    );
+
+            if (
+                lengthParts.length >
+                2
+            ) {
+                throw new Error(
+                    "A tone length may contain at most two values."
                 );
             }
 
-            oscillator.connect(gain);
-            gain.connect(context.destination);
+            const effectBeats =
+                this.#beats(
+                    lengthParts[0]
+                );
+            const sustainBeats =
+                lengthParts.length ===
+                    2
+                    ? this.#beats(
+                        lengthParts[1]
+                    )
+                    : 0;
 
-            oscillator.start(startAt);
-            oscillator.stop(Math.max(startAt + 0.001, endAt));
+            const tone =
+                this.#parseTone(
+                    event.tone
+                );
 
-            entry.nodes.add(oscillator);
-            entry.nodes.add(gain);
+            if (
+                sustainBeats &&
+                !tone.sustain
+            ) {
+                throw new Error(
+                    "A second tone length requires ... sustain notation."
+                );
+            }
 
-            oscillator.addEventListener(
-                "ended",
-                () => {
-                    entry.nodes.delete(oscillator);
-                    entry.nodes.delete(gain);
-                    try { oscillator.disconnect(); } catch {}
-                    try { gain.disconnect(); } catch {}
-                },
-                {once: true}
+            const startAt =
+                entry.startedAt +
+                offsetBeats *
+                    beatSeconds;
+            const effectEnd =
+                startAt +
+                Math.max(
+                    0,
+                    effectBeats *
+                        beatSeconds
+                );
+            const noteEnd =
+                effectEnd +
+                Math.max(
+                    0,
+                    sustainBeats *
+                        beatSeconds
+                );
+            const envelope =
+                this.#instrumentEnvelope(
+                    instrument
+                );
+            const endAt =
+                noteEnd +
+                envelope.release;
+            const dynamic =
+                this.#dynamic(
+                    event.dynamic
+                );
+            const volume =
+                Number.isFinite(
+                    Number(
+                        instrument.volume
+                    )
+                )
+                    ? Number(
+                        instrument.volume
+                    )
+                    : 1;
+            const dynamicGain =
+                context.createGain();
+            const envelopeGain =
+                context.createGain();
+            const startDynamic =
+                this.#velocityDynamic(
+                    dynamic.start,
+                    instrument
+                );
+            const endDynamic =
+                this.#velocityDynamic(
+                    dynamic.end,
+                    instrument
+                );
+
+            dynamicGain.gain
+                .setValueAtTime(
+                    Math.max(
+                        0.0001,
+                        startDynamic *
+                            volume *
+                            songGain
+                    ),
+                    startAt
+                );
+
+            if (
+                endDynamic !==
+                startDynamic
+            ) {
+                dynamicGain.gain
+                    .linearRampToValueAtTime(
+                        Math.max(
+                            0.0001,
+                            endDynamic *
+                                volume *
+                                songGain
+                        ),
+                        effectEnd
+                    );
+            }
+
+            envelopeGain.gain
+                .setValueAtTime(
+                    envelope.attack >
+                        0
+                        ? 0.0001
+                        : 1,
+                    startAt
+                );
+
+            const attackEnd =
+                Math.min(
+                    noteEnd,
+                    startAt +
+                        envelope.attack
+                );
+
+            if (
+                envelope.attack >
+                0
+            ) {
+                envelopeGain.gain
+                    .linearRampToValueAtTime(
+                        1,
+                        attackEnd
+                    );
+            }
+
+            const decayEnd =
+                Math.min(
+                    noteEnd,
+                    attackEnd +
+                        envelope.decay
+                );
+
+            if (
+                envelope.decay >
+                    0 &&
+                decayEnd >
+                    attackEnd
+            ) {
+                envelopeGain.gain
+                    .linearRampToValueAtTime(
+                        Math.max(
+                            0.0001,
+                            envelope.sustain
+                        ),
+                        decayEnd
+                    );
+            }
+            else if (
+                attackEnd <
+                noteEnd
+            ) {
+                envelopeGain.gain
+                    .setValueAtTime(
+                        Math.max(
+                            0.0001,
+                            envelope.sustain
+                        ),
+                        attackEnd
+                    );
+            }
+
+            if (
+                decayEnd <
+                noteEnd
+            ) {
+                envelopeGain.gain
+                    .setValueAtTime(
+                        Math.max(
+                            0.0001,
+                            envelope.sustain
+                        ),
+                        noteEnd
+                    );
+            }
+
+            if (
+                envelope.release >
+                0
+            ) {
+                envelopeGain.gain
+                    .setValueAtTime(
+                        Math.max(
+                            0.0001,
+                            envelope.sustain
+                        ),
+                        noteEnd
+                    );
+                envelopeGain.gain
+                    .exponentialRampToValueAtTime(
+                        0.0001,
+                        endAt
+                    );
+            }
+
+            let sourceDestination =
+                envelopeGain;
+            let filterNode;
+            const filter =
+                instrument
+                    ?.filter;
+
+            if (
+                filter &&
+                typeof filter ===
+                    "object" &&
+                typeof context
+                    .createBiquadFilter ===
+                    "function"
+            ) {
+                filterNode =
+                    context
+                        .createBiquadFilter();
+
+                if (
+                    typeof filter.type ===
+                    "string"
+                ) {
+                    filterNode.type =
+                        filter.type;
+                }
+
+                const baseFrequency =
+                    Number.isFinite(
+                        Number(
+                            filter.frequency
+                        )
+                    )
+                        ? Math.max(
+                            10,
+                            Number(
+                                filter.frequency
+                            )
+                        )
+                        : 5000;
+                const nyquist =
+                    Math.max(
+                        10,
+                        (
+                            Number(
+                                context.sampleRate
+                            ) ||
+                            48000
+                        ) /
+                            2
+                    );
+                const clampedBase =
+                    Math.min(
+                        nyquist,
+                        baseFrequency
+                    );
+                const envelopeAmount =
+                    Number.isFinite(
+                        Number(
+                            filter.envelopeAmount
+                        )
+                    )
+                        ? Number(
+                            filter
+                                .envelopeAmount
+                        )
+                        : 0;
+                const initialFrequency =
+                    Math.max(
+                        10,
+                        Math.min(
+                            nyquist,
+                            clampedBase +
+                                envelopeAmount
+                        )
+                    );
+
+                filterNode.frequency
+                    .setValueAtTime(
+                        initialFrequency,
+                        startAt
+                    );
+
+                if (
+                    envelopeAmount !==
+                    0
+                ) {
+                    const filterSettleAt =
+                        Math.min(
+                            noteEnd,
+                            startAt +
+                                Math.max(
+                                    0.001,
+                                    envelope.attack +
+                                        envelope.decay
+                                )
+                        );
+
+                    filterNode.frequency
+                        .linearRampToValueAtTime(
+                            clampedBase,
+                            filterSettleAt
+                        );
+                }
+
+                if (
+                    Number.isFinite(
+                        Number(
+                            filter.Q
+                        )
+                    )
+                ) {
+                    filterNode.Q
+                        .setValueAtTime(
+                            Math.max(
+                                0,
+                                Number(
+                                    filter.Q
+                                )
+                            ),
+                            startAt
+                        );
+                }
+
+                filterNode.connect(
+                    envelopeGain
+                );
+                sourceDestination =
+                    filterNode;
+                entry.nodes.add(
+                    filterNode
+                );
+            }
+
+            envelopeGain.connect(
+                dynamicGain
             );
+            dynamicGain.connect(
+                context.destination
+            );
+
+            entry.nodes.add(
+                envelopeGain
+            );
+            entry.nodes.add(
+                dynamicGain
+            );
+
+            const partials =
+                this.#instrumentPartials(
+                    instrument
+                );
+            const instrumentForPitch = {
+                ...instrument,
+                __beatSeconds:
+                    beatSeconds
+            };
+
+            for (
+                const partial of
+                partials
+            ) {
+                const oscillator =
+                    context
+                        .createOscillator();
+                const partialGain =
+                    context
+                        .createGain();
+
+                oscillator.type =
+                    partial.waveform ||
+                    (
+                        typeof instrument
+                            .waveform ===
+                            "string"
+                            ? instrument
+                                .waveform
+                            : "sine"
+                    );
+
+                partialGain.gain
+                    .setValueAtTime(
+                        partial.gain,
+                        startAt
+                    );
+
+                this.#schedulePitch(
+                    oscillator,
+                    tone,
+                    startAt,
+                    effectEnd,
+                    instrumentForPitch,
+                    partial.ratio,
+                    partial.detune
+                );
+
+                oscillator.connect(
+                    partialGain
+                );
+                partialGain.connect(
+                    sourceDestination
+                );
+
+                oscillator.start(
+                    startAt
+                );
+                oscillator.stop(
+                    Math.max(
+                        startAt +
+                            0.001,
+                        endAt
+                    )
+                );
+
+                entry.nodes.add(
+                    oscillator
+                );
+                entry.nodes.add(
+                    partialGain
+                );
+
+                oscillator
+                    .addEventListener(
+                        "ended",
+                        () => {
+                            entry.nodes
+                                .delete(
+                                    oscillator
+                                );
+                            entry.nodes
+                                .delete(
+                                    partialGain
+                                );
+
+                            try {
+                                oscillator
+                                    .disconnect();
+                            }
+                            catch {}
+
+                            try {
+                                partialGain
+                                    .disconnect();
+                            }
+                            catch {}
+                        },
+                        {
+                            once: true
+                        }
+                    );
+            }
+
+            const noise =
+                instrument
+                    ?.noise;
+            const noiseAmount =
+                Number(
+                    noise?.amount
+                );
+
+            if (
+                noise &&
+                typeof noise ===
+                    "object" &&
+                Number.isFinite(
+                    noiseAmount
+                ) &&
+                noiseAmount >
+                    0 &&
+                typeof context
+                    .createBuffer ===
+                    "function" &&
+                typeof context
+                    .createBufferSource ===
+                    "function"
+            ) {
+                const noiseDecay =
+                    Math.max(
+                        0.001,
+                        Number(
+                            noise.decay
+                        ) ||
+                        0.03
+                    );
+                const noiseEnd =
+                    Math.min(
+                        endAt,
+                        startAt +
+                            noiseDecay
+                    );
+                const sampleRate =
+                    Math.max(
+                        8000,
+                        Number(
+                            context.sampleRate
+                        ) ||
+                        48000
+                    );
+                const frameCount =
+                    Math.max(
+                        1,
+                        Math.ceil(
+                            (
+                                noiseEnd -
+                                startAt
+                            ) *
+                                sampleRate
+                        )
+                    );
+                const buffer =
+                    context
+                        .createBuffer(
+                            1,
+                            frameCount,
+                            sampleRate
+                        );
+                const samples =
+                    buffer
+                        .getChannelData(
+                            0
+                        );
+
+                for (
+                    let index = 0;
+                    index <
+                    samples.length;
+                    index++
+                ) {
+                    samples[index] =
+                        Math.random() *
+                            2 -
+                        1;
+                }
+
+                const source =
+                    context
+                        .createBufferSource();
+                const noiseGain =
+                    context
+                        .createGain();
+
+                source.buffer =
+                    buffer;
+                noiseGain.gain
+                    .setValueAtTime(
+                        noiseAmount,
+                        startAt
+                    );
+                noiseGain.gain
+                    .exponentialRampToValueAtTime(
+                        0.0001,
+                        noiseEnd
+                    );
+
+                source.connect(
+                    noiseGain
+                );
+                noiseGain.connect(
+                    sourceDestination
+                );
+                source.start(
+                    startAt
+                );
+                source.stop(
+                    Math.max(
+                        startAt +
+                            0.001,
+                        noiseEnd
+                    )
+                );
+
+                entry.nodes.add(
+                    source
+                );
+                entry.nodes.add(
+                    noiseGain
+                );
+
+                source.addEventListener(
+                    "ended",
+                    () => {
+                        entry.nodes.delete(
+                            source
+                        );
+                        entry.nodes.delete(
+                            noiseGain
+                        );
+
+                        try {
+                            source.disconnect();
+                        }
+                        catch {}
+
+                        try {
+                            noiseGain
+                                .disconnect();
+                        }
+                        catch {}
+                    },
+                    {
+                        once: true
+                    }
+                );
+            }
 
             return endAt;
         }
