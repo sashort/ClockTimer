@@ -5379,6 +5379,17 @@ class SpeechMicBar extends HTMLElement {
             );
 
         this.#layoutOptionPanes();
+
+        if (
+            this.optionsOpen ||
+            this.optionsCollapsed
+        ) {
+            requestAnimationFrame(
+                () =>
+                    this
+                        .#dispatchSurfaceBoundaryChange()
+            );
+        }
     }
 
     #responseVisual(value) {
