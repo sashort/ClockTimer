@@ -133,7 +133,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-26-3";
+        "2026-09-26-4";
 
     const speechRuntimeVersion =
         "?sherpa=" +
