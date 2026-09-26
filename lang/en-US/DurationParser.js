@@ -77,6 +77,80 @@ class EnglishDurationParser {
             : `${minutes}:${String(seconds).padStart(2,"0")}`;
     }
 
+    static describe(milliseconds) {
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds <= 0
+        ) {
+            return undefined;
+        }
+
+        const totalSeconds =
+            Math.round(
+                milliseconds /
+                1000
+            );
+        const hours =
+            Math.floor(
+                totalSeconds /
+                3600
+            );
+        const minutes =
+            Math.floor(
+                (
+                    totalSeconds %
+                    3600
+                ) /
+                60
+            );
+        const seconds =
+            totalSeconds %
+                60;
+        const parts = [];
+
+        if (hours) {
+            parts.push(
+                String(hours) +
+                (
+                    hours === 1
+                        ? " hour"
+                        : " hours"
+                )
+            );
+        }
+
+        if (minutes) {
+            parts.push(
+                String(minutes) +
+                (
+                    minutes === 1
+                        ? " minute"
+                        : " minutes"
+                )
+            );
+        }
+
+        if (
+            seconds ||
+            !parts.length
+        ) {
+            parts.push(
+                String(seconds) +
+                (
+                    seconds === 1
+                        ? " second"
+                        : " seconds"
+                )
+            );
+        }
+
+        return parts.join(
+            " "
+        );
+    }
+
     static #number(value) {
         if(/^\d+$/.test(value))return Number(value);
         const words=value.split(" ").filter(Boolean);let total=0,current=0;
