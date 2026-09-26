@@ -2573,16 +2573,16 @@
                         ) {
                             utterance.rate =
                                 eventRate *
-                                effectiveSpeechVelocity;
+                                speechVelocity;
                         }
                         else if (
-                            effectiveSpeechVelocity !==
+                            speechVelocity !==
                                 1
                         ) {
                             // At exactly 1x, leave rate unset so the voice
                             // uses its true browser/native default.
                             utterance.rate =
-                                effectiveSpeechVelocity;
+                                speechVelocity;
                         }
 
                         if (
@@ -3409,15 +3409,15 @@
             ) {
                 utterance.rate =
                     explicitRate *
-                    speechVelocity;
+                    effectiveSpeechVelocity;
             }
             else if (
-                speechVelocity !==
+                effectiveSpeechVelocity !==
                     1
             ) {
                 // Preserve the browser/voice native default at neutral 1x.
                 utterance.rate =
-                    speechVelocity;
+                    effectiveSpeechVelocity;
             }
 
             if (
