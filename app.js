@@ -320,7 +320,7 @@
 
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
-                                "SpeechMenu.js"
+                                "SpeechMenu.js?v=sleep-wake-only-1"
                             );
                         }
 
@@ -18639,7 +18639,7 @@
                         ""
                 ) {
                     enabled =
-                        true;
+                        !current;
                 }
                 else if (
                     typeof syncState ===
