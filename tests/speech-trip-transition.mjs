@@ -184,22 +184,12 @@ assert.match(
 
 assert.match(
     app,
-    /setTimeout\([\s\S]*5000[\s\S]*tripTransitionOverlayQueue/
+    /setTimeout\([\s\S]*7000[\s\S]*tripTransitionOverlayQueue/
 );
 
-assert.match(
+assert.doesNotMatch(
     app,
-    /onTripStarted\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"on-time"/
-);
-
-assert.match(
-    app,
-    /onTripStartedEarly\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"early"/
-);
-
-assert.match(
-    app,
-    /onTripStartedLate\([\s\S]*showTripStartTransitionOverlay\([\s\S]*"late"/
+    /showTripStartTransitionOverlay/
 );
 
 assert.match(
@@ -212,6 +202,26 @@ assert.match(
     /document\.createElement\(\s*"code"\s*\)/
 );
 
+assert.match(
+    css,
+    /\.trip-transition-overlay\s*\{[\s\S]*z-index:\s*2147483644/
+);
+
+assert.match(
+    css,
+    /speech-mic-bar\[popover\][\s\S]*z-index:\s*2147483645/
+);
+
+assert.match(
+    css,
+    /\.speech-training-widget\s*\{[\s\S]*z-index:\s*2147483646/
+);
+
+assert.match(
+    css,
+    /\.trip-transition-overlay-row code\s*\{[\s\S]*color:\s*#111;[\s\S]*background:\s*var\(--wm-yellow, #ffc220\)/
+);
+
 console.log(
-    "PASS trip start/end overlays are queued for five seconds and emphasize values with code elements"
+    "PASS trip-end overlay shows for seven seconds with emphasized code values and the intended stacking order"
 );
