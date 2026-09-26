@@ -11675,14 +11675,9 @@
         }
 
         queueMicrotask(
-            () => {
+            () =>
                 speechMicBar
-                    ?.promoteTopLayer?.();
-
-                queueMicrotask(
-                    promoteTripTransitionOverlayTopLayer
-                );
-            }
+                    ?.promoteTopLayer?.()
         );
 
         startNumberPadAmbientTone();
@@ -11710,14 +11705,9 @@
         }
 
         queueMicrotask(
-            () => {
+            () =>
                 speechMicBar
-                    ?.promoteTopLayer?.();
-
-                queueMicrotask(
-                    promoteTripTransitionOverlayTopLayer
-                );
-            }
+                    ?.promoteTopLayer?.()
         );
 
         startNumberPadAmbientTone();
@@ -14182,6 +14172,8 @@
         await clockTimer
             .resetCompletedTrip();
 
+        await waitForTripTransitionOverlay();
+
         const opened =
             await beginNewTripWorkflow({
                 initialValue: "",
@@ -15556,28 +15548,6 @@
         };
     }
 
-    function promoteTripTransitionOverlayTopLayer() {
-        if (
-            !tripTransitionOverlayActive ||
-            tripTransitionOverlay?.hidden
-        ) {
-            return false;
-        }
-
-        try {
-            tripTransitionOverlay
-                .remove();
-            document.body
-                .append(
-                    tripTransitionOverlay
-                );
-            return true;
-        }
-        catch {
-            return false;
-        }
-    }
-
     function renderTripTransitionOverlayItem(
         item
     ) {
@@ -15682,6 +15652,20 @@
                 },
                 7000
             );
+    }
+
+    async function waitForTripTransitionOverlay() {
+        while (
+            tripTransitionOverlayActive
+        ) {
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        50
+                    )
+            );
+        }
     }
 
     function enqueueTripTransitionOverlay(
