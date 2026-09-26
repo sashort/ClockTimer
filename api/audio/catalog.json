@@ -182,6 +182,71 @@
         "decay": 0.03
       },
       "trillStep": "1/8"
+    },
+    "cinematic-pulse-bass-phone": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.58,
+      "detune": 0,
+      "velocitySensitivity": 0.72,
+      "envelope": {
+        "attack": 0.022,
+        "decay": 0.34,
+        "sustain": 0.48,
+        "release": 0.22
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.42,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.42,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.12,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1450,
+        "Q": 0.75,
+        "envelopeAmount": 1200
+      },
+      "pitchEnvelope": {
+        "amount": 8,
+        "attack": 0,
+        "decay": 0.06
+      },
+      "reverb": {
+        "wet": 0.04,
+        "decay": 0.9
+      },
+      "delay": {
+        "time": 0.15,
+        "feedback": 0.08,
+        "wet": 0.035
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.018
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8"
     }
   },
   "songs": {
