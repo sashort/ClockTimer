@@ -2287,7 +2287,10 @@
                 includeTones = true,
                 includeSpeech = true,
                 suspendListening =
-                    false
+                    false,
+                suspendChimeListening =
+                    true,
+                startBeat = 0
             } = {}
         ) {
             const catalog = await this.load();
@@ -2317,6 +2320,19 @@
                 loop === undefined
                     ? Boolean(song.loop)
                     : Boolean(loop);
+            const requestedStartBeat =
+                Number(
+                    startBeat
+                );
+            const playbackStartBeat =
+                Number.isFinite(
+                    requestedStartBeat
+                )
+                    ? Math.max(
+                        0,
+                        requestedStartBeat
+                    )
+                    : 0;
             const requestedInstrument =
                 catalog?.instruments?.[
                     song.instrument
@@ -2416,10 +2432,15 @@
 
             const hasChime =
                 Boolean(
+                    suspendChimeListening &&
                     includeTones &&
                     song.events?.some?.(
                         event =>
-                            event?.tone
+                            event?.tone &&
+                            this.#beats(
+                                event.offset
+                            ) >=
+                                playbackStartBeat
                     )
                 );
 
@@ -2446,12 +2467,33 @@
                     entry.startedAt;
 
                 for (const event of song.events || []) {
+                    const eventOffset =
+                        this.#beats(
+                            event?.offset
+                        );
+
+                    if (
+                        eventOffset <
+                        playbackStartBeat
+                    ) {
+                        continue;
+                    }
+
+                    const playbackEvent = {
+                        ...event,
+                        offset:
+                            String(
+                                eventOffset -
+                                playbackStartBeat
+                            )
+                    };
+
                     if (includeTones && event?.tone) {
                         const toneEndAt =
                             this.#scheduleTone(
                                 context,
                                 entry,
-                                event,
+                                playbackEvent,
                                 instrument,
                                 tempo,
                                 songGain
@@ -2476,7 +2518,7 @@
                                 this.#scheduleSpeech(
                                     context,
                                     entry,
-                                    event,
+                                    playbackEvent,
                                     tempo
                                 )
                             );
@@ -2551,6 +2593,10 @@
                 return Object.freeze({
                     id: entry.id,
                     name,
+                    bpm:
+                        tempo,
+                    startBeat:
+                        playbackStartBeat,
                     finished,
                     stop: () =>
                         this.stopSong(
