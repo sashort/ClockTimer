@@ -4375,6 +4375,24 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .main-menu .easter-egg-submenu{margin:0 0 4px 28px;border-left:1px solid rgb(169 221 247 / 70%);}
 .main-menu .easter-egg-submenu button{padding:10px 12px;font-size:15px;color:var(--wm-blue-light);}
 .main-menu .easter-egg-submenu button::before{display:none;}
+.main-menu .easter-egg-song-picker{
+    display:grid;
+    gap:6px;
+    padding:8px 12px 10px;
+    color:var(--wm-blue-light);
+    font-size:14px;
+}
+.main-menu .easter-egg-song-picker select{
+    width:100%;
+    min-width:0;
+    min-height:38px;
+    padding:7px 9px;
+    color:inherit;
+    font:inherit;
+    border:1px solid rgb(255 255 255 / 28%);
+    border-radius:7px;
+    background:var(--wm-blue-dark);
+}
 .main-menu .easter-egg-submenu button[disabled]{opacity:.42;}
 #speechTrainingButton::before{
     -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M8.5 21h7' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M18.5 5v5M16 7.5h5' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
