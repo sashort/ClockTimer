@@ -14,7 +14,7 @@
         new EventTarget();
 
     const verbPrefix =
-        /^(?:add|apply|begin|cancel|change|choose|clear|close|confirm|connect|create|delete|defer|disable|discard|disconnect|edit|enable|end|enter|get|hide|load|lock|move|open|prepare|release|reload|remove|reorder|request|reset|resume|run|save|schedule|select|set|show|stage|start|stop|submit|switch|test|toggle|unlock|update|validate)/;
+        /^(?:add|apply|begin|cancel|change|choose|clear|close|confirm|connect|create|delete|defer|developer|disable|discard|disconnect|edit|enable|end|enter|get|hide|load|lock|move|open|prepare|release|reload|remove|reorder|request|reset|resume|run|save|schedule|select|set|show|stage|start|stop|submit|switch|test|toggle|unlock|update|validate)/;
 
     let stateProvider =
         () => ({});
