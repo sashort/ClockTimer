@@ -5856,11 +5856,17 @@ speech-command {
     .audio-settings-dialog {
         position: fixed;
         inset: 0;
+        box-sizing: border-box;
         width: 100vw;
         max-width: none;
         height: 100dvh;
         max-height: none;
         margin: 0;
+        padding:
+            max(8px, env(safe-area-inset-top))
+            max(8px, env(safe-area-inset-right))
+            max(8px, env(safe-area-inset-bottom))
+            max(8px, env(safe-area-inset-left));
         border-radius: 0;
         overflow: hidden;
     }
@@ -5931,10 +5937,27 @@ speech-command {
         display: block;
     }
 
-    .audio-settings-table tr {
+    .audio-settings-table thead tr {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) repeat(3, 48px);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         align-items: center;
+    }
+
+    .audio-settings-table thead th:first-child {
+        display: none;
+    }
+
+    .audio-settings-table tbody tr {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+        border-bottom: 1px solid rgb(255 255 255 / 14%);
+    }
+
+    .audio-settings-table tbody th {
+        grid-column: 1 / -1;
+        padding-bottom: 4px;
+        border-bottom: 0;
     }
 
     .audio-settings-table th,
@@ -5943,8 +5966,23 @@ speech-command {
         padding: 8px 5px;
     }
 
-    .audio-settings-table th:first-child {
+    .audio-settings-table tbody th:first-child {
         overflow-wrap: anywhere;
+    }
+
+    .audio-settings-table tbody td {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        place-items: center;
+        gap: 4px;
+        border-bottom: 0;
+    }
+
+    .audio-settings-table tbody td::before {
+        content: attr(data-audio-layer-label);
+        font-size: 11px;
+        line-height: 1;
+        opacity: .72;
     }
 
     .audio-settings-table thead th {
@@ -5968,7 +6006,7 @@ speech-command {
         position: sticky;
         bottom: 0;
         z-index: 3;
-        margin: 0 10px 10px;
+        margin: 0;
         padding-top: 8px;
         background: var(--wm-blue-dark);
     }
