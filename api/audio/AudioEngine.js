@@ -2454,7 +2454,7 @@
                         bpm,
                         volume,
                         speechDelayMs:
-                            entry.speechDelayMs,
+                            entry.requestedSpeechDelayMs,
                         loop: true,
                         suspendListening:
                             entry
@@ -3016,7 +3016,7 @@
                     effectiveSpeechVelocity,
                 speechVolume:
                     effectiveSpeechVolume,
-                speechDelayMs:
+                requestedSpeechDelayMs:
                     Math.max(
                         0,
                         Number(
@@ -3024,6 +3024,8 @@
                         ) ||
                         0
                     ),
+                speechDelayMs:
+                    0,
                 startedAt:
                     context.currentTime +
                     0.015,
@@ -3069,7 +3071,6 @@
 
             const hasChime =
                 Boolean(
-                    suspendChimeListening &&
                     includeTones &&
                     preparedEvents.some(
                         record =>
@@ -3078,7 +3079,15 @@
                     )
                 );
 
-            if (hasChime) {
+            entry.speechDelayMs =
+                hasChime
+                    ? entry.requestedSpeechDelayMs
+                    : 0;
+
+            if (
+                hasChime &&
+                suspendChimeListening
+            ) {
                 entry.chimeListeningSuspended =
                     true;
 
@@ -3339,6 +3348,7 @@
                         tempo,
                     startBeat:
                         playbackStartBeat,
+                    hasChime,
                     finished,
                     stop: () =>
                         this.stopSong(
