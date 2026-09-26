@@ -1652,12 +1652,7 @@
             const startAt =
                 entry.startedAt +
                 offsetBeats *
-                    beatSeconds +
-                (
-                    entry.speechDelayMs ||
-                    0
-                ) /
-                    1000;
+                    beatSeconds;
             const effectEnd =
                 startAt +
                 Math.max(
@@ -2523,7 +2518,12 @@
             const startAt =
                 entry.startedAt +
                 offsetBeats *
-                    beatSeconds;
+                    beatSeconds +
+                (
+                    entry.speechDelayMs ||
+                    0
+                ) /
+                    1000;
             const delay =
                 Math.max(
                     0,
