@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "notation": {
     "offset": "Beat offset from the beginning of the song.",
     "length": "One duration is the tone/effect length. Two comma-separated durations are effect length and post-effect sustain length.",
@@ -9,6 +9,36 @@
     "sustain": "...",
     "trillRule": "The two notes surrounding ~ must be exactly one semitone apart.",
     "sustainRule": "A second length value requires ... and sustains the final/resulting pitch."
+  },
+  "instrumentAttributes": {
+    "type": "Instrument engine type. oscillator is currently supported.",
+    "waveform": "Default OscillatorNode waveform. Defaults to sine.",
+    "volume": "Instrument gain multiplier. Defaults to 1.",
+    "envelope": {
+      "attack": "Amplitude attack time in seconds. Defaults to 0.",
+      "decay": "Amplitude decay time in seconds. Defaults to 0.",
+      "sustain": "Amplitude sustain level from 0 through 1. Defaults to 1.",
+      "release": "Amplitude release time in seconds. Defaults to 0 and extends the audible event when positive."
+    },
+    "partials": "Optional harmonic oscillator array. Each partial supports ratio, gain, detune in cents, and an optional waveform override. Defaults to one fundamental partial at ratio 1 and gain 1.",
+    "filter": {
+      "type": "BiquadFilterNode type, for example lowpass, highpass, or bandpass.",
+      "frequency": "Base filter cutoff/center frequency in Hz. Defaults to 5000 when a filter is present.",
+      "Q": "Filter resonance/Q. Defaults to the Web Audio node value when omitted.",
+      "envelopeAmount": "Initial filter-frequency offset in Hz. It settles to frequency over the amplitude envelope attack plus decay."
+    },
+    "noise": {
+      "amount": "White-noise transient gain. Zero or omission disables noise.",
+      "decay": "Noise transient decay time in seconds. Defaults to 0.03 when noise is enabled."
+    },
+    "detune": "Base oscillator detune in cents. Defaults to 0.",
+    "pitchEnvelope": {
+      "amount": "Pitch-envelope excursion in cents.",
+      "attack": "Seconds from base detune to the pitch-envelope peak. Defaults to 0.",
+      "decay": "Seconds from the pitch-envelope peak back to base detune. Defaults to 0."
+    },
+    "velocitySensitivity": "How strongly event dynamics affect gain, from 0 through 1. Defaults to 1.",
+    "trillStep": "Beat subdivision used by trill effects. Defaults to 1/8."
   },
   "instruments": {
     "legacy-square": {
