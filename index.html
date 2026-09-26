@@ -720,10 +720,10 @@
                 </label>
             </section>
 
-            <section class="audio-settings-announcements" aria-labelledby="audioAnnouncementsTitle">
+            <section class="audio-settings-announcements audio-settings-announcements-desktop" aria-labelledby="audioAnnouncementsTitle">
                 <h3 id="audioAnnouncementsTitle">Announcements</h3>
 
-                <div class="audio-settings-desktop-table audio-settings-table-wrap">
+                <div class="audio-settings-table-wrap">
                     <table class="audio-settings-table">
                         <thead>
                             <tr>
@@ -736,94 +736,109 @@
                         <tbody id="audioAnnouncementRows"></tbody>
                     </table>
                 </div>
-
-                <pane-page id="audioAnnouncementPage" class="audio-announcement-page" overflow="y">
-                    <div class="audio-announcement-list-view" data-pane-view="list">
-                        <div id="audioAnnouncementEventList" class="audio-announcement-event-list"></div>
-                    </div>
-
-                    <div class="audio-announcement-detail-view" data-pane-view="detail" hidden>
-                        <div class="audio-announcement-detail-heading">
-                            <button id="audioAnnouncementBack" class="audio-announcement-back" type="button" aria-label="Back to announcements">‹</button>
-                            <strong id="audioAnnouncementSelectedLabel">Master</strong>
-                        </div>
-
-                        <div class="audio-announcement-mobile-columns" aria-label="Announcement attributes">
-                            <label>
-                                <span>Chime</span>
-                                <input type="checkbox" data-audio-master="chime" checked>
-                            </label>
-                            <label>
-                                <span>Summary</span>
-                                <input type="checkbox" data-audio-master="summary" checked>
-                            </label>
-                            <label>
-                                <span>Details</span>
-                                <input type="checkbox" data-audio-master="details" checked>
-                            </label>
-                        </div>
-
-                        <div id="audioAnnouncementMobileAttributeRow" class="audio-announcement-mobile-attribute-row" hidden>
-                            <label class="audio-announcement-mobile-enable">
-                                <input type="checkbox" data-audio-row-master>
-                                <span>Enable</span>
-                            </label>
-                            <label>
-                                <span>Chime</span>
-                                <input type="checkbox" data-audio-layer="chime">
-                            </label>
-                            <label>
-                                <span>Summary</span>
-                                <input type="checkbox" data-audio-layer="summary">
-                            </label>
-                            <label>
-                                <span>Details</span>
-                                <input type="checkbox" data-audio-layer="details">
-                            </label>
-                        </div>
-
-                        <div id="audioAnnouncementMobileOverrides" class="audio-announcement-mobile-overrides" hidden>
-                            <div class="audio-announcement-preview-actions" role="group" aria-label="Announcement custom controls">
-                                <button id="audioAnnouncementPreview" type="button">Preview</button>
-                                <button id="audioAnnouncementApplyCustom" type="button" class="primary-action">Apply</button>
-                                <button id="audioAnnouncementResetCustom" type="button">Reset Custom</button>
-                                <button id="audioAnnouncementCancelCustom" type="button">Cancel</button>
-                            </div>
-
-                            <label data-audio-custom-setting="speechVolume">
-                                <span>Speech Volume</span>
-                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech volume">
-                                <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
-                                <output data-audio-custom-output></output>
-                            </label>
-                            <label data-audio-custom-setting="toneVolume">
-                                <span>Tone Volume</span>
-                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone volume">
-                                <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
-                                <output data-audio-custom-output></output>
-                            </label>
-                            <label data-audio-custom-setting="speechVelocity">
-                                <span>Speech Velocity</span>
-                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech velocity">
-                                <input type="range" data-audio-custom-value min="0.5" max="4" step="0.05">
-                                <output data-audio-custom-output></output>
-                            </label>
-                            <label data-audio-custom-setting="toneVelocity">
-                                <span>Tone Velocity</span>
-                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone velocity">
-                                <input type="range" data-audio-custom-value min="0.5" max="1.5" step="0.05">
-                                <output data-audio-custom-output></output>
-                            </label>
-                        </div>
-                    </div>
-                </pane-page>
             </section>
+
+            <button id="audioAnnouncementsOpen" class="audio-announcements-launcher" type="button">
+                <span>Announcements</span>
+                <span aria-hidden="true">›</span>
+            </button>
             </div>
 
             <div class="dialog-actions two-actions">
                 <button type="button" id="audioSettingsReset">Defaults</button>
                 <button type="submit" class="primary-action">Done</button>
             </div>
+        </form>
+    </dialog>
+
+    <dialog id="audioAnnouncementsDialog" class="app-dialog audio-announcements-dialog">
+        <form id="audioAnnouncementsForm" method="dialog">
+            <header class="dialog-header">
+                <button id="audioAnnouncementsClose" class="audio-announcements-window-back" type="button" data-close-dialog aria-label="Back to Audio Settings">‹</button>
+                <h2>Announcements</h2>
+                <span class="audio-announcements-header-spacer" aria-hidden="true"></span>
+            </header>
+
+            <pane-page id="audioAnnouncementPage" class="audio-announcement-page" overflow="y">
+                <div class="audio-announcement-list-view" data-pane-view="list">
+                    <div id="audioAnnouncementEventList" class="audio-announcement-event-list"></div>
+                </div>
+
+                <div class="audio-announcement-detail-view" data-pane-view="detail" hidden>
+                    <div class="audio-announcement-detail-heading">
+                        <button id="audioAnnouncementBack" class="audio-announcement-back" type="button" aria-label="Back to announcements">‹</button>
+                        <strong id="audioAnnouncementSelectedLabel">Master</strong>
+                    </div>
+
+                    <div class="audio-announcement-mobile-columns" aria-label="Announcement attributes">
+                        <label>
+                            <span>Chime</span>
+                            <input type="checkbox" data-audio-master="chime" checked>
+                        </label>
+                        <label>
+                            <span>Summary</span>
+                            <input type="checkbox" data-audio-master="summary" checked>
+                        </label>
+                        <label>
+                            <span>Details</span>
+                            <input type="checkbox" data-audio-master="details" checked>
+                        </label>
+                    </div>
+
+                    <div id="audioAnnouncementMobileAttributeRow" class="audio-announcement-mobile-attribute-row" hidden>
+                        <label class="audio-announcement-mobile-enable">
+                            <input type="checkbox" data-audio-row-master>
+                            <span>Enable</span>
+                        </label>
+                        <label>
+                            <span>Chime</span>
+                            <input type="checkbox" data-audio-layer="chime">
+                        </label>
+                        <label>
+                            <span>Summary</span>
+                            <input type="checkbox" data-audio-layer="summary">
+                        </label>
+                        <label>
+                            <span>Details</span>
+                            <input type="checkbox" data-audio-layer="details">
+                        </label>
+                    </div>
+
+                    <div id="audioAnnouncementMobileOverrides" class="audio-announcement-mobile-overrides" hidden>
+                        <div class="audio-announcement-preview-actions" role="group" aria-label="Announcement custom controls">
+                            <button id="audioAnnouncementPreview" type="button">Preview</button>
+                            <button id="audioAnnouncementApplyCustom" type="button" class="primary-action">Apply</button>
+                            <button id="audioAnnouncementResetCustom" type="button">Reset Custom</button>
+                            <button id="audioAnnouncementCancelCustom" type="button">Cancel</button>
+                        </div>
+
+                        <label data-audio-custom-setting="speechVolume">
+                            <span>Speech Volume</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech volume">
+                            <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                        <label data-audio-custom-setting="toneVolume">
+                            <span>Tone Volume</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone volume">
+                            <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                        <label data-audio-custom-setting="speechVelocity">
+                            <span>Speech Velocity</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech velocity">
+                            <input type="range" data-audio-custom-value min="0.5" max="4" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                        <label data-audio-custom-setting="toneVelocity">
+                            <span>Tone Velocity</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone velocity">
+                            <input type="range" data-audio-custom-value min="0.5" max="1.5" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                    </div>
+                </div>
+            </pane-page>
         </form>
     </dialog>
 
