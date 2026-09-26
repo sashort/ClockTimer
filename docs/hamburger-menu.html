@@ -104,10 +104,14 @@ kbd {
 <body>
 <main>
 <h1>&lt;hamburger-menu&gt;</h1>
-<p><strong>Reusable anchored hamburger menu custom element.</strong> It owns popover placement, horizontal paging, parent-menu promotion, directional animation, safe-boundary geometry, and promoted-menu scrolling. Application-specific commands and visual styling stay outside the component.</p>
+<p><strong>Reusable anchored hamburger menu custom element.</strong> It owns popover placement, horizontal page packing/swiping, parent-menu promotion, directional menu animation, safe-boundary geometry, and promoted-menu scrolling. The individual page shell is provided by the reusable <code>&lt;pane-page&gt;</code> component; application-specific commands and visual styling stay outside the component.</p>
 
 <div class="note">
 <strong>WMOF integration:</strong> the main UI uses this custom element with <code>safe-boundary="#speechMicBar"</code>. The same element is intended for reuse in unrelated projects.
+</div>
+
+<div class="note">
+<strong>Component boundary:</strong> <code>HamburgerMenu.js</code> depends on <code>PanePage.js</code> and creates each packed horizontal menu panel as a <code>&lt;pane-page class="hamburger-menu-panel pane-page-horizontal-item"&gt;</code>. <code>&lt;pane-page&gt;</code> is the reusable page/view primitive. Hamburger-specific horizontal swiping, page indexing, indicator behavior, safe-boundary packing, and menu-parent promotion remain owned by <code>&lt;hamburger-menu&gt;</code>.
 </div>
 
 <h2>Core behavior</h2>
@@ -126,7 +130,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Horizontal paging</h3>
-<p>Normal content never vertically scrolls. If it is too tall, the element packs top-level rows into horizontally swipeable panes. Every normal pane uses the height of the tallest pane in that layout.</p>
+<p>Normal content never vertically scrolls. If it is too tall, the element packs top-level rows into horizontally swipeable <code>&lt;pane-page&gt;</code> elements. Every normal page uses the height of the tallest page in that layout. <strong>The left/right swipe gesture, current-page calculation, scroll snapping, and page indicator are HamburgerMenu behavior, not PanePage behavior.</strong></p>
 </div>
 <div class="card">
 <h3>Parent promotion</h3>
@@ -172,6 +176,7 @@ kbd {
     &lt;/div&gt;
 &lt;/hamburger-menu&gt;
 
+&lt;script src="PanePage.js"&gt;&lt;/script&gt;
 &lt;script src="HamburgerMenu.js"&gt;&lt;/script&gt;</pre>
 
 <p>If the trigger does not already have <code>slot="trigger"</code>, the element uses its first direct child button and assigns the slot automatically.</p>
@@ -247,7 +252,7 @@ kbd {
 <ol>
 <li>The popover is marked as calculating and rendered at <code>opacity: 0</code>.</li>
 <li>The component measures the safe region and the visible top-level rows.</li>
-<li>Rows are packed into horizontal panes. If multiple panes are required, every pane is assigned the height of the tallest packed pane.</li>
+<li>Rows are packed into horizontal <code>&lt;pane-page&gt;</code> elements. If multiple pages are required, every page is assigned the height of the tallest packed page.</li>
 <li>The browser's anchor-positioning / <code>position-try</code> result is reconciled against the safe region. Any correction moves the popover, never the hamburger.</li>
 <li>After a second frame confirms placement, the popover is revealed at <code>opacity: 1</code>.</li>
 </ol>
@@ -255,6 +260,7 @@ kbd {
 <p>Applications should also cloak pre-upgrade light-DOM menu rows so they cannot flash before the custom-element script runs. WMOF marks the button with <code>slot="trigger"</code> in static HTML and hides the other direct children while <code>hamburger-menu:not(:defined)</code>.</p>
 
 <h2>Promotion model</h2>
+<p class="note"><strong>Do not confuse menu promotion with generic PanePage navigation.</strong> Hamburger parent promotion is still menu-specific because it measures sibling/descendant rows, freezes menu geometry, applies coverage keyframes, manages nested submenu state, and coordinates with the safe boundary. <code>PanePage.showView()</code> is the reusable application-level drill-down primitive; HamburgerMenu does not delegate this specialized parent-menu promotion sequence to it.</p>
 
 <figure>
 <svg viewBox="0 0 960 430" role="img" aria-label="Staged parent promotion toward hamburger">
