@@ -2296,6 +2296,8 @@
                     false,
                 suspendChimeListening =
                     true,
+                useSelectedInstrument =
+                    true,
                 startBeat = 0
             } = {}
         ) {
@@ -2340,8 +2342,10 @@
                     )
                     : 0;
             const selectedInstrumentName =
-                this.#outputSettings
-                    .instrument;
+                useSelectedInstrument
+                    ? this.#outputSettings
+                        .instrument
+                    : "";
             const selectedInstrument =
                 selectedInstrumentName
                     ? catalog
