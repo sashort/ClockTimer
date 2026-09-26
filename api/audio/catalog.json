@@ -979,1225 +979,1225 @@
       "events": [
         {
           "offset": "0",
-          "tone": "E2",
+          "tone": "E3",
           "length": "0.9",
           "dynamic": "mp"
         },
         {
           "offset": "1.5",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "2",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "3",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "4",
-          "tone": "C2",
+          "tone": "C3",
           "length": "0.9",
           "dynamic": "mp"
         },
         {
           "offset": "5.5",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "6",
-          "tone": "C3",
+          "tone": "C4",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "7",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "8",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.9",
           "dynamic": "mp"
         },
         {
           "offset": "8",
-          "tone": "D3",
+          "tone": "D4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "8",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "8",
-          "tone": "B3",
+          "tone": "B4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "9.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "10",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "10",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "10",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "10",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "11",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "12",
-          "tone": "D2",
+          "tone": "D3",
           "length": "0.9",
           "dynamic": "mp"
         },
         {
           "offset": "12",
-          "tone": "D3",
+          "tone": "D4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "12",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "12",
-          "tone": "A3",
+          "tone": "A4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "13.5",
-          "tone": "A2",
-          "length": "0.55",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "14",
-          "tone": "D3",
-          "length": "0.55",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "14",
-          "tone": "D3",
-          "length": "0.8",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "14",
-          "tone": "F#3",
-          "length": "0.8",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "14",
           "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "F#4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "A4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "15",
-          "tone": "A2",
+          "tone": "A3",
           "length": "0.55",
           "dynamic": "mp"
         },
         {
           "offset": "16",
-          "tone": "E2",
+          "tone": "E3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "16",
-          "tone": "E3",
+          "tone": "E4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "16",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "16",
-          "tone": "B3",
+          "tone": "B4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "16",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "16.75",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "17.5",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "17.5",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "18",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "18",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "18",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "18",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "18.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "19",
-          "tone": "B2",
-          "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "19",
           "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "19",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "20",
-          "tone": "C2",
+          "tone": "C3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "20",
-          "tone": "E3",
+          "tone": "E4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "20",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "20",
-          "tone": "C4",
+          "tone": "C5",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "20",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "20.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "21.5",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "21.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "22",
-          "tone": "C3",
+          "tone": "C4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "22",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "22",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "22",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "22.5",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "23",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "23",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "24",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "24",
-          "tone": "D3",
-          "length": "1.35",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "24",
-          "tone": "G3",
-          "length": "1.35",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "24",
-          "tone": "B3",
-          "length": "1.35",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "24",
           "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "D5",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "24.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "25.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "25.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "26",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "26",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "26",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "26",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "26.5",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "27",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "27",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "28",
-          "tone": "D2",
+          "tone": "D3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "28",
-          "tone": "D3",
+          "tone": "D4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "28",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "28",
-          "tone": "A3",
+          "tone": "A4",
           "length": "1.35",
           "dynamic": "mp"
         },
         {
           "offset": "28",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "28.75",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "29.5",
-          "tone": "A2",
+          "tone": "A3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "29.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "30",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "30",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "30",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "30",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "30.5",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.45",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "31",
-          "tone": "A2",
-          "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "31",
           "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "31",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "32",
-          "tone": "E2",
+          "tone": "E3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "32",
-          "tone": "E3",
+          "tone": "E4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "32",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "32",
-          "tone": "B3",
+          "tone": "B4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "32",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "32.75",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "33.5",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "33.5",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "34",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "34",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "34",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "34",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "34.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "35",
-          "tone": "B2",
-          "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "35",
           "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "35",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "36",
-          "tone": "C2",
+          "tone": "C3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "36",
-          "tone": "E3",
+          "tone": "E4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "36",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "36",
-          "tone": "C4",
+          "tone": "C5",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "36",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "36.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "37.5",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "37.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "38",
-          "tone": "C3",
+          "tone": "C4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "38",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "38",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "38",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "38.5",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "39",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "39",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "40",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "40",
-          "tone": "D3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "40",
-          "tone": "G3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "40",
-          "tone": "B3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "40",
           "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "D5",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "40.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "41.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "41.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "42",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "42",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "42",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "42",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "42.5",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "43",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "43",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "44",
-          "tone": "D2",
+          "tone": "D3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "44",
-          "tone": "D3",
+          "tone": "D4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "44",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "44",
-          "tone": "A3",
+          "tone": "A4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "44",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "f"
         },
         {
           "offset": "44.75",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "45.5",
-          "tone": "A2",
+          "tone": "A3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "45.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "46",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "46",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "46",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "46",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "46.5",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.45",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "47",
-          "tone": "A2",
-          "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "47",
           "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "47",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "48",
-          "tone": "E2",
+          "tone": "E3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "48",
-          "tone": "E3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "48",
-          "tone": "G3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "48",
-          "tone": "B3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "48",
           "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "E5",
           "length": "0.7",
           "dynamic": "mf"
         },
         {
           "offset": "49",
-          "tone": "D4",
+          "tone": "D5",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "49.5",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "49.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "50",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "50",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "50",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "50",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "50.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "51",
-          "tone": "B2",
+          "tone": "B3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "52",
-          "tone": "C2",
+          "tone": "C3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "52",
-          "tone": "E3",
+          "tone": "E4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "52",
-          "tone": "G3",
+          "tone": "G4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "52",
-          "tone": "C4",
+          "tone": "C5",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "52",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.7",
           "dynamic": "mf"
         },
         {
           "offset": "53",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "53.5",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "53.75",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "54",
-          "tone": "C3",
+          "tone": "C4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "54",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "54",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "54",
-          "tone": "C4",
+          "tone": "C5",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "54.5",
-          "tone": "E3",
+          "tone": "E4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "55",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "56",
-          "tone": "G2",
+          "tone": "G3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "56",
-          "tone": "D3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "56",
-          "tone": "G3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "56",
-          "tone": "B3",
-          "length": "1.35",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "56",
           "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "D5",
           "length": "0.7",
           "dynamic": "mf"
         },
         {
           "offset": "57",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "57.5",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "57.75",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "58",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "58",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "58",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "58",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "58.5",
-          "tone": "G3",
+          "tone": "G4",
           "length": "0.8",
           "dynamic": "mf"
         },
         {
           "offset": "59",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "60",
-          "tone": "D2",
+          "tone": "D3",
           "length": "0.9",
           "dynamic": "mf"
         },
         {
           "offset": "60",
-          "tone": "D3",
+          "tone": "D4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "60",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "60",
-          "tone": "A3",
+          "tone": "A4",
           "length": "1.35",
           "dynamic": "mf"
         },
         {
           "offset": "60",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "60.75",
-          "tone": "B3",
+          "tone": "B4",
           "length": "0.45",
           "dynamic": "mf"
         },
         {
           "offset": "61.5",
-          "tone": "A2",
+          "tone": "A3",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "61.5",
-          "tone": "D4",
+          "tone": "D5",
           "length": "0.7",
           "dynamic": "mf"
         },
         {
           "offset": "62",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.55",
           "dynamic": "mf"
         },
         {
           "offset": "62",
-          "tone": "D3",
+          "tone": "D4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "62",
-          "tone": "F#3",
+          "tone": "F#4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "62",
-          "tone": "A3",
+          "tone": "A4",
           "length": "0.8",
           "dynamic": "mp"
         },
         {
           "offset": "62.5",
-          "tone": "E4",
+          "tone": "E5",
           "length": "1.25",
           "dynamic": "f"
         },
         {
           "offset": "63",
-          "tone": "A2",
+          "tone": "A3",
           "length": "0.55",
           "dynamic": "mf"
         }
