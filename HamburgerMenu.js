@@ -166,6 +166,34 @@
             ":where(hamburger-menu) .hamburger-menu-indicator[hidden] {",
             "  display: none;",
             "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target {",
+            "  position: absolute;",
+            "  top: 0;",
+            "  bottom: auto;",
+            "  z-index: 7;",
+            "  width: var(--hamburger-menu-swipe-target-width, 56px);",
+            "  height: var(--hamburger-menu-panel-height, 100%);",
+            "  pointer-events: none;",
+            "  opacity: calc(var(--hamburger-menu-swipe-target-opacity, .28) + (var(--hamburger-menu-swipe-target-progress, 0) * var(--hamburger-menu-swipe-target-emphasis, .62)));",
+            "  transition: opacity var(--hamburger-menu-swipe-target-transition, 90ms) linear, filter var(--hamburger-menu-swipe-target-transition, 90ms) linear;",
+            "  filter: brightness(calc(1 + (var(--hamburger-menu-swipe-target-progress, 0) * var(--hamburger-menu-swipe-target-brightness, .45))));",
+            "  will-change: opacity, filter;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target[hidden] {",
+            "  display: none;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target[data-direction=\"previous\"] {",
+            "  left: 0;",
+            "  right: auto;",
+            "  background: var(--hamburger-menu-swipe-target-previous-gradient, linear-gradient(to right, color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 78%, transparent), transparent));",
+            "  box-shadow: var(--hamburger-menu-swipe-target-previous-shadow, inset 6px 0 18px color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 42%, transparent));",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target[data-direction=\"next\"] {",
+            "  left: auto;",
+            "  right: 0;",
+            "  background: var(--hamburger-menu-swipe-target-next-gradient, linear-gradient(to left, color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 78%, transparent), transparent));",
+            "  box-shadow: var(--hamburger-menu-swipe-target-next-shadow, inset -6px 0 18px color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 42%, transparent));",
+            "}",
             ":where(hamburger-menu) .hamburger-menu-indicator-thumb {",
             "  position: absolute;",
             "  inset: 0 auto 0 0;",
@@ -345,6 +373,9 @@
         #swipeStartY = 0;
         #swipeStartScrollLeft = 0;
         #swipeActive = false;
+        #swipeDirection;
+        #swipeTarget;
+        #swipeTargetReached = false;
         #suppressSwipeClick = false;
         #suppressSwipeClickTimer;
 
@@ -1109,9 +1140,29 @@
                         this.#indicatorThumb
                     );
 
+                this.#swipeTarget =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                this.#swipeTarget
+                    .className =
+                    "hamburger-menu-swipe-target";
+
+                this.#swipeTarget
+                    .setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+                this.#swipeTarget.hidden =
+                    true;
+
                 this.#popover
                     .append(
                         this.#viewport,
+                        this.#swipeTarget,
                         this.#indicator
                     );
 
@@ -1138,6 +1189,34 @@
                             ":scope > .hamburger-menu-focus-layer"
                         );
 
+                this.#swipeTarget =
+                    this.#popover
+                        .querySelector(
+                            ":scope > .hamburger-menu-swipe-target"
+                        );
+
+                if (!this.#swipeTarget) {
+                    this.#swipeTarget =
+                        document
+                            .createElement(
+                                "div"
+                            );
+
+                    this.#swipeTarget
+                        .className =
+                        "hamburger-menu-swipe-target";
+                    this.#swipeTarget
+                        .setAttribute(
+                            "aria-hidden",
+                            "true"
+                        );
+                    this.#swipeTarget.hidden =
+                        true;
+                    this.#popover.append(
+                        this.#swipeTarget
+                    );
+                }
+
                 this.#indicator =
                     this.#popover
                         .querySelector(
@@ -1162,6 +1241,162 @@
                     "aria-expanded",
                     "false"
                 );
+        }
+
+        #hidePaneSwipeTarget() {
+            this.#swipeDirection =
+                undefined;
+            this.#swipeTargetReached =
+                false;
+
+            if (!this.#swipeTarget) {
+                return;
+            }
+
+            this.#swipeTarget.hidden =
+                true;
+            this.#swipeTarget
+                .removeAttribute(
+                    "data-direction"
+                );
+            this.#swipeTarget.style
+                .removeProperty(
+                    "--hamburger-menu-swipe-target-progress"
+                );
+        }
+
+        #showPaneSwipeTarget(
+            direction
+        ) {
+            if (!this.#swipeTarget) {
+                return false;
+            }
+
+            const targetPage =
+                direction ===
+                    "next"
+                    ? this.#panelIndex +
+                        1
+                    : this.#panelIndex -
+                        1;
+
+            if (
+                targetPage <
+                    0 ||
+                targetPage >=
+                    this.pageCount
+            ) {
+                this.#hidePaneSwipeTarget();
+                return false;
+            }
+
+            this.#swipeDirection =
+                direction;
+            this.#swipeTargetReached =
+                false;
+            this.#swipeTarget.dataset
+                .direction =
+                direction;
+            this.#swipeTarget.hidden =
+                false;
+            this.#swipeTarget.style
+                .setProperty(
+                    "--hamburger-menu-swipe-target-progress",
+                    "0"
+                );
+
+            return true;
+        }
+
+        #updatePaneSwipeTarget(
+            event
+        ) {
+            if (
+                !this.#swipeTarget ||
+                this.#swipeTarget.hidden ||
+                !this.#swipeDirection
+            ) {
+                return;
+            }
+
+            const rect =
+                this.#swipeTarget
+                    .getBoundingClientRect();
+            const viewportRect =
+                this.#viewport
+                    .getBoundingClientRect();
+            const x =
+                Number(
+                    event.clientX
+                );
+
+            const edgeDistance =
+                this.#swipeDirection ===
+                    "next"
+                    ? Math.max(
+                        0,
+                        x -
+                            viewportRect
+                                .left
+                    )
+                    : Math.max(
+                        0,
+                        viewportRect
+                            .right -
+                            x
+                    );
+            const span =
+                Math.max(
+                    1,
+                    viewportRect.width
+                );
+            const approach =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        1 -
+                            edgeDistance /
+                                span
+                    )
+                );
+
+            this.#swipeTarget.style
+                .setProperty(
+                    "--hamburger-menu-swipe-target-progress",
+                    String(
+                        approach
+                    )
+                );
+
+            const reached =
+                this.#swipeDirection ===
+                    "next"
+                    ? x <=
+                        rect.right
+                    : x >=
+                        rect.left;
+
+            if (
+                reached &&
+                Math.abs(
+                    x -
+                    this.#swipeStartX
+                ) >=
+                    Math.min(
+                        48,
+                        span *
+                            0.15
+                    )
+            ) {
+                this.#swipeTargetReached =
+                    true;
+                this.#swipeTarget.style
+                    .setProperty(
+                        "--hamburger-menu-swipe-target-progress",
+                        "1"
+                    );
+            }
         }
 
         #beginPaneSwipe(
@@ -1197,6 +1432,7 @@
                 this.#viewport.scrollLeft;
             this.#swipeActive =
                 false;
+            this.#hidePaneSwipeTarget();
         }
 
         #movePaneSwipe(
@@ -1243,6 +1479,16 @@
                 this.#swipeActive =
                     true;
 
+                const direction =
+                    deltaX <
+                        0
+                        ? "next"
+                        : "previous";
+
+                this.#showPaneSwipeTarget(
+                    direction
+                );
+
                 try {
                     this.#viewport
                         .setPointerCapture(
@@ -1253,6 +1499,25 @@
             }
 
             event.preventDefault();
+
+            const direction =
+                deltaX <
+                    0
+                    ? "next"
+                    : "previous";
+
+            if (
+                direction !==
+                    this.#swipeDirection
+            ) {
+                this.#showPaneSwipeTarget(
+                    direction
+                );
+            }
+
+            this.#updatePaneSwipeTarget(
+                event
+            );
 
             this.#viewport
                 .scrollLeft =
@@ -1294,16 +1559,20 @@
 
             event.preventDefault();
 
-            const width =
-                this.#viewport
-                    .clientWidth ||
-                1;
             const page =
-                Math.round(
-                    this.#viewport
-                        .scrollLeft /
-                    width
-                );
+                this.#swipeTargetReached &&
+                this.#swipeDirection
+                    ? (
+                        this.#swipeDirection ===
+                            "next"
+                            ? this.#panelIndex +
+                                1
+                            : this.#panelIndex -
+                                1
+                    )
+                    : this.#panelIndex;
+
+            this.#hidePaneSwipeTarget();
 
             this.goToPage(
                 page
@@ -1340,6 +1609,7 @@
                 undefined;
             this.#swipeActive =
                 false;
+            this.#hidePaneSwipeTarget();
 
             this.goToPage(
                 this.#panelIndex
