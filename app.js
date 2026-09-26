@@ -15648,7 +15648,7 @@
                             280
                         );
                 },
-                5000
+                7000
             );
     }
 
@@ -15679,91 +15679,6 @@
 
         renderTripTransitionOverlayItem(
             item
-        );
-    }
-
-    function showTripStartTransitionOverlay(
-        detail,
-        timing =
-            "on-time"
-    ) {
-        const summary =
-            detail?.summary;
-        const trip =
-            summary?.trip;
-        const total =
-            summary?.total;
-        const title =
-            timing ===
-                "early"
-                ? "Trip Started Early"
-                : timing ===
-                    "late"
-                    ? "Trip Started Late"
-                    : "Trip Started";
-        const timingLabel =
-            timing ===
-                "early"
-                ? "Started Early"
-                : timing ===
-                    "late"
-                    ? "Started Late"
-                    : undefined;
-
-        enqueueTripTransitionOverlay(
-            title,
-            [
-                timingLabel
-                    ? tripTransitionRow(
-                        timingLabel,
-                        formatTripTransitionDuration(
-                            detail
-                                ?.timeDifferenceMilliseconds
-                        )
-                    )
-                    : undefined,
-                tripTransitionRow(
-                    "Scheduled Start",
-                    formatTripTransitionMoment(
-                        detail
-                            ?.scheduledStartTime
-                    )
-                ),
-                tripTransitionRow(
-                    "Actual Start",
-                    formatTripTransitionMoment(
-                        detail
-                            ?.actualStartTime
-                    )
-                ),
-                tripTransitionRow(
-                    "Standard Time",
-                    trip
-                        ?.standardTime
-                ),
-                tripTransitionRow(
-                    "Trip Percent",
-                    formatSummaryPercent(
-                        trip
-                            ?.countedPercent
-                    )
-                ),
-                tripTransitionRow(
-                    "Trip Goal",
-                    formatSummaryPercent(
-                        trip
-                            ?.percentGoal
-                    )
-                ),
-                tripTransitionRow(
-                    totalScopeLabel() +
-                        " Percent",
-                    formatSummaryPercent(
-                        total
-                            ?.countedPercent
-                    )
-                )
-            ]
         );
     }
 
@@ -15863,11 +15778,6 @@
     }
 
     async function onTripStarted(event) {
-        showTripStartTransitionOverlay(
-            event.detail,
-            "on-time"
-        );
-
         reserveSemanticEvent(
             event,
             "Trip started on time"
@@ -15942,11 +15852,6 @@
     }
 
     function onTripStartedEarly(event) {
-        showTripStartTransitionOverlay(
-            event.detail,
-            "early"
-        );
-
         reserveSemanticEvent(event, "Trip started early");
 
         void playSemanticSongThenSpeak(
@@ -15961,11 +15866,6 @@
     }
 
     function onTripStartedLate(event) {
-        showTripStartTransitionOverlay(
-            event.detail,
-            "late"
-        );
-
         reserveSemanticEvent(event, "Trip started late");
 
         void playSemanticSongThenSpeak(
