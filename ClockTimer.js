@@ -152,6 +152,8 @@
         #apiBase =
             "api";
 
+        #transactionTimestampProvider;
+
         #scheduledStart;
 
         #scheduledStartMilliseconds;
@@ -221,12 +223,19 @@
         #autoSyncTripGoal =
             false;
 
-        #matchedTripGoal;
+        #calculatedTripGoal;
+
+        #calculatedTotalGoal;
+
+        #calculatedGoalSource;
 
         #tripGoalMissedState =
             false;
 
         #totalGoalMissedState =
+            false;
+
+        #standardGoalMissedState =
             false;
 
         #eventsReady =
@@ -545,6 +554,26 @@
                 .second-hand {
                     display: block;
                     border-radius: 999px;
+                    transition:
+                        all
+                        50ms
+                        cubic-bezier(
+                            0.1,
+                            2.7,
+                            0.58,
+                            1
+                        );
+                }
+
+                @media (
+                    prefers-reduced-motion:
+                        reduce
+                ) {
+                    .hour-hand,
+                    .minute-hand,
+                    .second-hand {
+                        transition: none;
+                    }
                 }
 
                 .hour-hand {
@@ -1332,6 +1361,188 @@
             return match[1] ? -value : value;
         }
 
+        #getActualTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            const scope =
+                summary.scope ||
+                (
+                    this.#percentMode ===
+                        "total"
+                        ? "total"
+                        : "trip"
+                );
+
+            const selected =
+                scope === "total"
+                    ? summary.total
+                    : scope === "trip"
+                        ? summary.trip
+                        : summary.selected;
+
+            const suffix =
+                this.#renderedTimeMode ===
+                    "elapsed"
+                    ? "Time Elapsed"
+                    : this.#renderedTimeMode ===
+                        "calculated-end"
+                        ? "End Time"
+                        : "Time Remaining";
+
+            const label =
+                scope === "standard"
+                    ? `Standard ${suffix}`
+                    : `${scope === "total" ? "Total" : "Trip"} ${suffix}`;
+
+            let text =
+                selected?.renderedTime;
+
+            let value;
+            let date;
+
+            const totalOutsideTripRemaining =
+                scope === "total" &&
+                this.#renderedTimeMode === "remaining" &&
+                !this.#started;
+
+            if (totalOutsideTripRemaining) {
+                value =
+                    Number(
+                        summary.total
+                            ?.netTimeMilliseconds
+                    );
+
+                text =
+                    Number.isFinite(
+                        value
+                    )
+                        ? this.#formatRemainingRenderedDuration(
+                            value
+                        )
+                        : undefined;
+            }
+            else {
+                date =
+                    this.#renderedDate(
+                        text,
+                        now
+                    );
+
+                value =
+                    this.#renderedTimeValue(
+                        text,
+                        selected,
+                        date
+                    );
+            }
+
+            return Object.freeze({
+                mode:
+                    this.#renderedTimeMode,
+                scope,
+                type:
+                    this.#renderedTimeMode,
+                label,
+                text:
+                    typeof text === "string" &&
+                    text
+                        ? text
+                        : "---",
+                value:
+                    Number.isFinite(
+                        value
+                    )
+                        ? value
+                        : null,
+                date:
+                    date instanceof Date &&
+                    !Number.isNaN(
+                        date.getTime()
+                    )
+                        ? new Date(
+                            date.getTime()
+                        )
+                        : null,
+                available:
+                    typeof text === "string" &&
+                    Boolean(
+                        text
+                    ),
+                virtual:
+                    false
+            });
+        }
+
+        #getVirtualTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            const actual =
+                this.#getActualTimeState(
+                    now,
+                    summary
+                );
+
+            if (
+                actual.scope !== "total" ||
+                actual.mode !== "remaining" ||
+                this.#started ||
+                !Number.isFinite(
+                    actual.value
+                )
+            ) {
+                return null;
+            }
+
+            const over =
+                actual.value > 0;
+
+            const value =
+                Math.abs(
+                    actual.value
+                );
+
+            return Object.freeze({
+                ...actual,
+                type:
+                    over
+                        ? "over"
+                        : "banked",
+                label:
+                    over
+                        ? "Time Over"
+                        : "Banked Time",
+                text:
+                    this.#formatRemainingRenderedDuration(
+                        value
+                    ),
+                value,
+                date:
+                    null,
+                available:
+                    true,
+                virtual:
+                    true
+            });
+        }
+
+        #getEffectiveTimeState(
+            now = new Date(),
+            summary = this.#buildSummarySnapshot(now)
+        ) {
+            return (
+                this.#getVirtualTimeState(
+                    now,
+                    summary
+                ) ??
+                this.#getActualTimeState(
+                    now,
+                    summary
+                )
+            );
+        }
+
         #actionClock(milliseconds) {
             const numeric = Number(milliseconds);
             const negative = Number.isFinite(numeric) && numeric < 0;
@@ -1352,21 +1563,29 @@
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
             const standardText = selected?.standardTime;
-            const rawRenderedText = selected?.renderedTime;
+            const effectiveTimeState =
+                this.#getEffectiveTimeState(
+                    now,
+                    summary
+                );
+            const rawRenderedText =
+                effectiveTimeState
+                    ?.text;
             const renderedText =
                 typeof rawRenderedText === "string" &&
+                !effectiveTimeState?.virtual &&
                 (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed") &&
                 interval?.open === false
                     ? `${rawRenderedText}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}`
                     : rawRenderedText;
-            const renderedDate = this.#renderedDate(renderedText, now);
+            const renderedDate =
+                effectiveTimeState
+                    ?.date;
             const countedPercent = Number(selected?.countedPercent);
             const ordinaryGoal = scope === "standard"
                 ? Number(this.#getTripGoal())
                 : Number(selected?.percentGoal);
-            const goal = this.#percentMode === "auto" && this.#autoSyncTripGoal
-                ? Number(this.#renderedPercentGoal)
-                : ordinaryGoal;
+            const goal = ordinaryGoal;
             const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties();
             const creationDate = this.#getJSONCreationDate();
@@ -1421,13 +1640,27 @@
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
-                time_header_text: scope === "standard" ? `Standard ${suffix}` : `${scopeLabel} ${suffix}`,
-                time_header_short_text: scope === "standard" ? `Std. ${suffix}` : null,
+                time_header_text:
+                    effectiveTimeState
+                        ?.label ||
+                    (
+                        scope === "standard"
+                            ? `Standard ${suffix}`
+                            : `${scopeLabel} ${suffix}`
+                    ),
+                time_header_short_text:
+                    scope === "standard" &&
+                    !effectiveTimeState
+                        ?.virtual
+                        ? `Std. ${suffix}`
+                        : null,
                 time_component: this.#component(
                     renderedText,
-                    this.#renderedTimeValue(renderedText, selected, renderedDate),
+                    effectiveTimeState
+                        ?.value,
                     renderedDate,
-                    typeof renderedText === "string" && Boolean(renderedText)
+                    effectiveTimeState
+                        ?.available === true
                 ),
                 current_percent_component: this.#component(
                     Number.isFinite(countedPercent) ? `${Math.round(countedPercent * 100)}%` : undefined,
@@ -1797,6 +2030,14 @@
                         this.#semanticGoalSetSource ??
                         this.#renderedPercentGoalSourceOverride ??
                         "user";
+
+                    if (
+                        name === "trip-goal" &&
+                        semanticSource === "user" &&
+                        this.#autoSyncTripGoal
+                    ) {
+                        this.autoSyncTripGoal = false;
+                    }
 
                     this.#emitClockTimerEvent("goalChanged", {
                         goal: name === "trip-goal" ? "trip" : "total",
@@ -2929,6 +3170,63 @@
             );
         }
 
+        #transactionTimestamp(
+            fallback = new Date()
+        ) {
+            let candidate;
+
+            try {
+                candidate =
+                    this.#transactionTimestampProvider
+                        ?.();
+            }
+            catch {}
+
+            const source =
+                candidate === undefined ||
+                candidate === null
+                    ? fallback
+                    : candidate;
+
+            const date =
+                source instanceof Date
+                    ? new Date(
+                        source.getTime()
+                    )
+                    : new Date(
+                        source
+                    );
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+                const fallbackDate =
+                    fallback instanceof Date
+                        ? new Date(
+                            fallback.getTime()
+                        )
+                        : new Date(
+                            fallback
+                        );
+
+                if (
+                    Number.isNaN(
+                        fallbackDate.getTime()
+                    )
+                ) {
+                    throw new TypeError(
+                        "Transaction timestamp must be a valid date/time."
+                    );
+                }
+
+                return fallbackDate;
+            }
+
+            return date;
+        }
+
         #parseTripEventTimestamp(value) {
             if (value instanceof Date) {
                 return new Date(
@@ -2987,9 +3285,9 @@
             }
 
             const date =
-                timestamp instanceof Date
-                    ? new Date(timestamp.getTime())
-                    : new Date(timestamp);
+                this.#transactionTimestamp(
+                    timestamp
+                );
 
             if (Number.isNaN(date.getTime())) {
                 throw new TypeError(
@@ -3271,6 +3569,7 @@
 
             void this.#protectedSync(
                 async () => {
+                    await this.#ensureTripPersisted();
                     await this.#syncTripEvents();
                 }
             ).catch(() => {});
@@ -4111,6 +4410,9 @@
                 return this.#goalChangeFailure(reason);
             }
 
+            this.#calculatedTotalGoal = undefined;
+            this.#calculatedGoalSource = "sync";
+
             const requirements =
                 this.#calculateTotalGoalRequirements({
                     allowMissed: true
@@ -4120,42 +4422,48 @@
                 !Number.isFinite(requirements.tripGoal) ||
                 requirements.tripGoal <= 0
             ) {
+                this.#calculatedTripGoal = undefined;
                 return this.#goalChangeFailure("insufficient-time");
             }
 
-            const previousMatchedTripGoal =
-                this.#matchedTripGoal;
+            const previousCalculatedTripGoal =
+                this.#calculatedTripGoal;
 
-            this.#matchedTripGoal =
+            this.#calculatedTripGoal =
                 requirements.tripGoal;
 
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride === "start"
                     ? "start"
-                    : "automatic"
+                    : "automatic",
+                {
+                    refreshCalculatedGoal: false
+                }
             );
 
             if (
-                previousMatchedTripGoal !==
-                    this.#matchedTripGoal
+                previousCalculatedTripGoal !==
+                    this.#calculatedTripGoal
             ) {
                 this.#emitClockTimerEvent(
                     "tripGoalAutomaticallySet",
                     {
                         previousValue:
-                            Number.isFinite(previousMatchedTripGoal)
-                                ? `${previousMatchedTripGoal * 100}%`
+                            Number.isFinite(previousCalculatedTripGoal)
+                                ? `${previousCalculatedTripGoal * 100}%`
                                 : null,
                         value:
-                            `${this.#matchedTripGoal * 100}%`,
+                            `${this.#calculatedTripGoal * 100}%`,
                         tripGoal:
                             this.#getTripGoal(),
                         userTripGoal:
                             this.#getUserTripGoal(),
-                        matchedTripGoal:
-                            this.#matchedTripGoal,
+                        calculatedTripGoal:
+                            this.#calculatedTripGoal,
                         totalGoal:
                             this.#getTotalGoal(),
+                        userTotalGoal:
+                            this.#getUserTotalGoal(),
                         source:
                             "automatic-total",
                         userInitiated:
@@ -5063,6 +5371,52 @@
 
             const prepared = this.#preparedTrip;
             const { tripId: ignoredTripId, ...localOptions } = options;
+
+            let transactionTime;
+
+            try {
+                const suppliedTransactionTime =
+                    this.#transactionTimestampProvider
+                        ?.();
+
+                if (
+                    suppliedTransactionTime !==
+                        undefined &&
+                    suppliedTransactionTime !==
+                        null
+                ) {
+                    transactionTime =
+                        suppliedTransactionTime instanceof Date
+                            ? new Date(
+                                suppliedTransactionTime.getTime()
+                            )
+                            : new Date(
+                                suppliedTransactionTime
+                            );
+
+                    if (
+                        Number.isNaN(
+                            transactionTime.getTime()
+                        )
+                    ) {
+                        transactionTime =
+                            undefined;
+                    }
+                }
+            }
+            catch {}
+
+            if (
+                transactionTime &&
+                localOptions.creationTime ===
+                    undefined
+            ) {
+                localOptions.creationTime =
+                    this.#dateToStandardTime(
+                        transactionTime
+                    );
+            }
+
             if (prepared) {
                 if (localOptions.creationTime === undefined) localOptions.creationTime = prepared.creationTime;
                 if (localOptions.startTime === undefined) localOptions.startTime = prepared.startTime;
@@ -5207,8 +5561,21 @@
             return result;
         }
 
-        async stop(stopTime = this.#dateToStandardTime(new Date())) {
-            const parsed = this.#validateClockTime(stopTime, "stopTime");
+        async stop(stopTime) {
+            const effectiveStopTime =
+                stopTime === undefined
+                    ? this.#dateToStandardTime(
+                        this.#transactionTimestamp(
+                            new Date()
+                        )
+                    )
+                    : stopTime instanceof Date
+                        ? this.#dateToStandardTime(
+                            stopTime
+                        )
+                        : stopTime;
+
+            const parsed = this.#validateClockTime(effectiveStopTime, "stopTime");
             const stopTimeline = this.#resolveNear(parsed.total, this.#getCurrentTimelineTime());
             const persistedEnd = this.#timelineToISO(stopTimeline);
             const aggregateStartTimeline =
@@ -5226,12 +5593,13 @@
             const aggregateNonProduction =
                 this.#nonProduction;
 
-            this.#checkGoalMisses(stopTimeline);
-            const localResult = this.#stopLocal(stopTime);
+            const localResult = this.#stopLocal(effectiveStopTime);
             if (!localResult || !persistedEnd) {
                 throw new Error("The trip could not be stopped.");
             }
-            this.#matchedTripGoal = undefined;
+            if (this.#calculatedGoalSource === "sync") {
+                this.#calculatedTripGoal = undefined;
+            }
             this.#handleTripGoalChange("automatic");
             this.#pendingIntervalRecord = undefined;
 
@@ -5402,15 +5770,42 @@
             length,
             attributes,
             startBuffer,
-            endBuffer
+            endBuffer,
+            at
         ) {
+            const operationTime =
+                at === undefined
+                    ? this.#transactionTimestamp(
+                        new Date()
+                    )
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    operationTime.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval start time must be a valid date/time."
+                );
+            }
+
             const localResult =
                 this.#startIntervalLocal(
                     type,
                     length,
                     attributes,
                     startBuffer,
-                    endBuffer
+                    endBuffer,
+                    operationTime
                 );
 
             if (!localResult) {
@@ -5484,14 +5879,11 @@
                 }
             );
 
-            const synced = await this.#protectedSync(async () => {
-                await this.#ensureTripPersisted();
-                await this.#syncTripEvents();
-            });
+            this.#scheduleTripEventSync();
 
             const result =
                 this.#mutationResult(
-                    synced,
+                    false,
                     record
                 );
 
@@ -5506,10 +5898,6 @@
                     record,
                     "end"
                 );
-
-            this.#checkGoalMisses(
-                this.#getCurrentTimelineTime()
-            );
 
             const intervalStartedDetail = {
                 ...result,
@@ -5551,8 +5939,157 @@
             return result;
         }
 
-        async endInterval() {
-            const nowDate = new Date();
+        async cancelInterval(
+            at
+        ) {
+            const nowDate =
+                at === undefined
+                    ? new Date()
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval cancellation time must be a valid date/time."
+                );
+            }
+
+            const now =
+                this.#getCurrentTimelineTime(
+                    nowDate
+                );
+
+            const current =
+                this.#getCurrentInterval(
+                    now
+                );
+
+            if (
+                !current ||
+                current.source !==
+                    "inserted" ||
+                current.open !==
+                    true
+            ) {
+                throw new Error(
+                    "Only the active open interval can be canceled."
+                );
+            }
+
+            const record =
+                current.record;
+
+            if (
+                !this.#closeOpenIntervalAt(
+                    nowDate,
+                    current
+                )
+            ) {
+                throw new Error(
+                    "The active interval could not be closed for cancellation."
+                );
+            }
+
+            record.clockTimerEventKey ??=
+                this.#createTripEventClientToken();
+
+            const intervalType =
+                String(
+                    record.type ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const result =
+                await this.#commitIntervalDeletion(
+                    record
+                );
+
+            const detail = {
+                ...result,
+                type:
+                    record.type,
+                canceled:
+                    true,
+                canceledAt:
+                    nowDate.toISOString(),
+                startTime:
+                    record.startDate
+                        ?.toISOString?.()
+            };
+
+            this.#emitClockTimerEvent(
+                "intervalCanceled",
+                detail
+            );
+
+            if (
+                intervalType ===
+                    "down"
+            ) {
+                const semanticDetail =
+                    this.#getSemanticIntervalDetail(
+                        record,
+                        {
+                            ...detail,
+                            completion:
+                                "canceled",
+                            resumedFrom:
+                                "down"
+                        }
+                    );
+
+                this.#emitClockTimerEvent(
+                    "downTimeCanceled",
+                    semanticDetail
+                );
+
+                this.#emitClockTimerEvent(
+                    "tripResumed",
+                    semanticDetail
+                );
+            }
+
+            return result;
+        }
+
+        async endInterval(at) {
+            const nowDate =
+                at === undefined
+                    ? this.#transactionTimestamp(
+                        new Date()
+                    )
+                    : (
+                        at instanceof Date
+                            ? new Date(
+                                at.getTime()
+                            )
+                            : new Date(
+                                at
+                            )
+                    );
+
+            if (
+                Number.isNaN(
+                    nowDate.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "Interval end time must be a valid date/time."
+                );
+            }
             const now = this.#getCurrentTimelineTime(nowDate);
             const current = this.#getCurrentInterval(now);
             const pending = this.#pendingIntervalRecord;
@@ -5623,7 +6160,9 @@
                 Number.isFinite(scheduledEnd) &&
                 now < scheduledEnd;
 
-            const localResult = this.#endIntervalLocal();
+            const localResult = this.#endIntervalLocal(
+                nowDate
+            );
             if (!localResult) {
                 throw new Error("The interval could not be ended.");
             }
@@ -5655,13 +6194,13 @@
                 }
             );
 
-            const synced = await this.#protectedSync(async () => {
-                await this.#ensureTripPersisted();
-                await this.#syncTripEvents();
-            });
-            const result = this.#mutationResult(synced, record);
-            this.#checkGoalMisses(this.#getCurrentTimelineTime());
+            this.#scheduleTripEventSync();
 
+            const result =
+                this.#mutationResult(
+                    false,
+                    record
+                );
             const intervalEndedDetail = {
                 ...result,
                 ...this.#getTimingDetail(
@@ -5868,7 +6407,6 @@
                     this.renderedTimeMode = rendered;
                 }
                 if (has("goal_type")) this.percentMode = configuration.goal_type;
-                if (has("auto_goal")) this.autoSyncTripGoal = Boolean(configuration.auto_goal);
                 if (has("trip_goal")) {
                     const value = this.#configurationGoal(configuration.trip_goal, "trip_goal");
                     if (value === null) this.removeAttribute("trip-goal");
@@ -5879,6 +6417,56 @@
                     if (value === null) this.removeAttribute("total-goal");
                     else this.setAttribute("total-goal", value);
                 }
+                const calculatedGoalChanged =
+                    has("calculated_trip_goal") ||
+                    has("calculated_total_goal") ||
+                    has("calculated_goal_source");
+                if (has("calculated_goal_source")) {
+                    const source = configuration.calculated_goal_source;
+                    this.#calculatedGoalSource =
+                        source === null || source === undefined || source === ""
+                            ? undefined
+                            : String(source);
+                }
+                if (has("calculated_trip_goal")) {
+                    const value = configuration.calculated_trip_goal;
+                    this.#calculatedTripGoal =
+                        value === null || value === undefined
+                            ? undefined
+                            : this.#parseGoalValue(String(value), NaN);
+                    if (
+                        this.#calculatedTripGoal !== undefined &&
+                        (
+                            !Number.isFinite(this.#calculatedTripGoal) ||
+                            this.#calculatedTripGoal <= 0
+                        )
+                    ) {
+                        throw new TypeError(
+                            "calculated_trip_goal must be a positive ratio or percentage."
+                        );
+                    }
+                }
+                if (has("calculated_total_goal")) {
+                    const value = configuration.calculated_total_goal;
+                    this.#calculatedTotalGoal =
+                        value === null || value === undefined
+                            ? undefined
+                            : this.#parseGoalValue(String(value), NaN);
+                    if (
+                        this.#calculatedTotalGoal !== undefined &&
+                        (
+                            !Number.isFinite(this.#calculatedTotalGoal) ||
+                            this.#calculatedTotalGoal <= 0
+                        )
+                    ) {
+                        throw new TypeError(
+                            "calculated_total_goal must be a positive ratio or percentage."
+                        );
+                    }
+                }
+                if (has("auto_goal")) {
+                    this.autoSyncTripGoal = Boolean(configuration.auto_goal);
+                }
                 if (has("external_standard_time")) {
                     this.#externalStandardTime = this.#configurationDuration(
                         configuration.external_standard_time, "external_standard_time");
@@ -5887,8 +6475,16 @@
                     this.#externalCountedTime = this.#configurationDuration(
                         configuration.external_counted_time, "external_counted_time");
                 }
-                if (has("external_standard_time") || has("external_counted_time")) {
-                    this.#handleTripGoalChange("user");
+                if (
+                    calculatedGoalChanged ||
+                    has("external_standard_time") ||
+                    has("external_counted_time")
+                ) {
+                    this.#handleTripGoalChange(
+                        calculatedGoalChanged
+                            ? "automatic"
+                            : "user"
+                    );
                 }
             }
             finally {
@@ -5903,6 +6499,57 @@
                 throw new TypeError("now must be a valid Date.");
             }
             return this.#buildSummarySnapshot(now);
+        }
+
+        getRenderedTime(mode = this.#renderedTimeMode, now = new Date()) {
+            if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+                throw new TypeError("now must be a valid Date.");
+            }
+
+            const normalized =
+                String(mode || "")
+                    .trim()
+                    .toLowerCase();
+
+            if (
+                !new Set([
+                    "remaining",
+                    "elapsed",
+                    "calculated-end"
+                ]).has(normalized)
+            ) {
+                throw new RangeError(
+                    "mode must be remaining, elapsed, or calculated-end."
+                );
+            }
+
+            if (
+                this.#getRenderedPercentScope() ===
+                    "total"
+            ) {
+                const timelineNow =
+                    this.#getSummaryTimelineNow(
+                        now
+                    );
+                const total =
+                    this.#getTotalSummary(
+                        timelineNow,
+                        now,
+                        normalized
+                    );
+
+                if (
+                    total?.renderedTime !==
+                        undefined
+                ) {
+                    return total.renderedTime;
+                }
+            }
+
+            return this.#calculateRenderedTime(
+                now,
+                normalized
+            );
         }
 
         get autoRestartTripAfterLateBreak() {
@@ -6188,6 +6835,88 @@
             return this.#renderedTime;
         }
 
+        getActualTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getActualTimeState(
+                now
+            );
+        }
+
+        getVirtualTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getVirtualTimeState(
+                now
+            );
+        }
+
+        getEffectiveTimeState(
+            now = new Date()
+        ) {
+            if (
+                !(now instanceof Date) ||
+                Number.isNaN(
+                    now.getTime()
+                )
+            ) {
+                throw new TypeError(
+                    "now must be a valid Date."
+                );
+            }
+
+            return this.#getEffectiveTimeState(
+                now
+            );
+        }
+
+        get actualTimeState() {
+            return this.getActualTimeState();
+        }
+
+        get virtualTimeState() {
+            return this.getVirtualTimeState();
+        }
+
+        get effectiveTimeState() {
+            return this.getEffectiveTimeState();
+        }
+
+        get virtualRenderedTime() {
+            return (
+                this.virtualTimeState
+                    ?.text ??
+                null
+            );
+        }
+
+        get effectiveRenderedTime() {
+            return this.effectiveTimeState
+                ?.text;
+        }
+
         get nonProduction() {
             return this.#nonProduction;
         }
@@ -6215,6 +6944,28 @@
         }
 
         get currentTripId() { return this.#tripId; }
+
+        get transactionTimestampProvider() {
+            return this.#transactionTimestampProvider;
+        }
+
+        set transactionTimestampProvider(
+            provider
+        ) {
+            if (
+                provider !== undefined &&
+                provider !== null &&
+                typeof provider !==
+                    "function"
+            ) {
+                throw new TypeError(
+                    "transactionTimestampProvider must be a function, null, or undefined."
+                );
+            }
+
+            this.#transactionTimestampProvider =
+                provider || undefined;
+        }
 
         async persistCurrentTrip() {
             if (!(await this.#ensureConnected())) throw new Error("Connect before saving trip settings.");
@@ -6444,15 +7195,34 @@
             }
 
             if (value === this.#autoSyncTripGoal) {
+                if (
+                    !value &&
+                    this.#calculatedGoalSource !== "end-time" &&
+                    (
+                        this.#calculatedTripGoal !== undefined ||
+                        this.#calculatedTotalGoal !== undefined
+                    )
+                ) {
+                    this.#calculatedTripGoal = undefined;
+                    this.#calculatedTotalGoal = undefined;
+                    this.#calculatedGoalSource = undefined;
+                    this.#handleTripGoalChange("user");
+                }
                 return;
             }
 
             this.#autoSyncTripGoal =
                 value;
 
-            if (!value) {
-                this.#matchedTripGoal =
-                    undefined;
+            if (value) {
+                this.#calculatedTotalGoal = undefined;
+                this.#calculatedGoalSource = "sync";
+                this.#refreshCalculatedTripGoal();
+            }
+            else if (this.#calculatedGoalSource !== "end-time") {
+                this.#calculatedTripGoal = undefined;
+                this.#calculatedTotalGoal = undefined;
+                this.#calculatedGoalSource = undefined;
             }
 
             if (this.#hasStartProperties()) {
@@ -6460,6 +7230,18 @@
                     "user"
                 );
             }
+        }
+
+        get calculatedTripGoal() {
+            return this.#calculatedTripGoal;
+        }
+
+        get calculatedTotalGoal() {
+            return this.#calculatedTotalGoal;
+        }
+
+        get calculatedGoalSource() {
+            return this.#calculatedGoalSource;
         }
 
         get status() {
@@ -8229,6 +9011,7 @@
             };
             this.#tripGoalMissedState = false;
             this.#totalGoalMissedState = false;
+            this.#standardGoalMissedState = false;
 
             return new Date();
         }
@@ -10713,10 +11496,6 @@
                     new Date()
                 );
 
-                this.#checkGoalMisses(
-                    now
-                );
-
                 this.#refreshRingLayout(
                     now,
                     {
@@ -10882,7 +11661,6 @@
                 this.#updateOvertimeRanges(now);
                 this.#updateRemainingRanges(now);
                 this.#updateDisplay(new Date());
-                this.#checkGoalMisses(now);
                 this.#refreshRingLayout(
                     now,
                     {
@@ -12330,8 +13108,6 @@
                 );
             }
 
-            this.#checkGoalMisses(now);
-
             const activeLatency =
                 this.#openOverwriteRange;
 
@@ -13378,7 +14154,13 @@
             this.#started =
                 false;
 
-            this.#matchedTripGoal =
+            this.#calculatedTripGoal =
+                undefined;
+
+            this.#calculatedTotalGoal =
+                undefined;
+
+            this.#calculatedGoalSource =
                 undefined;
 
             if (!this.#preserveInsertedOnClear) {
@@ -13390,6 +14172,7 @@
 
             this.#tripGoalMissedState = false;
             this.#totalGoalMissedState = false;
+            this.#standardGoalMissedState = false;
 
             this.#tickAlignmentMilliseconds =
                 undefined;
@@ -22417,38 +23200,37 @@
             }
         }
 
-        #refreshMatchedTripGoal() {
+        #refreshCalculatedTripGoal() {
             const previous =
-                this.#matchedTripGoal;
-
-            let next;
+                this.#calculatedTripGoal;
 
             if (
-                this.#autoSyncTripGoal &&
-                this.#started &&
-                this.#hasStartProperties()
+                !this.#autoSyncTripGoal ||
+                !this.#started ||
+                !this.#hasStartProperties()
             ) {
-                const requirements =
-                    this.#calculateTotalGoalRequirements({
-                        allowMissed: true
-                    });
-
-                if (
-                    Number.isFinite(requirements.tripGoal) &&
-                    requirements.tripGoal > 0
-                ) {
-                    next =
-                        requirements.tripGoal;
+                if (this.#calculatedGoalSource === "sync") {
+                    this.#calculatedTripGoal = undefined;
                 }
+
+                return previous !== this.#calculatedTripGoal;
             }
 
-            this.#matchedTripGoal =
-                next;
+            const requirements =
+                this.#calculateTotalGoalRequirements({
+                    allowMissed: true
+                });
 
-            const changed =
-                previous !== next;
+            this.#calculatedTripGoal =
+                Number.isFinite(requirements.tripGoal) &&
+                requirements.tripGoal > 0
+                    ? requirements.tripGoal
+                    : undefined;
 
-            return changed;
+            this.#calculatedGoalSource =
+                "sync";
+
+            return previous !== this.#calculatedTripGoal;
         }
 
         #handleTripGoalChange(
@@ -22456,12 +23238,12 @@
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic",
             {
-                refreshMatchedGoal = true
+                refreshCalculatedGoal = true
             } = {}
         ) {
 
-            if (refreshMatchedGoal) {
-                this.#refreshMatchedTripGoal();
+            if (refreshCalculatedGoal) {
+                this.#refreshCalculatedTripGoal();
             }
 
             const goal =
@@ -22570,8 +23352,6 @@
                 stateChangeVisual,
                 this.#getStateChangeAnimationDuration()
             );
-
-            this.#checkGoalMisses(now);
         }
 
         #getRangeAnimationDuration() {
@@ -25526,25 +26306,31 @@
             );
         }
 
-        #getTripGoal() {
-            if (
-                this.#autoSyncTripGoal &&
-                Number.isFinite(this.#matchedTripGoal) &&
-                this.#matchedTripGoal > 0
-            ) {
-                return this.#matchedTripGoal;
-            }
-
-            return this.#getUserTripGoal();
-        }
-
-        #getTotalGoal() {
+        #getUserTotalGoal() {
             return this.#parseGoalValue(
                 this.getAttribute(
                     "total-goal"
                 ),
                 1
             );
+        }
+
+        #getTripGoal() {
+            return (
+                Number.isFinite(this.#calculatedTripGoal) &&
+                this.#calculatedTripGoal > 0
+            )
+                ? this.#calculatedTripGoal
+                : this.#getUserTripGoal();
+        }
+
+        #getTotalGoal() {
+            return (
+                Number.isFinite(this.#calculatedTotalGoal) &&
+                this.#calculatedTotalGoal > 0
+            )
+                ? this.#calculatedTotalGoal
+                : this.#getUserTotalGoal();
         }
 
         #emptyGoalRequirements() {
@@ -26017,10 +26803,153 @@
             return state;
         }
 
+        #getGoalFailFallback(
+            failedTypes,
+            now
+        ) {
+            const failed =
+                new Set(failedTypes);
+
+            const candidates = [];
+
+            const addCandidate = (
+                type,
+                percent,
+                requirements
+            ) => {
+                if (
+                    failed.has(type) ||
+                    !Number.isFinite(percent) ||
+                    percent <= 0 ||
+                    !Number.isFinite(
+                        requirements
+                            ?.adjustedTimeElapsed
+                    ) ||
+                    requirements
+                        .adjustedTimeElapsed <= 0
+                ) {
+                    return;
+                }
+
+                const deadline =
+                    this.#calculateAdjustedEndTimeline(
+                        requirements
+                            .adjustedTimeElapsed
+                    );
+
+                if (
+                    !Number.isFinite(deadline) ||
+                    (
+                        Number.isFinite(now) &&
+                        deadline <= now
+                    )
+                ) {
+                    return;
+                }
+
+                candidates.push({
+                    type,
+                    percent,
+                    deadline:
+                        this.#timelineToISO(
+                            deadline
+                        ),
+                    remainingMilliseconds:
+                        Number.isFinite(now)
+                            ? Math.max(
+                                0,
+                                deadline - now
+                            )
+                            : undefined
+                });
+            };
+
+            if (
+                Number.isFinite(
+                    this.#calculatedTripGoal
+                ) ||
+                this.hasAttribute(
+                    "trip-goal"
+                )
+            ) {
+                addCandidate(
+                    "trip",
+                    this.#getTripGoal(),
+                    this.#calculateTripGoalRequirements()
+                );
+            }
+
+            if (
+                Number.isFinite(
+                    this.#calculatedTotalGoal
+                ) ||
+                this.hasAttribute(
+                    "total-goal"
+                )
+            ) {
+                addCandidate(
+                    "total",
+                    this.#getTotalGoal(),
+                    this.#calculateTotalGoalRequirements()
+                );
+            }
+
+            addCandidate(
+                "standard",
+                1,
+                this.#calculateTripGoalRequirementsForGoal(
+                    1
+                )
+            );
+
+            if (
+                this.#percentMode === "trip"
+            ) {
+                return (
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "trip"
+                    ) ??
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "standard"
+                    )
+                );
+            }
+
+            if (
+                this.#percentMode === "total"
+            ) {
+                return (
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "total"
+                    ) ??
+                    candidates.find(
+                        candidate =>
+                            candidate.type ===
+                                "standard"
+                    )
+                );
+            }
+
+            candidates.sort(
+                (left, right) =>
+                    right.percent -
+                    left.percent
+            );
+
+            return candidates[0];
+        }
+
         #checkGoalMisses(now) {
             if (!this.#started || !Number.isFinite(now)) {
                 this.#tripGoalMissedState = false;
                 this.#totalGoalMissedState = false;
+                this.#standardGoalMissedState = false;
                 this.#totalGoalNotPossibleState = false;
                 return;
             }
@@ -26039,72 +26968,167 @@
                 );
             }
 
-            const tripGoal = this.#getTripGoal();
-            const tripAdjusted = Number.isFinite(tripGoal) && tripGoal > 0 &&
-                Number.isFinite(this.#standardDuration)
-                    ? this.#standardDuration / tripGoal
+            const failures = [];
+
+            const standardRequirements =
+                this.#calculateTripGoalRequirementsForGoal(
+                    1,
+                    {
+                        allowMissed: true
+                    }
+                );
+
+            const standardDeadline =
+                Number.isFinite(
+                    standardRequirements
+                        .adjustedTimeElapsed
+                )
+                    ? this.#calculateAdjustedEndTimeline(
+                        standardRequirements
+                            .adjustedTimeElapsed
+                    )
                     : undefined;
-            const tripDeadline = Number.isFinite(tripAdjusted)
-                ? this.#calculateAdjustedEndTimeline(tripAdjusted)
-                : undefined;
-            const tripMissed = Number.isFinite(tripDeadline) && now > tripDeadline;
 
-            if (tripMissed && !this.#tripGoalMissedState) {
-                const detail = {
-                    goal: tripGoal,
-                    deadline: this.#timelineToISO(tripDeadline),
-                    currentTime: this.#timelineToISO(now)
-                };
+            const standardMissed =
+                Number.isFinite(
+                    standardDeadline
+                ) &&
+                now > standardDeadline;
 
-                this.#emitClockTimerEvent(
-                    "tripGoalMissed",
-                    detail
-                );
-
-                this.#emitClockTimerEvent(
-                    "tripGoalFailed",
-                    detail
-                );
+            if (
+                standardMissed &&
+                !this.#standardGoalMissedState
+            ) {
+                failures.push({
+                    type: "standard",
+                    percent: 1,
+                    deadline:
+                        this.#timelineToISO(
+                            standardDeadline
+                        )
+                });
             }
-            this.#tripGoalMissedState = tripMissed;
 
-            const totalGoal = this.#getTotalGoal();
-            const totalAdjusted = this.#getTotalGoalAdjustedTimeElapsed();
-            const totalDeadline = Number.isFinite(totalAdjusted)
-                ? this.#calculateAdjustedEndTimeline(totalAdjusted)
-                : undefined;
-            const totalGoalActive =
-                this.#percentMode === "total" ||
-                this.#autoSyncTripGoal ||
-                this.hasAttribute("total-goal");
+            this.#standardGoalMissedState =
+                standardMissed;
 
-            const totalMissed = totalGoalActive &&
-                Number.isFinite(totalDeadline) && now > totalDeadline;
-
-            if (totalMissed && !this.#totalGoalMissedState) {
-                const detail = {
-                    goal: totalGoal,
-                    deadline: this.#timelineToISO(totalDeadline),
-                    currentTime: this.#timelineToISO(now)
-                };
-
-                this.#emitClockTimerEvent(
-                    "totalGoalMissed",
-                    detail
-                );
-
-                this.#emitClockTimerEvent(
-                    "totalGoalFailed",
-                    detail
-                );
-            }
-            this.#totalGoalMissedState = totalMissed;
-        }
-
-        #calculateTripGoalRequirements({ allowMissed = false } = {}) {
             const tripGoal =
                 this.#getTripGoal();
 
+            const tripAdjusted =
+                Number.isFinite(tripGoal) &&
+                tripGoal > 0 &&
+                Number.isFinite(
+                    this.#standardDuration
+                )
+                    ? this.#standardDuration /
+                        tripGoal
+                    : undefined;
+
+            const tripDeadline =
+                Number.isFinite(tripAdjusted)
+                    ? this.#calculateAdjustedEndTimeline(
+                        tripAdjusted
+                    )
+                    : undefined;
+
+            const tripMissed =
+                Number.isFinite(tripDeadline) &&
+                now > tripDeadline;
+
+            if (
+                tripMissed &&
+                !this.#tripGoalMissedState
+            ) {
+                failures.push({
+                    type: "trip",
+                    percent: tripGoal,
+                    deadline:
+                        this.#timelineToISO(
+                            tripDeadline
+                        )
+                });
+            }
+
+            this.#tripGoalMissedState =
+                tripMissed;
+
+            const totalGoal =
+                this.#getTotalGoal();
+
+            const totalAdjusted =
+                this.#getTotalGoalAdjustedTimeElapsed();
+
+            const totalDeadline =
+                Number.isFinite(totalAdjusted)
+                    ? this.#calculateAdjustedEndTimeline(
+                        totalAdjusted
+                    )
+                    : undefined;
+
+            const totalGoalActive =
+                this.#percentMode === "total" ||
+                this.#autoSyncTripGoal ||
+                Number.isFinite(
+                    this.#calculatedTotalGoal
+                ) ||
+                this.hasAttribute(
+                    "total-goal"
+                );
+
+            const totalMissed =
+                totalGoalActive &&
+                Number.isFinite(totalDeadline) &&
+                now > totalDeadline;
+
+            if (
+                totalMissed &&
+                !this.#totalGoalMissedState
+            ) {
+                failures.push({
+                    type: "total",
+                    percent: totalGoal,
+                    deadline:
+                        this.#timelineToISO(
+                            totalDeadline
+                        )
+                });
+            }
+
+            this.#totalGoalMissedState =
+                totalMissed;
+
+            if (failures.length) {
+                const fallback =
+                    this.#getGoalFailFallback(
+                        failures.map(
+                            goal => goal.type
+                        ),
+                        now
+                    );
+
+                this.#emitClockTimerEvent(
+                    "goalFail",
+                    {
+                        goals: failures,
+                        currentTime:
+                            this.#timelineToISO(
+                                now
+                            ),
+                        ...(
+                            fallback
+                                ? { fallback }
+                                : {}
+                        )
+                    }
+                );
+            }
+        }
+
+        #calculateTripGoalRequirementsForGoal(
+            tripGoal,
+            { allowMissed = false } = {}
+        ) {
             if (
                 !Number.isFinite(tripGoal) ||
                 tripGoal <= 0 ||
@@ -26152,6 +27176,13 @@
             return requirements;
         }
 
+        #calculateTripGoalRequirements({ allowMissed = false } = {}) {
+            return this.#calculateTripGoalRequirementsForGoal(
+                this.#getTripGoal(),
+                { allowMissed }
+            );
+        }
+
         #getTotalGoalRequirementFailureReason() {
             const totalGoal =
                 this.#getTotalGoal();
@@ -26170,8 +27201,8 @@
                 !totals ||
                 !Number.isFinite(totals.standardTimeMilliseconds) ||
                 totals.standardTimeMilliseconds < 0 ||
-                !Number.isFinite(totals.actualTimeMilliseconds) ||
-                totals.actualTimeMilliseconds < 0
+                !Number.isFinite(totals.countedTimeMilliseconds) ||
+                totals.countedTimeMilliseconds < 0
             ) {
                 return "missing-trip-totals";
             }
@@ -26191,7 +27222,7 @@
             const adjustedTimeElapsed =
                 combinedStandard /
                     totalGoal -
-                totals.actualTimeMilliseconds;
+                totals.countedTimeMilliseconds;
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -26255,7 +27286,7 @@
                     totals.standardTimeMilliseconds
                 ) ||
                 !Number.isFinite(
-                    totals.actualTimeMilliseconds
+                    totals.countedTimeMilliseconds
                 ) ||
                 !Number.isFinite(standardDuration) ||
                 standardDuration <= 0
@@ -26267,13 +27298,13 @@
                 totals.standardTimeMilliseconds +
                 standardDuration;
 
-            const targetCombinedActual =
+            const targetCombinedCounted =
                 combinedStandard /
                 totalGoal;
 
             const targetAdjustedTimeElapsed =
-                targetCombinedActual -
-                totals.actualTimeMilliseconds;
+                targetCombinedCounted -
+                totals.countedTimeMilliseconds;
 
             if (
                 !Number.isFinite(targetAdjustedTimeElapsed) ||
@@ -26378,79 +27409,81 @@
         }
 
         #getAutoGoalSelection() {
+            const tripGoal =
+                this.#getTripGoal();
+
+            const totalGoal =
+                this.#getTotalGoal();
+
             const tripRequirements =
                 this.#calculateTripGoalRequirements();
 
-            const totalRequirements =
-                this.hasAttribute("total-goal")
-                    ? this.#calculateTotalGoalRequirements()
-                    : this.#emptyGoalRequirements();
-
-            const tripTime =
-                Number(
-                    tripRequirements.adjustedTimeElapsed
-                );
-
-            const totalTime =
-                Number(
-                    totalRequirements.adjustedTimeElapsed
-                );
-
-            const tripValid =
-                Number.isFinite(tripTime) &&
-                tripTime > 0;
-
-            const totalValid =
-                Number.isFinite(totalTime) &&
-                totalTime > 0;
-
-            const tripScope =
-                (
-                    this.#autoSyncTripGoal &&
-                    Number.isFinite(this.#matchedTripGoal) &&
-                    this.#matchedTripGoal > 0
-                ) ||
-                this.hasAttribute("trip-goal")
-                    ? "trip"
-                    : "standard";
-
-            if (!tripValid) {
-                return totalValid
-                    ? {
-                        scope: "total",
-                        requirements: totalRequirements
-                    }
-                    : {
-                        scope: "standard",
-                        requirements:
-                            this.#emptyGoalRequirements()
-                    };
-            }
-
-            if (!totalValid) {
-                return {
-                    scope: tripScope,
-                    requirements: tripRequirements
-                };
-            }
-
             if (
-                totalTime < tripTime ||
-                (
-                    totalTime === tripTime &&
-                    tripScope === "standard"
-                )
+                this.#calculatedGoalSource === "end-time" &&
+                Number.isFinite(this.#calculatedTripGoal) &&
+                this.#calculatedTripGoal > 0
             ) {
                 return {
-                    scope: "total",
-                    requirements: totalRequirements
+                    scope: "trip",
+                    goal: this.#calculatedTripGoal,
+                    requirements:
+                        this.#calculateTripGoalRequirements({
+                            allowMissed: true
+                        })
                 };
             }
 
-            return {
-                scope: tripScope,
-                requirements: tripRequirements
-            };
+            const totalRequirements =
+                this.#calculateTotalGoalRequirements();
+
+            const standardRequirements =
+                this.#calculateTripGoalRequirementsForGoal(
+                    1
+                );
+
+            const candidates = [
+                {
+                    scope: "trip",
+                    goal: tripGoal,
+                    requirements: tripRequirements
+                },
+                {
+                    scope: "total",
+                    goal: totalGoal,
+                    requirements: totalRequirements
+                },
+                {
+                    scope: "standard",
+                    goal: 1,
+                    requirements: standardRequirements
+                }
+            ].filter(
+                candidate =>
+                    Number.isFinite(candidate.goal) &&
+                    candidate.goal > 0 &&
+                    Number.isFinite(
+                        candidate.requirements
+                            ?.adjustedTimeElapsed
+                    ) &&
+                    candidate.requirements
+                        .adjustedTimeElapsed > 0
+            );
+
+            if (!candidates.length) {
+                return {
+                    scope: "standard",
+                    goal: 1,
+                    requirements:
+                        this.#emptyGoalRequirements()
+                };
+            }
+
+            candidates.sort(
+                (left, right) =>
+                    right.goal - left.goal
+            );
+
+            return candidates[0];
         }
 
         #calculateGoalRequirements() {
@@ -31037,6 +32070,10 @@
 
             this.#reapplyOverwriteRanges();
 
+            this.#checkGoalMisses(
+                now
+            );
+
             this.#refreshRingLayout(
                 now
             );
@@ -31131,137 +32168,45 @@
                 minuteAngle
             );
 
-            const previousSecondAngle =
-                Number.isFinite(
-                    this.#secondHandAngle
-                )
-                    ? this.#secondHandAngle
-                    : secondAngle;
-
-            const secondAdvance =
-                (
-                    secondAngle -
-                    previousSecondAngle +
-                    360
-                ) % 360;
-
-            const settledSecondAngle =
-                previousSecondAngle +
-                secondAdvance;
-
             this.#secondHandTickAnimation
                 ?.cancel();
 
             this.#secondHandTickAnimation =
                 undefined;
 
-            const animateSecondHand =
-                secondAdvance > 0 &&
-                !globalThis.matchMedia?.(
+            const reduceMotion =
+                globalThis.matchMedia?.(
                     "(prefers-reduced-motion: reduce)"
-                )?.matches;
+                )?.matches ===
+                    true;
 
             if (
-                animateSecondHand
+                this.#secondHand
             ) {
-                const previousSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        previousSecondAngle
-                    );
-
-                const overshootSecondAngle =
-                    settledSecondAngle +
-                    0.8;
-
-                const overshootSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        overshootSecondAngle
-                    );
-
-                const settledSecondHeight =
-                    this.#getHandLengthForAngle(
-                        this.#secondHand,
-                        settledSecondAngle
-                    );
-
-                const handKeyframe =
-                    (
-                        angle,
-                        height
-                    ) => {
-                        const keyframe = {
-                            transform:
-                                `translate(-50%, -100%) rotate(${angle}deg)`
-                        };
-
-                        if (
-                            Number.isFinite(
-                                height
-                            )
-                        ) {
-                            keyframe.height =
-                                `${height}px`;
-                        }
-
-                        return keyframe;
-                    };
-
-                const animation =
-                    this.#secondHand.animate(
-                        [
-                            handKeyframe(
-                                previousSecondAngle,
-                                previousSecondHeight
-                            ),
-                            {
-                                ...handKeyframe(
-                                    overshootSecondAngle,
-                                    overshootSecondHeight
-                                ),
-                                offset: 0.78
-                            },
-                            handKeyframe(
-                                settledSecondAngle,
-                                settledSecondHeight
-                            )
-                        ],
-                        {
-                            duration: 180,
-                            easing: "ease-out",
-                            fill: "both"
-                        }
-                    );
-
-                this.#setHandGeometry(
-                    this.#secondHand,
-                    settledSecondAngle
-                );
-
-                this.#secondHandTickAnimation =
-                    animation;
-
-                animation.finished
-                    .catch(() => {})
-                    .finally(() => {
-                        if (
-                            this.#secondHandTickAnimation ===
-                                animation
-                        ) {
-                            this.#secondHandTickAnimation =
-                                undefined;
-
-                            animation.cancel();
-                        }
-                    });
+                if (
+                    reduceMotion ||
+                    seconds === 0
+                ) {
+                    this.#secondHand
+                        .style
+                        .setProperty(
+                            "transition",
+                            "none"
+                        );
+                }
+                else {
+                    this.#secondHand
+                        .style
+                        .removeProperty(
+                            "transition"
+                        );
+                }
             }
-            else {
-                this.#setHandGeometry(
-                    this.#secondHand,
-                    secondAngle
-                );
-            }
+
+            this.#setHandGeometry(
+                this.#secondHand,
+                secondAngle
+            );
 
             this.#secondHandAngle =
                 secondAngle;
@@ -31485,7 +32430,12 @@
             return total;
         }
 
-        #getTotalSummary(timelineNow, nowDate) {
+        #getTotalSummary(
+            timelineNow,
+            nowDate,
+            renderedTimeMode =
+                this.#renderedTimeMode
+        ) {
             const base = this.#hasUsableAggregateSnapshot()
                 ? this.#tripTotals
                 : undefined;
@@ -31522,65 +32472,74 @@
                 ? standardTimeMilliseconds / countedTimeMilliseconds
                 : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
-            const allowedTimeMilliseconds =
-                (
-                    Number.isFinite(percentGoal) &&
-                    percentGoal > 0
-                        ? Math.round(
-                            standardTimeMilliseconds /
-                            percentGoal
-                        )
-                        : standardTimeMilliseconds
-                ) +
-                allowanceCreditMilliseconds;
-            const remainingMilliseconds = allowedTimeMilliseconds - countedTimeMilliseconds;
+            const activeTrip =
+                this.#started &&
+                this.#hasStartProperties();
+            const totalGoalRequirements =
+                activeTrip
+                    ? this.#calculateTotalGoalRequirements({
+                        allowMissed: true
+                    })
+                    : undefined;
+            const activeTripCountedMilliseconds =
+                activeTrip
+                    ? this.#getCountedTimeElapsed(
+                        timelineNow
+                    )
+                    : 0;
+            const activeTripRemainingMilliseconds =
+                Number.isFinite(
+                    totalGoalRequirements
+                        ?.adjustedTimeElapsed
+                )
+                    ? (
+                        totalGoalRequirements
+                            .adjustedTimeElapsed -
+                        activeTripCountedMilliseconds
+                    )
+                    : undefined;
+            const completedNetMilliseconds =
+                countedTimeMilliseconds -
+                standardTimeMilliseconds;
 
             let renderedTime;
             if (!this.#hasStartProperties() &&
                 standardTimeMilliseconds === 0 && actualTimeMilliseconds === 0 && countedTimeMilliseconds === 0) {
                 renderedTime = undefined;
             }
-            else if (this.#renderedTimeMode === "elapsed") {
+            else if (renderedTimeMode === "elapsed") {
                 renderedTime = this.#formatElapsedRenderedDuration(countedTimeMilliseconds);
             }
-            else if (this.#renderedTimeMode === "calculated-end") {
-                let intervalAdjustmentMilliseconds = 0;
-
-                const activeInterval =
-                    this.getActiveIntervalState(
-                        nowDate
-                    );
-
-                const activeIntervalType =
-                    String(
-                        activeInterval?.intervalType ?? ""
-                    ).trim().toLowerCase();
-
+            else if (renderedTimeMode === "calculated-end") {
                 if (
-                    (
-                        activeIntervalType === "break" ||
-                        activeIntervalType === "lunch"
-                    ) &&
-                    Number.isFinite(
-                        activeInterval?.remainingMilliseconds
-                    )
+                    !activeTrip ||
+                    !totalGoalRequirements
+                        ?.adjustedEndTime
                 ) {
-                    intervalAdjustmentMilliseconds =
-                        activeInterval.remainingMilliseconds;
+                    renderedTime = undefined;
                 }
-
-                renderedTime = this.#formatSummaryEndTime(
-                    new Date(
-                        nowDate.getTime() +
-                        remainingMilliseconds +
-                        intervalAdjustmentMilliseconds
-                    )
-                );
+                else {
+                    renderedTime =
+                        this.#formatSummaryEndTime(
+                            new Date(
+                                totalGoalRequirements
+                                    .adjustedEndTime
+                            )
+                        );
+                }
             }
             else {
-                renderedTime = this.#formatRemainingRenderedDuration(
-                    remainingMilliseconds
-                );
+                renderedTime =
+                    this.#formatRemainingRenderedDuration(
+                        activeTrip &&
+                        Number.isFinite(
+                            activeTripRemainingMilliseconds
+                        )
+                            ? activeTripRemainingMilliseconds
+                            : Math.abs(
+                                completedNetMilliseconds
+                            )
+                    );
             }
 
             return {
@@ -31593,8 +32552,10 @@
                 allowanceCreditMilliseconds,
                 countedPercent,
                 percentGoal,
+                netTimeMilliseconds:
+                    completedNetMilliseconds,
                 renderedTime,
-                renderedTimeMode: this.#renderedTimeMode
+                renderedTimeMode
             };
         }
 

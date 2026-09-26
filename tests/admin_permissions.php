@@ -44,6 +44,8 @@ function rejects(callable $callback, int $status, string $code): void {
 }
 $normal=['id'=>1,'permissions'=>0]; $creator=['id'=>2,'permissions'=>1];
 $editor=['id'=>3,'permissions'=>2]; $super=['id'=>4,'permissions'=>4];
+$developerPreview=['id'=>5,'permissions'=>8]; $developer=['id'=>6,'permissions'=>16];
+$tokenGrantor=['id'=>7,'permissions'=>32];
 test('no permissions by default', fn()=>expect(!has_permission($normal,1)));
 test('creator cannot modify others', fn()=>rejects(fn()=>require_user_edit_access($creator,$normal),403,'permission_required'));
 test('editor may modify others', fn()=>require_user_edit_access($editor,$normal));
@@ -52,9 +54,15 @@ test('normal user cannot edit others', fn()=>rejects(fn()=>require_user_edit_acc
 test('editor cannot modify superuser', fn()=>rejects(fn()=>require_user_edit_access($editor,$super),403,'permission_required'));
 test('superuser can modify superuser', fn()=>require_user_edit_access($super,['id'=>5,'permissions'=>4]));
 test('superuser implies create and modify', fn()=>expect(has_permission($super,1) && has_permission($super,2)));
+test('developer preview permission', fn()=>expect(has_permission($developerPreview, PERMISSION_DEVELOPER_PREVIEW) && !has_permission($developerPreview, PERMISSION_DEVELOPER)));
+test('developer permission', fn()=>expect(has_permission($developer, PERMISSION_DEVELOPER) && !has_permission($developer, PERMISSION_DEVELOPER_PREVIEW)));
+test('developer access accepts either developer flag', fn()=>expect(has_any_permission($developerPreview, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER) && has_any_permission($developer, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER)));
+test('superuser implies developer permissions', fn()=>expect(has_any_permission($super, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER)));
+test('grant token access permission', fn()=>expect(has_permission($tokenGrantor, PERMISSION_GRANT_TOKEN_ACCESS)));
+test('superuser implies grant token access', fn()=>expect(has_permission($super, PERMISSION_GRANT_TOKEN_ACCESS)));
 foreach ([$normal,$creator,$editor] as $actor) test('cannot assign permissions: '.$actor['id'], fn()=>rejects(fn()=>require_permission_assignment($actor,4),403,'permission_required'));
-foreach ([-1,8,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
-test('combined permission mask', fn()=>expect(require_permission_assignment($super,7)===7));
+foreach ([-1,64,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
+test('combined permission mask', fn()=>expect(require_permission_assignment($super,63)===63));
 test('revoke permissions', fn()=>expect(require_permission_assignment($super,0)===0));
 $input=['firstName'=>' Test ','lastName'=>'Account','username'=>'temp-account','password'=>' with spaces '];
 $GLOBALS['actorId']=1;

@@ -1,32 +1,72 @@
 class SpeechMenu {
-    static #wakePhrase = /^listen$/i;
-    static #sleepPhrase = /^mute$/i;
     static #stopped = true;
     static #sleeping = false;
-    static #Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    static #listeningSuspensions = 0;
     static #events = new EventTarget();
     static #separator = ",";
     static #language = "en-US";
     static #silenceTimeout = 5000;
     static #commitSilenceTimeout = 350;
+    static #terminalCommitSilenceTimeout = 120;
+    static #continuationSilenceTimeout = 900;
+    static #maximumCandidateHoldTimeout = 1200;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
     static #micTrack;
     static #audioContext;
     static #sourceNode;
-    static #processorNode;
+    static #captureNode;
+    static #recognizer;
+    static #vad;
+    static #pipeline = "raw";
+    static #finishedUtterances = new Map();
     static #silentGain;
     static #utterance;
     static #utteranceSequence = 0;
     static #preRollFrames = [];
     static #preRollSamples = 0;
-    static #recognitionQueue = Promise.resolve();
     static #startPromise;
     static #sessionGeneration = 0;
     static #lastLevelEventAt = 0;
     static #debug = false;
     static #debugFunction = data => console.log(data);
+    static #executionEnabled = true;
+    static #executionContext;
+    static #synthesizedSpeech = new Map();
+    static #synthesizedSpeechSequence = 0;
+    static #synthesizedSpeechGraceMilliseconds = 750;
+    static #phrases = Object.freeze([]);
+    static #phraseGroups = Object.freeze([]);
+    static #phraseRefreshQueued = false;
+    static #recognizerHotwordKey = "";
+    static #corrections = Object.freeze([]);
+    static #correctionsRevision = "empty";
+    static #builtInCorrections =
+        Object.freeze(
+            [
+                ["red", -101],
+                ["redd", -102],
+                ["rudd", -103]
+            ]
+                .map(
+                    ([observed, id]) =>
+                        Object.freeze({
+                            id,
+                            observed,
+                            observedCompact:
+                                observed,
+                            canonical:
+                                "ready",
+                            canonicalCompact:
+                                "ready",
+                            matchType:
+                                "prefix",
+                            occurrences:
+                                1
+                        })
+                )
+        );
 
     static {
         document.addEventListener("visibilitychange", () => {
@@ -37,20 +77,167 @@ class SpeechMenu {
                 void SpeechMenu.#audioContext.resume().catch(() => {});
             }
         });
+
+        const refreshPhrases =
+            () => SpeechMenu.#schedulePhraseRefresh();
+
+        for (const type of ["toggle", "close", "cancel", "okStatusChanged"]) {
+            document.addEventListener(
+                type,
+                refreshPhrases,
+                true
+            );
+        }
+
+        if (typeof MutationObserver === "function") {
+            new MutationObserver(refreshPhrases)
+                .observe(
+                    document.documentElement,
+                    {
+                        subtree: true,
+                        childList: true,
+                        attributes: true,
+                        attributeFilter: [
+                            "speech-pattern",
+                            "speech-modal",
+                            "speech-index",
+                            "data-speech-options-group",
+                            "data-speech-options-category",
+                            "open",
+                            "hidden",
+                            "disabled",
+                            "inert",
+                            "aria-hidden",
+                            "speech-available",
+                            "speech-open-ended"
+                        ]
+                    }
+                );
+        }
+
+        queueMicrotask(refreshPhrases);
     }
 
     static get events() { return SpeechMenu.#events; }
-    static get wakePhrase() { return SpeechMenu.#wakePhrase; }
-    static get sleepPhrase() { return SpeechMenu.#sleepPhrase; }
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
+    static get executionEnabled() { return SpeechMenu.#executionEnabled; }
+    static get executionContext() { return SpeechMenu.#executionContext; }
+    static get synthesizedSpeechActive() { return SpeechMenu.#synthesizedSpeech.size > 0; }
+    static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
+    static get listeningSuspended() { return SpeechMenu.#listeningSuspensions > 0; }
+    static get phrases() { return SpeechMenu.#phrases; }
+    static get phraseGroups() { return SpeechMenu.#phraseGroups; }
+    static get corrections() { return SpeechMenu.#corrections; }
+    static get correctionsRevision() { return SpeechMenu.#correctionsRevision; }
 
-    static set wakePhrase(value) { SpeechMenu.#setPhrase("wake", value); }
-    static set sleepPhrase(value) { SpeechMenu.#setPhrase("sleep", value); }
+    static async wake({
+        utteranceId,
+        transcript,
+        signal
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        utteranceId ??=
+            SpeechMenu
+                .#executionContext
+                ?.utteranceId;
+        transcript ??=
+            SpeechMenu
+                .#executionContext
+                ?.transcript;
+
+        SpeechMenu.#sleeping =
+            false;
+        SpeechMenu
+            .#schedulePhraseRefresh();
+
+        SpeechMenu.#emit(
+            "unmuted",
+            {
+                utteranceId,
+                transcript
+            }
+        );
+
+        return true;
+    }
+
+    static async sleep({
+        utteranceId,
+        transcript,
+        signal
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        utteranceId ??=
+            SpeechMenu
+                .#executionContext
+                ?.utteranceId;
+        transcript ??=
+            SpeechMenu
+                .#executionContext
+                ?.transcript;
+
+        SpeechMenu.#sleeping =
+            true;
+        SpeechMenu
+            .#schedulePhraseRefresh();
+
+        SpeechMenu.#emit(
+            "muted",
+            {
+                utteranceId,
+                transcript
+            }
+        );
+
+        return true;
+    }
+
+    static isCommandImplemented(element) {
+        if (!(element instanceof Element)) {
+            return false;
+        }
+
+        const speechFunction =
+            element.getAttribute(
+                "speech-function"
+            );
+
+        if (
+            !SpeechMenu
+                .#resolve(
+                    speechFunction
+                )
+        ) {
+            return false;
+        }
+
+        const speechPreproc =
+            element.getAttribute(
+                "speech-preproc"
+            );
+
+        return (
+            !speechPreproc ||
+            Boolean(
+                SpeechMenu
+                    .#resolve(
+                        speechPreproc
+                    )
+            )
+        );
+    }
+
     static set silenceTimeout(value) {
         const milliseconds = Number(value);
         if (!Number.isFinite(milliseconds) || milliseconds < 100) {
@@ -87,15 +274,279 @@ class SpeechMenu {
         });
     }
 
-    static async start(language = "en-US", listSeparator = ",") {
-        if (!SpeechMenu.#Recognition) {
-            SpeechMenu.#emit("speechRecognitionFailed", {
-                error: "NotSupportedError",
-                message: "Speech recognition is not supported by this browser."
-            });
+    static registerSynthesizedSpeech(value) {
+        const text =
+            SpeechMenu
+                .#normalizeTranscript(
+                    value
+                );
+
+        if (!text) {
+            return undefined;
+        }
+
+        const id =
+            ++SpeechMenu
+                .#synthesizedSpeechSequence;
+
+        SpeechMenu.#synthesizedSpeech
+            .set(
+                id,
+                {
+                    text,
+                    expiresAt:
+                        Infinity,
+                    timer:
+                        undefined
+                }
+            );
+
+        return id;
+    }
+
+    static unregisterSynthesizedSpeech(
+        id,
+        {
+            graceMilliseconds =
+                SpeechMenu
+                    .#synthesizedSpeechGraceMilliseconds
+        } = {}
+    ) {
+        const entry =
+            SpeechMenu
+                .#synthesizedSpeech
+                .get(id);
+
+        if (!entry) {
             return false;
         }
 
+        clearTimeout(
+            entry.timer
+        );
+
+        const delay =
+            Math.max(
+                0,
+                Number(
+                    graceMilliseconds
+                ) || 0
+            );
+
+        if (delay === 0) {
+            SpeechMenu
+                .#synthesizedSpeech
+                .delete(id);
+            return true;
+        }
+
+        entry.expiresAt =
+            performance.now() +
+            delay;
+
+        entry.timer =
+            setTimeout(
+                () => {
+                    SpeechMenu
+                        .#synthesizedSpeech
+                        .delete(id);
+                },
+                delay
+            );
+
+        return true;
+    }
+
+    static set executionEnabled(value) {
+        const next =
+            Boolean(value);
+
+        if (
+            next ===
+            SpeechMenu.#executionEnabled
+        ) {
+            return;
+        }
+
+        SpeechMenu.#executionEnabled =
+            next;
+
+        SpeechMenu.#emit(
+            "speechExecutionChanged",
+            {
+                enabled:
+                    next
+            }
+        );
+    }
+
+    static set pipeline(value) {
+        const next =
+            String(value || "raw")
+                .toLocaleLowerCase();
+
+        if (
+            next !== "raw" &&
+            next !== "silero"
+        ) {
+            throw new RangeError(
+                'SpeechMenu.pipeline must be "raw" or "silero".'
+            );
+        }
+
+        if (
+            SpeechMenu.started ||
+            SpeechMenu.#startPromise
+        ) {
+            throw new Error(
+                "SpeechMenu.pipeline cannot change while speech recognition is running."
+            );
+        }
+
+        SpeechMenu.#pipeline =
+            next;
+
+        SpeechMenu.#emit(
+            "speechPipelineChanged",
+            {
+                pipeline:
+                    next
+            }
+        );
+    }
+
+    static async loadCorrections(
+        url = "api/speech-corrections/?language=en-US"
+    ) {
+        try {
+            const response =
+                await fetch(
+                    url,
+                    {
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        }
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !Array.isArray(
+                    data.corrections
+                )
+            ) {
+                throw new Error(
+                    data.message ||
+                    "Speech corrections could not be loaded."
+                );
+            }
+
+            SpeechMenu.#corrections =
+                Object.freeze(
+                    data.corrections
+                        .filter(
+                            correction =>
+                                correction &&
+                                correction.enabled !== false &&
+                                typeof correction.observed ===
+                                    "string" &&
+                                typeof correction.canonical ===
+                                    "string"
+                        )
+                        .map(
+                            correction =>
+                                Object.freeze({
+                                    id:
+                                        Number(
+                                            correction.id
+                                        ) || 0,
+                                    observed:
+                                        SpeechMenu
+                                            .#normalizeTranscript(
+                                                correction.observed
+                                            ),
+                                    observedCompact:
+                                        String(
+                                            correction.observedCompact ||
+                                            SpeechMenu
+                                                .#compactTranscript(
+                                                    correction.observed
+                                                )
+                                        ),
+                                    canonical:
+                                        SpeechMenu
+                                            .#normalizeTranscript(
+                                                correction.canonical
+                                            ),
+                                    canonicalCompact:
+                                        String(
+                                            correction.canonicalCompact ||
+                                            SpeechMenu
+                                                .#compactTranscript(
+                                                    correction.canonical
+                                                )
+                                        ),
+                                    matchType:
+                                        correction.matchType ===
+                                            "prefix"
+                                            ? "prefix"
+                                            : "exact",
+                                    occurrences:
+                                        Number(
+                                            correction.occurrences
+                                        ) || 1
+                                })
+                        )
+                );
+
+            SpeechMenu.#correctionsRevision =
+                String(
+                    data.revision ||
+                    "unknown"
+                );
+
+            SpeechMenu.#emit(
+                "speechCorrectionsChanged",
+                {
+                    corrections:
+                        SpeechMenu.#corrections,
+                    revision:
+                        SpeechMenu.#correctionsRevision
+                }
+            );
+
+            return true;
+        }
+        catch (error) {
+            globalThis
+                .WMOFPresentationSetters
+                ?.cancelSpeechResponse?.(
+                    responseSession
+                );
+
+            SpeechMenu.#emit(
+                "speechCorrectionsFailed",
+                {
+                    error,
+                    message:
+                        error?.message ||
+                        "Speech corrections could not be loaded."
+                }
+            );
+
+            return false;
+        }
+    }
+
+    static async start(language = "en-US", listSeparator = ",") {
         if (!navigator.mediaDevices?.getUserMedia) {
             SpeechMenu.#emit("speechRecognitionFailed", {
                 error: "NotSupportedError",
@@ -129,8 +580,8 @@ class SpeechMenu {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
+                        noiseSuppression: false,
+                        autoGainControl: false
                     }
                 });
 
@@ -161,13 +612,100 @@ class SpeechMenu {
                     await context.resume();
                 }
 
+                const AudioWorkletNodeCtor =
+                    window.AudioWorkletNode ||
+                    globalThis.AudioWorkletNode;
+
                 if (
-                    typeof context.createScriptProcessor !== "function"
+                    !context.audioWorklet ||
+                    typeof AudioWorkletNodeCtor !== "function" ||
+                    typeof globalThis.SherpaRecognizer !== "function" ||
+                    (
+                        SpeechMenu.#pipeline === "silero" &&
+                        typeof globalThis.SileroVad !== "function"
+                    )
                 ) {
                     try { await context.close(); } catch {}
                     throw new Error(
-                        "This browser cannot segment microphone audio without restarting capture."
+                        "This browser does not support the WMOF client speech runtime."
                     );
+                }
+
+                await context.audioWorklet.addModule(
+                    globalThis.SherpaRecognizer.assetUrl(
+                        "speech/SpeechAudioWorklet.js"
+                    )
+                );
+
+                const recognizer =
+                    new globalThis.SherpaRecognizer({
+                        hotwords:
+                            SpeechMenu.#hotwords()
+                    });
+
+                SpeechMenu.#recognizer =
+                    recognizer;
+
+                recognizer.addEventListener(
+                    "transcript",
+                    SpeechMenu.#onSherpaTranscript
+                );
+
+                recognizer.addEventListener(
+                    "error",
+                    SpeechMenu.#onSherpaError
+                );
+
+                recognizer.addEventListener(
+                    "status",
+                    SpeechMenu.#onSherpaStatus
+                );
+
+                recognizer.addEventListener(
+                    "utteranceEnded",
+                    SpeechMenu.#onSherpaUtteranceEnded
+                );
+
+                await recognizer.ready;
+
+                if (
+                    SpeechMenu.#pipeline === "silero"
+                ) {
+                    const vad =
+                        new globalThis.SileroVad({
+                            threshold: 0.5,
+                            minSilenceDuration:
+                                SpeechMenu
+                                    .#commitSilenceTimeout /
+                                1000,
+                            minSpeechDuration: 0.15,
+                            maxSpeechDuration: 20
+                        });
+
+                    SpeechMenu.#vad =
+                        vad;
+
+                    vad.addEventListener(
+                        "speechStart",
+                        SpeechMenu.#onVadSpeechStart
+                    );
+
+                    vad.addEventListener(
+                        "speechEnd",
+                        SpeechMenu.#onVadSpeechEnd
+                    );
+
+                    vad.addEventListener(
+                        "error",
+                        SpeechMenu.#onVadError
+                    );
+
+                    vad.addEventListener(
+                        "status",
+                        SpeechMenu.#onVadStatus
+                    );
+
+                    await vad.ready;
                 }
 
                 SpeechMenu.#stream =
@@ -190,15 +728,15 @@ class SpeechMenu {
                         stream
                     );
 
-                SpeechMenu.#processorNode =
-                    context.createScriptProcessor(
-                        2048,
-                        Math.max(
-                            1,
-                            SpeechMenu.#sourceNode
-                                .channelCount || 1
-                        ),
-                        1
+                SpeechMenu.#captureNode =
+                    new AudioWorkletNodeCtor(
+                        context,
+                        "wmof-speech-capture",
+                        {
+                            numberOfInputs: 1,
+                            numberOfOutputs: 1,
+                            outputChannelCount: [1]
+                        }
                     );
 
                 SpeechMenu.#silentGain =
@@ -207,17 +745,20 @@ class SpeechMenu {
                 SpeechMenu.#silentGain.gain.value =
                     0;
 
-                SpeechMenu.#processorNode
+                SpeechMenu.#captureNode.port
                     .addEventListener(
-                        "audioprocess",
-                        SpeechMenu.#onAudioProcess
+                        "message",
+                        SpeechMenu.#onAudioWorkletMessage
                     );
 
+                SpeechMenu.#captureNode.port
+                    .start?.();
+
                 SpeechMenu.#sourceNode.connect(
-                    SpeechMenu.#processorNode
+                    SpeechMenu.#captureNode
                 );
 
-                SpeechMenu.#processorNode.connect(
+                SpeechMenu.#captureNode.connect(
                     SpeechMenu.#silentGain
                 );
 
@@ -234,6 +775,17 @@ class SpeechMenu {
                 SpeechMenu.#emit("started", {
                     language:
                         SpeechMenu.#language,
+                    recognizer:
+                        "sherpa",
+                    pipeline:
+                        SpeechMenu.#pipeline,
+                    sampleRate:
+                        globalThis.SherpaRecognizer
+                            .sampleRate,
+                    captureSettings:
+                        SpeechMenu.#micTrack
+                            .getSettings?.() ||
+                        {},
                     silenceTimeout:
                         SpeechMenu.#silenceTimeout,
                     commitSilenceTimeout:
@@ -280,6 +832,43 @@ class SpeechMenu {
         return SpeechMenu.#startPromise;
     }
 
+    static suspendListening(reason = "audio-playback") {
+        SpeechMenu.#listeningSuspensions++;
+
+        if (SpeechMenu.#listeningSuspensions === 1) {
+            SpeechMenu.#preRollFrames = [];
+            SpeechMenu.#preRollSamples = 0;
+
+            SpeechMenu.#emit("listeningSuspended", {
+                reason,
+                count: SpeechMenu.#listeningSuspensions
+            });
+        }
+
+        return SpeechMenu.#listeningSuspensions;
+    }
+
+    static resumeListening(reason = "audio-playback") {
+        if (SpeechMenu.#listeningSuspensions <= 0) {
+            SpeechMenu.#listeningSuspensions = 0;
+            return false;
+        }
+
+        SpeechMenu.#listeningSuspensions--;
+
+        if (SpeechMenu.#listeningSuspensions === 0) {
+            SpeechMenu.#preRollFrames = [];
+            SpeechMenu.#preRollSamples = 0;
+
+            SpeechMenu.#emit("listeningResumed", {
+                reason,
+                count: 0
+            });
+        }
+
+        return true;
+    }
+
     static async stop() {
         const wasActive =
             !SpeechMenu.#stopped ||
@@ -320,6 +909,445 @@ class SpeechMenu {
                 true
             );
         }
+
+        return SpeechMenu.extrapolatePhrases();
+    }
+
+    static extrapolatePattern(pattern) {
+        return Object.freeze(
+            SpeechMenu
+                .#expandRegexSource(
+                    pattern
+                )
+                .slice()
+        );
+    }
+
+    static withoutPhrase(
+        pattern,
+        phrase
+    ) {
+        if (
+            typeof pattern !== "string" ||
+            typeof phrase !== "string" ||
+            !phrase.trim()
+        ) {
+            return pattern;
+        }
+
+        const parts =
+            SpeechMenu
+                .#splitPhraseExclusions(
+                    pattern
+                );
+
+        const exclusion =
+            SpeechMenu
+                .#phraseExclusionSource(
+                    phrase
+                );
+
+        if (!exclusion) {
+            return pattern;
+        }
+
+        const exclusions =
+            [
+                ...new Set([
+                    ...parts.exclusions,
+                    exclusion
+                ])
+            ];
+
+        return (
+            "^(?!(?:" +
+            exclusions.join("|") +
+            ")$)(?:" +
+            parts.base +
+            ")$"
+        );
+    }
+
+    static extrapolatePhrases() {
+        const groups = [];
+        const intentGroups =
+            new Map();
+        const phrases = [];
+        const seen = new Set();
+
+        for (
+            const element of
+            SpeechMenu.#availableCandidates()
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
+                );
+
+            if (!pattern) continue;
+
+            const extrapolated =
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
+                    );
+
+            if (!extrapolated.length) {
+                continue;
+            }
+
+            const menu =
+                element.closest(
+                    "speech-menu"
+                );
+
+            const intent =
+                element
+                    .getAttribute(
+                        "data-speech-intent"
+                    )
+                    ?.trim() ||
+                undefined;
+
+            const optionsPhrase =
+                element
+                    .getAttribute(
+                        "data-speech-options-phrase"
+                    )
+                    ?.trim() ||
+                undefined;
+
+            const descriptor = {
+                element,
+                elements: [element],
+                intent,
+                menu: menu || undefined,
+                modal:
+                    SpeechMenu
+                        .#effectiveModal(
+                            element
+                        ),
+                pattern,
+                optionsGroup:
+                    element
+                        .getAttribute(
+                            "data-speech-options-group"
+                        )
+                        ?.trim() ||
+                    undefined,
+                optionsCategory:
+                    element
+                        .getAttribute(
+                            "data-speech-options-category"
+                        )
+                        ?.trim() ||
+                    undefined,
+                optionPhrases:
+                    optionsPhrase
+                        ? [optionsPhrase]
+                        : undefined,
+                phrases:
+                    extrapolated.slice()
+            };
+
+            if (intent) {
+                const existing =
+                    intentGroups.get(
+                        intent
+                    );
+
+                if (existing) {
+                    existing.elements.push(
+                        element
+                    );
+
+                    for (
+                        const phrase of
+                        extrapolated
+                    ) {
+                        if (
+                            !existing.phrases
+                                .includes(
+                                    phrase
+                                )
+                        ) {
+                            existing.phrases.push(
+                                phrase
+                            );
+                        }
+                    }
+
+                    if (optionsPhrase) {
+                        existing.optionPhrases ??=
+                            [];
+
+                        if (
+                            !existing
+                                .optionPhrases
+                                .includes(
+                                    optionsPhrase
+                                )
+                        ) {
+                            existing
+                                .optionPhrases
+                                .push(
+                                    optionsPhrase
+                                );
+                        }
+                    }
+                }
+                else {
+                    intentGroups.set(
+                        intent,
+                        descriptor
+                    );
+                    groups.push(
+                        descriptor
+                    );
+                }
+            }
+            else {
+                groups.push(
+                    descriptor
+                );
+            }
+
+            for (const phrase of extrapolated) {
+                if (seen.has(phrase)) continue;
+                seen.add(phrase);
+                phrases.push(phrase);
+            }
+        }
+
+        const previousPhrases =
+            SpeechMenu.#phrases;
+        const previousGroups =
+            SpeechMenu.#phraseGroups;
+
+        SpeechMenu.#phraseGroups =
+            Object.freeze(
+                groups.map(
+                    group =>
+                        Object.freeze({
+                            ...group,
+                            elements:
+                                Object.freeze(
+                                    group.elements.slice()
+                                ),
+                            optionPhrases:
+                                group.optionPhrases
+                                    ? Object.freeze(
+                                        group
+                                            .optionPhrases
+                                            .slice()
+                                    )
+                                    : undefined,
+                            phrases:
+                                Object.freeze(
+                                    group.phrases.slice()
+                                )
+                        })
+                )
+            );
+
+        SpeechMenu.#phrases =
+            Object.freeze(phrases);
+
+        const phrasesChanged =
+            previousPhrases.length !==
+                phrases.length ||
+            previousPhrases.some(
+                (phrase, index) =>
+                    phrase !==
+                    phrases[index]
+            );
+
+        const groupsChanged =
+            previousGroups.length !==
+                groups.length ||
+            previousGroups.some(
+                (group, index) => {
+                    const next =
+                        groups[index];
+
+                    return (
+                        !next ||
+                        group.element !==
+                            next.element ||
+                        group.intent !==
+                            next.intent ||
+                        group.pattern !==
+                            next.pattern ||
+                        group.optionsGroup !==
+                            next.optionsGroup ||
+                        group.optionsCategory !==
+                            next.optionsCategory ||
+                        (
+                            group.optionPhrases
+                                ?.length ||
+                            0
+                        ) !==
+                            (
+                                next.optionPhrases
+                                    ?.length ||
+                                0
+                            ) ||
+                        group.optionPhrases
+                            ?.some(
+                                (
+                                    phrase,
+                                    phraseIndex
+                                ) =>
+                                    phrase !==
+                                    next
+                                        .optionPhrases?.[
+                                            phraseIndex
+                                        ]
+                            ) ||
+                        group.phrases.length !==
+                            next.phrases.length ||
+                        group.phrases.some(
+                            (
+                                phrase,
+                                phraseIndex
+                            ) =>
+                                phrase !==
+                                next.phrases[
+                                    phraseIndex
+                                ]
+                        )
+                    );
+                }
+            );
+
+        if (
+            phrasesChanged ||
+            groupsChanged
+        ) {
+            SpeechMenu.#emit(
+                "phrasesChanged",
+                {
+                    phrases:
+                        SpeechMenu.#phrases,
+                    phraseGroups:
+                        SpeechMenu.#phraseGroups
+                }
+            );
+
+        }
+
+        /*
+         * Command scope and recognizer vocabulary are separate concerns.
+         * Sleep/wake, dialogs, popovers, availability, etc. can change
+         * the executable phrase set without changing the vocabulary the
+         * recognizer should know. Keep a stable superset of all defined
+         * speech phrases so transient scope changes do not force Sherpa
+         * to destroy/rebuild its recognizer between utterances.
+         */
+        SpeechMenu
+            .#refreshRecognizerHotwords();
+
+        return SpeechMenu.#phrases;
+    }
+
+    static #hotwords() {
+        const values = [];
+        const seen =
+            new Set();
+
+        for (
+            const element of
+            document.querySelectorAll(
+                "[speech-pattern]"
+            )
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
+                );
+
+            if (!pattern) {
+                continue;
+            }
+
+            for (
+                const phrase of
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
+                    )
+            ) {
+                const value =
+                    String(
+                        phrase ||
+                        ""
+                    ).trim();
+
+                if (
+                    !value ||
+                    seen.has(
+                        value
+                    )
+                ) {
+                    continue;
+                }
+
+                seen.add(
+                    value
+                );
+                values.push(
+                    value
+                );
+            }
+        }
+
+        return values;
+    }
+
+    static #refreshRecognizerHotwords() {
+        const values =
+            SpeechMenu
+                .#hotwords();
+
+        const key =
+            JSON.stringify(
+                values
+            );
+
+        if (
+            key ===
+                SpeechMenu
+                    .#recognizerHotwordKey
+        ) {
+            return false;
+        }
+
+        SpeechMenu.#recognizerHotwordKey =
+            key;
+
+        SpeechMenu.#recognizer
+            ?.setHotwords(
+                values
+            );
+
+        return true;
+    }
+
+    static #schedulePhraseRefresh() {
+        if (SpeechMenu.#phraseRefreshQueued) {
+            return;
+        }
+
+        SpeechMenu.#phraseRefreshQueued =
+            true;
+
+        queueMicrotask(
+            () => {
+                SpeechMenu.#phraseRefreshQueued =
+                    false;
+                SpeechMenu.extrapolatePhrases();
+            }
+        );
     }
 
     static #emit(type, detail) {
@@ -331,41 +1359,6 @@ class SpeechMenu {
                     : {detail}
             )
         );
-    }
-
-    static #setPhrase(kind, value) {
-        try {
-            const regex =
-                value instanceof RegExp
-                    ? value
-                    : new RegExp(value, "i");
-
-            if (kind === "wake") {
-                SpeechMenu.#wakePhrase =
-                    regex;
-            }
-            else {
-                SpeechMenu.#sleepPhrase =
-                    regex;
-            }
-
-            SpeechMenu.#emit(
-                `${kind}PhraseChanged`,
-                {
-                    [`${kind}PhraseRegex`]:
-                        regex
-                }
-            );
-        }
-        catch {
-            SpeechMenu.#emit(
-                `${kind}PhraseChangeFailed`,
-                {
-                    message:
-                        `${kind}Phrase must be a valid regular expression.`
-                }
-            );
-        }
     }
 
     static #onTrackEnded = () => {
@@ -384,66 +1377,51 @@ class SpeechMenu {
         void SpeechMenu.#releaseCapture();
     };
 
-    static #onAudioProcess = event => {
+    static #onAudioWorkletMessage = event => {
         if (
             SpeechMenu.#stopped ||
+            SpeechMenu.listeningSuspended ||
             !SpeechMenu.#audioContext
         ) {
             return;
         }
 
-        const input =
-            event.inputBuffer;
+        const data =
+            event.data;
 
-        if (!input?.length) return;
-
-        const channels = [];
-
-        for (
-            let index = 0;
-            index < input.numberOfChannels;
-            index++
+        if (
+            data?.type !== "audio" ||
+            !(data.samples instanceof Float32Array) ||
+            data.samples.length === 0
         ) {
-            channels.push(
-                new Float32Array(
-                    input.getChannelData(
-                        index
-                    )
-                )
-            );
+            return;
         }
 
-        if (channels.length === 0) return;
-
-        let squareTotal = 0;
-        let sampleTotal = 0;
-
-        for (const channel of channels) {
-            for (const sample of channel) {
-                squareTotal +=
-                    sample * sample;
-            }
-            sampleTotal +=
-                channel.length;
-        }
+        const samples =
+            data.samples;
 
         const level =
-            sampleTotal > 0
-                ? Math.sqrt(
-                    squareTotal /
-                    sampleTotal
-                )
+            Number.isFinite(
+                Number(data.level)
+            )
+                ? Number(data.level)
                 : 0;
 
+        const sampleRate =
+            Number(data.sampleRate) ||
+            globalThis.SherpaRecognizer
+                ?.sampleRate ||
+            16000;
+
         const frame = {
-            channels,
+            samples,
             length:
-                channels[0].length
+                samples.length
         };
 
         const frameMilliseconds =
             frame.length /
-            input.sampleRate *
+            sampleRate *
             1000;
 
         const now =
@@ -463,6 +1441,57 @@ class SpeechMenu {
             );
         }
 
+        if (
+            SpeechMenu.#utterance &&
+            SpeechMenu.#utterance
+                .candidateHardCommitAt !==
+                undefined &&
+            now >=
+                SpeechMenu.#utterance
+                    .candidateHardCommitAt &&
+            !SpeechMenu.#utterance
+                .committed &&
+            !SpeechMenu.#utterance
+                .committing
+        ) {
+            const currentExact =
+                SpeechMenu
+                    .#exactCandidate(
+                        SpeechMenu.#utterance
+                    );
+
+            if (currentExact) {
+                void SpeechMenu
+                    .#commitUtterance(
+                        SpeechMenu.#utterance
+                    );
+            }
+        }
+
+        if (
+            SpeechMenu.#pipeline ===
+                "silero"
+        ) {
+            SpeechMenu.#vad
+                ?.accept(
+                    samples
+                );
+
+            if (!SpeechMenu.#utterance) {
+                SpeechMenu.#appendPreRollFrame(
+                    frame,
+                    sampleRate
+                );
+            }
+            else {
+                SpeechMenu.#appendUtteranceFrame(
+                    frame
+                );
+            }
+
+            return;
+        }
+
         if (!SpeechMenu.#utterance) {
             if (
                 level >=
@@ -479,7 +1508,7 @@ class SpeechMenu {
             else {
                 SpeechMenu.#appendPreRollFrame(
                     frame,
-                    input.sampleRate
+                    sampleRate
                 );
             }
 
@@ -487,9 +1516,18 @@ class SpeechMenu {
         }
 
         if (
-            SpeechMenu.#utterance.committed &&
+            (
+                SpeechMenu.#utterance.committed ||
+                SpeechMenu.#utterance
+                    .recognitionStopped
+            ) &&
             level >= SpeechMenu.#speechThreshold
         ) {
+            SpeechMenu
+                .#clearCandidatePool(
+                    SpeechMenu.#utterance
+                );
+
             SpeechMenu.#finishUtterance(
                 "committed",
                 false
@@ -515,15 +1553,59 @@ class SpeechMenu {
                 frameMilliseconds;
 
             if (
-                !SpeechMenu.#utterance.committed &&
-                !SpeechMenu.#utterance.committing &&
-                SpeechMenu.#utterance.candidate &&
-                SpeechMenu.#utterance.silenceMilliseconds >=
-                    SpeechMenu.#commitSilenceTimeout
+                !SpeechMenu.#utterance
+                    .committed &&
+                !SpeechMenu.#utterance
+                    .committing &&
+                SpeechMenu.#utterance
+                    .silenceMilliseconds >=
+                    (
+                        SpeechMenu
+                            .#hasOpenContinuation(
+                                SpeechMenu
+                                    .#utterance
+                            )
+                            ? SpeechMenu
+                                .#continuationSilenceTimeout
+                            : SpeechMenu
+                                .#commitSilenceTimeout
+                    )
             ) {
-                void SpeechMenu.#commitUtterance(
-                    SpeechMenu.#utterance
-                );
+                const utterance =
+                    SpeechMenu.#utterance;
+                const exactCandidate =
+                    SpeechMenu
+                        .#exactCandidate(
+                            utterance
+                        );
+                if (
+                    SpeechMenu
+                        .#hasOpenContinuation(
+                            utterance
+                        )
+                ) {
+                    /*
+                     * Open-ended values (for example
+                     * "ready at five fif") often stop changing before
+                     * Sherpa emits the completed last word. Real silence
+                     * is the boundary; request the recognizer's final
+                     * decode instead of committing a stale interim.
+                     */
+                    SpeechMenu
+                        .#finishUtterance(
+                            "candidate-silence",
+                            true
+                        );
+
+                    return;
+                }
+
+                if (exactCandidate) {
+                    void SpeechMenu
+                        .#commitUtterance(
+                            utterance
+                        );
+                }
             }
 
             if (
@@ -538,6 +1620,187 @@ class SpeechMenu {
                 );
             }
         }
+    };
+
+    static #onVadSpeechStart = event => {
+        if (
+            SpeechMenu.#stopped ||
+            SpeechMenu.#pipeline !==
+                "silero"
+        ) {
+            return;
+        }
+
+        if (
+            SpeechMenu.#utterance
+                ?.recognitionStopped
+        ) {
+            SpeechMenu.#finishUtterance(
+                "recognition-committed",
+                false
+            );
+        }
+
+        if (SpeechMenu.#utterance) {
+            if (
+                SpeechMenu
+                    .#hasOpenContinuation(
+                        SpeechMenu.#utterance
+                    )
+            ) {
+                SpeechMenu.#emit(
+                    "speechVadChanged",
+                    {
+                        pipeline: "silero",
+                        detected: true,
+                        resumed: true,
+                        processMilliseconds:
+                            Number(
+                                event.detail
+                                    ?.processMilliseconds
+                            ) || 0,
+                        maxProcessMilliseconds:
+                            Number(
+                                event.detail
+                                    ?.maxProcessingMilliseconds
+                            ) || 0
+                    }
+                );
+            }
+
+            return;
+        }
+
+        const now =
+            performance.now();
+
+        SpeechMenu.#emit(
+            "speechVadChanged",
+            {
+                pipeline: "silero",
+                detected: true,
+                processMilliseconds:
+                    Number(
+                        event.detail
+                            ?.processMilliseconds
+                    ) || 0,
+                maxProcessMilliseconds:
+                    Number(
+                        event.detail
+                            ?.maxProcessingMilliseconds
+                    ) || 0
+            }
+        );
+
+        SpeechMenu.#beginUtterance(
+            now
+        );
+    };
+
+    static #onVadSpeechEnd = event => {
+        if (
+            SpeechMenu.#pipeline !==
+                "silero"
+        ) {
+            return;
+        }
+
+        SpeechMenu.#emit(
+            "speechVadChanged",
+            {
+                pipeline: "silero",
+                detected: false,
+                processMilliseconds:
+                    Number(
+                        event.detail
+                            ?.processMilliseconds
+                    ) || 0,
+                maxProcessMilliseconds:
+                    Number(
+                        event.detail
+                            ?.maxProcessingMilliseconds
+                    ) || 0
+            }
+        );
+
+        if (
+            SpeechMenu.#utterance
+        ) {
+            const utterance =
+                SpeechMenu.#utterance;
+
+            if (
+                !utterance.committed &&
+                !utterance.committing &&
+                SpeechMenu
+                    .#hasOpenContinuation(
+                        utterance
+                    )
+            ) {
+                /*
+                 * A short pause can occur inside an open-ended value,
+                 * e.g. "ready at four ... fifteen". Keep Sherpa's
+                 * current stream alive so the next VAD speech segment
+                 * continues the same logical utterance.
+                 */
+                return;
+            }
+
+            if (
+                !utterance.committed &&
+                !utterance.committing &&
+                SpeechMenu
+                    .#exactCandidate(
+                        utterance
+                    )
+            ) {
+                void SpeechMenu
+                    .#commitUtterance(
+                        utterance
+                    );
+            }
+            else {
+                SpeechMenu.#finishUtterance(
+                    "vad-silence",
+                    true
+                );
+            }
+        }
+    };
+
+    static #onVadError = event => {
+        const detail =
+            event.detail || {};
+
+        SpeechMenu.#emit(
+            "speechRecognitionFailed",
+            {
+                error:
+                    detail.error ||
+                    "SileroVadError",
+                message:
+                    detail.message ||
+                    "Silero VAD failed."
+            }
+        );
+    };
+
+    static #onVadStatus = event => {
+        const status =
+            event.detail?.status ||
+            "";
+
+        if (!status) {
+            return;
+        }
+
+        SpeechMenu.#emit(
+            "speechRecognitionStatusChanged",
+            {
+                status:
+                    `VAD: ${status}`
+            }
+        );
     };
 
     static #appendPreRollFrame(
@@ -573,10 +1836,13 @@ class SpeechMenu {
     }
 
     static #beginUtterance(now) {
+        SpeechMenu
+            .#cancelPendingRecognitionForBargeIn();
+
         const id =
             ++SpeechMenu.#utteranceSequence;
 
-        const frames =
+        const preRollFrames =
             SpeechMenu.#preRollFrames
                 .splice(0);
 
@@ -586,50 +1852,109 @@ class SpeechMenu {
         SpeechMenu.#preRollSamples =
             0;
 
+        const wallStartedAt =
+            new Date(
+                performance.timeOrigin +
+                now
+            );
+
         SpeechMenu.#utterance = {
             id,
             sessionGeneration:
                 SpeechMenu.#sessionGeneration,
             startedAt: now,
+            wallStartedAt:
+                wallStartedAt.toISOString(),
             silenceMilliseconds: 0,
-            frames,
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
-            candidate: undefined,
+            firstTranscriptAt:
+                undefined,
+            candidatePool: [],
+            candidatePoolController:
+                undefined,
+            candidateCommitTimer:
+                undefined,
+            candidateHardCommitTimer:
+                undefined,
+            candidateHardCommitAt:
+                undefined,
+            lastExactCandidate:
+                undefined,
             committed: false,
             committing: false,
-            liveRecognition: undefined,
-            liveRecognitionStopped: false,
-            recognitionPrefix: ""
+            recognitionStopped: false
         };
 
         SpeechMenu.#emit(
             "utteranceStarted",
             {
                 id,
-                startedAt: now
+                startedAt: now,
+                wallStartedAt:
+                    wallStartedAt.toISOString()
             }
         );
 
-        SpeechMenu.#startLiveRecognition(
-            SpeechMenu.#utterance
-        );
+        SpeechMenu.#recognizer
+            ?.beginUtterance(id);
+
+        for (
+            const frame of
+            preRollFrames
+        ) {
+            SpeechMenu.#recognizer
+                ?.accept(
+                    id,
+                    frame.samples
+                );
+        }
+    }
+
+    static #cancelPendingRecognitionForBargeIn() {
+        for (
+            const [
+                id,
+                utterance
+            ] of SpeechMenu
+                .#finishedUtterances
+        ) {
+            SpeechMenu
+                .#clearCandidatePool(
+                    utterance
+                );
+
+            SpeechMenu
+                .#stopLiveRecognition(
+                    utterance,
+                    false
+                );
+
+            SpeechMenu
+                .#finishedUtterances
+                .delete(id);
+        }
     }
 
     static #appendUtteranceFrame(
         frame
     ) {
-        if (!SpeechMenu.#utterance) {
+        const utterance =
+            SpeechMenu.#utterance;
+
+        if (!utterance) {
             return;
         }
 
-        SpeechMenu.#utterance.frames.push(
-            frame
-        );
-
-        SpeechMenu.#utterance.sampleCount +=
+        utterance.sampleCount +=
             frame.length;
+
+        SpeechMenu.#recognizer
+            ?.accept(
+                utterance.id,
+                frame.samples
+            );
     }
 
     static #finishUtterance(
@@ -641,18 +1966,29 @@ class SpeechMenu {
 
         if (!utterance) return;
 
+        if (
+            recognize &&
+            !utterance.committed
+        ) {
+            SpeechMenu.#finishedUtterances
+                .set(
+                    utterance.id,
+                    utterance
+                );
+        }
+
         SpeechMenu.#stopLiveRecognition(
-            utterance
+            utterance,
+            recognize
         );
 
         SpeechMenu.#utterance =
             undefined;
 
-        const context =
-            SpeechMenu.#audioContext;
-
         const sampleRate =
-            context?.sampleRate || 48000;
+            globalThis.SherpaRecognizer
+                ?.sampleRate ||
+            16000;
 
         const durationMilliseconds =
             utterance.sampleCount /
@@ -676,262 +2012,230 @@ class SpeechMenu {
             }
         );
 
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
         if (
-            utterance.candidate &&
+            recognize &&
+            exactCandidate &&
             !utterance.committed &&
-            !utterance.committing
+            !utterance.committing &&
+            !(
+                (
+                    SpeechMenu.#pipeline ===
+                        "silero" &&
+                    reason ===
+                        "vad-silence"
+                ) ||
+                reason ===
+                    "candidate-silence"
+            )
         ) {
             void SpeechMenu.#commitUtterance(
                 utterance
             );
-            return;
         }
-
-        if (
-            !recognize ||
-            utterance.committed ||
-            !context ||
-            utterance.sampleCount <= 0
-        ) {
-            return;
-        }
-
-        const channelCount =
-            Math.max(
-                1,
-                utterance.frames[0]
-                    ?.channels.length || 1
-            );
-
-        const audioBuffer =
-            context.createBuffer(
-                channelCount,
-                utterance.sampleCount,
-                sampleRate
-            );
-
-        let offset = 0;
-
-        for (
-            const frame of
-                utterance.frames
-        ) {
-            for (
-                let channelIndex = 0;
-                channelIndex < channelCount;
-                channelIndex++
-            ) {
-                const samples =
-                    frame.channels[
-                        Math.min(
-                            channelIndex,
-                            frame.channels
-                                .length - 1
-                        )
-                    ];
-
-                if (!samples) continue;
-
-                audioBuffer.copyToChannel(
-                    samples,
-                    channelIndex,
-                    offset
+        else {
+            SpeechMenu
+                .#clearCandidatePool(
+                    utterance
                 );
-            }
-
-            offset +=
-                frame.length;
         }
-
-        const recognitionInput = {
-            id: utterance.id,
-            sessionGeneration:
-                utterance.sessionGeneration,
-            audioBuffer
-        };
-
-        SpeechMenu.#recognitionQueue =
-            SpeechMenu.#recognitionQueue
-                .catch(() => {})
-                .then(
-                    () =>
-                        SpeechMenu
-                            .#recognizeUtterance(
-                                recognitionInput
-                            )
-                );
     }
 
-    static #startLiveRecognition(
-        utterance
+    static #onSherpaTranscript = event => {
+        const detail =
+            event.detail || {};
+        const id =
+            detail.utteranceId;
+        const active =
+            SpeechMenu.#utterance;
+        const utterance =
+            active?.id === id
+                ? active
+                : SpeechMenu
+                    .#finishedUtterances
+                    .get(id);
+
+        if (!utterance) {
+            return;
+        }
+
+        const transcript =
+            SpeechMenu
+                .#stripSynthesizedSpeech(
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            detail.transcript
+                        )
+                );
+
+        if (!transcript) {
+            return;
+        }
+
+        const receivedAt =
+            performance.now();
+        const isFirstTranscript =
+            utterance.firstTranscriptAt ===
+                undefined;
+
+        if (isFirstTranscript) {
+            utterance.firstTranscriptAt =
+                receivedAt;
+        }
+
+        SpeechMenu.#emit(
+            "speechRecognitionTiming",
+            {
+                backend:
+                    "sherpa",
+                utteranceId:
+                    id,
+                isFinal:
+                    Boolean(
+                        detail.isFinal
+                    ),
+                isFirstTranscript,
+                firstTranscriptMilliseconds:
+                    utterance.firstTranscriptAt -
+                    utterance.startedAt,
+                transcriptMilliseconds:
+                    receivedAt -
+                    utterance.startedAt,
+                decodeMilliseconds:
+                    Number(
+                        detail.decodeMilliseconds
+                    ) || 0
+            }
+        );
+
+        if (
+            active === utterance
+        ) {
+            void SpeechMenu
+                .#handleLiveTranscript(
+                    utterance,
+                    transcript,
+                    Boolean(
+                        detail.isFinal
+                    )
+                );
+            return;
+        }
+
+        if (!detail.isFinal) {
+            return;
+        }
+
+        SpeechMenu.#finishedUtterances
+            .delete(id);
+
+        void SpeechMenu
+            .#handleCompletedTranscript(
+                utterance,
+                transcript
+            );
+    };
+
+    static #onSherpaError = event => {
+        const detail =
+            event.detail || {};
+
+        SpeechMenu.#emit(
+            detail.fatal
+                ? "speechRecognitionFailed"
+                : "speechRecognitionStreamingFailed",
+            {
+                utteranceId:
+                    detail.utteranceId,
+                error:
+                    detail.error ||
+                    "SherpaError",
+                message:
+                    detail.message ||
+                    "Sherpa recognition failed."
+            }
+        );
+    };
+
+    static #onSherpaStatus = event => {
+        SpeechMenu.#emit(
+            "speechRecognitionStatusChanged",
+            {
+                status:
+                    event.detail?.status ||
+                    ""
+            }
+        );
+    };
+
+    static #onSherpaUtteranceEnded = event => {
+        const id =
+            event.detail?.utteranceId;
+
+        if (
+            SpeechMenu.#utterance?.id === id
+        ) {
+            return;
+        }
+
+        const utterance =
+            SpeechMenu.#finishedUtterances
+                .get(id);
+
+        if (!utterance) {
+            return;
+        }
+
+        SpeechMenu.#finishedUtterances
+            .delete(id);
+
+        if (
+            !utterance.transcript &&
+            !String(
+                event.detail?.transcript ||
+                ""
+            ).trim()
+        ) {
+            SpeechMenu.#emit(
+                "utteranceUnrecognized",
+                {
+                    id
+                }
+            );
+        }
+    };
+
+    static #stopLiveRecognition(
+        utterance,
+        finalize = true
     ) {
         if (
             !utterance ||
-            utterance.liveRecognitionStopped ||
-            utterance.committed ||
-            SpeechMenu.#stopped ||
-            utterance.sessionGeneration !==
-                SpeechMenu.#sessionGeneration ||
-            !SpeechMenu.#micTrack
+            utterance.recognitionStopped
         ) {
-            return false;
+            return;
         }
 
-        const recognition =
-            new SpeechMenu.#Recognition();
-
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang =
-            SpeechMenu.#language;
-
-        utterance.liveRecognition =
-            recognition;
-
-        recognition.onresult =
-            event => {
-                let sessionText = "";
-                let allFinal = true;
-
-                for (
-                    let index = 0;
-                    index < event.results.length;
-                    index++
-                ) {
-                    const result =
-                        event.results[index];
-
-                    const value =
-                        result?.[0]?.transcript;
-
-                    if (value) {
-                        sessionText +=
-                            `${sessionText ? " " : ""}${value}`;
-                    }
-
-                    if (!result?.isFinal) {
-                        allFinal = false;
-                    }
-                }
-
-                const transcript =
-                    SpeechMenu.#normalizeTranscript(
-                        `${utterance.recognitionPrefix || ""} ${sessionText}`
-                    );
-
-                if (transcript) {
-                    void SpeechMenu.#handleLiveTranscript(
-                        utterance,
-                        transcript,
-                        allFinal
-                    );
-                }
-            };
-
-        recognition.onerror =
-            event => {
-                if (
-                    event.error === "aborted" ||
-                    event.error === "no-speech"
-                ) {
-                    return;
-                }
-
-                SpeechMenu.#emit(
-                    "speechRecognitionStreamingFailed",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        error:
-                            event.error,
-                        message:
-                            event.message
-                    }
-                );
-            };
-
-        recognition.onend =
-            () => {
-                if (
-                    utterance.liveRecognition !==
-                        recognition
-                ) {
-                    return;
-                }
-
-                utterance.liveRecognition =
-                    undefined;
-
-                if (
-                    utterance.liveRecognitionStopped ||
-                    utterance.committed ||
-                    SpeechMenu.#stopped ||
-                    SpeechMenu.#utterance !==
-                        utterance
-                ) {
-                    return;
-                }
-
-                utterance.recognitionPrefix =
-                    utterance.transcript || "";
-
-                queueMicrotask(
-                    () =>
-                        SpeechMenu.#startLiveRecognition(
-                            utterance
-                        )
-                );
-            };
-
-        try {
-            recognition.start(
-                SpeechMenu.#micTrack
-            );
-            return true;
-        }
-        catch (error) {
-            utterance.liveRecognition =
-                undefined;
-            utterance.liveRecognitionStopped =
-                true;
-
-            SpeechMenu.#emit(
-                "speechRecognitionStreamingFailed",
-                {
-                    utteranceId:
-                        utterance.id,
-                    error:
-                        error?.name ||
-                        "TrackInputUnsupported",
-                    message:
-                        error?.message ||
-                        "Live speech recognition could not start from the persistent microphone track."
-                }
-            );
-            return false;
-        }
-    }
-
-    static #stopLiveRecognition(
-        utterance
-    ) {
-        if (!utterance) return;
-
-        utterance.liveRecognitionStopped =
+        utterance.recognitionStopped =
             true;
 
-        const recognition =
-            utterance.liveRecognition;
-
-        utterance.liveRecognition =
-            undefined;
-
-        if (!recognition) return;
-
-        try {
-            recognition.abort();
+        if (finalize) {
+            SpeechMenu.#recognizer
+                ?.finishUtterance(
+                    utterance.id
+                );
         }
-        catch {}
+        else {
+            SpeechMenu.#recognizer
+                ?.abortUtterance(
+                    utterance.id
+                );
+        }
     }
 
     static async #handleLiveTranscript(
@@ -942,6 +2246,7 @@ class SpeechMenu {
         if (
             !utterance ||
             utterance.committed ||
+            utterance.committing ||
             SpeechMenu.#stopped ||
             SpeechMenu.#utterance !==
                 utterance ||
@@ -985,75 +2290,110 @@ class SpeechMenu {
             );
         }
 
-        let candidate;
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
 
-        if (
-            SpeechMenu.#sleeping
-        ) {
-            if (
-                SpeechMenu.#test(
-                    SpeechMenu.#wakePhrase,
-                    transcript
-                )
-            ) {
-                candidate = {
-                    kind: "wake",
-                    transcript
-                };
-            }
-        }
-        else if (
-            SpeechMenu.#test(
-                SpeechMenu.#sleepPhrase,
-                transcript
-            )
-        ) {
-            candidate = {
-                kind: "mute",
-                transcript
-            };
-        }
-        else {
-            candidate =
-                await SpeechMenu.#processTranscript(
+        const controller =
+            new AbortController();
+
+        utterance.candidatePoolController =
+            controller;
+
+        const pool =
+            await SpeechMenu
+                .#refreshCandidatePool(
+                    utterance,
                     transcript,
-                    utterance.id,
-                    false
+                    controller.signal
                 );
-        }
 
         if (
+            controller.signal.aborted ||
             SpeechMenu.#utterance !==
                 utterance ||
             utterance.committed ||
             revision !==
-                utterance.transcriptRevision
+                utterance.transcriptRevision ||
+            utterance.candidatePoolController !==
+                controller
         ) {
             return;
         }
 
-        utterance.candidate =
-            candidate || undefined;
+        utterance.candidatePool =
+            pool;
 
         if (
-            utterance.candidate &&
-            utterance.silenceMilliseconds >=
-                SpeechMenu.#commitSilenceTimeout
+            pool.length &&
+            utterance.lastExactCandidate &&
+            !utterance
+                .lastExactCandidate
+                .commandElement
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                ) &&
+            !utterance.committed &&
+            !utterance.committing
         ) {
-            await SpeechMenu.#commitUtterance(
-                utterance
-            );
+            SpeechMenu
+                .#armCandidateHardDeadline(
+                    utterance
+                );
         }
+
+        if (
+            !pool.length &&
+            !utterance.committing &&
+            !utterance.lastExactCandidate
+        ) {
+            const id =
+                utterance.id;
+            const failedTranscript =
+                utterance.transcript;
+
+            SpeechMenu.#finishUtterance(
+                "no-candidates",
+                false
+            );
+
+            SpeechMenu.#emit(
+                "utteranceUnrecognized",
+                {
+                    id,
+                    transcript:
+                        failedTranscript,
+                    reason:
+                        "no-candidates",
+                    fast: true
+                }
+            );
+
+            return;
+        }
+
+        SpeechMenu
+            .#scheduleCandidateCommit(
+                utterance,
+                revision
+            );
     }
 
     static async #commitUtterance(
         utterance
     ) {
+        const candidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
         if (
             !utterance ||
             utterance.committed ||
             utterance.committing ||
-            !utterance.candidate
+            !candidate
         ) {
             return false;
         }
@@ -1064,65 +2404,48 @@ class SpeechMenu {
         const transcript =
             utterance.transcript;
 
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
+
+        /*
+         * The recognition decision is complete before the action is.
+         * Cut the Sherpa stream now so a slow UI/API action cannot let
+         * later speech grow onto this already-accepted utterance.
+         */
+        SpeechMenu.#stopLiveRecognition(
+            utterance,
+            false
+        );
+
         let committed =
             false;
 
         try {
-            if (
-                utterance.candidate.kind ===
-                    "wake"
-            ) {
-                SpeechMenu.#sleeping =
-                    false;
-
-                SpeechMenu.#emit(
-                    "unmuted",
-                    {
-                        utteranceId:
+            committed =
+                Boolean(
+                    await SpeechMenu
+                        .#processElement(
+                            candidate
+                                .commandElement,
+                            transcript,
                             utterance.id,
-                        transcript
-                    }
+                            candidate
+                                .speechMenuElement,
+                            SpeechMenu
+                                .#executionEnabled
+                        )
                 );
-
-                committed = true;
-            }
-            else if (
-                utterance.candidate.kind ===
-                    "mute"
-            ) {
-                SpeechMenu.#sleeping =
-                    true;
-
-                SpeechMenu.#emit(
-                    "muted",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        transcript
-                    }
-                );
-
-                committed = true;
-            }
-            else {
-                committed =
-                    Boolean(
-                        await SpeechMenu
-                            .#processTranscript(
-                                transcript,
-                                utterance.id,
-                                true
-                            )
-                    );
-            }
 
             if (committed) {
                 utterance.committed =
                     true;
 
-                SpeechMenu.#stopLiveRecognition(
-                    utterance
-                );
+                SpeechMenu
+                    .#clearCandidatePool(
+                        utterance
+                    );
 
                 SpeechMenu.#emit(
                     "utteranceCommitted",
@@ -1142,296 +2465,264 @@ class SpeechMenu {
         }
     }
 
-    static async #recognizeUtterance(
-        utterance
+    static #terminalPrefixRecovery(
+        transcript
     ) {
+        const spoken =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                );
+
         if (
-            utterance.sessionGeneration !==
-                SpeechMenu.#sessionGeneration ||
-            SpeechMenu.#stopped ||
-            !SpeechMenu.#audioContext
+            spoken.length < 4 ||
+            spoken.includes(
+                " "
+            )
         ) {
-            return;
+            return undefined;
         }
 
-        const context =
-            SpeechMenu.#audioContext;
+        const matches = [];
 
-        const destination =
-            context.createMediaStreamDestination();
-
-        const bufferSource =
-            context.createBufferSource();
-
-        bufferSource.buffer =
-            utterance.audioBuffer;
-
-        bufferSource.connect(
-            destination
-        );
-
-        const replayTrack =
-            destination.stream
-                .getAudioTracks()[0];
-
-        if (!replayTrack) {
-            SpeechMenu.#emit(
-                "speechRecognitionFailed",
-                {
-                    utteranceId:
-                        utterance.id,
-                    error:
-                        "AudioTrackError",
-                    message:
-                        "Unable to create an in-memory recognition audio track."
-                }
-            );
-            return;
-        }
-
-        const recognition =
-            new SpeechMenu.#Recognition();
-
-        recognition.continuous =
-            false;
-
-        recognition.interimResults =
-            false;
-
-        recognition.lang =
-            SpeechMenu.#language;
-
-        let finalText = "";
-
-        await new Promise(resolve => {
-            let settled = false;
-            let safetyTimer;
-
-            const finish = () => {
-                if (settled) return;
-                settled = true;
-
-                clearTimeout(
-                    safetyTimer
+        for (
+            const element of
+            SpeechMenu
+                .#availableCandidates()
+        ) {
+            const pattern =
+                element.getAttribute(
+                    "speech-pattern"
                 );
 
-                try {
-                    replayTrack.stop();
-                }
-                catch {}
-
-                try {
-                    bufferSource.disconnect();
-                }
-                catch {}
-
-                resolve();
-            };
-
-            recognition.onresult =
-                event => {
-                    for (
-                        let index =
-                            event.resultIndex;
-                        index <
-                            event.results.length;
-                        index++
-                    ) {
-                        const result =
-                            event.results[
-                                index
-                            ];
-
-                        if (!result.isFinal) {
-                            continue;
-                        }
-
-                        const text =
-                            SpeechMenu
-                                .#normalizeTranscript(
-                                    result[0]
-                                        ?.transcript
-                                );
-
-                        if (text) {
-                            finalText +=
-                                `${finalText ? " " : ""}${text}`;
-                        }
-                    }
-                };
-
-            recognition.onerror =
-                event => {
-                    if (
-                        event.error !==
-                        "aborted"
-                    ) {
-                        SpeechMenu.#emit(
-                            "speechRecognitionFailed",
-                            {
-                                utteranceId:
-                                    utterance.id,
-                                error:
-                                    event.error,
-                                message:
-                                    event.message
-                            }
-                        );
-                    }
-                };
-
-            recognition.onend =
-                finish;
-
-            try {
-                recognition.start(
-                    replayTrack
-                );
-            }
-            catch (error) {
-                SpeechMenu.#emit(
-                    "speechRecognitionFailed",
-                    {
-                        utteranceId:
-                            utterance.id,
-                        error:
-                            error?.name ||
-                            "TrackInputUnsupported",
-                        message:
-                            error?.message ||
-                            "This browser does not accept a supplied audio track for speech recognition."
-                    }
-                );
-
-                finish();
-                return;
+            if (!pattern) {
+                continue;
             }
 
-            bufferSource.addEventListener(
-                "ended",
-                () => {
-                    setTimeout(
-                        () => {
-                            try {
-                                recognition.stop();
-                            }
-                            catch {}
-                        },
-                        250
-                    );
-                },
-                {once: true}
-            );
-
-            bufferSource.start();
-
-            safetyTimer =
-                setTimeout(
-                    () => {
-                        try {
-                            recognition.abort();
-                        }
-                        catch {}
-
-                        finish();
-                    },
-                    Math.max(
-                        3500,
-                        utterance.audioBuffer
-                            .duration *
-                            1000 +
-                            3000
+            for (
+                const phrase of
+                SpeechMenu
+                    .#expandRegexSource(
+                        pattern
                     )
-                );
-        });
+            ) {
+                const canonical =
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            phrase
+                        );
 
-        if (!finalText) {
-            SpeechMenu.#emit(
-                "utteranceUnrecognized",
-                {
-                    id: utterance.id
+                if (
+                    !canonical ||
+                    canonical.includes(
+                        " "
+                    ) ||
+                    canonical ===
+                        spoken ||
+                    !canonical.startsWith(
+                        spoken
+                    ) ||
+                    spoken.length * 3 <
+                        canonical.length * 2
+                ) {
+                    continue;
                 }
-            );
-            return;
+
+                matches.push({
+                    element,
+                    phrase:
+                        canonical
+                });
+            }
         }
+
+        if (
+            matches.length !==
+                1
+        ) {
+            return undefined;
+        }
+
+        return matches[0];
+    }
+
+    static async #handleCompletedTranscript(
+        utterance,
+        transcript
+    ) {
+        SpeechMenu
+            .#clearCandidatePool(
+                utterance
+            );
+
+        utterance.transcript =
+            transcript;
+
+        SpeechMenu.#emit(
+            "utteranceTranscriptChanged",
+            {
+                id:
+                    utterance.id,
+                transcript,
+                isFinal: true
+            }
+        );
 
         SpeechMenu.#emit(
             "utteranceTranscribed",
             {
-                id: utterance.id,
-                transcript: finalText
+                id:
+                    utterance.id,
+                transcript,
+                live: false
             }
         );
 
-        if (
-            SpeechMenu.#debug &&
-            finalText
-        ) {
-            const words =
-                finalText.split(/\s+/);
+        let matched =
+            await SpeechMenu.#processTranscript(
+                transcript,
+                utterance.id,
+                SpeechMenu.#executionEnabled
+            );
 
-            SpeechMenu.#debugFunction({
-                state:
-                    SpeechMenu.#sleeping
-                        ? "muted"
-                        : "listening",
-                isFinal: true,
-                fullText: finalText,
-                lastWord:
-                    words.at(-1)
-            });
-        }
+        if (!matched) {
+            const recovery =
+                SpeechMenu
+                    .#terminalPrefixRecovery(
+                        transcript
+                    );
 
-        if (SpeechMenu.#sleeping) {
-            if (
-                SpeechMenu.#test(
-                    SpeechMenu.#wakePhrase,
-                    finalText
-                )
-            ) {
-                SpeechMenu.#sleeping =
-                    false;
-
+            if (recovery) {
                 SpeechMenu.#emit(
-                    "unmuted",
+                    "speechTerminalPrefixRecovered",
                     {
                         utteranceId:
                             utterance.id,
-                        transcript:
-                            finalText
+                        observed:
+                            transcript,
+                        canonical:
+                            recovery.phrase,
+                        commandElement:
+                            recovery.element
                     }
                 );
-            }
 
-            return;
+                matched =
+                    await SpeechMenu
+                        .#processElement(
+                            recovery.element,
+                            recovery.phrase,
+                            utterance.id,
+                            SpeechMenu
+                                .#candidateMenu(
+                                    recovery.element
+                                ),
+                            SpeechMenu
+                                .#executionEnabled
+                        );
+            }
         }
 
-        if (
-            SpeechMenu.#test(
-                SpeechMenu.#sleepPhrase,
-                finalText
-            )
-        ) {
-            SpeechMenu.#sleeping =
-                true;
-
+        if (!matched) {
             SpeechMenu.#emit(
-                "muted",
+                "utteranceUnrecognized",
                 {
-                    utteranceId:
+                    id:
                         utterance.id,
-                    transcript:
-                        finalText
+                    transcript
                 }
             );
+        }
+    }
 
-            return;
+    static #stripSynthesizedSpeech(value) {
+        let transcript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    value
+                );
+
+        if (
+            !transcript ||
+            !SpeechMenu
+                .#synthesizedSpeech
+                .size
+        ) {
+            return transcript;
         }
 
-        await SpeechMenu.#processTranscript(
-            finalText,
-            utterance.id
+        const now =
+            performance.now();
+
+        const phrases = [];
+
+        for (
+            const [
+                id,
+                entry
+            ] of SpeechMenu
+                .#synthesizedSpeech
+        ) {
+            if (
+                entry.expiresAt !==
+                    Infinity &&
+                entry.expiresAt <= now
+            ) {
+                clearTimeout(
+                    entry.timer
+                );
+
+                SpeechMenu
+                    .#synthesizedSpeech
+                    .delete(id);
+
+                continue;
+            }
+
+            phrases.push(
+                entry.text
+            );
+        }
+
+        phrases.sort(
+            (left, right) =>
+                right.length -
+                left.length
         );
+
+        for (
+            const phrase of
+            phrases
+        ) {
+            const escaped =
+                phrase.replace(
+                    /[-/\\^$*+?.()|[\]{}]/g,
+                    "\\$&"
+                );
+
+            transcript =
+                transcript
+                    .replace(
+                        new RegExp(
+                            "(?:^|\\s)" +
+                            escaped +
+                            "(?=\\s|$)",
+                            "g"
+                        ),
+                        " "
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!transcript) {
+                break;
+            }
+        }
+
+        return transcript;
     }
 
     static #normalizeTranscript(value) {
@@ -1457,9 +2748,1058 @@ class SpeechMenu {
             .trim();
     }
 
+    static #compactTranscript(value) {
+        return SpeechMenu
+            .#normalizeTranscript(
+                value
+            )
+            .replace(
+                /\s+/g,
+                ""
+            );
+    }
+
+    static #whitespaceTolerantSource(
+        source
+    ) {
+        const text =
+            String(source || "");
+
+        let result = "";
+        let escaped = false;
+        let characterClass = false;
+
+        for (
+            let index = 0;
+            index < text.length;
+            index++
+        ) {
+            const character =
+                text[index];
+
+            if (escaped) {
+                result +=
+                    character;
+                escaped = false;
+                continue;
+            }
+
+            if (character === "\\") {
+                result +=
+                    character;
+                escaped = true;
+                continue;
+            }
+
+            if (character === "[") {
+                characterClass =
+                    true;
+                result +=
+                    character;
+                continue;
+            }
+
+            if (
+                character === "]" &&
+                characterClass
+            ) {
+                characterClass =
+                    false;
+                result +=
+                    character;
+                continue;
+            }
+
+            if (
+                !characterClass &&
+                /\s/.test(
+                    character
+                )
+            ) {
+                result +=
+                    "\\s*";
+
+                while (
+                    index + 1 <
+                        text.length &&
+                    /\s/.test(
+                        text[
+                            index + 1
+                        ]
+                    )
+                ) {
+                    index++;
+                }
+
+                continue;
+            }
+
+            result +=
+                character;
+        }
+
+        return result;
+    }
+
+    static #compactPrefixRemainder(
+        text,
+        compactPrefix
+    ) {
+        const normalized =
+            SpeechMenu
+                .#normalizeTranscript(
+                    text
+                );
+
+        const target =
+            String(
+                compactPrefix ||
+                ""
+            );
+
+        if (!target) {
+            return undefined;
+        }
+
+        let compactIndex = 0;
+
+        for (
+            let index = 0;
+            index < normalized.length;
+            index++
+        ) {
+            const character =
+                normalized[index];
+
+            if (/\s/.test(character)) {
+                continue;
+            }
+
+            if (
+                character !==
+                target[
+                    compactIndex
+                ]
+            ) {
+                return undefined;
+            }
+
+            compactIndex++;
+
+            if (
+                compactIndex ===
+                target.length
+            ) {
+                return normalized
+                    .slice(
+                        index + 1
+                    )
+                    .trim();
+            }
+        }
+
+        return undefined;
+    }
+
+    static #candidateAllowsCorrection(
+        element,
+        correction
+    ) {
+        const normal =
+            element.speechPattern;
+
+        const compact =
+            element.speechCompactPattern;
+
+        const test =
+            value => {
+                for (
+                    const regex of
+                    [normal, compact]
+                ) {
+                    if (!regex) continue;
+                    regex.lastIndex = 0;
+
+                    if (
+                        regex.test(
+                            value
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+        if (
+            correction.matchType ===
+                "exact"
+        ) {
+            return test(
+                correction.canonical
+            );
+        }
+
+        return (
+            test(
+                correction.canonical +
+                " value"
+            ) ||
+            SpeechMenu
+                .#expandRegexSource(
+                    element.getAttribute(
+                        "speech-pattern"
+                    ) ||
+                    ""
+                )
+                .some(
+                    phrase =>
+                        SpeechMenu
+                            .#compactTranscript(
+                                phrase.replace(
+                                    /<[^>]+>/g,
+                                    ""
+                                )
+                            )
+                            .startsWith(
+                                correction
+                                    .canonicalCompact
+                            )
+                )
+        );
+    }
+
+    static #applyCorrection(
+        element,
+        text
+    ) {
+        const transcript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    text
+                );
+
+        const compact =
+            SpeechMenu
+                .#compactTranscript(
+                    transcript
+                );
+
+        for (
+            const correction of
+            [
+                ...SpeechMenu
+                    .#builtInCorrections,
+                ...SpeechMenu
+                    .#corrections
+            ]
+        ) {
+            if (
+                !SpeechMenu
+                    .#candidateAllowsCorrection(
+                        element,
+                        correction
+                    )
+            ) {
+                continue;
+            }
+
+            if (
+                correction.matchType ===
+                    "exact"
+            ) {
+                if (
+                    compact !==
+                    correction
+                        .observedCompact
+                ) {
+                    continue;
+                }
+
+                return {
+                    correction,
+                    original:
+                        transcript,
+                    corrected:
+                        correction
+                            .canonical
+                };
+            }
+
+            const remainder =
+                SpeechMenu
+                    .#compactPrefixRemainder(
+                        transcript,
+                        correction
+                            .observedCompact
+                    );
+
+            if (
+                remainder ===
+                    undefined
+            ) {
+                continue;
+            }
+
+            return {
+                correction,
+                original:
+                    transcript,
+                corrected:
+                    SpeechMenu
+                        .#normalizeTranscript(
+                            correction
+                                .canonical +
+                            (
+                                remainder
+                                    ? " " +
+                                        remainder
+                                    : ""
+                            )
+                        )
+            };
+        }
+
+        return undefined;
+    }
+
     static #test(regex, text) {
         regex.lastIndex = 0;
         return regex.test(text);
+    }
+
+    static #cancelCandidateWork(
+        utterance
+    ) {
+        if (
+            utterance
+                ?.candidateCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateCommitTimer
+            );
+
+            utterance.candidateCommitTimer =
+                undefined;
+        }
+
+        const controller =
+            utterance
+                ?.candidatePoolController;
+
+        if (
+            controller &&
+            !controller.signal.aborted
+        ) {
+            controller.abort();
+        }
+
+        if (utterance) {
+            utterance.candidatePoolController =
+                undefined;
+        }
+    }
+
+    static #clearCandidatePool(
+        utterance
+    ) {
+        if (!utterance) return;
+
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
+
+        if (
+            utterance
+                .candidateHardCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateHardCommitTimer
+            );
+
+            utterance.candidateHardCommitTimer =
+                undefined;
+        }
+
+        utterance.candidateHardCommitAt =
+            undefined;
+        utterance.lastExactCandidate =
+            undefined;
+        utterance.candidatePool = [];
+    }
+
+    static #exactCandidate(
+        utterance
+    ) {
+        return utterance
+            ?.candidatePool
+            ?.find(
+                candidate =>
+                    candidate.exact
+            );
+    }
+
+    static #hasCompetingContinuation(
+        utterance,
+        exactCandidate
+    ) {
+        return Boolean(
+            utterance
+                ?.candidatePool
+                ?.some(
+                    candidate =>
+                        candidate !==
+                            exactCandidate &&
+                        candidate
+                            .continuation
+                )
+        );
+    }
+
+    static #hasOpenContinuation(
+        utterance
+    ) {
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
+        return Boolean(
+            exactCandidate
+                ?.continuation ||
+            (
+                !exactCandidate &&
+                utterance
+                    ?.candidatePool
+                    ?.length &&
+                utterance
+                    .lastExactCandidate
+            )
+        );
+    }
+
+    static #commitHeldCandidate(
+        utterance
+    ) {
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing
+        ) {
+            return false;
+        }
+
+        const candidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                ) ||
+            utterance.lastExactCandidate;
+
+        if (!candidate) {
+            return false;
+        }
+
+        utterance.candidatePool = [
+            candidate
+        ];
+
+        if (candidate.transcript) {
+            utterance.transcript =
+                candidate.transcript;
+        }
+
+        void SpeechMenu
+            .#commitUtterance(
+                utterance
+            );
+
+        return true;
+    }
+
+    static #candidateCommitTimeout(
+        utterance
+    ) {
+        return utterance
+            ?.candidatePool
+            ?.some(
+                candidate =>
+                    candidate.continuation
+            )
+                ? SpeechMenu
+                    .#commitSilenceTimeout
+                : Math.min(
+                    SpeechMenu
+                        .#commitSilenceTimeout,
+                    SpeechMenu
+                        .#terminalCommitSilenceTimeout
+                );
+    }
+
+    static #armCandidateHardDeadline(
+        utterance
+    ) {
+        if (!utterance) {
+            return false;
+        }
+
+        if (
+            utterance
+                .candidateHardCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateHardCommitTimer
+            );
+        }
+
+        utterance.candidateHardCommitAt =
+            performance.now() +
+            SpeechMenu
+                .#maximumCandidateHoldTimeout;
+
+        utterance.candidateHardCommitTimer =
+            setTimeout(
+                () => {
+                    utterance
+                        .candidateHardCommitTimer =
+                        undefined;
+
+                    if (
+                        SpeechMenu.#stopped ||
+                        SpeechMenu.#utterance !==
+                            utterance ||
+                        utterance.committed ||
+                        utterance.committing
+                    ) {
+                        return;
+                    }
+
+                    const currentExact =
+                        SpeechMenu
+                            .#exactCandidate(
+                                utterance
+                            );
+
+                    if (currentExact) {
+                        void SpeechMenu
+                            .#commitUtterance(
+                                utterance
+                            );
+                        return;
+                    }
+
+                    /*
+                     * The recognizer advanced beyond the last exact
+                     * transcript but is still inside a viable command.
+                     * Do not commit the stale snapshot; ask Sherpa for
+                     * its final decode of the newer partial instead.
+                     */
+                    if (
+                        utterance
+                            .lastExactCandidate &&
+                        utterance
+                            .lastExactCandidate
+                            .revision !==
+                            utterance
+                                .transcriptRevision
+                    ) {
+                        SpeechMenu
+                            .#finishUtterance(
+                                "candidate-silence",
+                                true
+                            );
+                    }
+                },
+                SpeechMenu
+                    .#maximumCandidateHoldTimeout
+            );
+
+        return true;
+    }
+
+    static #scheduleCandidateCommit(
+        utterance,
+        revision
+    ) {
+        const exactCandidate =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
+        if (
+            !utterance ||
+            utterance.committed ||
+            utterance.committing ||
+            !exactCandidate
+        ) {
+            return false;
+        }
+
+        if (
+            SpeechMenu
+                .#hasCompetingContinuation(
+                    utterance,
+                    exactCandidate
+                )
+        ) {
+            return false;
+        }
+
+        utterance.lastExactCandidate = {
+            ...exactCandidate,
+            transcript:
+                utterance.transcript,
+            revision
+        };
+
+        if (
+            !exactCandidate
+                .commandElement
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                )
+        ) {
+            SpeechMenu
+                .#armCandidateHardDeadline(
+                    utterance
+                );
+        }
+
+        if (
+            utterance
+                .candidateCommitTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .candidateCommitTimer
+            );
+
+            utterance.candidateCommitTimer =
+                undefined;
+        }
+
+        if (
+            exactCandidate.continuation
+        ) {
+            return true;
+        }
+
+        /*
+         * Once a terminal phrase is exact and no competing phrase can
+         * still grow from the same transcript, the recognition decision
+         * is complete.  Commit it immediately instead of holding the
+         * utterance for the terminal silence timeout.  #commitUtterance()
+         * stops the current Sherpa stream before running the action, so
+         * the very next voiced frame can start a fresh utterance and
+         * barge in even while the previous action is still finishing.
+         *
+         * Open/ambiguous phrases keep the normal hold above, preserving
+         * cases such as "ready" -> "ready at four fifteen".
+         */
+        void SpeechMenu
+            .#commitUtterance(
+                utterance
+            );
+
+        return true;
+    }
+
+    static #phraseCanContinue(
+        transcript,
+        phrase
+    ) {
+        const spoken =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                )
+                .split(" ")
+                .filter(Boolean);
+
+        const template =
+            String(
+                phrase ||
+                ""
+            )
+                .toLocaleLowerCase()
+                .trim()
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .split(" ")
+                .filter(Boolean);
+
+        if (
+            !spoken.length ||
+            !template.length
+        ) {
+            return false;
+        }
+
+        const placeholder =
+            token =>
+                /^<[A-Za-z_$][\w$]*>$/
+                    .test(token);
+
+        const visit =
+            (
+                templateIndex,
+                spokenIndex
+            ) => {
+                if (
+                    spokenIndex >=
+                    spoken.length
+                ) {
+                    return (
+                        templateIndex <
+                        template.length
+                    );
+                }
+
+                if (
+                    templateIndex >=
+                    template.length
+                ) {
+                    return false;
+                }
+
+                const token =
+                    template[
+                        templateIndex
+                    ];
+
+                if (
+                    !placeholder(token)
+                ) {
+                    const spokenToken =
+                        spoken[
+                            spokenIndex
+                        ];
+
+                    if (
+                        token !==
+                        spokenToken
+                    ) {
+                        /*
+                         * Streaming recognizers revise the final word
+                         * character-by-character/phoneme-by-phoneme.
+                         * Keep a phrase alive when the last observed
+                         * token is still a prefix of the expected token
+                         * (for example "re" / "read" -> "ready").
+                         */
+                        if (
+                            spokenIndex ===
+                                spoken.length -
+                                    1 &&
+                            token.startsWith(
+                                spokenToken
+                            )
+                        ) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    return visit(
+                        templateIndex + 1,
+                        spokenIndex + 1
+                    );
+                }
+
+                for (
+                    let next =
+                        spokenIndex + 1;
+                    next <=
+                        spoken.length;
+                    next++
+                ) {
+                    if (
+                        next ===
+                        spoken.length
+                    ) {
+                        return true;
+                    }
+
+                    if (
+                        visit(
+                            templateIndex + 1,
+                            next
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+        return visit(
+            0,
+            0
+        );
+    }
+
+    static #elementContinuationDepth(
+        element,
+        transcript
+    ) {
+        const group =
+            SpeechMenu.#phraseGroups
+                .find(
+                    item =>
+                        item.element ===
+                        element
+                );
+
+        if (!group) {
+            return undefined;
+        }
+
+        let depth;
+
+        for (
+            const phrase of
+            group.phrases
+        ) {
+            if (
+                !SpeechMenu
+                    .#phraseCanContinue(
+                        transcript,
+                        phrase
+                    )
+            ) {
+                continue;
+            }
+
+            const words =
+                String(phrase)
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .length;
+
+            depth =
+                depth === undefined
+                    ? words
+                    : Math.min(
+                        depth,
+                        words
+                    );
+        }
+
+        return depth;
+    }
+
+    static async #refreshCandidatePool(
+        utterance,
+        transcript,
+        signal
+    ) {
+        SpeechMenu.extrapolatePhrases();
+
+        const previous =
+            utterance.candidatePool ||
+            [];
+
+        const previousElements =
+            new Set(
+                previous
+                    .map(
+                        candidate =>
+                            candidate
+                                .commandElement
+                    )
+                    .filter(Boolean)
+            );
+
+        const all =
+            SpeechMenu
+                .#availableCandidates();
+
+        const source =
+            previousElements.size
+                ? all.filter(
+                    element =>
+                        previousElements
+                            .has(element)
+                )
+                : all;
+
+        const evaluated =
+            await Promise.all(
+                source.map(
+                    async (
+                        element,
+                        order
+                    ) => {
+                        if (signal?.aborted) {
+                            return false;
+                        }
+
+                        const continuationDepth =
+                            SpeechMenu
+                                .#elementContinuationDepth(
+                                    element,
+                                    transcript
+                                );
+
+                        const speechMenuElement =
+                            SpeechMenu
+                                .#candidateMenu(
+                                    element
+                                );
+
+                        const exact =
+                            await SpeechMenu
+                                .#processElement(
+                                    element,
+                                    transcript,
+                                    utterance.id,
+                                    speechMenuElement,
+                                    false,
+                                    signal
+                                );
+
+                        if (signal?.aborted) {
+                            return false;
+                        }
+
+                        const openEnded =
+                            element
+                                .hasAttribute?.(
+                                    "speech-open-ended"
+                                );
+
+                        const previousOpenEndedExact =
+                            openEnded &&
+                            utterance
+                                .lastExactCandidate
+                                ?.commandElement ===
+                                    element &&
+                            String(
+                                transcript ||
+                                ""
+                            )
+                                .toLocaleLowerCase()
+                                .startsWith(
+                                    String(
+                                        utterance
+                                            .lastExactCandidate
+                                            ?.transcript ||
+                                        ""
+                                    )
+                                        .toLocaleLowerCase()
+                                        .trim() +
+                                    " "
+                                );
+
+                        const continuation =
+                            continuationDepth !==
+                                undefined ||
+                            (
+                                openEnded &&
+                                (
+                                    Boolean(
+                                        exact
+                                    ) ||
+                                    previousOpenEndedExact
+                                )
+                            );
+
+                        if (
+                            !exact &&
+                            !continuation
+                        ) {
+                            return false;
+                        }
+
+                        return {
+                            kind: "command",
+                            utteranceId:
+                                utterance.id,
+                            commandElement:
+                                element,
+                            speechMenuElement,
+                            transcript,
+                            exact:
+                                Boolean(exact),
+                            continuation,
+                            depth:
+                                continuationDepth ??
+                                (
+                                    openEnded &&
+                                    continuation
+                                        ? 1
+                                        : Number.MAX_SAFE_INTEGER
+                                ),
+                            order
+                        };
+                    }
+                )
+            );
+
+        if (signal?.aborted) {
+            return [];
+        }
+
+        let next =
+            evaluated
+                .filter(Boolean)
+                .sort(
+                    (left, right) =>
+                        left.depth -
+                            right.depth ||
+                        left.order -
+                            right.order
+                );
+
+        /*
+         * The candidate pool behaves like a queue.  Newer words
+         * make shorter/front candidates ineligible, so discard
+         * those first before considering the longer continuations.
+         */
+        while (
+            next.length > 1 &&
+            !next[0].exact &&
+            !next[0].continuation
+        ) {
+            next.shift();
+        }
+
+        /*
+         * Recognition engines can revise earlier words.  If pruning
+         * an existing queue leaves nothing, reseed from every
+         * currently available speech candidate for the new revision.
+         */
+        if (
+            !next.length &&
+            previousElements.size &&
+            !signal?.aborted
+        ) {
+            utterance.candidatePool = [];
+
+            return SpeechMenu
+                .#refreshCandidatePool(
+                    utterance,
+                    transcript,
+                    signal
+                );
+        }
+
+        return next;
     }
 
     static async #processTranscript(
@@ -1467,138 +3807,11 @@ class SpeechMenu {
         utteranceId,
         execute = true
     ) {
-        const first =
-            async elements => {
-                for (
-                    const element of
-                        elements
-                ) {
-                    const result =
-                        await SpeechMenu
-                            .#processElement(
-                                element,
-                                text,
-                                utteranceId,
-                                undefined,
-                                execute
-                            );
+        SpeechMenu.extrapolatePhrases();
 
-                    if (result) {
-                        return result;
-                    }
-                }
-
-                return false;
-            };
-
-        const firstMenu =
-            async elements => {
-                for (
-                    const element of
-                        elements
-                ) {
-                    const result =
-                        await SpeechMenu
-                            .#processMenu(
-                                element,
-                                text,
-                                utteranceId,
-                                execute
-                            );
-
-                    if (result) {
-                        return result;
-                    }
-                }
-
-                return false;
-            };
-
-        let result =
-            await firstMenu(
-                document.querySelectorAll(
-                    'speech-modal[speech-modal="top-level"]'
-                )
-            );
-
-        if (result) return result;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    'speech-command[speech-modal="top-level"]'
-                )
-            );
-
-        if (result) return result;
-
-        const modal =
-            [
-                ...document
-                    .querySelectorAll(
-                        "dialog:modal, dialog[open]"
-                    )
-            ].at(-1);
-
-        if (modal) {
-            result =
-                await SpeechMenu.#processMenu(
-                    modal,
-                    text,
-                    utteranceId,
-                    execute
-                );
-
-            if (result) return result;
-        }
-
-        result =
-            await firstMenu(
-                document.querySelectorAll(
-                    'speech-modal:not([speech-modal="top-level"])'
-                )
-            );
-
-        if (result) return result;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    'speech-command[speech-modal=""]'
-                )
-            );
-
-        if (result) return result;
-
-        if (modal) return false;
-
-        result =
-            await first(
-                document.querySelectorAll(
-                    "details[open], [popover]:popover-open"
-                )
-            );
-
-        if (result) return result;
-
-        return await first(
-            document.querySelectorAll(
-                ":not(details):not(dialog):not(speech-modal)[speech-pattern]"
-            )
-        );
-    }
-
-    static async #processMenu(
-        menu,
-        text,
-        utteranceId,
-        execute = true
-    ) {
         for (
             const element of
-                menu.querySelectorAll(
-                    "[speech-pattern]:not([speech-modal])"
-                )
+            SpeechMenu.#availableCandidates()
         ) {
             const result =
                 await SpeechMenu
@@ -1606,7 +3819,10 @@ class SpeechMenu {
                         element,
                         text,
                         utteranceId,
-                        menu,
+                        SpeechMenu
+                            .#candidateMenu(
+                                element
+                            ),
                         execute
                     );
 
@@ -1616,6 +3832,1085 @@ class SpeechMenu {
         }
 
         return false;
+    }
+
+    static #candidateMenu(element) {
+        return (
+            element.closest(
+                "speech-menu"
+            ) ||
+            element.closest(
+                "dialog, details, [popover]"
+            ) ||
+            undefined
+        );
+    }
+
+    static #normalizeModal(value) {
+        if (value === "system") {
+            return "system";
+        }
+
+        if (value === "top-level") {
+            return "top-level";
+        }
+
+        if (
+            value === "default" ||
+            value === ""
+        ) {
+            return "default";
+        }
+
+        return undefined;
+    }
+
+    static #effectiveModal(element) {
+        if (
+            element.hasAttribute(
+                "speech-modal"
+            )
+        ) {
+            return SpeechMenu
+                .#normalizeModal(
+                    element.getAttribute(
+                        "speech-modal"
+                    )
+                );
+        }
+
+        const menu =
+            element.closest(
+                "speech-menu"
+            );
+
+        if (
+            menu?.hasAttribute(
+                "speech-modal"
+            )
+        ) {
+            return SpeechMenu
+                .#normalizeModal(
+                    menu.getAttribute(
+                        "speech-modal"
+                    )
+                );
+        }
+
+        return undefined;
+    }
+
+    static #openPopover(element) {
+        try {
+            return element.matches(
+                ":popover-open"
+            );
+        }
+        catch {
+            return false;
+        }
+    }
+
+    static #speechIndex(
+        element
+    ) {
+        if (!element) return 0;
+
+        const value =
+            Number(
+                element.getAttribute(
+                    "speech-index"
+                )
+            );
+
+        return Number.isFinite(value)
+            ? value
+            : 0;
+    }
+
+    static #candidatePriority(
+        element
+    ) {
+        return {
+            menu:
+                SpeechMenu
+                    .#speechIndex(
+                        element.closest(
+                            "speech-menu"
+                        )
+                    ),
+            command:
+                SpeechMenu
+                    .#speechIndex(
+                        element
+                    )
+        };
+    }
+
+    static #sortCandidates(
+        elements
+    ) {
+        return elements
+            .map(
+                (element, order) => ({
+                    element,
+                    order,
+                    priority:
+                        SpeechMenu
+                            .#candidatePriority(
+                                element
+                            )
+                })
+            )
+            .sort(
+                (left, right) =>
+                    right.priority.menu -
+                        left.priority.menu ||
+                    right.priority.command -
+                        left.priority.command ||
+                    left.order -
+                        right.order
+            )
+            .map(
+                item =>
+                    item.element
+            );
+    }
+
+    static #targetIsAvailable(
+        target
+    ) {
+        if (!(target instanceof Element)) {
+            return false;
+        }
+
+        if (
+            target.matches?.(
+                "[hidden], [inert], [aria-hidden='true'], :disabled"
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            target.closest?.(
+                "[hidden], [inert], [aria-hidden='true']"
+            )
+        ) {
+            return false;
+        }
+
+        const details =
+            target.closest?.(
+                "details"
+            );
+
+        if (
+            details &&
+            !details.open
+        ) {
+            return false;
+        }
+
+        const popover =
+            target.closest?.(
+                "[popover]"
+            );
+
+        if (
+            popover &&
+            !SpeechMenu
+                .#openPopover(
+                    popover
+                )
+        ) {
+            return false;
+        }
+
+        for (
+            let current = target;
+            current &&
+                current !==
+                    document.documentElement;
+            current =
+                current.parentElement
+        ) {
+            const dialog =
+                current.matches?.("dialog")
+                    ? current
+                    : undefined;
+
+            if (
+                dialog &&
+                !dialog.open
+            ) {
+                return false;
+            }
+
+            try {
+                const style =
+                    getComputedStyle(
+                        current
+                    );
+
+                if (
+                    style.display ===
+                        "none" ||
+                    style.visibility ===
+                        "hidden" ||
+                    style.visibility ===
+                        "collapse"
+                ) {
+                    return false;
+                }
+            }
+            catch {}
+        }
+
+        return true;
+    }
+
+    static #candidateStateAvailable(
+        element
+    ) {
+        if (
+            !element ||
+            element.hasAttribute(
+                "hidden"
+            ) ||
+            element.hasAttribute(
+                "disabled"
+            ) ||
+            element.hasAttribute(
+                "inert"
+            ) ||
+            element.getAttribute(
+                "aria-hidden"
+            ) === "true"
+        ) {
+            return false;
+        }
+
+        if (
+            element.dataset
+                ?.speechIntent ===
+                "confirm"
+        ) {
+            const context =
+                element.closest(
+                    "dialog, [popover], details"
+                ) ||
+                element.parentElement;
+
+            const okAllowed =
+                context?.allowOk !==
+                    false;
+
+            if (!okAllowed) {
+                return false;
+            }
+        }
+
+        const availability =
+            element.getAttribute(
+                "speech-available"
+            );
+
+        if (availability) {
+            const resolved =
+                SpeechMenu.#resolve(
+                    availability
+                );
+
+            if (!resolved) {
+                return false;
+            }
+
+            try {
+                if (
+                    resolved.fn.call(
+                        resolved.owner,
+                        element
+                    ) !== true
+                ) {
+                    return false;
+                }
+            }
+            catch {
+                return false;
+            }
+
+            /*
+             * An explicit semantic availability function is authoritative.
+             * data-speech-target remains useful for training and response
+             * presentation, but it must not veto a command whose semantic
+             * runtime state says it is available.
+             */
+            return true;
+        }
+
+        /*
+         * Confirm/cancel targets are retained as command metadata for
+         * training and response presentation.  Their runtime scope comes
+         * from the active speech context instead: confirm is gated above by
+         * allowOk.  A shared training target must not make a contextual
+         * OK/Cancel command unavailable merely because that representative
+         * target is on another surface.
+         */
+        const intent =
+            element.dataset
+                ?.speechIntent;
+
+        if (
+            intent === "confirm" ||
+            intent === "cancel"
+        ) {
+            return true;
+        }
+
+        const target =
+            SpeechMenu
+                .#resolveSpeechTarget(
+                    element
+                );
+
+        if (!target.selector) {
+            return true;
+        }
+
+        return target.elements
+            .some(
+                SpeechMenu
+                    .#targetIsAvailable
+            );
+    }
+
+    static #availableCandidates() {
+        const all =
+            [
+                ...document
+                    .querySelectorAll(
+                        "[speech-pattern]"
+                    )
+            ];
+
+        const system = [];
+        const topLevel = [];
+        const defaults = [];
+        const contextual = [];
+
+        for (const element of all) {
+            if (
+                !SpeechMenu
+                    .#candidateStateAvailable(
+                        element
+                    )
+            ) {
+                continue;
+            }
+
+            const modal =
+                SpeechMenu
+                    .#effectiveModal(
+                        element
+                    );
+
+            if (modal === "system") {
+                system.push(element);
+            }
+            else if (modal === "top-level") {
+                topLevel.push(element);
+            }
+            else if (modal === "default") {
+                defaults.push(element);
+            }
+            else {
+                contextual.push(element);
+            }
+        }
+
+        const result = [];
+        const seen = new Set();
+        const append =
+            elements => {
+                for (
+                    const element of
+                    SpeechMenu
+                        .#sortCandidates(
+                            elements
+                        )
+                ) {
+                    if (seen.has(element)) {
+                        continue;
+                    }
+
+                    seen.add(element);
+                    result.push(element);
+                }
+            };
+
+        if (SpeechMenu.#sleeping) {
+            append(
+                system.filter(
+                    element =>
+                        element.dataset
+                            ?.speechSystemCommand ===
+                            "wake" ||
+                        element.getAttribute(
+                            "speech-function"
+                        ) ===
+                            "SpeechMenu.wake"
+                )
+            );
+
+            return result;
+        }
+
+        append(system);
+        append(topLevel);
+
+        const dialog =
+            [
+                ...document
+                    .querySelectorAll(
+                        "dialog[open]"
+                    )
+            ].at(-1);
+
+        if (dialog) {
+            append(
+                contextual.filter(
+                    element =>
+                        dialog.contains(
+                            element
+                        )
+                )
+            );
+
+            append(defaults);
+            return result;
+        }
+
+        append(defaults);
+
+        const openContainers =
+            [
+                ...document
+                    .querySelectorAll(
+                        "details[open]"
+                    ),
+                ...[
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ]
+                    .filter(
+                        SpeechMenu
+                            .#openPopover
+                    )
+            ];
+
+        for (const container of openContainers) {
+            append(
+                contextual.filter(
+                    element =>
+                        container.contains(
+                            element
+                        )
+                )
+            );
+        }
+
+        append(
+            contextual.filter(
+                element => {
+                    if (
+                        element.closest(
+                            "dialog"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        element.closest(
+                            "details"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        element.closest(
+                            "[popover]"
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            )
+        );
+
+        return result;
+    }
+
+    static #stripRegexAnchors(
+        source
+    ) {
+        let text =
+            String(source || "")
+                .trim();
+
+        if (text.startsWith("^")) {
+            text = text.slice(1);
+        }
+
+        if (
+            text.endsWith("$") &&
+            !text.endsWith("\\$")
+        ) {
+            text = text.slice(0, -1);
+        }
+
+        return text;
+    }
+
+    static #splitPhraseExclusions(
+        source
+    ) {
+        const text =
+            String(source || "")
+                .trim();
+
+        const prefix =
+            "^(?!(?:";
+        const marker =
+            ")$)(?:";
+        const suffix =
+            ")$";
+
+        if (
+            text.startsWith(prefix) &&
+            text.endsWith(suffix)
+        ) {
+            const markerIndex =
+                text.indexOf(
+                    marker,
+                    prefix.length
+                );
+
+            if (markerIndex >= 0) {
+                const raw =
+                    text.slice(
+                        prefix.length,
+                        markerIndex
+                    );
+
+                const exclusions = [];
+                let current = "";
+
+                for (
+                    let index = 0;
+                    index < raw.length;
+                    index++
+                ) {
+                    const character =
+                        raw[index];
+
+                    if (
+                        character === "\\" &&
+                        index + 1 <
+                            raw.length
+                    ) {
+                        current +=
+                            character +
+                            raw[++index];
+                        continue;
+                    }
+
+                    if (character === "|") {
+                        exclusions.push(
+                            current
+                        );
+                        current = "";
+                        continue;
+                    }
+
+                    current +=
+                        character;
+                }
+
+                if (current) {
+                    exclusions.push(
+                        current
+                    );
+                }
+
+                return {
+                    base:
+                        text.slice(
+                            markerIndex +
+                                marker.length,
+                            -suffix.length
+                        ),
+                    exclusions:
+                        exclusions.filter(
+                            Boolean
+                        )
+                };
+            }
+        }
+
+        return {
+            base:
+                SpeechMenu
+                    .#stripRegexAnchors(
+                        text
+                    ),
+            exclusions: []
+        };
+    }
+
+    static #phraseExclusionSource(
+        phrase
+    ) {
+        const text =
+            String(phrase || "")
+                .trim();
+
+        if (!text) return "";
+
+        const escape =
+            value =>
+                value.replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&"
+                );
+
+        let result = "";
+        let offset = 0;
+        const slots =
+            /<([A-Za-z_$][\w$]*)>/g;
+
+        for (
+            let match;
+            (
+                match =
+                    slots.exec(text)
+            );
+        ) {
+            result +=
+                escape(
+                    text.slice(
+                        offset,
+                        match.index
+                    )
+                );
+
+            result += ".+";
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        result +=
+            escape(
+                text.slice(
+                    offset
+                )
+            );
+
+        return result;
+    }
+
+    static #expandRegexSource(
+        source,
+        limit = 128
+    ) {
+        if (typeof source !== "string") {
+            return [];
+        }
+
+        const exclusionParts =
+            SpeechMenu
+                .#splitPhraseExclusions(
+                    source
+                );
+
+        let text =
+            exclusionParts.base;
+
+        let exclusionRegex;
+
+        if (
+            exclusionParts
+                .exclusions
+                .length
+        ) {
+            try {
+                exclusionRegex =
+                    new RegExp(
+                        "^(?:" +
+                        exclusionParts
+                            .exclusions
+                            .join("|") +
+                        ")$",
+                        "i"
+                    );
+            }
+            catch {}
+        }
+
+        let index = 0;
+
+        const combine =
+            (left, right) => {
+                const output = [];
+
+                for (const a of left) {
+                    for (const b of right) {
+                        output.push(a + b);
+
+                        if (
+                            output.length >=
+                            limit
+                        ) {
+                            return output;
+                        }
+                    }
+                }
+
+                return output;
+            };
+
+        const placeholder =
+            slotName =>
+                "<" +
+                (slotName || "value") +
+                ">";
+
+        const parseExpression =
+            (
+                stopCharacter,
+                slotName
+            ) => {
+                const alternatives = [];
+                let sequence = [""];
+
+                while (index < text.length) {
+                    const character =
+                        text[index];
+
+                    if (
+                        stopCharacter &&
+                        character ===
+                            stopCharacter
+                    ) {
+                        break;
+                    }
+
+                    if (character === "|") {
+                        alternatives.push(
+                            ...sequence
+                        );
+                        sequence = [""];
+                        index++;
+                        continue;
+                    }
+
+                    let atom;
+
+                    if (character === "(") {
+                        index++;
+
+                        let name;
+
+                        if (
+                            text.slice(
+                                index,
+                                index + 2
+                            ) === "?:"
+                        ) {
+                            index += 2;
+                        }
+                        else if (
+                            text.slice(
+                                index,
+                                index + 2
+                            ) === "?<"
+                        ) {
+                            const close =
+                                text.indexOf(
+                                    ">",
+                                    index + 2
+                                );
+
+                            if (close > index) {
+                                name =
+                                    text.slice(
+                                        index + 2,
+                                        close
+                                    );
+                                index =
+                                    close + 1;
+                            }
+                        }
+
+                        atom =
+                            parseExpression(
+                                ")",
+                                name ||
+                                    slotName
+                            );
+
+                        if (
+                            text[index] ===
+                            ")"
+                        ) {
+                            index++;
+                        }
+                    }
+                    else if (
+                        character === "["
+                    ) {
+                        const close =
+                            text.indexOf(
+                                "]",
+                                index + 1
+                            );
+
+                        if (close < 0) {
+                            atom = [
+                                placeholder(
+                                    slotName
+                                )
+                            ];
+                            index++;
+                        }
+                        else {
+                            const body =
+                                text.slice(
+                                    index + 1,
+                                    close
+                                );
+
+                            atom =
+                                /^[A-Za-z0-9]+$/
+                                    .test(body)
+                                    ? [...body]
+                                    : [
+                                        placeholder(
+                                            slotName
+                                        )
+                                    ];
+
+                            index =
+                                close + 1;
+                        }
+                    }
+                    else if (
+                        character === "\\"
+                    ) {
+                        const escaped =
+                            text[index + 1];
+
+                        if (!escaped) {
+                            atom = ["\\"];
+                            index++;
+                        }
+                        else {
+                            atom = [
+                                escaped === "s"
+                                    ? " "
+                                    : escaped
+                            ];
+                            index += 2;
+                        }
+                    }
+                    else if (
+                        character === "."
+                    ) {
+                        atom = [
+                            placeholder(
+                                slotName
+                            )
+                        ];
+                        index++;
+                    }
+                    else {
+                        atom = [character];
+                        index++;
+                    }
+
+                    const quantifier =
+                        text[index];
+
+                    if (quantifier === "?") {
+                        atom = [
+                            "",
+                            ...atom
+                        ];
+                        index++;
+                    }
+                    else if (
+                        quantifier === "+" ||
+                        quantifier === "*"
+                    ) {
+                        index++;
+                    }
+                    else if (
+                        quantifier === "{"
+                    ) {
+                        const close =
+                            text.indexOf(
+                                "}",
+                                index + 1
+                            );
+
+                        if (close >= 0) {
+                            index =
+                                close + 1;
+                        }
+                    }
+
+                    sequence =
+                        combine(
+                            sequence,
+                            atom
+                        );
+
+                    if (
+                        sequence.length >=
+                        limit
+                    ) {
+                        break;
+                    }
+                }
+
+                alternatives.push(
+                    ...sequence
+                );
+
+                return [
+                    ...new Set(
+                        alternatives
+                    )
+                ].slice(0, limit);
+            };
+
+        return parseExpression()
+            .map(
+                phrase =>
+                    phrase
+                        .replace(
+                            /\s+/g,
+                            " "
+                        )
+                        .trim()
+            )
+            .filter(Boolean)
+            .filter(
+                phrase =>
+                    !exclusionRegex ||
+                    !exclusionRegex
+                        .test(
+                            phrase
+                        )
+            )
+            .filter(
+                (
+                    phrase,
+                    phraseIndex,
+                    phrases
+                ) =>
+                    phrases.indexOf(
+                        phrase
+                    ) ===
+                    phraseIndex
+            )
+            .slice(0, limit);
+    }
+
+    static #canonicalMatchTranscript(
+        element,
+        text,
+        groups,
+        matchingMode
+    ) {
+        if (
+            matchingMode !==
+                "compact"
+        ) {
+            return text;
+        }
+
+        const values =
+            groups &&
+            typeof groups ===
+                "object"
+                ? groups
+                : {};
+
+        const compact =
+            SpeechMenu
+                .#compactTranscript(
+                    text
+                );
+
+        for (
+            const phrase of
+            SpeechMenu
+                .#expandRegexSource(
+                    element
+                        .getAttribute(
+                            "speech-pattern"
+                        ) ||
+                    ""
+                )
+        ) {
+            const candidate =
+                SpeechMenu
+                    .#normalizeTranscript(
+                        String(
+                            phrase ||
+                            ""
+                        )
+                            .replace(
+                                /<([A-Za-z_$][\w$]*)>/g,
+                                (
+                                    token,
+                                    name
+                                ) =>
+                                    values[
+                                        name
+                                    ] ??
+                                    token
+                            )
+                    );
+
+            if (
+                /<[^>]+>/.test(
+                    candidate
+                )
+            ) {
+                continue;
+            }
+
+            if (
+                SpeechMenu
+                    .#compactTranscript(
+                        candidate
+                    ) ===
+                    compact
+            ) {
+                return candidate;
+            }
+        }
+
+        return text;
     }
 
     static #prepare(
@@ -1641,6 +4936,15 @@ class SpeechMenu {
                         "gi"
                     );
 
+                element.speechCompactPattern =
+                    new RegExp(
+                        SpeechMenu
+                            .#whitespaceTolerantSource(
+                                source
+                            ),
+                        "gi"
+                    );
+
                 element.speechPatternSource =
                     source;
             }
@@ -1661,11 +4965,14 @@ class SpeechMenu {
             }
         }
 
+        const speechFunction =
+            element.getAttribute(
+                "speech-function"
+            );
+
         const target =
             SpeechMenu.#resolve(
-                element.getAttribute(
-                    "speech-function"
-                )
+                speechFunction
             );
 
         if (!target) {
@@ -1693,6 +5000,33 @@ class SpeechMenu {
 
         element.speechFuncThis =
             target.owner;
+
+        element.speechParameterFunc =
+            target.fn;
+
+        const actionName =
+            speechFunction
+                .match(
+                    /^WMOFActions\.([A-Za-z_$][\w$]*)$/
+                )
+                ?.[1];
+
+        if (actionName) {
+            const implementation =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.getImplementation?.(
+                        actionName
+                    );
+
+            if (
+                typeof implementation ===
+                    "function"
+            ) {
+                element.speechParameterFunc =
+                    implementation;
+            }
+        }
 
         const preprocName =
             element.getAttribute(
@@ -1807,26 +5141,34 @@ class SpeechMenu {
                 selector:
                     undefined,
                 element:
-                    undefined
+                    undefined,
+                elements: []
             };
         }
 
         try {
+            const elements =
+                [
+                    ...document
+                        .querySelectorAll(
+                            selector
+                        )
+                ];
+
             return {
                 selector,
                 element:
-                    document
-                        .querySelector(
-                            selector
-                        ) ||
-                    undefined
+                    elements[0] ||
+                    undefined,
+                elements
             };
         }
         catch {
             return {
                 selector,
                 element:
-                    undefined
+                    undefined,
+                elements: []
             };
         }
     }
@@ -1836,8 +5178,13 @@ class SpeechMenu {
         transcript,
         utteranceId,
         speechMenuElement,
-        execute = true
+        execute = true,
+        signal
     ) {
+        if (signal?.aborted) {
+            return false;
+        }
+
         if (
             !SpeechMenu.#prepare(
                 element
@@ -1849,6 +5196,18 @@ class SpeechMenu {
         let text =
             transcript;
 
+        const correction =
+            SpeechMenu
+                .#applyCorrection(
+                    element,
+                    text
+                );
+
+        if (correction) {
+            text =
+                correction.corrected;
+        }
+
         let preprocessing;
 
         try {
@@ -1856,23 +5215,32 @@ class SpeechMenu {
                 element.speechPreprocFunc
             ) {
                 const processed =
-                    element.speechPreprocFunc(
-                        text,
-                        {
-                            kind:
-                                element.getAttribute(
-                                    "speech-preproc-context"
-                                ),
-                            field:
-                                element.getAttribute(
-                                    "speech-preproc-field"
-                                ),
-                            pattern:
-                                element.getAttribute(
-                                    "speech-pattern"
-                                )
-                        }
+                    await Promise.resolve(
+                        element.speechPreprocFunc(
+                            text,
+                            {
+                                kind:
+                                    element.getAttribute(
+                                        "speech-preproc-context"
+                                    ),
+                                field:
+                                    element.getAttribute(
+                                        "speech-preproc-field"
+                                    ),
+                                pattern:
+                                    element.getAttribute(
+                                        "speech-pattern"
+                                    ),
+                                provisional:
+                                    !execute,
+                                signal
+                            }
+                        )
                     );
+
+                if (signal?.aborted) {
+                    return false;
+                }
 
                 if (
                     typeof processed !==
@@ -1884,6 +5252,90 @@ class SpeechMenu {
                 if (
                     processed !== text
                 ) {
+                    let contextChange;
+
+                    let prefixLength = 0;
+                    const sharedLength =
+                        Math.min(
+                            text.length,
+                            processed.length
+                        );
+
+                    while (
+                        prefixLength <
+                            sharedLength &&
+                        text[
+                            prefixLength
+                        ] ===
+                            processed[
+                                prefixLength
+                            ]
+                    ) {
+                        prefixLength++;
+                    }
+
+                    let originalSuffix =
+                        text.length;
+                    let processedSuffix =
+                        processed.length;
+
+                    while (
+                        originalSuffix >
+                            prefixLength &&
+                        processedSuffix >
+                            prefixLength &&
+                        text[
+                            originalSuffix -
+                                1
+                        ] ===
+                            processed[
+                                processedSuffix -
+                                    1
+                            ]
+                    ) {
+                        originalSuffix--;
+                        processedSuffix--;
+                    }
+
+                    const sourceText =
+                        text.slice(
+                            prefixLength,
+                            originalSuffix
+                        );
+                    const processedValue =
+                        processed.slice(
+                            prefixLength,
+                            processedSuffix
+                        );
+
+                    if (
+                        sourceText ||
+                        processedValue
+                    ) {
+                        contextChange = {
+                            field:
+                                element.getAttribute(
+                                    "speech-preproc-field"
+                                ) ||
+                                undefined,
+                            kind:
+                                element.getAttribute(
+                                    "speech-preproc-context"
+                                ) ||
+                                undefined,
+                            sourceStart:
+                                prefixLength,
+                            sourceEnd:
+                                originalSuffix,
+                            sourceText,
+                            processedStart:
+                                prefixLength,
+                            processedEnd:
+                                processedSuffix,
+                            processedValue
+                        };
+                    }
+
                     preprocessing = {
                         utteranceId,
                         commandElement:
@@ -1892,7 +5344,10 @@ class SpeechMenu {
                         originalText:
                             text,
                         processedText:
-                            processed
+                            processed,
+                        contextChange,
+                        provisional:
+                            !execute
                     };
                 }
 
@@ -1901,6 +5356,14 @@ class SpeechMenu {
             }
         }
         catch (error) {
+            if (
+                signal?.aborted ||
+                error?.name ===
+                    "AbortError"
+            ) {
+                return false;
+            }
+
             SpeechMenu.#emit(
                 "speechMenuCommandError",
                 {
@@ -1914,125 +5377,172 @@ class SpeechMenu {
             return false;
         }
 
-        const regex =
-            element.speechPattern;
-
-        regex.lastIndex = 0;
-
         const args =
             new ParameterParser(
+                element.speechParameterFunc ||
                 element.speechFunc
             );
 
         let matched =
             false;
 
-        let result;
+        let matchingMode =
+            "normal";
 
-        while (
-            (
-                result =
-                    regex.exec(text)
-            ) !== null
+        let matchedGroups =
+            {};
+
+        for (
+            const candidate of
+            [
+                {
+                    regex:
+                        element.speechPattern,
+                    mode:
+                        "normal"
+                },
+                {
+                    regex:
+                        element
+                            .speechCompactPattern,
+                    mode:
+                        "compact"
+                }
+            ]
         ) {
-            matched = true;
+            const regex =
+                candidate.regex;
 
-            const values =
-                result.groups ||
-                {};
+            if (!regex) continue;
 
-            const named =
-                new Set(
-                    Object
-                        .values(
-                            result.groups ||
-                            {}
-                        )
-                        .filter(
-                            value =>
-                                value !==
-                                undefined
-                        )
-                );
+            regex.lastIndex = 0;
 
-            for (
-                const [name, value] of
-                    Object.entries(
-                        values
-                    )
+            let result;
+
+            while (
+                (
+                    result =
+                        regex.exec(text)
+                ) !== null
             ) {
-                if (!value) continue;
+                matched = true;
+                matchingMode =
+                    candidate.mode;
 
-                if (name === "_") {
-                    args.restArguments
-                        ?.push(
-                            ...SpeechMenu
-                                .#list(
-                                    value
-                                )
-                        );
-                }
-                else if (
-                    name.startsWith(
-                        "_"
-                    )
-                ) {
-                    args.setArgument(
-                        name.slice(1),
-                        SpeechMenu.#list(
-                            value
-                        )
-                    );
-                }
-                else {
-                    args.setArgument(
-                        name,
-                        value
-                    );
-                }
-            }
+                const values =
+                    result.groups ||
+                    {};
 
-            if (
-                args.restArguments
-            ) {
+                matchedGroups = {
+                    ...values
+                };
+
+                const named =
+                    new Set(
+                        Object
+                            .values(
+                                result.groups ||
+                                {}
+                            )
+                            .filter(
+                                value =>
+                                    value !==
+                                    undefined
+                            )
+                    );
+
                 for (
-                    let index = 1;
-                    index <
-                        result.length;
-                    index++
-                ) {
-                    const value =
-                        result[
-                            index
-                        ];
-
-                    if (
-                        value &&
-                        !named.has(
-                            value
+                    const [name, value] of
+                        Object.entries(
+                            values
                         )
-                    ) {
+                ) {
+                    if (!value) continue;
+
+                    if (name === "_") {
                         args.restArguments
-                            .push(
-                                SpeechMenu
-                                    .#scalar(
+                            ?.push(
+                                ...SpeechMenu
+                                    .#list(
                                         value
                                     )
                             );
                     }
+                    else if (
+                        name.startsWith(
+                            "_"
+                        )
+                    ) {
+                        args.setArgument(
+                            name.slice(1),
+                            SpeechMenu.#list(
+                                value
+                            )
+                        );
+                    }
+                    else {
+                        args.setArgument(
+                            name,
+                            value
+                        );
+                    }
+                }
+
+                if (
+                    args.restArguments
+                ) {
+                    for (
+                        let index = 1;
+                        index <
+                            result.length;
+                        index++
+                    ) {
+                        const value =
+                            result[
+                                index
+                            ];
+
+                        if (
+                            value &&
+                            !named.has(
+                                value
+                            )
+                        ) {
+                            args.restArguments
+                                .push(
+                                    SpeechMenu
+                                        .#scalar(
+                                            value
+                                        )
+                                );
+                        }
+                    }
+                }
+
+                if (
+                    !result[0].length
+                ) {
+                    regex.lastIndex++;
                 }
             }
 
-            if (
-                !result[0].length
-            ) {
-                regex.lastIndex++;
+            if (matched) {
+                break;
             }
         }
 
         if (!matched) {
             return false;
         }
+
+        const canonicalTranscript =
+            SpeechMenu
+                .#canonicalMatchTranscript(
+                    element,
+                    text,
+                    matchedGroups,
+                    matchingMode
+                );
 
         const matchDetail = {
             utteranceId,
@@ -2042,8 +5552,40 @@ class SpeechMenu {
             originalTranscript:
                 transcript,
             transcript:
-                text
+                text,
+            canonicalTranscript,
+            matchingMode,
+            correctionId:
+                correction?.correction
+                    ?.id ||
+                null,
+            provisional:
+                !execute
         };
+
+        if (correction) {
+            SpeechMenu.#emit(
+                "speechCorrectionApplied",
+                {
+                    utteranceId,
+                    commandElement:
+                        element,
+                    speechMenuElement,
+                    correctionId:
+                        correction
+                            .correction
+                            .id,
+                    matchType:
+                        correction
+                            .correction
+                            .matchType,
+                    observed:
+                        correction.original,
+                    canonical:
+                        correction.corrected
+                }
+            );
+        }
 
         SpeechMenu.#emit(
             "speechCommandMatched",
@@ -2082,12 +5624,15 @@ class SpeechMenu {
                 speechMenuElement,
                 transcript:
                     text,
+                canonicalTranscript,
                 arguments:
                     argumentValues.slice(),
                 targetSelector:
                     target.selector,
                 targetElement:
                     target.element,
+                targetElements:
+                    target.elements.slice(),
                 provisional:
                     !execute
             }
@@ -2102,56 +5647,149 @@ class SpeechMenu {
                 speechMenuElement,
                 transcript:
                     text,
+                canonicalTranscript,
                 arguments:
                     argumentValues.slice(),
                 targetSelector:
                     target.selector,
                 targetElement:
-                    target.element
+                    target.element,
+                targetElements:
+                    target.elements.slice()
             };
         }
 
-        if (
-            target.element &&
-            typeof requestAnimationFrame ===
-                "function"
-        ) {
-            await new Promise(
-                resolve =>
-                    requestAnimationFrame(
-                        () =>
-                            resolve()
-                    )
-            );
-        }
+        const responseSession =
+            globalThis
+                .WMOFPresentationSetters
+                ?.beginSpeechResponse?.({
+                    commandElement:
+                        element,
+                    targetSelector:
+                        target.selector,
+                    targetElements:
+                        target.elements
+                });
 
         try {
+            const utterance =
+                SpeechMenu.#utterance
+                    ?.id ===
+                        utteranceId
+                    ? SpeechMenu.#utterance
+                    : SpeechMenu
+                        .#finishedUtterances
+                        .get(
+                            utteranceId
+                        );
+
+            const previousExecutionContext =
+                SpeechMenu
+                    .#executionContext;
+
+            SpeechMenu.#executionContext =
+                Object.freeze({
+                    utteranceId,
+                    transcript:
+                        text,
+                    utteranceStartedAt:
+                        utterance
+                            ?.wallStartedAt
+                });
+
+            let outcomeValue;
+
+            try {
+                outcomeValue =
+                    element
+                        .speechFunc
+                        .apply(
+                            element.speechFuncThis,
+                            argumentValues
+                        );
+            }
+            finally {
+                SpeechMenu.#executionContext =
+                    previousExecutionContext;
+            }
+
             const outcome =
-                await element
-                    .speechFunc
-                    .apply(
-                        element.speechFuncThis,
-                        argumentValues
-                    );
+                await outcomeValue;
 
             if (outcome === false) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
                 return false;
             }
 
-            await Promise.resolve();
+            const dictatedResponse =
+                outcome &&
+                typeof outcome ===
+                    "object" &&
+                outcome.speechResponse
+                    ?.type ===
+                    "dictation"
+                    ? String(
+                        outcome
+                            .speechResponse
+                            .value ??
+                        ""
+                    ).trim()
+                    : "";
 
-            if (
-                target.element &&
-                typeof requestAnimationFrame ===
-                    "function"
-            ) {
-                await new Promise(
-                    resolve =>
-                        requestAnimationFrame(
-                            () =>
-                                resolve()
-                        )
-                );
+            if (dictatedResponse) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.presentSpeechDictation?.(
+                        dictatedResponse,
+                        {
+                            commandElement:
+                                element,
+                            utteranceId
+                        }
+                    );
+            }
+            else {
+                await Promise.resolve();
+
+                if (
+                    target.element &&
+                    typeof requestAnimationFrame ===
+                        "function"
+                ) {
+                    await new Promise(
+                        resolve =>
+                            requestAnimationFrame(
+                                () =>
+                                    resolve()
+                            )
+                    );
+                }
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.finishSpeechResponse?.(
+                        responseSession,
+                        {
+                            commandElement:
+                                element,
+                            targetSelector:
+                                target.selector,
+                            targetElements:
+                                target.elements,
+                            utteranceId
+                        }
+                    );
             }
 
             SpeechMenu.#emit(
@@ -2163,12 +5801,15 @@ class SpeechMenu {
                     speechMenuElement,
                     transcript:
                         text,
+                    canonicalTranscript,
                     arguments:
                         argumentValues.slice(),
                     targetSelector:
                         target.selector,
                     targetElement:
-                        target.element
+                        target.element,
+                    targetElements:
+                        target.elements.slice()
                 }
             );
 
@@ -2179,6 +5820,7 @@ class SpeechMenu {
                         element,
                     transcript:
                         text,
+                    canonicalTranscript,
                     utteranceId
                 }
             );
@@ -2226,23 +5868,24 @@ class SpeechMenu {
     }
 
     static async #releaseCapture() {
-        const processor =
-            SpeechMenu.#processorNode;
+        const captureNode =
+            SpeechMenu.#captureNode;
 
-        SpeechMenu.#processorNode =
+        SpeechMenu.#captureNode =
             undefined;
 
-        if (processor) {
+        if (captureNode) {
             try {
-                processor.removeEventListener(
-                    "audioprocess",
-                    SpeechMenu.#onAudioProcess
-                );
+                captureNode.port
+                    .removeEventListener(
+                        "message",
+                        SpeechMenu.#onAudioWorkletMessage
+                    );
             }
             catch {}
 
             try {
-                processor.disconnect();
+                captureNode.disconnect();
             }
             catch {}
         }
@@ -2264,6 +5907,64 @@ class SpeechMenu {
 
         SpeechMenu.#silentGain =
             undefined;
+
+        const recognizer =
+            SpeechMenu.#recognizer;
+
+        SpeechMenu.#recognizer =
+            undefined;
+
+        if (recognizer) {
+            try {
+                recognizer.removeEventListener(
+                    "transcript",
+                    SpeechMenu.#onSherpaTranscript
+                );
+                recognizer.removeEventListener(
+                    "error",
+                    SpeechMenu.#onSherpaError
+                );
+                recognizer.removeEventListener(
+                    "status",
+                    SpeechMenu.#onSherpaStatus
+                );
+                recognizer.removeEventListener(
+                    "utteranceEnded",
+                    SpeechMenu.#onSherpaUtteranceEnded
+                );
+                recognizer.close();
+            }
+            catch {}
+        }
+
+        const vad =
+            SpeechMenu.#vad;
+
+        SpeechMenu.#vad =
+            undefined;
+
+        if (vad) {
+            try {
+                vad.removeEventListener(
+                    "speechStart",
+                    SpeechMenu.#onVadSpeechStart
+                );
+                vad.removeEventListener(
+                    "speechEnd",
+                    SpeechMenu.#onVadSpeechEnd
+                );
+                vad.removeEventListener(
+                    "error",
+                    SpeechMenu.#onVadError
+                );
+                vad.removeEventListener(
+                    "status",
+                    SpeechMenu.#onVadStatus
+                );
+                vad.close();
+            }
+            catch {}
+        }
 
         const stream =
             SpeechMenu.#stream;
@@ -2307,6 +6008,9 @@ class SpeechMenu {
 
         SpeechMenu.#preRollSamples =
             0;
+
+        SpeechMenu.#finishedUtterances
+            .clear();
 
         SpeechMenu.#utterance =
             undefined;

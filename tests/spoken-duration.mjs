@@ -11,7 +11,11 @@ assert.equal(parse("one hour twenty minutes"),"1:20:00");
 assert.equal(parse("zero thirty"),"0:30:00");
 assert.equal(parse("1:30"),"1:30:00");
 assert.equal(parse("1:02:03"),"1:02:03");
-assert.equal(parse("ninety minutes"),"1:30:00");
+assert.equal(parse("159"),"1:59:00");
+assert.equal(parse("530"),"5:30:00");
+assert.equal(Parser.parse("199"),undefined);
+assert.equal(Parser.parse("ninety minutes"),undefined);
+assert.equal(Parser.parse("90"),undefined);
 assert.equal(parse("two hours five minutes ten seconds"),"2:05:10");
 assert.equal(Parser.parse("nonsense"),undefined);
 

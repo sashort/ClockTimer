@@ -382,6 +382,18 @@ assert.equal(
     "TimeRange has no rendering shadow tree"
 );
 
+assert(
+    Number(existing.style.zIndex) >
+        Number(elapsed.style.zIndex),
+    "base/history layer stays above the elapsed logical layer"
+);
+
+assert(
+    Number(existing.style.zIndex) >
+        Number(remaining.style.zIndex),
+    "base/history layer stays above the remaining logical layer"
+);
+
 console.log(
     "PASS TimeRange transactions and RingContainer annular layers"
 );

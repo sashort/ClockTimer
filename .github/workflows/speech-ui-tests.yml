@@ -1,0 +1,111 @@
+name: Speech UI tests
+
+on:
+  push:
+    branches:
+      - sherpa-client-asr
+  pull_request:
+    paths:
+      - "SpeechMenu.js"
+      - "SpeechEditorRuntime.js"
+      - "app.js"
+      - "ClockTimer.js"
+      - "HamburgerMenu.js"
+      - "index.html"
+      - "app.css"
+      - "api/admin/speech-editor/**"
+      - "api/admin/access-tokens/**"
+      - "api/admin/sql/**"
+      - "api/_core/access_tokens.php"
+      - "api/_core/sql_console.php"
+      - "api/_core/developer_docs.php"
+      - "api/docs/**"
+      - "api/audio/**"
+      - "docs/**"
+      - "api/speech-editor-config/**"
+      - "api/speech-corrections/**"
+      - "api/_core/speech_corrections.php"
+      - "migrations/**"
+      - "database/create_database.sql"
+      - "lang/en-US/DurationParser.js"
+      - "tests/speech-*.mjs"
+      - "tests/spoken-duration.mjs"
+      - "tests/package.json"
+      - "tests/hamburger-menu.mjs"
+      - "tests/developer_docs.php"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check SpeechMenu.js
+          node --check SherpaRecognizer.js
+          node --check SileroVad.js
+          node --check SpeechDiagnostics.js
+          node --check speech/SherpaWorker.js
+          node --check speech/SileroVadWorker.js
+          node --check speech/SpeechAudioWorklet.js
+          node --check SpeechEditorRuntime.js
+          node --check ActionFunctions.js
+          node --check HamburgerMenu.js
+          node --check app.js
+          node --check api/admin/speech-editor/EditorActionFunctions.js
+          node --check api/admin/speech-editor/RegexBuilder.js
+          node --check api/admin/speech-editor/editor.js
+          node --check lang/en-US/DurationParser.js
+
+      - name: Check PHP syntax
+        run: |
+          php -l api/admin/speech-editor/index.php
+          php -l api/admin/access-tokens/index.php
+          php -l api/admin/sql/index.php
+          php -l api/_core/access_tokens.php
+          php -l api/_core/new_user_invites.php
+          php -l api/admin/new-user/index.php
+          php -l api/new-user/index.php
+          php -l api/_core/sql_console.php
+          php -l api/_core/developer_docs.php
+          php -l api/docs/index.php
+          php -l api/admin/speech-editor/agent/index.php
+          php -l api/_core/permissions.php
+          php -l api/_core/csrf.php
+          php -l api/speech-editor-config/index.php
+          php -l api/speech-corrections/index.php
+          php -l api/_core/speech_corrections.php
+          php -l migrations/006_speech_model_training.php
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+
+      - name: Run speech tests
+        working-directory: tests
+        run: |
+          npm run test:speech-editor
+          npm run test:speech-phrases
+          npm run test:action-macros
+          npm run test:editor-actions
+          npm run test:hamburger-menu
+          php admin_permissions.php
+          php access_tokens.php
+          php new_user_invites.php
+          php sql_batch.php
+          php developer_docs.php
+          node new-user-qr.mjs
+          node regex-builder.mjs
+          node speech-mic-pipeline.mjs
+          node speech-goal-fail.mjs
+          node speech-trip-transition.mjs
+          node speech-value-preprocessor.mjs
+          node speech-training-model.mjs
+          node spoken-duration.mjs

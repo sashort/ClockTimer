@@ -14,7 +14,8 @@
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
-        customTripLogDates: "wmof.clock.customTripLogDates"
+        customTripLogDates: "wmof.clock.customTripLogDates",
+        audioSettings: "wmof.clock.audioSettings"
     };
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
@@ -23,6 +24,37 @@
         lateBreakBehavior: "showLateWindow",
         syncGoals: false
     };
+    const AUDIO_ANNOUNCEMENTS = Object.freeze([
+        ["trip-started", "Trip Started"],
+        ["trip-started-early", "Trip Started Early"],
+        ["trip-started-late", "Trip Started Late"],
+        ["break-started", "Break Started"],
+        ["short-break-started", "Short Break Started"],
+        ["lunch-started", "Lunch Started"],
+        ["trip-resumed-early", "Trip Resumed Early"],
+        ["trip-resumed-automatically", "Trip Resumed Automatically"],
+        ["trip-resumed-after-break", "Trip Resumed After Break"],
+        ["down-time-started", "Down Time Started"],
+        ["trip-resumed-from-down", "Trip Resumed From Down"],
+        ["trip-ended", "Trip Ended"],
+        ["goal-failed", "Goal Failed"],
+        ["lunch-clock-out", "Lunch Clock Out"],
+        ["lunch-clock-in", "Lunch Clock In"]
+    ]);
+
+    const AUDIO_DEFAULTS = Object.freeze({
+        speechVolume: 1,
+        toneVolume: 1,
+        masterVelocity: 1,
+        speechVelocity: 1,
+        toneVelocity: 1,
+        masters: Object.freeze({
+            chime: true,
+            summary: true,
+            details: true
+        })
+    });
+
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
         timerMode: "elapsed",
@@ -86,17 +118,125 @@
 
     const $ = selector => document.querySelector(selector);
 
-    const speechRuntimeVersion = (() => {
-        try {
-            return new URL(
-                document.currentScript?.src ||
-                    location.href
-            ).search;
-        }
-        catch {
-            return "";
-        }
-    })();
+    const {
+        wait,
+        safeStorageGet,
+        safeStorageSet,
+        formatDuration,
+        formatDateInput,
+        parseDateInput
+    } =
+        globalThis
+            .WMOFUtilities;
+
+    const SHERPA_ASSET_VERSION =
+        "2026-09-24-6";
+
+    const SPEECH_RUNTIME_REVISION =
+        "2026-09-26-2";
+
+    const speechRuntimeVersion =
+        "?sherpa=" +
+        encodeURIComponent(
+            SHERPA_ASSET_VERSION
+        ) +
+        "&runtime=" +
+        encodeURIComponent(
+            SPEECH_RUNTIME_REVISION
+        );
+
+    const speechSearchParams =
+        new URLSearchParams(
+            location.search
+        );
+
+    const speechDiagnosticsEnabled =
+        speechSearchParams.has(
+            "speech-diagnostics"
+        );
+
+    const speechPipeline =
+        speechSearchParams.get(
+            "speech-pipeline"
+        ) === "silero"
+            ? "silero"
+            : "raw";
+
+    const speechAssetCacheReady =
+        (async () => {
+            if (
+                !("serviceWorker" in navigator) ||
+                !globalThis.isSecureContext
+            ) {
+                return false;
+            }
+
+            try {
+                const registration =
+                    await navigator
+                        .serviceWorker
+                        .register(
+                            "SpeechAssetCacheWorker.js" +
+                                speechRuntimeVersion,
+                            {
+                                scope: "./",
+                                updateViaCache:
+                                    "all"
+                            }
+                        );
+
+                await navigator
+                    .serviceWorker
+                    .ready;
+
+                if (
+                    navigator
+                        .serviceWorker
+                        .controller
+                ) {
+                    return true;
+                }
+
+                await new Promise(
+                    resolve => {
+                        const timeout =
+                            setTimeout(
+                                resolve,
+                                1500
+                            );
+
+                        navigator
+                            .serviceWorker
+                            .addEventListener(
+                                "controllerchange",
+                                () => {
+                                    clearTimeout(
+                                        timeout
+                                    );
+                                    resolve();
+                                },
+                                {
+                                    once: true
+                                }
+                            );
+                    }
+                );
+
+                return Boolean(
+                    navigator
+                        .serviceWorker
+                        .controller
+                );
+            }
+            catch (error) {
+                console.warn(
+                    "Sherpa asset cache unavailable:",
+                    error
+                );
+
+                return false;
+            }
+        })();
 
     const loadClassicScript = source =>
         new Promise((resolve, reject) => {
@@ -162,11 +302,47 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
-                        if (!globalThis.SpeechMenu) {
+                        await speechAssetCacheReady;
+                        if (!globalThis.SherpaRecognizer) {
                             await loadClassicScript(
-                                "SpeechMenu.js"
+                                "SherpaRecognizer.js"
                             );
                         }
+
+                        if (
+                            speechPipeline === "silero" &&
+                            !globalThis.SileroVad
+                        ) {
+                            await loadClassicScript(
+                                "SileroVad.js"
+                            );
+                        }
+
+                        if (!globalThis.SpeechMenu) {
+                            await loadClassicScript(
+                                "SpeechMenu.js?v=sleep-wake-only-1"
+                            );
+                        }
+
+                        if (
+                            !globalThis.SpeechMenu.started &&
+                            globalThis.SpeechMenu.pipeline !==
+                                speechPipeline
+                        ) {
+                            globalThis.SpeechMenu.pipeline =
+                                speechPipeline;
+                        }
+
+                        void globalThis.SpeechMenu
+                            .loadCorrections(
+                                new URL(
+                                    "api/speech-corrections/?language=en-US",
+                                    API_BASE
+                                ).href
+                            )
+                            .catch(
+                                () => {}
+                            );
 
                         if (
                             !customElements.get(
@@ -175,6 +351,30 @@
                         ) {
                             await loadClassicScript(
                                 "SpeechMicBar.js"
+                            );
+                        }
+
+                        if (
+                            speechDiagnosticsEnabled &&
+                            !customElements.get(
+                                "speech-diagnostics"
+                            )
+                        ) {
+                            await loadClassicScript(
+                                "SpeechDiagnostics.js"
+                            );
+                        }
+
+                        if (
+                            speechDiagnosticsEnabled &&
+                            !document.querySelector(
+                                "speech-diagnostics"
+                            )
+                        ) {
+                            document.body.append(
+                                document.createElement(
+                                    "speech-diagnostics"
+                                )
                             );
                         }
 
@@ -190,11 +390,63 @@
     };
 
     const clockTimer = $("#clockTimer");
+
+    const speechTransactionDate =
+        () => {
+            const value =
+                globalThis.SpeechMenu
+                    ?.executionContext
+                    ?.utteranceStartedAt;
+
+            if (!value) {
+                return undefined;
+            }
+
+            const date =
+                new Date(
+                    value
+                );
+
+            return Number.isNaN(
+                date.getTime()
+            )
+                ? undefined
+                : date;
+        };
+
+    clockTimer.transactionTimestampProvider =
+        speechTransactionDate;
+
     const clockPreview = $("#clockPreview");
     if (clockPreview) {
         clockPreview.keepAspectRatio =
             true;
     }
+    const PERMISSION_SUPERUSER =
+        4;
+
+    const PERMISSION_DEVELOPER_PREVIEW =
+        8;
+
+    const PERMISSION_DEVELOPER =
+        16;
+
+    const PERMISSION_GRANT_TOKEN_ACCESS =
+        32;
+
+    const ACCESS_TOKEN_PERMISSION_MASK =
+        PERMISSION_SUPERUSER |
+        PERMISSION_GRANT_TOKEN_ACCESS;
+
+    const SPEECH_EDITOR_PERMISSION_MASK =
+        PERMISSION_SUPERUSER |
+        PERMISSION_DEVELOPER_PREVIEW |
+        PERMISSION_DEVELOPER;
+
+    const DEVELOPER_MENU_PERMISSION_MASK =
+        PERMISSION_DEVELOPER_PREVIEW |
+        PERMISSION_DEVELOPER;
+
     const app = $("#app");
     const loginDialog = $("#loginDialog");
     const profileDialog = $("#profileDialog");
@@ -206,44 +458,628 @@
             ["lastName", "last_name"], ["preferredName", "preferred_name"]]) {
             $("#" + id).value = user[field] ?? "";
         }
-        const permissions=Number(user.permissions)||0;$("#adminMenuGroup").hidden=permissions===0;$("#newUserButton").hidden=!(permissions&5);$("#speechEditorLink").hidden=!(permissions&4);
+        const permissions =
+            Number(user.permissions) || 0;
+
+        const canCreateUsers =
+            Boolean(
+                permissions &
+                (
+                    1 |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
+        const canManageTokens =
+            Boolean(
+                permissions &
+                ACCESS_TOKEN_PERMISSION_MASK
+            );
+
+        const canUseDeveloperTools =
+            Boolean(
+                permissions &
+                DEVELOPER_MENU_PERMISSION_MASK
+            );
+
+        const canUseSpeechEditor =
+            Boolean(
+                permissions &
+                SPEECH_EDITOR_PERMISSION_MASK
+            ) &&
+            canUseDeveloperTools;
+
+        $("#newUserButton").hidden =
+            !canCreateUsers;
+
+        $("#accessTokensButton").hidden =
+            !canManageTokens;
+
+        $("#speechToolsGroup").hidden =
+            false;
+
+        $("#speechTrainingButton").hidden =
+            false;
+
+        $("#speechEditorButton").hidden =
+            !canUseSpeechEditor;
+
+        $("#developerDocsButton").hidden =
+            !canUseDeveloperTools;
+
+        $("#easterEggToolsGroup").hidden =
+            !canUseDeveloperTools;
+
+        $("#sqlConsoleButton").hidden =
+            !canUseDeveloperTools;
+
+        $("#adminMenuGroup").hidden =
+            !(
+                canCreateUsers ||
+                canManageTokens
+            );
+
+        syncSpeechTrainingControls();
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
     const stateDialog = $("#stateSettingsDialog");
     const profileMenuButton = $("#profileMenuButton");
     const authButton = $("#authButton");
+    const menuAccountRow = $("#menuAccountRow");
+    const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
+    const easterEggSongSelect =
+        $("#easterEggSongSelect");
+    const easterEggPlayButton =
+        $("#easterEggPlayButton");
+    const easterEggPauseButton =
+        $("#easterEggPauseButton");
+    const easterEggStopButton =
+        $("#easterEggStopButton");
+    const easterEggRewindButton =
+        $("#easterEggRewindButton");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
+    const speechTrainingButton = $("#speechTrainingButton");
+    const speechTrainingChoiceDialog = $("#speechTrainingChoiceDialog");
+    const speechTrainingPendingDialog = $("#speechTrainingPendingDialog");
+    const speechTrainingPendingMessage = $("#speechTrainingPendingMessage");
+    const speechTrainingPendingError = $("#speechTrainingPendingError");
+    const speechTrainingPendingCancel = $("#speechTrainingPendingCancel");
+    const speechTrainingPendingDiscard = $("#speechTrainingPendingDiscard");
+    const speechTrainingPendingCommit = $("#speechTrainingPendingCommit");
+    const speechTrainingWidget = $("#speechTrainingWidget");
+    const speechTrainingDragHandle = $("#speechTrainingDragHandle");
+    const speechTrainingPhrase = $("#speechTrainingPhrase");
+    const speechTrainingHeard = $("#speechTrainingHeard");
+    const speechTrainingHeardStatus = $("#speechTrainingHeardStatus");
+    const speechTrainingPrompt = $("#speechTrainingPrompt");
+    const speechTrainingCount = $("#speechTrainingCount");
+    const speechTrainingStartStop = $("#speechTrainingStartStop");
+    const speechTrainingResults = $("#speechTrainingResults");
+    const speechTrainingResultsCount = $("#speechTrainingResultsCount");
+    const speechTrainingResultsList = $("#speechTrainingResultsList");
 
-    const setSpeechButtonState = (enabled, muted = false) => {
-        speechRecognitionButton?.setAttribute(
-            "aria-pressed",
-            String(enabled)
-        );
-        speechRecognitionButton?.classList.toggle(
-            "is-sleeping",
-            enabled && muted
-        );
-        if (speechRecognitionButton) {
-            speechRecognitionButton.title =
-                enabled
-                    ? "Disable Speech Recognition"
-                    : "Enable Speech Recognition";
-            speechRecognitionButton.setAttribute(
-                "aria-label",
-                speechRecognitionButton.title
+    let easterEggSong =
+        easterEggSongSelect
+            ?.value ||
+        "neon-afterglow";
+    let easterEggPlayback;
+    let easterEggPlaybackBeat = 0;
+    let easterEggPlaybackStartedAt;
+    let easterEggPlaybackTempo = 104;
+    let easterEggPlaybackGeneration = 0;
+    let easterEggPlaybackStarting = false;
+
+    const easterEggNow =
+        () =>
+            globalThis.performance
+                ?.now?.() ??
+            Date.now();
+
+    const updateEasterEggControls =
+        state => {
+            const playing =
+                state ===
+                "playing";
+            const paused =
+                state ===
+                "paused";
+
+            if (easterEggPlayButton) {
+                easterEggPlayButton.disabled =
+                    playing ||
+                    easterEggPlaybackStarting;
+                easterEggPlayButton.textContent =
+                    paused
+                        ? "Resume"
+                        : "Play";
+            }
+
+            if (easterEggPauseButton) {
+                easterEggPauseButton.disabled =
+                    !playing;
+            }
+
+            if (easterEggStopButton) {
+                easterEggStopButton.disabled =
+                    !playing &&
+                    !paused;
+            }
+
+            if (easterEggRewindButton) {
+                easterEggRewindButton.disabled =
+                    !playing &&
+                    !paused &&
+                    easterEggPlaybackBeat <=
+                        0;
+            }
+        };
+
+    const captureEasterEggPlaybackBeat =
+        () => {
+            if (
+                !easterEggPlayback ||
+                easterEggPlaybackStartedAt ===
+                    undefined
+            ) {
+                return;
+            }
+
+            const elapsedSeconds =
+                Math.max(
+                    0,
+                    (
+                        easterEggNow() -
+                        easterEggPlaybackStartedAt
+                    ) /
+                        1000
+                );
+
+            easterEggPlaybackBeat +=
+                elapsedSeconds *
+                easterEggPlaybackTempo /
+                60;
+
+            easterEggPlaybackStartedAt =
+                easterEggNow();
+        };
+
+    const startEasterEggPlayback =
+        async () => {
+            if (
+                easterEggPlayback ||
+                easterEggPlaybackStarting
+            ) {
+                return;
+            }
+
+            const audio =
+                globalThis.WMOFAudio;
+
+            if (!audio?.startSong) {
+                return;
+            }
+
+            easterEggPlaybackStarting =
+                true;
+            updateEasterEggControls(
+                easterEggPlaybackBeat >
+                    0
+                    ? "paused"
+                    : "stopped"
             );
-        }
-    };
 
-    const setSpeechLayoutState = enabled => {
-        app.dataset.speechActive =
-            String(Boolean(enabled));
-    };
+            const generation =
+                ++easterEggPlaybackGeneration;
+
+            try {
+                const playback =
+                    await audio.startSong(
+                        easterEggSong,
+                        {
+                            startBeat:
+                                easterEggPlaybackBeat,
+                            includeSpeech:
+                                false,
+                            suspendChimeListening:
+                                false,
+                            useSelectedInstrument:
+                                false
+                        }
+                    );
+
+                if (
+                    generation !==
+                    easterEggPlaybackGeneration
+                ) {
+                    playback?.stop?.();
+                    return;
+                }
+
+                easterEggPlayback =
+                    playback;
+                easterEggPlaybackTempo =
+                    Number(
+                        playback?.bpm
+                    ) ||
+                    104;
+                easterEggPlaybackStartedAt =
+                    easterEggNow();
+
+                updateEasterEggControls(
+                    "playing"
+                );
+
+                void playback.finished
+                    .then(
+                        () => {
+                            if (
+                                easterEggPlayback
+                                    ?.id !==
+                                playback.id
+                            ) {
+                                return;
+                            }
+
+                            easterEggPlayback =
+                                undefined;
+                            easterEggPlaybackBeat =
+                                0;
+                            easterEggPlaybackStartedAt =
+                                undefined;
+
+                            updateEasterEggControls(
+                                "stopped"
+                            );
+                        }
+                    );
+            }
+            catch (error) {
+                console.error(
+                    "Easter egg playback failed:",
+                    error
+                );
+
+                easterEggPlayback =
+                    undefined;
+                easterEggPlaybackStartedAt =
+                    undefined;
+
+                updateEasterEggControls(
+                    easterEggPlaybackBeat >
+                        0
+                        ? "paused"
+                        : "stopped"
+                );
+            }
+            finally {
+                easterEggPlaybackStarting =
+                    false;
+
+                updateEasterEggControls(
+                    easterEggPlayback
+                        ? "playing"
+                        : (
+                            easterEggPlaybackBeat >
+                                0
+                                ? "paused"
+                                : "stopped"
+                        )
+                );
+            }
+        };
+
+    const pauseEasterEggPlayback =
+        () => {
+            if (!easterEggPlayback) {
+                return;
+            }
+
+            captureEasterEggPlaybackBeat();
+
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback.stop?.();
+
+            updateEasterEggControls(
+                "paused"
+            );
+        };
+
+    const stopEasterEggPlayback =
+        () => {
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackBeat =
+                0;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback?.stop?.();
+
+            updateEasterEggControls(
+                "stopped"
+            );
+        };
+
+    const rewindEasterEggPlayback =
+        async () => {
+            const wasPlaying =
+                Boolean(
+                    easterEggPlayback
+                );
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackBeat =
+                0;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback?.stop?.();
+
+            updateEasterEggControls(
+                "stopped"
+            );
+
+            if (wasPlaying) {
+                await startEasterEggPlayback();
+            }
+        };
+
+    easterEggSongSelect
+        ?.addEventListener(
+            "change",
+            () => {
+                stopEasterEggPlayback();
+
+                easterEggSong =
+                    easterEggSongSelect.value ||
+                    "neon-afterglow";
+
+                easterEggPlaybackTempo =
+                    easterEggSong ===
+                        "chrome-velocity"
+                        ? 156
+                        : 104;
+            }
+        );
+
+    easterEggPlayButton
+        ?.addEventListener(
+            "click",
+            () => {
+                void startEasterEggPlayback();
+            }
+        );
+
+    easterEggPauseButton
+        ?.addEventListener(
+            "click",
+            pauseEasterEggPlayback
+        );
+
+    easterEggStopButton
+        ?.addEventListener(
+            "click",
+            stopEasterEggPlayback
+        );
+
+    easterEggRewindButton
+        ?.addEventListener(
+            "click",
+            () => {
+                void rewindEasterEggPlayback();
+            }
+        );
+
+    updateEasterEggControls(
+        "stopped"
+    );
+
+    let speechRecognitionLanguageAvailable = false;
+    let speechTrainingConnectionAvailable = false;
+    let inAppSpeechTrainingEnabled = false;
+    let speechTrainingActive = false;
+    let speechTrainingTarget;
+    let speechTrainingUtteranceCount = 0;
+    let speechTrainingCsrfToken;
+    let speechTrainingExecutionBeforeStart = true;
+    let speechTrainingPromptTimer;
+    let speechTrainingPendingDecision;
+    let speechTrainingPendingDecisionResolve;
+    let speechTrainingPendingBusy = false;
+    let speechTrainingPendingReason;
+    const speechTrainingPendingSamples = [];
+    const speechTrainingSeenUtterances = new Set();
+    const speechTrainingResultsHistory = [];
+    const speechTrainingOutcomeByUtterance = new Map();
+
+    new MutationObserver(
+        records => {
+            if (
+                records.some(
+                    record =>
+                        record.attributeName ===
+                            "open" &&
+                        record.target
+                            ?.matches?.(
+                                "dialog[open]"
+                            )
+                )
+            ) {
+                queueMicrotask(
+                    () =>
+                        speechMicBar
+                            ?.promoteTopLayer?.()
+                );
+            }
+        }
+    ).observe(
+        document.documentElement,
+        {
+            subtree: true,
+            attributes: true,
+            attributeFilter: [
+                "open"
+            ]
+        }
+    );
+
+    const setSpeechButtonState =
+        globalThis
+            .WMOFPresentationSetters
+            .define(
+                "setSpeechButtonState",
+                (
+                    enabled,
+                    muted = false
+                ) => {
+                    speechRecognitionButton
+                        ?.setAttribute(
+                            "aria-pressed",
+                            String(enabled)
+                        );
+
+                    speechRecognitionButton
+                        ?.classList
+                        .toggle(
+                            "is-sleeping",
+                            enabled &&
+                                muted
+                        );
+
+                    if (
+                        speechRecognitionButton
+                    ) {
+                        speechRecognitionButton
+                            .title =
+                            enabled
+                                ? "Disable Speech Recognition"
+                                : "Enable Speech Recognition";
+
+                        speechRecognitionButton
+                            .setAttribute(
+                                "aria-label",
+                                speechRecognitionButton
+                                    .title
+                            );
+                    }
+                }
+            );
+
+    const setSpeechLayoutState =
+        globalThis
+            .WMOFPresentationSetters
+            .define(
+                "setSpeechLayoutState",
+                enabled => {
+                    app.dataset
+                        .speechActive =
+                        String(
+                            Boolean(
+                                enabled
+                            )
+                        );
+                }
+            );
 
     let speechActivationPending = false;
+    let speechRecognitionSuspended = false;
+
+    const disableSpeechRecognitionRuntime =
+        async () => {
+            if (speechTrainingActive) {
+                return false;
+            }
+
+            setSpeechButtonState(
+                false,
+                false
+            );
+            setSpeechLayoutState(
+                false
+            );
+
+            try {
+                await ensureSpeechRuntime();
+
+                const speechMenu =
+                    globalThis.SpeechMenu;
+
+                if (!speechMenu?.started) {
+                    speechRecognitionSuspended =
+                        false;
+                    return false;
+                }
+
+                if (!speechRecognitionSuspended) {
+                    speechMenu
+                        .suspendListening?.(
+                            "speech-recognition-disabled"
+                        );
+                    speechRecognitionSuspended =
+                        true;
+                }
+
+                return true;
+            }
+            catch (error) {
+                console.error(error);
+                return false;
+            }
+        };
+
+    const enableSpeechRecognitionRuntime =
+        async () => {
+            await ensureSpeechRuntime();
+
+            const speechMenu =
+                globalThis.SpeechMenu;
+
+            if (
+                speechRecognitionSuspended &&
+                speechMenu?.started
+            ) {
+                speechMenu
+                    .resumeListening?.(
+                        "speech-recognition-disabled"
+                    );
+                speechRecognitionSuspended =
+                    false;
+                return true;
+            }
+
+            speechRecognitionSuspended =
+                false;
+
+            const englishLanguage =
+                globalThis.WMOFLanguages?.["en-US"];
+
+            return Boolean(
+                await speechMenu?.start?.(
+                    englishLanguage
+                        ?.speechRecognitionLanguage ||
+                        "en-US"
+                )
+            );
+        };
 
     setSpeechButtonState(false);
     setSpeechLayoutState(false);
@@ -251,7 +1087,10 @@
     speechRecognitionButton?.addEventListener(
         "click",
         async () => {
-            if (speechActivationPending) return;
+            if (
+                speechActivationPending ||
+                speechTrainingActive
+            ) return;
 
             const enabled =
                 speechRecognitionButton.getAttribute(
@@ -259,17 +1098,7 @@
                 ) === "true";
 
             if (enabled) {
-                setSpeechButtonState(false, false);
-                setSpeechLayoutState(false);
-
-                try {
-                    await ensureSpeechRuntime();
-                    await globalThis.SpeechMenu?.stop?.();
-                }
-                catch (error) {
-                    console.error(error);
-                }
-
+                await disableSpeechRecognitionRuntime();
                 return;
             }
 
@@ -279,16 +1108,8 @@
             mainMenu?.hidePopover?.();
 
             try {
-                await ensureSpeechRuntime();
-
-                const englishLanguage =
-                    globalThis.WMOFLanguages?.["en-US"];
-
                 const started =
-                    await globalThis.SpeechMenu?.start?.(
-                        englishLanguage?.speechRecognitionLanguage ||
-                            "en-US"
-                    );
+                    await enableSpeechRecognitionRuntime();
 
                 if (!started) {
                     setSpeechButtonState(false, false);
@@ -314,14 +1135,14 @@
     const tripLogEndDate = $("#tripLogEndDate");
     const tripLogRangeError = $("#tripLogRangeError");
     let tripRangeRevision = 0;
-    const syncGoalsMenuButton = $("#syncGoalsMenuButton");
-    const syncGoalsMenuIcon = syncGoalsMenuButton?.querySelector(".sync-goals-menu-icon");
+    const toggleSyncMenuButton = $("#toggleSyncMenuButton");
+    const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
     const tripLogCloseButton = $("#tripLogCloseButton");
     const tripLogSettingsButton = $("#tripLogSettingsButton");
     let tripLogSettingsVisible = false;
     const tripLogBody = $("#tripLogBody");
-    const goalSyncButton = $("#goalSyncButton");
+    const toggleSyncGoalButton = $("#toggleSyncGoalButton");
     const autoGoalDialog = $("#autoGoalDialog");
     const autoTripGoalValue = $("#autoTripGoalValue");
     const autoTotalGoalValue = $("#autoTotalGoalValue");
@@ -337,7 +1158,15 @@
     const downResumeButton = $("#downResumeButton");
     const downCancelButton = $("#downCancelButton");
     const breakDialog = $("#breakDialog");
+    setOkAllowed(
+        breakDialog,
+        false
+    );
+    const tripTransitionOverlay = $("#tripTransitionOverlay");
+    const tripTransitionOverlayTitle = $("#tripTransitionOverlayTitle");
+    const tripTransitionOverlayDetails = $("#tripTransitionOverlayDetails");
     const scheduledStartDialog = $("#scheduledStartDialog");
+    const scheduledStartCountdownLabel = $("#scheduledStartCountdownLabel");
     const scheduledStartCountdown = $("#scheduledStartCountdown");
     const scheduledStartStandard = $("#scheduledStartStandard");
     const scheduledStartStandardValue = $("#scheduledStartStandardValue");
@@ -361,10 +1190,23 @@
     const tripSetStartsNowTimestampLabel = tripSetStartsNow.querySelector(".trip-now-timestamp-label");
     const tripSetStartsNowCancel = $("#tripSetStartsNowCancel");
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
+    const audioSettingsDialog = $("#audioSettingsDialog");
+    const audioSettingsForm = $("#audioSettingsForm");
+    const audioAnnouncementRows = $("#audioAnnouncementRows");
+    const audioSpeechVolume = $("#audioSpeechVolume");
+    const audioToneVolume = $("#audioToneVolume");
+    const audioInstrument = $("#audioInstrument");
+    const audioMasterVelocity = $("#audioMasterVelocity");
+    const audioSpeechVelocity = $("#audioSpeechVelocity");
+    const audioToneVelocity = $("#audioToneVelocity");
+    const audioFormalTime = $("#audioFormalTime");
+    const audioSpeechVolumeValue = $("#audioSpeechVolumeValue");
+    const audioToneVolumeValue = $("#audioToneVolumeValue");
+    const audioMasterVelocityValue = $("#audioMasterVelocityValue");
+    const audioSpeechVelocityValue = $("#audioSpeechVelocityValue");
+    const audioToneVelocityValue = $("#audioToneVelocityValue");
+    const audioSettingsReset = $("#audioSettingsReset");
 
-    let timerStartedAt = 0;
-    let timerAccumulated = 0;
-    let timerInterval;
     let loginPromptTimeout;
     let loginPending = false;
     let stagedStandardTime;
@@ -373,17 +1215,25 @@
     let tripStartsNowState;
     let tripStartsNowExiting = false;
     let tripStartsNowExitTimer;
+    const tripTransitionOverlayQueue = [];
+    let tripTransitionOverlayActive = false;
+    let tripTransitionOverlayTimer;
+    let tripTransitionOverlayHideTimer;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
     let numberPadState;
     let numberPadLoadPromise;
     let numberPadDialog;
+    let englishSpeech;
+    let installSpeechCommand;
     let numberPadDisplay;
     let numberPadSettingsArea;
     let numberPadSettings;
     let numberPadConnection;
     let numberPadClear;
+    let numberPadReset;
+    let numberPadCancel;
     let numberPadConfirm;
     let numberPadContext;
     let numberPadReadout;
@@ -396,10 +1246,19 @@
         returnTarget: "home",
         numberPadState: undefined
     };
-    let numberPadLongPressTimer;
-    let numberPadLongPressed = false;
-    let numberPadLastClearPointerDown = 0;
-    let initialLoginSuppressed = false;
+    const speechEditorPreview =
+        new URLSearchParams(
+            globalThis.location
+                ?.search ||
+            ""
+        )
+            .get(
+                "speech-editor-preview"
+            ) ===
+        "1";
+
+    let initialLoginSuppressed =
+        speechEditorPreview;
     let deliberatelyLoggedOut = safeStorageGet("wmof.deliberatelyLoggedOut") === "true";
     let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
@@ -413,14 +1272,11 @@
     let renderedTimeLongPressTimer;
     let renderedTimeLongPressed = false;
     let endTimeGoalOverride;
-    let endTimeLockDialogInitialScopes = [];
     let endTimeGoalLockFlashTimer;
     let syncNetworkStatus;
     let syncOfflineTransitionSequence = 0;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
-    const NUMBER_PAD_LONG_PRESS = 750;
-    const NUMBER_PAD_DOUBLE_PRESS = 350;
     const CLOCK_TIMER_DOUBLE_PRESS = 350;
     const STARTUP_CONNECTION_DELAY = 2000;
     const CONNECTION_UI_TRANSITION_DURATION = 750;
@@ -458,6 +1314,523 @@
     let settingsHelpAnimation;
     let tripListButtonAnimation;
     let tripListBodyAnimationFrame;
+
+    function defaultAudioSettings() {
+        const rows = {};
+
+        for (const [key] of AUDIO_ANNOUNCEMENTS) {
+            rows[key] = {
+                enabled: true,
+                chime: 0,
+                summary: 0,
+                details: 0
+            };
+        }
+
+        return {
+            speechVolume: 1,
+            toneVolume: 1,
+            masterVelocity: 1,
+            speechVelocity: 1,
+            toneVelocity: 1,
+            instrument: "",
+            formalTime: false,
+            masters: {
+                chime: true,
+                summary: true,
+                details: true
+            },
+            rows
+        };
+    }
+
+    function normalizeAudioSettings(source) {
+        const settings = defaultAudioSettings();
+        const value =
+            source && typeof source === "object"
+                ? source
+                : {};
+        const clamp =
+            (candidate, minimum, maximum, fallback) => {
+                const numeric = Number(candidate);
+                return Number.isFinite(numeric)
+                    ? Math.max(minimum, Math.min(maximum, numeric))
+                    : fallback;
+            };
+
+        settings.speechVolume =
+            clamp(value.speechVolume, 0, 1, 1);
+        settings.toneVolume =
+            clamp(value.toneVolume, 0, 1, 1);
+        settings.masterVelocity =
+            clamp(value.masterVelocity, 0.5, 4, 1);
+        settings.speechVelocity =
+            clamp(value.speechVelocity, 0.5, 4, 1);
+        settings.toneVelocity =
+            clamp(value.toneVelocity, 0.5, 1.5, 1);
+        settings.instrument =
+            typeof value.instrument ===
+                "string"
+                ? value.instrument.trim()
+                : "";
+        settings.formalTime =
+            value.formalTime === true;
+
+        for (const layer of ["chime", "summary", "details"]) {
+            if (typeof value.masters?.[layer] === "boolean") {
+                settings.masters[layer] =
+                    value.masters[layer];
+            }
+        }
+
+        for (const [key] of AUDIO_ANNOUNCEMENTS) {
+            const row = value.rows?.[key];
+            if (!row || typeof row !== "object") continue;
+
+            if (typeof row.enabled === "boolean") {
+                settings.rows[key].enabled =
+                    row.enabled;
+            }
+
+            for (const layer of ["chime", "summary", "details"]) {
+                if (row[layer] === -1 || row[layer] === 0) {
+                    settings.rows[key][layer] =
+                        row[layer];
+                }
+            }
+        }
+
+        return settings;
+    }
+
+    function loadAudioSettings() {
+        try {
+            const raw =
+                safeStorageGet(
+                    STORAGE.audioSettings
+                );
+            return normalizeAudioSettings(
+                raw ? JSON.parse(raw) : undefined
+            );
+        }
+        catch {
+            return defaultAudioSettings();
+        }
+    }
+
+    let audioSettings =
+        loadAudioSettings();
+
+    function saveAudioSettings() {
+        safeStorageSet(
+            STORAGE.audioSettings,
+            JSON.stringify(audioSettings)
+        );
+    }
+
+    function applyAudioOutputSettings() {
+        globalThis.WMOFAudio?.configureOutput?.({
+            speechVolume:
+                audioSettings.speechVolume,
+            toneVolume:
+                audioSettings.toneVolume,
+            speechVelocity:
+                audioSettings.speechVelocity,
+            toneVelocity:
+                audioSettings.toneVelocity,
+            instrument:
+                audioSettings.instrument
+        });
+    }
+
+    function audioCellUserEnabled(
+        announcement,
+        layer
+    ) {
+        const row =
+            audioSettings.rows[
+                announcement
+            ];
+
+        return Boolean(
+            row &&
+            row.enabled !== false &&
+            audioSettings.masters[layer] !== false &&
+            row[layer] !== -1
+        );
+    }
+
+    async function populateAudioInstrumentOptions() {
+        if (!audioInstrument) return;
+
+        try {
+            const catalog =
+                await globalThis.WMOFAudio
+                    ?.load?.();
+            const instruments =
+                Object.entries(
+                    catalog?.instruments ||
+                    {}
+                );
+
+            const fragment =
+                document.createDocumentFragment();
+            const defaultOption =
+                document.createElement(
+                    "option"
+                );
+
+            defaultOption.value = "";
+            defaultOption.textContent =
+                "Song Default";
+            fragment.append(
+                defaultOption
+            );
+
+            for (
+                const [
+                    id,
+                    instrument
+                ] of instruments
+            ) {
+                if (
+                    instrument
+                        ?.selectable ===
+                        false
+                ) {
+                    continue;
+                }
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    id;
+                option.textContent =
+                    String(
+                        instrument
+                            ?.displayName ||
+                        id
+                    );
+
+                fragment.append(
+                    option
+                );
+            }
+
+            audioInstrument
+                .replaceChildren(
+                    fragment
+                );
+            audioInstrument.value =
+                audioSettings.instrument;
+
+            if (
+                audioInstrument.value !==
+                    audioSettings.instrument
+            ) {
+                audioInstrument.value =
+                    "";
+            }
+        }
+        catch (error) {
+            console.warn(
+                "Unable to load audio instruments:",
+                error
+            );
+        }
+    }
+
+    function buildAudioAnnouncementRows() {
+        if (!audioAnnouncementRows) return;
+
+        const fragment =
+            document.createDocumentFragment();
+
+        for (const [key, label] of AUDIO_ANNOUNCEMENTS) {
+            const row =
+                document.createElement("tr");
+            row.dataset.audioAnnouncement =
+                key;
+
+            const heading =
+                document.createElement("th");
+            heading.scope = "row";
+
+            const labelElement =
+                document.createElement("label");
+            const master =
+                document.createElement("input");
+            master.type = "checkbox";
+            master.dataset.audioRowMaster = "";
+            labelElement.append(
+                master,
+                document.createTextNode(" " + label)
+            );
+            heading.append(labelElement);
+            row.append(heading);
+
+            for (const layer of ["chime", "summary", "details"]) {
+                const cell =
+                    document.createElement("td");
+                const input =
+                    document.createElement("input");
+                input.type = "checkbox";
+                input.dataset.audioLayer =
+                    layer;
+                input.setAttribute(
+                    "aria-label",
+                    label + " " + layer
+                );
+                cell.dataset.audioLayerLabel =
+                    layer === "chime"
+                        ? "Chime"
+                        : layer === "summary"
+                            ? "Summary"
+                            : "Details";
+                cell.append(input);
+                row.append(cell);
+            }
+
+            fragment.append(row);
+        }
+
+        audioAnnouncementRows.replaceChildren(
+            fragment
+        );
+    }
+
+    function renderAudioSettings() {
+        if (!audioSettingsDialog) return;
+
+        audioSpeechVolume.value =
+            String(audioSettings.speechVolume);
+        audioToneVolume.value =
+            String(audioSettings.toneVolume);
+        audioMasterVelocity.value =
+            String(audioSettings.masterVelocity);
+        audioSpeechVelocity.value =
+            String(audioSettings.speechVelocity);
+        audioToneVelocity.value =
+            String(audioSettings.toneVelocity);
+        if (audioInstrument) {
+            audioInstrument.value =
+                audioSettings.instrument;
+        }
+        audioFormalTime.checked =
+            audioSettings.formalTime === true;
+
+        audioSpeechVolumeValue.textContent =
+            Math.round(audioSettings.speechVolume * 100) + "%";
+        audioToneVolumeValue.textContent =
+            Math.round(audioSettings.toneVolume * 100) + "%";
+        audioMasterVelocityValue.textContent =
+            audioSettings.masterVelocity.toFixed(2) + "×";
+        audioSpeechVelocityValue.textContent =
+            audioSettings.speechVelocity.toFixed(2) + "×";
+        audioToneVelocityValue.textContent =
+            audioSettings.toneVelocity.toFixed(2) + "×";
+
+        for (const input of audioSettingsDialog.querySelectorAll("[data-audio-master]")) {
+            input.checked =
+                audioSettings.masters[
+                    input.dataset.audioMaster
+                ] !== false;
+        }
+
+        for (const row of audioAnnouncementRows?.querySelectorAll("[data-audio-announcement]") || []) {
+            const key =
+                row.dataset.audioAnnouncement;
+            const state =
+                audioSettings.rows[key];
+            if (!state) continue;
+
+            row.querySelector("[data-audio-row-master]").checked =
+                state.enabled !== false;
+
+            for (const input of row.querySelectorAll("[data-audio-layer]")) {
+                const layer =
+                    input.dataset.audioLayer;
+                input.checked =
+                    state[layer] !== -1;
+                input.disabled =
+                    state.enabled === false ||
+                    audioSettings.masters[layer] === false;
+            }
+        }
+    }
+
+    function shiftMasterVelocity(value) {
+        const next =
+            Math.max(
+                0.5,
+                Math.min(
+                    4,
+                    Number(value)
+                )
+            );
+
+        if (!Number.isFinite(next)) return;
+
+        const delta =
+            next -
+            audioSettings.masterVelocity;
+
+        audioSettings.masterVelocity =
+            next;
+        audioSettings.speechVelocity =
+            Math.max(
+                0.5,
+                Math.min(
+                    4,
+                    audioSettings.speechVelocity +
+                        delta
+                )
+            );
+        audioSettings.toneVelocity =
+            Math.max(
+                0.5,
+                Math.min(
+                    1.5,
+                    audioSettings.toneVelocity +
+                        delta
+                )
+            );
+    }
+
+    buildAudioAnnouncementRows();
+    void populateAudioInstrumentOptions();
+    renderAudioSettings();
+    applyAudioOutputSettings();
+
+    audioSettingsDialog?.addEventListener(
+        "opening",
+        () => {
+            void populateAudioInstrumentOptions();
+            renderAudioSettings();
+        }
+    );
+
+    audioSettingsForm?.addEventListener(
+        "input",
+        event => {
+            const target =
+                event.target;
+
+            if (target === audioInstrument) {
+                return;
+            }
+
+            if (target === audioSpeechVolume) {
+                audioSettings.speechVolume =
+                    Number(target.value);
+            }
+            else if (target === audioToneVolume) {
+                audioSettings.toneVolume =
+                    Number(target.value);
+            }
+            else if (target === audioMasterVelocity) {
+                shiftMasterVelocity(
+                    target.value
+                );
+            }
+            else if (target === audioSpeechVelocity) {
+                audioSettings.speechVelocity =
+                    Number(target.value);
+            }
+            else if (target === audioToneVelocity) {
+                audioSettings.toneVelocity =
+                    Number(target.value);
+            }
+            else if (target === audioFormalTime) {
+                audioSettings.formalTime =
+                    target.checked;
+            }
+            else if (target.matches?.("[data-audio-master]")) {
+                audioSettings.masters[
+                    target.dataset.audioMaster
+                ] =
+                    target.checked;
+            }
+            else {
+                const row =
+                    target.closest?.(
+                        "[data-audio-announcement]"
+                    );
+                const state =
+                    audioSettings.rows[
+                        row?.dataset
+                            .audioAnnouncement
+                    ];
+
+                if (
+                    state &&
+                    target.matches?.(
+                        "[data-audio-row-master]"
+                    )
+                ) {
+                    state.enabled =
+                        target.checked;
+                }
+                else if (
+                    state &&
+                    target.matches?.(
+                        "[data-audio-layer]"
+                    )
+                ) {
+                    // Only this table toggles persistent user-disabled state.
+                    state[
+                        target.dataset.audioLayer
+                    ] =
+                        target.checked
+                            ? 0
+                            : -1;
+                }
+            }
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+        }
+    );
+
+    audioInstrument
+        ?.addEventListener(
+            "change",
+            () => {
+                audioSettings.instrument =
+                    audioInstrument.value;
+
+                saveAudioSettings();
+
+                audioInstrument.disabled =
+                    true;
+
+                requestAnimationFrame(
+                    () =>
+                        globalThis.location
+                            ?.reload?.()
+                );
+            }
+        );
+
+    audioSettingsReset?.addEventListener(
+        "click",
+        () => {
+            audioSettings =
+                defaultAudioSettings();
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+        }
+    );
+
+    audioSettingsForm?.addEventListener(
+        "submit",
+        saveAudioSettings
+    );
 
     function getPressedShadow(baseShadow, pressedShadow) {
         return !baseShadow || baseShadow === "none"
@@ -502,7 +1875,7 @@
 
     function beginButtonPressFeedback(button) {
         if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-        if (button === goalSyncButton) return;
+        if (button === toggleSyncGoalButton) return;
         if (buttonPressStates.has(button)) return;
 
         const style = getComputedStyle(button);
@@ -585,16 +1958,6 @@
         releaseButtonPressFeedback(button);
     }, true);
 
-    function safeStorageGet(key) {
-        try { return localStorage.getItem(key); }
-        catch { return null; }
-    }
-
-    function safeStorageSet(key, value) {
-        try { localStorage.setItem(key, value); }
-        catch {}
-    }
-
     function normalizeTripLogRange(value) {
         const normalized =
             String(value || "day")
@@ -612,6 +1975,38 @@
                 STORAGE.tripLogRange
             )
         );
+    }
+
+    function totalScopeLabel() {
+        switch (getTripLogRange()) {
+            case "day":
+                return "Day";
+            case "week":
+                return "Week";
+            case "pay-period":
+                return "Check";
+            case "month":
+                return "Month";
+            case "year":
+                return "Year";
+            case "custom":
+            default:
+                return "Total";
+        }
+    }
+
+    function userFacingTotalText(value) {
+        const text =
+            String(value ?? "");
+        const label =
+            totalScopeLabel();
+
+        return label === "Total"
+            ? text
+            : text.replace(
+                /\bTotal\b/g,
+                label
+            );
     }
 
     function setTripLogRange(
@@ -687,6 +2082,11 @@
         }
         showTripRangeError();
         window.dispatchEvent(new CustomEvent("wmof:trip-log-range-changed", {detail: {range}}));
+        syncScopeUI();
+        renderClockTimerUIState(
+            clockTimer.uiState
+        );
+        refreshAutoGoalDialog();
         if (getTripListState() === "open") void dispatchTripListRequest("range");
         else void refreshGoalTotalsForRange(range).catch(error => {
             if (!error.clockTimerOffline) {
@@ -768,23 +2168,83 @@
     }
 
     function getAppContentMetrics() {
-        const rect = app.getBoundingClientRect();
+        const appRect = app.getBoundingClientRect();
         const style = getComputedStyle(app);
         const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
         const paddingRight = Number.parseFloat(style.paddingRight) || 0;
         const paddingTop = Number.parseFloat(style.paddingTop) || 0;
         const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
         const height = tripLogButton?.offsetHeight || 74;
+        const visualViewport =
+            globalThis.visualViewport;
+        const viewportLeft =
+            visualViewport?.offsetLeft ??
+            0;
+        const viewportTop =
+            visualViewport?.offsetTop ??
+            0;
+        const viewportRight =
+            viewportLeft +
+            (
+                visualViewport?.width ??
+                globalThis.innerWidth
+            );
+        const viewportBottom =
+            viewportTop +
+            (
+                visualViewport?.height ??
+                globalThis.innerHeight
+            );
+        const left =
+            Math.max(
+                appRect.left +
+                    paddingLeft,
+                viewportLeft
+            );
+        const right =
+            Math.min(
+                appRect.right -
+                    paddingRight,
+                viewportRight
+            );
+        const top =
+            Math.max(
+                appRect.top +
+                    paddingTop,
+                viewportTop
+            );
+        const bottom =
+            Math.min(
+                appRect.bottom -
+                    paddingBottom,
+                viewportBottom
+            );
+        const rect = {
+            left,
+            top,
+            right,
+            bottom,
+            width:
+                Math.max(
+                    0,
+                    right - left
+                ),
+            height:
+                Math.max(
+                    0,
+                    bottom - top
+                )
+        };
 
         return {
             rect,
-            paddingLeft,
-            paddingRight,
-            paddingTop,
-            paddingBottom,
+            paddingLeft: 0,
+            paddingRight: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
             height,
-            left: rect.left + paddingLeft,
-            width: Math.max(0, rect.width - paddingLeft - paddingRight)
+            left,
+            width: rect.width
         };
     }
 
@@ -798,11 +2258,35 @@
         };
     }
 
+    function getSpeechMicTop() {
+        const metrics =
+            getAppContentMetrics();
+
+        const rowHeight =
+            Number.parseFloat(
+                getComputedStyle(app)
+                    .getPropertyValue(
+                        "--speech-mic-row-height"
+                    )
+            ) ||
+            0;
+
+        return (
+            metrics.rect.bottom -
+            metrics.paddingBottom -
+            rowHeight
+        );
+    }
+
     function getTripLogBottomRect() {
-        const metrics = getAppContentMetrics();
+        const metrics =
+            getAppContentMetrics();
+
         return {
             left: metrics.left,
-            top: metrics.rect.bottom - metrics.paddingBottom - metrics.height,
+            top:
+                getSpeechMicTop() -
+                metrics.height,
             width: metrics.width,
             height: metrics.height
         };
@@ -874,7 +2358,7 @@
             topRect.height;
 
         const bottom =
-            metrics.rect.bottom;
+            getSpeechMicTop();
 
         return {
             left: metrics.left,
@@ -886,6 +2370,35 @@
                     bottom - top
                 )
         };
+    }
+
+    function refreshTripLogBoundaryLayout() {
+        if (
+            !tripLogBody ||
+            tripLogBody.hidden ||
+            app.dataset
+                .tripListState !==
+                "open"
+        ) {
+            return false;
+        }
+
+        const topRect =
+            getTripLogTopRect();
+        const bodyRect =
+            getTripLogBodyRect();
+
+        setFloatingTripLogRect(
+            topRect
+        );
+        setFloatingTripLogBodyRect(
+            bodyRect
+        );
+        positionTripLogCloseButton(
+            topRect
+        );
+
+        return true;
     }
 
     function setFloatingTripLogBodyRect(rect) {
@@ -946,6 +2459,32 @@
             tripLogSettingsButton.style.color = getComputedStyle(tripLogButton).color;
         }
     }
+
+    globalThis.addEventListener(
+        "resize",
+        refreshTripLogBoundaryLayout,
+        {
+            passive: true
+        }
+    );
+
+    globalThis.visualViewport
+        ?.addEventListener(
+            "resize",
+            refreshTripLogBoundaryLayout,
+            {
+                passive: true
+            }
+        );
+
+    globalThis.visualViewport
+        ?.addEventListener(
+            "scroll",
+            refreshTripLogBoundaryLayout,
+            {
+                passive: true
+            }
+        );
 
     async function dispatchTripListRequest(
         source = "button"
@@ -1065,7 +2604,17 @@
             numberPad:openNumberPad,
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
-                if(change){renderTripActionState();renderSyncGoalsState();updateSummaryValues();}
+                if(change){
+                    if (
+                        endTimeGoalOverride &&
+                        String(id) === String(clockTimer.currentTripId)
+                    ) {
+                        recalculateEndTimeGoalOverride();
+                    }
+                    renderTripActionState();
+                    renderSyncGoalsState();
+                    updateSummaryValues();
+                }
                 return result;
             },
             refresh:()=>dispatchTripListRequest("edit"),
@@ -1175,13 +2724,9 @@
                 target.height
             );
 
-        const centerX =
-            target.left +
-            fullWidth / 2;
-
-        const centerY =
+        const anchorBottom =
             target.top +
-            fullHeight / 2;
+            fullHeight;
 
         if (
             fullWidth <= 0 ||
@@ -1196,13 +2741,6 @@
 
         const fullDuration =
             Math.max(1, duration);
-
-        const edgeSpeed =
-            Math.max(
-                fullWidth / 2,
-                fullHeight / 2
-            ) /
-            fullDuration;
 
         return new Promise(
             resolve => {
@@ -1225,44 +2763,43 @@
                                     startedAt
                             );
 
-                        const travelled =
-                            edgeSpeed *
-                            (
-                                opening
-                                    ? elapsed
-                                    : fullDuration -
-                                        elapsed
-                            );
+                        const linear =
+                            elapsed /
+                            fullDuration;
 
-                        const halfWidth =
-                            Math.min(
-                                fullWidth / 2,
-                                Math.max(
-                                    0,
-                                    travelled
-                                )
-                            );
+                        const progress =
+                            linear < .5
+                                ? 2 *
+                                    linear *
+                                    linear
+                                : 1 -
+                                    Math.pow(
+                                        -2 *
+                                            linear +
+                                            2,
+                                        2
+                                    ) /
+                                    2;
 
-                        const halfHeight =
-                            Math.min(
-                                fullHeight / 2,
-                                Math.max(
-                                    0,
-                                    travelled
-                                )
-                            );
+                        const visible =
+                            opening
+                                ? progress
+                                : 1 -
+                                    progress;
+
+                        const height =
+                            fullHeight *
+                            visible;
 
                         setFloatingTripLogBodyRect({
                             left:
-                                centerX -
-                                halfWidth,
+                                target.left,
                             top:
-                                centerY -
-                                halfHeight,
+                                anchorBottom -
+                                height,
                             width:
-                                halfWidth * 2,
-                            height:
-                                halfHeight * 2
+                                fullWidth,
+                            height
                         });
 
                         if (elapsed >= fullDuration) {
@@ -1447,28 +2984,16 @@
         );
 
         if (pinned) {
-            const sourceRect =
-                tripLogButton.getBoundingClientRect();
-
-            setFloatingTripLogRect(
-                sourceRect
-            );
-
+            const sourceRect = tripLogButton.getBoundingClientRect();
+            setFloatingTripLogRect(sourceRect);
             await animateTripLogButton(
                 "translateY(0px)",
                 `translateY(${topRect.top - sourceRect.top}px)`
             );
         }
         else {
-            setFloatingTripLogRect(
-                topRect
-            );
-
-            const distance =
-                topRect.top +
-                topRect.height +
-                8;
-
+            setFloatingTripLogRect(topRect);
+            const distance = topRect.top + topRect.height + 8;
             await animateTripLogButton(
                 `translateY(-${distance}px)`,
                 "translateY(0px)"
@@ -1487,9 +3012,13 @@
             getTripLogBodyRect();
 
         setFloatingTripLogBodyRect({
-            left: bodyRect.left + bodyRect.width / 2,
-            top: bodyRect.top + bodyRect.height / 2,
-            width: 0,
+            left:
+                bodyRect.left,
+            top:
+                bodyRect.top +
+                bodyRect.height,
+            width:
+                bodyRect.width,
             height: 0
         });
 
@@ -1591,25 +3120,16 @@
         );
 
         if (pinned) {
-            const destination =
-                getTripLogBottomRect();
-
+            const destination = getTripLogBottomRect();
             await animateTripLogButton(
                 "translateY(0px)",
                 `translateY(${destination.top - topRect.top}px)`,
                 TRIP_LIST_BUTTON_TRANSITION_DURATION
             );
-
-            setFloatingTripLogRect(
-                destination
-            );
+            setFloatingTripLogRect(destination);
         }
         else {
-            const distance =
-                topRect.top +
-                topRect.height +
-                8;
-
+            const distance = topRect.top + topRect.height + 8;
             await animateTripLogButton(
                 "translateY(0px)",
                 `translateY(-${distance}px)`,
@@ -1762,7 +3282,7 @@
             getSyncGoalsState();
 
         const idle = enabled && normalizedConnectionStatus() === "online" && !tripIsLive();
-        for (const element of [goalSyncButton, syncGoalsMenuIcon]) {
+        for (const element of [toggleSyncGoalButton, syncGoalsMenuIcon]) {
             if (!element) continue;
             element.classList.toggle("sync-paused", idle);
             if (!element.querySelector(".sync-pause-badge")) {
@@ -1774,8 +3294,8 @@
         for (
             const button of
                 [
-                    syncGoalsMenuButton,
-                    goalSyncButton
+                    toggleSyncMenuButton,
+                    toggleSyncGoalButton
                 ]
         ) {
             if (!button) continue;
@@ -1805,11 +3325,11 @@
                     : "disabled";
         }
 
-        if (goalSyncButton) {
+        if (toggleSyncGoalButton) {
             const calculable=enabled&&normalizedConnectionStatus()==="online"&&tripIsLive()&&Boolean(state?.auto_goal_active)&&Boolean(state?.goal_component?.valid);
-            ensureSyncOfflineOverlay(goalSyncButton);
-            goalSyncButton.classList.toggle("sync-calculable",calculable);
-            goalSyncButton.hidden =
+            ensureSyncOfflineOverlay(toggleSyncGoalButton);
+            toggleSyncGoalButton.classList.toggle("sync-calculable",calculable);
+            toggleSyncGoalButton.hidden =
                 renderedScope !==
                     "trip";
         }
@@ -1823,6 +3343,16 @@
     ) {
         const enabled =
             Boolean(value);
+
+        if (
+            enabled &&
+            endTimeGoalOverride
+        ) {
+            endTimeGoalOverride =
+                undefined;
+
+            renderEndTimeGoalLock();
+        }
 
         clockTimer.configure({
             auto_goal: enabled
@@ -1858,7 +3388,7 @@
     function getSyncVisualElements() {
         return [
             syncGoalsMenuIcon,
-            goalSyncButton
+            toggleSyncGoalButton
         ].filter(Boolean);
     }
 
@@ -2001,7 +3531,7 @@
             const element of
                 [
                     syncGoalsMenuIcon,
-                    goalSyncButton
+                    toggleSyncGoalButton
                 ]
         ) {
             if (!element || element.hidden) continue;
@@ -2207,25 +3737,103 @@
         return normalized;
     }
 
-    function formatDuration(milliseconds) {
-        const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return [hours, minutes, seconds].map(value => String(value).padStart(2, "0")).join(":");
-    }
-
     function syncConnectionUI(connected) {
+        speechTrainingConnectionAvailable =
+            Boolean(connected);
         profileMenuButton.hidden = !connected;
-        const permissions=Number(signedInProfile?.permissions)||0,showAdmin=connected&&permissions!==0;
-        $("#adminMenuGroup").hidden=!showAdmin;$("#newUserButton").hidden=!showAdmin||!(permissions&5);$("#speechEditorLink").hidden=!showAdmin||!(permissions&4);
-        if(!showAdmin){$("#adminSubmenu").hidden=true;$("#adminMenuButton").setAttribute("aria-expanded","false");}
+        const permissions =
+            Number(
+                signedInProfile?.permissions
+            ) || 0;
+
+        const canCreateUsers =
+            connected &&
+            Boolean(
+                permissions &
+                (
+                    1 |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
+        const canManageTokens =
+            connected &&
+            Boolean(
+                permissions &
+                ACCESS_TOKEN_PERMISSION_MASK
+            );
+
+        const canUseDeveloperTools =
+            connected &&
+            Boolean(
+                permissions &
+                DEVELOPER_MENU_PERMISSION_MASK
+            );
+
+        const canUseSpeechEditor =
+            canUseDeveloperTools &&
+            Boolean(
+                permissions &
+                SPEECH_EDITOR_PERMISSION_MASK
+            );
+
+        const showAdmin =
+            canCreateUsers ||
+            canManageTokens;
+
+        $("#adminMenuGroup").hidden =
+            !showAdmin;
+
+        $("#newUserButton").hidden =
+            !canCreateUsers;
+
+        $("#accessTokensButton").hidden =
+            !canManageTokens;
+
+        $("#speechToolsGroup").hidden =
+            false;
+
+        $("#speechTrainingButton").hidden =
+            false;
+
+        $("#speechEditorButton").hidden =
+            !canUseSpeechEditor;
+
+        $("#developerDocsButton").hidden =
+            !canUseDeveloperTools;
+
+        $("#sqlConsoleButton").hidden =
+            !canUseDeveloperTools;
+
+        if (!showAdmin) {
+            $("#adminSubmenu").hidden =
+                true;
+
+            $("#adminMenuButton")
+                .setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+        }
+
+        if (!canUseDeveloperTools) {
+            $("#speechEditorButton").hidden =
+                true;
+            $("#developerDocsButton").hidden =
+                true;
+            $("#sqlConsoleButton").hidden =
+                true;
+        }
         authButton.textContent = connected ? "Logout" : "Login";
         authButton.classList.toggle("logout-button", connected);
-    }
 
-    function wait(milliseconds) {
-        return new Promise(resolve => setTimeout(resolve, Math.max(0, milliseconds)));
+        if (connected) {
+            menuLogoutSlot?.append(authButton);
+        } else {
+            menuAccountRow?.append(authButton);
+        }
+
+        syncSpeechTrainingControls();
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
@@ -2254,65 +3862,188 @@
         let controller = cloudIconTransitions.get(element);
         if (!controller) {
             controller = {
-                chain: Promise.resolve(),
                 animation: undefined,
                 generation: 0,
+                running: false,
                 targetState: getState()
             };
             cloudIconTransitions.set(element, controller);
         }
 
+        controller.targetState = nextState;
+
         if (!animate) {
             controller.generation += 1;
             controller.animation?.cancel();
             controller.animation = undefined;
-            controller.chain = Promise.resolve();
-            controller.targetState = nextState;
+            controller.running = false;
             element.style.transform = "";
             applyState(nextState);
             return;
         }
 
-        if (controller.targetState === nextState) return;
-        controller.targetState = nextState;
-        const generation = controller.generation;
+        if (controller.running || getState() === controller.targetState) {
+            return;
+        }
 
-        controller.chain = controller.chain.then(async () => {
-            if (generation !== controller.generation) return;
-            if (getState() === nextState) return;
+        controller.running = true;
+        const generation =
+            controller.generation;
 
-            const halfDuration = CONNECTION_UI_TRANSITION_DURATION / 2;
-            controller.animation = element.animate(
-                [
-                    { transform: "rotateY(0deg)" },
-                    { transform: "rotateY(90deg)" }
-                ],
-                { duration: halfDuration, easing: "linear", fill: "forwards" }
-            );
+        void (async () => {
+            try {
+                const halfDuration =
+                    CONNECTION_UI_TRANSITION_DURATION /
+                    2;
 
-            try { await controller.animation.finished; }
-            catch { return; }
-            if (generation !== controller.generation) return;
+                while (
+                    generation ===
+                        controller.generation &&
+                    getState() !==
+                        controller.targetState
+                ) {
+                    controller.animation =
+                        element.animate(
+                            [
+                                {
+                                    transform:
+                                        "rotateY(0deg)"
+                                },
+                                {
+                                    transform:
+                                        "rotateY(90deg)"
+                                }
+                            ],
+                            {
+                                duration:
+                                    halfDuration,
+                                easing:
+                                    "linear",
+                                fill:
+                                    "forwards"
+                            }
+                        );
 
-            applyState(nextState);
-            element.style.transform = "rotateY(-90deg)";
-            controller.animation.cancel();
-            controller.animation = element.animate(
-                [
-                    { transform: "rotateY(-90deg)" },
-                    { transform: "rotateY(0deg)" }
-                ],
-                { duration: halfDuration, easing: "linear", fill: "forwards" }
-            );
+                    try {
+                        await controller
+                            .animation
+                            .finished;
+                    }
+                    catch {
+                        return;
+                    }
 
-            try { await controller.animation.finished; }
-            catch { return; }
-            if (generation !== controller.generation) return;
+                    if (
+                        generation !==
+                        controller.generation
+                    ) {
+                        return;
+                    }
 
-            element.style.transform = "";
-            controller.animation.cancel();
-            controller.animation = undefined;
-        }).catch(() => {});
+                    /*
+                     * The face is invisible at 90 degrees. Apply the
+                     * newest requested state here, so rapid state
+                     * changes retarget the same flip instead of
+                     * cancelling/restarting it and causing a jerk.
+                     */
+                    applyState(
+                        controller
+                            .targetState
+                    );
+
+                    element.style.transform =
+                        "rotateY(-90deg)";
+
+                    controller.animation
+                        .cancel();
+
+                    controller.animation =
+                        element.animate(
+                            [
+                                {
+                                    transform:
+                                        "rotateY(-90deg)"
+                                },
+                                {
+                                    transform:
+                                        "rotateY(0deg)"
+                                }
+                            ],
+                            {
+                                duration:
+                                    halfDuration,
+                                easing:
+                                    "linear",
+                                fill:
+                                    "forwards"
+                            }
+                        );
+
+                    try {
+                        await controller
+                            .animation
+                            .finished;
+                    }
+                    catch {
+                        return;
+                    }
+
+                    if (
+                        generation !==
+                        controller.generation
+                    ) {
+                        return;
+                    }
+
+                    element.style.transform =
+                        "";
+
+                    controller.animation
+                        .cancel();
+
+                    controller.animation =
+                        undefined;
+
+                    /*
+                     * If the requested state changed during the
+                     * reveal half, loop through another complete
+                     * hidden-midpoint flip. Never swap a visible
+                     * face in place.
+                     */
+                }
+            }
+            finally {
+                if (
+                    generation ===
+                    controller.generation
+                ) {
+                    controller.running =
+                        false;
+                    element.style.transform =
+                        "";
+                    controller.animation
+                        ?.cancel();
+                    controller.animation =
+                        undefined;
+
+                    if (
+                        getState() !==
+                        controller.targetState
+                    ) {
+                        setCloudIconVisualState(
+                            element,
+                            getState,
+                            applyState,
+                            controller
+                                .targetState,
+                            {
+                                animate: true
+                            }
+                        );
+                    }
+                }
+            }
+        })();
     }
 
     function syncTripSettingsCloud(status = clockTimer.networkStatus) {
@@ -2702,6 +4433,39 @@
         }));
     }
 
+    function setOkAllowed(
+        context,
+        allowed
+    ) {
+        if (!context) {
+            return false;
+        }
+
+        const next =
+            allowed === true;
+
+        if (
+            context.allowOk ===
+                next
+        ) {
+            return next;
+        }
+
+        context.allowOk =
+            next;
+
+        emitUIEvent(
+            context,
+            "okStatusChanged",
+            {
+                okAllowed:
+                    next
+            }
+        );
+
+        return next;
+    }
+
     function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
         if (
             !dialog ||
@@ -2729,6 +4493,9 @@
             `${transitionDuration}ms`
         );
         dialog.showModal();
+        speechMicBar
+            ?.promoteTopLayer?.();
+
         setTimeout(() => {
             if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
             dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
@@ -2785,8 +4552,25 @@
     }
 
     function popoverIsOpen(popover) {
-        try { return Boolean(popover?.matches?.(":popover-open")); }
-        catch { return false; }
+        if (
+            popover &&
+            typeof popover.isOpen ===
+                "boolean"
+        ) {
+            return popover.isOpen;
+        }
+
+        try {
+            return Boolean(
+                popover
+                    ?.matches?.(
+                        ":popover-open"
+                    )
+            );
+        }
+        catch {
+            return false;
+        }
     }
 
     function hidePopoverForHandoff(popover) {
@@ -2883,6 +4667,23 @@
         return true;
     }
 
+    document.addEventListener(
+        "toggle",
+        event => {
+            if (
+                event.target !== speechMicBar &&
+                event.newState === "open"
+            ) {
+                queueMicrotask(
+                    () =>
+                        speechMicBar
+                            ?.promoteTopLayer?.()
+                );
+            }
+        },
+        true
+    );
+
     document.querySelectorAll("[popover]").forEach(popover => {
         popover.addEventListener("beforetoggle", event => {
             const opening = event.newState === "open";
@@ -2948,6 +4749,10 @@
         loginPromptTimeout = undefined;
         initialLoginAttemptPending = false;
 
+        if (speechEditorPreview) {
+            return false;
+        }
+
         if (loginDialog.open) return true;
 
         const opened = openDialogElement(loginDialog, {
@@ -2963,6 +4768,13 @@
     }
 
     function showInitialLoginDialog() {
+        if (speechEditorPreview) {
+            initialLoginAttemptPending =
+                false;
+
+            return false;
+        }
+
         if (deliberatelyLoggedOut) return;
         if (loginDialog.open) return;
         const opened = openDialogElement(loginDialog, {
@@ -3046,7 +4858,7 @@
 
         const label =
             actual === "total"
-                ? "Total"
+                ? totalScopeLabel()
                 : actual === "auto"
                     ? "Auto"
                     : "Trip";
@@ -3113,33 +4925,38 @@
     function renderEndTimeGoalLock() {
         const lock = $("#endTimeGoalLock");
         if (!lock) return;
-        const scopes = endTimeGoalOverride?.scopes || [];
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        const appliesToMode = mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
-        const temporarilyVisible = endTimeGoalLockFlashTimer !== undefined && appliesToMode;
-        const hidden = !endTimeGoalOverride ||
-            (!temporarilyVisible && (
-                clockTimer.renderedTimeMode !== "calculated-end" ||
-                !appliesToMode
-            ));
-        const visibilityChanged = lock.hidden !== hidden;
+
+        const temporarilyVisible =
+            endTimeGoalLockFlashTimer !== undefined;
+
+        const hidden =
+            !endTimeGoalOverride ||
+            (
+                !temporarilyVisible &&
+                clockTimer.renderedTimeMode !==
+                    "calculated-end"
+            );
+
+        const visibilityChanged =
+            lock.hidden !== hidden;
+
         lock.hidden = hidden;
-        lock.setAttribute("aria-pressed", String(Boolean(endTimeGoalOverride)));
-        if (!hidden && visibilityChanged) requestAnimationFrame(alignStatusIcons);
+        lock.setAttribute(
+            "aria-pressed",
+            String(Boolean(endTimeGoalOverride))
+        );
+
+        if (!hidden && visibilityChanged) {
+            requestAnimationFrame(
+                alignStatusIcons
+            );
+        }
     }
 
-    function endTimeGoalDisplayScope(snapshot) {
-        if (!endTimeGoalOverride) return undefined;
-        const scopes = endTimeGoalOverride.scopes || [];
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        if (mode !== "auto") return scopes.includes(mode) ? mode : undefined;
-        if (scopes.includes(snapshot?.scope)) return snapshot.scope;
-        return scopes.includes("trip") ? "trip" : scopes.includes("total") ? "total" : undefined;
-    }
-
-    function endTimeGoalLockedForMode(mode = normalizePercentMode(clockTimer.percentMode)) {
-        const scopes = endTimeGoalOverride?.scopes || [];
-        return mode === "auto" ? scopes.length > 0 : scopes.includes(mode);
+    function endTimeGoalLockedForMode() {
+        return Boolean(
+            endTimeGoalOverride
+        );
     }
 
     function flashEndTimeGoalLock() {
@@ -3160,34 +4977,16 @@
     }
 
     function releaseEndTimeGoalOverride() {
-        const override = endTimeGoalOverride;
-        if (!override) return false;
+        if (!endTimeGoalOverride) return false;
         endTimeGoalOverride = undefined;
-        restoreGoalAttribute("trip-goal", override.tripGoal);
-        restoreGoalAttribute("total-goal", override.totalGoal);
-        clockTimer.configure({auto_goal: override.autoSyncTripGoal});
+        clockTimer.configure({
+            calculated_trip_goal: null,
+            calculated_total_goal: null,
+            calculated_goal_source: null
+        });
         renderEndTimeGoalLock();
         queueSummaryRefresh();
         return true;
-    }
-
-    function selectedEndTimeLockScopes() {
-        return [
-            $("#endTimeTripLock")?.checked ? "trip" : undefined,
-            $("#endTimeTotalLock")?.checked ? "total" : undefined
-        ].filter(Boolean);
-    }
-
-    function refreshEndTimeLockDialog() {
-        const scopes = new Set(endTimeGoalOverride?.scopes || []);
-        endTimeLockDialogInitialScopes = [...scopes].sort();
-        $("#endTimeTripLock").checked = scopes.has("trip");
-        $("#endTimeTotalLock").checked = scopes.has("total");
-        $("#endTimeLockReleaseMessage").hidden = scopes.size !== 0;
-    }
-
-    function updateEndTimeLockReleaseMessage() {
-        $("#endTimeLockReleaseMessage").hidden = selectedEndTimeLockScopes().length !== 0;
     }
 
     function goalForDeadline(summary, scope, currentSummary, deadline) {
@@ -3229,74 +5028,105 @@
         return `${Number((value * 100).toFixed(6))}%`;
     }
 
-    function setEndTimeGoalScopes(scopes) {
-        if (!endTimeGoalOverride) return false;
-        const normalized = [...new Set(scopes)].filter(scope => scope === "trip" || scope === "total");
-        if (normalized.length === 0) return releaseEndTimeGoalOverride();
-        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
-        const summary = clockTimer.getSummarySnapshot?.(endTimeGoalOverride.deadline);
-        const goals = Object.fromEntries(normalized.map(scope => [
-            scope,
-            goalForDeadline(summary, scope, currentSummary, endTimeGoalOverride.deadline)
-        ]));
-        if (normalized.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
-        restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
-        restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-        clockTimer.configure({auto_goal: false});
-        for (const scope of normalized) {
-            clockTimer.configure({
-                [scope === "total" ? "total_goal" : "trip_goal"]:
-                    percentGoalAttribute(goals[scope])
-            });
+    function recalculateEndTimeGoalOverride() {
+        const deadline =
+            endTimeGoalOverride?.deadline;
+
+        if (
+            !(deadline instanceof Date) ||
+            Number.isNaN(deadline.getTime()) ||
+            deadline.getTime() <= Date.now() ||
+            !tripIsLive()
+        ) {
+            return false;
         }
-        endTimeGoalOverride.scopes = normalized;
-        renderEndTimeGoalLock();
+
+        const currentSummary =
+            clockTimer.getSummarySnapshot?.(
+                new Date()
+            );
+
+        const summary =
+            clockTimer.getSummarySnapshot?.(
+                deadline
+            );
+
+        const goals = {
+            trip:
+                goalForDeadline(
+                    summary,
+                    "trip",
+                    currentSummary,
+                    deadline
+                ),
+            total:
+                goalForDeadline(
+                    summary,
+                    "total",
+                    currentSummary,
+                    deadline
+                )
+        };
+
+        if (
+            !Number.isFinite(goals.trip) ||
+            goals.trip <= 0 ||
+            !Number.isFinite(goals.total) ||
+            goals.total <= 0
+        ) {
+            return false;
+        }
+
+        clockTimer.configure({
+            auto_goal: false,
+            calculated_trip_goal:
+                percentGoalAttribute(
+                    goals.trip
+                ),
+            calculated_total_goal:
+                percentGoalAttribute(
+                    goals.total
+                ),
+            calculated_goal_source:
+                "end-time"
+        });
+
         queueSummaryRefresh();
+
         return true;
     }
 
     function applyEndTimeGoalOverride(target) {
-        const deadline = target instanceof Date ? new Date(target.getTime()) : new Date(target);
-        if (!tripIsLive() || Number.isNaN(deadline.getTime()) || deadline.getTime() <= Date.now()) {
+        const deadline =
+            target instanceof Date
+                ? new Date(target.getTime())
+                : new Date(target);
+
+        if (
+            !tripIsLive() ||
+            Number.isNaN(deadline.getTime()) ||
+            deadline.getTime() <= Date.now()
+        ) {
             return false;
         }
-        const currentSummary = clockTimer.getSummarySnapshot?.(new Date());
-        const summary = clockTimer.getSummarySnapshot?.(deadline);
-        const mode = normalizePercentMode(clockTimer.percentMode);
-        const scopes = mode === "auto" ? ["trip", "total"] : [mode];
-        const goals = Object.fromEntries(scopes.map(scope => [
-            scope,
-            goalForDeadline(summary, scope, currentSummary, deadline)
-        ]));
-        if (scopes.some(scope => !Number.isFinite(goals[scope]) || goals[scope] <= 0)) return false;
 
-        if (!endTimeGoalOverride) {
-            endTimeGoalOverride = {
-                tripGoal: goalAttributeSnapshot("trip-goal"),
-                totalGoal: goalAttributeSnapshot("total-goal"),
-                autoSyncTripGoal: Boolean(clockTimer.autoSyncTripGoal),
-                scopes: [...scopes],
-                deadline
-            };
-        }
-        else {
-            restoreGoalAttribute("trip-goal", endTimeGoalOverride.tripGoal);
-            restoreGoalAttribute("total-goal", endTimeGoalOverride.totalGoal);
-            clockTimer.configure({auto_goal: endTimeGoalOverride.autoSyncTripGoal});
-            endTimeGoalOverride.deadline = deadline;
-            endTimeGoalOverride.scopes = [...scopes];
+        endTimeGoalOverride = {
+            deadline
+        };
+
+        if (!recalculateEndTimeGoalOverride()) {
+            endTimeGoalOverride =
+                undefined;
+
+            return false;
         }
 
-        clockTimer.configure({auto_goal: false});
-        for (const scope of scopes) {
-            clockTimer.configure({
-                [scope === "total" ? "total_goal" : "trip_goal"]:
-                    percentGoalAttribute(goals[scope])
-            });
-        }
-        applyRenderedTimeMode("calculated-end");
+        applyRenderedTimeMode(
+            "calculated-end"
+        );
+
         renderEndTimeGoalLock();
-        queueSummaryRefresh();
+
         return true;
     }
 
@@ -3364,11 +5194,17 @@
         const renderedLabel = $("#renderedTimeLabel");
         standardLabel.classList.remove("summary-label-responsive");
         renderedLabel.classList.remove("summary-label-responsive");
-        standardLabel.textContent = state.standard_time_header_text;
+        standardLabel.textContent =
+            userFacingTotalText(
+                state.standard_time_header_text
+            );
         if (state.time_header_short_text) {
             const full = document.createElement("span");
             full.className = "summary-label-full";
-            full.textContent = state.time_header_text;
+            full.textContent =
+                userFacingTotalText(
+                    state.time_header_text
+                );
             const short = document.createElement("span");
             short.className = "summary-label-short";
             short.textContent = state.time_header_short_text;
@@ -3376,7 +5212,10 @@
             renderedLabel.replaceChildren(full, short);
         }
         else {
-            renderedLabel.textContent = state.time_header_text;
+            renderedLabel.textContent =
+                userFacingTotalText(
+                    state.time_header_text
+                );
         }
         $("#standardTimeValue").textContent = state.standard_time_component.text;
         $("#renderedTimeValue").textContent = state.time_component.text;
@@ -3385,9 +5224,9 @@
         $("#goalPercentValue").setAttribute(
             "aria-label",
             state.goal_type === "auto"
-                ? "Choose Trip or Total goal"
+                ? "Choose Trip or " + totalScopeLabel() + " goal"
                 : state.goal_type === "total"
-                    ? "Edit Total goal"
+                    ? "Edit " + totalScopeLabel() + " goal"
                     : "Edit Trip goal"
         );
         const controls = state.controls;
@@ -3443,7 +5282,7 @@
         if(data.hasImage){image.src=data.imageUrl;photo.append(image);}else if(capture&&data.active){const camera=document.createElement('button');camera.type='button';camera.className='down-details-camera';camera.innerHTML='<svg viewBox="0 0 64 52" aria-hidden="true"><path d="M6 14h13l5-8h16l5 8h13v32H6z"/><circle cx="32" cy="30" r="12"/><circle cx="51" cy="20" r="2"/></svg><strong>Take Photo</strong>';camera.addEventListener('click',()=>void openCamera());photo.append(camera);}else {const empty=document.createElement('p');empty.textContent='No photo attached.';photo.append(empty);}body.append(photo);
         const label=document.createElement('label');label.textContent='Notes';const notes=document.createElement('textarea');notes.maxLength=10000;notes.placeholder='Describe the cause of the down time…';notes.value=data.notes||'';notes.readOnly=!editing&&!capture;label.append(notes);body.append(label);
         let deleteImage=false;if((editing||capture)&&data.hasImage){const remove=document.createElement('button');remove.type='button';remove.className='down-details-delete';remove.textContent='Delete Photo';remove.addEventListener('click',()=>{if(confirm('Delete this Down photo?')){deleteImage=true;photo.replaceChildren(Object.assign(document.createElement('p'),{textContent:'Photo will be deleted when saved.'}));remove.hidden=true;}});body.append(remove);}const helper=document.createElement('p');helper.className='down-details-helper';helper.textContent='One photo may be attached to this Down interval.';body.append(helper);form.append(body);
-        const actions=document.createElement('div');actions.className='dialog-actions two-actions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=(editing||capture)?'Cancel':'Close';cancel.addEventListener('click',()=>dialog.close());actions.append(cancel);if(editing||capture){const save=document.createElement('button');save.type='submit';save.className='primary-action';save.textContent='Save';actions.append(save);form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;try{const payload=new FormData();payload.set('notes',notes.value);if(selectedImage)payload.set('image',selectedImage);if(deleteImage)payload.set('deleteImage','1');await clockTimer.downDetailsRequest(tripId,intervalKey,payload);dialog.close();if(!tripLogBody.hidden)await dispatchTripListRequest('down-details');}catch(error){let alert=form.querySelector('[role=alert]');if(!alert){alert=document.createElement('p');alert.className='trip-log-error';alert.setAttribute('role','alert');body.append(alert);}alert.textContent=error.message;}finally{save.disabled=false;}});}form.append(actions);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);dialog.remove();},{once:true});dialog.showModal();
+        const actions=document.createElement('div');actions.className='dialog-actions two-actions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=(editing||capture)?'Cancel':'Close';cancel.addEventListener('click',()=>dialog.close());actions.append(cancel);if(editing||capture){const save=document.createElement('button');save.type='submit';save.className='primary-action';save.textContent='Save';actions.append(save);form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;try{await globalThis.WMOFActions.saveDownDetails(tripId,intervalKey,{notes:notes.value,image:selectedImage,deleteImage});dialog.close();}catch(error){let alert=form.querySelector('[role=alert]');if(!alert){alert=document.createElement('p');alert.className='trip-log-error';alert.setAttribute('role','alert');body.append(alert);}alert.textContent=error.message;}finally{save.disabled=false;}});}form.append(actions);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);dialog.remove();},{once:true});dialog.showModal();
     }
 
     function updateSummaryValues(state = clockTimer.uiState) {
@@ -5445,6 +7284,2256 @@
         }
     );
 
+    function hasSpeechDeveloperAccess() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            DEVELOPER_MENU_PERMISSION_MASK
+        );
+    }
+
+    function canResolveSpeechTrainingDivergence() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            PERMISSION_DEVELOPER
+        );
+    }
+
+    function isSpeechTrainingDeveloperPreviewOnly() {
+        const permissions =
+            Number(
+                signedInProfile
+                    ?.permissions
+            ) || 0;
+
+        return Boolean(
+            permissions &
+            PERMISSION_DEVELOPER_PREVIEW
+        ) &&
+            !Boolean(
+                permissions &
+                PERMISSION_DEVELOPER
+            );
+    }
+
+    function normalizeSpeechTrainingPhrase(
+        value
+    ) {
+        return String(
+            value ||
+            ""
+        )
+            .toLocaleLowerCase()
+            .replace(
+                /<[^>]+>/g,
+                " "
+            )
+            .replace(
+                /[^\p{L}\p{N}\s]/gu,
+                " "
+            )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
+    function speechTrainingEnglishSoftOmission(
+        observed,
+        expected
+    ) {
+        if (
+            !observed ||
+            !expected ||
+            observed ===
+                expected
+        ) {
+            return false;
+        }
+
+        const weakConsonants =
+            new Set([
+                "s",
+                "z",
+                "f",
+                "v",
+                "h"
+            ]);
+
+        const weakFinalConsonants =
+            new Set([
+                ...weakConsonants,
+                "t",
+                "d"
+            ]);
+
+        if (
+            expected.length ===
+                observed.length +
+                    1
+        ) {
+            for (
+                let index = 0;
+                index < expected.length;
+                index++
+            ) {
+                if (
+                    expected.slice(
+                        0,
+                        index
+                    ) +
+                        expected.slice(
+                            index +
+                                1
+                        ) !==
+                    observed
+                ) {
+                    continue;
+                }
+
+                const omitted =
+                    expected[
+                        index
+                    ];
+
+                if (
+                    weakConsonants.has(
+                        omitted
+                    )
+                ) {
+                    return true;
+                }
+
+                if (
+                    index ===
+                        expected.length -
+                            1 &&
+                    weakFinalConsonants
+                        .has(
+                            omitted
+                        )
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        const softClusters = [
+            "sh",
+            "th",
+            "ph",
+            "wh"
+        ];
+
+        return softClusters.some(
+            cluster =>
+                (
+                    expected.startsWith(
+                        cluster
+                    ) &&
+                    observed ===
+                        expected.slice(
+                            cluster.length
+                        )
+                ) ||
+                (
+                    expected.endsWith(
+                        cluster
+                    ) &&
+                    observed ===
+                        expected.slice(
+                            0,
+                            -cluster.length
+                        )
+                )
+        );
+    }
+
+    function speechTrainingTokenBelongsToFamily(
+        observed,
+        expected
+    ) {
+        if (observed === expected) {
+            return true;
+        }
+
+        const lexicalFamilies = [
+            new Set([
+                "ok",
+                "okay"
+            ]),
+            new Set([
+                "sync",
+                "sink",
+                "sin"
+            ])
+        ];
+
+        if (
+            lexicalFamilies.some(
+                family =>
+                    family.has(
+                        observed
+                    ) &&
+                    family.has(
+                        expected
+                    )
+            )
+        ) {
+            return true;
+        }
+
+        const singularPluralPair =
+            (
+                observed + "s" ===
+                    expected ||
+                expected + "s" ===
+                    observed
+            ) ||
+            (
+                observed + "es" ===
+                    expected ||
+                expected + "es" ===
+                    observed
+            );
+
+        if (singularPluralPair) {
+            return true;
+        }
+
+        return speechTrainingEnglishSoftOmission(
+            observed,
+            expected
+        );
+    }
+
+    function speechTrainingExpectedPhraseMatches(
+        observed,
+        candidate
+    ) {
+        const heard =
+            normalizeSpeechTrainingPhrase(
+                observed
+            );
+
+        const template =
+            String(
+                candidate ||
+                ""
+            )
+                .toLocaleLowerCase()
+                .trim();
+
+        if (!heard || !template) {
+            return false;
+        }
+
+        const placeholders = [];
+        const protectedTemplate =
+            template.replace(
+                /<[^>]+>/g,
+                value => {
+                    const token =
+                        "__wmof_placeholder_" +
+                        placeholders.length +
+                        "__";
+
+                    placeholders.push(
+                        token
+                    );
+
+                    return token;
+                }
+            );
+
+        const normalizedTemplate =
+            protectedTemplate
+                .replace(
+                    /[^\p{L}\p{N}_\s]/gu,
+                    " "
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        if (!normalizedTemplate) {
+            return false;
+        }
+
+        const heardTokens =
+            heard
+                .split(
+                    " "
+                )
+                .filter(
+                    Boolean
+                );
+
+        const templateTokens =
+            normalizedTemplate
+                .split(
+                    " "
+                )
+                .filter(
+                    Boolean
+                );
+
+        if (
+            !placeholders.length &&
+            heardTokens.length !==
+                templateTokens.length
+        ) {
+            return false;
+        }
+
+        if (!placeholders.length) {
+            return templateTokens
+                .every(
+                    (
+                        token,
+                        index
+                    ) =>
+                        speechTrainingTokenBelongsToFamily(
+                            heardTokens[
+                                index
+                            ],
+                            token
+                        )
+                );
+        }
+
+        const placeholderSet =
+            new Set(
+                placeholders
+            );
+
+        const visit =
+            (
+                templateIndex,
+                heardIndex
+            ) => {
+                if (
+                    templateIndex >=
+                        templateTokens
+                            .length
+                ) {
+                    return (
+                        heardIndex ===
+                        heardTokens.length
+                    );
+                }
+
+                const token =
+                    templateTokens[
+                        templateIndex
+                    ];
+
+                if (
+                    placeholderSet.has(
+                        token
+                    )
+                ) {
+                    for (
+                        let next =
+                            heardIndex +
+                            1;
+                        next <=
+                            heardTokens.length;
+                        next++
+                    ) {
+                        if (
+                            visit(
+                                templateIndex +
+                                    1,
+                                next
+                            )
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if (
+                    heardIndex >=
+                        heardTokens.length ||
+                    !speechTrainingTokenBelongsToFamily(
+                        heardTokens[
+                            heardIndex
+                        ],
+                        token
+                    )
+                ) {
+                    return false;
+                }
+
+                return visit(
+                    templateIndex +
+                        1,
+                    heardIndex +
+                        1
+                );
+            };
+
+        return visit(
+            0,
+            0
+        );
+    }
+
+    function speechTrainingPhraseWasExpected(
+        observed,
+        target =
+            speechTrainingTarget
+    ) {
+        if (
+            !observed ||
+            !target
+        ) {
+            return false;
+        }
+
+        const candidates =
+            [
+                ...new Set(
+                    [
+                        ...(
+                            Array.isArray(
+                                target
+                                    .expectedPhrases
+                            )
+                                ? target
+                                    .expectedPhrases
+                                : []
+                        ),
+                        target.required,
+                        target.phrase,
+                        target.display
+                    ].filter(
+                        Boolean
+                    )
+                )
+            ];
+
+        return candidates.some(
+            candidate =>
+                speechTrainingExpectedPhraseMatches(
+                    observed,
+                    candidate
+                )
+        );
+    }
+
+    function speechTrainingTargetMatchesCommand(
+        target,
+        element
+    ) {
+        if (!target || !element) {
+            return false;
+        }
+
+        const commandId =
+            element.dataset
+                ?.speechEditorId;
+
+        if (
+            target.commandId &&
+            commandId
+        ) {
+            return (
+                target.commandId ===
+                commandId
+            );
+        }
+
+        const commandKey =
+            element.dataset
+                ?.speechSystemCommand;
+
+        if (
+            target.commandKey &&
+            commandKey
+        ) {
+            return (
+                target.commandKey ===
+                commandKey
+            );
+        }
+
+        const pattern =
+            element
+                .getAttribute?.(
+                    "speech-pattern"
+                ) ||
+            "";
+
+        return Boolean(
+            target.pattern &&
+            pattern &&
+            target.pattern ===
+                pattern
+        );
+    }
+
+    function normalizeSpeechTrainingObserved(
+        observed,
+        outcome
+    ) {
+        const raw =
+            String(
+                observed ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        const live =
+            String(
+                outcome
+                    ?.lastLiveTranscript ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        if (
+            raw &&
+            live &&
+            raw !== live
+        ) {
+            const doubled =
+                (
+                    live +
+                    " " +
+                    live
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (
+                raw
+                    .toLocaleLowerCase() ===
+                doubled
+                    .toLocaleLowerCase()
+            ) {
+                return {
+                    observed:
+                        live,
+                    rawObserved:
+                        raw,
+                    normalizedFinalArtifact:
+                        true
+                };
+            }
+        }
+
+        return {
+            observed:
+                raw,
+            rawObserved:
+                raw,
+            normalizedFinalArtifact:
+                false
+        };
+    }
+
+    function speechTrainingResultPresentation(
+        result
+    ) {
+        switch (
+            result?.state
+        ) {
+            case "accepted":
+                return {
+                    symbol:
+                        "✓",
+                    label:
+                        "Current model accepted"
+                };
+            case "model-miss":
+                return {
+                    symbol:
+                        "✓",
+                    label:
+                        "Current model rejected"
+                };
+            case "divergence":
+                return {
+                    symbol:
+                        "×",
+                    label:
+                        "Current model rejected · divergence"
+                };
+            default:
+                return {
+                    symbol:
+                        "",
+                    label:
+                        "Discarded · unusable input"
+                };
+        }
+    }
+
+    function speechTrainingSameTarget(
+        left,
+        right
+    ) {
+        return Boolean(
+            left &&
+            right &&
+            left.source ===
+                right.source &&
+            left.category ===
+                right.category &&
+            left.card ===
+                right.card &&
+            left.phrase ===
+                right.phrase
+        );
+    }
+
+    function updateSpeechTrainingCount() {
+        speechTrainingUtteranceCount =
+            speechTrainingResultsHistory
+                .filter(
+                    result =>
+                        result.state !==
+                            "discarded" &&
+                        speechTrainingSameTarget(
+                            result.target,
+                            speechTrainingTarget
+                        )
+                )
+                .length;
+
+        if (speechTrainingCount) {
+            speechTrainingCount
+                .textContent =
+                String(
+                    speechTrainingUtteranceCount
+                );
+        }
+    }
+
+    function setSpeechTrainingHeardResult(
+        result
+    ) {
+        if (speechTrainingHeard) {
+            speechTrainingHeard
+                .textContent =
+                "Heard: " +
+                (
+                    result?.observed ||
+                    "—"
+                );
+        }
+
+        if (!speechTrainingHeardStatus) {
+            return;
+        }
+
+        if (!result) {
+            speechTrainingHeardStatus
+                .hidden =
+                true;
+            speechTrainingHeardStatus
+                .textContent =
+                "";
+            speechTrainingHeardStatus
+                .removeAttribute(
+                    "data-result"
+                );
+            return;
+        }
+
+        const presentation =
+            speechTrainingResultPresentation(
+                result
+            );
+
+        speechTrainingHeardStatus.hidden =
+            false;
+        speechTrainingHeardStatus
+            .dataset
+            .result =
+            result.state;
+        speechTrainingHeardStatus
+            .textContent =
+            presentation.symbol;
+        speechTrainingHeardStatus
+            .setAttribute(
+                "aria-label",
+                presentation.label
+            );
+        speechTrainingHeardStatus.title =
+            presentation.label;
+    }
+
+    function speechTrainingReviewLabel(
+        result
+    ) {
+        if (
+            result.divergenceStatus ===
+                "approved"
+        ) {
+            return "Approved as phrase";
+        }
+
+        if (
+            result.divergenceStatus ===
+                "merged"
+        ) {
+            return "Merged with existing phrase";
+        }
+
+        return isSpeechTrainingDeveloperPreviewOnly()
+            ? "Pending developer review · read only"
+            : "Pending developer review";
+    }
+
+    async function reviewSpeechTrainingDivergence(
+        result,
+        decision
+    ) {
+        if (
+            !result ||
+            result.state !==
+                "divergence" ||
+            !canResolveSpeechTrainingDivergence()
+        ) {
+            return false;
+        }
+
+        if (
+            decision ===
+                "purge" &&
+            !result.contributionId
+        ) {
+            return removeSpeechTrainingResult(
+                result
+            );
+        }
+
+        if (!result.contributionId) {
+            result.divergenceStatus =
+                decision ===
+                    "approve"
+                    ? "approved"
+                    : "merged";
+            result.reviewDecision =
+                decision;
+            renderSpeechTrainingResults();
+            return true;
+        }
+
+        const csrf =
+            await ensureSpeechTrainingCsrfToken();
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/speech-corrections/?language=en-US",
+                {
+                    method:
+                        "POST",
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Content-Type":
+                            "application/json",
+                        "X-CSRF-Token":
+                            csrf
+                    },
+                    body:
+                        JSON.stringify({
+                            action:
+                                "divergence-review",
+                            language:
+                                "en-US",
+                            decision,
+                            ids: [
+                                result
+                                    .contributionId
+                            ]
+                        })
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to review divergent speech training."
+            );
+        }
+
+        if (decision === "purge") {
+            const index =
+                speechTrainingResultsHistory
+                    .indexOf(
+                        result
+                    );
+
+            if (index >= 0) {
+                speechTrainingResultsHistory
+                    .splice(
+                        index,
+                        1
+                    );
+            }
+        }
+        else {
+            result.divergenceStatus =
+                decision ===
+                    "approve"
+                    ? "approved"
+                    : "merged";
+        }
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
+    async function removeSpeechTrainingResult(
+        result
+    ) {
+        if (!result) {
+            return false;
+        }
+
+        if (result.contributionId) {
+            const csrf =
+                await ensureSpeechTrainingCsrfToken();
+
+            const response =
+                await fetch(
+                    API_BASE +
+                    "api/speech-corrections/?language=en-US",
+                    {
+                        method:
+                            "DELETE",
+                        credentials:
+                            "same-origin",
+                        cache:
+                            "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json",
+                            "Content-Type":
+                                "application/json",
+                            "X-CSRF-Token":
+                                csrf
+                        },
+                        body:
+                            JSON.stringify({
+                                action:
+                                    "contribution",
+                                language:
+                                    "en-US",
+                                id:
+                                    result
+                                        .contributionId,
+                                reason:
+                                    "Deleted from in-app speech training results"
+                            })
+                    }
+                );
+
+            const data =
+                await response
+                    .json()
+                    .catch(
+                        () => ({})
+                    );
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to delete speech training run."
+                );
+            }
+        }
+
+        const pendingIndex =
+            speechTrainingPendingSamples
+                .indexOf(
+                    result
+                );
+
+        if (pendingIndex >= 0) {
+            speechTrainingPendingSamples
+                .splice(
+                    pendingIndex,
+                    1
+                );
+        }
+
+        const historyIndex =
+            speechTrainingResultsHistory
+                .indexOf(
+                    result
+                );
+
+        if (historyIndex >= 0) {
+            speechTrainingResultsHistory
+                .splice(
+                    historyIndex,
+                    1
+                );
+        }
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
+    function renderSpeechTrainingResults() {
+        if (speechTrainingResultsCount) {
+            speechTrainingResultsCount
+                .textContent =
+                String(
+                    speechTrainingResultsHistory
+                        .length
+                );
+        }
+
+        if (!speechTrainingResultsList) {
+            return;
+        }
+
+        speechTrainingResultsList
+            .replaceChildren();
+
+        for (
+            const result of
+            [
+                ...speechTrainingResultsHistory
+            ].reverse()
+        ) {
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "speech-training-result";
+            row.dataset.result =
+                result.state;
+
+            const presentation =
+                speechTrainingResultPresentation(
+                    result
+                );
+
+            const icon =
+                document.createElement(
+                    "span"
+                );
+
+            icon.className =
+                "speech-training-result-icon";
+            icon.dataset.result =
+                result.state;
+            icon.textContent =
+                presentation.symbol;
+            icon.setAttribute(
+                "aria-label",
+                presentation.label
+            );
+
+            const copy =
+                document.createElement(
+                    "span"
+                );
+
+            copy.className =
+                "speech-training-result-copy";
+
+            const heard =
+                document.createElement(
+                    "strong"
+                );
+
+            heard.textContent =
+                result.observed ||
+                "Bad input";
+
+            const target =
+                document.createElement(
+                    "span"
+                );
+
+            target.textContent =
+                "Expected: " +
+                (
+                    result.target
+                        ?.display ||
+                    result.target
+                        ?.phrase ||
+                    "command"
+                );
+
+            copy.append(
+                heard,
+                target
+            );
+
+            const state =
+                document.createElement(
+                    "span"
+                );
+
+            state.className =
+                "speech-training-result-state";
+            state.textContent =
+                presentation.label;
+
+            const remove =
+                document.createElement(
+                    "button"
+                );
+
+            remove.type =
+                "button";
+            remove.className =
+                "speech-training-result-remove";
+            remove.title =
+                "Delete this training run";
+            remove.setAttribute(
+                "aria-label",
+                "Delete this training run"
+            );
+
+            remove.addEventListener(
+                "click",
+                () => {
+                    remove.disabled =
+                        true;
+
+                    void removeSpeechTrainingResult(
+                        result
+                    )
+                        .catch(
+                            error => {
+                                remove.disabled =
+                                    false;
+                                console.error(
+                                    error
+                                );
+                                setSpeechTrainingPrompt(
+                                    "error",
+                                    "Error"
+                                );
+                            }
+                        );
+                }
+            );
+
+            row.append(
+                icon,
+                copy,
+                state,
+                remove
+            );
+
+            if (
+                result.state ===
+                    "divergence"
+            ) {
+                const review =
+                    document.createElement(
+                        "div"
+                    );
+
+                review.className =
+                    "speech-training-result-review";
+
+                const label =
+                    document.createElement(
+                        "span"
+                    );
+
+                label.textContent =
+                    speechTrainingReviewLabel(
+                        result
+                    );
+
+                review.append(
+                    label
+                );
+
+                if (
+                    canResolveSpeechTrainingDivergence() &&
+                    ![
+                        "approved",
+                        "merged"
+                    ].includes(
+                        result
+                            .divergenceStatus
+                    )
+                ) {
+                    for (
+                        const [
+                            decision,
+                            text
+                        ] of [
+                            [
+                                "approve",
+                                "Approve phrase"
+                            ],
+                            [
+                                "merge",
+                                "Merge"
+                            ],
+                            [
+                                "purge",
+                                "Purge"
+                            ]
+                        ]
+                    ) {
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
+
+                        button.type =
+                            "button";
+                        button.dataset
+                            .decision =
+                            decision;
+                        button.textContent =
+                            text;
+
+                        button.addEventListener(
+                            "click",
+                            () => {
+                                button.disabled =
+                                    true;
+
+                                void reviewSpeechTrainingDivergence(
+                                    result,
+                                    decision
+                                )
+                                    .catch(
+                                        error => {
+                                            button.disabled =
+                                                false;
+                                            console.error(
+                                                error
+                                            );
+                                        }
+                                    );
+                            }
+                        );
+
+                        review.append(
+                            button
+                        );
+                    }
+                }
+
+                row.append(
+                    review
+                );
+            }
+
+            speechTrainingResultsList
+                .append(
+                    row
+                );
+        }
+    }
+
+    function clearSpeechTrainingResults() {
+        speechTrainingResultsHistory
+            .splice(
+                0,
+                speechTrainingResultsHistory
+                    .length
+            );
+
+        speechTrainingOutcomeByUtterance
+            .clear();
+
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+        setSpeechTrainingHeardResult();
+
+        if (speechTrainingResults) {
+            speechTrainingResults.open =
+                false;
+        }
+    }
+
+    function finalizeSpeechTrainingResult(
+        telemetry
+    ) {
+        const utteranceId =
+            telemetry.utteranceId ??
+            telemetry.event
+                ?.id ??
+            telemetry.event
+                ?.utteranceId;
+
+        if (
+            utteranceId ===
+                undefined ||
+            speechTrainingSeenUtterances
+                .has(
+                    utteranceId
+                )
+        ) {
+            return false;
+        }
+
+        speechTrainingSeenUtterances
+            .add(
+                utteranceId
+            );
+
+        const rawObserved =
+            String(
+                telemetry.heard ||
+                telemetry.event
+                    ?.transcript ||
+                telemetry.transcript ||
+                ""
+            ).trim();
+
+        const outcome =
+            speechTrainingOutcomeByUtterance
+                .get(
+                    utteranceId
+                ) ||
+            {};
+
+        const normalizedObserved =
+            normalizeSpeechTrainingObserved(
+                rawObserved,
+                outcome
+            );
+
+        const observed =
+            normalizedObserved
+                .observed;
+
+        speechTrainingOutcomeByUtterance
+            .delete(
+                utteranceId
+            );
+
+        const modelAccepted =
+            Boolean(
+                outcome.matchedExpected
+            );
+
+        const expected =
+            observed
+                ? speechTrainingPhraseWasExpected(
+                    observed,
+                    speechTrainingTarget
+                )
+                : false;
+
+        const state =
+            !observed
+                ? "discarded"
+                : modelAccepted
+                    ? "accepted"
+                    : expected
+                        ? "model-miss"
+                        : "divergence";
+
+        const result = {
+            utteranceId,
+            target: {
+                ...speechTrainingTarget,
+                expectedPhrases:
+                    [
+                        ...(
+                            speechTrainingTarget
+                                ?.expectedPhrases ||
+                            []
+                        )
+                    ]
+            },
+            observed,
+            rawObserved:
+                normalizedObserved
+                    .rawObserved,
+            normalizedFinalArtifact:
+                normalizedObserved
+                    .normalizedFinalArtifact,
+            state,
+            expected,
+            modelAccepted,
+            divergenceStatus:
+                state ===
+                    "divergence"
+                    ? "pending"
+                    : undefined,
+            pipeline:
+                globalThis
+                    .SpeechMenu
+                    ?.pipeline,
+            runtimeRevision:
+                globalThis
+                    .SherpaRecognizer
+                    ?.runtimeRevision,
+            capturedAt:
+                Date.now()
+        };
+
+        speechTrainingResultsHistory
+            .push(
+                result
+            );
+
+        if (
+            state !==
+                "discarded"
+        ) {
+            speechTrainingPendingSamples
+                .push(
+                    result
+                );
+        }
+
+        setSpeechTrainingHeardResult(
+            result
+        );
+        renderSpeechTrainingResults();
+        updateSpeechTrainingCount();
+
+        return true;
+    }
+
+    function syncSpeechTrainingControls() {
+        if (speechTrainingButton) {
+            const unavailable =
+                !signedInProfile ||
+                !speechTrainingConnectionAvailable;
+
+            speechTrainingButton.disabled =
+                unavailable ||
+                speechTrainingActive;
+
+            speechTrainingButton.setAttribute(
+                "aria-pressed",
+                String(
+                    inAppSpeechTrainingEnabled
+                )
+            );
+
+            speechTrainingButton.title =
+                speechTrainingActive
+                    ? "Stop active training before disabling Speech Training"
+                    : unavailable
+                        ? "Sign in and connect to use Speech Training"
+                        : inAppSpeechTrainingEnabled
+                            ? "Disable Speech Training"
+                            : "Enable Speech Training";
+        }
+
+        if (speechRecognitionButton) {
+            speechRecognitionButton.disabled =
+                !speechRecognitionLanguageAvailable ||
+                speechTrainingActive;
+        }
+
+        syncSpeechTrainingStartButton();
+    }
+
+    function syncSpeechTrainingStartButton() {
+        if (!speechTrainingStartStop) {
+            return;
+        }
+
+        const speechMenu =
+            globalThis.SpeechMenu;
+
+        const muted =
+            Boolean(
+                speechMenu?.muted
+            );
+
+        const ready =
+            inAppSpeechTrainingEnabled &&
+            Boolean(
+                speechTrainingTarget
+            ) &&
+            Boolean(
+                speechMenu?.started
+            ) &&
+            !muted;
+
+        speechTrainingStartStop.disabled =
+            speechTrainingActive
+                ? false
+                : !ready;
+
+        speechTrainingStartStop.textContent =
+            speechTrainingActive
+                ? "Stop"
+                : "Start";
+
+        speechTrainingStartStop.dataset.active =
+            String(
+                speechTrainingActive
+            );
+
+        if (
+            !speechTrainingActive &&
+            inAppSpeechTrainingEnabled
+        ) {
+            setSpeechTrainingPrompt(
+                muted
+                    ? "muted"
+                    : speechTrainingTarget
+                        ? "ready"
+                        : "select",
+                muted
+                    ? "Muted"
+                    : speechTrainingTarget
+                        ? "Ready"
+                        : "Select"
+            );
+        }
+    }
+
+    function showSpeechTrainingWidget({
+        promote = false
+    } = {}) {
+        if (!speechTrainingWidget) {
+            return false;
+        }
+
+        speechTrainingWidget.hidden =
+            false;
+
+        try {
+            const open =
+                speechTrainingWidget.matches(
+                    ":popover-open"
+                );
+
+            if (
+                open &&
+                promote
+            ) {
+                speechTrainingWidget
+                    .classList
+                    .add(
+                        "popover-immediate-close"
+                    );
+
+                speechTrainingWidget
+                    .hidePopover?.();
+
+                speechTrainingWidget
+                    .showPopover?.();
+
+                requestAnimationFrame(
+                    () =>
+                        speechTrainingWidget
+                            .classList
+                            .remove(
+                                "popover-immediate-close"
+                            )
+                );
+            }
+            else if (!open) {
+                speechTrainingWidget
+                    .showPopover?.();
+            }
+        }
+        catch {}
+
+        return true;
+    }
+
+    function hideSpeechTrainingWidget() {
+        if (!speechTrainingWidget) {
+            return false;
+        }
+
+        try {
+            if (
+                speechTrainingWidget.matches(
+                    ":popover-open"
+                )
+            ) {
+                speechTrainingWidget
+                    .hidePopover?.();
+            }
+        }
+        catch {}
+
+        speechTrainingWidget.hidden =
+            true;
+
+        return true;
+    }
+
+    function setSpeechTrainingPrompt(
+        state,
+        label
+    ) {
+        if (!speechTrainingWidget) {
+            return;
+        }
+
+        speechTrainingWidget.dataset.prompt =
+            state || "ready";
+
+        if (speechTrainingPrompt) {
+            speechTrainingPrompt.textContent =
+                label ||
+                state ||
+                "Ready";
+        }
+    }
+
+    function resetSpeechTrainingTarget({
+        clearSelection = true
+    } = {}) {
+        speechTrainingTarget =
+            undefined;
+        speechTrainingUtteranceCount =
+            0;
+        speechTrainingSeenUtterances
+            .clear();
+
+        if (speechTrainingPhrase) {
+            speechTrainingPhrase.textContent =
+                "Select a command";
+        }
+
+        setSpeechTrainingHeardResult();
+        speechTrainingOutcomeByUtterance
+            .clear();
+        updateSpeechTrainingCount();
+
+        if (clearSelection) {
+            speechMicBar
+                ?.clearTrainingTarget?.();
+        }
+
+        syncSpeechTrainingStartButton();
+    }
+
+    async function ensureSpeechTrainingCsrfToken() {
+        if (speechTrainingCsrfToken) {
+            return speechTrainingCsrfToken;
+        }
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/users/",
+                {
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (
+            !response.ok ||
+            typeof data.csrfToken !==
+                "string" ||
+            data.csrfToken.length <
+                32
+        ) {
+            throw new Error(
+                data.message ||
+                "Unable to authorize speech training."
+            );
+        }
+
+        speechTrainingCsrfToken =
+            data.csrfToken;
+
+        return speechTrainingCsrfToken;
+    }
+
+    async function persistInAppSpeechTrainingSample(
+        sample
+    ) {
+        const target =
+            sample?.target;
+
+        const observed =
+            String(
+                sample?.observed ||
+                ""
+            ).trim();
+
+        if (
+            !target ||
+            !observed
+        ) {
+            throw new Error(
+                "The pending speech training sample is invalid."
+            );
+        }
+
+        if (!signedInProfile) {
+            throw new Error(
+                "Sign in to commit pending speech training."
+            );
+        }
+
+        const csrf =
+            await ensureSpeechTrainingCsrfToken();
+
+        const commandIdentity =
+            target.commandId ||
+            target.commandKey ||
+            target.card ||
+            "command";
+
+        const componentKey =
+            (
+                target.source ===
+                    "mic-bar"
+                    ? "system:speech-controls"
+                    : (
+                        "app:" +
+                        String(
+                            target.category ||
+                            "settings"
+                        ) +
+                        ":" +
+                        String(
+                            target.card ||
+                            "default"
+                        )
+                    )
+            ).slice(
+                0,
+                500
+            );
+
+        const phraseKey =
+            (
+                String(
+                    commandIdentity
+                ) +
+                ":" +
+                String(
+                    target.phrase ||
+                    target.display ||
+                    ""
+                )
+            ).slice(
+                0,
+                500
+            );
+
+        const response =
+            await fetch(
+                API_BASE +
+                "api/speech-corrections/?language=en-US",
+                {
+                    method:
+                        "POST",
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Content-Type":
+                            "application/json",
+                        "X-CSRF-Token":
+                            csrf
+                    },
+                    body:
+                        JSON.stringify({
+                            action:
+                                "sample",
+                            language:
+                                "en-US",
+                            componentKey,
+                            phraseKey,
+                            phrase:
+                                target.display ||
+                                target.phrase,
+                            canonical:
+                                target.phrase ||
+                                target.display,
+                            observed,
+                            source:
+                                "manual",
+                            trainingStyle:
+                                "in-app",
+                            pipeline:
+                                sample.pipeline ||
+                                globalThis
+                                    .SpeechMenu
+                                    ?.pipeline,
+                            runtimeRevision:
+                                sample.runtimeRevision ||
+                                globalThis
+                                    .SherpaRecognizer
+                                    ?.runtimeRevision,
+                            metadata: {
+                                trainingTargetSource:
+                                    target.source,
+                                commandId:
+                                    target.commandId ||
+                                    null,
+                                commandKey:
+                                    target.commandKey ||
+                                    null,
+                                expectedPhrases:
+                                    target.expectedPhrases ||
+                                    [],
+                                trainingResultState:
+                                    sample.state ||
+                                    null,
+                                modelAccepted:
+                                    Boolean(
+                                        sample.modelAccepted
+                                    ),
+                                expected:
+                                    Boolean(
+                                        sample.expected
+                                    ),
+                                rawObserved:
+                                    sample.rawObserved ||
+                                    sample.observed ||
+                                    null,
+                                normalizedFinalArtifact:
+                                    Boolean(
+                                        sample.normalizedFinalArtifact
+                                    ),
+                                divergenceStatus:
+                                    sample.divergenceStatus ||
+                                    null
+                            }
+                        })
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to save speech training sample."
+            );
+        }
+
+        return data;
+    }
+
+    function clearPendingSpeechTrainingSamples() {
+        speechTrainingPendingSamples
+            .splice(
+                0,
+                speechTrainingPendingSamples
+                    .length
+            );
+
+        return true;
+    }
+
+    async function commitPendingSpeechTrainingSamples() {
+        while (
+            speechTrainingPendingSamples
+                .length
+        ) {
+            const sample =
+                speechTrainingPendingSamples[
+                    0
+                ];
+
+            const persisted =
+                await persistInAppSpeechTrainingSample(
+                    sample
+                );
+
+            sample.contributionId =
+                persisted
+                    ?.contribution
+                    ?.id ||
+                persisted
+                    ?.sample
+                    ?.id ||
+                sample.contributionId;
+            sample.committed =
+                true;
+
+            renderSpeechTrainingResults();
+
+            speechTrainingPendingSamples
+                .shift();
+
+            if (
+                speechTrainingPendingSamples
+                    .length
+            ) {
+                renderPendingSpeechTrainingMessage();
+            }
+        }
+
+        return true;
+    }
+
+    function pendingSpeechTrainingTargetLabel() {
+        const target =
+            speechTrainingPendingSamples[
+                0
+            ]?.target ||
+            speechTrainingTarget;
+
+        return (
+            target?.display ||
+            target?.phrase ||
+            "this phrase"
+        );
+    }
+
+    function renderPendingSpeechTrainingMessage(
+        reason =
+            speechTrainingPendingReason ||
+            "exit"
+    ) {
+        const count =
+            speechTrainingPendingSamples
+                .length;
+
+        if (
+            !count ||
+            !speechTrainingPendingMessage
+        ) {
+            return false;
+        }
+
+        const suffix =
+            count === 1
+                ? "utterance"
+                : "utterances";
+
+        speechTrainingPendingMessage
+            .textContent =
+            count +
+            " pending " +
+            suffix +
+            " for “" +
+            pendingSpeechTrainingTargetLabel() +
+            "”. " +
+            (
+                reason ===
+                    "switch"
+                    ? "Commit or discard them before changing phrases."
+                    : "Commit or discard them before leaving Speech Training."
+            );
+
+        return true;
+    }
+
+    function finishPendingSpeechTrainingDecision(
+        result
+    ) {
+        const resolve =
+            speechTrainingPendingDecisionResolve;
+
+        speechTrainingPendingDecisionResolve =
+            undefined;
+        speechTrainingPendingDecision =
+            undefined;
+        speechTrainingPendingBusy =
+            false;
+        speechTrainingPendingReason =
+            undefined;
+
+        if (speechTrainingPendingDialog?.open) {
+            closeDialog(
+                speechTrainingPendingDialog,
+                {
+                    reason:
+                        "speech-training-pending-" +
+                        result
+                }
+            );
+        }
+
+        speechMicBar.trainingLocked =
+            speechTrainingActive;
+
+        resolve?.(
+            result
+        );
+    }
+
+    function promptPendingSpeechTrainingSamples(
+        reason
+    ) {
+        if (
+            !speechTrainingPendingSamples
+                .length
+        ) {
+            return Promise.resolve(
+                "none"
+            );
+        }
+
+        if (
+            speechTrainingPendingDecision
+        ) {
+            return speechTrainingPendingDecision;
+        }
+
+        speechTrainingPendingReason =
+            reason;
+
+        renderPendingSpeechTrainingMessage(
+            reason
+        );
+
+        if (speechTrainingPendingError) {
+            speechTrainingPendingError.hidden =
+                true;
+            speechTrainingPendingError.textContent =
+                "";
+        }
+
+        speechTrainingPendingBusy =
+            false;
+
+        speechTrainingPendingCancel.disabled =
+            false;
+        speechTrainingPendingDiscard.disabled =
+            false;
+        speechTrainingPendingCommit.disabled =
+            false;
+
+        speechMicBar.trainingLocked =
+            true;
+
+        openDialogElement(
+            speechTrainingPendingDialog,
+            {
+                reason:
+                    "speech-training-pending"
+            }
+        );
+
+        speechTrainingPendingDecision =
+            new Promise(
+                resolve => {
+                    speechTrainingPendingDecisionResolve =
+                        resolve;
+                }
+            );
+
+        return speechTrainingPendingDecision;
+    }
+
+    async function enableInAppSpeechTraining() {
+        if (
+            speechTrainingActive ||
+            !signedInProfile ||
+            !speechTrainingConnectionAvailable
+        ) {
+            return false;
+        }
+
+        await ensureSpeechRuntime();
+
+        const started =
+            await enableSpeechRecognitionRuntime();
+
+        if (!started) {
+            throw new Error(
+                "Speech recognition is unavailable."
+            );
+        }
+
+        setSpeechButtonState(
+            true,
+            Boolean(
+                globalThis
+                    .SpeechMenu
+                    ?.muted
+            )
+        );
+        setSpeechLayoutState(
+            true
+        );
+
+        inAppSpeechTrainingEnabled =
+            true;
+
+        speechMicBar.trainingMode =
+            true;
+        speechMicBar.trainingLocked =
+            false;
+
+        clearSpeechTrainingResults();
+        resetSpeechTrainingTarget();
+
+        globalThis.SpeechMenu
+            ?.extrapolatePhrases?.();
+
+        await speechMicBar
+            ?.showOptions?.(
+                globalThis
+                    .SpeechMenu
+                    ?.phraseGroups ||
+                []
+            );
+
+        if (speechTrainingTarget) {
+            showSpeechTrainingWidget();
+        }
+
+        mainMenu
+            ?.hidePopover?.();
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    async function disableInAppSpeechTraining({
+        promptPending = true
+    } = {}) {
+        if (speechTrainingActive) {
+            return false;
+        }
+
+        if (
+            promptPending &&
+            speechTrainingPendingSamples
+                .length
+        ) {
+            const decision =
+                await promptPendingSpeechTrainingSamples(
+                    "exit"
+                );
+
+            if (decision === "cancel") {
+                return false;
+            }
+        }
+
+        inAppSpeechTrainingEnabled =
+            false;
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingPromptTimer =
+            undefined;
+
+        speechMicBar.trainingLocked =
+            false;
+        speechMicBar.trainingMode =
+            false;
+
+        void speechMicBar
+            ?.hideOptions?.();
+
+        if (speechTrainingWidget) {
+            hideSpeechTrainingWidget();
+            speechTrainingWidget.style.left =
+                "";
+            speechTrainingWidget.style.top =
+                "";
+            speechTrainingWidget.style.bottom =
+                "";
+            speechTrainingWidget.style.transform =
+                "";
+        }
+
+        resetSpeechTrainingTarget({
+            clearSelection:
+                false
+        });
+
+        clearPendingSpeechTrainingSamples();
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    function startInAppSpeechTraining() {
+        const speechMenu =
+            globalThis.SpeechMenu;
+
+        if (
+            !inAppSpeechTrainingEnabled ||
+            speechTrainingActive ||
+            !speechTrainingTarget ||
+            !speechMenu?.started ||
+            speechMenu.muted
+        ) {
+            syncSpeechTrainingStartButton();
+            return false;
+        }
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingSeenUtterances
+            .clear();
+
+        speechTrainingExecutionBeforeStart =
+            speechMenu.executionEnabled;
+
+        speechMenu.executionEnabled =
+            false;
+
+        speechTrainingActive =
+            true;
+        speechMicBar.trainingLocked =
+            true;
+
+        setSpeechTrainingPrompt(
+            "speak",
+            "Speak"
+        );
+
+        syncSpeechTrainingControls();
+
+        return true;
+    }
+
+    function stopInAppSpeechTraining({
+        forced = false
+    } = {}) {
+        if (!speechTrainingActive) {
+            if (forced) {
+                void disableInAppSpeechTraining();
+            }
+
+            return false;
+        }
+
+        clearTimeout(
+            speechTrainingPromptTimer
+        );
+
+        speechTrainingPromptTimer =
+            undefined;
+
+        speechTrainingActive =
+            false;
+        speechMicBar.trainingLocked =
+            false;
+
+        if (globalThis.SpeechMenu) {
+            globalThis.SpeechMenu
+                .executionEnabled =
+                speechTrainingExecutionBeforeStart;
+        }
+
+        setSpeechTrainingPrompt(
+            globalThis.SpeechMenu
+                ?.muted
+                ? "muted"
+                : "ready",
+            globalThis.SpeechMenu
+                ?.muted
+                ? "Muted"
+                : "Ready"
+        );
+
+        syncSpeechTrainingControls();
+
+        if (forced) {
+            void disableInAppSpeechTraining();
+        }
+
+        return true;
+    }
+
+    function openSpeechTrainingEditorMode() {
+        if (
+            !signedInProfile ||
+            !hasSpeechDeveloperAccess()
+        ) {
+            return false;
+        }
+
+        const opened =
+            window.open(
+                API_BASE +
+                "api/admin/speech-editor/?training=1",
+                "wmofSpeechEditor"
+            );
+
+        if (!opened) {
+            throw new Error(
+                "The Speech Editor training window was blocked by the browser."
+            );
+        }
+
+        return true;
+    }
+
     function openDialog(id, { fromPopover = false, reason = "user" } = {}) {
         const dialog = document.getElementById(id);
         if (!dialog || dialog.open) return false;
@@ -5481,21 +9570,18 @@
         return true;
     }
 
-    scopeToggle.addEventListener("pointerup", () => {
-        const current =
-            PERCENT_MODES.indexOf(
-                normalizePercentMode(
-                    clockTimer.percentMode
-                )
-            );
-
-        applyScope(
-            PERCENT_MODES[
-                (current + 1) %
-                PERCENT_MODES.length
-            ]
-        );
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scopeToggle,
+            event:
+                "pointerup",
+            name:
+                "cycleGoalModePointerUp",
+            action:
+                "cycleGoalMode"
+        });
 
     scopeConnectionButton?.addEventListener(
         "click",
@@ -5513,14 +9599,14 @@
         }
     );
 
-    const renderedTimeButton = $("#renderedTimeButton");
+    const toggleRenderedTimeButton = $("#toggleRenderedTimeButton");
 
     function cancelRenderedTimeLongPress() {
         clearTimeout(renderedTimeLongPressTimer);
         renderedTimeLongPressTimer = undefined;
     }
 
-    renderedTimeButton.addEventListener("pointerdown", event => {
+    toggleRenderedTimeButton.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
         event.preventDefault();
         renderedTimeLongPressed = false;
@@ -5532,46 +9618,43 @@
         }, 650);
     });
 
-    renderedTimeButton.addEventListener("pointerup", () => {
-        cancelRenderedTimeLongPress();
-        if (renderedTimeLongPressed) {
-            renderedTimeLongPressed = false;
-            return;
-        }
-        const index = RENDERED_TIME_MODES.indexOf(clockTimer.renderedTimeMode);
-        applyRenderedTimeMode(RENDERED_TIME_MODES[(index + 1) % RENDERED_TIME_MODES.length]);
-    });
+    toggleRenderedTimeButton.addEventListener(
+        "pointerup",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "toggleRenderedTimePointerUp",
+                () => {
+                    cancelRenderedTimeLongPress();
+
+                    if (
+                        renderedTimeLongPressed
+                    ) {
+                        renderedTimeLongPressed =
+                            false;
+
+                        return false;
+                    }
+
+                    return globalThis
+                        .WMOFActions
+                        .toggleRenderedTime();
+                }
+            )
+    );
 
     for (const type of ["pointercancel", "pointerleave"]) {
-        renderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
+        toggleRenderedTimeButton.addEventListener(type, cancelRenderedTimeLongPress);
     }
 
-    renderedTimeButton.addEventListener("contextmenu", event => event.preventDefault());
+    toggleRenderedTimeButton.addEventListener("contextmenu", event => event.preventDefault());
 
     $("#endTimeGoalLock")?.addEventListener("click", event => {
         event.stopPropagation();
-        if (clockTimer.percentMode !== "auto") {
-            releaseEndTimeGoalOverride();
-            return;
-        }
-        refreshEndTimeLockDialog();
-        openDialogElement($("#endTimeLockDialog"), {
-            duration: 250,
-            reason: "end-time-lock-scopes"
-        });
-    });
 
-    for (const checkbox of [$("#endTimeTripLock"), $("#endTimeTotalLock")]) {
-        checkbox?.addEventListener("change", updateEndTimeLockReleaseMessage);
-    }
-
-    $("#endTimeLockForm")?.addEventListener("submit", event => {
-        event.preventDefault();
-        const scopes = selectedEndTimeLockScopes().sort();
-        const unchanged = scopes.length === endTimeLockDialogInitialScopes.length &&
-            scopes.every((scope, index) => scope === endTimeLockDialogInitialScopes[index]);
-        if (!unchanged && !setEndTimeGoalScopes(scopes)) return;
-        closeDialog($("#endTimeLockDialog"), { reason: "end-time-lock-scopes-saved" });
+        globalThis
+            .WMOFActions
+            .releaseEndTimeGoal();
     });
 
     function toggleClockTimerTypeFromTap() {
@@ -5635,7 +9718,10 @@
             clearTimeout(clockTimerTapTimer);
             clockTimerTapTimer = undefined;
             clockTimerLastTapAt = -Infinity;
-            toggleClockTimerElapsedRemaining();
+            globalThis
+                .WMOFActions
+                .toggleTimerMode();
+
             return;
         }
 
@@ -5648,7 +9734,9 @@
             () => {
                 clockTimerTapTimer = undefined;
                 clockTimerLastTapAt = -Infinity;
-                toggleClockTimerTypeFromTap();
+                globalThis
+                    .WMOFActions
+                    .toggleTimerType();
             },
             CLOCK_TIMER_DOUBLE_PRESS
         );
@@ -5684,43 +9772,71 @@
         }
     );
 
-    syncGoalsMenuButton?.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            toggleSyncGoals();
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                toggleSyncMenuButton,
+            event:
+                "click",
+            name:
+                "toggleMenuSyncClick",
+            action:
+                "toggleSync",
+            preventDefault:
+                true
+        });
 
-    goalSyncButton?.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            toggleSyncGoals();
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                toggleSyncGoalButton,
+            event:
+                "click",
+            name:
+                "toggleGoalSyncClick",
+            action:
+                "toggleSync",
+            preventDefault:
+                true
+        });
 
     tripListMenuButton?.addEventListener(
         "click",
-        () => {
-            mainMenu?.hidePopover?.();
-            void openTripList("menu");
-        }
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "openTripLogMenuClick",
+                () => {
+                    mainMenu
+                        ?.hidePopover?.();
+
+                    return globalThis
+                        .WMOFActions
+                        .openTripLog(
+                            "menu"
+                        );
+                }
+            )
     );
 
-    tripLogButton?.addEventListener(
-        "click",
-        () => {
-            if (
-                getTripListState() ===
-                    "closed"
-            ) {
-                void openTripList(
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripLogButton,
+            event:
+                "click",
+            name:
+                "openTripLogButtonClick",
+            action:
+                "openTripLog",
+            args:
+                () => [
                     "button"
-                );
-            }
-        }
-    );
+                ]
+        });
 
     tripLogSettingsButton?.addEventListener("click", () => {
         tripLogSettingsVisible = !tripLogSettingsVisible;
@@ -5728,14 +9844,22 @@
         tripLogSettingsButton.setAttribute("aria-label", tripLogSettingsVisible ? "Hide Trip Log settings" : "Show Trip Log settings");
         tripLogView?.setSettingsVisible(tripLogSettingsVisible);
     });
-    tripLogCloseButton?.addEventListener(
-        "click",
-        () => {
-            void closeTripList(
-                "close"
-            );
-        }
-    );
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripLogCloseButton,
+            event:
+                "click",
+            name:
+                "closeTripLogClick",
+            action:
+                "closeTripLog",
+            args:
+                () => [
+                    "close"
+                ]
+        });
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
@@ -5813,108 +9937,1050 @@
         }
     });
 
-    $("#graphicalSettingsForm").addEventListener("submit", event => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        syncMilitaryToggleForTimeFormat(form);
-        syncTimeFormatForMilitaryToggle(form);
-        const settings = settingsFromForm(form);
-        applyGraphicalSettings(settings);
-        saveGraphicalSettings(settings);
-        void closeDialogWithReturn(graphicalDialog, { reason: "graphical-settings-save" }).catch(() => {});
-    });
+    $("#graphicalSettingsForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveGraphicalSettingsSubmit",
+                event => {
+                    event.preventDefault();
+
+                    const form =
+                        event.currentTarget;
+
+                    syncMilitaryToggleForTimeFormat(
+                        form
+                    );
+
+                    syncTimeFormatForMilitaryToggle(
+                        form
+                    );
+
+                    globalThis
+                        .WMOFActions
+                        .updateGraphicalSettings(
+                            settingsFromForm(
+                                form
+                            )
+                        );
+
+                    void closeDialogWithReturn(
+                        graphicalDialog,
+                        {
+                            reason:
+                                "graphical-settings-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
+                }
+            )
+    );
 
     $("#resetGraphicalSettings").addEventListener("click", () => fillGraphicalForm({ ...GRAPHICAL_DEFAULTS }));
 
-    $("#stateSettingsForm").addEventListener("submit", event => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        const preferences = {
-            ...getTripPreferences(),
-            lateBreakBehavior:
-                form.elements.lateBreakBehavior.value === "autoRestartTrip"
-                    ? "autoRestartTrip"
-                    : "showLateWindow"
-        };
-        saveTripPreferences(preferences);
-        if (!tripIsLive() && !tripDraft) {
-            clockTimer.intervalElapsedBehavior = "startLatency";
-            clockTimer.autoRestartTripAfterLateBreak =
-                preferences.lateBreakBehavior === "autoRestartTrip";
-        }
-        void closeDialogWithReturn(stateDialog, { reason: "state-settings-save" }).catch(() => {});
-    });
+    $("#stateSettingsForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveStateSettingsSubmit",
+                event => {
+                    event.preventDefault();
 
-    $("#loginForm").addEventListener("submit", async event => {
-        event.preventDefault();
-        const username = $("#loginUsername").value.trim();
-        const password = $("#loginPassword").value;
-        const error = $("#loginError");
-        error.textContent = "";
+                    globalThis
+                        .WMOFActions
+                        .changeLateBreakBehavior(
+                            event
+                                .currentTarget
+                                .elements
+                                .lateBreakBehavior
+                                .value
+                        );
 
-        if (normalizedConnectionStatus() === "offline") {
-            animateOfflineClouds();
-        }
-
-        loginPending = true;
-        try {
-            const result = await clockTimer.connect(username, password);
-            if (!result?.connected) throw new Error("Login failed.");
-            deliberatelyLoggedOut = false;
-            safeStorageSet("wmof.deliberatelyLoggedOut", "false");
-            populateProfile(result.user);
-
-            for (let index = uiReturnStack.length - 1; index >= 0; index -= 1) {
-                if (
-                    uiReturnStack[index]?.type === "popover" &&
-                    uiReturnStack[index]?.element === mainMenu
-                ) {
-                    uiReturnStack.splice(index, 1);
+                    void closeDialogWithReturn(
+                        stateDialog,
+                        {
+                            reason:
+                                "state-settings-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
                 }
-            }
-            hidePopoverForHandoff(mainMenu);
+            )
+    );
 
-            syncNetworkStatusUI({ login: true });
-        }
-        catch (failure) {
-            error.textContent = failure?.message || "Unable to login.";
-        }
-        finally {
-            loginPending = false;
-        }
-    });
+    $("#loginForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "connectUserSubmit",
+                async event => {
+                    event.preventDefault();
 
-    authButton.addEventListener("pointerup", async () => {
-        if (clockTimer.networkStatus !== "online") {
-            clearTimeout(loginPromptTimeout);
-            loginPromptTimeout = undefined;
-            initialLoginAttemptPending = false;
-            openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
+                    const error =
+                        $("#loginError");
+
+                    error.textContent =
+                        "";
+
+                    try {
+                        await globalThis
+                            .WMOFActions
+                            .connectUser(
+                                $("#loginUsername")
+                                    .value,
+                                $("#loginPassword")
+                                    .value
+                            );
+                    }
+                    catch (failure) {
+                        error.textContent =
+                            failure
+                                ?.message ||
+                            "Unable to login.";
+                    }
+                }
+            )
+    );
+
+    authButton.addEventListener(
+        "pointerup",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "changeAuthenticationPointerUp",
+                async () => {
+                    if (
+                        clockTimer
+                            .networkStatus !==
+                            "online"
+                    ) {
+                        clearTimeout(
+                            loginPromptTimeout
+                        );
+
+                        loginPromptTimeout =
+                            undefined;
+
+                        initialLoginAttemptPending =
+                            false;
+
+                        openDialog(
+                            "loginDialog",
+                            {
+                                fromPopover:
+                                    true,
+                                reason:
+                                    "popover-handoff"
+                            }
+                        );
+
+                        return;
+                    }
+
+                    try {
+                        await globalThis
+                            .WMOFActions
+                            .disconnectUser();
+                    }
+                    catch {}
+                }
+            )
+    );
+
+    let speechBuildTimer;
+
+    function runSpeechBuildAnimation(
+        open
+    ) {
+        const button =
+            $("#speechMenuButton");
+
+        clearTimeout(
+            speechBuildTimer
+        );
+
+        button
+            ?.classList
+            .remove(
+                "speech-build-active"
+            );
+
+        if (!open || !button) {
             return;
         }
-        mainMenu?.hidePopover?.();
-        deliberatelyLoggedOut = true;
-        safeStorageSet("wmof.deliberatelyLoggedOut", "true");
-        clearTimeout(loginPromptTimeout);
-        try { await clockTimer.disconnect(); }
-        catch {}
-        finally { syncNetworkStatusUI(); }
-    });
 
-    $("#adminMenuButton").addEventListener("click", () => {const submenu=$("#adminSubmenu"),open=submenu.hidden;submenu.hidden=!open;$("#adminMenuButton").setAttribute("aria-expanded",String(open));});
+        void button.offsetWidth;
+
+        button
+            .classList
+            .add(
+                "speech-build-active"
+            );
+
+        speechBuildTimer =
+            setTimeout(
+                () => {
+                    button
+                        .classList
+                        .remove(
+                            "speech-build-active"
+                        );
+                },
+                1050
+            );
+    }
+
+    mainMenu
+        ?.addEventListener(
+            "parentopening",
+            event => {
+                if (
+                    event.detail
+                        ?.button
+                        ?.id ===
+                    "speechMenuButton"
+                ) {
+                    runSpeechBuildAnimation(
+                        true
+                    );
+                }
+            }
+        );
+
+    mainMenu
+        ?.addEventListener(
+            "parentclosing",
+            event => {
+                if (
+                    event.detail
+                        ?.button
+                        ?.id ===
+                    "speechMenuButton"
+                ) {
+                    runSpeechBuildAnimation(
+                        false
+                    );
+                }
+            }
+        );
+
     $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
-    $("#profileForm").addEventListener("submit", event => {
-        event.preventDefault();
-        void closeDialogWithReturn(profileDialog, { reason: "profile-save" }).catch(() => {});
-        window.dispatchEvent(new CustomEvent("wmof:profile-save", {
-            detail: Object.fromEntries(new FormData(event.currentTarget))
-        }));
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#accessTokensButton"),
+            event:
+                "click",
+            name:
+                "openAccessTokensClick",
+            action:
+                "openAccessTokens",
+            preventDefault:
+                true
+        });
 
-    $("#resetPasswordButton").addEventListener("click", () => {
-        window.dispatchEvent(new CustomEvent("wmof:reset-password-request", { detail: { apiBase: API_BASE } }));
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#speechEditorButton"),
+            event:
+                "click",
+            name:
+                "openSpeechEditorClick",
+            action:
+                "openSpeechEditor",
+            preventDefault:
+                true
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#speechTrainingButton"),
+            event:
+                "click",
+            name:
+                "openSpeechTrainingClick",
+            action:
+                "openSpeechTraining",
+            preventDefault:
+                true
+        });
+
+    $("#speechTrainingInAppChoice")
+        ?.addEventListener(
+            "click",
+            async () => {
+                closeDialog(
+                    speechTrainingChoiceDialog,
+                    {
+                        reason:
+                            "speech-training-in-app"
+                    }
+                );
+
+                try {
+                    await enableInAppSpeechTraining();
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+        );
+
+    $("#speechTrainingEditorChoice")
+        ?.addEventListener(
+            "click",
+            () => {
+                closeDialog(
+                    speechTrainingChoiceDialog,
+                    {
+                        reason:
+                            "speech-training-editor"
+                    }
+                );
+
+                openSpeechTrainingEditorMode();
+            }
+        );
+
+    const setPendingSpeechTrainingButtonsDisabled =
+        disabled => {
+            speechTrainingPendingCancel.disabled =
+                Boolean(disabled);
+            speechTrainingPendingDiscard.disabled =
+                Boolean(disabled);
+            speechTrainingPendingCommit.disabled =
+                Boolean(disabled);
+        };
+
+    speechTrainingPendingDialog
+        ?.addEventListener(
+            "cancel",
+            event => {
+                event.preventDefault();
+
+                if (
+                    !speechTrainingPendingBusy
+                ) {
+                    finishPendingSpeechTrainingDecision(
+                        "cancel"
+                    );
+                }
+            }
+        );
+
+    speechTrainingPendingCommit
+        ?.addEventListener(
+            "click",
+            async () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                speechTrainingPendingBusy =
+                    true;
+
+                setPendingSpeechTrainingButtonsDisabled(
+                    true
+                );
+
+                if (speechTrainingPendingError) {
+                    speechTrainingPendingError.hidden =
+                        true;
+                    speechTrainingPendingError.textContent =
+                        "";
+                }
+
+                try {
+                    await commitPendingSpeechTrainingSamples();
+
+                    finishPendingSpeechTrainingDecision(
+                        "commit"
+                    );
+                }
+                catch (error) {
+                    speechTrainingPendingBusy =
+                        false;
+
+                    setPendingSpeechTrainingButtonsDisabled(
+                        false
+                    );
+
+                    if (speechTrainingPendingError) {
+                        speechTrainingPendingError.hidden =
+                            false;
+                        speechTrainingPendingError.textContent =
+                            error?.message ||
+                            "Unable to commit pending speech training.";
+                    }
+                }
+            }
+        );
+
+    speechTrainingPendingDiscard
+        ?.addEventListener(
+            "click",
+            () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                clearPendingSpeechTrainingSamples();
+
+                finishPendingSpeechTrainingDecision(
+                    "discard"
+                );
+            }
+        );
+
+    speechTrainingPendingCancel
+        ?.addEventListener(
+            "click",
+            () => {
+                if (
+                    speechTrainingPendingBusy
+                ) {
+                    return;
+                }
+
+                finishPendingSpeechTrainingDecision(
+                    "cancel"
+                );
+            }
+        );
+
+    speechTrainingStartStop
+        ?.addEventListener(
+            "click",
+            () => {
+                if (speechTrainingActive) {
+                    stopInAppSpeechTraining();
+                    return;
+                }
+
+                startInAppSpeechTraining();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-options-opened",
+            () => {
+                if (
+                    inAppSpeechTrainingEnabled &&
+                    speechTrainingTarget
+                ) {
+                    showSpeechTrainingWidget({
+                        promote: true
+                    });
+                }
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-target-requested",
+            event => {
+                if (
+                    !inAppSpeechTrainingEnabled ||
+                    speechTrainingActive
+                ) {
+                    event.preventDefault();
+                    return;
+                }
+
+                const requested =
+                    event.detail;
+
+                const current =
+                    speechTrainingTarget;
+
+                const sameTarget =
+                    current &&
+                    requested &&
+                    current.source ===
+                        requested.source &&
+                    current.category ===
+                        requested.category &&
+                    current.card ===
+                        requested.card &&
+                    current.phrase ===
+                        requested.phrase;
+
+                if (
+                    sameTarget ||
+                    !current ||
+                    !speechTrainingPendingSamples
+                        .length
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (
+                    speechTrainingPendingDecision
+                ) {
+                    return;
+                }
+
+                void (
+                    async () => {
+                        const decision =
+                            await promptPendingSpeechTrainingSamples(
+                                "switch"
+                            );
+
+                        if (
+                            decision ===
+                                "cancel"
+                        ) {
+                            return;
+                        }
+
+                        speechMicBar
+                            ?.selectTrainingTarget?.(
+                                requested
+                            );
+                    }
+                )();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-target-selected",
+            event => {
+                if (
+                    !inAppSpeechTrainingEnabled ||
+                    speechTrainingActive
+                ) {
+                    return;
+                }
+
+                speechTrainingTarget = {
+                    ...event.detail
+                };
+
+                showSpeechTrainingWidget({
+                    promote: true
+                });
+
+                speechTrainingSeenUtterances
+                    .clear();
+                speechTrainingOutcomeByUtterance
+                    .clear();
+
+                if (speechTrainingPhrase) {
+                    speechTrainingPhrase
+                        .textContent =
+                        speechTrainingTarget
+                            .display ||
+                        speechTrainingTarget
+                            .phrase ||
+                        "Command";
+                }
+
+                setSpeechTrainingHeardResult();
+                updateSpeechTrainingCount();
+                syncSpeechTrainingStartButton();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-training-telemetry",
+            event => {
+                if (!inAppSpeechTrainingEnabled) {
+                    return;
+                }
+
+                const telemetry =
+                    event.detail ||
+                    {};
+
+                speechTrainingWidget
+                    ?.dispatchEvent(
+                        new CustomEvent(
+                            "speech-training-metrics",
+                            {
+                                bubbles: true,
+                                detail: {
+                                    ...telemetry
+                                }
+                            }
+                        )
+                    );
+
+                if (
+                    telemetry.type ===
+                        "muted" ||
+                    telemetry.type ===
+                        "unmuted" ||
+                    telemetry.type ===
+                        "started" ||
+                    telemetry.type ===
+                        "listeningResumed"
+                ) {
+                    syncSpeechTrainingStartButton();
+                }
+
+                if (!speechTrainingActive) {
+                    return;
+                }
+
+                const utteranceId =
+                    telemetry.utteranceId ??
+                    telemetry.event
+                        ?.id ??
+                    telemetry.event
+                        ?.utteranceId;
+
+                const transcript =
+                    String(
+                        telemetry.heard ||
+                        telemetry.event
+                            ?.transcript ||
+                        telemetry.transcript ||
+                        ""
+                    ).trim();
+
+                if (
+                    transcript &&
+                    speechTrainingHeard
+                ) {
+                    speechTrainingHeard
+                        .textContent =
+                        "Heard: " +
+                        transcript;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceTranscriptChanged" &&
+                    telemetry.event
+                        ?.isFinal !==
+                            true &&
+                    utteranceId !==
+                        undefined &&
+                    transcript
+                ) {
+                    const outcome =
+                        speechTrainingOutcomeByUtterance
+                            .get(
+                                utteranceId
+                            ) ||
+                        {
+                            matchedExpected:
+                                false,
+                            lastLiveTranscript:
+                                ""
+                        };
+
+                    outcome
+                        .lastLiveTranscript =
+                        transcript;
+
+                    speechTrainingOutcomeByUtterance
+                        .set(
+                            utteranceId,
+                            outcome
+                        );
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceStarted"
+                ) {
+                    if (
+                        utteranceId !==
+                            undefined
+                    ) {
+                        speechTrainingOutcomeByUtterance
+                            .set(
+                                utteranceId,
+                                {
+                                    matchedExpected:
+                                        false,
+                                    lastLiveTranscript:
+                                        ""
+                                }
+                            );
+                    }
+
+                    clearTimeout(
+                        speechTrainingPromptTimer
+                    );
+
+                    setSpeechTrainingPrompt(
+                        "speak",
+                        "Speak"
+                    );
+
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "speechCommandMatched" &&
+                    utteranceId !==
+                        undefined
+                ) {
+                    const outcome =
+                        speechTrainingOutcomeByUtterance
+                            .get(
+                                utteranceId
+                            ) ||
+                        {
+                            matchedExpected:
+                                false
+                        };
+
+                    if (
+                        speechTrainingTargetMatchesCommand(
+                            speechTrainingTarget,
+                            telemetry.event
+                                ?.commandElement
+                        )
+                    ) {
+                        outcome.matchedExpected =
+                            true;
+                    }
+
+                    speechTrainingOutcomeByUtterance
+                        .set(
+                            utteranceId,
+                            outcome
+                        );
+
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceTranscribed"
+                ) {
+                    return;
+                }
+
+                if (
+                    telemetry.type ===
+                        "utteranceFinished"
+                ) {
+                    clearTimeout(
+                        speechTrainingPromptTimer
+                    );
+
+                    setSpeechTrainingPrompt(
+                        "pause",
+                        "Pause"
+                    );
+
+                    speechTrainingPromptTimer =
+                        setTimeout(
+                            () => {
+                                if (
+                                    speechTrainingActive &&
+                                    !globalThis
+                                        .SpeechMenu
+                                        ?.muted
+                                ) {
+                                    setSpeechTrainingPrompt(
+                                        "speak",
+                                        "Speak"
+                                    );
+                                }
+                            },
+                            650
+                        );
+
+                    return;
+                }
+
+                if (
+                    ![
+                        "utteranceCommitted",
+                        "utteranceUnrecognized"
+                    ].includes(
+                        telemetry.type
+                    )
+                ) {
+                    return;
+                }
+
+                finalizeSpeechTrainingResult(
+                    telemetry
+                );
+            }
+        );
+
+    if (speechTrainingDragHandle) {
+        let drag;
+
+        const move =
+            event => {
+                if (
+                    !drag ||
+                    event.pointerId !==
+                        drag.pointerId
+                ) {
+                    return;
+                }
+
+                const width =
+                    speechTrainingWidget
+                        .offsetWidth;
+
+                const height =
+                    speechTrainingWidget
+                        .offsetHeight;
+
+                const left =
+                    Math.max(
+                        4,
+                        Math.min(
+                            window.innerWidth -
+                                width -
+                                4,
+                            event.clientX -
+                                drag.offsetX
+                        )
+                    );
+
+                const top =
+                    Math.max(
+                        4,
+                        Math.min(
+                            window.innerHeight -
+                                height -
+                                4,
+                            event.clientY -
+                                drag.offsetY
+                        )
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "left",
+                        left + "px"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "top",
+                        top + "px"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "bottom",
+                        "auto"
+                    );
+
+                speechTrainingWidget
+                    .style
+                    .setProperty(
+                        "transform",
+                        "none"
+                    );
+            };
+
+        const finish =
+            event => {
+                if (
+                    !drag ||
+                    event.pointerId !==
+                        drag.pointerId
+                ) {
+                    return;
+                }
+
+                try {
+                    speechTrainingDragHandle
+                        .releasePointerCapture(
+                            event.pointerId
+                        );
+                }
+                catch {}
+
+                drag =
+                    undefined;
+            };
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointerdown",
+                event => {
+                    if (
+                        speechTrainingWidget
+                            ?.hidden
+                    ) {
+                        return;
+                    }
+
+                    const rect =
+                        speechTrainingWidget
+                            .getBoundingClientRect();
+
+                    drag = {
+                        pointerId:
+                            event.pointerId,
+                        offsetX:
+                            event.clientX -
+                            rect.left,
+                        offsetY:
+                            event.clientY -
+                            rect.top
+                    };
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "left",
+                            rect.left +
+                                "px"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "top",
+                            rect.top +
+                                "px"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "bottom",
+                            "auto"
+                        );
+
+                    speechTrainingWidget
+                        .style
+                        .setProperty(
+                            "transform",
+                            "none"
+                        );
+
+                    speechTrainingDragHandle
+                        .setPointerCapture(
+                            event.pointerId
+                        );
+                }
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointermove",
+                move
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointerup",
+                finish
+            );
+
+        speechTrainingDragHandle
+            .addEventListener(
+                "pointercancel",
+                finish
+            );
+    }
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#developerDocsButton"),
+            event:
+                "click",
+            name:
+                "openDeveloperDocsClick",
+            action:
+                "openDeveloperDocs",
+            preventDefault:
+                true
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#sqlConsoleButton"),
+            event:
+                "click",
+            name:
+                "openSqlConsoleClick",
+            action:
+                "openSqlConsole",
+            preventDefault:
+                true
+        });
+
+    $("#profileForm").addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveProfileSubmit",
+                event => {
+                    event.preventDefault();
+
+                    globalThis
+                        .WMOFActions
+                        .saveProfileData(
+                            Object.fromEntries(
+                                new FormData(
+                                    event
+                                        .currentTarget
+                                )
+                            )
+                        );
+
+                    void closeDialogWithReturn(
+                        profileDialog,
+                        {
+                            reason:
+                                "profile-save"
+                        }
+                    ).catch(
+                        () => {}
+                    );
+                }
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#resetPasswordButton"),
+            event:
+                "click",
+            name:
+                "requestPasswordResetClick",
+            action:
+                "requestPasswordReset"
+        });
 
     async function fetchResource(url, options = {}) {
         return fetch(url, options)
@@ -5957,6 +11023,38 @@
             }));
     }
 
+    function installNumberPadSpeechCommands() {
+        if (
+            !numberPadDialog
+                ?.isConnected ||
+            !englishSpeech ||
+            typeof installSpeechCommand !==
+                "function"
+        ) {
+            return false;
+        }
+
+        installSpeechCommand(
+            "confirm",
+            "confirmNumberPad",
+            numberPadDialog,
+            false
+        );
+
+        installSpeechCommand(
+            "cancel",
+            "cancelNumberPadEdit",
+            numberPadDialog,
+            false
+        );
+
+        globalThis
+            .SpeechMenu
+            ?.refresh?.();
+
+        return true;
+    }
+
     async function ensureNumberPadLoaded() {
         if (numberPadDialog?.isConnected) return;
         if (!numberPadLoadPromise) {
@@ -5986,6 +11084,8 @@
                 numberPadSettings = $("#numberPadSettings");
                 numberPadConnection = $("#numberPadConnection");
                 numberPadClear = $("#numberPadClear");
+                numberPadReset = $("#numberPadReset");
+                numberPadCancel = $("#numberPadCancel");
                 numberPadConfirm = $("#numberPadConfirm");
                 numberPadContext = $("#numberPadContext");
                 numberPadReadout = $("#numberPadReadout");
@@ -5994,6 +11094,12 @@
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
                 bindNumberPadEvents();
+                setOkAllowed(
+                    numberPadDialog,
+                    false
+                );
+
+                installNumberPadSpeechCommands();
             })().catch(error => {
                 numberPadLoadPromise = undefined;
                 throw error;
@@ -6002,15 +11108,85 @@
         await numberPadLoadPromise;
     }
 
-    function normalizeTimeDigits(value) {
-        const text = String(value || "").trim();
-        if (!text) return "";
-        const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
-        if (!match) return "";
-        const hours = match[1] || "";
-        const minutes = match[2];
-        const seconds = match[3];
-        return hours ? `${hours}${minutes.padStart(2, "0")}${seconds}` : `${minutes}${seconds}`;
+    function durationValueToRawDigits(
+        value
+    ) {
+        const milliseconds =
+            parseTimelineTime(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds < 0
+        ) {
+            return "";
+        }
+
+        const totalSeconds =
+            Math.floor(
+                milliseconds /
+                1000
+            );
+
+        const hours =
+            Math.floor(
+                totalSeconds /
+                3600
+            );
+
+        const minutes =
+            Math.floor(
+                (
+                    totalSeconds %
+                    3600
+                ) /
+                60
+            );
+
+        const seconds =
+            totalSeconds %
+            60;
+
+        if (hours > 0) {
+            return (
+                String(hours) +
+                String(minutes)
+                    .padStart(2, "0") +
+                String(seconds)
+                    .padStart(2, "0")
+            );
+        }
+
+        return (
+            String(minutes) +
+            String(seconds)
+                .padStart(2, "0")
+        );
+    }
+
+    function canonicalClockTimerDuration(
+        value
+    ) {
+        const milliseconds =
+            parseTimelineTime(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds <= 0
+        ) {
+            return undefined;
+        }
+
+        return formatTimelineMilliseconds(
+            milliseconds
+        );
     }
 
     function parseTimelineTime(value) {
@@ -6107,12 +11283,6 @@
         return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")}`;
     }
 
-    function formatDateInput(date) {
-        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-        const pad = value => String(value).padStart(2, "0");
-        return `${String(date.getFullYear()).padStart(4, "0")}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    }
-
     function getTripMomentDefaults(value = new Date()) {
         const date = value instanceof Date
             ? new Date(value.getTime())
@@ -6131,18 +11301,6 @@
             startTime: time,
             creationDate: formatDateInput(date)
         };
-    }
-
-    function parseDateInput(value) {
-        const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (!match) return undefined;
-        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-        if (
-            date.getFullYear() !== Number(match[1]) ||
-            date.getMonth() !== Number(match[2]) - 1 ||
-            date.getDate() !== Number(match[3])
-        ) return undefined;
-        return date;
     }
 
     function shiftDateInput(value, days) {
@@ -6260,7 +11418,7 @@
             return "Trip Percent";
         }
         if (source === "total-goal") {
-            return "Total Percent";
+            return totalScopeLabel() + " Percent";
         }
         return titles[source] || "Number Pad";
     }
@@ -6303,20 +11461,6 @@
             numberPadState.meridiem !== numberPadState.initialMeridiem;
     }
 
-    function getNumberPadClearAction() {
-        if (!numberPadState) return "close";
-        if (numberPadHasChanges() || (numberPadState.meridiem ?? null) !== (numberPadState.initialMeridiem ?? null)) return "reset";
-        if (["trip-settings", "scheduled-start"].includes(numberPadState.backTarget)) return "back";
-        if (
-            numberPadState.role === "root" &&
-            numberPadState.source === "standard-time" &&
-            !numberPadState.everEdited
-        ) {
-            return "home";
-        }
-        return "close";
-    }
-
     function refreshNumberPad() {
         if (!numberPadState || !numberPadDialog) return;
         const percentMode = numberPadState.mode === "percent";
@@ -6349,17 +11493,22 @@
                 : "50%"
         );
         const changed = numberPadHasChanges();
-        const clearAction = getNumberPadClearAction();
-        numberPadClear.dataset.action = clearAction;
+
+        numberPadClear.dataset.action =
+            "clear";
         numberPadClear.setAttribute(
             "aria-label",
-            clearAction === "reset"
-                ? "Reset"
-                : clearAction === "back"
-                    ? "Back"
-                    : clearAction === "home"
-                        ? "Home"
-                        : "Close"
+            "Clear"
+        );
+
+        numberPadReset?.setAttribute(
+            "aria-label",
+            "Reset"
+        );
+
+        numberPadCancel?.setAttribute(
+            "aria-label",
+            "Cancel"
         );
 
         const valid = numberPadValueValid();
@@ -6376,6 +11525,11 @@
             : startsTrip
                 ? !valid
                 : ((!changed && !numberPadState.allowEmpty) || !valid);
+
+        setOkAllowed(
+            numberPadDialog,
+            !numberPadConfirm.disabled
+        );
 
         const settingsVisible =
             !percentMode &&
@@ -6429,6 +11583,106 @@
         }
     }
 
+    let numberPadAmbientTone;
+    let numberPadAmbientToneGeneration = 0;
+    const activeNumberPadTouchTones =
+        new Map();
+
+    function startNumberPadAmbientTone() {
+        const generation =
+            ++numberPadAmbientToneGeneration;
+
+        numberPadAmbientTone
+            ?.stop?.();
+        numberPadAmbientTone =
+            undefined;
+
+        void globalThis
+            .WMOFAudio
+            ?.startFrequencies?.(
+                [350, 440],
+                {
+                    waveform: "square",
+                    volume: 0.01,
+                    reason:
+                        "number-pad-ambient",
+                    suspendListening:
+                        false
+                }
+            )
+            .then(
+                handle => {
+                    if (
+                        generation !==
+                        numberPadAmbientToneGeneration
+                    ) {
+                        handle
+                            ?.stop?.();
+                        return;
+                    }
+
+                    numberPadAmbientTone =
+                        handle;
+                }
+            )
+            .catch(
+                error =>
+                    console.error(
+                        "Number pad ambient tone failed:",
+                        error
+                    )
+            );
+    }
+
+    function stopNumberPadAmbientTone() {
+        numberPadAmbientToneGeneration++;
+        numberPadAmbientTone
+            ?.stop?.();
+        numberPadAmbientTone =
+            undefined;
+    }
+
+    function stopNumberPadTouchTone(
+        button
+    ) {
+        const state =
+            activeNumberPadTouchTones
+                .get(
+                    button
+                );
+
+        if (!state) {
+            return;
+        }
+
+        state.released =
+            true;
+
+        state.handle
+            ?.stop?.();
+
+        activeNumberPadTouchTones
+            .delete(
+                button
+            );
+    }
+
+    function stopAllNumberPadAudio() {
+        stopNumberPadAmbientTone();
+
+        for (
+            const button of
+            Array.from(
+                activeNumberPadTouchTones
+                    .keys()
+            )
+        ) {
+            stopNumberPadTouchTone(
+                button
+            );
+        }
+    }
+
     async function openNumberPad({
         mode,
         source,
@@ -6438,13 +11692,35 @@
         startsTripOnConfirm = false,
         role = "root",
         workflow,
-        cancelTarget = "home",
+        cancelTarget,
         confirmTarget,
         backTarget,
         duration = 250,
-        onConfirm, onCancel, title, allowEmpty = false
+        onConfirm, onCancel, title, allowEmpty = false,
+        signal
     } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        if (
+            typeof confirmTarget !==
+                "string" ||
+            !confirmTarget.trim() ||
+            typeof cancelTarget !==
+                "string" ||
+            !cancelTarget.trim()
+        ) {
+            throw new TypeError(
+                "Number pad requires explicit confirmTarget and cancelTarget."
+            );
+        }
+
         await ensureNumberPadLoaded();
+
+        if (signal?.aborted) {
+            return false;
+        }
         const normalizedMode = mode === "percent"
             ? "percent"
             : mode === "absolute"
@@ -6465,7 +11741,7 @@
         else {
             initial = normalizedMode === "percent"
                 ? normalizePercentDigits(initialValue)
-                : normalizeTimeDigits(initialValue);
+                : durationValueToRawDigits(initialValue);
         }
         const state = {
             mode: normalizedMode,
@@ -6497,16 +11773,8 @@
                         : null
             ),
             cancelTarget,
-            confirmTarget: confirmTarget || (
-                normalizedRole === "trip-settings-field"
-                    ? "trip-settings"
-                    : "home"
-            ),
-            backTarget: backTarget || (
-                normalizedRole === "trip-settings-field"
-                    ? "trip-settings"
-                    : undefined
-            ),
+            confirmTarget,
+            backTarget,
             everEdited: false,
             allowEmpty: Boolean(allowEmpty)
         };
@@ -6527,12 +11795,22 @@
             });
         }
 
+        queueMicrotask(
+            () =>
+                speechMicBar
+                    ?.promoteTopLayer?.()
+        );
+
+        startNumberPadAmbientTone();
+
         if (source === "new-trip") {
             void settleInitialNumberPadConnection(
                 state,
                 preparationPromise ?? Promise.resolve()
             );
         }
+
+        return true;
     }
 
     async function restoreNumberPadState(snapshot, { duration = 0 } = {}) {
@@ -6546,26 +11824,37 @@
                 reason: "trip-settings-return"
             });
         }
+
+        queueMicrotask(
+            () =>
+                speechMicBar
+                    ?.promoteTopLayer?.()
+        );
+
+        startNumberPadAmbientTone();
     }
 
     function resetNumberPad() {
-        clearTimeout(numberPadLongPressTimer);
-        numberPadLongPressTimer = undefined;
-        numberPadLongPressed = false;
-        numberPadLastClearPointerDown = 0;
         numberPadState = undefined;
         if (numberPadDisplay) numberPadDisplay.textContent = "";
         if (numberPadContext) numberPadContext.textContent = "Number Pad";
         if (numberPadDate) numberPadDate.value = "";
         if (numberPadClear) {
-            numberPadClear.dataset.action = "close";
-            numberPadClear.setAttribute("aria-label", "Close");
+            numberPadClear.dataset.action = "clear";
+            numberPadClear.setAttribute("aria-label", "Clear");
         }
+        numberPadReset?.setAttribute("aria-label", "Reset");
+        numberPadCancel?.setAttribute("aria-label", "Cancel");
         if (numberPadConfirm) {
             numberPadConfirm.dataset.action = "confirm";
             numberPadConfirm.setAttribute("aria-label", "Confirm");
             numberPadConfirm.disabled = true;
         }
+
+        setOkAllowed(
+            numberPadDialog,
+            false
+        );
     }
 
     async function closeNumberPad({
@@ -6576,6 +11865,7 @@
     } = {}) {
         const state = numberPadState;
         if (!state) return false;
+
         if (!allowChanged && numberPadHasChanges()) return false;
 
         const target = destination ?? state.cancelTarget ?? "home";
@@ -6621,24 +11911,24 @@
         return true;
     }
 
-    async function requestNumberPadClose() {
-        if (!numberPadState) return false;
-        const action = getNumberPadClearAction();
-        const destination = action === "back"
-            ? numberPadState.backTarget
-            : numberPadState.cancelTarget;
+    async function cancelNumberPad() {
+        if (!numberPadState) {
+            return false;
+        }
+
+        const destination =
+            numberPadState.cancelTarget;
+
+        if (!destination) {
+            return false;
+        }
+
         return closeNumberPad({
             destination,
-            discardPrepared: destination === "home"
-        });
-    }
-
-    async function cancelNumberPad() {
-        if (!numberPadState) return false;
-        return closeNumberPad({
-            destination: numberPadState.cancelTarget || "home",
-            discardPrepared: true,
-            allowChanged: true
+            discardPrepared:
+                true,
+            allowChanged:
+                true
         });
     }
 
@@ -6727,18 +12017,37 @@
         if (autoTotalGoalValue) {
             autoTotalGoalValue.textContent =
                 getConfiguredGoalDisplay("total");
+
+            const option =
+                autoTotalGoalValue.closest(
+                    "[data-auto-goal-scope='total']"
+                );
+            const label =
+                option?.querySelector(
+                    "span"
+                );
+            if (label) {
+                label.textContent =
+                    "Your " +
+                    totalScopeLabel() +
+                    " Goal";
+            }
         }
 
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
             const scope = button.dataset.autoGoalScope === "total" ? "total" : "trip";
             const locked = lockedScopes.has(scope);
+            const scopeLabel =
+                scope === "total"
+                    ? totalScopeLabel()
+                    : "Trip";
             button.disabled = locked;
             button.setAttribute(
                 "aria-label",
                 locked
-                    ? `${scope === "total" ? "Total" : "Trip"} goal locked to End Time`
-                    : `Edit ${scope === "total" ? "Total" : "Trip"} goal`
+                    ? `${scopeLabel} goal locked to End Time`
+                    : `Edit ${scopeLabel} goal`
             );
         }
     }
@@ -6907,8 +12216,37 @@
         }
 
         if (clockTimer.standardTime !== undefined) {
-            clockTimer.standardTime = formatted;
-            if (clockTimer.standardTime !== formatted) return false;
+            const canonical =
+                canonicalClockTimerDuration(
+                    formatted
+                );
+
+            if (!canonical) {
+                return false;
+            }
+
+            clockTimer.standardTime =
+                canonical;
+
+            const appliedMilliseconds =
+                parseTimelineTime(
+                    clockTimer.standardTime
+                );
+
+            const requestedMilliseconds =
+                parseTimelineTime(
+                    canonical
+                );
+
+            if (
+                !Number.isFinite(
+                    appliedMilliseconds
+                ) ||
+                appliedMilliseconds !==
+                    requestedMilliseconds
+            ) {
+                return false;
+            }
         }
         return true;
     }
@@ -6929,16 +12267,6 @@
         numberPadState.meridiem = numberPadState.initialMeridiem;
         numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
         refreshNumberPad();
-    }
-
-    function runNumberPadClearShortAction() {
-        if (!numberPadState) return;
-        const action = getNumberPadClearAction();
-        if (action === "close" || action === "back" || action === "home") {
-            void requestNumberPadClose().catch(() => {});
-            return;
-        }
-        resetNumberPadPendingValue();
     }
 
     function changeNumberPadMeridiem(next) {
@@ -7018,13 +12346,33 @@
     }
 
     function tripIsLive() {
-        return app.dataset.tripState === "running";
+        const timerState =
+            clockTimer
+                ?.uiState;
+
+        if (
+            typeof timerState
+                ?.trip_active ===
+                "boolean"
+        ) {
+            return timerState
+                .trip_active;
+        }
+
+        return (
+            clockTimer
+                ?.status ===
+                "running" ||
+            app.dataset
+                .tripState ===
+                "running"
+        );
     }
 
     function syncDraftStandardTimeReturnFrame(formatted) {
         const state = getTripSettingsReturnNumberPadState();
         if (!state || state.source !== "new-trip") return;
-        const digits = normalizeTimeDigits(formatted);
+        const digits = durationValueToRawDigits(formatted);
         state.initial = digits;
         state.pending = digits;
         state.replaceOnNextDigit = false;
@@ -7099,7 +12447,87 @@
     function updateScheduledStartDialog() {
         const scheduled = tripDraftFutureStartDate();
         const remaining = scheduled ? scheduled.getTime() - Date.now() : 0;
-        scheduledStartCountdown.textContent = `${remaining < 0 ? "-" : ""}${formatDuration(Math.abs(remaining))}`;
+        const military =
+            clockTimer.getAttribute(
+                "military-time"
+            ) !==
+                "false";
+        let scheduledTimeLabel =
+            "---";
+
+        if (
+            scheduled &&
+            !Number.isNaN(
+                scheduled.getTime()
+            )
+        ) {
+            const hours =
+                scheduled.getHours();
+            const minutes =
+                String(
+                    scheduled.getMinutes()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    );
+            const seconds =
+                String(
+                    scheduled.getSeconds()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+            scheduledTimeLabel =
+                military
+                    ? (
+                        String(hours)
+                            .padStart(
+                                2,
+                                "0"
+                            ) +
+                        ":" +
+                        minutes +
+                        ":" +
+                        seconds
+                    )
+                    : (
+                        String(
+                            hours %
+                                12 ||
+                            12
+                        ) +
+                        ":" +
+                        minutes +
+                        ":" +
+                        seconds +
+                        " " +
+                        (
+                            hours >=
+                                12
+                                ? "PM"
+                                : "AM"
+                        )
+                    );
+        }
+
+        scheduledStartCountdownLabel.textContent =
+            "Time Until " +
+            scheduledTimeLabel;
+        scheduledStartCountdown.textContent =
+            (
+                remaining <
+                    0
+                    ? "-"
+                    : ""
+            ) +
+            formatDuration(
+                Math.abs(
+                    remaining
+                )
+            );
         scheduledStartStandardValue.textContent = String(tripDraft?.standardTime || "").trim() || "---";
         const scheduledTimeReached = remaining <= 0;
         const canStart = tripDraftCanStart(tripDraft);
@@ -7107,7 +12535,11 @@
             scheduledStartAutoArmed = false;
             scheduledStartAuto.checked = false;
             scheduledStartAuto.disabled = true;
-            void beginScheduledTrip("scheduled");
+            void globalThis
+                .WMOFActions
+                .startScheduledTrip(
+                    "scheduled"
+                );
             return;
         }
         if (scheduledTimeReached) {
@@ -7150,35 +12582,110 @@
         if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-start-cancel"});
     }
 
-    scheduledStartAuto.addEventListener("change", () => {
-        scheduledStartAutoArmed = scheduledStartAuto.checked;
-        updateScheduledStartDialog();
-    });
-    scheduledStartNow.addEventListener("click", () => void beginScheduledTrip("now"));
-    scheduledStartOnTime.addEventListener("click", () => void beginScheduledTrip("scheduled"));
-    scheduledStartCancel.addEventListener("click", cancelScheduledStartPrompt);
-    scheduledStartClose.addEventListener("click", cancelScheduledStartPrompt);
-    scheduledStartDialog.addEventListener("cancel", event => {event.preventDefault();cancelScheduledStartPrompt();});
-    scheduledStartStandard.addEventListener("click", () => {
-        if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-standard-edit",immediate:true});
-        void openNumberPad({
-            mode: "time",
-            source: "standard-time",
-            initialValue: tripDraft?.standardTime || "",
-            role: "trip-settings-field",
-            workflow: "new-trip",
-            cancelTarget: "scheduled-start",
-            confirmTarget: "scheduled-start",
-            backTarget: "scheduled-start",
-            duration: 0,
-            allowEmpty: true,
-            onConfirm: value => {
-                if (!tripDraft) return false;
-                tripDraft.standardTime = value || "";
-                return true;
-            }
-        }).catch(() => showScheduledStartDialog({resolution: scheduledStartNeedsResolution}));
-    });
+    scheduledStartAuto.addEventListener(
+        "change",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "changeScheduledStartAutoInput",
+                () =>
+                    globalThis
+                        .WMOFActions
+                        .changeScheduledStartAuto(
+                            scheduledStartAuto
+                                .checked
+                        )
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartNow,
+            event:
+                "click",
+            name:
+                "startScheduledTripNowClick",
+            action:
+                "startScheduledTrip",
+            args:
+                () => [
+                    "now"
+                ]
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartOnTime,
+            event:
+                "click",
+            name:
+                "startScheduledTripOnTimeClick",
+            action:
+                "startScheduledTrip",
+            args:
+                () => [
+                    "scheduled"
+                ]
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartCancel,
+            event:
+                "click",
+            name:
+                "cancelScheduledStartClick",
+            action:
+                "cancelScheduledStart"
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartClose,
+            event:
+                "click",
+            name:
+                "closeScheduledStartClick",
+            action:
+                "cancelScheduledStart"
+        });
+
+    scheduledStartDialog.addEventListener(
+        "cancel",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "cancelScheduledStartDialog",
+                event => {
+                    event.preventDefault();
+
+                    return globalThis
+                        .WMOFActions
+                        .cancelScheduledStart();
+                }
+            )
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                scheduledStartStandard,
+            event:
+                "click",
+            name:
+                "openScheduledStandardTimeEditorClick",
+            action:
+                "openScheduledStandardTimeEditor"
+        });
 
     function tripDraftCanStart(draft = tripDraft) {
         if (!draft || !parseDateInput(draft.creationDate)) return false;
@@ -7197,8 +12704,20 @@
     async function startTripDraft() {
         const draft = tripDraft;
         if (draft?.deferred) return false;
-        const standardTime = String(draft?.standardTime || "").trim();
-        if (!tripDraftCanStart(draft)) return false;
+        const standardTime =
+            canonicalClockTimerDuration(
+                String(
+                    draft?.standardTime ||
+                    ""
+                ).trim()
+            );
+
+        if (
+            !standardTime ||
+            !tripDraftCanStart(draft)
+        ) {
+            return false;
+        }
 
         clockTimer.configure({auto_goal: Boolean(draft.syncGoals)});
         clockTimer.intervalElapsedBehavior = "startLatency";
@@ -7210,6 +12729,23 @@
             const window = CalendarRange.tripWindow(calendar);
             try { await updateTripTotals(window); }
             catch (error) { if (!error.clockTimerOffline) throw error; }
+        }
+
+        if (
+            draft
+                .endStartTransition ===
+                true &&
+            draft
+                .startTimeSetToNow ===
+                true
+        ) {
+            // The 5-note transition normally preloads one suppression for
+            // the upcoming Start Trip cue. If Actual Start is pushed to Now,
+            // cancel that one-shot suppression so the normal start chime is
+            // allowed to play as the second chime.
+            cancelSemanticDisable(
+                "chime"
+            );
         }
 
         await clockTimer.start({
@@ -7261,7 +12797,8 @@
         tripSettingsSession = {
             live: tripIsLive(),
             original: cloneTripSettingsValues(values),
-            values: cloneTripSettingsValues(values)
+            values: cloneTripSettingsValues(values),
+            startTimeSetToNow: false
         };
         return tripSettingsSession;
     }
@@ -7461,13 +12998,17 @@
             if (!tripDraft) return false;
             Object.assign(tripDraft, {
                 deferred: Boolean(values.deferred),
-            nonProduction: values.nonProduction === true,
+                nonProduction: values.nonProduction === true,
                 standardTime: values.standardTime,
                 creationTime: values.creationTime,
                 creationDate: values.creationDate,
                 scheduledStart: values.scheduledStart,
                 startTime: values.startTime,
-                syncGoals: Boolean(values.syncGoals)
+                syncGoals: Boolean(values.syncGoals),
+                startTimeSetToNow:
+                    tripSettingsSession
+                        ?.startTimeSetToNow ===
+                    true
             });
             return true;
         }
@@ -7477,7 +13018,22 @@
             if (clockTimer.creationTime !== values.creationTime) clockTimer.creationTime = values.creationTime;
             if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
-            if (clockTimer.standardTime !== values.standardTime) clockTimer.standardTime = values.standardTime;
+            if (
+                clockTimer.standardTime !==
+                    values.standardTime
+            ) {
+                const canonicalStandardTime =
+                    canonicalClockTimerDuration(
+                        values.standardTime
+                    );
+
+                if (!canonicalStandardTime) {
+                    return false;
+                }
+
+                clockTimer.standardTime =
+                    canonicalStandardTime;
+            }
             clockTimer.nonProduction = values.nonProduction === true;
             clockTimer.configure({auto_goal: Boolean(values.syncGoals)});
             stagedStandardTime = values.standardTime || stagedStandardTime;
@@ -7492,7 +13048,7 @@
         const state = getTripSettingsReturnNumberPadState();
         const standardTime = tripSettingsSession?.values?.standardTime;
         if (!state || state.source !== "standard-time" || !standardTime) return;
-        const digits = normalizeTimeDigits(standardTime);
+        const digits = durationValueToRawDigits(standardTime);
         if (!digits) return;
         const changed = digits !== state.initial;
         state.pending = digits;
@@ -7684,176 +13240,349 @@
         const keypadSpeechPattern = globalThis.WMOFLanguages?.["en-US"]?.speech?.commands?.keypadValue;
         if (keypadSpeechPattern) {
             const speechField = document.createElement("speech-command");
-            speechField.hidden = true;
             speechField.setAttribute("speech-pattern", keypadSpeechPattern);
-            speechField.setAttribute("speech-function", "WMOFSpeechCommands.setKeypadValue");
-            speechField.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+            speechField.setAttribute("speech-function", "WMOFActions.enterKeypadValue");
+            speechField.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
             speechField.setAttribute("speech-preproc-field", "spokenValue");
             speechField.setAttribute("speech-preproc-context", "keypad");
-            numberPadDialog.append(speechField);
+            speechField.setAttribute("speech-open-ended", "");
+            speechField.dataset.speechOptionsPhrase =
+                "<spokenValue>";
+            ensureSpeechMenu(numberPadDialog).append(speechField);
         }
-        const backspace = $("#numberPadBackspace");
-        let deleteTimer, held = false;
-        const erase = eraseNumberPadPendingValue;
-        backspace.addEventListener("pointerdown", event => {
-            held = false;backspace.setPointerCapture?.(event.pointerId);
-            deleteTimer = setTimeout(() => {held=true;erase(true);}, NUMBER_PAD_LONG_PRESS);
-        });
-        backspace.addEventListener("pointerup", () => {clearTimeout(deleteTimer);if (!held) erase(false);});
-        backspace.addEventListener("pointercancel", () => clearTimeout(deleteTimer));
-        backspace.addEventListener("click", event => {if (event.detail===0) erase(false);});
+        const backspace =
+            $("#numberPadBackspace");
 
-        numberPadDialog.querySelectorAll("[data-number]").forEach(button => {
-            button.addEventListener("pointerup", () => {
-                if (!numberPadState) return;
-                const previousPending = numberPadState.pending;
-                if (numberPadState.replaceOnNextDigit) {
-                    numberPadState.pending = "";
-                    numberPadState.replaceOnNextDigit = false;
+        let deleteTimer;
+        let held = false;
+
+        backspace.addEventListener(
+            "pointerdown",
+            globalThis
+                .WMOFInteractionFunctions
+                .define(
+                    "clearNumberPadPointerDown",
+                    event => {
+                        held = false;
+
+                        backspace
+                            .setPointerCapture?.(
+                                event.pointerId
+                            );
+
+                        deleteTimer =
+                            setTimeout(
+                                () => {
+                                    held =
+                                        true;
+
+                                    globalThis
+                                        .WMOFActions
+                                        .clearNumberPadValue();
+                                },
+                                NUMBER_PAD_LONG_PRESS
+                            );
+                    }
+                )
+        );
+
+        backspace.addEventListener(
+            "pointerup",
+            globalThis
+                .WMOFInteractionFunctions
+                .define(
+                    "clearNumberPadPointerUp",
+                    () => {
+                        clearTimeout(
+                            deleteTimer
+                        );
+
+                        if (!held) {
+                            globalThis
+                                .WMOFActions
+                                .clearNumberPadValue();
+                        }
+                    }
+                )
+        );
+
+        backspace.addEventListener(
+            "pointercancel",
+            () =>
+                clearTimeout(
+                    deleteTimer
+                )
+        );
+
+        backspace.addEventListener(
+            "click",
+            globalThis
+                .WMOFInteractionFunctions
+                .define(
+                    "clearNumberPadKeyboardClick",
+                    event => {
+                        if (
+                            event.detail ===
+                            0
+                        ) {
+                            globalThis
+                                .WMOFActions
+                                .clearNumberPadValue();
+                        }
+                    }
+                )
+        );
+
+        numberPadDialog
+            .querySelectorAll(
+                "[data-touch-tone]"
+            )
+            .forEach(
+                button => {
+                    button.addEventListener(
+                        "pointerdown",
+                        event => {
+                            stopNumberPadTouchTone(
+                                button
+                            );
+
+                            if (
+                                button.disabled ||
+                                button.hasAttribute(
+                                    "disabled"
+                                )
+                            ) {
+                                return;
+                            }
+
+                            button
+                                .setPointerCapture?.(
+                                    event.pointerId
+                                );
+
+                            const state = {
+                                released: false,
+                                handle: undefined
+                            };
+
+                            activeNumberPadTouchTones
+                                .set(
+                                    button,
+                                    state
+                                );
+
+                            const frequencies =
+                                String(
+                                    button.dataset
+                                        .touchTone ||
+                                    ""
+                                )
+                                    .split(",")
+                                    .map(Number);
+
+                            void globalThis
+                                .WMOFAudio
+                                ?.startFrequencies?.(
+                                    frequencies,
+                                    {
+                                        waveform:
+                                            "square",
+                                        volume: 1,
+                                        reason:
+                                            "number-pad",
+                                        suspendListening:
+                                            false
+                                    }
+                                )
+                                .then(
+                                    handle => {
+                                        if (
+                                            state.released
+                                        ) {
+                                            handle
+                                                ?.stop?.();
+                                            return;
+                                        }
+
+                                        state.handle =
+                                            handle;
+                                    }
+                                )
+                                .catch(
+                                    error =>
+                                        console.error(
+                                            "Number pad tone failed:",
+                                            error
+                                        )
+                                );
+                        }
+                    );
+
+                    for (
+                        const type of
+                        [
+                            "pointerup",
+                            "pointercancel",
+                            "pointerleave",
+                            "lostpointercapture"
+                        ]
+                    ) {
+                        button.addEventListener(
+                            type,
+                            () =>
+                                stopNumberPadTouchTone(
+                                    button
+                                )
+                        );
+                    }
                 }
-                const candidate = numberPadState.pending + button.dataset.number;
-                if (numberPadState.mode === "absolute" && candidate.length > 6) return;
-                numberPadState.pending = candidate;
-                if (candidate !== previousPending) numberPadState.everEdited = true;
-                refreshNumberPad();
-            });
-        });
+            );
 
-        [numberPadAM, numberPadPM].forEach(button => {
-            button.addEventListener("pointerup", () => changeNumberPadMeridiem(button.dataset.meridiem));
-        });
+        numberPadDialog
+            .querySelectorAll(
+                "[data-number]"
+            )
+            .forEach(
+                button => {
+                    globalThis
+                        .WMOFInteractionFunctions
+                        .bindAction({
+                            element:
+                                button,
+                            event:
+                                "pointerup",
+                            name:
+                                "enterNumberPadDigit" +
+                                button.dataset
+                                    .number +
+                                "PointerUp",
+                            action:
+                                "enterNumberPadDigit",
+                            args:
+                                () => [
+                                    button.dataset
+                                        .number
+                                ]
+                        });
+                }
+            );
 
-        numberPadDate.addEventListener("input", () => {
-            if (!numberPadState || numberPadState.mode !== "absolute") return;
-            if (numberPadState.pendingDate !== numberPadDate.value) {
-                numberPadState.everEdited = true;
-            }
-            numberPadState.pendingDate = numberPadDate.value;
-            refreshNumberPad();
-        });
-
-        numberPadConfirm.addEventListener("pointerup", async () => {
-            if (!numberPadState || numberPadConfirm.disabled) return;
-            if (numberPadConfirm.dataset.action === "autocorrect") {
-                if (numberPadState.mode === "absolute") autocorrectAbsoluteState(numberPadState);
-                else numberPadState.pending = autocorrectTimeDigits(numberPadState.pending);
-                numberPadState.replaceOnNextDigit = false;
-                refreshNumberPad();
-                return;
-            }
-            try {
-                if (await commitNumberPad()) {
-                    const destination = numberPadState?.confirmTarget || "home";
-                    await closeNumberPad({
-                        discardPrepared: false,
-                        allowChanged: true,
-                        destination
+        [
+            numberPadAM,
+            numberPadPM
+        ].forEach(
+            button => {
+                globalThis
+                    .WMOFInteractionFunctions
+                    .bindAction({
+                        element:
+                            button,
+                        event:
+                            "pointerup",
+                        name:
+                            "setNumberPad" +
+                            button.dataset
+                                .meridiem +
+                            "PointerUp",
+                        action:
+                            "setNumberPadMeridiem",
+                        args:
+                            () => [
+                                button.dataset
+                                    .meridiem
+                            ]
                     });
-                }
             }
-            catch {
-                if (numberPadState) {
-                    numberPadState.persistence = "offline";
-                    refreshNumberPad();
-                }
-            }
-        });
+        );
 
-        numberPadClear.addEventListener("pointerdown", event => {
-            if (!numberPadState || getNumberPadClearAction() !== "reset") return;
-            const now = performance.now();
-            const doublePress = now - numberPadLastClearPointerDown <= NUMBER_PAD_DOUBLE_PRESS;
-            numberPadLastClearPointerDown = now;
-            numberPadLongPressed = false;
-            numberPadClear.setPointerCapture?.(event.pointerId);
-            clearTimeout(numberPadLongPressTimer);
-            if (doublePress) {
-                numberPadLongPressed = true;
-                resetNumberPadPendingValue();
-                return;
-            }
-            numberPadLongPressTimer = setTimeout(() => {
-                numberPadLongPressTimer = undefined;
-                numberPadLongPressed = true;
-                if (!numberPadState) return;
-                resetNumberPadPendingValue();
-            }, NUMBER_PAD_LONG_PRESS);
-        });
-
-        numberPadClear.addEventListener("pointerup", event => {
-            if (numberPadClear.hasPointerCapture?.(event.pointerId)) numberPadClear.releasePointerCapture(event.pointerId);
-            if (numberPadLongPressTimer !== undefined) {
-                clearTimeout(numberPadLongPressTimer);
-                numberPadLongPressTimer = undefined;
-            }
-            if (numberPadLongPressed) {
-                numberPadLongPressed = false;
-                return;
-            }
-            runNumberPadClearShortAction();
-        });
-
-        numberPadClear.addEventListener("pointercancel", () => {
-            clearTimeout(numberPadLongPressTimer);
-            numberPadLongPressTimer = undefined;
-            numberPadLongPressed = false;
-        });
-
-        numberPadClear.addEventListener("click", event => {
-            if (event.detail === 0) runNumberPadClearShortAction();
-        });
-
-        numberPadConnection.addEventListener("click", () => {
-            if (
-                !numberPadState ||
-                numberPadState.mode === "percent" ||
-                numberPadSettingsArea.dataset.persistence !== "offline"
-            ) return;
-            void resumeConnectionFromCloud({ source: "number-pad" }).catch(() => {});
-        });
-
-        numberPadSettings.addEventListener("pointerup", () => {
-            if (
-                !numberPadState ||
-                numberPadState.mode === "percent" ||
-                numberPadState.role === "trip-settings-field"
-            ) return;
-            if (tripDraft && numberPadState.source === "new-trip" && numberPadValueValid()) {
-                const formatted = renderTimeDigits(numberPadState.pending);
-                if (formatted) tripDraft.standardTime = formatted;
-            }
-
-            const returnState = { ...numberPadState };
-            setTripSettingsReturnToNumberPad(returnState);
-
-            if (!openTripSettingsDialog("number-pad-settings", { duration: 0 })) {
-                resetTripSettingsNavigation();
-                return;
-            }
-
-            void closeNumberPad({
-                discardPrepared: false,
-                allowChanged: true,
-                immediate: true,
-                destination: "none"
-            }).then(closed => {
-                if (closed) return;
-                resetTripSettingsNavigation();
-                closeDialog(tripSettingsDialog, {
-                    reason: "number-pad-settings:rollback",
-                    immediate: true
-                });
-            }).catch(() => {
-                resetTripSettingsNavigation();
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadDate,
+                event:
+                    "input",
+                name:
+                    "changeNumberPadDateInput",
+                action:
+                    "changeNumberPadDate",
+                args:
+                    () => [
+                        numberPadDate
+                            .value
+                    ]
             });
-        });
 
-        numberPadDialog.addEventListener("cancel", event => {
-            event.preventDefault();
-            void cancelNumberPad().catch(() => {});
-        });
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadConfirm,
+                event:
+                    "pointerup",
+                name:
+                    "confirmNumberPadPointerUp",
+                action:
+                    "confirmNumberPad"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadClear,
+                event:
+                    "pointerup",
+                name:
+                    "clearNumberPadPointerUp",
+                action:
+                    "clearNumberPadValue"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadReset,
+                event:
+                    "pointerup",
+                name:
+                    "resetNumberPadPointerUp",
+                action:
+                    "resetNumberPadValue"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadCancel,
+                event:
+                    "pointerup",
+                name:
+                    "cancelNumberPadPointerUp",
+                action:
+                    "cancelNumberPadEdit"
+            });
+
+        numberPadDialog.addEventListener(
+            "cancel",
+            globalThis
+                .WMOFInteractionFunctions
+                .define(
+                    "cancelNumberPadDialog",
+                    event => {
+                        event.preventDefault();
+
+                        return globalThis
+                            .WMOFActions
+                            .cancelNumberPadEdit();
+                    }
+                )
+        );
 
         numberPadDialog.addEventListener("close", () => {
+            stopAllNumberPadAudio();
             resetNumberPad();
         });
 
@@ -7864,118 +13593,148 @@
         refreshTripSettingsValues();
     });
 
-    tripSettingsCloud.addEventListener("click", () => {
-        if (
-            tripSettingsCloud.dataset.networkStatus !== "offline" ||
-            connectionCloudPhase !== "settled"
-        ) return;
-        void resumeConnectionFromCloud({
-            source: "trip-settings"
-        }).catch(() => {});
-    });
-
-    tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (button.disabled) return;
-            const field = button.dataset.tripTimeField;
-
-            void (async () => {
-                try {
-                    await openTripFieldNumberPad(field);
-                    if (!numberPadDialog?.open) return;
-                    if (!closeDialog(tripSettingsDialog, {
-                        reason: `trip-settings:${field}`,
-                        immediate: true
-                    })) {
-                        await closeNumberPad({
-                            discardPrepared: false,
-                            allowChanged: true,
-                            immediate: true,
-                            destination: "none"
-                        });
+    tripSettingsCloud.addEventListener(
+        "click",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "resumeTripSettingsConnectionClick",
+                () => {
+                    if (
+                        tripSettingsCloud
+                            .dataset
+                            .networkStatus !==
+                                "offline" ||
+                        connectionCloudPhase !==
+                            "settled"
+                    ) {
+                        return false;
                     }
+
+                    return globalThis
+                        .WMOFActions
+                        .resumeConnection(
+                            "trip-settings"
+                        );
                 }
-                catch {}
-            })();
+            )
+    );
+
+    tripSettingsDialog
+        .querySelectorAll(
+            "[data-trip-time-field]"
+        )
+        .forEach(
+            button => {
+                globalThis
+                    .WMOFInteractionFunctions
+                    .bindAction({
+                        element:
+                            button,
+                        event:
+                            "pointerup",
+                        name:
+                            "openTrip" +
+                            String(
+                                button.dataset
+                                    .tripTimeField ||
+                                "Time"
+                            )
+                                .replace(
+                                    /[^A-Za-z0-9]+(.)/g,
+                                    (
+                                        match,
+                                        character
+                                    ) =>
+                                        character
+                                            ?.toUpperCase() ||
+                                        ""
+                                ) +
+                            "EditorPointerUp",
+                        action:
+                            "openTripTimeEditor",
+                        args:
+                            () => [
+                                button.dataset
+                                    .tripTimeField
+                            ]
+                    });
+            }
+        );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripSetStartsNow,
+            event:
+                "pointerup",
+            name:
+                "toggleTripStartsNowPointerUp",
+            action:
+                "toggleTripStartsNow"
         });
-    });
 
-    tripSetStartsNow.addEventListener("pointerup", () => {
-        if (!tripDraft || tripIsLive()) return;
-        if (!tripSettingsSession) beginTripSettingsSession();
-        const values = tripSettingsSession?.values;
-        if (!values) return;
-
-        if (!tripStartsNowState) {
-            const now = new Date();
-            const value = formatTimelineDateTime(now, values.creationDate);
-            if (!value) return;
-            const label = formatTripTimeOnly(value, values.creationDate);
-            if (!label || label === "---") return;
-            tripStartsNowState = {
-                value,
-                label,
-                snapshot: {
-                    scheduledStart: values.scheduledStart,
-                    startTime: values.startTime
-                },
-                scheduled: false,
-                actual: false
-            };
-            syncTripStartsNowUI();
-            return;
-        }
-
-        beginTripStartsNowExit();
-    });
-
-    tripSetStartsNowCancel.addEventListener("pointerup", () => {
-        if (!tripStartsNowState) return;
-        const values = tripSettingsSession?.values;
-        const snapshot = tripStartsNowState.snapshot;
-        if (values && snapshot) {
-            if (tripStartsNowState.scheduled) {
-                values.scheduledStart = snapshot.scheduledStart;
-            }
-            if (tripStartsNowState.actual) {
-                values.startTime = snapshot.startTime;
-            }
-        }
-        beginTripStartsNowExit();
-    });
-
-    tripStartNowToggles.forEach(button => {
-        button.addEventListener("pointerup", () => {
-            if (!tripStartsNowState) return;
-            const values = tripSettingsSession?.values;
-            const snapshot = tripStartsNowState.snapshot;
-            if (!values || !snapshot) return;
-
-            const scheduled =
-                button.dataset.tripStartNowTarget === "scheduled-start";
-            const key = scheduled ? "scheduled" : "actual";
-            const selected = !tripStartsNowState[key];
-            tripStartsNowState[key] = selected;
-
-            if (scheduled) {
-                values.scheduledStart = selected
-                    ? tripStartsNowState.value
-                    : snapshot.scheduledStart;
-            }
-            else {
-                values.startTime = selected
-                    ? tripStartsNowState.value
-                    : snapshot.startTime;
-            }
-
-            refreshTripSettingsValues();
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                tripSetStartsNowCancel,
+            event:
+                "pointerup",
+            name:
+                "cancelTripStartsNowPointerUp",
+            action:
+                "cancelTripStartsNow"
         });
-    });
 
-    $("#tripProductive").addEventListener("change", event => {
-        const session = tripSettingsSession || beginTripSettingsSession();
-        if (session) session.values.nonProduction = !event.target.checked;
-    });
+    tripStartNowToggles.forEach(
+        button => {
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    element:
+                        button,
+                    event:
+                        "pointerup",
+                    name:
+                        "toggleTripStartsNow" +
+                        (
+                            button.dataset
+                                .tripStartNowTarget ===
+                                "scheduled-start"
+                                ? "Scheduled"
+                                : "Actual"
+                        ) +
+                        "PointerUp",
+                    action:
+                        "toggleTripStartsNowTarget",
+                    args:
+                        () => [
+                            button.dataset
+                                .tripStartNowTarget
+                        ]
+                });
+        }
+    );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#tripProductive"),
+            event:
+                "change",
+            name:
+                "changeTripProductiveInput",
+            action:
+                "changeTripProductive",
+            args:
+                event => [
+                    event.target
+                        .checked
+                ]
+        });
 
     function renderDeferredTrip() {
         const button = $("#newTripButton");
@@ -7983,83 +13742,47 @@
         button.title = tripDraft?.deferred ? "Resume deferred trip" : "New Trip";
     }
 
-    $("#tripDefer").addEventListener("change", event => {
-        const session = tripSettingsSession || beginTripSettingsSession();
-        if (!session || session.live) return;
-        const values = session.values;
-        if (event.target.checked) {
-            session.preDeferredValues = cloneTripSettingsValues(values);
-            values.scheduledStart = values.creationTime;
-            values.startTime = undefined;
-            tripStartsNowState = undefined;
-            tripStartsNowExiting = false;
-        } else {
-            if (session.preDeferredValues) {
-                Object.assign(values, cloneTripSettingsValues(session.preDeferredValues));
-            }
-            session.preDeferredValues = undefined;
-        }
-        values.deferred = event.target.checked;
-        tripStartsNowState = undefined;
-        refreshTripSettingsValues();
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#tripDefer"),
+            event:
+                "change",
+            name:
+                "changeTripDeferredInput",
+            action:
+                "changeTripDeferred",
+            args:
+                event => [
+                    event.target
+                        .checked
+                ]
+        });
 
-    tripSettingsForm.addEventListener("submit", event => {
-        event.preventDefault();
-        if (!tripSettingsSession) beginTripSettingsSession();
+    tripSettingsForm.addEventListener(
+        "submit",
+        globalThis
+            .WMOFInteractionFunctions
+            .define(
+                "saveTripSettingsSubmit",
+                event => {
+                    event.preventDefault();
 
-        void (async () => {
-            const startingDraft = Boolean(tripDraft && !tripIsLive());
-            if (!applyTripSettingsSession()) {
-                refreshTripSettingsValues();
-                return;
-            }
+                    const result =
+                        globalThis
+                            .WMOFActions
+                            .saveTripSettings();
 
-            if (startingDraft) {
-                if (tripDraft.deferred) {
-                    tripStartsNowState = undefined;
-                    tripSettingsSession = undefined;
-                    if (numberPadDialog?.open) await closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
-                    uiReturnStack.length = 0;
-                    resetTripSettingsNavigation();
-                    closeDialog(tripSettingsDialog, { reason: "trip-settings-defer" });
-                    renderDeferredTrip();
-                    return;
-                }
-                if (tripDraftHasFutureStart(tripDraft)) {
-                    tripStartsNowState = undefined;
-                    tripSettingsSession = undefined;
-                    resetTripSettingsNavigation();
-                    closeDialog(tripSettingsDialog, { reason: "trip-settings-scheduled", immediate: true });
-                    showScheduledStartDialog();
-                    return;
-                }
-                try {
-                    if (!await startTripDraft()) {
-                        restoreDraftFromTripSettingsOriginal();
-                        refreshTripSettingsValues();
-                        return;
-                    }
-                }
-                catch {
-                    restoreDraftFromTripSettingsOriginal();
-                    refreshTripSettingsValues();
-                    return;
-                }
-                tripStartsNowState = undefined;
-                tripSettingsSession = undefined;
-                resetTripSettingsNavigation();
-                closeDialog(tripSettingsDialog, { reason: "trip-settings-start" });
-                return;
-            }
+                    result
+                        ?.catch?.(
+                            () => {}
+                        );
 
-            syncTripSettingsCallerAfterSave();
-            await clockTimer.persistCurrentTrip();
-            tripStartsNowState = undefined;
-            tripSettingsSession = undefined;
-            await closeTripSettingsToNavigation("trip-settings-save");
-        })().catch(() => {});
-    });
+                    return result;
+                }
+            )
+    );
 
     function resumedTripStarts(draft, moment) {
         const base = parseDateInput(draft.creationDate);
@@ -8070,8 +13793,27 @@
         return { scheduledStart: draft.scheduledStart ?? draft.creationTime, startTime: time };
     }
 
-    async function beginNewTripWorkflow({ initialValue, tripMoment } = {}) {
-        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
+    async function beginNewTripWorkflow({
+        initialValue,
+        tripMoment,
+        signal,
+        endStartTransition = false
+    } = {}) {
+        if (signal?.aborted) {
+            return false;
+        }
+
+        if (clockTimer.status === "stopped") {
+            await clockTimer.resetCompletedTrip();
+
+            if (signal?.aborted) {
+                return false;
+            }
+        }
+
+        const previousTripDraft =
+            tripDraft;
+
         const deferredDraft = tripDraft?.deferred ? tripDraft : undefined;
         uiReturnStack.length = 0;
         resetTripSettingsNavigation();
@@ -8090,12 +13832,20 @@
         tripDraft = deferredDraft ? {
             ...deferredDraft,
             deferred: false,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                ),
             ...resumedTripStarts(deferredDraft, moment)
         } : {
             ...tripDefaults,
             standardTime: newTripInitialValue || "",
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
-            syncGoals: tripPreferences.syncGoals
+            syncGoals: tripPreferences.syncGoals,
+            endStartTransition:
+                Boolean(
+                    endStartTransition
+                )
         };
 
         renderDeferredTrip();
@@ -8117,122 +13867,229 @@
             });
         }
 
-        return openNumberPad({
-            mode: "time",
-            source: "new-trip",
-            initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
-            preparationPromise,
-            tripDefaults: tripDraft,
-            startsTripOnConfirm: true,
-            role: "root",
-            workflow: "new-trip",
-            cancelTarget: "home",
-            confirmTarget: "home"
-        });
+        const opened =
+            await openNumberPad({
+                mode: "time",
+                source: "new-trip",
+                initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
+                preparationPromise,
+                tripDefaults: tripDraft,
+                startsTripOnConfirm: true,
+                role: "root",
+                workflow: "new-trip",
+                cancelTarget: "home",
+                confirmTarget: "home",
+                signal
+            });
+
+        if (
+            !opened &&
+            signal?.aborted
+        ) {
+            tripDraft =
+                previousTripDraft;
+
+            renderDeferredTrip();
+        }
+
+        return opened;
     }
 
-    $("#newTripButton").addEventListener("pointerup", () => {
-        void beginNewTripWorkflow({ tripMoment: new Date() }).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#newTripButton"),
+            event:
+                "pointerup",
+            name:
+                "openStartMenuPointerUp",
+            action:
+                "openStartMenu"
+        });
 
-    endTripButton.addEventListener("pointerup", () => {
-        void endCurrentIntervalOrTrip().catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                endTripButton,
+            event:
+                "pointerup",
+            name:
+                "endTripPointerUp",
+            action:
+                "endTrip"
+        });
 
-    breakButton.addEventListener("pointerup", () => {
-        openDialog("breakDialog", { reason: "break" });
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                breakButton,
+            event:
+                "pointerup",
+            name:
+                "openBreakMenuPointerUp",
+            action:
+                "openBreakMenu"
+        });
 
-    downButton.addEventListener("pointerup", () => {
-        void clockTimer.startInterval("down").then(result => {
-            if (result) renderTripActionState();
-        }).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downButton,
+            event:
+                "pointerup",
+            name:
+                "startDownTimePointerUp",
+            action:
+                "startDownTime"
+        });
 
     downDetailsButton.addEventListener("pointerup", () => {
         const reference=activeDownReference();
         if(reference?.tripId&&reference.intervalKey)void openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});
     });
 
-    downBreakButton.addEventListener("pointerup", () => {
-        openDialog("breakDialog", { reason: "down-break" });
-    });
-
-    downResumeButton.addEventListener("pointerup", () => {
-        void clockTimer.endInterval().then(() => renderTripActionState()).catch(() => {});
-    });
-
-    downCancelButton.addEventListener("pointerup", () => {
-        void (async () => {
-            await clockTimer.endInterval();
-            await endCurrentIntervalOrTrip();
-        })().catch(() => {});
-    });
-
-    breakDialog.querySelectorAll("[data-break-type]").forEach(button => {
-        button.addEventListener("click", async event => {
-            event.preventDefault();
-
-            const breakType =
-                button.dataset.breakType;
-
-            closeDialog(
-                breakDialog,
-                { reason: "break-type-selected" }
-            );
-
-            try {
-                await startBreakInterval(
-                    breakType
-                );
-            }
-            catch {
-                updateSummaryValues();
-                renderTripActionState();
-            }
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downBreakButton,
+            event:
+                "pointerup",
+            name:
+                "openDownBreakMenuPointerUp",
+            action:
+                "openBreakMenu",
+            args:
+                () => [
+                    "down-break"
+                ]
         });
-    });
 
-    $("#standardTimeButton").addEventListener("pointerup", () => {
-        let summary;
-        try {
-            summary =
-                clockTimer.getSummarySnapshot?.(
-                    new Date()
-                );
-        }
-        catch {}
-
-        if (
-            !tripIsLive() ||
-            summary?.scope === "total"
-        ) {
-            return;
-        }
-
-        resetTripSettingsNavigation();
-        openTripSettingsDialog("summary-standard-time", {
-            focusField: "standard-time"
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downResumeButton,
+            event:
+                "pointerup",
+            name:
+                "resumeTripPointerUp",
+            action:
+                "resumeTrip"
         });
-    });
 
-    $("#goalPercentValue").addEventListener("pointerup", () => {
-        if (clockTimer.percentMode === "auto") {
-            openAutoGoalDialog();
-            return;
-        }
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                downCancelButton,
+            event:
+                "pointerup",
+            name:
+                "cancelDownTimePointerUp",
+            action:
+                "cancelDownTime"
+        });
 
-        if (endTimeGoalLockedForMode()) {
-            flashEndTimeGoalLock();
-            return;
-        }
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#cancelDownConfirmYes"),
+            event:
+                "click",
+            name:
+                "confirmCancelDownTimeClick",
+            action:
+                "confirmCancelDownTime"
+        });
 
-        void openPercentGoalNumberPad(
-            clockTimer.percentMode === "total"
-                ? "total"
-                : "trip"
-        ).catch(() => {});
-    });
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#cancelDownConfirmNo"),
+            event:
+                "click",
+            name:
+                "continueDownTimeClick",
+            action:
+                "continueDownTime"
+        });
+
+    breakDialog
+        .querySelectorAll(
+            "[data-break-type]"
+        )
+        .forEach(
+            button => {
+                globalThis
+                    .WMOFInteractionFunctions
+                    .bindAction({
+                        element:
+                            button,
+                        event:
+                            "click",
+                        name:
+                            "startBreak" +
+                            String(
+                                button.dataset
+                                    .breakType ||
+                                "Type"
+                            )
+                                .replace(
+                                    /[^A-Za-z0-9]+(.)/g,
+                                    (
+                                        match,
+                                        character
+                                    ) =>
+                                        character
+                                            ?.toUpperCase() ||
+                                        ""
+                                ) +
+                            "Click",
+                        action:
+                            "startBreak",
+                        args:
+                            () => [
+                                button.dataset
+                                    .breakType
+                            ],
+                        preventDefault:
+                            true
+                    });
+            }
+        );
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#standardTimeButton"),
+            event:
+                "pointerup",
+            name:
+                "openStandardTimeSettingsPointerUp",
+            action:
+                "openStandardTimeSettings"
+        });
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#goalPercentValue"),
+            event:
+                "pointerup",
+            name:
+                "openGoalEditorPointerUp",
+            action:
+                "openGoalEditor"
+        });
 
     autoGoalDialog
         ?.querySelectorAll(
@@ -8263,33 +14120,6 @@
                 }
             );
         });
-
-    function renderIndependentTimer() {
-        const active = timerStartedAt ? Date.now() - timerStartedAt : 0;
-        $("#independentTimerValue").value = formatDuration(timerAccumulated + active);
-    }
-
-    $("#independentStart").addEventListener("click", () => {
-        if (timerStartedAt) return;
-        timerStartedAt = Date.now();
-        timerInterval = setInterval(renderIndependentTimer, 250);
-        renderIndependentTimer();
-    });
-
-    $("#independentStop").addEventListener("click", () => {
-        if (!timerStartedAt) return;
-        timerAccumulated += Date.now() - timerStartedAt;
-        timerStartedAt = 0;
-        clearInterval(timerInterval);
-        renderIndependentTimer();
-    });
-
-    $("#independentReset").addEventListener("click", () => {
-        timerStartedAt = 0;
-        timerAccumulated = 0;
-        clearInterval(timerInterval);
-        $("#independentTimerValue").value = "---";
-    });
 
     function formatIntervalClock(milliseconds) {
         const numeric = Number(milliseconds);
@@ -8391,33 +14221,273 @@
         downButton.hidden = false;
     }
 
-    async function endCurrentIntervalOrTrip() {
-        const interval = clockTimer.getActiveIntervalState?.(new Date());
-        const intervalType = String(interval?.intervalType || "").toLowerCase();
+    async function endCurrentIntervalOrTrip(
+        transactionTime =
+            speechTransactionDate()
+    ) {
+        const effectiveTime =
+            transactionTime instanceof Date &&
+            !Number.isNaN(
+                transactionTime.getTime()
+            )
+                ? new Date(
+                    transactionTime.getTime()
+                )
+                : new Date();
 
-        if (intervalType === "break" || intervalType === "lunch") {
-            await clockTimer.endInterval();
+        const interval =
+            clockTimer.getActiveIntervalState
+                ?.(
+                    effectiveTime
+                );
+
+        const intervalType =
+            String(
+                interval?.intervalType ||
+                ""
+            )
+                .toLowerCase();
+
+        if (
+            intervalType === "break" ||
+            intervalType === "lunch"
+        ) {
+            await clockTimer.endInterval(
+                transactionTime
+            );
             updateSummaryValues();
             renderTripActionState();
             return;
         }
 
         if (intervalType === "down") {
-            await clockTimer.endInterval();
+            await clockTimer.endInterval(
+                transactionTime
+            );
             renderTripActionState();
             return;
         }
 
-        const tripMoment = new Date();
-        await clockTimer.stop();
-        await clockTimer.resetCompletedTrip();
-        await beginNewTripWorkflow({
-            initialValue: "",
-            tripMoment
-        });
+        const tripMoment =
+            effectiveTime;
+
+        endingIntoNewTrip =
+            true;
+
+        // Suppress exactly the next ordinary chime: the legacy 3-note
+        // End Trip cue emitted by tripEnded.
+        incrementSemanticDisable(
+            "chime"
+        );
+
+        try {
+            await clockTimer.stop(
+                transactionTime
+            );
+        }
+        finally {
+            endingIntoNewTrip =
+                false;
+        }
+
+        await clockTimer
+            .resetCompletedTrip();
+
+        await waitForTripTransitionOverlay();
+
+        const opened =
+            await beginNewTripWorkflow({
+                initialValue: "",
+                tripMoment,
+                endStartTransition: true
+            });
+
+        const speech =
+            pendingEndStartTripSpeech;
+
+        pendingEndStartTripSpeech =
+            undefined;
+
+        if (
+            opened &&
+            tripDraftUsesEndStartTransition()
+        ) {
+            const endChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-ended",
+                    "chime"
+                );
+            const startChimeEnabled =
+                audioCellUserEnabled(
+                    "trip-started",
+                    "chime"
+                );
+            const audio =
+                globalThis.WMOFAudio;
+            let transitionSong;
+
+            if (
+                endChimeEnabled &&
+                startChimeEnabled
+            ) {
+                transitionSong =
+                    "trip-transition";
+            }
+            else if (endChimeEnabled) {
+                transitionSong =
+                    "trip-ended";
+            }
+            else if (startChimeEnabled) {
+                transitionSong =
+                    "trip-started";
+            }
+
+            let transitionChimePlayed =
+                false;
+
+            if (
+                transitionSong &&
+                consumeSemanticAction(
+                    "chime"
+                )
+            ) {
+                try {
+                    const song =
+                        await audio?.startSong?.(
+                            transitionSong,
+                            {
+                                bpm: 180,
+                                includeSpeech: false
+                            }
+                        );
+                    transitionChimePlayed =
+                        Boolean(song);
+                    await song?.finished;
+                }
+                catch (error) {
+                    console.error(
+                        "Audio playback failed:",
+                        transitionSong,
+                        error
+                    );
+                }
+            }
+
+            if (speech) {
+                audio?.speak?.(
+                    speech
+                );
+            }
+
+            if (
+                transitionChimePlayed &&
+                startChimeEnabled
+            ) {
+                // Start's chime has already been represented by either
+                // the 5-tone segue or the standalone Start cue.
+                incrementSemanticDisable(
+                    "chime"
+                );
+            }
+        }
+        else if (speech) {
+            await playSemanticSongThenSpeak(
+                "trip-ended",
+                speech
+            );
+        }
     }
 
-    async function startBreakInterval(kind) {
+    let speechBreakPromptState;
+
+    function openSpeechBreakPrompt(
+        mode
+    ) {
+        const dialog =
+            $("#speechBreakConfirmDialog");
+        const title =
+            $("#speechBreakConfirmTitle");
+        const message =
+            $("#speechBreakConfirmMessage");
+
+        if (
+            !dialog ||
+            !title ||
+            !message
+        ) {
+            return false;
+        }
+
+        if (mode === "start") {
+            title.textContent =
+                "Start Break";
+            message.textContent =
+                "Is this a lunch?";
+
+            speechBreakPromptState = {
+                mode: "start"
+            };
+        }
+        else if (mode === "end") {
+            const active =
+                clockTimer
+                    .getActiveIntervalState
+                    ?.(
+                        new Date()
+                    );
+            const type =
+                String(
+                    active?.intervalType ||
+                    ""
+                )
+                    .toLowerCase();
+
+            if (
+                type !== "break" &&
+                type !== "lunch"
+            ) {
+                return false;
+            }
+
+            const label =
+                type === "lunch"
+                    ? "Lunch"
+                    : "Break";
+
+            title.textContent =
+                `End ${label}`;
+            message.textContent =
+                `Are you ready to end your ${label.toLowerCase()}?`;
+
+            speechBreakPromptState = {
+                mode: "end",
+                intervalType:
+                    type
+            };
+        }
+        else {
+            return false;
+        }
+
+        return openDialog(
+            "speechBreakConfirmDialog",
+            {
+                reason:
+                    `speech-break-${mode}`
+            }
+        );
+    }
+
+    function clearSpeechBreakPrompt() {
+        speechBreakPromptState =
+            undefined;
+    }
+
+    async function startBreakInterval(
+        kind,
+        transactionTime =
+            speechTransactionDate()
+    ) {
         const configs = {
             break: { type: "break", length: "15:00", attributes: { breakType: "break" } },
             lunch: { type: "lunch", length: "30:00", attributes: { breakType: "lunch" } },
@@ -8426,10 +14496,34 @@
         const config = configs[kind];
         if (!config) return false;
 
-        const active = clockTimer.getActiveIntervalState?.(new Date());
-        if (String(active?.intervalType || "").toLowerCase() === "down") {
+        const lookupTime =
+            transactionTime instanceof Date &&
+            !Number.isNaN(
+                transactionTime.getTime()
+            )
+                ? transactionTime
+                : new Date();
+
+        const active =
+            clockTimer
+                .getActiveIntervalState
+                ?.(
+                    lookupTime
+                );
+
+        if (
+            String(
+                active?.intervalType ||
+                ""
+            )
+                .toLowerCase() ===
+                "down"
+        ) {
             const ended =
-                await clockTimer.endInterval();
+                await clockTimer
+                    .endInterval(
+                        transactionTime
+                    );
 
             updateSummaryValues();
             renderTripActionState();
@@ -8439,13 +14533,16 @@
             }
         }
 
-        const result = await clockTimer.startInterval(
-            config.type,
-            config.length,
-            config.attributes,
-            "2:30",
-            "2:30"
-        );
+        const result =
+            await clockTimer
+                .startInterval(
+                    config.type,
+                    config.length,
+                    config.attributes,
+                    "2:30",
+                    "2:30",
+                    transactionTime
+                );
 
         updateSummaryValues();
         renderTripActionState();
@@ -8489,7 +14586,26 @@
         ) {
             releaseEndTimeGoalOverride();
         }
-        renderTripActionState(event.detail?.now);
+        else if (
+            endTimeGoalOverride &&
+            String(
+                clockTimer
+                    .getActiveIntervalState?.(
+                        event.detail?.now
+                    )
+                    ?.intervalType ||
+                ""
+            )
+                .trim()
+                .toLowerCase() ===
+                    "down"
+        ) {
+            recalculateEndTimeGoalOverride();
+        }
+
+        renderTripActionState(
+            event.detail?.now
+        );
     });
 
     clockTimer.addEventListener("uiStateChanged", event => {
@@ -8526,10 +14642,18 @@
     });
 
     clockTimer.addEventListener("intervalStarted", () => {
+        if (endTimeGoalOverride) {
+            recalculateEndTimeGoalOverride();
+        }
+
         renderTripActionState();
     });
 
     clockTimer.addEventListener("intervalEnded", () => {
+        if (endTimeGoalOverride) {
+            recalculateEndTimeGoalOverride();
+        }
+
         renderTripActionState();
     });
 
@@ -8552,6 +14676,31 @@
         "intervalDeleted",
         "goalChangeFailed"
     ];
+
+    const endTimeGoalRecalculationEvents = [
+        "standardTimeChanged",
+        "creationDateChanged",
+        "creationTimeChanged",
+        "scheduledStartChanged",
+        "startTimeChanged",
+        "intervalExtended",
+        "intervalApprovalToggled",
+        "intervalApprovalChanged",
+        "intervalDeleted"
+    ];
+
+    for (const eventName of endTimeGoalRecalculationEvents) {
+        clockTimer.addEventListener(
+            eventName,
+            () => {
+                if (endTimeGoalOverride) {
+                    recalculateEndTimeGoalOverride();
+                }
+            }
+        );
+    }
+
+
 
     for (const eventName of summaryRefreshEvents) {
         clockTimer.addEventListener(eventName, queueSummaryRefresh);
@@ -8614,7 +14763,7 @@
     function alignStatusIcons() {
         if (!scopeConnectionButton || scopeConnectionButton.hidden) return;
         const reference=scopeConnectionButton.getBoundingClientRect();const center=reference.left+reference.width/2;
-        for(const icon of [goalSyncButton,$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
+        for(const icon of [toggleSyncGoalButton,$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
             if(!icon || icon.hidden) continue;
             const parent=icon.offsetParent;if(!parent) continue;
             icon.style.left=`${center-parent.getBoundingClientRect().left-parent.clientLeft-icon.offsetWidth/2}px`;
@@ -8622,56 +14771,1339 @@
         }
     }
     const statusIconObserver=new ResizeObserver(()=>requestAnimationFrame(alignStatusIcons));
-    for(const element of [scopeConnectionButton,goalSyncButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
+    for(const element of [scopeConnectionButton,toggleSyncGoalButton,$("#newTripButton"),$(".deferred-trip-icon"),$("#endTimeGoalLock")]) if(element) statusIconObserver.observe(element);
 
     // Semantic ClockTimer event integration points.
-    // These bodies intentionally do not change UI yet; future speech synthesis and
-    // other user-facing reactions should be implemented here rather than decoding
-    // lower-level ClockTimer events elsewhere.
+    // Notification layers use nestable disable counts so callers can suppress
+    // one layer temporarily without disturbing another caller's suppression.
+    const semanticDisableCounts = {
+        chime: 0,
+        summary: 0,
+        details: 0
+    };
+
+    function setSemanticDisable(
+        layer,
+        value
+    ) {
+        if (
+            !Object.hasOwn(
+                semanticDisableCounts,
+                layer
+            )
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        const next =
+            Number(value);
+
+        if (
+            !Number.isInteger(next) ||
+            next < -1
+        ) {
+            throw new TypeError(
+                "Semantic disable values must be -1 or a non-negative integer."
+            );
+        }
+
+        semanticDisableCounts[layer] =
+            next;
+
+        return next;
+    }
+
+    function incrementSemanticDisable(
+        layer
+    ) {
+        if (
+            semanticDisableCounts[
+                layer
+            ] < 0
+        ) {
+            return -1;
+        }
+
+        semanticDisableCounts[layer] +=
+            1;
+
+        return semanticDisableCounts[layer];
+    }
+
+    function consumeSemanticAction(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state === 0
+        ) {
+            return true;
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return false;
+    }
+
+    function cancelSemanticDisable(
+        layer
+    ) {
+        const state =
+            semanticDisableCounts[
+                layer
+            ];
+
+        if (
+            state === undefined
+        ) {
+            throw new RangeError(
+                "Unknown semantic notification layer: " +
+                    layer
+            );
+        }
+
+        if (
+            state > 0
+        ) {
+            semanticDisableCounts[layer] =
+                state - 1;
+        }
+
+        return semanticDisableCounts[layer];
+    }
+
+    globalThis.WMOFSemanticNotifications =
+        Object.freeze({
+            setDisable:
+                setSemanticDisable,
+            incrementDisable:
+                incrementSemanticDisable,
+            consumeAction:
+                consumeSemanticAction,
+            cancelDisable:
+                cancelSemanticDisable,
+            get disableCounts() {
+                return {
+                    ...semanticDisableCounts
+                };
+            }
+        });
+
+    function consumeAnnouncementAction(
+        announcement,
+        layer
+    ) {
+        if (
+            !audioCellUserEnabled(
+                announcement,
+                layer
+            )
+        ) {
+            return {
+                perform: false,
+                userDisabled: true,
+                runtimeSuppressed: false
+            };
+        }
+
+        const before =
+            semanticDisableCounts[layer];
+        const perform =
+            consumeSemanticAction(layer);
+
+        return {
+            perform,
+            userDisabled: false,
+            runtimeSuppressed:
+                !perform && before > 0
+        };
+    }
+
     function reserveSemanticEvent(event, purpose) {
         const detail = event.detail;
         void detail;
         void purpose;
     }
 
-    function onTripStarted(event) {
-        reserveSemanticEvent(event, "Trip started on time");
+    function playSemanticSong(name, options = {}) {
+        const audio =
+            globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                name,
+                "chime"
+            );
+        const summary =
+            consumeAnnouncementAction(
+                name,
+                "summary"
+            );
+
+        if (
+            (!chime.perform && !summary.perform) ||
+            !audio?.startSong
+        ) {
+            return;
+        }
+
+        void audio
+            .startSong(
+                name,
+                {
+                    bpm: 180,
+                    includeTones:
+                        chime.perform,
+                    includeSpeech:
+                        summary.perform,
+                    ...options
+                }
+            )
+            .catch(
+                error =>
+                    console.error(
+                        "Audio playback failed:",
+                        name,
+                        error
+                    )
+            );
+    }
+
+    async function playSemanticSongThenSpeak(
+        name,
+        speech,
+        options = {}
+    ) {
+        const audio =
+            globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                name,
+                "chime"
+            );
+
+        let played =
+            false;
+
+        if (chime.perform) {
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            name,
+                            {
+                                bpm: 180,
+                                includeSpeech: false,
+                                ...options
+                            }
+                        );
+
+                played =
+                    Boolean(song);
+
+                await song
+                    ?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    name,
+                    error
+                );
+            }
+        }
+
+        if (speech && audio?.speak) {
+            audio.speak(speech);
+        }
+
+        return {
+            played,
+            chime
+        };
+    }
+
+    // Early/late announcements are about the timing gain or loss for
+    // the current trip event. They intentionally never use summary.total.
+    function tripTimingSpeech(
+        detail,
+        lead,
+        disposition,
+        announcement
+    ) {
+        const milliseconds =
+            Number(
+                detail
+                    ?.timeDifferenceMilliseconds
+            );
+
+        const parts = [];
+
+        if (
+            consumeAnnouncementAction(
+                announcement,
+                "summary"
+            ).perform
+        ) {
+            parts.push(
+                lead + "."
+            );
+        }
+
+        if (
+            Number.isFinite(
+                milliseconds
+            ) &&
+            consumeAnnouncementAction(
+                announcement,
+                "details"
+            ).perform
+        ) {
+            parts.push(
+                formatGoalFailureDuration(
+                    Math.abs(
+                        milliseconds
+                    )
+                ) +
+                " " +
+                disposition +
+                "."
+            );
+        }
+
+        return parts.join(
+            " "
+        );
+    }
+
+    function formatSpokenPercent(
+        value
+    ) {
+        const percent =
+            Math.round(
+                Number(value) *
+                    100
+            );
+
+        if (!Number.isFinite(percent)) {
+            return "";
+        }
+
+        return (
+            goalFailureNumberWords(
+                percent
+            ) +
+            " percent"
+        );
+    }
+
+    function renderedGoalLabel(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
+            );
+        const percentGoal =
+            Number(
+                selected?.percentGoal
+            );
+        const roundedPercent =
+            Number.isFinite(percentGoal)
+                ? Math.round(
+                    percentGoal * 100
+                )
+                : undefined;
+
+        if (
+            scope === "standard" ||
+            roundedPercent === 100
+        ) {
+            return "Standard Goal";
+        }
+
+        if (!Number.isFinite(roundedPercent)) {
+            return "";
+        }
+
+        const type =
+            scope === "total"
+                ? totalScopeLabel()
+                : "Trip";
+
+        return (
+            type +
+            " Goal " +
+            goalFailureNumberWords(
+                roundedPercent
+            ) +
+            " percent"
+        );
+    }
+
+    function renderedGoalRemainingMilliseconds(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const scope =
+            String(
+                summary?.scope ||
+                ""
+            ).toLowerCase();
+        const selected =
+            summary?.selected ||
+            (
+                scope === "total"
+                    ? summary?.total
+                    : summary?.trip
+            );
+        const standard =
+            Number(
+                selected?.standardTimeMilliseconds
+            );
+        const counted =
+            Number(
+                selected?.countedTimeElapsedMilliseconds
+            );
+        const percentGoal =
+            Number(
+                selected?.percentGoal
+            );
+        const allowanceCredit =
+            Number(
+                selected?.allowanceCreditMilliseconds ??
+                0
+            );
+
+        if (
+            !Number.isFinite(standard) ||
+            !Number.isFinite(counted) ||
+            !Number.isFinite(percentGoal) ||
+            percentGoal <= 0
+        ) {
+            return undefined;
+        }
+
+        return Math.round(
+            standard /
+                percentGoal +
+            (
+                Number.isFinite(allowanceCredit)
+                    ? allowanceCredit
+                    : 0
+            ) -
+            counted
+        );
+    }
+
+    function tripStartGoalDetailSpeech(
+        detail
+    ) {
+        const remaining =
+            renderedGoalRemainingMilliseconds(
+                detail
+            );
+        const label =
+            renderedGoalLabel(
+                detail
+            );
+
+        if (
+            !Number.isFinite(remaining) ||
+            remaining <= 0 ||
+            !label
+        ) {
+            return "";
+        }
+
+        return (
+            formatGoalFailureDuration(
+                remaining
+            ) +
+            " until " +
+            label +
+            "."
+        );
+    }
+
+    function tripEndTotalSpeech(
+        detail
+    ) {
+        const total =
+            detail?.summary?.total;
+        const countedPercent =
+            Number(
+                total?.countedPercent
+            );
+        const parts = [];
+        const summary =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-ended",
+                "details"
+            );
+
+        if (summary.perform) {
+            parts.push(
+                "Trip ended."
+            );
+
+            if (
+                Number.isFinite(
+                    countedPercent
+                )
+            ) {
+                parts.push(
+                    totalScopeLabel() + " percent: " +
+                        formatSpokenPercent(
+                            countedPercent
+                        ) +
+                        "."
+                );
+            }
+        }
+
+        if (details.perform) {
+            const remaining =
+                renderedGoalRemainingMilliseconds(
+                    detail
+                );
+            const label =
+                renderedGoalLabel(
+                    detail
+                );
+
+            if (
+                Number.isFinite(remaining) &&
+                label
+            ) {
+                if (remaining > 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
+                            remaining
+                        ) +
+                        " banked toward " +
+                        label +
+                        "."
+                    );
+                }
+                else if (remaining < 0) {
+                    parts.push(
+                        formatGoalFailureDuration(
+                            Math.abs(
+                                remaining
+                            )
+                        ) +
+                        " over " +
+                        label +
+                        "."
+                    );
+                }
+            }
+        }
+
+        return parts.join(" ");
+    }
+
+    let lunchClockCueState;
+
+    function clearLunchClockCueState() {
+        if (!lunchClockCueState) {
+            return;
+        }
+
+        clearTimeout(
+            lunchClockCueState.clockOutTimer
+        );
+        clearTimeout(
+            lunchClockCueState.clockInTimer
+        );
+
+        lunchClockCueState =
+            undefined;
+    }
+
+    function scheduleLunchClockCues(detail = {}) {
+        clearLunchClockCueState();
+
+        const isLunch =
+            detail.isLunch === true ||
+            String(
+                detail.breakType ||
+                detail.intervalType ||
+                ""
+            )
+                .toLowerCase() ===
+                "lunch";
+
+        if (!isLunch) {
+            return;
+        }
+
+        const clockOutAt =
+            new Date(
+                detail.startTime
+            ).getTime();
+
+        const clockInAt =
+            new Date(
+                detail.endTime
+            ).getTime();
+
+        const state = {
+            clockOutAt,
+            clockInAt,
+            clockOutFired: false,
+            clockInFired: false,
+            clockOutTimer: undefined,
+            clockInTimer: undefined
+        };
+
+        lunchClockCueState =
+            state;
+
+        const fireClockOut =
+            () => {
+                if (
+                    lunchClockCueState !==
+                        state ||
+                    state.clockOutFired
+                ) {
+                    return;
+                }
+
+                state.clockOutFired =
+                    true;
+
+                playSemanticSong(
+                    "lunch-clock-out",
+                    {
+                        bpm: 120
+                    }
+                );
+            };
+
+        const fireClockIn =
+            () => {
+                if (
+                    lunchClockCueState !==
+                        state ||
+                    state.clockInFired
+                ) {
+                    return;
+                }
+
+                state.clockInFired =
+                    true;
+
+                playSemanticSong(
+                    "lunch-clock-in",
+                    {
+                        bpm: 120
+                    }
+                );
+            };
+
+        if (
+            Number.isFinite(
+                clockOutAt
+            )
+        ) {
+            state.clockOutTimer =
+                setTimeout(
+                    fireClockOut,
+                    Math.max(
+                        0,
+                        clockOutAt -
+                            Date.now()
+                    )
+                );
+        }
+
+        if (
+            Number.isFinite(
+                clockInAt
+            )
+        ) {
+            state.clockInTimer =
+                setTimeout(
+                    fireClockIn,
+                    Math.max(
+                        0,
+                        clockInAt -
+                            Date.now()
+                    )
+                );
+        }
+    }
+
+    function finishLunchClockCues(detail = {}) {
+        const state =
+            lunchClockCueState;
+
+        if (!state) {
+            return;
+        }
+
+        clearTimeout(
+            state.clockOutTimer
+        );
+        clearTimeout(
+            state.clockInTimer
+        );
+
+        const endedAt =
+            new Date(
+                detail.actualEndTime ||
+                detail.endTime ||
+                Date.now()
+            ).getTime();
+
+        if (
+            state.clockOutFired &&
+            !state.clockInFired &&
+            (
+                !Number.isFinite(
+                    state.clockInAt
+                ) ||
+                !Number.isFinite(
+                    endedAt
+                ) ||
+                endedAt <
+                    state.clockInAt
+            )
+        ) {
+            state.clockInFired =
+                true;
+
+            playSemanticSong(
+                "lunch-clock-in",
+                {
+                    bpm: 120
+                }
+            );
+        }
+
+        lunchClockCueState =
+            undefined;
+    }
+
+    let endingIntoNewTrip =
+        false;
+
+    let pendingEndStartTripSpeech;
+
+    function tripDraftUsesEndStartTransition() {
+        return (
+            tripDraft
+                ?.endStartTransition ===
+            true
+        );
+    }
+
+
+
+
+    function formatTripTransitionMoment(
+        value
+    ) {
+        const date =
+            value instanceof Date
+                ? new Date(
+                    value.getTime()
+                )
+                : new Date(
+                    value
+                );
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "---";
+        }
+
+        const military =
+            clockTimer.getAttribute(
+                "military-time"
+            ) !==
+                "false";
+        const minutes =
+            String(
+                date.getMinutes()
+            )
+                .padStart(
+                    2,
+                    "0"
+                );
+        const seconds =
+            String(
+                date.getSeconds()
+            )
+                .padStart(
+                    2,
+                    "0"
+                );
+
+        if (military) {
+            return (
+                String(
+                    date.getHours()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    ) +
+                ":" +
+                minutes +
+                ":" +
+                seconds
+            );
+        }
+
+        const hours =
+            date.getHours();
+
+        return (
+            String(
+                hours %
+                    12 ||
+                12
+            ) +
+            ":" +
+            minutes +
+            ":" +
+            seconds +
+            " " +
+            (
+                hours >=
+                    12
+                    ? "PM"
+                    : "AM"
+            )
+        );
+    }
+
+    function formatTripTransitionDuration(
+        value
+    ) {
+        const milliseconds =
+            Number(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            )
+        ) {
+            return "---";
+        }
+
+        return formatDuration(
+            Math.abs(
+                milliseconds
+            )
+        );
+    }
+
+    function tripTransitionRow(
+        label,
+        value
+    ) {
+        const text =
+            String(
+                value ??
+                ""
+            )
+                .trim();
+
+        if (
+            !text ||
+            text ===
+                "---"
+        ) {
+            return undefined;
+        }
+
+        return {
+            label,
+            value:
+                text
+        };
+    }
+
+    function renderTripTransitionOverlayItem(
+        item
+    ) {
+        if (
+            !tripTransitionOverlay ||
+            !tripTransitionOverlayTitle ||
+            !tripTransitionOverlayDetails
+        ) {
+            tripTransitionOverlayActive =
+                false;
+            return;
+        }
+
+        tripTransitionOverlayTitle.textContent =
+            item.title;
+        tripTransitionOverlayDetails
+            .replaceChildren(
+                ...item.rows
+                    .map(
+                        row => {
+                            const element =
+                                document.createElement(
+                                    "div"
+                                );
+                            const label =
+                                document.createElement(
+                                    "span"
+                                );
+                            const value =
+                                document.createElement(
+                                    "code"
+                                );
+
+                            element.className =
+                                "trip-transition-overlay-row";
+                            label.textContent =
+                                row.label;
+                            value.textContent =
+                                row.value;
+
+                            element.append(
+                                label,
+                                value
+                            );
+
+                            return element;
+                        }
+                    )
+            );
+
+        tripTransitionOverlay.hidden =
+            false;
+
+        requestAnimationFrame(
+            () => {
+                tripTransitionOverlay
+                    .classList
+                    .add(
+                        "is-visible"
+                    );
+            }
+        );
+
+        clearTimeout(
+            tripTransitionOverlayTimer
+        );
+        clearTimeout(
+            tripTransitionOverlayHideTimer
+        );
+
+        tripTransitionOverlayTimer =
+            setTimeout(
+                () => {
+                    tripTransitionOverlay
+                        .classList
+                        .remove(
+                            "is-visible"
+                        );
+
+                    tripTransitionOverlayHideTimer =
+                        setTimeout(
+                            () => {
+                                tripTransitionOverlay.hidden =
+                                    true;
+                                tripTransitionOverlayActive =
+                                    false;
+
+                                const next =
+                                    tripTransitionOverlayQueue
+                                        .shift();
+
+                                if (next) {
+                                    tripTransitionOverlayActive =
+                                        true;
+                                    renderTripTransitionOverlayItem(
+                                        next
+                                    );
+                                }
+                            },
+                            280
+                        );
+                },
+                7000
+            );
+    }
+
+    async function waitForTripTransitionOverlay() {
+        while (
+            tripTransitionOverlayActive
+        ) {
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        50
+                    )
+            );
+        }
+    }
+
+    function enqueueTripTransitionOverlay(
+        title,
+        rows
+    ) {
+        const item = {
+            title,
+            rows:
+                rows.filter(
+                    Boolean
+                )
+        };
+
+        if (
+            tripTransitionOverlayActive
+        ) {
+            tripTransitionOverlayQueue
+                .push(
+                    item
+                );
+            return;
+        }
+
+        tripTransitionOverlayActive =
+            true;
+
+        renderTripTransitionOverlayItem(
+            item
+        );
+    }
+
+    function showTripEndTransitionOverlay(
+        detail
+    ) {
+        const total =
+            detail?.summary?.total;
+        const countedPercent =
+            Number(
+                total?.countedPercent
+            );
+        const remaining =
+            renderedGoalRemainingMilliseconds(
+                detail
+            );
+        const goalLabel =
+            renderedGoalLabel(
+                detail
+            );
+        const rows = [];
+
+        if (
+            Number.isFinite(
+                countedPercent
+            )
+        ) {
+            rows.push(
+                tripTransitionRow(
+                    totalScopeLabel() +
+                        " Percent",
+                    formatSummaryPercent(
+                        countedPercent
+                    )
+                )
+            );
+        }
+
+        if (
+            Number.isFinite(
+                remaining
+            ) &&
+            goalLabel
+        ) {
+            if (
+                remaining >
+                0
+            ) {
+                rows.push(
+                    tripTransitionRow(
+                        "Banked Toward " +
+                            goalLabel,
+                        formatTripTransitionDuration(
+                            remaining
+                        )
+                    )
+                );
+            }
+            else if (
+                remaining <
+                0
+            ) {
+                rows.push(
+                    tripTransitionRow(
+                        "Over " +
+                            goalLabel,
+                        formatTripTransitionDuration(
+                            remaining
+                        )
+                    )
+                );
+            }
+        }
+
+        enqueueTripTransitionOverlay(
+            "Trip Ended",
+            rows
+        );
+    }
+
+    async function onTripStarted(event) {
+        reserveSemanticEvent(
+            event,
+            "Trip started on time"
+        );
+
+        const audio =
+            globalThis.WMOFAudio;
+        const chime =
+            consumeAnnouncementAction(
+                "trip-started",
+                "chime"
+            );
+        const summary =
+            consumeAnnouncementAction(
+                "trip-started",
+                "summary"
+            );
+        const details =
+            consumeAnnouncementAction(
+                "trip-started",
+                "details"
+            );
+        const parts = [];
+
+        if (summary.perform) {
+            parts.push(
+                chime.runtimeSuppressed &&
+                !chime.userDisabled
+                    ? "Trip in Progress."
+                    : "Trip started."
+            );
+        }
+
+        if (details.perform) {
+            const detailSpeech =
+                tripStartGoalDetailSpeech(
+                    event.detail
+                );
+            if (detailSpeech) {
+                parts.push(
+                    detailSpeech
+                );
+            }
+        }
+
+        if (chime.perform) {
+            try {
+                const song =
+                    await audio?.startSong?.(
+                        "trip-started",
+                        {
+                            bpm: 180,
+                            includeSpeech: false
+                        }
+                    );
+                await song?.finished;
+            }
+            catch (error) {
+                console.error(
+                    "Audio playback failed:",
+                    "trip-started",
+                    error
+                );
+            }
+        }
+
+        if (parts.length) {
+            audio?.speak?.(
+                parts.join(" ")
+            );
+        }
     }
 
     function onTripStartedEarly(event) {
         reserveSemanticEvent(event, "Trip started early");
+
+        void playSemanticSongThenSpeak(
+            "trip-started-early",
+            tripTimingSpeech(
+                event.detail,
+                "Trip started early",
+                "saved",
+                "trip-started-early"
+            )
+        );
     }
 
     function onTripStartedLate(event) {
         reserveSemanticEvent(event, "Trip started late");
+
+        void playSemanticSongThenSpeak(
+            "trip-started-late",
+            tripTimingSpeech(
+                event.detail,
+                "Trip started late",
+                "lost",
+                "trip-started-late"
+            )
+        );
     }
 
     function onBreakStarted(event) {
         reserveSemanticEvent(event, "Break or lunch started");
+
+        const breakType =
+            String(
+                event.detail?.breakType ||
+                event.detail?.intervalType ||
+                ""
+            ).toLowerCase();
+
+        playSemanticSong(
+            breakType === "lunch"
+                ? "lunch-started"
+                : breakType === "short"
+                    ? "short-break-started"
+                    : "break-started"
+        );
+
+        scheduleLunchClockCues(
+            event.detail
+        );
     }
 
     function onBreakEndedEarly(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended before the auto-restart boundary");
+        void playSemanticSongThenSpeak(
+            "trip-resumed-early",
+            tripTimingSpeech(
+                event.detail,
+                "Trip resumed early",
+                "saved",
+                "trip-resumed-early"
+            )
+        );
+        finishLunchClockCues(
+            event.detail
+        );
     }
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
+        playSemanticSong("trip-resumed-automatically");
+        finishLunchClockCues(
+            event.detail
+        );
     }
 
     function onBreakEndedLate(event) {
         reserveSemanticEvent(event, "Break or lunch manually ended after the end-buffer boundary");
+        void playSemanticSongThenSpeak(
+            "trip-resumed-after-break",
+            tripTimingSpeech(
+                event.detail,
+                "Trip resumed",
+                "lost",
+                "trip-resumed-after-break"
+            )
+        );
+        finishLunchClockCues(
+            event.detail
+        );
     }
 
     function onDownTimeStarted(event) {
         reserveSemanticEvent(event, "Down time started");
+        playSemanticSong("down-time-started");
     }
 
     function onTripResumed(event) {
         reserveSemanticEvent(event, "Trip resumed from down time");
+        playSemanticSong("trip-resumed-from-down");
     }
 
     function onTripEnded(event) {
+        showTripEndTransitionOverlay(
+            event.detail
+        );
+
         reserveSemanticEvent(event, "Trip ended");
+
+        const speech =
+            tripEndTotalSpeech(
+                event.detail
+            );
+
+        if (
+            endingIntoNewTrip
+        ) {
+            pendingEndStartTripSpeech =
+                speech;
+
+            // The direct end->start workflow preloads one chime suppression.
+            // Attempting the ordinary End Trip cue here consumes that slot,
+            // so the legacy 3-note cue is skipped without special casing the
+            // audio helper itself.
+            consumeSemanticAction(
+                "chime"
+            );
+
+            return;
+        }
+
+        void playSemanticSongThenSpeak(
+            "trip-ended",
+            speech
+        );
     }
 
     function onTotalGoalSet(event) {
@@ -8686,12 +16118,632 @@
         reserveSemanticEvent(event, "Trip goal derived automatically");
     }
 
-    function onTripGoalFailed(event) {
-        reserveSemanticEvent(event, "Trip goal failed");
+    function goalFailureNumberWords(
+        value
+    ) {
+        const number =
+            Math.max(
+                0,
+                Math.round(
+                    Number(value)
+                )
+            );
+
+        if (!Number.isFinite(number)) {
+            return "";
+        }
+
+        const small = [
+            "zero", "one", "two", "three", "four",
+            "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen",
+            "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen"
+        ];
+
+        const tens = [
+            "", "", "twenty", "thirty", "forty",
+            "fifty", "sixty", "seventy",
+            "eighty", "ninety"
+        ];
+
+        const underThousand =
+            number => {
+                if (number < 20) {
+                    return small[number];
+                }
+
+                if (number < 100) {
+                    const remainder =
+                        number % 10;
+
+                    return (
+                        tens[
+                            Math.floor(
+                                number / 10
+                            )
+                        ] +
+                        (
+                            remainder
+                                ? "-" +
+                                    small[
+                                        remainder
+                                    ]
+                                : ""
+                        )
+                    );
+                }
+
+                const remainder =
+                    number % 100;
+
+                return (
+                    small[
+                        Math.floor(
+                            number / 100
+                        )
+                    ] +
+                    " hundred" +
+                    (
+                        remainder
+                            ? " and " +
+                                underThousand(
+                                    remainder
+                                )
+                            : ""
+                    )
+                );
+            };
+
+        if (number < 1000) {
+            return underThousand(
+                number
+            );
+        }
+
+        if (number < 1000000) {
+            const thousands =
+                Math.floor(
+                    number / 1000
+                );
+
+            const remainder =
+                number % 1000;
+
+            return (
+                goalFailureNumberWords(
+                    thousands
+                ) +
+                " thousand" +
+                (
+                    remainder
+                        ? " " +
+                            underThousand(
+                                remainder
+                            )
+                        : ""
+                )
+            );
+        }
+
+        return String(number);
     }
 
-    function onTotalGoalFailed(event) {
-        reserveSemanticEvent(event, "Total goal failed");
+    function formatGoalFailureDuration(
+        milliseconds
+    ) {
+        const totalSeconds =
+            Math.max(
+                0,
+                Math.round(
+                    Number(milliseconds) /
+                        1000
+                )
+            );
+
+        const hours =
+            Math.floor(
+                totalSeconds /
+                    3600
+            );
+
+        const minutes =
+            Math.floor(
+                (
+                    totalSeconds %
+                    3600
+                ) /
+                    60
+            );
+
+        const seconds =
+            totalSeconds %
+                60;
+
+        if (audioSettings.formalTime) {
+            const formalParts = [];
+
+            if (hours > 0) {
+                formalParts.push(
+                    goalFailureNumberWords(hours) +
+                    (hours === 1 ? " hour" : " hours")
+                );
+            }
+
+            if (minutes > 0) {
+                formalParts.push(
+                    goalFailureNumberWords(minutes) +
+                    (minutes === 1 ? " minute" : " minutes")
+                );
+            }
+
+            if (seconds > 0 || !formalParts.length) {
+                formalParts.push(
+                    goalFailureNumberWords(seconds) +
+                    (seconds === 1 ? " second" : " seconds")
+                );
+            }
+
+            if (formalParts.length === 1) {
+                return formalParts[0];
+            }
+
+            return (
+                formalParts
+                    .slice(0, -1)
+                    .join(", ") +
+                " and " +
+                formalParts[
+                    formalParts.length - 1
+                ]
+            );
+        }
+
+        const parts = [];
+
+        if (hours > 0) {
+            parts.push(
+                hours === 1
+                    ? "an hour"
+                    : goalFailureNumberWords(
+                        hours
+                    ) +
+                        " hours"
+            );
+        }
+
+        if (minutes > 0) {
+            parts.push(
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " minute" +
+                (
+                    minutes === 1
+                        ? ""
+                        : "s"
+                )
+            );
+        }
+
+        if (
+            seconds > 0 ||
+            !parts.length
+        ) {
+            parts.push(
+                goalFailureNumberWords(
+                    seconds
+                ) +
+                " second" +
+                (
+                    seconds === 1
+                        ? ""
+                        : "s"
+                )
+            );
+        }
+
+        if (parts.length < 2) {
+            return parts[0];
+        }
+
+        if (
+            hours > 0 &&
+            minutes > 0 &&
+            seconds === 0 &&
+            parts.length === 2
+        ) {
+            const minuteNumber =
+                goalFailureNumberWords(
+                    minutes
+                );
+
+            const minuteSyllables =
+                minuteNumber
+                    .toLowerCase()
+                    .replace(
+                        /[^a-z\s-]/g,
+                        ""
+                    )
+                    .split(
+                        /[\s-]+/
+                    )
+                    .filter(Boolean)
+                    .reduce(
+                        (total, word) => {
+                            const normalized =
+                                word
+                                    .replace(
+                                        /(?:e|es|ed)$/,
+                                        ""
+                                    );
+                            const groups =
+                                normalized.match(
+                                    /[aeiouy]+/g
+                                );
+                            return (
+                                total +
+                                Math.max(
+                                    1,
+                                    groups?.length ||
+                                        0
+                                )
+                            );
+                        },
+                        0
+                    );
+            const omitAnd =
+                minutes > 9 &&
+                minuteSyllables > 1;
+
+            return (
+                parts[0] +
+                (
+                    omitAnd
+                        ? " "
+                        : " and "
+                ) +
+                minuteNumber
+            );
+        }
+
+        if (
+            hours > 0 &&
+            seconds > 0
+        ) {
+            if (minutes === 0) {
+                return (
+                    parts[0] +
+                    " " +
+                    goalFailureNumberWords(
+                        seconds
+                    ) +
+                    (
+                        seconds === 1
+                            ? " second"
+                            : " seconds"
+                    )
+                );
+            }
+
+            return (
+                parts[0] +
+                " " +
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " and " +
+                goalFailureNumberWords(
+                    seconds
+                )
+            );
+        }
+
+        if (
+            hours === 0 &&
+            minutes > 0 &&
+            seconds > 0
+        ) {
+            return (
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " minute" +
+                (
+                    minutes === 1
+                        ? ""
+                        : "s"
+                ) +
+                " and " +
+                goalFailureNumberWords(
+                    seconds
+                )
+            );
+        }
+
+        return (
+            parts
+                .slice(
+                    0,
+                    -1
+                )
+                .join(", ") +
+            " and " +
+            parts[
+                parts.length - 1
+            ]
+        );
+    }
+
+    function buildGoalFailureSpeech(
+        detail = {}
+    ) {
+        const goals =
+            Array.isArray(detail.goals)
+                ? detail.goals
+                : [];
+
+        const percentMode =
+            normalizePercentMode(
+                clockTimer.percentMode
+            );
+
+        const announcedGoals =
+            percentMode === "trip"
+                ? goals.filter(
+                    goal =>
+                        goal?.type ===
+                            "standard" ||
+                        goal?.type ===
+                            "trip"
+                )
+                : percentMode === "total"
+                    ? goals.filter(
+                        goal =>
+                            goal?.type ===
+                                "standard" ||
+                            goal?.type ===
+                                "total"
+                    )
+                    : goals;
+
+        const standardFailed =
+            announcedGoals.some(
+                goal =>
+                    goal?.type ===
+                        "standard"
+            );
+
+        const belowStandardFailed =
+            announcedGoals.some(
+                goal => {
+                    const percent =
+                        Number(
+                            goal?.percent
+                        );
+
+                    return (
+                        goal?.type !==
+                            "standard" &&
+                        Number.isFinite(
+                            percent
+                        ) &&
+                        percent < 1
+                    );
+                }
+            );
+
+        const summarySentences = [];
+
+        // In fixed Trip/Total modes, crossing Standard is its own temporal
+        // boundary announcement. Do not combine it with the fixed goal.
+        if (
+            standardFailed &&
+            (
+                percentMode === "trip" ||
+                percentMode === "total"
+            )
+        ) {
+            summarySentences.push(
+                "Standard Goal Failed."
+            );
+        }
+        else {
+            if (standardFailed) {
+                summarySentences.push(
+                    "Standard Goal Failed."
+                );
+            }
+
+            for (const goal of announcedGoals) {
+                if (
+                    goal?.type ===
+                        "trip"
+                ) {
+                    summarySentences.push(
+                        "Trip Goal Failed."
+                    );
+                }
+                else if (
+                    goal?.type ===
+                        "total"
+                ) {
+                    summarySentences.push(
+                        totalScopeLabel() + " Goal Failed."
+                    );
+                }
+            }
+        }
+
+        const detailSentences = [];
+        const fallback =
+            detail.fallback;
+
+        if (fallback) {
+            const type =
+                String(
+                    fallback.type ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const percent =
+                Number(
+                    fallback.percent
+                );
+
+            const remainingMilliseconds =
+                Number(
+                    fallback
+                        .remainingMilliseconds
+                );
+
+            if (
+                percentMode === "auto" &&
+                Number.isFinite(
+                    remainingMilliseconds
+                ) &&
+                (
+                    type === "standard" ||
+                    type === "trip" ||
+                    type === "total"
+                )
+            ) {
+                const roundedPercent =
+                    Number.isFinite(percent)
+                        ? Math.round(
+                            percent * 100
+                        )
+                        : undefined;
+
+                const useStandardLabel =
+                    type === "standard" ||
+                    roundedPercent === 100;
+
+                const label =
+                    useStandardLabel
+                        ? "Standard"
+                        : type === "trip"
+                            ? "Trip"
+                            : totalScopeLabel();
+
+                const percentText =
+                    !useStandardLabel &&
+                    Number.isFinite(
+                        roundedPercent
+                    )
+                        ? " " +
+                            goalFailureNumberWords(
+                                roundedPercent
+                            ) +
+                            " percent"
+                        : "";
+
+                detailSentences.push(
+                    `${formatGoalFailureDuration(
+                        remainingMilliseconds
+                    )} until ${label} Goal${percentText}.`
+                );
+            }
+        }
+
+        if (belowStandardFailed) {
+            detailSentences.push(
+                "Overtime in progress."
+            );
+        }
+
+        const spoken = [];
+
+        if (
+            summarySentences.length &&
+            consumeAnnouncementAction(
+                "goal-failed",
+                "summary"
+            ).perform
+        ) {
+            spoken.push(
+                ...summarySentences
+            );
+        }
+
+        if (
+            detailSentences.length &&
+            consumeAnnouncementAction(
+                "goal-failed",
+                "details"
+            ).perform
+        ) {
+            spoken.push(
+                ...detailSentences
+            );
+        }
+
+        return spoken.join(
+            " "
+        );
+    }
+
+    async function speakGoalFailure(
+        detail
+    ) {
+        const audio =
+            globalThis
+                .WMOFAudio;
+
+        const speech =
+            buildGoalFailureSpeech(
+                detail
+            );
+
+        if (
+            consumeAnnouncementAction(
+                "goal-failed",
+                "chime"
+            ).perform
+        ) {
+            try {
+                const song =
+                    await audio
+                        ?.startSong?.(
+                            "goal-failed",
+                            {
+                                bpm: 100
+                            }
+                        );
+
+                await song
+                    ?.finished;
+            }
+            catch (
+                error
+            ) {
+                console.error(
+                    "Audio playback failed:",
+                    "goal-failed",
+                    error
+                );
+            }
+        }
+
+        if (speech) {
+            audio
+                ?.speak?.(
+                    speech
+                );
+        }
+    }
+
+    function onGoalFail(event) {
+        reserveSemanticEvent(
+            event,
+            "One or more goals failed"
+        );
+
+        void speakGoalFailure(
+            event.detail
+        );
     }
 
     function onPercentModeChanged(event) {
@@ -8730,8 +16782,18 @@
 
     function onDisconnected(event) {
         if (event.detail?.source === "disconnect") {
+            if (speechTrainingActive) {
+                stopInAppSpeechTraining({
+                    forced: true
+                });
+            } else if (inAppSpeechTrainingEnabled) {
+                disableInAppSpeechTraining();
+            }
+
             signedInProfile = undefined;
+            speechTrainingCsrfToken = undefined;
             for (const id of ["profileUsername", "firstName", "lastName", "preferredName"]) $("#" + id).value = "";
+            syncSpeechTrainingControls();
         }
         reserveSemanticEvent(event, "ClockTimer disconnected");
     }
@@ -8754,8 +16816,7 @@
         totalGoalSet: onTotalGoalSet,
         tripGoalSet: onTripGoalSet,
         tripGoalAutomaticallySet: onTripGoalAutomaticallySet,
-        tripGoalFailed: onTripGoalFailed,
-        totalGoalFailed: onTotalGoalFailed,
+        goalFail: onGoalFail,
         percentModeChanged: onPercentModeChanged,
         goalAutomaticallyAdjusted: onGoalAutomaticallyAdjusted,
         standardTimeChanged: onStandardTimeChanged,
@@ -8772,203 +16833,4373 @@
         clockTimer.addEventListener(eventName, handler);
     }
 
-    function setStandardTimeFromSpeech(timeValue) {
-        const duration = EnglishSpeechValuePreprocessor.parse(timeValue, "duration");
-        const formatted = EnglishDurationParser.format(duration);
-        if (!formatted) return false;
+    globalThis
+        .WMOFSpeechProcessingFunctions
+        .define(
+            "normalizeSpeechValue",
+            (
+                text,
+                {
+                    field,
+                    kind,
+                    pattern
+                }
+            ) => {
+                if (kind === "keypad") {
+                    if (
+                        !numberPadDialog
+                            ?.open ||
+                        !numberPadState
+                    ) {
+                        return text;
+                    }
 
-        if (scheduledStartDialog.open && !scheduledStartStandard.disabled && tripDraft) {
-            tripDraft.standardTime = formatted;
-            scheduledStartStandard.classList.remove("needs-value");
-            scheduledStartMessage.hidden = true;
-            updateScheduledStartDialog();
-            return true;
-        }
+                    kind =
+                        numberPadState.mode ===
+                            "absolute"
+                            ? "clock-parts"
+                            : numberPadState.mode ===
+                                "percent"
+                                ? "percent"
+                                : "duration";
+                }
 
-        const editButton = tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]');
-        if (tripSettingsDialog.open && editButton && !editButton.disabled) {
-            const session = tripSettingsSession || beginTripSettingsSession();
-            if (!session) return false;
-            session.values.standardTime = formatted;
-            refreshTripSettingsValues();
-            return true;
-        }
-        return false;
+                if (
+                    !field ||
+                    !pattern
+                ) {
+                    return text;
+                }
+
+                const match =
+                    new RegExp(
+                        pattern,
+                        "i"
+                    )
+                        .exec(text);
+
+                const phrase =
+                    match?.groups
+                        ?.[field];
+
+                if (
+                    typeof phrase !==
+                        "string"
+                ) {
+                    return text;
+                }
+
+                const normalized =
+                    EnglishSpeechValuePreprocessor
+                        .normalize(
+                            phrase,
+                            kind
+                        );
+
+                if (
+                    normalized ===
+                        undefined
+                ) {
+                    return text;
+                }
+
+                const start =
+                    match.index +
+                    match[0]
+                        .lastIndexOf(
+                            phrase
+                        );
+
+                return (
+                    text.slice(
+                        0,
+                        start
+                    ) +
+                    normalized +
+                    text.slice(
+                        start +
+                            phrase.length
+                    )
+                );
+            }
+        );
+
+    let pendingSpeechReady;
+    const SPEECH_READY_CONTINUATION_WINDOW =
+        1800;
+
+    const cancelPendingSpeechReady =
+        () => {
+            if (
+                pendingSpeechReady !==
+                    undefined
+            ) {
+                clearTimeout(
+                    pendingSpeechReady
+                );
+            }
+
+            pendingSpeechReady =
+                undefined;
+        };
+
+    const armSpeechReadyContinuation =
+        () => {
+            cancelPendingSpeechReady();
+
+            pendingSpeechReady =
+                setTimeout(
+                    () => {
+                        pendingSpeechReady =
+                            undefined;
+                    },
+                    SPEECH_READY_CONTINUATION_WINDOW
+                );
+        };
+
+    const openStartMenuWorkflow =
+        ({
+            preserveSpeechContinuation =
+                false
+        } = {}) => {
+            if (
+                tripIsLive() ||
+                $("#newTripButton")
+                    ?.disabled
+            ) {
+                return false;
+            }
+
+            if (
+                !preserveSpeechContinuation
+            ) {
+                cancelPendingSpeechReady();
+            }
+
+            const signal =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.invocationContext
+                    ?.signal;
+
+            return Promise
+                .resolve(
+                    beginNewTripWorkflow({
+                        tripMoment:
+                            new Date(),
+                        signal
+                    })
+                )
+                .then(
+                    result =>
+                        signal?.aborted
+                            ? true
+                            : result !== false
+                )
+                .catch(
+                    () =>
+                        Boolean(
+                            signal?.aborted
+                        )
+                );
+        };
+
+    const closeActiveSpeechSurface =
+        async () => {
+            const interruptedAction =
+                globalThis
+                    .WMOFActionFunctions
+                    ?.invocationContext
+                    ?.interruptedAction;
+
+            if (
+                speechMicBar
+                    ?.optionsOpen
+            ) {
+                void speechMicBar
+                    .hideOptions?.();
+
+                return true;
+            }
+
+            const popover =
+                [
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ]
+                    .filter(
+                        element =>
+                            element !==
+                                speechMicBar &&
+                            popoverIsOpen(
+                                element
+                            )
+                    )
+                    .at(-1);
+
+            if (popover) {
+                if (
+                    popover.id ===
+                    "graphicalHelpPopover"
+                ) {
+                    await closeSettingsHelpPopover();
+                }
+                else {
+                    popover.hidePopover?.();
+                }
+
+                return true;
+            }
+
+            const dialog =
+                [
+                    ...document
+                        .querySelectorAll(
+                            "dialog[open]"
+                        )
+                ].at(-1);
+
+            if (!dialog) {
+                return Boolean(
+                    interruptedAction
+                );
+            }
+
+            if (
+                dialog ===
+                numberPadDialog
+            ) {
+                return cancelNumberPad();
+            }
+
+            if (
+                dialog ===
+                tripSettingsDialog
+            ) {
+                return cancelTripSettingsDialog(
+                    "speech-close"
+                );
+            }
+
+            return closeDialogWithReturn(
+                dialog,
+                {
+                    reason:
+                        "speech-close"
+                }
+            );
+        };
+
+    globalThis
+        .WMOFSpeechAvailability =
+        Object.freeze({
+            canStartTrip() {
+                return (
+                    !tripIsLive() &&
+                    !$("#newTripButton")
+                        ?.disabled
+                );
+            },
+
+            canUseReady() {
+                if (!tripIsLive()) {
+                    return (
+                        !$("#newTripButton")
+                            ?.disabled
+                    );
+                }
+
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return ![
+                    "break",
+                    "lunch",
+                    "down"
+                ].includes(
+                    type
+                );
+            },
+
+            canContinueStartAt() {
+                return (
+                    pendingSpeechReady !==
+                        undefined &&
+                    !tripIsLive()
+                );
+            },
+
+            canUseInformational() {
+                return tripIsLive();
+            },
+
+            canOpenBreakMenu() {
+                return !breakButton?.disabled;
+            },
+
+            canStartDownTime() {
+                const activeIntervalType =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                return (
+                    activeIntervalType !==
+                        "down" &&
+                    !downButton?.disabled
+                );
+            },
+
+            canOpenBreakEndMenu() {
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return (
+                    type === "break" ||
+                    type === "lunch"
+                );
+            },
+
+            canResumeTrip() {
+                const type =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase();
+
+                return (
+                    type === "down" ||
+                    type === "break" ||
+                    type === "lunch"
+                );
+            },
+
+            canCancelDownTime() {
+                return Boolean(
+                    downCancelButton &&
+                    !downCancelButton.hidden &&
+                    !downCancelButton.disabled &&
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() ===
+                        "down"
+                );
+            },
+
+            canLockEndTime() {
+                return tripIsLive();
+            },
+
+            canOpenTripLog() {
+                return (
+                    getTripListState() !==
+                    "open"
+                );
+            },
+
+            canCloseTripLog() {
+                return (
+                    getTripListState() ===
+                    "open"
+                );
+            },
+
+            canDeferTrip() {
+                return Boolean(
+                    numberPadDialog?.open &&
+                    numberPadState
+                        ?.workflow ===
+                        "new-trip" &&
+                    tripDraft
+                );
+            },
+
+            canToggleRenderedTime() {
+                return tripIsLive();
+            },
+
+            canCloseSurface() {
+                if (
+                    globalThis
+                        .WMOFActionFunctions
+                        ?.isInterruptGroupActive?.(
+                            "primary-surface"
+                        )
+                ) {
+                    return true;
+                }
+
+                if (
+                    speechMicBar
+                        ?.optionsOpen
+                ) {
+                    return true;
+                }
+
+                if (
+                    [
+                        ...document
+                            .querySelectorAll(
+                                "dialog[open]"
+                            )
+                    ].length
+                ) {
+                    return true;
+                }
+
+                return [
+                    ...document
+                        .querySelectorAll(
+                            "[popover]"
+                        )
+                ].some(
+                    element =>
+                        element !==
+                            speechMicBar &&
+                        popoverIsOpen(
+                            element
+                        )
+                );
+            }
+        });
+
+    const dictateSpeechMetric =
+        (
+            label,
+            value
+        ) => {
+            const displayValue =
+                String(
+                    value ??
+                    ""
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!displayValue) {
+                return false;
+            }
+
+            const response =
+                (
+                    String(
+                        label ||
+                        ""
+                    )
+                        .trim() +
+                    " " +
+                    displayValue
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            const spokenResponse =
+                response
+                    .replace(
+                        /%/g,
+                        " percent"
+                    );
+
+            globalThis
+                .WMOFAudio
+                ?.speak?.(
+                    spokenResponse
+                );
+
+            return {
+                speechResponse: {
+                    type:
+                        "dictation",
+                    value:
+                        response
+                }
+            };
+        };
+
+    const confirmSettingChange =
+        async (
+            value,
+            {
+                spokenValue
+            } = {}
+        ) => {
+            const response =
+                String(
+                    value ??
+                    ""
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            if (!response) {
+                return false;
+            }
+
+            const spokenResponse =
+                String(
+                    spokenValue ??
+                    response
+                )
+                    .replace(
+                        /%/g,
+                        " percent"
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
+
+            const audio =
+                globalThis
+                    .WMOFAudio;
+
+            try {
+                const cue =
+                    await audio
+                        ?.startSong?.(
+                            "info-tone",
+                            {
+                                bpm: 120
+                            }
+                        );
+
+                await cue
+                    ?.finished;
+            }
+            catch (
+                error
+            ) {
+                console.warn(
+                    "Setting confirmation cue failed:",
+                    error
+                );
+            }
+
+            audio
+                ?.speak?.(
+                    spokenResponse
+                );
+
+            return {
+                speechResponse: {
+                    type:
+                        "dictation",
+                    value:
+                        response
+                }
+            };
+        };
+
+    const goalPercentForScope =
+        scope => {
+            let summary;
+
+            try {
+                summary =
+                    clockTimer
+                        .getSummarySnapshot?.(
+                            new Date()
+                        );
+            }
+            catch {
+                return undefined;
+            }
+
+            const value =
+                summary?.[
+                    scope
+                ]?.percentGoal;
+
+            return Number.isFinite(
+                Number(value)
+            )
+                ? formatSummaryPercent(
+                    value
+                )
+                : undefined;
+        };
+
+    const setGoalPercentValue =
+        async (
+            scope,
+            percent
+        ) => {
+            const normalizedScope =
+                String(
+                    scope ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const value =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        percent,
+                        "percent"
+                    );
+
+            if (
+                ![
+                    "trip",
+                    "total"
+                ].includes(
+                    normalizedScope
+                ) ||
+                !Number.isFinite(
+                    value
+                ) ||
+                value <= 0
+            ) {
+                return false;
+            }
+
+            if (
+                (
+                    endTimeGoalOverride
+                        ?.scopes ||
+                    []
+                ).includes(
+                    normalizedScope
+                )
+            ) {
+                flashEndTimeGoalLock();
+
+                return false;
+            }
+
+            const before =
+                goalPercentForScope(
+                    normalizedScope
+                );
+
+            const state =
+                clockTimer.configure({
+                    [
+                        normalizedScope ===
+                            "total"
+                            ? "total_goal"
+                            : "trip_goal"
+                    ]:
+                        `${value}%`
+                });
+
+            renderClockTimerUIState(
+                state
+            );
+            refreshAutoGoalDialog();
+            queueSummaryRefresh();
+
+            const after =
+                goalPercentForScope(
+                    normalizedScope
+                );
+
+            if (
+                !after ||
+                before ===
+                    after
+            ) {
+                return true;
+            }
+
+            const label =
+                normalizedScope
+                    .charAt(0)
+                    .toUpperCase() +
+                normalizedScope
+                    .slice(1);
+
+            return confirmSettingChange(
+                label +
+                " Goal Set to " +
+                after
+            );
+        };
+
+    const actions =
+        globalThis.WMOFActions;
+
+    globalThis
+        .WMOFActionFunctions
+        .defineAll({
+            changeStandardTime(
+                timeValue
+            ) {
+                const duration =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            timeValue,
+                            "duration"
+                        );
+
+                const formatted =
+                    EnglishDurationParser
+                        .format(
+                            duration
+                        );
+
+                if (!formatted) {
+                    return false;
+                }
+
+                if (
+                    scheduledStartDialog
+                        .open &&
+                    !scheduledStartStandard
+                        .disabled &&
+                    tripDraft
+                ) {
+                    const previous =
+                        tripDraft
+                            .standardTime;
+
+                    tripDraft.standardTime =
+                        formatted;
+
+                    scheduledStartStandard
+                        .classList
+                        .remove(
+                            "needs-value"
+                        );
+
+                    scheduledStartMessage.hidden =
+                        true;
+
+                    updateScheduledStartDialog();
+
+                    return previous ===
+                        formatted
+                        ? true
+                        : confirmSettingChange(
+                            "Standard Time Set to " +
+                            formatted,
+                            {
+                                spokenValue:
+                                    "Standard Time Set to " +
+                                    EnglishDurationParser
+                                        .describe(
+                                            duration
+                                        )
+                            }
+                        );
+                }
+
+                const editButton =
+                    tripSettingsDialog
+                        .querySelector(
+                            '[data-trip-time-field="standard-time"]'
+                        );
+
+                if (
+                    tripSettingsDialog.open &&
+                    editButton &&
+                    !editButton.disabled
+                ) {
+                    const session =
+                        tripSettingsSession ||
+                        beginTripSettingsSession();
+
+                    if (!session) {
+                        return false;
+                    }
+
+                    const previous =
+                        session.values
+                            .standardTime;
+
+                    session.values
+                        .standardTime =
+                        formatted;
+
+                    refreshTripSettingsValues();
+
+                    return previous ===
+                        formatted
+                        ? true
+                        : confirmSettingChange(
+                            "Standard Time Set to " +
+                            formatted,
+                            {
+                                spokenValue:
+                                    "Standard Time Set to " +
+                                    EnglishDurationParser
+                                        .describe(
+                                            duration
+                                        )
+                            }
+                        );
+                }
+
+                return false;
+            },
+
+            enterKeypadValue(
+                spokenValue
+            ) {
+                if (
+                    !numberPadDialog
+                        ?.open ||
+                    !numberPadState
+                ) {
+                    return false;
+                }
+
+                let pending;
+                let meridiem =
+                    numberPadState
+                        .meridiem;
+
+                if (
+                    numberPadState.mode ===
+                        "percent"
+                ) {
+                    const percent =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "percent"
+                            );
+
+                    if (
+                        !Number.isInteger(
+                            percent
+                        ) ||
+                        percent <= 0
+                    ) {
+                        return false;
+                    }
+
+                    pending =
+                        String(percent);
+                }
+                else if (
+                    numberPadState.mode ===
+                        "absolute"
+                ) {
+                    const parts =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "clock-parts"
+                            );
+
+                    if (!parts) {
+                        return false;
+                    }
+
+                    if (parts.meridiem) {
+                        meridiem =
+                            parts.meridiem
+                                .toUpperCase();
+                    }
+                    else if (
+                        parts.hour > 12
+                    ) {
+                        meridiem =
+                            undefined;
+                    }
+
+                    const hour =
+                        meridiem &&
+                        parts.hour > 12
+                            ? (
+                                parts.hour %
+                                    12 ||
+                                12
+                            )
+                            : parts.hour;
+
+                    pending =
+                        absoluteDigits(
+                            hour,
+                            parts.minute,
+                            0
+                        );
+
+                    if (parts.day) {
+                        const date =
+                            new Date();
+
+                        if (
+                            parts.day ===
+                                "tomorrow"
+                        ) {
+                            date.setDate(
+                                date.getDate() +
+                                    1
+                            );
+                        }
+
+                        numberPadState
+                            .pendingDate =
+                            formatDateInput(
+                                date
+                            );
+                    }
+
+                    if (
+                        !absoluteDigitsValid(
+                            pending,
+                            meridiem
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+                else {
+                    const duration =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenValue,
+                                "duration"
+                            );
+
+                    if (
+                        !Number.isFinite(
+                            duration
+                        ) ||
+                        duration <= 0
+                    ) {
+                        return false;
+                    }
+
+                    pending =
+                        durationValueToRawDigits(
+                            formatTimelineMilliseconds(
+                                duration
+                            )
+                        );
+
+                    if (
+                        !timeDigitsValid(
+                            pending
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+
+                numberPadState.pending =
+                    pending;
+
+                numberPadState.meridiem =
+                    meridiem;
+
+                numberPadState
+                    .replaceOnNextDigit =
+                    false;
+
+                numberPadState.everEdited =
+                    true;
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            openStartMenu() {
+                return openStartMenuWorkflow();
+            },
+
+            async prepareReadyAction() {
+                if (tripIsLive()) {
+                    return endCurrentIntervalOrTrip(
+                        speechTransactionDate()
+                    );
+                }
+
+                armSpeechReadyContinuation();
+
+                return openStartMenuWorkflow({
+                    preserveSpeechContinuation:
+                        true
+                });
+            },
+
+            prepareStartMenu() {
+                armSpeechReadyContinuation();
+
+                return openStartMenuWorkflow({
+                    preserveSpeechContinuation:
+                        true
+                });
+            },
+
+            disableSpeechRecognition() {
+                return disableSpeechRecognitionRuntime();
+            },
+
+            toggleSpeechOptions() {
+                if (
+                    speechMicBar
+                        ?.optionsOpen
+                ) {
+                    return Boolean(
+                        speechMicBar
+                            .collapseOptions?.()
+                    );
+                }
+
+                if (
+                    speechMicBar
+                        ?.optionsCollapsed
+                ) {
+                    return Boolean(
+                        speechMicBar
+                            .expandOptions?.()
+                    );
+                }
+
+                globalThis
+                    .SpeechMenu
+                    ?.extrapolatePhrases?.();
+
+                return Boolean(
+                    speechMicBar
+                        ?.showOptions?.(
+                            globalThis
+                                .SpeechMenu
+                                ?.phraseGroups ||
+                            []
+                        )
+                );
+            },
+
+            closeActiveSurface() {
+                return closeActiveSpeechSurface();
+            },
+
+            handleSpeechRuntimeStarted() {
+                setSpeechButtonState(
+                    true,
+                    false
+                );
+
+                setSpeechLayoutState(
+                    true
+                );
+
+                return true;
+            },
+
+            handleSpeechRuntimeStopped() {
+                cancelPendingSpeechReady();
+
+                setSpeechButtonState(
+                    false,
+                    false
+                );
+
+                setSpeechLayoutState(
+                    false
+                );
+
+                if (speechTrainingActive) {
+                    stopInAppSpeechTraining({
+                        forced:
+                            true
+                    });
+                }
+
+                syncSpeechTrainingControls();
+
+                return true;
+            },
+
+            handleSpeechRuntimeMuted(
+                muted = true
+            ) {
+                setSpeechButtonState(
+                    true,
+                    Boolean(
+                        muted
+                    )
+                );
+
+                syncSpeechTrainingControls();
+
+                return true;
+            },
+
+            handleSpeechUtteranceStarted() {
+                void globalThis
+                    .WMOFPresentationSetters
+                    ?.dismissSpeechResponse?.({
+                        fast:
+                            true
+                    });
+
+                return true;
+            },
+
+            async scheduleStartAt(
+                spokenTime,
+                {
+                    fromReadyContinuation =
+                        false
+                } = {}
+            ) {
+                const continuingReady =
+                    fromReadyContinuation &&
+                    pendingSpeechReady !==
+                        undefined;
+
+                if (
+                    tripIsLive() ||
+                    (
+                        $("#newTripButton")
+                            ?.disabled &&
+                        !continuingReady
+                    )
+                ) {
+                    cancelPendingSpeechReady();
+                    return false;
+                }
+
+                cancelPendingSpeechReady();
+
+                if (
+                    continuingReady &&
+                    numberPadDialog
+                        ?.open &&
+                    numberPadState
+                        ?.workflow ===
+                        "new-trip" &&
+                    numberPadState
+                        ?.role ===
+                        "root"
+                ) {
+                    await closeNumberPad({
+                        discardPrepared:
+                            false,
+                        allowChanged:
+                            true,
+                        immediate:
+                            true,
+                        destination:
+                            "home"
+                    });
+                }
+
+                const now =
+                    new Date();
+
+                const target =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            spokenTime,
+                            "clock",
+                            {
+                                baseDate:
+                                    now,
+                                preferFuture:
+                                    true
+                            }
+                        );
+
+                if (!target) {
+                    return false;
+                }
+
+                if (
+                    clockTimer.status ===
+                        "stopped"
+                ) {
+                    await clockTimer
+                        .resetCompletedTrip();
+                }
+
+                const defaults =
+                    getTripMomentDefaults(
+                        now
+                    );
+
+                if (!defaults) {
+                    return false;
+                }
+
+                const scheduledStart =
+                    formatTimelineDateTime(
+                        target,
+                        defaults
+                            .creationDate
+                    );
+
+                const preferences =
+                    getTripPreferences();
+
+                if (!scheduledStart) {
+                    return false;
+                }
+
+                uiReturnStack.length =
+                    0;
+
+                resetTripSettingsNavigation();
+
+                tripSettingsSession =
+                    undefined;
+
+                tripStartsNowState =
+                    undefined;
+
+                tripDraft = {
+                    ...defaults,
+                    standardTime: "",
+                    scheduledStart,
+                    startTime:
+                        scheduledStart,
+                    lateBreakBehavior:
+                        preferences
+                            .lateBreakBehavior,
+                    syncGoals:
+                        preferences
+                            .syncGoals
+                };
+
+                renderDeferredTrip();
+
+                try {
+                    await clockTimer
+                        .prepareTrip({
+                            timeout:
+                                5000,
+                            at: now
+                        });
+                }
+                catch {}
+
+                showScheduledStartDialog();
+
+                return true;
+            },
+
+            continueStartAt(
+                spokenTime
+            ) {
+                if (
+                    !globalThis
+                        .WMOFSpeechAvailability
+                        .canContinueStartAt()
+                ) {
+                    return false;
+                }
+
+                return actions
+                    .scheduleStartAt(
+                        spokenTime,
+                        {
+                            fromReadyContinuation:
+                                true
+                        }
+                    );
+            },
+
+            openBreakMenu(
+                reason = "break"
+            ) {
+                if (
+                    breakButton?.disabled
+                ) {
+                    return false;
+                }
+
+                breakDialog
+                    .querySelectorAll(
+                        ".speech-focused"
+                    )
+                    .forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    "speech-focused"
+                                )
+                    );
+
+                setOkAllowed(
+                    breakDialog,
+                    false
+                );
+
+                return openDialog(
+                    "breakDialog",
+                    {
+                        reason
+                    }
+                );
+            },
+
+            chooseBreakType(
+                breakChoice
+            ) {
+                if (
+                    !breakDialog.open
+                ) {
+                    return false;
+                }
+
+                const kind =
+                    ({
+                        "10":
+                            "short-break",
+                        short:
+                            "short-break",
+                        "15":
+                            "break",
+                        break:
+                            "break",
+                        long:
+                            "break",
+                        lunch:
+                            "lunch"
+                    })[
+                        String(
+                            breakChoice
+                        )
+                            .toLowerCase()
+                    ];
+
+                const button =
+                    breakDialog
+                        .querySelector(
+                            `[data-break-type="${kind}"]`
+                        );
+
+                if (!button) {
+                    return false;
+                }
+
+                breakDialog
+                    .querySelectorAll(
+                        ".speech-focused"
+                    )
+                    .forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    "speech-focused"
+                                )
+                    );
+
+                button.classList.add(
+                    "speech-focused"
+                );
+
+                button.focus();
+
+                setOkAllowed(
+                    breakDialog,
+                    true
+                );
+
+                return true;
+            },
+
+            async confirmBreakType() {
+                const transactionTime =
+                    speechTransactionDate();
+
+                const button =
+                    breakDialog
+                        .querySelector(
+                            "[data-break-type].speech-focused"
+                        );
+
+                if (
+                    !breakDialog.open ||
+                    !button
+                ) {
+                    return false;
+                }
+
+                const kind =
+                    button.dataset
+                        .breakType;
+
+                setOkAllowed(
+                    breakDialog,
+                    false
+                );
+
+                closeDialog(
+                    breakDialog,
+                    {
+                        reason:
+                            "break-type-selected"
+                    }
+                );
+
+                return startBreakInterval(
+                    kind,
+                    transactionTime
+                );
+            },
+
+            async startBreak(
+                kind
+            ) {
+                const transactionTime =
+                    speechTransactionDate();
+
+                if (!kind) {
+                    return false;
+                }
+
+                if (breakDialog.open) {
+                    closeDialog(
+                        breakDialog,
+                        {
+                            reason:
+                                "break-type-selected"
+                        }
+                    );
+                }
+
+                return startBreakInterval(
+                    kind,
+                    transactionTime
+                );
+            },
+
+            async startDownTime() {
+                const transactionTime =
+                    speechTransactionDate();
+                const activeIntervalType =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                transactionTime
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                if (
+                    activeIntervalType ===
+                        "down" ||
+                    downButton?.disabled
+                ) {
+                    return false;
+                }
+
+                const result =
+                    await clockTimer
+                        .startInterval(
+                            "down",
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            transactionTime
+                        );
+
+                if (result) {
+                    renderTripActionState();
+                }
+
+                return Boolean(
+                    result
+                );
+            },
+
+            openBreakEndMenu() {
+                return openSpeechBreakPrompt(
+                    "end"
+                );
+            },
+
+            async resumeTrip() {
+                const transactionTime =
+                    speechTransactionDate();
+
+                const result =
+                    await clockTimer
+                        .endInterval(
+                            transactionTime
+                        );
+
+                renderTripActionState();
+
+                return Boolean(
+                    result
+                );
+            },
+
+            async endTrip() {
+                const transactionTime =
+                    speechTransactionDate();
+
+                return endCurrentIntervalOrTrip(
+                    transactionTime
+                );
+            },
+
+            cancelDownTime() {
+                const active =
+                    clockTimer
+                        .getActiveIntervalState
+                        ?.(
+                            new Date()
+                        );
+
+                if (
+                    String(
+                        active
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() !==
+                        "down"
+                ) {
+                    return false;
+                }
+
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog) {
+                    return false;
+                }
+
+                const prompt =
+                    "Press/Say OK to Cancel your down time";
+
+                setOkAllowed(
+                    dialog,
+                    true
+                );
+
+                const opened =
+                    openDialog(
+                        "cancelDownConfirmDialog",
+                        {
+                            reason:
+                                "cancel-down"
+                        }
+                    );
+
+                if (!opened) {
+                    setOkAllowed(
+                        dialog,
+                        false
+                    );
+                }
+
+                if (
+                    opened &&
+                    globalThis
+                        .SpeechMenu
+                        ?.executionContext
+                ) {
+                    globalThis
+                        .WMOFAudio
+                        ?.speak?.(
+                            prompt
+                        );
+                }
+
+                return Boolean(
+                    opened
+                );
+            },
+
+            async confirmCancelDownTime() {
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                const active =
+                    clockTimer
+                        .getActiveIntervalState
+                        ?.(
+                            new Date()
+                        );
+
+                if (
+                    String(
+                        active
+                            ?.intervalType ||
+                        ""
+                    )
+                        .toLowerCase() !==
+                        "down"
+                ) {
+                    setOkAllowed(
+                        dialog,
+                        false
+                    );
+
+                    closeDialog(
+                        dialog,
+                        {
+                            reason:
+                                "cancel-down-invalid"
+                        }
+                    );
+
+                    return false;
+                }
+
+                const transactionTime =
+                    speechTransactionDate();
+
+                setOkAllowed(
+                    dialog,
+                    false
+                );
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "cancel-down-confirmed"
+                    }
+                );
+
+                const result =
+                    await clockTimer
+                        .cancelInterval(
+                            transactionTime
+                        );
+
+                updateSummaryValues();
+                renderTripActionState();
+
+                return Boolean(
+                    result
+                );
+            },
+
+            continueDownTime() {
+                const dialog =
+                    $("#cancelDownConfirmDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                setOkAllowed(
+                    dialog,
+                    false
+                );
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "cancel-down-declined"
+                    }
+                );
+
+                return true;
+            },
+
+            readTripGoal() {
+                return dictateSpeechMetric(
+                    "Trip Goal",
+                    goalPercentForScope(
+                        "trip"
+                    )
+                );
+            },
+
+            readTotalGoal() {
+                return dictateSpeechMetric(
+                    totalScopeLabel() + " Goal",
+                    goalPercentForScope(
+                        "total"
+                    )
+                );
+            },
+
+            setTripGoal(
+                percent
+            ) {
+                return setGoalPercentValue(
+                    "trip",
+                    percent
+                );
+            },
+
+            setTotalGoal(
+                percent
+            ) {
+                return setGoalPercentValue(
+                    "total",
+                    percent
+                );
+            },
+
+            changeGoal(
+                goalScope,
+                percent
+            ) {
+                return setGoalPercentValue(
+                    goalScope,
+                    percent
+                );
+            },
+
+            readGoalMode() {
+                const mode =
+                    normalizePercentMode(
+                        clockTimer
+                            .percentMode
+                    );
+
+                const label =
+                    mode.charAt(0)
+                        .toUpperCase() +
+                    mode.slice(1);
+
+                return dictateSpeechMetric(
+                    label,
+                    "Mode"
+                );
+            },
+
+            changeGoalMode(
+                goalMode
+            ) {
+                const mode =
+                    String(
+                        goalMode ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                if (
+                    !PERCENT_MODES
+                        .includes(
+                            mode
+                        )
+                ) {
+                    return false;
+                }
+
+                const previousMode =
+                    normalizePercentMode(
+                        clockTimer
+                            .percentMode
+                    );
+
+                const appliedMode =
+                    applyScope(
+                        mode
+                    );
+
+                syncScopeUI(true);
+                renderClockTimerUIState(
+                    clockTimer.uiState
+                );
+                refreshAutoGoalDialog();
+                queueSummaryRefresh();
+
+                if (
+                    appliedMode !==
+                    mode
+                ) {
+                    return false;
+                }
+
+                if (
+                    previousMode ===
+                    appliedMode
+                ) {
+                    return true;
+                }
+
+                const label =
+                    appliedMode
+                        .charAt(0)
+                        .toUpperCase() +
+                    appliedMode
+                        .slice(1);
+
+                return confirmSettingChange(
+                    "Viewing " +
+                    label +
+                    " Mode"
+                );
+            },
+
+            cycleGoalMode() {
+                const current =
+                    PERCENT_MODES
+                        .indexOf(
+                            normalizePercentMode(
+                                clockTimer
+                                    .percentMode
+                            )
+                        );
+
+                const next =
+                    PERCENT_MODES[
+                        (
+                            current +
+                            1
+                        ) %
+                        PERCENT_MODES
+                            .length
+                    ];
+
+                const applied =
+                    applyScope(
+                        next
+                    );
+
+                const label =
+                    applied
+                        .charAt(0)
+                        .toUpperCase() +
+                    applied
+                        .slice(1);
+
+                return confirmSettingChange(
+                    "Viewing " +
+                    label +
+                    " Mode"
+                );
+            },
+
+            readSyncStatus() {
+                return confirmSettingChange(
+                    getSyncGoalsState()
+                        ? "Sync On"
+                        : "Sync Off"
+                );
+            },
+
+            toggleSync(
+                syncState
+            ) {
+                if (
+                    normalizedConnectionStatus() ===
+                        "offline"
+                ) {
+                    animateOfflineClouds();
+
+                    return confirmSettingChange(
+                        "Sync Unavailable"
+                    );
+                }
+
+                const current =
+                    getSyncGoalsState();
+
+                let enabled;
+
+                if (
+                    syncState ===
+                        undefined ||
+                    syncState ===
+                        null ||
+                    String(
+                        syncState
+                    )
+                        .trim() ===
+                        ""
+                ) {
+                    enabled =
+                        !current;
+                }
+                else if (
+                    typeof syncState ===
+                        "boolean"
+                ) {
+                    enabled =
+                        syncState;
+                }
+                else {
+                    const requested =
+                        String(
+                            syncState
+                        )
+                            .trim()
+                            .toLowerCase();
+
+                    if (
+                        [
+                            "on",
+                            "true",
+                            "enabled",
+                            "enable"
+                        ].includes(
+                            requested
+                        )
+                    ) {
+                        enabled =
+                            true;
+                    }
+                    else if (
+                        [
+                            "off",
+                            "false",
+                            "disabled",
+                            "disable"
+                        ].includes(
+                            requested
+                        )
+                    ) {
+                        enabled =
+                            false;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+
+                try {
+                    setSyncGoals(
+                        enabled
+                    );
+                }
+                catch {
+                    return confirmSettingChange(
+                        "Sync Fail"
+                    );
+                }
+
+                animateSyncGoalsIcons();
+
+                const applied =
+                    getSyncGoalsState();
+
+                if (
+                    applied !==
+                        enabled
+                ) {
+                    return confirmSettingChange(
+                        "Sync Fail"
+                    );
+                }
+
+                if (
+                    current ===
+                    enabled
+                ) {
+                    return true;
+                }
+
+                return confirmSettingChange(
+                    enabled
+                        ? "Sync On"
+                        : "Sync Off"
+                );
+            },
+
+            lockEndTime(
+                spokenTime
+            ) {
+                if (!tripIsLive()) {
+                    return false;
+                }
+
+                const target =
+                    EnglishSpeechValuePreprocessor
+                        .parse(
+                            spokenTime,
+                            "clock",
+                            {
+                                baseDate:
+                                    new Date(),
+                                preferFuture:
+                                    true
+                            }
+                        );
+
+                const previousDeadline =
+                    endTimeGoalOverride
+                        ?.deadline
+                        ?.getTime?.();
+
+                if (
+                    !target ||
+                    !applyEndTimeGoalOverride(
+                        target
+                    )
+                ) {
+                    return false;
+                }
+
+                if (
+                    previousDeadline ===
+                    target.getTime()
+                ) {
+                    return true;
+                }
+
+                const label =
+                    target
+                        .toLocaleTimeString(
+                            undefined,
+                            {
+                                hour:
+                                    "numeric",
+                                minute:
+                                    "2-digit"
+                            }
+                        );
+
+                return confirmSettingChange(
+                    "End Time Locked to " +
+                    label
+                );
+            },
+
+            openTripLog(
+                source = "speech"
+            ) {
+                if (
+                    getTripListState() !==
+                        "open"
+                ) {
+                    void openTripList(
+                        source
+                    );
+                }
+
+                return true;
+            },
+
+            closeTripLog(
+                source = "speech"
+            ) {
+                if (
+                    getTripListState() ===
+                        "open"
+                ) {
+                    void closeTripList(
+                        source
+                    );
+                }
+
+                return true;
+            },
+
+            deferTrip() {
+                if (
+                    !numberPadDialog
+                        ?.open ||
+                    numberPadState
+                        ?.workflow !==
+                        "new-trip" ||
+                    !tripDraft
+                ) {
+                    return false;
+                }
+
+                tripDraft.deferred =
+                    true;
+
+                tripDraft.standardTime =
+                    "";
+
+                renderDeferredTrip();
+
+                void closeNumberPad({
+                    discardPrepared:
+                        false,
+                    allowChanged:
+                        true,
+                    immediate:
+                        true,
+                    destination:
+                        "home"
+                });
+
+                return true;
+            },
+
+            readEndTime() {
+                let rendered;
+
+                try {
+                    rendered =
+                        clockTimer
+                            .getRenderedTime?.(
+                                "calculated-end",
+                                new Date()
+                            );
+                }
+                catch {
+                    return false;
+                }
+
+                if (
+                    typeof rendered !==
+                        "string" ||
+                    !rendered
+                ) {
+                    return false;
+                }
+
+                return dictateSpeechMetric(
+                    "End Time",
+                    rendered
+                );
+            },
+
+            readTimeRemaining() {
+                let state;
+
+                try {
+                    state =
+                        clockTimer
+                            .getEffectiveTimeState?.(
+                                new Date()
+                            );
+                }
+                catch {
+                    return false;
+                }
+
+                if (
+                    !state ||
+                    state.mode !==
+                        "remaining" ||
+                    !state.available ||
+                    !Number.isFinite(
+                        state.value
+                    )
+                ) {
+                    return false;
+                }
+
+                return confirmSettingChange(
+                    formatGoalFailureDuration(
+                        Math.abs(
+                            state.value
+                        )
+                    )
+                );
+            },
+
+            readRenderedTime(
+                timeMode
+            ) {
+                const value =
+                    String(
+                        timeMode ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const mode =
+                    value.includes(
+                        "end"
+                    )
+                        ? "calculated-end"
+                        : value.includes(
+                            "elapsed"
+                        )
+                            ? "elapsed"
+                            : value.includes(
+                                "remaining"
+                            )
+                                ? "remaining"
+                                : undefined;
+
+                if (!mode) {
+                    return false;
+                }
+
+                let state;
+
+                try {
+                    state =
+                        clockTimer
+                            .getEffectiveTimeState?.(
+                                new Date()
+                            );
+                }
+                catch {
+                    return false;
+                }
+
+                if (
+                    !state ||
+                    state.mode !==
+                        mode ||
+                    !state.available
+                ) {
+                    return false;
+                }
+
+                return dictateSpeechMetric(
+                    state.label,
+                    state.text
+                );
+            },
+
+            toggleRenderedTime(
+                timeMode
+            ) {
+                let next;
+
+                if (
+                    timeMode ===
+                        undefined ||
+                    timeMode ===
+                        null ||
+                    String(
+                        timeMode
+                    )
+                        .trim() ===
+                        ""
+                ) {
+                    const index =
+                        RENDERED_TIME_MODES
+                            .indexOf(
+                                clockTimer
+                                    .renderedTimeMode
+                            );
+
+                    next =
+                        RENDERED_TIME_MODES[
+                            (
+                                index +
+                                1
+                            ) %
+                            RENDERED_TIME_MODES
+                                .length
+                        ];
+                }
+                else {
+                    const value =
+                        String(
+                            timeMode
+                        )
+                            .trim()
+                            .toLowerCase();
+
+                    next =
+                        value.includes(
+                            "end"
+                        )
+                            ? "calculated-end"
+                            : value.includes(
+                                "elapsed"
+                            )
+                                ? "elapsed"
+                                : value.includes(
+                                    "remaining"
+                                )
+                                    ? "remaining"
+                                    : value;
+
+                    if (
+                        !RENDERED_TIME_MODES
+                            .includes(
+                                next
+                            )
+                    ) {
+                        return false;
+                    }
+                }
+
+                const previous =
+                    clockTimer
+                        .renderedTimeMode;
+
+                applyRenderedTimeMode(
+                    next
+                );
+
+                if (
+                    previous ===
+                    next
+                ) {
+                    return true;
+                }
+
+                let announcement;
+
+                if (
+                    next ===
+                        "calculated-end"
+                ) {
+                    announcement =
+                        "Showing End Time";
+                }
+                else if (
+                    next ===
+                        "elapsed"
+                ) {
+                    announcement =
+                        "Showing Elapsed Time";
+                }
+                else {
+                    let effectiveTimeState;
+
+                    try {
+                        effectiveTimeState =
+                            clockTimer
+                                .getEffectiveTimeState?.(
+                                    new Date()
+                                );
+                    }
+                    catch {}
+
+                    announcement =
+                        effectiveTimeState
+                            ?.label ===
+                            "Banked Time"
+                            ? "Showing Banked Time"
+                            : effectiveTimeState
+                                ?.label ===
+                                "Time Over"
+                                ? "Showing Time Over"
+                                : "Showing Time Left";
+                }
+
+                return confirmSettingChange(
+                    announcement
+                );
+            },
+
+            openStandardTimeSettings() {
+                let summary;
+
+                try {
+                    summary =
+                        clockTimer
+                            .getSummarySnapshot
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                if (
+                    !tripIsLive() ||
+                    summary?.scope ===
+                        "total"
+                ) {
+                    return false;
+                }
+
+                resetTripSettingsNavigation();
+
+                return openTripSettingsDialog(
+                    "summary-standard-time",
+                    {
+                        focusField:
+                            "standard-time"
+                    }
+                );
+            },
+
+            openGoalEditor() {
+                if (
+                    endTimeGoalLockedForMode()
+                ) {
+                    flashEndTimeGoalLock();
+
+                    return false;
+                }
+
+                if (
+                    clockTimer.percentMode ===
+                        "auto"
+                ) {
+                    openAutoGoalDialog();
+
+                    return true;
+                }
+
+                void openPercentGoalNumberPad(
+                    clockTimer
+                        .percentMode ===
+                        "total"
+                        ? "total"
+                        : "trip"
+                ).catch(
+                    () => {}
+                );
+
+                return true;
+            },
+
+            async confirmBreakPromptYes() {
+                const transactionTime =
+                    speechTransactionDate();
+
+                const dialog =
+                    $("#speechBreakConfirmDialog");
+                const state =
+                    speechBreakPromptState;
+
+                if (
+                    !dialog?.open ||
+                    !state
+                ) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-break-yes"
+                    }
+                );
+
+                clearSpeechBreakPrompt();
+
+                if (
+                    state.mode ===
+                    "start"
+                ) {
+                    return startBreakInterval(
+                        "lunch",
+                        transactionTime
+                    );
+                }
+
+                if (
+                    state.mode ===
+                    "end"
+                ) {
+                    await endCurrentIntervalOrTrip(
+                        transactionTime
+                    );
+                    return true;
+                }
+
+                return false;
+            },
+
+            async confirmBreakPromptNo() {
+                const dialog =
+                    $("#speechBreakConfirmDialog");
+                const state =
+                    speechBreakPromptState;
+
+                if (
+                    !dialog?.open ||
+                    !state
+                ) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-break-no"
+                    }
+                );
+
+                clearSpeechBreakPrompt();
+
+                if (
+                    state.mode ===
+                    "start"
+                ) {
+                    return startBreakInterval(
+                        "break"
+                    );
+                }
+
+                return state.mode ===
+                    "end";
+            },
+
+            cancelBreakPrompt() {
+                const dialog =
+                    $("#speechBreakConfirmDialog");
+
+                if (!dialog?.open) {
+                    return false;
+                }
+
+                closeDialog(
+                    dialog,
+                    {
+                        reason:
+                            "speech-break-cancel"
+                    }
+                );
+
+                clearSpeechBreakPrompt();
+
+                return true;
+            },
+
+            updateGraphicalSettings(
+                settings
+            ) {
+                const normalized =
+                    saveGraphicalSettings(
+                        settings
+                    );
+
+                applyGraphicalSettings(
+                    normalized
+                );
+
+                return normalized;
+            },
+
+            changeLateBreakBehavior(
+                value
+            ) {
+                const preferences = {
+                    ...getTripPreferences(),
+                    lateBreakBehavior:
+                        value ===
+                            "autoRestartTrip"
+                            ? "autoRestartTrip"
+                            : "showLateWindow"
+                };
+
+                saveTripPreferences(
+                    preferences
+                );
+
+                if (
+                    !tripIsLive() &&
+                    !tripDraft
+                ) {
+                    clockTimer
+                        .intervalElapsedBehavior =
+                        "startLatency";
+
+                    clockTimer
+                        .autoRestartTripAfterLateBreak =
+                        preferences
+                            .lateBreakBehavior ===
+                        "autoRestartTrip";
+                }
+
+                return preferences;
+            },
+
+            async connectUser(
+                username,
+                password
+            ) {
+                if (
+                    normalizedConnectionStatus() ===
+                        "offline"
+                ) {
+                    animateOfflineClouds();
+                }
+
+                loginPending = true;
+
+                try {
+                    const result =
+                        await clockTimer
+                            .connect(
+                                String(
+                                    username ||
+                                    ""
+                                )
+                                    .trim(),
+                                String(
+                                    password ||
+                                    ""
+                                )
+                            );
+
+                    if (
+                        !result
+                            ?.connected
+                    ) {
+                        throw new Error(
+                            "Login failed."
+                        );
+                    }
+
+                    deliberatelyLoggedOut =
+                        false;
+
+                    safeStorageSet(
+                        "wmof.deliberatelyLoggedOut",
+                        "false"
+                    );
+
+                    populateProfile(
+                        result.user
+                    );
+
+                    for (
+                        let index =
+                            uiReturnStack
+                                .length -
+                            1;
+                        index >= 0;
+                        index -= 1
+                    ) {
+                        if (
+                            uiReturnStack[
+                                index
+                            ]?.type ===
+                                "popover" &&
+                            uiReturnStack[
+                                index
+                            ]?.element ===
+                                mainMenu
+                        ) {
+                            uiReturnStack
+                                .splice(
+                                    index,
+                                    1
+                                );
+                        }
+                    }
+
+                    hidePopoverForHandoff(
+                        mainMenu
+                    );
+
+                    syncNetworkStatusUI({
+                        login:
+                            true
+                    });
+
+                    return result;
+                }
+                finally {
+                    loginPending =
+                        false;
+                }
+            },
+
+            openAccessTokens() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        ACCESS_TOKEN_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Grant Token Access permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/access-tokens/?console=1",
+                        "wmofAccessTokens"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Access Tokens window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
+            },
+
+            openSpeechTraining() {
+                if (
+                    !signedInProfile ||
+                    !speechTrainingConnectionAvailable
+                ) {
+                    return false;
+                }
+
+                if (speechTrainingActive) {
+                    return false;
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                if (inAppSpeechTrainingEnabled) {
+                    return disableInAppSpeechTraining();
+                }
+
+                if (
+                    hasSpeechDeveloperAccess()
+                ) {
+                    openDialogElement(
+                        speechTrainingChoiceDialog,
+                        {
+                            reason:
+                                "speech-training-choice"
+                        }
+                    );
+
+                    return true;
+                }
+
+                void enableInAppSpeechTraining()
+                    .catch(
+                        error =>
+                            console.error(
+                                error
+                            )
+                    );
+
+                return true;
+            },
+
+            async openSpeechEditor() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        SPEECH_EDITOR_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                const target =
+                    "wmofSpeechEditor";
+
+                const editorWindow =
+                    window.open(
+                        "",
+                        target
+                    );
+
+                if (!editorWindow) {
+                    throw new Error(
+                        "The Speech Editor window was blocked by the browser."
+                    );
+                }
+
+                try {
+                    const response =
+                        await fetch(
+                            API_BASE +
+                            "api/users/",
+                            {
+                                credentials:
+                                    "same-origin",
+                                cache:
+                                    "no-store",
+                                headers: {
+                                    "Accept":
+                                        "application/json"
+                                }
+                            }
+                        );
+
+                    const data =
+                        await response.json();
+
+                    if (
+                        !response.ok ||
+                        typeof data
+                            .csrfToken !==
+                            "string" ||
+                        data.csrfToken
+                            .length <
+                            32
+                    ) {
+                        throw new Error(
+                            data.message ||
+                            "A valid WMOF CSRF token is required."
+                        );
+                    }
+
+                    const form =
+                        document
+                            .createElement(
+                                "form"
+                            );
+
+                    form.method =
+                        "POST";
+
+                    form.action =
+                        API_BASE +
+                        "api/admin/speech-editor/";
+
+                    form.target =
+                        target;
+
+                    const token =
+                        document
+                            .createElement(
+                                "input"
+                            );
+
+                    token.type =
+                        "hidden";
+
+                    token.name =
+                        "csrf_token";
+
+                    token.value =
+                        data.csrfToken;
+
+                    form.append(
+                        token
+                    );
+
+                    document.body
+                        .append(
+                            form
+                        );
+
+                    form.submit();
+                    form.remove();
+
+                    mainMenu
+                        ?.hidePopover?.();
+
+                    return true;
+                }
+                catch (
+                    error
+                ) {
+                    try {
+                        editorWindow
+                            .close();
+                    }
+                    catch {}
+
+                    throw error;
+                }
+            },
+
+            openDeveloperDocs() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        DEVELOPER_MENU_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/docs/",
+                        "wmofDeveloperDocs"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Developer Docs window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
+            },
+
+            openSqlConsole() {
+                const opened =
+                    window.open(
+                        API_BASE +
+                        "api/admin/sql/?console=1",
+                        "wmofSqlConsole"
+                    );
+
+                if (!opened) {
+                    throw new Error(
+                        "The Database Access window was blocked by the browser."
+                    );
+                }
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                return true;
+            },
+
+            async disconnectUser() {
+                mainMenu
+                    ?.hidePopover?.();
+
+                if (speechTrainingActive) {
+                    return false;
+                }
+
+                if (
+                    inAppSpeechTrainingEnabled
+                ) {
+                    const exited =
+                        await disableInAppSpeechTraining();
+
+                    if (!exited) {
+                        return false;
+                    }
+                }
+
+                deliberatelyLoggedOut =
+                    true;
+
+                safeStorageSet(
+                    "wmof.deliberatelyLoggedOut",
+                    "true"
+                );
+
+                clearTimeout(
+                    loginPromptTimeout
+                );
+
+                let remoteDestroyed =
+                    false;
+
+                try {
+                    const result =
+                        await clockTimer
+                            .disconnect();
+
+                    remoteDestroyed =
+                        Boolean(
+                            result?.remote
+                        );
+
+                    if (!remoteDestroyed) {
+                        const sessionResponse =
+                            await fetch(
+                                API_BASE +
+                                "api/users/",
+                                {
+                                    credentials:
+                                        "same-origin",
+                                    cache:
+                                        "no-store",
+                                    headers: {
+                                        "Accept":
+                                            "application/json"
+                                    }
+                                }
+                            );
+
+                        if (
+                            sessionResponse
+                                .status ===
+                            401
+                        ) {
+                            remoteDestroyed =
+                                true;
+                        }
+                        else {
+                            const sessionData =
+                                await sessionResponse
+                                    .json();
+
+                            if (
+                                !sessionResponse
+                                    .ok ||
+                                typeof sessionData
+                                    .csrfToken !==
+                                    "string"
+                            ) {
+                                throw new Error(
+                                    sessionData
+                                        .message ||
+                                    "Unable to destroy the WMOF session."
+                                );
+                            }
+
+                            const logoutResponse =
+                                await fetch(
+                                    API_BASE +
+                                    "api/users/",
+                                    {
+                                        method:
+                                            "POST",
+                                        credentials:
+                                            "same-origin",
+                                        cache:
+                                            "no-store",
+                                        headers: {
+                                            "Accept":
+                                                "application/json",
+                                            "Content-Type":
+                                                "application/json",
+                                            "X-CSRF-Token":
+                                                sessionData
+                                                    .csrfToken
+                                        },
+                                        body:
+                                            JSON.stringify({
+                                                action:
+                                                    "disconnect"
+                                            })
+                                    }
+                                );
+
+                            if (
+                                !logoutResponse
+                                    .ok
+                            ) {
+                                const logoutData =
+                                    await logoutResponse
+                                        .json()
+                                        .catch(
+                                            () => ({})
+                                        );
+
+                                throw new Error(
+                                    logoutData
+                                        .message ||
+                                    "Unable to destroy the WMOF session."
+                                );
+                            }
+
+                            remoteDestroyed =
+                                true;
+                        }
+                    }
+                }
+                finally {
+                    syncNetworkStatusUI();
+                }
+
+                if (!remoteDestroyed) {
+                    throw new Error(
+                        "The WMOF server session was not destroyed."
+                    );
+                }
+
+                return true;
+            },
+
+            saveProfileData(
+                values
+            ) {
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "wmof:profile-save",
+                        {
+                            detail:
+                                values &&
+                                typeof values ===
+                                    "object"
+                                    ? values
+                                    : {}
+                        }
+                    )
+                );
+
+                return true;
+            },
+
+            requestPasswordReset() {
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "wmof:reset-password-request",
+                        {
+                            detail: {
+                                apiBase:
+                                    API_BASE
+                            }
+                        }
+                    )
+                );
+
+                return true;
+            },
+
+            changeScheduledStartAuto(
+                enabled
+            ) {
+                scheduledStartAutoArmed =
+                    Boolean(enabled);
+
+                scheduledStartAuto.checked =
+                    scheduledStartAutoArmed;
+
+                updateScheduledStartDialog();
+
+                return scheduledStartAutoArmed;
+            },
+
+            async startScheduledTrip(
+                mode = "scheduled"
+            ) {
+                return beginScheduledTrip(
+                    mode === "now"
+                        ? "now"
+                        : "scheduled"
+                );
+            },
+
+            cancelScheduledStart() {
+                cancelScheduledStartPrompt();
+
+                return true;
+            },
+
+            openScheduledStandardTimeEditor() {
+                if (
+                    scheduledStartDialog
+                        .open
+                ) {
+                    closeDialog(
+                        scheduledStartDialog,
+                        {
+                            reason:
+                                "scheduled-standard-edit",
+                            immediate:
+                                true
+                        }
+                    );
+                }
+
+                void openNumberPad({
+                    mode:
+                        "time",
+                    source:
+                        "standard-time",
+                    initialValue:
+                        tripDraft
+                            ?.standardTime ||
+                        "",
+                    role:
+                        "trip-settings-field",
+                    workflow:
+                        "new-trip",
+                    cancelTarget:
+                        "scheduled-start",
+                    confirmTarget:
+                        "scheduled-start",
+                    backTarget:
+                        "scheduled-start",
+                    duration:
+                        0,
+                    allowEmpty:
+                        true,
+                    onConfirm:
+                        value => {
+                            if (
+                                !tripDraft
+                            ) {
+                                return false;
+                            }
+
+                            tripDraft
+                                .standardTime =
+                                value ||
+                                "";
+
+                            return true;
+                        }
+                }).catch(
+                    () =>
+                        showScheduledStartDialog({
+                            resolution:
+                                scheduledStartNeedsResolution
+                        })
+                );
+
+                return true;
+            },
+
+            clearNumberPadValue() {
+                eraseNumberPadPendingValue();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            resetNumberPadValue() {
+                resetNumberPadPendingValue();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            enterNumberPadDigit(
+                digit
+            ) {
+                if (!numberPadState) {
+                    return false;
+                }
+
+                const value =
+                    String(
+                        digit ||
+                        ""
+                    );
+
+                if (
+                    !/^\d$/.test(
+                        value
+                    )
+                ) {
+                    return false;
+                }
+
+                const previousPending =
+                    numberPadState
+                        .pending;
+
+                if (
+                    numberPadState
+                        .replaceOnNextDigit
+                ) {
+                    numberPadState.pending =
+                        "";
+
+                    numberPadState
+                        .replaceOnNextDigit =
+                        false;
+                }
+
+                const candidate =
+                    numberPadState
+                        .pending +
+                    value;
+
+                if (
+                    numberPadState
+                        .mode ===
+                        "absolute" &&
+                    candidate.length >
+                        6
+                ) {
+                    return false;
+                }
+
+                numberPadState.pending =
+                    candidate;
+
+                if (
+                    candidate !==
+                    previousPending
+                ) {
+                    numberPadState
+                        .everEdited =
+                        true;
+                }
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            setNumberPadMeridiem(
+                value
+            ) {
+                changeNumberPadMeridiem(
+                    value
+                );
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            changeNumberPadDate(
+                value
+            ) {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode !==
+                        "absolute"
+                ) {
+                    return false;
+                }
+
+                const next =
+                    String(
+                        value ||
+                        ""
+                    );
+
+                if (
+                    numberPadState
+                        .pendingDate !==
+                    next
+                ) {
+                    numberPadState
+                        .everEdited =
+                        true;
+                }
+
+                numberPadState
+                    .pendingDate =
+                    next;
+
+                refreshNumberPad();
+
+                return true;
+            },
+
+            async confirmNumberPad() {
+                if (
+                    !numberPadState ||
+                    numberPadConfirm
+                        .disabled
+                ) {
+                    return false;
+                }
+
+                if (
+                    numberPadConfirm
+                        .dataset
+                        .action ===
+                        "autocorrect"
+                ) {
+                    if (
+                        numberPadState
+                            .mode ===
+                            "absolute"
+                    ) {
+                        autocorrectAbsoluteState(
+                            numberPadState
+                        );
+                    }
+                    else {
+                        numberPadState
+                            .pending =
+                            autocorrectTimeDigits(
+                                numberPadState
+                                    .pending
+                            );
+                    }
+
+                    numberPadState
+                        .replaceOnNextDigit =
+                        false;
+
+                    refreshNumberPad();
+
+                    return true;
+                }
+
+                try {
+                    if (
+                        await commitNumberPad()
+                    ) {
+                        const destination =
+                            numberPadState
+                                ?.confirmTarget;
+
+                        if (!destination) {
+                            return false;
+                        }
+
+                        await closeNumberPad({
+                            discardPrepared:
+                                false,
+                            allowChanged:
+                                true,
+                            destination
+                        });
+
+                        return true;
+                    }
+                }
+                catch {
+                    if (numberPadState) {
+                        numberPadState
+                            .persistence =
+                            "offline";
+
+                        refreshNumberPad();
+                    }
+                }
+
+                return false;
+            },
+
+            runNumberPadClear() {
+                eraseNumberPadPendingValue();
+
+                return Boolean(
+                    numberPadState
+                );
+            },
+
+            async resumeNumberPadConnection(
+                source = "number-pad"
+            ) {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode ===
+                        "percent" ||
+                    numberPadSettingsArea
+                        .dataset
+                        .persistence !==
+                        "offline"
+                ) {
+                    return false;
+                }
+
+                await resumeConnectionFromCloud({
+                    source
+                });
+
+                return true;
+            },
+
+            openNumberPadSettings() {
+                if (
+                    !numberPadState ||
+                    numberPadState
+                        .mode ===
+                        "percent" ||
+                    numberPadState
+                        .role ===
+                        "trip-settings-field"
+                ) {
+                    return false;
+                }
+
+                if (
+                    tripDraft &&
+                    numberPadState
+                        .source ===
+                        "new-trip" &&
+                    numberPadValueValid()
+                ) {
+                    const formatted =
+                        renderTimeDigits(
+                            numberPadState
+                                .pending
+                        );
+
+                    if (formatted) {
+                        tripDraft
+                            .standardTime =
+                            formatted;
+                    }
+                }
+
+                const returnState = {
+                    ...numberPadState
+                };
+
+                setTripSettingsReturnToNumberPad(
+                    returnState
+                );
+
+                if (
+                    !openTripSettingsDialog(
+                        "number-pad-settings",
+                        {
+                            duration:
+                                0
+                        }
+                    )
+                ) {
+                    resetTripSettingsNavigation();
+
+                    return false;
+                }
+
+                void closeNumberPad({
+                    discardPrepared:
+                        false,
+                    allowChanged:
+                        true,
+                    immediate:
+                        true,
+                    destination:
+                        "none"
+                })
+                    .then(
+                        closed => {
+                            if (closed) {
+                                return;
+                            }
+
+                            resetTripSettingsNavigation();
+
+                            closeDialog(
+                                tripSettingsDialog,
+                                {
+                                    reason:
+                                        "number-pad-settings:rollback",
+                                    immediate:
+                                        true
+                                }
+                            );
+                        }
+                    )
+                    .catch(
+                        () => {
+                            resetTripSettingsNavigation();
+                        }
+                    );
+
+                return true;
+            },
+
+            cancelNumberPadEdit() {
+                void cancelNumberPad()
+                    .catch(
+                        () => {}
+                    );
+
+                return true;
+            },
+
+            async saveDownDetails(
+                tripId,
+                intervalKey,
+                {
+                    notes = "",
+                    image,
+                    deleteImage =
+                        false
+                } = {}
+            ) {
+                const payload =
+                    new FormData();
+
+                payload.set(
+                    "notes",
+                    String(
+                        notes ||
+                        ""
+                    )
+                );
+
+                if (image) {
+                    payload.set(
+                        "image",
+                        image
+                    );
+                }
+
+                if (deleteImage) {
+                    payload.set(
+                        "deleteImage",
+                        "1"
+                    );
+                }
+
+                await clockTimer
+                    .downDetailsRequest(
+                        tripId,
+                        intervalKey,
+                        payload
+                    );
+
+                if (
+                    !tripLogBody.hidden
+                ) {
+                    await dispatchTripListRequest(
+                        "down-details"
+                    );
+                }
+
+                return true;
+            },
+
+            resumeConnection(
+                source = "app"
+            ) {
+                void resumeConnectionFromCloud({
+                    source:
+                        String(
+                            source ||
+                            "app"
+                        )
+                }).catch(
+                    () => {}
+                );
+
+                return true;
+            },
+
+            releaseEndTimeGoal() {
+                releaseEndTimeGoalOverride();
+
+                return true;
+            },
+
+            toggleTimerType() {
+                return toggleClockTimerTypeFromTap();
+            },
+
+            toggleTimerMode() {
+                return toggleClockTimerElapsedRemaining();
+            },
+
+            async openTripTimeEditor(
+                field
+            ) {
+                const button =
+                    tripSettingsDialog
+                        .querySelector(
+                            `[data-trip-time-field="${field}"]`
+                        );
+
+                if (
+                    !button ||
+                    button.disabled
+                ) {
+                    return false;
+                }
+
+                try {
+                    await openTripFieldNumberPad(
+                        field
+                    );
+
+                    if (
+                        !numberPadDialog
+                            ?.open
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        !closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    `trip-settings:${field}`,
+                                immediate:
+                                    true
+                            }
+                        )
+                    ) {
+                        await closeNumberPad({
+                            discardPrepared:
+                                false,
+                            allowChanged:
+                                true,
+                            immediate:
+                                true,
+                            destination:
+                                "none"
+                        });
+                    }
+
+                    return true;
+                }
+                catch {
+                    return false;
+                }
+            },
+
+            toggleTripStartsNow() {
+                if (
+                    !tripDraft ||
+                    tripIsLive()
+                ) {
+                    return false;
+                }
+
+                if (
+                    !tripSettingsSession
+                ) {
+                    beginTripSettingsSession();
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                if (!values) {
+                    return false;
+                }
+
+                if (
+                    !tripStartsNowState
+                ) {
+                    const now =
+                        new Date();
+
+                    const value =
+                        formatTimelineDateTime(
+                            now,
+                            values
+                                .creationDate
+                        );
+
+                    if (!value) {
+                        return false;
+                    }
+
+                    const label =
+                        formatTripTimeOnly(
+                            value,
+                            values
+                                .creationDate
+                        );
+
+                    if (
+                        !label ||
+                        label === "---"
+                    ) {
+                        return false;
+                    }
+
+                    tripStartsNowState = {
+                        value,
+                        label,
+                        snapshot: {
+                            scheduledStart:
+                                values
+                                    .scheduledStart,
+                            startTime:
+                                values
+                                    .startTime
+                        },
+                        scheduled:
+                            false,
+                        actual:
+                            false
+                    };
+
+                    syncTripStartsNowUI();
+
+                    return true;
+                }
+
+                beginTripStartsNowExit();
+
+                return true;
+            },
+
+            cancelTripStartsNow() {
+                if (
+                    !tripStartsNowState
+                ) {
+                    return false;
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                const snapshot =
+                    tripStartsNowState
+                        .snapshot;
+
+                if (
+                    values &&
+                    snapshot
+                ) {
+                    if (
+                        tripStartsNowState
+                            .scheduled
+                    ) {
+                        values
+                            .scheduledStart =
+                            snapshot
+                                .scheduledStart;
+                    }
+
+                    if (
+                        tripStartsNowState
+                            .actual
+                    ) {
+                        values
+                            .startTime =
+                            snapshot
+                                .startTime;
+
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            false;
+                    }
+                }
+
+                beginTripStartsNowExit();
+
+                return true;
+            },
+
+            toggleTripStartsNowTarget(
+                target
+            ) {
+                if (
+                    !tripStartsNowState
+                ) {
+                    return false;
+                }
+
+                const values =
+                    tripSettingsSession
+                        ?.values;
+
+                const snapshot =
+                    tripStartsNowState
+                        .snapshot;
+
+                if (
+                    !values ||
+                    !snapshot
+                ) {
+                    return false;
+                }
+
+                const scheduled =
+                    target ===
+                    "scheduled-start";
+
+                const key =
+                    scheduled
+                        ? "scheduled"
+                        : "actual";
+
+                const selected =
+                    !tripStartsNowState[
+                        key
+                    ];
+
+                tripStartsNowState[
+                    key
+                ] =
+                    selected;
+
+                if (scheduled) {
+                    values.scheduledStart =
+                        selected
+                            ? tripStartsNowState
+                                .value
+                            : snapshot
+                                .scheduledStart;
+                }
+                else {
+                    values.startTime =
+                        selected
+                            ? tripStartsNowState
+                                .value
+                            : snapshot
+                                .startTime;
+
+                    if (
+                        tripSettingsSession
+                    ) {
+                        tripSettingsSession
+                            .startTimeSetToNow =
+                            selected;
+                    }
+                }
+
+                refreshTripSettingsValues();
+
+                return selected;
+            },
+
+            changeTripProductive(
+                productive
+            ) {
+                const session =
+                    tripSettingsSession ||
+                    beginTripSettingsSession();
+
+                if (!session) {
+                    return false;
+                }
+
+                session.values
+                    .nonProduction =
+                    !Boolean(
+                        productive
+                    );
+
+                return true;
+            },
+
+            changeTripDeferred(
+                deferred
+            ) {
+                const session =
+                    tripSettingsSession ||
+                    beginTripSettingsSession();
+
+                if (
+                    !session ||
+                    session.live
+                ) {
+                    return false;
+                }
+
+                const values =
+                    session.values;
+
+                const enabled =
+                    Boolean(
+                        deferred
+                    );
+
+                if (enabled) {
+                    session
+                        .preDeferredValues =
+                        cloneTripSettingsValues(
+                            values
+                        );
+
+                    values.scheduledStart =
+                        values.creationTime;
+
+                    values.startTime =
+                        undefined;
+
+                    tripStartsNowState =
+                        undefined;
+
+                    tripStartsNowExiting =
+                        false;
+                }
+                else {
+                    if (
+                        session
+                            .preDeferredValues
+                    ) {
+                        Object.assign(
+                            values,
+                            cloneTripSettingsValues(
+                                session
+                                    .preDeferredValues
+                            )
+                        );
+                    }
+
+                    session
+                        .preDeferredValues =
+                        undefined;
+                }
+
+                values.deferred =
+                    enabled;
+
+                tripStartsNowState =
+                    undefined;
+
+                refreshTripSettingsValues();
+
+                return true;
+            },
+
+            async saveTripSettings() {
+                if (
+                    !tripSettingsSession
+                ) {
+                    beginTripSettingsSession();
+                }
+
+                const startingDraft =
+                    Boolean(
+                        tripDraft &&
+                        !tripIsLive()
+                    );
+
+                if (
+                    !applyTripSettingsSession()
+                ) {
+                    refreshTripSettingsValues();
+
+                    return false;
+                }
+
+                if (startingDraft) {
+                    if (
+                        tripDraft.deferred
+                    ) {
+                        tripStartsNowState =
+                            undefined;
+
+                        tripSettingsSession =
+                            undefined;
+
+                        if (
+                            numberPadDialog
+                                ?.open
+                        ) {
+                            await closeNumberPad({
+                                discardPrepared:
+                                    false,
+                                allowChanged:
+                                    true,
+                                immediate:
+                                    true,
+                                destination:
+                                    "home"
+                            });
+                        }
+
+                        uiReturnStack.length =
+                            0;
+
+                        resetTripSettingsNavigation();
+
+                        closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    "trip-settings-defer"
+                            }
+                        );
+
+                        renderDeferredTrip();
+
+                        return true;
+                    }
+
+                    if (
+                        tripDraftHasFutureStart(
+                            tripDraft
+                        )
+                    ) {
+                        tripStartsNowState =
+                            undefined;
+
+                        tripSettingsSession =
+                            undefined;
+
+                        resetTripSettingsNavigation();
+
+                        closeDialog(
+                            tripSettingsDialog,
+                            {
+                                reason:
+                                    "trip-settings-scheduled",
+                                immediate:
+                                    true
+                            }
+                        );
+
+                        showScheduledStartDialog();
+
+                        return true;
+                    }
+
+                    try {
+                        if (
+                            !await startTripDraft()
+                        ) {
+                            restoreDraftFromTripSettingsOriginal();
+
+                            refreshTripSettingsValues();
+
+                            return false;
+                        }
+                    }
+                    catch {
+                        restoreDraftFromTripSettingsOriginal();
+
+                        refreshTripSettingsValues();
+
+                        return false;
+                    }
+
+                    tripStartsNowState =
+                        undefined;
+
+                    tripSettingsSession =
+                        undefined;
+
+                    resetTripSettingsNavigation();
+
+                    closeDialog(
+                        tripSettingsDialog,
+                        {
+                            reason:
+                                "trip-settings-start"
+                        }
+                    );
+
+                    return true;
+                }
+
+                syncTripSettingsCallerAfterSave();
+
+                await clockTimer
+                    .persistCurrentTrip();
+
+                tripStartsNowState =
+                    undefined;
+
+                tripSettingsSession =
+                    undefined;
+
+                await closeTripSettingsToNavigation(
+                    "trip-settings-save"
+                );
+
+                return true;
+            },
+
+        });
+
+    for (
+        const actionName of
+        [
+            "openStartMenu",
+            "prepareReadyAction",
+            "prepareStartMenu",
+            "closeActiveSurface"
+        ]
+    ) {
+        globalThis
+            .WMOFActionFunctions
+            .setMetadata(
+                actionName,
+                {
+                    interruptGroup:
+                        "primary-surface"
+                }
+            );
     }
 
-    const speechCommands = globalThis.WMOFSpeechCommands || Object.create(null);
-    globalThis.WMOFSpeechPreprocess = {
-        normalize(text, {field, kind, pattern}) {
-            if (kind === "keypad") {
-                if (!numberPadDialog?.open || !numberPadState) return text;
-                kind = numberPadState.mode === "absolute" ? "clock-parts" :
-                    numberPadState.mode === "percent" ? "percent" : "duration";
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
+            "readSyncStatus",
+            {
+                parameters: []
             }
-            if (!field || !pattern) return text;
-            const match = new RegExp(pattern, "i").exec(text);
-            const phrase = match?.groups?.[field];
-            if (typeof phrase !== "string") return text;
-            const normalized = EnglishSpeechValuePreprocessor.normalize(phrase, kind);
-            if (normalized === undefined) return text;
-            const start = match.index + match[0].lastIndexOf(phrase);
-            return text.slice(0, start) + normalized + text.slice(start + phrase.length);
-        }
-    };
-    let pendingSpeechReady;
-    const cancelPendingSpeechReady = () => {
-        if (pendingSpeechReady !== undefined) clearTimeout(pendingSpeechReady);
-        pendingSpeechReady = undefined;
-    };
-    const speechPointerUp = element => {
-        if (!element || element.hidden || element.disabled) return false;
-        element.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerType: "speech" }));
-        return true;
-    };
-    speechCommands.setStandardTime = setStandardTimeFromSpeech;
-    speechCommands.setKeypadValue = spokenValue => {
-        if (!numberPadDialog?.open || !numberPadState) return false;
-        let pending, meridiem = numberPadState.meridiem;
-        if (numberPadState.mode === "percent") {
-            const percent = EnglishSpeechValuePreprocessor.parse(spokenValue, "percent");
-            if (!Number.isInteger(percent) || percent <= 0) return false;
-            pending = String(percent);
-        }
-        else if (numberPadState.mode === "absolute") {
-            const parts = EnglishSpeechValuePreprocessor.parse(spokenValue, "clock-parts");
-            if (!parts) return false;
-            if (parts.meridiem) meridiem = parts.meridiem.toUpperCase();
-            else if (parts.hour > 12) meridiem = undefined;
-            const hour = meridiem && parts.hour > 12 ? parts.hour % 12 || 12 : parts.hour;
-            pending = absoluteDigits(hour, parts.minute, 0);
-            if (parts.day) {
-                const date = new Date();
-                if (parts.day === "tomorrow") date.setDate(date.getDate() + 1);
-                numberPadState.pendingDate = formatDateInput(date);
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
+            "toggleSync",
+            {
+                parameters: [
+                    {
+                        name: "syncState",
+                        type: "choice",
+                        optional: true,
+                        values: [
+                            "on",
+                            "off"
+                        ]
+                    }
+                ]
             }
-            if (!absoluteDigitsValid(pending, meridiem)) return false;
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setMetadata(
+            "toggleRenderedTime",
+            {
+                parameters: [
+                    {
+                        name: "timeMode",
+                        type: "choice",
+                        optional: true,
+                        values:
+                            RENDERED_TIME_MODES
+                                .slice()
+                    }
+                ]
+            }
+        );
+
+    globalThis
+        .WMOFActionFunctions
+        .setContextProvider(
+            () => {
+                let summary;
+                let activeInterval;
+
+                try {
+                    summary =
+                        clockTimer
+                            .getSummarySnapshot
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                try {
+                    activeInterval =
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            );
+                }
+                catch {}
+
+                return {
+                    currentTrip: {
+                        id:
+                            clockTimer
+                                .currentTripId,
+                        status:
+                            clockTimer
+                                .status,
+                        summary:
+                            summary?.trip
+                    },
+                    activeInterval:
+                        activeInterval ||
+                        null,
+                    renderedTime: {
+                        mode:
+                            clockTimer
+                                .renderedTimeMode
+                    },
+                    sync: {
+                        enabled:
+                            getSyncGoalsState(),
+                        connection:
+                            normalizedConnectionStatus()
+                    },
+                    goal: {
+                        mode:
+                            normalizePercentMode(
+                                clockTimer
+                                    .percentMode
+                            )
+                    }
+                };
+            }
+        );
+
+
+    function ensureSpeechMenu(
+        container = document.body,
+        modalMode
+    ) {
+        if (
+            modalMode === "top-level"
+        ) {
+            const topLevel =
+                document.getElementById(
+                    "speechTopLevelMenu"
+                );
+
+            if (topLevel) {
+                return topLevel;
+            }
         }
-        else {
-            const duration = EnglishSpeechValuePreprocessor.parse(spokenValue, "duration");
-            const formatted = EnglishDurationParser.format(duration);
-            if (!formatted) return false;
-            pending = normalizeTimeDigits(formatted);
-            if (!timeDigitsValid(pending)) return false;
+
+        const selector =
+            modalMode
+                ? `speech-menu[speech-modal="${modalMode}"]`
+                : "speech-menu:not([speech-modal])";
+
+        let menu;
+
+        try {
+            menu =
+                [
+                    ...container.children
+                ].find(
+                    element =>
+                        element.matches?.(
+                            selector
+                        )
+                );
         }
-        numberPadState.pending = pending;
-        numberPadState.meridiem = meridiem;
-        numberPadState.replaceOnNextDigit = false;
-        numberPadState.everEdited = true;
-        refreshNumberPad();
-        return true;
-    };
-    speechCommands.ready = () => {
-        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
-        cancelPendingSpeechReady();
-        pendingSpeechReady = setTimeout(() => {
-            pendingSpeechReady = undefined;
-            speechPointerUp($("#newTripButton"));
-        }, 1100);
-        return true;
-    };
-    speechCommands.readyAt = async spokenTime => {
-        cancelPendingSpeechReady();
-        if (tripIsLive() || $("#newTripButton")?.disabled) return false;
-        const now = new Date();
-        const target = EnglishSpeechValuePreprocessor.parse(spokenTime, "clock", {baseDate:now, preferFuture:true});
-        if (!target) return false;
-        if (clockTimer.status === "stopped") await clockTimer.resetCompletedTrip();
-        const defaults = getTripMomentDefaults(now);
-        const scheduledStart = formatTimelineDateTime(target, defaults.creationDate);
-        const preferences = getTripPreferences();
-        if (!defaults || !scheduledStart) return false;
-        uiReturnStack.length = 0;
-        resetTripSettingsNavigation();
-        tripSettingsSession = undefined;
-        tripStartsNowState = undefined;
-        tripDraft = {
-            ...defaults,
-            standardTime: "",
-            scheduledStart,
-            startTime: scheduledStart,
-            lateBreakBehavior: preferences.lateBreakBehavior,
-            syncGoals: preferences.syncGoals
-        };
-        renderDeferredTrip();
-        try { await clockTimer.prepareTrip({ timeout: 5000, at: now }); } catch {}
-        showScheduledStartDialog();
-        return true;
-    };
-    speechCommands.readyAtContinuation = spokenTime => {
-        if (pendingSpeechReady === undefined) return false;
-        return speechCommands.readyAt(spokenTime);
-    };
-    speechCommands.breakStart = () => speechPointerUp(breakButton);
-    speechCommands.chooseBreak = breakChoice => {
-        if (!breakDialog.open) return false;
-        const kind = ({"10":"short-break",short:"short-break","15":"break",long:"break",lunch:"lunch"})[String(breakChoice).toLowerCase()];
-        const button = breakDialog.querySelector(`[data-break-type="${kind}"]`);
-        if (!button) return false;
-        breakDialog.querySelectorAll(".speech-focused").forEach(item => item.classList.remove("speech-focused"));
-        button.classList.add("speech-focused");
-        button.focus();
-        return true;
-    };
-    speechCommands.confirmBreak = () => {
-        const button = breakDialog.querySelector("[data-break-type].speech-focused");
-        if (!breakDialog.open || !button) return false;
-        button.click();
-        return true;
-    };
-    speechCommands.down = () => speechPointerUp(downButton);
-    speechCommands.breakEnd = () => {
-        const type = String(clockTimer.getActiveIntervalState?.(new Date())?.intervalType || "").toLowerCase();
-        if (type !== "break" && type !== "lunch") return false;
-        openDialog("speechBreakEndDialog", { reason: "speech-break-end" });
-        return true;
-    };
-    speechCommands.resume = () => speechPointerUp(downResumeButton);
-    speechCommands.setGoal = (goalScope, percent) => {
-        const scope = String(goalScope).toLowerCase();
-        const value = EnglishSpeechValuePreprocessor.parse(percent, "percent");
-        if (!['trip','total'].includes(scope) || !Number.isFinite(value) || value <= 0) return false;
-        if ((endTimeGoalOverride?.scopes || []).includes(scope)) { flashEndTimeGoalLock(); return false; }
-        clockTimer.configure({ [scope === "total" ? "total_goal" : "trip_goal"]: `${value}%` });
-        queueSummaryRefresh();
-        return true;
-    };
-    speechCommands.setGoalMode = goalMode => {
-        const mode = String(goalMode).toLowerCase();
-        if (!PERCENT_MODES.includes(mode)) return false;
-        applyScope(mode);
-        return true;
-    };
-    speechCommands.sync = syncAction => {
-        const current = getSyncGoalsState();
-        const action = String(syncAction || "").toLowerCase();
-        setSyncGoals(action === "on" ? true : action === "off" ? false : !current);
-        return true;
-    };
-    speechCommands.lockEndTime = spokenTime => {
-        if (!tripIsLive()) return false;
-        const target = EnglishSpeechValuePreprocessor.parse(spokenTime, "clock", {baseDate:new Date(), preferFuture:true});
-        return target ? applyEndTimeGoalOverride(target) : false;
-    };
-    speechCommands.showTripLog = () => { if (getTripListState() !== "open") void openTripList("speech"); return true; };
-    speechCommands.hideTripLog = () => { if (getTripListState() === "open") void closeTripList("speech"); return true; };
-    speechCommands.deferTrip = () => {
-        if (!numberPadDialog?.open || numberPadState?.workflow !== "new-trip" || !tripDraft) return false;
-        tripDraft.deferred = true;
-        tripDraft.standardTime = "";
-        renderDeferredTrip();
-        void closeNumberPad({ discardPrepared: false, allowChanged: true, immediate: true, destination: "home" });
-        return true;
-    };
-    speechCommands.setRenderedTimeMode = timeMode => {
-        const value = String(timeMode).toLowerCase();
-        applyRenderedTimeMode(value.startsWith("end") ? "calculated-end" : value);
-        return true;
-    };
-    globalThis.WMOFSpeechCommands = speechCommands;
+        catch {}
+
+        if (menu) {
+            return menu;
+        }
+
+        menu =
+            document.createElement(
+                "speech-menu"
+            );
+
+        menu.dataset.speechRuntimeMenu =
+            "true";
+
+        if (modalMode) {
+            menu.setAttribute(
+                "speech-modal",
+                modalMode
+            );
+        }
+
+        container.append(menu);
+        return menu;
+    }
 
     void (async () => {
         try {
@@ -8980,98 +21211,441 @@
         }
 
         const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
-        const englishSpeech = englishLanguage?.speech;
-        const installSpeechCommand = (key, functionName, container = document.body, modal = true, valueKind, valueField) => {
+        englishSpeech =
+            englishLanguage?.speech;
+
+        installSpeechCommand =
+            (key, actionName, container = document.body, modal = true, valueKind, valueField) => {
             const pattern = englishSpeech?.commands?.[key];
             if (!pattern) return;
-            const element = document.createElement("speech-command");
-            element.hidden = true;
-            element.dataset.speechEditorId = `builtin:${key}:${container.id || "page"}`;
+            const modalMode =
+                modal === true
+                    ? "top-level"
+                    : modal === "default"
+                        ? "default"
+                        : undefined;
+            const speechMenu =
+                ensureSpeechMenu(
+                    container,
+                    modalMode
+                );
+
+            const editorId =
+                `builtin:${key}:${container.id || "page"}`;
+
+            let element =
+                [
+                    ...speechMenu
+                        .querySelectorAll(
+                            ":scope > speech-command[data-speech-editor-id]"
+                        )
+                ]
+                    .find(
+                        candidate =>
+                            candidate.dataset
+                                .speechEditorId ===
+                            editorId
+                    );
+
+            if (!element) {
+                element =
+                    document.createElement(
+                        "speech-command"
+                    );
+
+                element.dataset
+                    .speechEditorId =
+                    editorId;
+
+                speechMenu.append(
+                    element
+                );
+            }
             const speechTargets = {
-                readyAt:"#newTripButton", readyAtContinuation:"#newTripButton", ready:"#newTripButton",
+                readyAt:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
-                resume:"#downResumeButton", goal:"#goalPercentValue", goalMode:"#scopeToggle",
-                sync:"#syncGoalsMenuButton,#goalSyncButton", lockEndTime:"#renderedTimeButton", showTripLog:"#tripListMenuButton",
-                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#renderedTimeButton",
-                breakChoice:"#breakDialog [data-break-type]", confirm:container.id === "speechBreakEndDialog" ? "#speechBreakEndConfirm" : "#breakDialog [data-break-type]", cancel:"#speechBreakEndCancel"
+                resume:"#downResumeButton",
+                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue",
+                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
+                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
+                breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
+                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
             };
-            if (speechTargets[key]) element.dataset.speechTarget = speechTargets[key];
+
+            const speechOptionGroups = {
+                tripGoal: "goals",
+                totalGoal: "goals",
+                setTripGoal: "goals",
+                setTotalGoal: "goals",
+                readGoalMode: "mode",
+                goalMode: "mode",
+                readRenderedTime: "time",
+                renderedTimeMode: "time"
+            };
+
+            const speechIntents = {
+                confirm: "confirm",
+                cancel: "cancel"
+            };
+
+            const speechOptionCategories = {
+                readyAt: "trip-actions",
+                readyAtContinuation: "trip-actions",
+                ready: "trip-actions",
+                breakStart: "trip-actions",
+                down: "trip-actions",
+                breakEnd: "trip-actions",
+                resume: "trip-actions",
+                tripGoal: "goals",
+                totalGoal: "goals",
+                setTripGoal: "goals",
+                setTotalGoal: "goals",
+                readGoalMode: "settings",
+                goalMode: "settings",
+                readRenderedTime: "informational",
+                sync: "settings",
+                syncStatus: "informational",
+                howLong: "informational",
+                when: "informational",
+                lockEndTime: "settings",
+                showTripLog: "trip-actions",
+                hideTripLog: "trip-actions",
+                deferTrip: "trip-actions",
+                renderedTimeMode: "settings",
+                breakChoice: "trip-actions",
+                confirm: "trip-actions",
+                yes: "trip-actions",
+                no: "trip-actions",
+                cancel: "trip-actions"
+            };
+
+            if (speechTargets[key]) {
+                element.dataset.speechTarget =
+                    speechTargets[key];
+            }
+            else {
+                delete element.dataset.speechTarget;
+            }
+
+            const speechAvailability = {
+                readyAt:
+                    "WMOFSpeechAvailability.canStartTrip",
+                ready:
+                    "WMOFSpeechAvailability.canUseReady",
+                readyAtContinuation:
+                    "WMOFSpeechAvailability.canContinueStartAt",
+                breakStart:
+                    "WMOFSpeechAvailability.canOpenBreakMenu",
+                down:
+                    "WMOFSpeechAvailability.canStartDownTime",
+                breakEnd:
+                    "WMOFSpeechAvailability.canOpenBreakEndMenu",
+                resume:
+                    "WMOFSpeechAvailability.canResumeTrip",
+                lockEndTime:
+                    "WMOFSpeechAvailability.canLockEndTime",
+                showTripLog:
+                    "WMOFSpeechAvailability.canOpenTripLog",
+                hideTripLog:
+                    "WMOFSpeechAvailability.canCloseTripLog",
+                deferTrip:
+                    "WMOFSpeechAvailability.canDeferTrip",
+                renderedTimeMode:
+                    "WMOFSpeechAvailability.canToggleRenderedTime",
+                cancel:
+                    "WMOFSpeechAvailability.canCloseSurface"
+            };
+
+            const availability =
+                speechAvailability[
+                    key
+                ] ||
+                (
+                    speechOptionCategories[
+                        key
+                    ] ===
+                        "informational"
+                        ? "WMOFSpeechAvailability.canUseInformational"
+                        : ""
+                );
+
+            if (availability) {
+                element.setAttribute(
+                    "speech-available",
+                    availability
+                );
+            }
+            else {
+                element.removeAttribute(
+                    "speech-available"
+                );
+            }
+
+            if (speechIntents[key]) {
+                element.dataset.speechIntent =
+                    speechIntents[key];
+            }
+            else {
+                delete element.dataset.speechIntent;
+            }
+            if (speechOptionGroups[key]) {
+                element.dataset.speechOptionsGroup =
+                    speechOptionGroups[key];
+            }
+            element.dataset.speechOptionsCategory =
+                speechOptionCategories[key] ||
+                "settings";
             element.setAttribute("speech-pattern", pattern);
-            element.setAttribute("speech-function", `WMOFSpeechCommands.${functionName}`);
+            element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
-                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
-            if (modal) element.setAttribute("speech-modal", "top-level");
-            container.append(element);
+
+            return element;
         };
         if (englishSpeech) {
             for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
                 if (!element) continue;
                 element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
+                element.dataset.speechOptionsCategory =
+                    "settings";
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
-                element.setAttribute("speech-function", "WMOFSpeechCommands.setStandardTime");
-                element.setAttribute("speech-preproc", "WMOFSpeechPreprocess.normalize");
+                element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
+                element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", "duration");
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","readyAt"], ["readyAtContinuation","readyAtContinuation"], ["ready","ready"], ["breakStart","breakStart"], ["down","down"],
-                ["breakEnd","breakEnd"], ["resume","resume"], ["goal","setGoal"], ["goalMode","setGoalMode"],
-                ["sync","sync"], ["lockEndTime","lockEndTime"], ["showTripLog","showTripLog"],
-                ["hideTripLog","hideTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","setRenderedTimeMode"]
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
+                ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"],
+                ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
+                ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
+                ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
+                ["readRenderedTime","readRenderedTime"],
+                ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["howLong","readTimeRemaining"], ["when","readEndTime"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
-                    goal:["percent","percent"], lockEndTime:["clock","spokenTime"]
+                    setTripGoal:["percent","percent"], setTotalGoal:["percent","percent"],
+                    lockEndTime:["clock","spokenTime"]
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
-            installSpeechCommand("breakChoice", "chooseBreak", breakDialog, false);
-            installSpeechCommand("confirm", "confirmBreak", breakDialog, false);
-            SpeechMenu.wakePhrase = englishSpeech.wakePhrase;
-            SpeechMenu.sleepPhrase = englishSpeech.sleepPhrase;
+            const readyAtNumberPadCommand =
+                installSpeechCommand(
+                    "readyAtContinuation",
+                    "continueStartAt",
+                    numberPadDialog,
+                    false,
+                    "clock",
+                    "spokenTime"
+                );
+
+            readyAtNumberPadCommand
+                ?.setAttribute(
+                    "speech-index",
+                    "10"
+                );
+
+            installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
+            installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
+            installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
+            installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
+            installNumberPadSpeechCommands();
+            speechMicBar
+                ?.setSystemSpeechPatterns?.({
+                    wake:
+                        englishSpeech
+                            .wakePhrase,
+                    sleep:
+                        englishSpeech
+                            .sleepPhrase,
+                    off:
+                        englishSpeech
+                            .offPhrase
+                });
             SpeechMenu.refresh();
         }
 
-        speechMicBar?.addEventListener("started", () => {
-            setSpeechButtonState(true, false);
-            setSpeechLayoutState(true);
-        });
+        speechRecognitionLanguageAvailable =
+            Boolean(
+                englishSpeech
+            );
 
-        speechMicBar?.addEventListener("stopped", () => {
-            cancelPendingSpeechReady();
-            setSpeechButtonState(false, false);
-            setSpeechLayoutState(false);
-        });
+        syncSpeechTrainingControls();
 
-        speechMicBar?.addEventListener("speechCaptureEnded", () => {
-            cancelPendingSpeechReady();
-            setSpeechButtonState(false, false);
-            setSpeechLayoutState(false);
-        });
+        speechMicBar?.addEventListener(
+            "started",
+            () =>
+                actions
+                    .handleSpeechRuntimeStarted()
+        );
 
-        speechMicBar?.addEventListener("muted", () => {
-            setSpeechButtonState(true, true);
-        });
+        speechMicBar?.addEventListener(
+            "utteranceStarted",
+            () =>
+                actions
+                    .handleSpeechUtteranceStarted()
+        );
 
-        speechMicBar?.addEventListener("unmuted", () => {
-            setSpeechButtonState(true, false);
-        });
+        speechMicBar?.addEventListener(
+            "stopped",
+            () =>
+                actions
+                    .handleSpeechRuntimeStopped()
+        );
 
-        const speechBreakEndDialog = $("#speechBreakEndDialog");
-        $("#speechBreakEndCancel")?.addEventListener("click", () => closeDialog(speechBreakEndDialog, { reason: "speech-cancel" }));
-        $("#speechBreakEndConfirm")?.addEventListener("click", () => {
-            closeDialog(speechBreakEndDialog, { reason: "speech-confirm" });
-            void endCurrentIntervalOrTrip().catch(() => {});
-        });
-        if (englishSpeech && speechBreakEndDialog) {
-            installSpeechCommand("confirm", "confirmBreakEnd", speechBreakEndDialog, false);
-            installSpeechCommand("cancel", "cancelBreakEnd", speechBreakEndDialog, false);
-            speechCommands.confirmBreakEnd = () => { $("#speechBreakEndConfirm")?.click(); return true; };
-            speechCommands.cancelBreakEnd = () => { $("#speechBreakEndCancel")?.click(); return true; };
+        speechMicBar?.addEventListener(
+            "speechCaptureEnded",
+            () =>
+                actions
+                    .handleSpeechRuntimeStopped()
+        );
+
+        speechMicBar?.addEventListener(
+            "muted",
+            () =>
+                actions
+                    .handleSpeechRuntimeMuted(
+                        true
+                    )
+        );
+
+        speechMicBar?.addEventListener(
+            "unmuted",
+            () =>
+                actions
+                    .handleSpeechRuntimeMuted(
+                        false
+                    )
+        );
+
+        if (
+            englishSpeech &&
+            !globalThis.SpeechMenu
+                ?.started
+        ) {
+            speechActivationPending =
+                true;
+            setSpeechButtonState(
+                true,
+                false
+            );
+            setSpeechLayoutState(
+                true
+            );
+
+            try {
+                const started =
+                    await globalThis
+                        .SpeechMenu
+                        ?.start?.(
+                            englishLanguage
+                                ?.speechRecognitionLanguage ||
+                            "en-US"
+                        );
+
+                if (!started) {
+                    setSpeechButtonState(
+                        false,
+                        false
+                    );
+                    setSpeechLayoutState(
+                        false
+                    );
+                }
+            }
+            catch (error) {
+                console.error(
+                    error
+                );
+                setSpeechButtonState(
+                    false,
+                    false
+                );
+                setSpeechLayoutState(
+                    false
+                );
+            }
+            finally {
+                speechActivationPending =
+                    false;
+            }
+        }
+
+        const speechBreakConfirmDialog =
+            $("#speechBreakConfirmDialog");
+
+        for (
+            const [
+                id,
+                action,
+                name
+            ] of [
+                [
+                    "speechBreakConfirmYes",
+                    "confirmBreakPromptYes",
+                    "confirmBreakPromptYesClick"
+                ],
+                [
+                    "speechBreakConfirmNo",
+                    "confirmBreakPromptNo",
+                    "confirmBreakPromptNoClick"
+                ],
+                [
+                    "speechBreakConfirmCancel",
+                    "cancelBreakPrompt",
+                    "cancelBreakPromptClick"
+                ]
+            ]
+        ) {
+            globalThis
+                .WMOFInteractionFunctions
+                .bindAction({
+                    element:
+                        $("#" + id),
+                    event:
+                        "click",
+                    name,
+                    action
+                });
+        }
+
+        speechBreakConfirmDialog
+            ?.addEventListener(
+                "close",
+                clearSpeechBreakPrompt
+            );
+
+        if (
+            englishSpeech &&
+            speechBreakConfirmDialog
+        ) {
+            installSpeechCommand(
+                "yes",
+                "confirmBreakPromptYes",
+                speechBreakConfirmDialog,
+                false
+            );
+
+            installSpeechCommand(
+                "no",
+                "confirmBreakPromptNo",
+                speechBreakConfirmDialog,
+                false
+            );
+
+            installSpeechCommand(
+                "cancel",
+                "cancelBreakPrompt",
+                speechBreakConfirmDialog,
+                false
+            );
+
             SpeechMenu.refresh();
         }
 

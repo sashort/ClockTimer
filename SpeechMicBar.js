@@ -4,6 +4,8 @@ class SpeechMicBar extends HTMLElement {
         "stopped",
         "muted",
         "unmuted",
+        "listeningSuspended",
+        "listeningResumed",
         "utteranceStarted",
         "utteranceFinished",
         "utteranceTranscriptChanged",
@@ -17,13 +19,16 @@ class SpeechMicBar extends HTMLElement {
         "speechRecognitionError",
         "speechRecognitionFailed",
         "speechRecognitionStreamingFailed",
+        "speechRecognitionStatusChanged",
         "speechCaptureEnded",
         "utteranceUnrecognized",
-        "audioLevelChanged"
+        "audioLevelChanged",
+        "phrasesChanged"
     ];
 
     #shadow = this.attachShadow({mode: "closed"});
     #subscriptions = [];
+    #bar;
     #mic;
     #activity;
     #text;
@@ -33,6 +38,49 @@ class SpeechMicBar extends HTMLElement {
     #responseAnimation;
     #currentUtteranceId;
     #currentTranscript = "";
+    #currentTranscriptFinal = false;
+    #rejectedClearTimer;
+    #loadingAnimationFrame;
+    #loadingDisplayed = 0;
+    #loadingTarget = 0;
+    #loadingTotal = 0;
+    #optionsPanel;
+    #optionsClose;
+    #optionsGrid;
+    #optionsAnimation;
+    #layoutResizeObserver;
+    #layoutResizeHandler =
+        () =>
+            this
+                .#syncHostBounds();
+    #systemSpeechMenu;
+    #wakeCommand;
+    #sleepCommand;
+    #offCommand;
+    #commandsCommand;
+    #trainingSelection;
+    #optionCategories = [
+        {
+            key: "trip-actions",
+            label: "Trip Actions"
+        },
+        {
+            key: "informational",
+            label: "Informational"
+        },
+        {
+            key: "goals",
+            label: "Goals"
+        },
+        {
+            key: "settings",
+            label: "Settings"
+        },
+        {
+            key: "system",
+            label: "System"
+        }
+    ];
 
     constructor() {
         super();
@@ -44,12 +92,558 @@ class SpeechMicBar extends HTMLElement {
                     height: 74px;
                     min-width: 0;
                     display: block;
+                    position: relative;
                     color: white;
                     font: inherit;
+                    overflow: visible;
+                }
+
+                #optionsPanel {
+                    --speech-options-max-height:
+                        calc(100dvh - 90px);
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: 100%;
+                    box-sizing: border-box;
+                    height: auto;
+                    max-height:
+                        var(
+                            --speech-options-max-height
+                        );
+                    padding: 42px 8px 8px;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    overscroll-behavior: contain;
+                    display: grid;
+                    grid-template-columns:
+                        minmax(8px, 1fr)
+                        max-content
+                        minmax(8px, 1fr);
+                    gap: 7px 0;
+                    border: 3px solid
+                        rgb(255 255 255 / 38%);
+                    border-bottom: 0;
+                    border-radius:
+                        14px 14px 0 0;
+                    background:
+                        linear-gradient(
+                            180deg,
+                            rgb(34 43 51 / 98%),
+                            rgb(47 57 67 / 96%)
+                        );
+                    box-shadow:
+                        0 -10px 26px
+                        rgb(0 0 0 / 30%);
+                    backdrop-filter: blur(9px);
+                    clip-path:
+                        inset(
+                            100% 0 0 0
+                            round 14px 14px 0 0
+                        );
+                    opacity: 0;
+                    pointer-events: none;
+                    transform-origin:
+                        bottom center;
+                    scrollbar-gutter: stable;
+                    z-index: 3;
+                    transition:
+                        max-height 180ms ease-in-out,
+                        padding 180ms ease-in-out;
+                }
+
+                :host([options-open])
+                #optionsPanel,
+                :host([options-collapsed])
+                #optionsPanel {
+                    clip-path:
+                        inset(
+                            0
+                            round 14px 14px 0 0
+                        );
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                :host([options-collapsed])
+                #optionsPanel {
+                    height: 42px;
+                    min-height: 42px;
+                    max-height: 42px;
+                    padding: 0 8px;
                     overflow: hidden;
                 }
 
+                :host([options-collapsed])
+                #optionsGrid {
+                    display: none;
+                }
+
+                #optionsHeader {
+                    position: absolute;
+                    top: 8px;
+                    left: 12px;
+                    right: 48px;
+                    z-index: 4;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 16px;
+                    font-weight: 800;
+                    line-height: 28px;
+                    color: white;
+                }
+
+                #optionsClose {
+                    position: absolute;
+                    top: 7px;
+                    right: 9px;
+                    z-index: 5;
+                    width: 28px;
+                    height: 28px;
+                    padding: 0;
+                    display: grid;
+                    place-items: center;
+                    border: 1px solid
+                        rgb(255 255 255 / 38%);
+                    border-radius: 50%;
+                    color: white;
+                    background:
+                        rgb(20 30 42 / 82%);
+                    font: 700 22px/1
+                        system-ui,
+                        sans-serif;
+                    cursor: pointer;
+                }
+
+                #optionsClose:active {
+                    transform: scale(.94);
+                }
+
+                #optionsGrid {
+                    grid-column: 1 / -1;
+                    display: flex;
+                    flex-flow: row nowrap;
+                    align-items: flex-start;
+                    gap: 8px;
+                    min-width: 0;
+                }
+
+                .option-pane {
+                    flex: 1 1 0;
+                    min-width: 0;
+                    height: auto;
+                    align-self: flex-start;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .option-category {
+                    width: 100%;
+                    min-width: 0;
+                    display: grid;
+                    break-inside: avoid;
+                    grid-template-columns:
+                        42px
+                        minmax(0, 1fr);
+                    overflow: hidden;
+                    border: 1px solid
+                        rgb(169 221 247 / 24%);
+                    border-radius: 11px;
+                    background:
+                        linear-gradient(
+                            180deg,
+                            rgb(0 63 128 / 34%),
+                            rgb(0 30 96 / 30%)
+                        );
+                    box-shadow:
+                        inset 0 1px 0
+                        rgb(255 255 255 / 7%);
+                }
+
+                .option-category-rail {
+                    grid-column: 1;
+                    grid-row: 1;
+                    display: grid;
+                    place-items: center;
+                    min-height: 100%;
+                    color: white;
+                }
+
+                .option-category-rail {
+                    background:
+                        var(
+                            --speech-option-category-background,
+                            var(--ui-gray-gradient, var(--wm-gray))
+                        );
+                    color:
+                        var(
+                            --speech-option-category-color,
+                            white
+                        );
+                }
+
+                .option-category[
+                    data-category="trip-actions"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue-dark
+                        );
+                }
+
+                .option-category[
+                    data-category="goals"
+                ]
+                .option-category-rail {
+                    color:
+                        var(
+                            --wm-blue-dark
+                        );
+                    background:
+                        var(
+                            --wm-yellow
+                        );
+                }
+
+                .option-category[
+                    data-category="informational"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue
+                        );
+                }
+
+                .option-category[
+                    data-category="settings"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --ui-gray-gradient,
+                            var(--wm-gray)
+                        );
+                }
+
+                .option-category[
+                    data-category="system"
+                ]
+                .option-category-rail {
+                    background:
+                        var(
+                            --wm-blue
+                        );
+                }
+
+                .option-category-icon {
+                    width: 24px;
+                    height: 24px;
+                    display: grid;
+                    place-items: center;
+                    font:
+                        900 22px/1
+                        system-ui,
+                        sans-serif;
+                }
+
+                .option-category-icon[
+                    data-custom-icon="true"
+                ]::before {
+                    content: none !important;
+                }
+
+                .option-category[
+                    data-category="trip-actions"
+                ]
+                .option-category-icon::before {
+                    content: "▶";
+                    font-size: 20px;
+                    transform:
+                        translateX(1px);
+                }
+
+                .option-category[
+                    data-category="goals"
+                ]
+                .option-category-icon::before {
+                    content: "%";
+                    font-size: 22px;
+                }
+
+                .option-category[
+                    data-category="informational"
+                ]
+                .option-category-icon::before {
+                    content: "i";
+                    width: 23px;
+                    height: 23px;
+                    display: grid;
+                    place-items: center;
+                    border: 2px solid currentColor;
+                    border-radius: 50%;
+                    font-size: 17px;
+                    font-family: Georgia, serif;
+                    font-style: italic;
+                    line-height: 1;
+                }
+
+                .option-category[
+                    data-category="settings"
+                ]
+                .option-category-icon::before {
+                    content: "";
+                    width: 23px;
+                    height: 23px;
+                    background:
+                        currentColor;
+                    -webkit-mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.1 13a7.2 7.2 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.6 7.6 0 0 0-1.7-1L14.6 3h-4l-.4 3a7.6 7.6 0 0 0-1.7 1L6 6 4 9.4 6.1 11a7.2 7.2 0 0 0 0 2L4 14.6 6 18l2.5-1a7.6 7.6 0 0 0 1.7 1l.4 3h4l.4-3a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.4L19.1 13ZM12.6 15.4a3.4 3.4 0 1 1 0-6.8 3.4 3.4 0 0 1 0 6.8Z' fill='black'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                    mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.1 13a7.2 7.2 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.6 7.6 0 0 0-1.7-1L14.6 3h-4l-.4 3a7.6 7.6 0 0 0-1.7 1L6 6 4 9.4 6.1 11a7.2 7.2 0 0 0 0 2L4 14.6 6 18l2.5-1a7.6 7.6 0 0 0 1.7 1l.4 3h4l.4-3a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.4L19.1 13ZM12.6 15.4a3.4 3.4 0 1 1 0-6.8 3.4 3.4 0 0 1 0 6.8Z' fill='black'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                }
+
+                .option-category[
+                    data-category="system"
+                ]
+                .option-category-icon::before {
+                    content: "";
+                    width: 23px;
+                    height: 23px;
+                    background:
+                        currentColor;
+                    -webkit-mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                    mask:
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+                        center / contain
+                        no-repeat;
+                }
+
+                .option-category-content {
+                    grid-column: 2;
+                    min-width: 0;
+                    padding: 8px 10px 9px;
+                    display: grid;
+                    gap: 4px;
+                }
+
+                .option-category-title {
+                    margin: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size:
+                        clamp(
+                            14px,
+                            2.2vw,
+                            17px
+                        );
+                    font-weight: 800;
+                    line-height: 1.2;
+                }
+
+                .option-category-cards {
+                    min-width: 0;
+                    display: grid;
+                    gap: 4px;
+                }
+
+                .option-card {
+                    min-width: 0;
+                    display: grid;
+                    grid-template-columns:
+                        repeat(
+                            auto-fit,
+                            minmax(
+                                min(220px, 100%),
+                                1fr
+                            )
+                        );
+                    align-items: start;
+                    column-gap: 14px;
+                    row-gap: 3px;
+                    padding: 3px 0;
+                }
+
+                .option-card > .option-phrase {
+                    min-width: 0;
+                }
+
+                .option-card +
+                .option-card {
+                    padding-top: 6px;
+                    border-top: 1px solid
+                        rgb(169 221 247 / 16%);
+                }
+
+                .option-phrase {
+                    justify-self: start;
+                    display: inline-flex;
+                    align-items: baseline;
+                    width: max-content;
+                    min-width: 0;
+                    max-width: 100%;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    font-size:
+                        clamp(
+                            15px,
+                            2.6vw,
+                            20px
+                        );
+                    font-weight: 700;
+                    line-height: 1.18;
+                    letter-spacing: .01em;
+                }
+
+                .option-command-text {
+                    display: inline-flex;
+                    align-items: baseline;
+                    flex: 0 0 auto;
+                    min-width: max-content;
+                    white-space: nowrap;
+                }
+
+                :host([training-mode]) .option-phrase {
+                    cursor: pointer;
+                    border-radius: 6px;
+                    padding-inline: 5px;
+                    margin-inline: -5px;
+                    transition:
+                        background 150ms ease-in-out,
+                        color 150ms ease-in-out,
+                        box-shadow 150ms ease-in-out;
+                }
+
+                :host([training-mode]:not([training-locked]))
+                .option-phrase:hover {
+                    box-shadow:
+                        0 0 0 1px
+                        rgb(255 255 255 / 42%);
+                }
+
+                :host([training-mode])
+                .option-phrase.training-selected {
+                    color:
+                        var(
+                            --speech-training-contrast,
+                            white
+                        );
+                    background:
+                        var(
+                            --speech-training-category-color,
+                            var(--wm-blue)
+                        );
+                    box-shadow:
+                        0 0 0 2px
+                        rgb(255 255 255 / 56%);
+                }
+
+                :host([training-mode])
+                .option-phrase.training-selected code,
+                :host([training-mode])
+                .option-phrase.training-selected code.streaming-core-phrase,
+                :host([training-mode])
+                .option-phrase.training-selected code.streaming-context {
+                    color:
+                        var(
+                            --speech-training-contrast,
+                            white
+                        ) !important;
+                    border-color:
+                        currentColor !important;
+                    background:
+                        color-mix(
+                            in srgb,
+                            currentColor 12%,
+                            transparent
+                        ) !important;
+                }
+
+                :host([training-mode]:not([training-locked]))
                 #bar {
+                    cursor: pointer;
+                }
+
+                :host(
+                    [training-mode][training-target-source="mic-bar"]
+                )
+                #bar {
+                    box-shadow:
+                        inset 0 1px 0
+                            rgb(255 255 255 / 14%),
+                        0 0 0 2px
+                            var(--wm-blue-light),
+                        0 7px 16px
+                            rgb(0 0 0 / 24%);
+                }
+
+                .option-phrase.unimplemented
+                .option-command-text {
+                    text-decoration-line:
+                        line-through;
+                    text-decoration-thickness:
+                        2px;
+                    text-decoration-color:
+                        currentColor;
+                }
+
+                .option-unimplemented-label {
+                    flex: 0 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: clip;
+                    font-size: .72em;
+                    font-weight: 600;
+                    opacity: .72;
+                }
+
+                .option-optional {
+                    opacity: .42;
+                    font-weight: 600;
+                }
+
+                .option-phrase code {
+                    max-width: 180px;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    border: 1px solid
+                        rgb(169 221 247 / 38%);
+                    border-radius: 5px;
+                    font:
+                        600 12px/1.3
+                        ui-monospace,
+                        SFMono-Regular,
+                        Consolas,
+                        monospace;
+                }
+
+                .option-empty {
+                    justify-self: start;
+                    padding: 16px 12px;
+                    color:
+                        rgb(255 255 255 / 72%);
+                }
+
+                #bar {
+                    --speech-load-clip-right: 100%;
+                    position: relative;
+                    isolation: isolate;
                     box-sizing: border-box;
                     width: 100%;
                     height: 74px;
@@ -66,6 +660,86 @@ class SpeechMicBar extends HTMLElement {
                     backdrop-filter: blur(7px);
                 }
 
+                #bar::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 0;
+                    border-radius: inherit;
+                    background-image:
+                        linear-gradient(
+                            90deg,
+                            #003b73 0%,
+                            #0068c9 55%,
+                            #a9ddf7 100%
+                        ),
+                        linear-gradient(
+                            105deg,
+                            transparent 0%,
+                            transparent 32%,
+                            rgb(169 221 247 / 10%) 42%,
+                            rgb(169 221 247 / 58%) 50%,
+                            rgb(169 221 247 / 10%) 58%,
+                            transparent 68%,
+                            transparent 100%
+                        );
+                    background-size:
+                        100% 100%,
+                        300% 100%;
+                    background-position:
+                        0 0,
+                        100% 0;
+                    clip-path:
+                        inset(
+                            0
+                            var(--speech-load-clip-right)
+                            0
+                            0
+                            round 11px
+                        );
+                    opacity: 0;
+                    transition:
+                        opacity 160ms linear;
+                    pointer-events: none;
+                    will-change:
+                        clip-path,
+                        background-position;
+                }
+
+                :host([loading]) #bar::before {
+                    opacity: .9;
+                    animation:
+                        speech-load-wave
+                        1.35s
+                        linear
+                        infinite;
+                }
+
+
+                @keyframes speech-load-wave {
+                    from {
+                        background-position:
+                            0 0,
+                            100% 0;
+                    }
+                    to {
+                        background-position:
+                            0 0,
+                            0% 0;
+                    }
+                }
+
+                #bar > * {
+                    position: relative;
+                    z-index: 1;
+                }
+
+                :host([loading]) #text {
+                    text-shadow:
+                        0 1px 2px rgb(0 0 0 / 72%),
+                        0 0 8px rgb(0 30 96 / 52%);
+                }
+
                 #mic {
                     position: relative;
                     width: 48px;
@@ -73,10 +747,15 @@ class SpeechMicBar extends HTMLElement {
                     flex: 0 0 48px;
                     display: grid;
                     place-items: center;
+                    overflow: hidden;
                     border-radius: 50%;
                     color: rgb(255 255 255 / 70%);
                     background: rgb(0 30 96 / 76%);
                     transition: color 180ms linear, background 180ms linear;
+                }
+
+                #mic {
+                    cursor: pointer;
                 }
 
                 #mic::before {
@@ -86,6 +765,40 @@ class SpeechMicBar extends HTMLElement {
                     background: currentColor;
                     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
                     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+                }
+
+                #mic::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 2;
+                    border-radius: inherit;
+                    background:
+                        linear-gradient(
+                            to bottom left,
+                            transparent
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% - 3px),
+                            #e32636
+                                calc(50% + 3px),
+                            transparent
+                                calc(50% + 3px)
+                        );
+                    filter:
+                        drop-shadow(
+                            0 1px 1px
+                            rgb(0 0 0 / 48%)
+                        );
+                    opacity: 0;
+                    pointer-events: none;
+                    transition:
+                        opacity 120ms linear;
+                }
+
+                :host([state="muted"])
+                #mic::after {
+                    opacity: 1;
                 }
 
                 :host([state="listening"]) #mic,
@@ -142,6 +855,9 @@ class SpeechMicBar extends HTMLElement {
 
                 #text {
                     min-width: 0;
+                    min-height: 26px;
+                    display: inline-flex;
+                    align-items: center;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -172,16 +888,63 @@ class SpeechMicBar extends HTMLElement {
 
                 code {
                     max-width: 180px;
+                    min-height: 18px;
                     padding: 2px 5px;
                     flex: 0 1 auto;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    align-self: center;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                    vertical-align: middle;
                     border: 1px solid rgb(169 221 247 / 38%);
                     border-radius: 5px;
                     color: #a9ddf7;
                     background: rgb(0 30 96 / 45%);
                     font: 600 12px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
+                }
+
+                #text > code.streaming-core-phrase,
+                .option-phrase code.streaming-core-phrase {
+                    display: inline-flex;
+                    align-items: center;
+                    max-width: none;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    vertical-align: middle;
+                    color: #a9ddf7;
+                    border-color:
+                        rgb(
+                            169 221 247 /
+                            48%
+                        );
+                    background:
+                        rgb(
+                            169 221 247 /
+                            14%
+                        );
+                }
+
+                #text > code.streaming-context,
+                .option-phrase code.streaming-context {
+                    display: inline-block;
+                    max-width: none;
+                    margin-inline: 2px;
+                    padding: 1px 4px;
+                    vertical-align: baseline;
+                    color: #ffd86a;
+                    border-color:
+                        rgb(
+                            255 194 32 /
+                            48%
+                        );
+                    background:
+                        rgb(
+                            255 194 32 /
+                            16%
+                        );
                 }
 
                 #response {
@@ -216,12 +979,46 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 #responseContent > * {
+                    box-sizing: border-box !important;
                     max-width: 100% !important;
                     max-height: 50px !important;
                     min-width: 0 !important;
                     overflow: hidden !important;
                     pointer-events: none !important;
                     transform-origin: center;
+                }
+
+                .response-transition-stage {
+                    width: 100%;
+                    height: 50px;
+                    display: grid !important;
+                    place-items: center;
+                    overflow: hidden;
+                }
+
+                .response-transition-stage > * {
+                    grid-area: 1 / 1;
+                    max-width: 100% !important;
+                    max-height: 50px !important;
+                    min-width: 0 !important;
+                    pointer-events: none !important;
+                    transform-origin: center;
+                }
+
+                .response-button-facsimile {
+                    width: max-content;
+                    max-width: min(100%, 240px) !important;
+                    height: auto !important;
+                    min-height: 24px;
+                    padding: 4px 10px !important;
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    line-height: 1.15 !important;
+                    font-size: 12px !important;
                 }
 
                 #responseContent button,
@@ -232,11 +1029,34 @@ class SpeechMicBar extends HTMLElement {
                 }
 
                 @media (prefers-reduced-motion: reduce) {
-                    .wave { animation: none !important; }
+                    .wave,
+                    :host([loading]) #bar::before {
+                        animation: none !important;
+                    }
+
+                    :host([loading]) #bar::before {
+                        background-position:
+                            0 0,
+                            50% 0;
+                    }
                 }
             </style>
+            <section
+                id="optionsPanel"
+                aria-label="Speech Commands"
+                aria-hidden="true"
+            >
+                <div id="optionsHeader">Speech Commands</div>
+                <button
+                    id="optionsClose"
+                    type="button"
+                    aria-label="Collapse speech commands"
+                    title="Collapse speech commands"
+                >▼</button>
+                <div id="optionsGrid"></div>
+            </section>
             <div id="bar">
-                <div id="mic" aria-hidden="true"></div>
+                <div id="mic" role="button" tabindex="0" aria-label="Sleep or wake speech recognition"></div>
                 <div id="main">
                     <div id="activity" aria-live="polite"></div>
                     <div id="codes"></div>
@@ -246,82 +1066,4576 @@ class SpeechMicBar extends HTMLElement {
                 </div>
             </div>
         `;
+        this.#optionsPanel =
+            this.#shadow.querySelector(
+                "#optionsPanel"
+            );
+        this.#optionsClose =
+            this.#shadow.querySelector(
+                "#optionsClose"
+            );
+        this.#optionsGrid =
+            this.#shadow.querySelector(
+                "#optionsGrid"
+            );
+        this.#optionsClose
+            ?.addEventListener(
+                "click",
+                () => {
+                    if (
+                        this.optionsCollapsed
+                    ) {
+                        this.expandOptions();
+                    }
+                    else {
+                        this.collapseOptions();
+                    }
+                }
+            );
+        this.#bar = this.#shadow.querySelector("#bar");
+        this.#bar
+            ?.addEventListener(
+                "click",
+                () => {
+                    if (
+                        !this.trainingMode ||
+                        this.trainingLocked
+                    ) {
+                        return;
+                    }
+
+                    const command =
+                        this.#commandsCommand ||
+                        this.#ensureSystemSpeechMenu()
+                            ?.querySelector?.(
+                                ':scope > speech-command[data-speech-system-command="commands"]'
+                            );
+
+                    if (!command) {
+                        return;
+                    }
+
+                    this.#requestTrainingTarget({
+                        source:
+                            "mic-bar",
+                        category:
+                            "system",
+                        card:
+                            "speech-controls",
+                        phrase:
+                            "commands",
+                        display:
+                            "commands",
+                        expectedPhrases: [
+                            "commands",
+                            "speech commands",
+                            "what",
+                            "choices",
+                            "options"
+                        ],
+                        required:
+                            "commands",
+                        element:
+                            command
+                    });
+                }
+            );
         this.#mic = this.#shadow.querySelector("#mic");
+        const toggleMic =
+            event => {
+                event.stopPropagation();
+
+                const speechMenu =
+                    globalThis.SpeechMenu;
+
+                if (!speechMenu?.started) {
+                    return;
+                }
+
+                if (speechMenu.muted) {
+                    void speechMenu.wake?.();
+                }
+                else {
+                    void speechMenu.sleep?.();
+                }
+            };
+
+        this.#mic
+            ?.addEventListener(
+                "click",
+                toggleMic
+            );
+
+        this.#mic
+            ?.addEventListener(
+                "keydown",
+                event => {
+                    if (
+                        event.key !==
+                            "Enter" &&
+                        event.key !==
+                            " "
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    toggleMic(
+                        event
+                    );
+                }
+            );
         this.#activity = this.#shadow.querySelector("#activity");
         this.#codes = this.#shadow.querySelector("#codes");
         this.#responseLane = this.#shadow.querySelector("#response");
         this.#responseContent = this.#shadow.querySelector("#responseContent");
+        this.#ensureSystemSpeechMenu();
         this.#showIdleText();
     }
 
+    #ensureSystemSpeechMenu() {
+        let menu =
+            this.querySelector(
+                ':scope > speech-menu[speech-modal="system"]'
+            );
+
+        if (!menu) {
+            menu =
+                document.createElement(
+                    "speech-menu"
+                );
+            menu.setAttribute(
+                "speech-modal",
+                "system"
+            );
+            menu.dataset.speechEditorId =
+                "builtin:menu:system";
+            this.append(menu);
+        }
+
+        const ensureCommand =
+            (
+                key,
+                pattern,
+                speechFunction
+            ) => {
+                let command =
+                    menu.querySelector(
+                        `:scope > speech-command[data-speech-system-command="${key}"]`
+                    );
+
+                if (!command) {
+                    command =
+                        document.createElement(
+                            "speech-command"
+                        );
+                    command.dataset
+                        .speechSystemCommand =
+                        key;
+                    command.dataset
+                        .speechEditorId =
+                        `builtin:${key}:system`;
+                    command.dataset
+                        .speechOptionsCategory =
+                        "system";
+                    command.dataset
+                        .speechOptionsGroup =
+                        "speech-controls";
+                    menu.append(command);
+                }
+
+                command.setAttribute(
+                    "speech-pattern",
+                    pattern
+                );
+                command.setAttribute(
+                    "speech-function",
+                    speechFunction
+                );
+
+                return command;
+            };
+
+        this.#systemSpeechMenu =
+            menu;
+        this.#wakeCommand =
+            ensureCommand(
+                "wake",
+                "^wake$",
+                "SpeechMenu.wake"
+            );
+        this.#sleepCommand =
+            ensureCommand(
+                "sleep",
+                "^sleep$",
+                "SpeechMenu.sleep"
+            );
+        this.#offCommand =
+            ensureCommand(
+                "off",
+                "^off$",
+                "WMOFActions.disableSpeechRecognition"
+            );
+        this.#commandsCommand =
+            ensureCommand(
+                "commands",
+                "^(?:(?:speech )?commands|what|choices|options)$",
+                "WMOFActions.toggleSpeechOptions"
+            );
+
+        return menu;
+    }
+
+    setSystemSpeechPatterns(
+        {
+            wake,
+            sleep,
+            off
+        } = {}
+    ) {
+        this.#ensureSystemSpeechMenu();
+
+        for (
+            const [
+                command,
+                pattern
+            ] of [
+                [
+                    this.#wakeCommand,
+                    wake
+                ],
+                [
+                    this.#sleepCommand,
+                    sleep
+                ],
+                [
+                    this.#offCommand,
+                    off
+                ]
+            ]
+        ) {
+            const source =
+                String(
+                    pattern ||
+                    ""
+                ).trim();
+
+            if (!source) {
+                continue;
+            }
+
+            command.setAttribute(
+                "speech-pattern",
+                source
+            );
+        }
+
+        globalThis
+            .SpeechMenu
+            ?.refresh?.();
+
+        if (
+            this.state ===
+                "muted"
+        ) {
+            this.#showIdleText();
+        }
+
+        return true;
+    }
+
+    get trainingMode() {
+        return this.hasAttribute(
+            "training-mode"
+        );
+    }
+
+    set trainingMode(value) {
+        this.toggleAttribute(
+            "training-mode",
+            Boolean(value)
+        );
+
+        if (!value) {
+            this.trainingLocked =
+                false;
+            this.clearTrainingTarget();
+        }
+    }
+
+    get trainingLocked() {
+        return this.hasAttribute(
+            "training-locked"
+        );
+    }
+
+    set trainingLocked(value) {
+        this.toggleAttribute(
+            "training-locked",
+            Boolean(value)
+        );
+    }
+
+    get trainingTarget() {
+        return this.#trainingSelection
+            ? {
+                ...this.#trainingSelection
+            }
+            : undefined;
+    }
+
+    clearTrainingTarget() {
+        this.#trainingSelection =
+            undefined;
+
+        this.removeAttribute(
+            "training-target-source"
+        );
+
+        for (
+            const row of
+            this.#optionsGrid
+                ?.querySelectorAll?.(
+                    ".option-phrase.training-selected"
+                ) ||
+            []
+        ) {
+            row.classList.remove(
+                "training-selected"
+            );
+
+            row.style.removeProperty(
+                "--speech-training-category-color"
+            );
+
+            row.style.removeProperty(
+                "--speech-training-contrast"
+            );
+        }
+    }
+
+    #trainingCategoryColor(
+        category
+    ) {
+        const custom =
+            this.#optionCategories.find(
+                definition =>
+                    definition.key ===
+                    category
+            );
+
+        if (custom?.color) {
+            return custom.color;
+        }
+
+        const variable =
+            {
+                "trip-actions":
+                    "--wm-blue-dark",
+                goals:
+                    "--wm-yellow",
+                informational:
+                    "--wm-blue",
+                settings:
+                    "--wm-gray",
+                system:
+                    "--wm-blue"
+            }[
+                category
+            ] ||
+            "--wm-gray";
+
+        const fallback =
+            {
+                "trip-actions":
+                    "#001e60",
+                goals:
+                    "#ffc220",
+                informational:
+                    "#0053e2",
+                settings:
+                    "#a7a8aa",
+                system:
+                    "#0053e2"
+            }[
+                category
+            ] ||
+            "#a7a8aa";
+
+        return (
+            getComputedStyle(
+                this
+            )
+                .getPropertyValue(
+                    variable
+                )
+                .trim() ||
+            fallback
+        );
+    }
+
+    #trainingContrastColor(
+        color
+    ) {
+        const probe =
+            document.createElement(
+                "span"
+            );
+
+        probe.style.color =
+            color;
+        probe.style.position =
+            "absolute";
+        probe.style.visibility =
+            "hidden";
+
+        this.#shadow.append(
+            probe
+        );
+
+        const resolved =
+            getComputedStyle(
+                probe
+            ).color;
+
+        probe.remove();
+
+        const match =
+            resolved.match(
+                /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
+            );
+
+        if (!match) {
+            return "white";
+        }
+
+        const linear =
+            value => {
+                const channel =
+                    Number(value) /
+                    255;
+
+                return channel <=
+                    0.04045
+                        ? channel /
+                            12.92
+                        : (
+                            (
+                                channel +
+                                0.055
+                            ) /
+                            1.055
+                        ) **
+                            2.4;
+            };
+
+        const luminance =
+            0.2126 *
+                linear(
+                    match[1]
+                ) +
+            0.7152 *
+                linear(
+                    match[2]
+                ) +
+            0.0722 *
+                linear(
+                    match[3]
+                );
+
+        const blackContrast =
+            (
+                luminance +
+                0.05
+            ) /
+            0.05;
+
+        const whiteContrast =
+            1.05 /
+            (
+                luminance +
+                0.05
+            );
+
+        return blackContrast >=
+            whiteContrast
+                ? "black"
+                : "white";
+    }
+
+    selectTrainingTarget(
+        target
+    ) {
+        return this.#selectTrainingTarget(
+            target
+        );
+    }
+
+    #requestTrainingTarget(
+        target
+    ) {
+        if (
+            !this.trainingMode ||
+            this.trainingLocked ||
+            !target?.element
+        ) {
+            return false;
+        }
+
+        const current =
+            this.#trainingSelection;
+
+        if (
+            current &&
+            current.source === target.source &&
+            current.category === target.category &&
+            current.card === target.card &&
+            current.phrase === target.phrase
+        ) {
+            return true;
+        }
+
+        const event =
+            new CustomEvent(
+                "speech-training-target-requested",
+                {
+                    bubbles: true,
+                    composed: true,
+                    cancelable: true,
+                    detail: target
+                }
+            );
+
+        if (!this.dispatchEvent(event)) {
+            return false;
+        }
+
+        return this.#selectTrainingTarget(
+            target
+        );
+    }
+
+    #selectTrainingTarget(
+        {
+            source,
+            category,
+            card,
+            phrase,
+            display,
+            expectedPhrases,
+            required,
+            optionalPrefix,
+            optionalSuffix,
+            intent,
+            element,
+            row
+        }
+    ) {
+        if (
+            !this.trainingMode ||
+            this.trainingLocked ||
+            !element
+        ) {
+            return false;
+        }
+
+        this.clearTrainingTarget();
+
+        const categoryColor =
+            this.#trainingCategoryColor(
+                category
+            );
+
+        const contrast =
+            this.#trainingContrastColor(
+                categoryColor
+            );
+
+        if (row) {
+            row.classList.add(
+                "training-selected"
+            );
+
+            row.style.setProperty(
+                "--speech-training-category-color",
+                categoryColor
+            );
+
+            row.style.setProperty(
+                "--speech-training-contrast",
+                contrast
+            );
+        }
+
+        this.setAttribute(
+            "training-target-source",
+            source
+        );
+
+        this.#trainingSelection = {
+            source,
+            category,
+            card,
+            phrase,
+            display,
+            expectedPhrases:
+                [
+                    ...new Set(
+                        (
+                            Array.isArray(
+                                expectedPhrases
+                            )
+                                ? expectedPhrases
+                                : [phrase]
+                        )
+                            .map(
+                                value =>
+                                    String(
+                                        value ||
+                                        ""
+                                    ).trim()
+                            )
+                            .filter(
+                                Boolean
+                            )
+                    )
+                ],
+            required:
+                required ||
+                display ||
+                phrase,
+            optionalPrefix:
+                optionalPrefix ||
+                "",
+            optionalSuffix:
+                optionalSuffix ||
+                "",
+            pattern:
+                element.getAttribute(
+                    "speech-pattern"
+                ) ||
+                "",
+            intent:
+                intent ||
+                element.dataset
+                    .speechIntent ||
+                undefined,
+            commandId:
+                intent ||
+                element.dataset
+                    .speechIntent ||
+                element.dataset
+                    .speechEditorId ||
+                undefined,
+            commandKey:
+                element.dataset
+                    .speechSystemCommand ||
+                undefined,
+            categoryColor,
+            contrast
+        };
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-training-target-selected",
+                {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        ...this.#trainingSelection
+                    }
+                }
+            )
+        );
+
+        return true;
+    }
+
     connectedCallback() {
+        this.#ensureSystemSpeechMenu();
         this.#subscribe();
+        this.#observeHostBounds();
+        this.#syncHostBounds();
+        this.promoteTopLayer();
     }
 
     disconnectedCallback() {
         this.#unsubscribe();
+        this.#layoutResizeObserver
+            ?.disconnect?.();
+        this.#layoutResizeObserver =
+            undefined;
+        this.ownerDocument
+            ?.defaultView
+            ?.removeEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+    }
+
+    #contentBounds(
+        element
+    ) {
+        if (
+            !element ||
+            typeof element
+                .getBoundingClientRect !==
+                "function"
+        ) {
+            return undefined;
+        }
+
+        const view =
+            this.ownerDocument
+                ?.defaultView;
+
+        const rect =
+            element
+                .getBoundingClientRect();
+
+        const style =
+            view
+                ?.getComputedStyle?.(
+                    element
+                ) ||
+            {};
+
+        const number =
+            value =>
+                Number.parseFloat(
+                    value
+                ) ||
+                0;
+
+        return {
+            left:
+                rect.left +
+                number(
+                    style.paddingLeft
+                ),
+            right:
+                rect.right -
+                number(
+                    style.paddingRight
+                ),
+            bottom:
+                rect.bottom -
+                number(
+                    style.paddingBottom
+                )
+        };
+    }
+
+    #syncHostBounds() {
+        const document =
+            this.ownerDocument;
+
+        const view =
+            document
+                ?.defaultView;
+
+        if (
+            !document ||
+            !view
+        ) {
+            return false;
+        }
+
+        const viewportWidth =
+            Math.max(
+                0,
+                Number(
+                    view.innerWidth
+                ) ||
+                document
+                    .documentElement
+                    ?.clientWidth ||
+                0
+            );
+
+        const viewportHeight =
+            Math.max(
+                0,
+                Number(
+                    view.innerHeight
+                ) ||
+                document
+                    .documentElement
+                    ?.clientHeight ||
+                0
+            );
+
+        let left = 0;
+        let right =
+            viewportWidth;
+        let bottom =
+            viewportHeight;
+
+        const containers =
+            [
+                document
+                    .documentElement,
+                document.body,
+                this.parentElement
+            ]
+                .filter(
+                    (
+                        element,
+                        index,
+                        values
+                    ) =>
+                        element &&
+                        values
+                            .indexOf(
+                                element
+                            ) ===
+                            index
+                );
+
+        for (
+            const element of
+            containers
+        ) {
+            const bounds =
+                this
+                    .#contentBounds(
+                        element
+                    );
+
+            if (!bounds) {
+                continue;
+            }
+
+            left =
+                Math.max(
+                    left,
+                    bounds.left
+                );
+
+            right =
+                Math.min(
+                    right,
+                    bounds.right
+                );
+
+            bottom =
+                Math.min(
+                    bottom,
+                    bounds.bottom
+                );
+        }
+
+        this.style.setProperty(
+            "--speech-mic-fixed-left",
+            Math.max(
+                0,
+                left
+            ) +
+                "px"
+        );
+
+        this.style.setProperty(
+            "--speech-mic-fixed-width",
+            Math.max(
+                0,
+                right -
+                left
+            ) +
+                "px"
+        );
+
+        this.style.setProperty(
+            "--speech-mic-fixed-bottom",
+            Math.max(
+                0,
+                viewportHeight -
+                bottom
+            ) +
+                "px"
+        );
+
+        return true;
+    }
+
+    #observeHostBounds() {
+        const document =
+            this.ownerDocument;
+
+        const view =
+            document
+                ?.defaultView;
+
+        const ResizeObserverCtor =
+            view
+                ?.ResizeObserver ||
+            globalThis
+                .ResizeObserver;
+
+        this.#layoutResizeObserver
+            ?.disconnect?.();
+
+        if (
+            typeof ResizeObserverCtor ===
+                "function"
+        ) {
+            this.#layoutResizeObserver =
+                new ResizeObserverCtor(
+                    this
+                        .#layoutResizeHandler
+                );
+
+            for (
+                const element of
+                [
+                    document
+                        ?.documentElement,
+                    document?.body,
+                    this.parentElement
+                ]
+            ) {
+                if (element) {
+                    this
+                        .#layoutResizeObserver
+                        .observe(
+                            element
+                        );
+                }
+            }
+        }
+
+        view
+            ?.removeEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
+
+        view
+            ?.addEventListener?.(
+                "resize",
+                this
+                    .#layoutResizeHandler
+            );
     }
 
     get state() {
         return this.getAttribute("state") || "stopped";
     }
 
-    setResponse(value) {
-        this.#responseAnimation?.cancel();
-        this.#responseAnimation = undefined;
-        this.#responseContent.replaceChildren();
+    get optionsOpen() {
+        return this.hasAttribute(
+            "options-open"
+        );
+    }
 
-        if (value === undefined || value === null || value === "") {
-            return this.clearResponse();
+    get optionsCollapsed() {
+        return this.hasAttribute(
+            "options-collapsed"
+        );
+    }
+
+    promoteTopLayer() {
+        this.#syncHostBounds();
+
+        if (
+            typeof this.showPopover !==
+            "function"
+        ) {
+            return false;
         }
 
-        if (value instanceof Node) {
-            const visual =
-                value instanceof Element
-                    ? this.#cloneVisualElement(value)
-                    : value.cloneNode(true);
-
-            this.#responseContent.append(
-                visual
+        if (!this.hasAttribute("popover")) {
+            this.setAttribute(
+                "popover",
+                "manual"
             );
         }
-        else {
-            const span = document.createElement("span");
-            span.textContent = String(value);
-            this.#responseContent.append(span);
+
+        try {
+            const open =
+                this.matches(
+                    ":popover-open"
+                );
+
+            if (open) {
+                this.hidePopover();
+            }
+
+            this.showPopover();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
+    showOptions(
+        phraseGroups =
+            globalThis.SpeechMenu
+                ?.phraseGroups ||
+            []
+    ) {
+        this.removeAttribute(
+            "options-collapsed"
+        );
+        this.#syncOptionsToggle();
+
+        this.promoteTopLayer();
+        this.#renderOptions(
+            phraseGroups
+        );
+
+        const currentStyle =
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsPanel
+                ) || {};
+
+        const currentClipPath =
+            currentStyle.clipPath ||
+            "inset(100% 0 0 0 round 14px 14px 0 0)";
+
+        const currentOpacity =
+            Number(
+                currentStyle.opacity
+            );
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        this.setAttribute(
+            "options-open",
+            ""
+        );
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        if (
+            typeof this.#optionsPanel
+                .animate ===
+            "function"
+        ) {
+            const animation =
+                this.#optionsPanel
+                    .animate(
+                        [
+                            {
+                                clipPath:
+                                    currentClipPath,
+                                opacity:
+                                    Number.isFinite(
+                                        currentOpacity
+                                    )
+                                        ? currentOpacity
+                                        : 0
+                            },
+                            {
+                                clipPath:
+                                    "inset(0 round 14px 14px 0 0)",
+                                opacity: 1
+                            }
+                        ],
+                        {
+                            duration: 750,
+                            easing:
+                                "cubic-bezier(.2,.8,.2,1)",
+                            fill: "both"
+                        }
+                    );
+
+            this.#optionsAnimation =
+                animation;
+
+            animation.finished
+                .catch(() => {})
+                .finally(
+                    () => {
+                        if (
+                            this
+                                .#optionsAnimation ===
+                            animation
+                        ) {
+                            animation.cancel();
+                            this
+                                .#optionsAnimation =
+                                undefined;
+                        }
+                    }
+                );
         }
 
-        const wasVisible = this.hasAttribute("has-response");
-        this.setAttribute("has-response", "");
-
-        if (!wasVisible && typeof this.#responseLane.animate === "function") {
-            this.#responseAnimation = this.#responseLane.animate(
-                [
-                    {width: "0px", opacity: 0, transform: "translateX(16px)"},
-                    {width: "min(42vw, 360px)", opacity: 1, transform: "translateX(0)"}
-                ],
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-options-opened",
                 {
-                    duration: 220,
-                    easing: "cubic-bezier(.2,.8,.2,1)",
-                    fill: "both"
+                    bubbles: true,
+                    composed: true
+                }
+            )
+        );
+
+        return true;
+    }
+
+    #syncOptionsToggle() {
+        if (!this.#optionsClose) {
+            return;
+        }
+
+        const collapsed =
+            this.optionsCollapsed;
+
+        this.#optionsClose.textContent =
+            collapsed
+                ? "▲"
+                : "▼";
+
+        const action =
+            collapsed
+                ? "Expand speech commands"
+                : "Collapse speech commands";
+
+        this.#optionsClose
+            .setAttribute(
+                "aria-label",
+                action
+            );
+
+        this.#optionsClose.title =
+            action;
+    }
+
+    collapseOptions() {
+        if (
+            !this.optionsOpen &&
+            !this.optionsCollapsed
+        ) {
+            return false;
+        }
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        this.removeAttribute(
+            "options-open"
+        );
+        this.setAttribute(
+            "options-collapsed",
+            ""
+        );
+
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        this.#syncOptionsToggle();
+        this.#fitOptions();
+
+        return true;
+    }
+
+    expandOptions() {
+        if (
+            !this.optionsCollapsed
+        ) {
+            return false;
+        }
+
+        return this.showOptions(
+            globalThis.SpeechMenu
+                ?.phraseGroups ||
+            []
+        );
+    }
+
+    async hideOptions(
+        {
+            duration = 180
+        } = {}
+    ) {
+        if (
+            !this.optionsOpen &&
+            !this.optionsCollapsed
+        ) {
+            return false;
+        }
+
+        const currentStyle =
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsPanel
+                ) || {};
+
+        const currentClipPath =
+            currentStyle.clipPath ||
+            "inset(0 round 14px 14px 0 0)";
+
+        const currentOpacity =
+            Number(
+                currentStyle.opacity
+            );
+
+        this.#optionsAnimation?.cancel();
+        this.#optionsAnimation =
+            undefined;
+
+        /*
+         * The command surface is closed as soon as dismissal starts.
+         * Keep the visual collapse running independently so speech can
+         * begin a fresh utterance while the panel is still retracting.
+         */
+        this.removeAttribute(
+            "options-open"
+        );
+        this.removeAttribute(
+            "options-collapsed"
+        );
+        this.#syncOptionsToggle();
+
+        this.#optionsPanel
+            .setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+        if (
+            duration > 0 &&
+            typeof this.#optionsPanel
+                .animate ===
+            "function"
+        ) {
+            const animation =
+                this.#optionsPanel
+                    .animate(
+                        [
+                            {
+                                clipPath:
+                                    currentClipPath,
+                                opacity:
+                                    Number.isFinite(
+                                        currentOpacity
+                                    )
+                                        ? currentOpacity
+                                        : 1
+                            },
+                            {
+                                clipPath:
+                                    "inset(100% 0 0 0 round 14px 14px 0 0)",
+                                opacity: 0
+                            }
+                        ],
+                        {
+                            duration:
+                                Math.max(
+                                    0,
+                                    Number(
+                                        duration
+                                    ) || 0
+                                ),
+                            easing:
+                                "ease-in",
+                            fill: "both"
+                        }
+                    );
+
+            this.#optionsAnimation =
+                animation;
+
+            try {
+                await animation.finished;
+            }
+            catch {}
+
+            if (
+                this.#optionsAnimation ===
+                animation
+            ) {
+                animation.cancel();
+                this.#optionsAnimation =
+                    undefined;
+            }
+        }
+
+        return true;
+    }
+
+    #optionsGroupKey(
+        group,
+        index
+    ) {
+        const element =
+            group?.element;
+
+        /*
+         * A card is a visual grouping surface, not a command.
+         * Individual commands remain separate rows inside one card.
+         * Only an explicit options-group asks for another card.
+         */
+        return (
+            group?.optionsGroup ||
+            element
+                ?.getAttribute?.(
+                    "data-speech-options-group"
+                )
+                ?.trim() ||
+            "commands"
+        );
+    }
+
+    #optionsCategoryKey(
+        group
+    ) {
+        if (
+            String(
+                group?.modal ||
+                ""
+            )
+                .trim()
+                .toLowerCase() ===
+                    "system"
+        ) {
+            return "system";
+        }
+
+        const category =
+            (
+                group
+                    ?.optionsCategory ||
+                group
+                    ?.element
+                    ?.getAttribute?.(
+                        "data-speech-options-category"
+                    ) ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+        return this.#optionCategories.some(
+            definition =>
+                definition.key === category
+        )
+            ? category
+            : "settings";
+    }
+
+    #optionCategoryDefinitions() {
+        return this.#optionCategories.map(
+            definition => ({
+                ...definition
+            })
+        );
+    }
+
+    setOptionCategories(
+        definitions
+    ) {
+        if (!Array.isArray(definitions)) {
+            throw new TypeError(
+                "Option categories must be an array."
+            );
+        }
+
+        const normalized = [];
+        const seen = new Set();
+
+        for (const definition of definitions) {
+            const key =
+                String(
+                    definition?.key ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+            const label =
+                String(
+                    definition?.label ||
+                    ""
+                )
+                    .trim();
+
+            if (
+                !key ||
+                !label ||
+                seen.has(key)
+            ) {
+                continue;
+            }
+
+            seen.add(key);
+
+            normalized.push(
+                Object.freeze({
+                    key,
+                    label,
+                    color:
+                        String(
+                            definition?.color ||
+                            ""
+                        ).trim() ||
+                        undefined,
+                    contrast:
+                        String(
+                            definition?.contrast ||
+                            ""
+                        ).trim() ||
+                        undefined,
+                    icon:
+                        String(
+                            definition?.icon ||
+                            ""
+                        ).trim() ||
+                        undefined
+                })
+            );
+        }
+
+        if (
+            !normalized.some(
+                definition =>
+                    definition.key ===
+                    "settings"
+            )
+        ) {
+            normalized.push(
+                Object.freeze({
+                    key: "settings",
+                    label: "Settings"
+                })
+            );
+        }
+
+        this.#optionCategories =
+            normalized;
+
+        if (this.optionsOpen) {
+            this.#renderOptions(
+                globalThis.SpeechMenu
+                    ?.phraseGroups ||
+                []
+            );
+        }
+
+        return this.optionCategories;
+    }
+
+    get optionCategories() {
+        return this.#optionCategoryDefinitions();
+    }
+
+    defineOptionCategory(
+        definition
+    ) {
+        const key =
+            String(
+                definition?.key ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+        if (!key) {
+            throw new TypeError(
+                "Option category key is required."
+            );
+        }
+
+        const definitions =
+            this.optionCategories.filter(
+                current =>
+                    current.key !==
+                    key
+            );
+
+        definitions.push(
+            definition
+        );
+
+        this.setOptionCategories(
+            definitions
+        );
+
+        return this.optionCategories.find(
+            current =>
+                current.key ===
+                key
+        );
+    }
+
+    #contextLabel(
+        element,
+        name
+    ) {
+        const field =
+            element
+                ?.getAttribute?.(
+                    "speech-preproc-field"
+                );
+
+        if (field === name) {
+            const context =
+                element
+                    ?.getAttribute?.(
+                        "speech-preproc-context"
+                    )
+                    ?.trim()
+                    ?.toLowerCase();
+
+            if (context === "clock") {
+                return "time";
+            }
+
+            if (context === "duration") {
+                return "duration";
+            }
+
+            if (context === "percent") {
+                return "percent";
+            }
+        }
+
+        return String(name || "")
+            .replace(
+                /([a-z0-9])([A-Z])/g,
+                "$1 $2"
+            )
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+    }
+
+    #displayPhrase(
+        phrase,
+        element
+    ) {
+        return String(phrase || "")
+            .replace(
+                /<([^>]+)>/g,
+                (
+                    _,
+                    name
+                ) =>
+                    "<" +
+                    this.#contextLabel(
+                        element,
+                        name
+                    ) +
+                    ">"
+            );
+    }
+
+    #appendPhraseSeparator(
+        parent
+    ) {
+        const last =
+            parent?.lastChild;
+
+        if (!last) {
+            return;
+        }
+
+        const text =
+            String(
+                last.textContent ||
+                ""
+            );
+
+        if (
+            /\s$/.test(
+                text
+            )
+        ) {
+            return;
+        }
+
+        parent.append(
+            document.createTextNode(
+                " "
+            )
+        );
+    }
+
+    #appendOptionText(
+        parent,
+        text,
+        element,
+        {
+            optional = false,
+            core = true
+        } = {}
+    ) {
+        const value =
+            String(
+                text ||
+                ""
+            );
+
+        if (!value) {
+            return;
+        }
+
+        if (
+            parent.lastChild &&
+            !/^\s/.test(
+                value
+            )
+        ) {
+            this.#appendPhraseSeparator(
+                parent
+            );
+        }
+
+        if (optional) {
+            const span =
+                document.createElement(
+                    "span"
+                );
+
+            span.className =
+                "option-optional";
+
+            this.#appendOptionText(
+                span,
+                value,
+                element,
+                {
+                    optional: false,
+                    core: false
                 }
             );
-            this.#responseAnimation.finished
-                .catch(() => {})
-                .finally(() => {
-                    this.#responseAnimation?.cancel();
-                    this.#responseAnimation = undefined;
-                });
+
+            parent.append(
+                span
+            );
+
+            return;
         }
-        else {
-            this.#responseContent.animate?.(
-                [{opacity: .35, transform: "scale(.96)"}, {opacity: 1, transform: "scale(1)"}],
-                {duration: 160, easing: "ease-out"}
+
+        let remainder =
+            value;
+
+        if (core) {
+            const coreParts =
+                this.#corePhraseParts(
+                    value
+                );
+
+            if (coreParts) {
+                const coreCode =
+                    document.createElement(
+                        "code"
+                    );
+
+                coreCode.className =
+                    "streaming-core-phrase";
+
+                coreCode.textContent =
+                    coreParts.core;
+
+                parent.append(
+                    coreCode
+                );
+
+                remainder =
+                    coreParts.rest;
+
+                if (remainder) {
+                    parent.append(
+                        " "
+                    );
+                }
+            }
+        }
+
+        const pattern =
+            /<([^>]+)>/g;
+
+        let offset = 0;
+        let match;
+
+        while (
+            (
+                match =
+                    pattern.exec(
+                        remainder
+                    )
+            )
+        ) {
+            if (
+                match.index >
+                offset
+            ) {
+                parent.append(
+                    document
+                        .createTextNode(
+                            remainder.slice(
+                                offset,
+                                match.index
+                            )
+                        )
+                );
+            }
+
+            this.#appendPhraseSeparator(
+                parent
+            );
+
+            const code =
+                document.createElement(
+                    "code"
+                );
+
+            code.className =
+                "streaming-context";
+
+            code.textContent =
+                match[0];
+
+            parent.append(
+                code
+            );
+
+            offset =
+                match.index +
+                match[0].length;
+        }
+
+        if (
+            offset <
+            remainder.length
+        ) {
+            const tail =
+                remainder.slice(
+                    offset
+                );
+
+            if (
+                !/^\s/.test(
+                    tail
+                )
+            ) {
+                this.#appendPhraseSeparator(
+                    parent
+                );
+            }
+
+            parent.append(
+                document
+                    .createTextNode(
+                        tail
+                    )
             );
         }
     }
 
-    async clearResponse() {
+    #compactOptionGroup(
+        group
+    ) {
+        const items =
+            [];
+
+        const seen =
+            new Set();
+
+        for (
+            const phrase of
+            group?.optionPhrases ||
+            group?.phrases ||
+            []
+        ) {
+            const display =
+                this.#displayPhrase(
+                    phrase,
+                    group?.element
+                );
+
+            if (
+                !display ||
+                seen.has(
+                    display
+                )
+            ) {
+                continue;
+            }
+
+            seen.add(
+                display
+            );
+
+            items.push({
+                phrase,
+                display,
+                intent:
+                    group?.intent,
+                element:
+                    group?.element
+            });
+        }
+
+        const suppressed =
+            new Set();
+
+        const compacted =
+            items.map(
+                item => {
+                    let base;
+                    let optionalPrefix =
+                        "";
+                    let optionalSuffix =
+                        "";
+
+                    for (
+                        const candidate of
+                        items
+                    ) {
+                        if (
+                            candidate ===
+                                item ||
+                            candidate
+                                .display
+                                .length >=
+                                item.display
+                                    .length
+                        ) {
+                            continue;
+                        }
+
+                        const prefix =
+                            candidate.display +
+                            " ";
+
+                        const suffix =
+                            " " +
+                            candidate.display;
+
+                        if (
+                            item.display
+                                .startsWith(
+                                    prefix
+                                )
+                        ) {
+                            if (
+                                !base ||
+                                candidate
+                                    .display
+                                    .length >
+                                    base.display
+                                        .length
+                            ) {
+                                base =
+                                    candidate;
+                                optionalPrefix =
+                                    "";
+                                optionalSuffix =
+                                    item.display
+                                        .slice(
+                                            candidate
+                                                .display
+                                                .length
+                                        );
+                            }
+                        }
+                        else if (
+                            item.display
+                                .endsWith(
+                                    suffix
+                                )
+                        ) {
+                            if (
+                                !base ||
+                                candidate
+                                    .display
+                                    .length >
+                                    base.display
+                                        .length
+                            ) {
+                                base =
+                                    candidate;
+                                optionalPrefix =
+                                    item.display
+                                        .slice(
+                                            0,
+                                            item.display
+                                                .length -
+                                            candidate
+                                                .display
+                                                .length
+                                        );
+                                optionalSuffix =
+                                    "";
+                            }
+                        }
+                    }
+
+                    if (base) {
+                        suppressed.add(
+                            base.display
+                        );
+                    }
+
+                    return {
+                        ...item,
+                        required:
+                            base
+                                ?.display ||
+                            item.display,
+                        optionalPrefix,
+                        optionalSuffix,
+                        familyPhrases:
+                            [
+                                ...new Set(
+                                    [
+                                        base?.phrase,
+                                        item.phrase
+                                    ].filter(
+                                        Boolean
+                                    )
+                                )
+                            ]
+                    };
+                }
+            );
+
+        return compacted.filter(
+            item =>
+                !suppressed.has(
+                    item.display
+                ) ||
+                item.optionalPrefix ||
+                item.optionalSuffix
+        );
+    }
+    #optionItemText(
+        item
+    ) {
+        return String(
+            (
+                item?.optionalPrefix ||
+                ""
+            ) +
+            (
+                item?.required ||
+                this.#displayPhrase(
+                    item?.phrase,
+                    item?.element
+                )
+            ) +
+            (
+                item?.optionalSuffix ||
+                ""
+            )
+        )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+    }
+
+    #compareOptionItems(
+        left,
+        right
+    ) {
+        const a =
+            this.#optionItemText(
+                left
+            );
+
+        const b =
+            this.#optionItemText(
+                right
+            );
+
+        const alphabetical =
+            a.localeCompare(
+                b,
+                undefined,
+                {
+                    sensitivity:
+                        "base"
+                }
+            );
+
+        return (
+            alphabetical ||
+            a.length -
+                b.length
+        );
+    }
+
+    #phraseNode(
+        phrase,
+        element,
+        {
+            required,
+            optionalPrefix = "",
+            optionalSuffix = "",
+            implemented:
+                implementedOverride
+        } = {}
+    ) {
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "option-phrase";
+
+        const implemented =
+            typeof implementedOverride ===
+                "boolean"
+                ? implementedOverride
+                : globalThis
+                    .SpeechMenu
+                    ?.isCommandImplemented?.(
+                        element
+                    ) !== false;
+
+        if (!implemented) {
+            row.classList.add(
+                "unimplemented"
+            );
+
+            row.title =
+                "Not implemented";
+        }
+
+        const text =
+            this.#displayPhrase(
+                phrase,
+                element
+            );
+
+        const commandText =
+            document.createElement(
+                "span"
+            );
+
+        commandText.className =
+            "option-command-text";
+
+        this.#appendOptionText(
+            commandText,
+            optionalPrefix,
+            element,
+            {
+                optional: true,
+                core: false
+            }
+        );
+
+        this.#appendOptionText(
+            commandText,
+            required || text,
+            element
+        );
+
+        this.#appendOptionText(
+            commandText,
+            optionalSuffix,
+            element,
+            {
+                optional: true,
+                core: false
+            }
+        );
+
+        row.append(
+            commandText
+        );
+
+        if (!implemented) {
+            const status =
+                document.createElement(
+                    "span"
+                );
+
+            status.className =
+                "option-unimplemented-label";
+
+            status.textContent =
+                " (unimplemented)";
+
+            row.append(
+                status
+            );
+
+            row.setAttribute(
+                "aria-label",
+                text +
+                " (unimplemented)"
+            );
+        }
+        else {
+            row.setAttribute(
+                "aria-label",
+                text
+            );
+        }
+
+        return row;
+    }
+
+    #optionMutationDuration() {
+        return 0;
+    }
+
+    #optionItemKey(
+        categoryKey,
+        cardKey,
+        item
+    ) {
+        return [
+            categoryKey,
+            cardKey,
+            this
+                .#optionItemText(
+                    item
+                )
+                .toLocaleLowerCase()
+        ].join(
+            "\u0001"
+        );
+    }
+
+    #optionChildrenByKey(
+        parent,
+        className,
+        datasetKey
+    ) {
+        return new Map(
+            [
+                ...parent?.children ||
+                []
+            ]
+                .filter(
+                    child =>
+                        child.classList
+                            ?.contains(
+                                className
+                            )
+                )
+                .map(
+                    child => [
+                        child.dataset[
+                            datasetKey
+                        ],
+                        child
+                    ]
+                )
+                .filter(
+                    entry =>
+                        Boolean(
+                            entry[0]
+                        )
+                )
+        );
+    }
+
+    #optionAnimationState(
+        node
+    ) {
+        const view =
+            this.ownerDocument
+                ?.defaultView;
+
+        const style =
+            view
+                ?.getComputedStyle?.(
+                    node
+                ) || {};
+
+        const opacity =
+            Number(
+                style.opacity
+            );
+
+        return {
+            height:
+                Math.max(
+                    0,
+                    node
+                        .getBoundingClientRect()
+                        .height
+                ),
+            opacity:
+                Number.isFinite(
+                    opacity
+                )
+                    ? opacity
+                    : 1
+        };
+    }
+
+    #cancelOptionAnimations(
+        node
+    ) {
+        for (
+            const animation of
+            node?.getAnimations?.() ||
+            []
+        ) {
+            try {
+                animation.cancel();
+            }
+            catch {}
+        }
+    }
+
+    #animateOptionEnter(
+        node,
+        duration,
+        {
+            fromHeight = 0,
+            fromOpacity = 0
+        } = {}
+    ) {
+        if (
+            !node ||
+            duration <= 0 ||
+            typeof node.animate !==
+                "function"
+        ) {
+            return;
+        }
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.removeAttribute(
+            "data-option-exiting"
+        );
+
+        const targetHeight =
+            Math.max(
+                0,
+                node
+                    .getBoundingClientRect()
+                    .height
+            );
+
+        node.style.overflow =
+            "hidden";
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        height:
+                            Math.min(
+                                fromHeight,
+                                targetHeight
+                            ) +
+                            "px",
+                        opacity:
+                            fromOpacity,
+                        transform:
+                            "scaleY(.82)"
+                    },
+                    {
+                        height:
+                            targetHeight +
+                            "px",
+                        opacity: 1,
+                        transform:
+                            "scaleY(1)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.42,0,.58,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    if (
+                        !node.hasAttribute(
+                            "data-option-exiting"
+                        )
+                    ) {
+                        try {
+                            animation.cancel();
+                        }
+                        catch {}
+
+                        node.style
+                            .removeProperty(
+                                "overflow"
+                            );
+                    }
+                }
+            );
+    }
+
+    #animateOptionExit(
+        node,
+        duration,
+        remove
+    ) {
+        if (!node) {
+            return;
+        }
+
+        if (
+            duration <= 0 ||
+            typeof node.animate !==
+                "function"
+        ) {
+            remove();
+            return;
+        }
+
+        const state =
+            this
+                .#optionAnimationState(
+                    node
+                );
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.setAttribute(
+            "data-option-exiting",
+            ""
+        );
+
+        node.style.overflow =
+            "hidden";
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        height:
+                            state.height +
+                            "px",
+                        opacity:
+                            state.opacity,
+                        transform:
+                            "scaleY(1)"
+                    },
+                    {
+                        height: "0px",
+                        opacity: 0,
+                        transform:
+                            "scaleY(.82)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.42,0,.58,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    if (
+                        node.hasAttribute(
+                            "data-option-exiting"
+                        )
+                    ) {
+                        remove();
+                    }
+                }
+            );
+    }
+
+    #animateOptionMove(
+        node,
+        before,
+        duration
+    ) {
+        if (
+            !node ||
+            !before ||
+            duration <= 0 ||
+            typeof node.animate !==
+                "function" ||
+            node.hasAttribute(
+                "data-option-exiting"
+            ) ||
+            (
+                node.getAnimations?.()
+                    ?.length ||
+                0
+            )
+        ) {
+            return;
+        }
+
+        const after =
+            node.getBoundingClientRect();
+
+        const x =
+            before.left -
+            after.left;
+
+        const y =
+            before.top -
+            after.top;
+
+        if (
+            Math.abs(x) < .5 &&
+            Math.abs(y) < .5
+        ) {
+            return;
+        }
+
+        const animation =
+            node.animate(
+                [
+                    {
+                        transform:
+                            `translate(${x}px, ${y}px)`
+                    },
+                    {
+                        transform:
+                            "translate(0, 0)"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.42,0,.58,1)"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                () => {
+                    try {
+                        animation.cancel();
+                    }
+                    catch {}
+                }
+            );
+    }
+
+    #reviveOptionNode(
+        node,
+        duration
+    ) {
+        if (
+            !node?.hasAttribute?.(
+                "data-option-exiting"
+            )
+        ) {
+            return;
+        }
+
+        const state =
+            this
+                .#optionAnimationState(
+                    node
+                );
+
+        this
+            .#cancelOptionAnimations(
+                node
+            );
+
+        node.removeAttribute(
+            "data-option-exiting"
+        );
+
+        node.style
+            .removeProperty(
+                "overflow"
+            );
+
+        this
+            .#animateOptionEnter(
+                node,
+                duration,
+                {
+                    fromHeight:
+                        state.height,
+                    fromOpacity:
+                        state.opacity
+                }
+            );
+    }
+
+    #copyOptionPhraseNode(
+        target,
+        source
+    ) {
+        target.className =
+            source.className;
+
+        if (source.title) {
+            target.title =
+                source.title;
+        }
+        else {
+            target.removeAttribute(
+                "title"
+            );
+        }
+
+        const ariaLabel =
+            source.getAttribute(
+                "aria-label"
+            );
+
+        if (ariaLabel) {
+            target.setAttribute(
+                "aria-label",
+                ariaLabel
+            );
+        }
+        else {
+            target.removeAttribute(
+                "aria-label"
+            );
+        }
+
+        target.replaceChildren(
+            ...[
+                ...source.childNodes
+            ]
+        );
+    }
+
+    #createOptionCategory(
+        definition
+    ) {
+        const section =
+            document.createElement(
+                "section"
+            );
+
+        section.className =
+            "option-category";
+
+        section.dataset.category =
+            definition.key;
+
+        if (definition.color) {
+            section.style.setProperty(
+                "--speech-option-category-background",
+                definition.color
+            );
+        }
+
+        if (definition.contrast) {
+            section.style.setProperty(
+                "--speech-option-category-color",
+                definition.contrast
+            );
+        }
+
+        const rail =
+            document.createElement(
+                "div"
+            );
+
+        rail.className =
+            "option-category-rail";
+
+        rail.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        const icon =
+            document.createElement(
+                "span"
+            );
+
+        icon.className =
+            "option-category-icon";
+
+        if (definition.icon) {
+            icon.textContent =
+                definition.icon;
+
+            icon.dataset.customIcon =
+                "true";
+        }
+
+        rail.append(
+            icon
+        );
+
+        const content =
+            document.createElement(
+                "div"
+            );
+
+        content.className =
+            "option-category-content";
+
+        const title =
+            document.createElement(
+                "h3"
+            );
+
+        title.className =
+            "option-category-title";
+
+        title.textContent =
+            definition.label;
+
+        const cards =
+            document.createElement(
+                "div"
+            );
+
+        cards.className =
+            "option-category-cards";
+
+        content.append(
+            title,
+            cards
+        );
+
+        section.append(
+            rail,
+            content
+        );
+
+        return section;
+    }
+
+    #measureOptionCategoryHeight(
+        definition,
+        cards,
+        width
+    ) {
+        const section =
+            this
+                .#createOptionCategory(
+                    definition
+                );
+
+        const cardsContainer =
+            section.querySelector(
+                ".option-category-cards"
+            );
+
+        for (const card of cards) {
+            const box =
+                this
+                    .#createOptionCard(
+                        card
+                    );
+
+            for (
+                const item of
+                card.phrases
+            ) {
+                box.append(
+                    this
+                        .#createOptionPhrase(
+                            definition.key,
+                            card,
+                            item
+                        )
+                );
+            }
+
+            cardsContainer.append(
+                box
+            );
+        }
+
+        Object.assign(
+            section.style,
+            {
+                position:
+                    "absolute",
+                visibility:
+                    "hidden",
+                pointerEvents:
+                    "none",
+                inset:
+                    "0 auto auto 0",
+                width:
+                    Math.max(
+                        0,
+                        width
+                    ) +
+                    "px",
+                height:
+                    "auto",
+                maxHeight:
+                    "none",
+                overflow:
+                    "visible"
+            }
+        );
+
+        this.#optionsGrid.append(
+            section
+        );
+
+        const height =
+            Math.max(
+                0,
+                section
+                    .getBoundingClientRect()
+                    .height
+            );
+
+        section.remove();
+
+        return height;
+    }
+
+    #animateOptionContainerResize(
+        container,
+        fromHeight,
+        toHeight,
+        duration
+    ) {
+        if (!container) {
+            return;
+        }
+
+        const start =
+            Math.max(
+                0,
+                Number(fromHeight) ||
+                0
+            );
+
+        const end =
+            Math.max(
+                0,
+                Number(toHeight) ||
+                0
+            );
+
+        container.style.height =
+            start +
+            "px";
+        container.style.overflow =
+            "hidden";
+
+        if (
+            duration <= 0 ||
+            typeof container.animate !==
+                "function" ||
+            Math.abs(
+                end - start
+            ) < .5
+        ) {
+            container.style
+                .removeProperty(
+                    "height"
+                );
+            container.style
+                .removeProperty(
+                    "overflow"
+                );
+            return;
+        }
+
+        const animation =
+            container.animate(
+                [
+                    {
+                        height:
+                            start +
+                            "px"
+                    },
+                    {
+                        height:
+                            end +
+                            "px"
+                    }
+                ],
+                {
+                    duration,
+                    easing:
+                        "cubic-bezier(.42,0,.58,1)",
+                    fill:
+                        "both"
+                }
+            );
+
+        animation.finished
+            .catch(() => {})
+            .finally(
+                async () => {
+                    /*
+                     * Hold the measured final size while descendants
+                     * remove their animated exit nodes. This also absorbs
+                     * grid-gap removal, which otherwise produces a small
+                     * snap at the end of a collapse.
+                     */
+                    container.style.height =
+                        end +
+                        "px";
+
+                    const descendants =
+                        (
+                            container
+                                .getAnimations?.({
+                                    subtree:
+                                        true
+                                }) ||
+                            []
+                        )
+                            .filter(
+                                item =>
+                                    item !==
+                                        animation
+                            );
+
+                    try {
+                        animation.cancel();
+                    }
+                    catch {}
+
+                    if (
+                        descendants
+                            .length
+                    ) {
+                        await Promise
+                            .allSettled(
+                                descendants
+                                    .map(
+                                        item =>
+                                            item
+                                                .finished
+                                    )
+                            );
+                    }
+
+                    container.style
+                        .removeProperty(
+                            "height"
+                        );
+                    container.style
+                        .removeProperty(
+                            "overflow"
+                        );
+                }
+            );
+    }
+
+    #animateOptionCategoryResize(
+        section,
+        fromHeight,
+        toHeight,
+        duration
+    ) {
+        this
+            .#animateOptionContainerResize(
+                section,
+                fromHeight,
+                toHeight,
+                duration
+            );
+    }
+
+    #createOptionCard(
+        card
+    ) {
+        const box =
+            document.createElement(
+                "div"
+            );
+
+        box.className =
+            "option-card";
+
+        box.dataset.optionCardKey =
+            card.key;
+
+        return box;
+    }
+
+    #createOptionPhrase(
+        categoryKey,
+        card,
+        item
+    ) {
+        const row =
+            this.#phraseNode(
+                item.phrase,
+                item.element,
+                {
+                    required:
+                        item.required,
+                    optionalPrefix:
+                        item.optionalPrefix,
+                    optionalSuffix:
+                        item.optionalSuffix,
+                    implemented:
+                        item.implemented
+                }
+            );
+
+        row.dataset.optionItemKey =
+            this.#optionItemKey(
+                categoryKey,
+                card.key,
+                item
+            );
+
+        row.dataset.trainingCategory =
+            categoryKey;
+        row.dataset.trainingCard =
+            card.key;
+
+        row.addEventListener(
+            "click",
+            event => {
+                if (
+                    !this.trainingMode ||
+                    this.trainingLocked
+                ) {
+                    return;
+                }
+
+                event.stopPropagation();
+
+                this.#requestTrainingTarget({
+                    source:
+                        "command",
+                    category:
+                        categoryKey,
+                    card:
+                        card.key,
+                    phrase:
+                        item.phrase,
+                    display:
+                        item.display,
+                    expectedPhrases:
+                        item.familyPhrases ||
+                        [item.phrase],
+                    required:
+                        item.required,
+                    optionalPrefix:
+                        item.optionalPrefix,
+                    optionalSuffix:
+                        item.optionalSuffix,
+                    intent:
+                        item.intent,
+                    element:
+                        item.element,
+                    row
+                });
+            }
+        );
+
+        if (
+            this.#trainingSelection
+                ?.source ===
+                    "command" &&
+            this.#trainingSelection
+                ?.category ===
+                    categoryKey &&
+            this.#trainingSelection
+                ?.card ===
+                    card.key &&
+            this.#trainingSelection
+                ?.phrase ===
+                    item.phrase
+        ) {
+            const categoryColor =
+                this.#trainingCategoryColor(
+                    categoryKey
+                );
+
+            row.classList.add(
+                "training-selected"
+            );
+
+            row.style.setProperty(
+                "--speech-training-category-color",
+                categoryColor
+            );
+
+            row.style.setProperty(
+                "--speech-training-contrast",
+                this
+                    .#trainingContrastColor(
+                        categoryColor
+                    )
+            );
+        }
+
+        return row;
+    }
+
+    #syncOptionRows(
+        box,
+        categoryKey,
+        card,
+        duration
+    ) {
+        const desired =
+            card.phrases;
+
+        const desiredKeys =
+            desired.map(
+                item =>
+                    this
+                        .#optionItemKey(
+                            categoryKey,
+                            card.key,
+                            item
+                        )
+            );
+
+        const desiredSet =
+            new Set(
+                desiredKeys
+            );
+
+        const existing =
+            this.#optionChildrenByKey(
+                box,
+                "option-phrase",
+                "optionItemKey"
+            );
+
+        const beforePositions =
+            new Map(
+                [
+                    ...existing
+                ].map(
+                    (
+                        [
+                            key,
+                            row
+                        ]
+                    ) => [
+                        key,
+                        row
+                            .getBoundingClientRect()
+                    ]
+                )
+            );
+
+        for (
+            const [
+                key,
+                row
+            ] of
+            existing
+        ) {
+            if (
+                desiredSet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    row,
+                    duration,
+                    () =>
+                        row.remove()
+                );
+        }
+
+        for (
+            let index = 0;
+            index <
+                desired.length;
+            index++
+        ) {
+            const item =
+                desired[index];
+
+            const key =
+                desiredKeys[
+                    index
+                ];
+
+            let row =
+                existing.get(
+                    key
+                );
+
+            if (row) {
+                this
+                    .#reviveOptionNode(
+                        row,
+                        duration
+                    );
+
+                row.style.order =
+                    String(
+                        index
+                    );
+
+                const fresh =
+                    this
+                        .#createOptionPhrase(
+                            categoryKey,
+                            card,
+                            item
+                        );
+
+                this
+                    .#copyOptionPhraseNode(
+                        row,
+                        fresh
+                    );
+
+                continue;
+            }
+
+            row =
+                this
+                    .#createOptionPhrase(
+                        categoryKey,
+                        card,
+                        item
+                    );
+
+            row.style.order =
+                String(
+                    index
+                );
+
+            let reference;
+
+            for (
+                let next =
+                    index + 1;
+                next <
+                    desiredKeys.length;
+                next++
+            ) {
+                reference =
+                    existing.get(
+                        desiredKeys[
+                            next
+                        ]
+                    );
+
+                if (
+                    reference &&
+                    reference.parentElement ===
+                        box
+                ) {
+                    break;
+                }
+
+                reference =
+                    undefined;
+            }
+
+            box.insertBefore(
+                row,
+                reference ||
+                null
+            );
+
+            existing.set(
+                key,
+                row
+            );
+
+            this
+                .#animateOptionEnter(
+                    row,
+                    duration
+                );
+        }
+
+        for (
+            const key of
+            desiredKeys
+        ) {
+            this
+                .#animateOptionMove(
+                    existing.get(
+                        key
+                    ),
+                    beforePositions.get(
+                        key
+                    ),
+                    duration
+                );
+        }
+    }
+
+    #syncOptionCards(
+        container,
+        categoryKey,
+        cards,
+        duration
+    ) {
+        const desiredKeys =
+            cards.map(
+                card =>
+                    card.key
+            );
+
+        const desiredSet =
+            new Set(
+                desiredKeys
+            );
+
+        const existing =
+            this.#optionChildrenByKey(
+                container,
+                "option-card",
+                "optionCardKey"
+            );
+
+        const beforePositions =
+            new Map(
+                [
+                    ...existing
+                ].map(
+                    (
+                        [
+                            key,
+                            box
+                        ]
+                    ) => [
+                        key,
+                        box
+                            .getBoundingClientRect()
+                    ]
+                )
+            );
+
+        for (
+            const [
+                key,
+                box
+            ] of
+            existing
+        ) {
+            if (
+                desiredSet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    box,
+                    duration,
+                    () =>
+                        box.remove()
+                );
+        }
+
+        for (
+            let index = 0;
+            index <
+                cards.length;
+            index++
+        ) {
+            const card =
+                cards[index];
+
+            let box =
+                existing.get(
+                    card.key
+                );
+
+            if (box) {
+                this
+                    .#reviveOptionNode(
+                        box,
+                        duration
+                    );
+
+                box.style.order =
+                    String(
+                        index
+                    );
+
+                this
+                    .#syncOptionRows(
+                        box,
+                        categoryKey,
+                        card,
+                        duration
+                    );
+
+                continue;
+            }
+
+            box =
+                this
+                    .#createOptionCard(
+                        card
+                    );
+
+            box.style.order =
+                String(
+                    index
+                );
+
+            for (
+                const item of
+                card.phrases
+            ) {
+                box.append(
+                    this
+                        .#createOptionPhrase(
+                            categoryKey,
+                            card,
+                            item
+                        )
+                );
+            }
+
+            let reference;
+
+            for (
+                let next =
+                    index + 1;
+                next <
+                    desiredKeys.length;
+                next++
+            ) {
+                reference =
+                    existing.get(
+                        desiredKeys[
+                            next
+                        ]
+                    );
+
+                if (
+                    reference &&
+                    reference.parentElement ===
+                        container
+                ) {
+                    break;
+                }
+
+                reference =
+                    undefined;
+            }
+
+            container.insertBefore(
+                box,
+                reference ||
+                null
+            );
+
+            existing.set(
+                card.key,
+                box
+            );
+
+            this
+                .#animateOptionEnter(
+                    box,
+                    duration
+                );
+        }
+
+        for (
+            const key of
+            desiredKeys
+        ) {
+            this
+                .#animateOptionMove(
+                    existing.get(
+                        key
+                    ),
+                    beforePositions.get(
+                        key
+                    ),
+                    duration
+                );
+        }
+    }
+
+    #renderOptions(
+        phraseGroups
+    ) {
+        for (
+            const pane of
+            [
+                ...this.#optionsGrid
+                    ?.querySelectorAll?.(
+                        ":scope > .option-pane"
+                    ) ||
+                []
+            ]
+        ) {
+            while (pane.firstChild) {
+                this.#optionsGrid.insertBefore(
+                    pane.firstChild,
+                    pane
+                );
+            }
+            pane.remove();
+        }
+
+        const definitions =
+            this
+                .#optionCategoryDefinitions();
+
+        const categories =
+            new Map(
+                definitions.map(
+                    definition => [
+                        definition.key,
+                        {
+                            ...definition,
+                            cards:
+                                new Map()
+                        }
+                    ]
+                )
+            );
+
+        const ensureCard =
+            (
+                categoryKey,
+                cardKey
+            ) => {
+                const category =
+                    categories.get(
+                        categoryKey
+                    ) ||
+                    categories.get(
+                        "settings"
+                    );
+
+                let card =
+                    category.cards.get(
+                        cardKey
+                    );
+
+                if (!card) {
+                    card = {
+                        key:
+                            String(
+                                cardKey
+                            ),
+                        phrases: [],
+                        seen:
+                            new Set()
+                    };
+
+                    category.cards.set(
+                        cardKey,
+                        card
+                    );
+                }
+
+                return card;
+            };
+
+        (
+            Array.isArray(
+                phraseGroups
+            )
+                ? phraseGroups
+                : []
+        ).forEach(
+            (
+                group,
+                index
+            ) => {
+                const categoryKey =
+                    this
+                        .#optionsCategoryKey(
+                            group
+                        );
+
+                const card =
+                    ensureCard(
+                        categoryKey,
+                        this.#optionsGroupKey(
+                            group,
+                            index
+                        )
+                    );
+
+                for (
+                    const item of
+                    this.#compactOptionGroup(
+                        group
+                    )
+                ) {
+                    const signature =
+                        [
+                            item.required,
+                            item.optionalPrefix,
+                            item.optionalSuffix
+                        ].join(
+                            "\u0000"
+                        );
+
+                    if (
+                        card.seen.has(
+                            signature
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    card.seen.add(
+                        signature
+                    );
+
+                    card.phrases.push(
+                        item
+                    );
+                }
+            }
+        );
+        const desiredCategories =
+            [];
+
+        for (
+            const definition of
+            definitions
+        ) {
+            const category =
+                categories.get(
+                    definition.key
+                );
+
+            const cards =
+                [
+                    ...category
+                        .cards
+                        .values()
+                ]
+                    .filter(
+                        card =>
+                            card.phrases
+                                .length
+                    );
+
+            for (const card of cards) {
+                card.phrases.sort(
+                    (
+                        left,
+                        right
+                    ) =>
+                        this
+                            .#compareOptionItems(
+                                left,
+                                right
+                            )
+                );
+            }
+
+            cards.sort(
+                (
+                    left,
+                    right
+                ) =>
+                    this
+                        .#compareOptionItems(
+                            left.phrases[0],
+                            right.phrases[0]
+                        )
+            );
+
+            if (!cards.length) {
+                continue;
+            }
+
+            desiredCategories.push({
+                definition,
+                cards
+            });
+        }
+
+        const duration =
+            this
+                .#optionMutationDuration();
+
+        const existingCategories =
+            this.#optionChildrenByKey(
+                this.#optionsGrid,
+                "option-category",
+                "category"
+            );
+
+        const desiredCategoryKeys =
+            desiredCategories.map(
+                entry =>
+                    entry.definition
+                        .key
+            );
+
+        const desiredCategorySet =
+            new Set(
+                desiredCategoryKeys
+            );
+
+        /*
+         * Preflight every existing category before any card/category
+         * mutation starts. The real category is measured in its current
+         * state, while a hidden final-state category is measured at the
+         * same width. This gives the parent both animation endpoints
+         * before any child animation can begin.
+         */
+        const categoryResizePlan =
+            new Map();
+
+        const gridRect =
+            this.#optionsGrid
+                .getBoundingClientRect();
+
+        const finalCategoryHeights =
+            new Map();
+
+        for (
+            const {
+                definition,
+                cards
+            } of desiredCategories
+        ) {
+            const section =
+                existingCategories.get(
+                    definition.key
+                );
+
+            const rect =
+                section
+                    ?.getBoundingClientRect?.();
+
+            const width =
+                Math.max(
+                    0,
+                    rect?.width ||
+                    gridRect.width
+                );
+
+            const toHeight =
+                this
+                    .#measureOptionCategoryHeight(
+                        definition,
+                        cards,
+                        width
+                    );
+
+            finalCategoryHeights.set(
+                definition.key,
+                toHeight
+            );
+
+            if (!section) {
+                continue;
+            }
+
+            categoryResizePlan.set(
+                definition.key,
+                {
+                    fromHeight:
+                        Math.max(
+                            0,
+                            rect.height
+                        ),
+                    toHeight
+                }
+            );
+        }
+
+        const gridStyle =
+            this.ownerDocument
+                ?.defaultView
+                ?.getComputedStyle?.(
+                    this.#optionsGrid
+                ) ||
+            {};
+
+        const gridGap =
+            Number.parseFloat(
+                gridStyle.rowGap ||
+                gridStyle.gap ||
+                "0"
+            ) ||
+            0;
+
+        if (
+            desiredCategories.length
+        ) {
+            const finalGridHeight =
+                desiredCategories
+                    .reduce(
+                        (
+                            total,
+                            {
+                                definition
+                            }
+                        ) =>
+                            total +
+                            (
+                                finalCategoryHeights
+                                    .get(
+                                        definition.key
+                                    ) ||
+                                0
+                            ),
+                        0
+                    ) +
+                gridGap *
+                    Math.max(
+                        0,
+                        desiredCategories
+                            .length -
+                            1
+                    );
+
+            this
+                .#animateOptionContainerResize(
+                    this.#optionsGrid,
+                    gridRect.height,
+                    finalGridHeight,
+                    duration
+                );
+        }
+
+        for (
+            const [
+                key,
+                section
+            ] of
+            existingCategories
+        ) {
+            if (
+                desiredCategorySet.has(
+                    key
+                )
+            ) {
+                continue;
+            }
+
+            this
+                .#animateOptionExit(
+                    section,
+                    duration,
+                    () =>
+                        section.remove()
+                );
+        }
+
+        this.#optionsGrid
+            .querySelector(
+                ".option-empty"
+            )
+            ?.remove();
+
+        for (
+            let index = 0;
+            index <
+                desiredCategories.length;
+            index++
+        ) {
+            const {
+                definition,
+                cards
+            } =
+                desiredCategories[
+                    index
+                ];
+
+            let section =
+                existingCategories.get(
+                    definition.key
+                );
+
+            const isNew =
+                !section;
+
+            if (!section) {
+                section =
+                    this
+                        .#createOptionCategory(
+                            definition
+                        );
+
+                let reference;
+
+                for (
+                    let next =
+                        index + 1;
+                    next <
+                        desiredCategoryKeys
+                            .length;
+                    next++
+                ) {
+                    reference =
+                        existingCategories.get(
+                            desiredCategoryKeys[
+                                next
+                            ]
+                        );
+
+                    if (
+                        reference &&
+                        reference.parentElement ===
+                            this.#optionsGrid
+                    ) {
+                        break;
+                    }
+
+                    reference =
+                        undefined;
+                }
+
+                this.#optionsGrid
+                    .insertBefore(
+                        section,
+                        reference ||
+                        null
+                    );
+
+                existingCategories
+                    .set(
+                        definition.key,
+                        section
+                    );
+            }
+            else {
+                this
+                    .#reviveOptionNode(
+                        section,
+                        duration
+                    );
+            }
+
+            const cardsContainer =
+                section.querySelector(
+                    ".option-category-cards"
+                );
+
+            const resize =
+                categoryResizePlan.get(
+                    definition.key
+                );
+
+            if (
+                !isNew &&
+                resize
+            ) {
+                this
+                    .#animateOptionCategoryResize(
+                        section,
+                        resize.fromHeight,
+                        resize.toHeight,
+                        duration
+                    );
+            }
+
+            this
+                .#syncOptionCards(
+                    cardsContainer,
+                    definition.key,
+                    cards,
+                    isNew
+                        ? 0
+                        : duration
+                );
+
+            if (isNew) {
+                this
+                    .#animateOptionEnter(
+                        section,
+                        duration
+                    );
+            }
+        }
+
+        if (
+            !desiredCategories.length
+        ) {
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "option-empty";
+
+            empty.textContent =
+                "No voice options available.";
+
+            this.#optionsGrid
+                .append(
+                    empty
+                );
+        }
+
+        this.#fitOptions();
+    }
+
+    #optionPanePartitions(
+        count,
+        paneCount
+    ) {
+        const result = [];
+
+        const visit =
+            (
+                start,
+                panesLeft,
+                cuts
+            ) => {
+                if (panesLeft === 1) {
+                    result.push(
+                        [
+                            ...cuts,
+                            count
+                        ]
+                    );
+                    return;
+                }
+
+                const lastStart =
+                    count -
+                    panesLeft +
+                    1;
+
+                for (
+                    let end =
+                        start + 1;
+                    end <= lastStart;
+                    end++
+                ) {
+                    visit(
+                        end,
+                        panesLeft - 1,
+                        [
+                            ...cuts,
+                            end
+                        ]
+                    );
+                }
+            };
+
+        visit(
+            0,
+            paneCount,
+            []
+        );
+
+        return result;
+    }
+
+    #layoutOptionPanes() {
+        const categories =
+            [
+                ...this.#optionsGrid
+                    .querySelectorAll(
+                        ":scope > .option-category"
+                    )
+            ];
+
+        if (!categories.length) {
+            return;
+        }
+
+        const panelWidth =
+            Math.max(
+                0,
+                this.#optionsPanel
+                    .getBoundingClientRect()
+                    .width
+            );
+
+        const gap = 8;
+
+        const maximumPanes =
+            Math.max(
+                1,
+                Math.min(
+                    categories.length,
+                    Math.floor(
+                        panelWidth /
+                            320
+                    ) ||
+                    1
+                )
+            );
+
+        let best;
+
+        for (
+            let paneCount = 1;
+            paneCount <=
+                maximumPanes;
+            paneCount++
+        ) {
+            const paneWidth =
+                Math.max(
+                    0,
+                    (
+                        this.#optionsGrid
+                            .getBoundingClientRect()
+                            .width -
+                        gap *
+                            (
+                                paneCount -
+                                1
+                            )
+                    ) /
+                        paneCount
+                );
+
+            const heights =
+                categories.map(
+                    category => {
+                        const previousWidth =
+                            category.style.width;
+
+                        category.style.width =
+                            paneWidth +
+                            "px";
+
+                        const height =
+                            Math.max(
+                                0,
+                                category
+                                    .getBoundingClientRect()
+                                    .height
+                            );
+
+                        category.style.width =
+                            previousWidth;
+
+                        return height;
+                    }
+                );
+
+            for (
+                const cuts of
+                this.#optionPanePartitions(
+                    categories.length,
+                    paneCount
+                )
+            ) {
+                const columnHeights = [];
+                let start = 0;
+
+                for (
+                    const end of
+                    cuts
+                ) {
+                    const length =
+                        end - start;
+
+                    const height =
+                        heights
+                            .slice(
+                                start,
+                                end
+                            )
+                            .reduce(
+                                (
+                                    total,
+                                    value
+                                ) =>
+                                    total +
+                                    value,
+                                0
+                            ) +
+                        gap *
+                            Math.max(
+                                0,
+                                length - 1
+                            );
+
+                    columnHeights.push(
+                        height
+                    );
+                    start = end;
+                }
+
+                const tallest =
+                    Math.max(
+                        ...columnHeights
+                    );
+
+                const shortest =
+                    Math.min(
+                        ...columnHeights
+                    );
+
+                const imbalance =
+                    tallest -
+                    shortest;
+
+                const horizontalPreference =
+                    48;
+
+                const prefersMorePanes =
+                    best &&
+                    paneCount >
+                        best.paneCount &&
+                    tallest <=
+                        best.tallest +
+                            horizontalPreference;
+
+                const samePaneCountBetter =
+                    best &&
+                    paneCount ===
+                        best.paneCount &&
+                    (
+                        tallest <
+                            best.tallest -
+                                .5 ||
+                        (
+                            Math.abs(
+                                tallest -
+                                best.tallest
+                            ) < .5 &&
+                            imbalance <
+                                best.imbalance
+                        )
+                    );
+
+                if (
+                    !best ||
+                    prefersMorePanes ||
+                    samePaneCountBetter
+                ) {
+                    best = {
+                        paneCount,
+                        cuts,
+                        tallest,
+                        imbalance
+                    };
+                }
+            }
+        }
+
+        if (!best) {
+            return;
+        }
+
+        let start = 0;
+
+        for (
+            let paneIndex = 0;
+            paneIndex <
+                best.cuts.length;
+            paneIndex++
+        ) {
+            const end =
+                best.cuts[
+                    paneIndex
+                ];
+
+            const pane =
+                document.createElement(
+                    "div"
+                );
+
+            pane.className =
+                "option-pane";
+
+            pane.dataset.optionPane =
+                String(
+                    paneIndex
+                );
+
+            for (
+                let index = start;
+                index < end;
+                index++
+            ) {
+                pane.append(
+                    categories[
+                        index
+                    ]
+                );
+            }
+
+            this.#optionsGrid.append(
+                pane
+            );
+
+            start = end;
+        }
+    }
+
+    #fitOptions() {
+        const rect =
+            this.getBoundingClientRect();
+
+        const viewportHeight =
+            window.innerHeight ||
+            document.documentElement
+                ?.clientHeight ||
+            0;
+
+        const available =
+            Math.max(
+                120,
+                Math.min(
+                    rect.top - 8,
+                    viewportHeight -
+                        86
+                )
+            );
+
+        this.#optionsPanel.style
+            .setProperty(
+                "--speech-options-max-height",
+                available + "px"
+            );
+
+        this.#layoutOptionPanes();
+    }
+
+    #responseVisual(value) {
+        if (
+            value === undefined ||
+            value === null ||
+            value === ""
+        ) {
+            return undefined;
+        }
+
+        if (value instanceof Node) {
+            if (
+                value instanceof Element &&
+                value.hasAttribute(
+                    "data-speech-response-snapshot"
+                )
+            ) {
+                return value.cloneNode(
+                    true
+                );
+            }
+
+            return value instanceof Element
+                ? this.#cloneVisualElement(
+                    value
+                )
+                : value.cloneNode(true);
+        }
+
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.textContent =
+            String(value);
+
+        return span;
+    }
+
+    #showResponseLane() {
+        const wasVisible =
+            this.hasAttribute(
+                "has-response"
+            );
+
+        this.setAttribute(
+            "has-response",
+            ""
+        );
+
+        if (
+            !wasVisible &&
+            typeof this.#responseLane
+                .animate ===
+                "function"
+        ) {
+            this.#responseAnimation =
+                this.#responseLane
+                    .animate(
+                        [
+                            {
+                                width: "0px",
+                                opacity: 0,
+                                transform:
+                                    "translateX(16px)"
+                            },
+                            {
+                                width:
+                                    "min(42vw, 360px)",
+                                opacity: 1,
+                                transform:
+                                    "translateX(0)"
+                            }
+                        ],
+                        {
+                            duration: 220,
+                            easing:
+                                "cubic-bezier(.2,.8,.2,1)",
+                            fill: "both"
+                        }
+                    );
+
+            this.#responseAnimation
+                .finished
+                .catch(
+                    () => {}
+                )
+                .finally(
+                    () => {
+                        this.#responseAnimation
+                            ?.cancel();
+                        this.#responseAnimation =
+                            undefined;
+                    }
+                );
+        }
+
+        return wasVisible;
+    }
+
+    setResponse(value) {
+        this.#responseAnimation?.cancel();
+        this.#responseAnimation = undefined;
+
+        const visual =
+            this.#responseVisual(
+                value
+            );
+
+        if (!visual) {
+            return this.clearResponse();
+        }
+
+        const wasVisible =
+            this.#showResponseLane();
+
+        this.#responseContent
+            .replaceChildren(
+                visual
+            );
+
+        if (wasVisible) {
+            this.#responseContent
+                .animate?.(
+                    [
+                        {
+                            opacity: .35,
+                            transform:
+                                "scale(.96)"
+                        },
+                        {
+                            opacity: 1,
+                            transform:
+                                "scale(1)"
+                        }
+                    ],
+                    {
+                        duration: 160,
+                        easing:
+                            "ease-out"
+                    }
+                );
+        }
+
+        if (this.trainingMode) {
+            this.#emitTrainingTelemetry(
+                "responseChanged",
+                {
+                    response:
+                        String(
+                            this.#responseContent
+                                ?.textContent ||
+                            ""
+                        ).trim()
+                }
+            );
+        }
+    }
+
+    presentResponseTransition(
+        fromValue,
+        toValue,
+        {
+            duration = 320
+        } = {}
+    ) {
+        this.#responseAnimation?.cancel();
+        this.#responseAnimation = undefined;
+
+        const from =
+            this.#responseVisual(
+                fromValue
+            );
+        const to =
+            this.#responseVisual(
+                toValue
+            );
+
+        if (!from && !to) {
+            return this.clearResponse();
+        }
+
+        if (!from || !to) {
+            return this.setResponse(
+                to ||
+                from
+            );
+        }
+
+        this.#showResponseLane();
+
+        const stage =
+            document.createElement(
+                "div"
+            );
+
+        stage.className =
+            "response-transition-stage";
+
+        stage.append(
+            from,
+            to
+        );
+
+        this.#responseContent
+            .replaceChildren(
+                stage
+            );
+
+        to.style.opacity = "0";
+
+        if (
+            typeof from.animate !==
+                "function" ||
+            typeof to.animate !==
+                "function"
+        ) {
+            this.#responseContent
+                .replaceChildren(
+                    to
+                );
+            to.style.opacity = "";
+            return;
+        }
+
+        const options = {
+            duration:
+                Math.max(
+                    0,
+                    Number(duration) ||
+                    0
+                ),
+            easing:
+                "cubic-bezier(.2,.8,.2,1)",
+            fill:
+                "both"
+        };
+
+        const fromAnimation =
+            from.animate(
+                [
+                    {
+                        opacity: 1,
+                        transform:
+                            "scale(1)"
+                    },
+                    {
+                        opacity: 0,
+                        transform:
+                            "scale(.94)"
+                    }
+                ],
+                options
+            );
+
+        const toAnimation =
+            to.animate(
+                [
+                    {
+                        opacity: 0,
+                        transform:
+                            "scale(1.06)"
+                    },
+                    {
+                        opacity: 1,
+                        transform:
+                            "scale(1)"
+                    }
+                ],
+                options
+            );
+
+        const sharedStart =
+            document.timeline
+                ?.currentTime;
+
+        if (
+            sharedStart !==
+            null &&
+            sharedStart !==
+            undefined
+        ) {
+            try {
+                fromAnimation.startTime =
+                    sharedStart;
+                toAnimation.startTime =
+                    sharedStart;
+            }
+            catch {}
+        }
+
+        Promise
+            .allSettled([
+                fromAnimation.finished,
+                toAnimation.finished
+            ])
+            .then(
+                () => {
+                    if (
+                        stage.isConnected
+                    ) {
+                        this.#responseContent
+                            .replaceChildren(
+                                to
+                            );
+                        to.style.opacity =
+                            "";
+                    }
+                }
+            );
+    }
+
+    async clearResponse(
+        {
+            duration = 190
+        } = {}
+    ) {
         this.#responseAnimation?.cancel();
         this.#responseAnimation = undefined;
         if (!this.hasAttribute("has-response")) {
@@ -337,7 +5651,12 @@ class SpeechMicBar extends HTMLElement {
                     {width: "0px", opacity: 0, transform: "translateX(16px)"}
                 ],
                 {
-                    duration: 190,
+                    duration:
+                        Math.max(
+                            0,
+                            Number(duration) ||
+                            0
+                        ),
                     easing: "cubic-bezier(.4,0,.8,.2)",
                     fill: "both"
                 }
@@ -355,8 +5674,14 @@ class SpeechMicBar extends HTMLElement {
     }
 
     clear() {
+        clearTimeout(
+            this.#rejectedClearTimer
+        );
+        this.#rejectedClearTimer =
+            undefined;
         this.#currentUtteranceId = undefined;
         this.#currentTranscript = "";
+        this.#currentTranscriptFinal = false;
         this.removeAttribute("phase");
         this.#codes.replaceChildren();
         this.#showIdleText();
@@ -374,7 +5699,14 @@ class SpeechMicBar extends HTMLElement {
         }
 
         if (speechMenu.started) {
-            this.setAttribute("state", speechMenu.muted ? "muted" : "listening");
+            this.setAttribute(
+                "state",
+                speechMenu.listeningSuspended
+                    ? "suspended"
+                    : speechMenu.muted
+                        ? "muted"
+                        : "listening"
+            );
         }
     }
 
@@ -389,45 +5721,168 @@ class SpeechMicBar extends HTMLElement {
     #handleSpeechEvent(type, detail) {
         switch (type) {
             case "started":
-                this.setAttribute("state", "listening");
+                this.#clearLoadingProgress();
+                this.setAttribute(
+                    "state",
+                    globalThis.SpeechMenu?.listeningSuspended
+                        ? "suspended"
+                        : globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                );
                 this.clear();
                 break;
             case "stopped":
             case "speechCaptureEnded":
+                void this.hideOptions({
+                    duration: 0
+                });
+                this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.clear();
                 break;
             case "muted":
-                this.setAttribute("state", "muted");
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    "muted"
+                );
+                this.#showIdleText();
+                break;
+            case "listeningSuspended":
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    "suspended"
+                );
+                this.#showIdleText();
+                break;
+            case "listeningResumed":
+                this.setAttribute(
+                    "state",
+                    globalThis.SpeechMenu?.started
+                        ? globalThis.SpeechMenu?.muted
+                            ? "muted"
+                            : "listening"
+                        : "stopped"
+                );
+                this.#showIdleText();
                 break;
             case "unmuted":
-                this.setAttribute("state", "listening");
+                this.#currentUtteranceId =
+                    undefined;
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal =
+                    false;
+                this.removeAttribute("phase");
+                this.#codes.replaceChildren();
+                this.setAttribute(
+                    "state",
+                    globalThis.SpeechMenu?.listeningSuspended
+                        ? "suspended"
+                        : "listening"
+                );
+                this.#showIdleText();
                 break;
             case "speechRecognitionFailed":
+                this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.#showStatus(
                     detail?.message ||
                     "Speech recognition unavailable"
                 );
                 break;
+            case "speechRecognitionStatusChanged":
+                if (
+                    this.#showLoadingProgress(
+                        detail?.status
+                    )
+                ) {
+                    break;
+                }
+
+                if (this.hasAttribute("loading")) {
+                    this.#clearLoadingProgress();
+                }
+
+                if (
+                    globalThis.SpeechMenu
+                        ?.muted
+                ) {
+                    this.#showIdleText();
+                }
+                else if (detail?.status) {
+                    this.#showStatus(
+                        detail.status
+                    );
+                }
+                else {
+                    this.#showIdleText();
+                }
+                break;
             case "utteranceStarted":
+                clearTimeout(
+                    this.#rejectedClearTimer
+                );
+                this.#rejectedClearTimer =
+                    undefined;
                 this.#currentUtteranceId = detail?.id;
-                this.setAttribute("state", "utterance");
+                this.#currentTranscript = "";
+                this.#currentTranscriptFinal = false;
                 this.removeAttribute("phase");
                 this.#codes.replaceChildren();
-                this.#showWaveform();
+
+                if (
+                    globalThis.SpeechMenu
+                        ?.muted
+                ) {
+                    this.setAttribute(
+                        "state",
+                        "muted"
+                    );
+                    this.#showIdleText();
+                }
+                else {
+                    this.setAttribute(
+                        "state",
+                        "utterance"
+                    );
+                    this.#showWaveform();
+                }
                 break;
             case "utteranceFinished":
                 if (detail?.id === this.#currentUtteranceId) {
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
+                        globalThis.SpeechMenu?.listeningSuspended
+                            ? "suspended"
+                            : globalThis.SpeechMenu?.muted
+                                ? "muted"
+                                : "listening"
                     );
 
-                    if (!detail?.committed) {
-                        this.#showStatus("Processing…");
+                    if (
+                        !globalThis.SpeechMenu
+                            ?.muted &&
+                        !detail?.committed &&
+                        detail?.reason !==
+                            "no-candidates"
+                    ) {
+                        this.#showStatus(
+                            "Processing…"
+                        );
                     }
                 }
                 break;
@@ -435,33 +5890,74 @@ class SpeechMicBar extends HTMLElement {
                 if (detail?.id === this.#currentUtteranceId) {
                     this.#currentTranscript =
                         detail.transcript || "";
-                    this.#showText(
-                        this.#currentTranscript
-                    );
+                    this.#currentTranscriptFinal =
+                        Boolean(
+                            detail.isFinal
+                        );
+
+                    if (
+                        !globalThis.SpeechMenu
+                            ?.muted
+                    ) {
+                        this.#showStreamingPhrase(
+                            this.#currentTranscript
+                        );
+                    }
                 }
                 break;
             case "utteranceTranscribed":
                 if (detail?.id === this.#currentUtteranceId) {
-                    this.#currentTranscript = detail.transcript || "";
-                    this.#showText(this.#currentTranscript);
+                    this.#currentTranscript =
+                        detail.transcript || "";
+                    this.#currentTranscriptFinal =
+                        true;
+                    if (
+                        !globalThis.SpeechMenu
+                            ?.muted
+                    ) {
+                        this.#showStreamingPhrase(
+                            this.#currentTranscript
+                        );
+                    }
                 }
                 break;
             case "utteranceCommitted":
                 if (detail?.id === this.#currentUtteranceId) {
+                    this.#currentTranscript =
+                        detail.transcript ||
+                        this.#currentTranscript;
+                    this.#currentTranscriptFinal =
+                        true;
+
+                    if (
+                        this.getAttribute(
+                            "phase"
+                        ) !==
+                        "preprocessed"
+                    ) {
+                        this.#showStreamingPhrase(
+                            this.#currentTranscript
+                        );
+                    }
+
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
+                        globalThis.SpeechMenu?.listeningSuspended
+                            ? "suspended"
+                            : globalThis.SpeechMenu?.muted
+                                ? "muted"
+                                : "listening"
                     );
                 }
                 break;
             case "speechPreprocessed":
-                if (detail?.utteranceId === this.#currentUtteranceId) {
-                    this.setAttribute("phase", "preprocessed");
-                    this.#showPreprocessed(
-                        detail.originalText || this.#currentTranscript,
-                        detail.processedText || ""
+                if (
+                    detail?.utteranceId ===
+                        this.#currentUtteranceId &&
+                    detail?.contextChange
+                ) {
+                    this.#showStreamingContext(
+                        detail
                     );
                 }
                 break;
@@ -469,29 +5965,107 @@ class SpeechMicBar extends HTMLElement {
             case "speechMenuMatched":
                 if (
                     detail?.utteranceId ===
-                    this.#currentUtteranceId &&
-                    this.getAttribute("phase") !== "preprocessed"
+                        this.#currentUtteranceId &&
+                    !detail?.provisional &&
+                    this.getAttribute("phase") !==
+                        "preprocessed"
                 ) {
-                    this.setAttribute("phase", "matched");
+                    this.setAttribute(
+                        "phase",
+                        "matched"
+                    );
+
+                    if (
+                        detail
+                            ?.canonicalTranscript &&
+                        detail
+                            .canonicalTranscript !==
+                            detail.transcript
+                    ) {
+                        this.#showStreamingPhrase(
+                            detail
+                                .canonicalTranscript
+                        );
+                    }
                 }
                 break;
             case "speechArgumentsPrepared":
-                if (detail?.utteranceId === this.#currentUtteranceId) {
-                    this.#showArguments(detail.arguments || []);
-                    if (detail.targetElement) this.setResponse(detail.targetElement);
+                if (
+                    detail?.utteranceId === this.#currentUtteranceId &&
+                    !detail?.provisional
+                ) {
+                    this.#showArguments(
+                        detail.arguments ||
+                        []
+                    );
+                }
+                break;
+            case "utteranceUnrecognized":
+                if (detail?.id === this.#currentUtteranceId) {
+                    this.#scheduleRejectedClear(
+                        detail.id,
+                        detail?.fast
+                            ? 250
+                            : 2000
+                    );
+                }
+                break;
+            case "phrasesChanged":
+                if (this.optionsOpen) {
+                    this.#renderOptions(
+                        detail?.phraseGroups ||
+                        globalThis
+                            .SpeechMenu
+                            ?.phraseGroups ||
+                        []
+                    );
                 }
                 break;
             case "speechCommandExecuted":
                 if (
                     detail?.utteranceId ===
-                    this.#currentUtteranceId &&
-                    detail.targetElement
+                    this.#currentUtteranceId
                 ) {
-                    this.setResponse(
-                        detail.targetElement
+                    const formatted =
+                        detail
+                            .canonicalTranscript ||
+                        detail.transcript ||
+                        this.#currentTranscript;
+
+                    this.#currentTranscriptFinal =
+                        true;
+
+                    this.setAttribute(
+                        "phase",
+                        "preprocessed"
                     );
+
+                    if (
+                        detail
+                            ?.canonicalTranscript &&
+                        detail
+                            .canonicalTranscript !==
+                            detail.transcript
+                    ) {
+                        this.#showStreamingPhrase(
+                            formatted
+                        );
+                    }
+                    else {
+                        this.#showPreprocessed(
+                            this.#currentTranscript,
+                            formatted
+                        );
+                    }
                 }
                 break;
+        }
+
+        if (this.trainingMode) {
+            this.#emitTrainingTelemetry(
+                type,
+                detail
+            );
         }
 
         this.dispatchEvent(
@@ -506,8 +6080,356 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
+    #emitTrainingTelemetry(
+        type,
+        detail = {}
+    ) {
+        const responseText =
+            String(
+                this.#responseContent
+                    ?.textContent ||
+                ""
+            ).trim();
+
+        const utteranceId =
+            detail?.id ??
+            detail?.utteranceId ??
+            this.#currentUtteranceId;
+
+        const heard =
+            String(
+                detail?.transcript ||
+                detail?.originalTranscript ||
+                this.#currentTranscript ||
+                responseText ||
+                ""
+            ).trim();
+
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-training-telemetry",
+                {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        type,
+                        event:
+                            detail,
+                        utteranceId,
+                        heard,
+                        target:
+                            this.trainingTarget,
+                        state:
+                            this.state,
+                        phase:
+                            this.getAttribute(
+                                "phase"
+                            ) ||
+                            undefined,
+                        transcript:
+                            this.#currentTranscript,
+                        final:
+                            this.#currentTranscriptFinal,
+                        response:
+                            responseText,
+                        muted:
+                            Boolean(
+                                globalThis
+                                    .SpeechMenu
+                                    ?.muted
+                            ),
+                        listening:
+                            Boolean(
+                                globalThis
+                                    .SpeechMenu
+                                    ?.started
+                            ) &&
+                            !globalThis
+                                .SpeechMenu
+                                ?.listeningSuspended,
+                        locked:
+                            this.trainingLocked
+                    }
+                }
+            )
+        );
+    }
+
+    #wakeActivationPhrase() {
+        const pattern =
+            this.#wakeCommand
+                ?.getAttribute(
+                    "speech-pattern"
+                ) ||
+            "";
+
+        const phrases =
+            globalThis
+                .SpeechMenu
+                ?.extrapolatePattern?.(
+                    pattern
+                ) ||
+            [];
+
+        return (
+            phrases.find(
+                phrase =>
+                    String(
+                        phrase ||
+                        ""
+                    ).trim()
+            ) ||
+            "wake"
+        );
+    }
+
     #showIdleText() {
-        this.#showStatus(this.state === "muted" ? "Muted" : this.state === "stopped" ? "" : "Listening…");
+        this.#showStatus(
+            this.state === "muted"
+                ? (
+                    "Say " +
+                    this
+                        .#wakeActivationPhrase() +
+                    " to Activate"
+                )
+                : this.state === "suspended"
+                    ? "Listening paused"
+                    : this.state === "stopped"
+                        ? ""
+                        : "Listening…"
+        );
+    }
+
+    #showLoadingProgress(status) {
+        const match =
+            String(
+                status ||
+                ""
+            ).match(
+                /\(?\s*(\d+)\s*\/\s*(\d+)\s*\)?/
+            );
+
+        if (!match) {
+            return false;
+        }
+
+        const current =
+            Number(
+                match[1]
+            );
+        const total =
+            Number(
+                match[2]
+            );
+
+        if (
+            !Number.isFinite(
+                current
+            ) ||
+            !Number.isFinite(
+                total
+            ) ||
+            total <= 0
+        ) {
+            return false;
+        }
+
+        this.setAttribute(
+            "loading",
+            ""
+        );
+        this.setAttribute(
+            "aria-busy",
+            "true"
+        );
+
+        this.#animateLoadingProgress(
+            current,
+            total
+        );
+
+        return true;
+    }
+
+    #animateLoadingProgress(
+        current,
+        total
+    ) {
+        const samePacket =
+            this.#loadingTotal ===
+            total;
+
+        const from =
+            samePacket
+                ? this.#loadingDisplayed
+                : 0;
+
+        this.#loadingTarget =
+            current;
+        this.#loadingTotal =
+            total;
+
+        if (
+            this.#loadingAnimationFrame !==
+            undefined
+        ) {
+            cancelAnimationFrame(
+                this.#loadingAnimationFrame
+            );
+            this.#loadingAnimationFrame =
+                undefined;
+        }
+
+        const startedAt =
+            performance.now();
+        const duration = 160;
+
+        const render =
+            now => {
+                const elapsed =
+                    Math.max(
+                        0,
+                        now -
+                        startedAt
+                    );
+
+                const ratio =
+                    Math.min(
+                        1,
+                        elapsed /
+                        duration
+                    );
+
+                const displayed =
+                    ratio >= 1
+                        ? current
+                        : Math.min(
+                            current,
+                            Math.round(
+                                from +
+                                (
+                                    current -
+                                    from
+                                ) *
+                                ratio
+                            )
+                        );
+
+                this.#loadingDisplayed =
+                    displayed;
+
+                const progress =
+                    Math.max(
+                        0,
+                        Math.min(
+                            100,
+                            displayed /
+                            total *
+                            100
+                        )
+                    );
+
+                this.#bar.style
+                    .setProperty(
+                        "--speech-load-clip-right",
+                        (
+                            100 -
+                            progress
+                        ) +
+                        "%"
+                    );
+
+                this.#showStatus(
+                    displayed +
+                    " / " +
+                    total
+                );
+
+                if (ratio < 1) {
+                    this.#loadingAnimationFrame =
+                        requestAnimationFrame(
+                            render
+                        );
+                    return;
+                }
+
+                this.#loadingAnimationFrame =
+                    undefined;
+            };
+
+        this.#loadingAnimationFrame =
+            requestAnimationFrame(
+                render
+            );
+    }
+
+    #clearLoadingProgress() {
+        if (
+            this.#loadingAnimationFrame !==
+            undefined
+        ) {
+            cancelAnimationFrame(
+                this.#loadingAnimationFrame
+            );
+            this.#loadingAnimationFrame =
+                undefined;
+        }
+
+        this.#loadingDisplayed = 0;
+        this.#loadingTarget = 0;
+        this.#loadingTotal = 0;
+
+        this.removeAttribute(
+            "loading"
+        );
+        this.removeAttribute(
+            "aria-busy"
+        );
+        this.#bar.style
+            .setProperty(
+                "--speech-load-clip-right",
+                "100%"
+            );
+    }
+
+    #scheduleRejectedClear(
+        utteranceId,
+        delay = 2000
+    ) {
+        clearTimeout(
+            this.#rejectedClearTimer
+        );
+
+        this.#rejectedClearTimer =
+            setTimeout(
+                () => {
+                    this.#rejectedClearTimer =
+                        undefined;
+
+                    if (
+                        this.#currentUtteranceId !==
+                        utteranceId
+                    ) {
+                        return;
+                    }
+
+                    this.#currentTranscript = "";
+                    this.#currentTranscriptFinal =
+                        false;
+                    this.removeAttribute(
+                        "phase"
+                    );
+                    this.#codes
+                        .replaceChildren();
+                    void this.clearResponse();
+                    this.#showIdleText();
+                },
+                Math.max(
+                    0,
+                    Number(delay) ||
+                    0
+                )
+            );
     }
 
     #showWaveform() {
@@ -532,6 +6454,279 @@ class SpeechMicBar extends HTMLElement {
         this.#showStatus(text);
     }
 
+    #corePhraseParts(
+        text
+    ) {
+        const transcript =
+            String(
+                text || ""
+            )
+                .trim();
+
+        const readyAt =
+            /^ready\s+at(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (readyAt) {
+            return {
+                core: "Ready At",
+                rest:
+                    transcript.slice(
+                        readyAt[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const ready =
+            /^ready(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (ready) {
+            return {
+                core: "Ready",
+                rest:
+                    transcript.slice(
+                        ready[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const syncOff =
+            /^sync\s+off(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (syncOff) {
+            return {
+                core: "Sync Off",
+                rest:
+                    transcript.slice(
+                        syncOff[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        const sync =
+            /^sync(?:\s|$)/i
+                .exec(
+                    transcript
+                );
+
+        if (sync) {
+            return {
+                core: "Sync",
+                rest:
+                    transcript.slice(
+                        sync[0]
+                            .trimEnd()
+                            .length
+                    )
+                        .trimStart()
+            };
+        }
+
+        return undefined;
+    }
+
+    #showStreamingPhrase(
+        text
+    ) {
+        const parts =
+            this.#corePhraseParts(
+                text
+            );
+
+        if (!parts) {
+            this.#showText(
+                text
+            );
+            return;
+        }
+
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.id =
+            "text";
+
+        const code =
+            document.createElement(
+                "code"
+            );
+
+        code.className =
+            "streaming-core-phrase";
+
+        code.textContent =
+            parts.core;
+
+        span.append(
+            code
+        );
+
+        if (parts.rest) {
+            span.append(
+                " " +
+                parts.rest
+            );
+        }
+
+        this.#activity
+            .replaceChildren(
+                span
+            );
+
+        this.#text =
+            span;
+    }
+
+    #showStreamingContext(
+        detail
+    ) {
+        const original =
+            String(
+                detail?.originalText ||
+                this.#currentTranscript ||
+                ""
+            );
+
+        const change =
+            detail?.contextChange;
+
+        if (
+            !change ||
+            !Number.isInteger(
+                change.sourceStart
+            ) ||
+            !Number.isInteger(
+                change.sourceEnd
+            ) ||
+            change.sourceStart < 0 ||
+            change.sourceEnd <
+                change.sourceStart ||
+            change.sourceEnd >
+                original.length
+        ) {
+            this.#showText(
+                original
+            );
+            return;
+        }
+
+        const span =
+            document.createElement(
+                "span"
+            );
+
+        span.id =
+            "text";
+
+        const prefix =
+            original.slice(
+                0,
+                change.sourceStart
+            );
+
+        const coreParts =
+            this.#corePhraseParts(
+                prefix
+            );
+
+        if (coreParts) {
+            const coreCode =
+                document.createElement(
+                    "code"
+                );
+
+            coreCode.className =
+                "streaming-core-phrase";
+
+            coreCode.textContent =
+                coreParts.core;
+
+            span.append(
+                coreCode
+            );
+
+            if (coreParts.rest) {
+                span.append(
+                    " " +
+                    coreParts.rest
+                );
+            }
+
+            if (prefix.length) {
+                span.append(" ");
+            }
+        }
+        else if (prefix) {
+            span.append(
+                prefix
+            );
+        }
+
+        const code =
+            document.createElement(
+                "code"
+            );
+
+        code.className =
+            "streaming-context";
+
+        code.dataset.contextField =
+            change.field ||
+            "";
+
+        code.dataset.contextKind =
+            change.kind ||
+            "";
+
+        code.textContent =
+            String(
+                change.processedValue ??
+                ""
+            );
+
+        span.append(
+            code
+        );
+
+        if (
+            change.sourceEnd <
+                original.length
+        ) {
+            span.append(
+                original.slice(
+                    change.sourceEnd
+                )
+            );
+        }
+
+        this.#activity
+            .replaceChildren(
+                span
+            );
+
+        this.#text =
+            span;
+    }
+
     #showPreprocessed(original, processed) {
         const originalWords = String(original).split(/\s+/);
         const processedWords = String(processed).split(/\s+/);
@@ -552,18 +6747,204 @@ class SpeechMicBar extends HTMLElement {
 
     #showArguments(values) {
         this.#codes.replaceChildren();
+
         for (const value of values) {
-            const code = document.createElement("code");
+            if (
+                value === undefined ||
+                (
+                    value &&
+                    typeof value ===
+                        "object" &&
+                    !Array.isArray(
+                        value
+                    ) &&
+                    Object.keys(
+                        value
+                    ).length ===
+                        0
+                )
+            ) {
+                continue;
+            }
+
+            const code =
+                document.createElement(
+                    "code"
+                );
+
             code.textContent =
-                value === undefined
-                    ? "undefined"
-                    : value === null
-                        ? "null"
-                        : typeof value === "string"
-                            ? value
-                            : JSON.stringify(value);
-            this.#codes.append(code);
+                value === null
+                    ? "null"
+                    : typeof value ===
+                        "string"
+                        ? value
+                        : JSON.stringify(
+                            value
+                        );
+
+            this.#codes.append(
+                code
+            );
         }
+    }
+
+    #shouldUseButtonFacsimile(
+        source
+    ) {
+        if (
+            !source.matches?.(
+                "button, [role='button'], input[type='button'], input[type='submit'], input[type='reset']"
+            )
+        ) {
+            return false;
+        }
+
+        let width = 0;
+        let height = 0;
+
+        try {
+            const rect =
+                source.getBoundingClientRect();
+
+            width =
+                Number(
+                    rect?.width
+                ) ||
+                0;
+            height =
+                Number(
+                    rect?.height
+                ) ||
+                0;
+        }
+        catch {}
+
+        try {
+            const style =
+                getComputedStyle(
+                    source
+                );
+
+            width =
+                Math.max(
+                    width,
+                    parseFloat(
+                        style.width
+                    ) ||
+                    0
+                );
+            height =
+                Math.max(
+                    height,
+                    parseFloat(
+                        style.height
+                    ) ||
+                    0
+                );
+        }
+        catch {}
+
+        width =
+            Math.max(
+                width,
+                Number(
+                    source.scrollWidth
+                ) ||
+                0
+            );
+        height =
+            Math.max(
+                height,
+                Number(
+                    source.scrollHeight
+                ) ||
+                0
+            );
+
+        return (
+            width > 280 ||
+            height > 48
+        );
+    }
+
+    #createButtonFacsimile(
+        source
+    ) {
+        const visual =
+            document.createElement(
+                "div"
+            );
+
+        visual.className =
+            "response-button-facsimile";
+
+        let style;
+
+        try {
+            style =
+                getComputedStyle(
+                    source
+                );
+        }
+        catch {}
+
+        for (
+            const property of
+            [
+                "background",
+                "background-color",
+                "color",
+                "border",
+                "border-color",
+                "border-style",
+                "border-width",
+                "border-radius",
+                "box-shadow",
+                "font-family",
+                "font-weight",
+                "text-transform",
+                "letter-spacing"
+            ]
+        ) {
+            const value =
+                style?.getPropertyValue(
+                    property
+                );
+
+            if (value) {
+                visual.style
+                    .setProperty(
+                        property,
+                        value
+                    );
+            }
+        }
+
+        visual.textContent =
+            (
+                source.getAttribute(
+                    "aria-label"
+                ) ||
+                (
+                    "value" in source
+                        ? source.value
+                        : ""
+                ) ||
+                source.textContent ||
+                ""
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        visual.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        return visual;
     }
 
     #cloneVisualElement(source) {

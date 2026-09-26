@@ -3,7 +3,7 @@ name: Deploy to Lightsail
 on:
   push:
     branches:
-      - main
+      - sherpa-client-asr
   workflow_dispatch:
 
 concurrency:
@@ -42,14 +42,137 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             "$LAMP_USER@$LAMP_HOST" \
             'set -euo pipefail
-             $HOME/deploy-clocktimer.sh
+             DEPLOY_BRANCH=sherpa-client-asr
+
+             if ! sudo -n /opt/bitnami/ctlscript.sh status mariadb; then
+               echo "MariaDB is not running; starting it."
+               sudo -n /opt/bitnami/ctlscript.sh start mariadb
+             fi
+             sudo -n /opt/bitnami/ctlscript.sh status mariadb
+
+             sudo -n chown root:daemon /etc/clocktimer
+             sudo -n chmod 750 /etc/clocktimer
+             sudo -n chown root:daemon /etc/clocktimer/config.php
+             sudo -n chmod 640 /etc/clocktimer/config.php
+
              cd /opt/bitnami/apache2/htdocs
-             git fetch origin main:refs/remotes/origin/main
-             git checkout -B main origin/main
-             git reset --hard origin/main
+
+             ROLES_BACKUP=/tmp/clocktimer-SpeechFunctionRoles.js
+             rm -f "$ROLES_BACKUP"
+             if [ -f SpeechFunctionRoles.js ]; then
+               cp SpeechFunctionRoles.js "$ROLES_BACKUP"
+             fi
+
+             git reset --hard HEAD
+             git fetch --force origin "$DEPLOY_BRANCH:refs/remotes/origin/$DEPLOY_BRANCH"
+             git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
+             git reset --hard "origin/$DEPLOY_BRANCH"
+
+             if [ -s "$ROLES_BACKUP" ]; then
+               cp "$ROLES_BACKUP" SpeechFunctionRoles.js
+               rm -f "$ROLES_BACKUP"
+             fi
+
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
+
+             SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
+             SHERPA_VERSION=v1.13.7
+             SHERPA_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-en-asr-zipformer
+             SHERPA_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${SHERPA_PACKAGE}.tar.bz2
+             mkdir -p "$SHERPA_DIR"
+
+             SHERPA_MISSING=false
+             for SHERPA_FILE in \
+               sherpa-onnx-asr.js \
+               sherpa-onnx-wasm-main-asr.js \
+               sherpa-onnx-wasm-main-asr.wasm \
+               sherpa-onnx-wasm-main-asr.data
+             do
+               if [ ! -s "$SHERPA_DIR/$SHERPA_FILE" ]; then
+                 SHERPA_MISSING=true
+               fi
+             done
+
+             if [ "$SHERPA_MISSING" = true ]; then
+               SHERPA_TMP=$(mktemp -d)
+               echo "Installing Sherpa ${SHERPA_VERSION} English streaming WASM runtime."
+               curl -fL \
+                 --retry 5 \
+                 --retry-delay 2 \
+                 --connect-timeout 20 \
+                 -o "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" \
+                 "$SHERPA_RELEASE"
+               tar -xjf "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" -C "$SHERPA_TMP"
+
+               for SHERPA_FILE in \
+                 sherpa-onnx-asr.js \
+                 sherpa-onnx-wasm-main-asr.js \
+                 sherpa-onnx-wasm-main-asr.wasm \
+                 sherpa-onnx-wasm-main-asr.data
+               do
+                 install -m 644 \
+                   "$SHERPA_TMP/$SHERPA_PACKAGE/$SHERPA_FILE" \
+                   "$SHERPA_DIR/$SHERPA_FILE"
+               done
+
+               rm -rf "$SHERPA_TMP"
+             fi
+
+             echo "Sherpa runtime assets:"
+             ls -lh "$SHERPA_DIR"/sherpa-onnx-*
+
+             VAD_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/vad
+             VAD_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-vad
+             VAD_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${VAD_PACKAGE}.tar.bz2
+             mkdir -p "$VAD_DIR"
+
+             VAD_MISSING=false
+             for VAD_FILE in \
+               sherpa-onnx-vad.js \
+               sherpa-onnx-wasm-main-vad.js \
+               sherpa-onnx-wasm-main-vad.wasm \
+               sherpa-onnx-wasm-main-vad.data
+             do
+               if [ ! -s "$VAD_DIR/$VAD_FILE" ]; then
+                 VAD_MISSING=true
+               fi
+             done
+
+             if [ "$VAD_MISSING" = true ]; then
+               VAD_TMP=$(mktemp -d)
+               echo "Installing Sherpa ${SHERPA_VERSION} Silero VAD WASM runtime."
+               curl -fL \
+                 --retry 5 \
+                 --retry-delay 2 \
+                 --connect-timeout 20 \
+                 -o "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" \
+                 "$VAD_RELEASE"
+               tar -xjf "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" -C "$VAD_TMP"
+
+               for VAD_FILE in \
+                 sherpa-onnx-vad.js \
+                 sherpa-onnx-wasm-main-vad.js \
+                 sherpa-onnx-wasm-main-vad.wasm \
+                 sherpa-onnx-wasm-main-vad.data
+               do
+                 install -m 644 \
+                   "$VAD_TMP/$VAD_PACKAGE/$VAD_FILE" \
+                   "$VAD_DIR/$VAD_FILE"
+               done
+
+               rm -rf "$VAD_TMP"
+             fi
+
+             echo "Silero VAD runtime assets:"
+             ls -lh "$VAD_DIR"/sherpa-onnx-*
+
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
+             echo "Database connectivity check passed."
+
+             sudo -n chown "$(id -un)":daemon SpeechFunctionRoles.js
+             sudo -n chmod 664 SpeechFunctionRoles.js
+
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              VERSION=$(git rev-parse --short=12 HEAD)
              sed -i \
@@ -58,9 +181,53 @@ jobs:
                -e "s#src=\"RingContainer.js\"#src=\"RingContainer.js?v=$VERSION\"#" \
                -e "s#src=\"TimeRange.js\"#src=\"TimeRange.js?v=$VERSION\"#" \
                -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
+               -e "s#src=\"HamburgerMenu.js\"#src=\"HamburgerMenu.js?v=$VERSION\"#" \
                -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechFunctionRoles.js\"#src=\"SpeechFunctionRoles.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
+               -e "s#src=\"UtilityFunctions.js\"#src=\"UtilityFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"SpeechProcessingFunctions.js\"#src=\"SpeechProcessingFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"ActionFunctions.js\"#src=\"ActionFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"InteractionFunctions.js\"#src=\"InteractionFunctions.js?v=$VERSION\"#" \
+               -e "s#src=\"PresentationSetters.js\"#src=\"PresentationSetters.js?v=$VERSION\"#" \
                -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
                -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
                index.html
              echo "Asset version: $VERSION"
-             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html'
+             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html
+
+             USERS_STATUS=$(curl -sS -o /tmp/clocktimer-users-health.json -w "%{http_code}" https://wmof.sashort-apps.com/api/users/)
+             echo "Users API status: $USERS_STATUS"
+             cat /tmp/clocktimer-users-health.json
+             echo
+             if [ "$USERS_STATUS" != "401" ]; then
+               echo "Recent Apache/PHP errors:"
+               sudo -n tail -n 80 /opt/bitnami/apache2/logs/error_log || true
+               exit 1
+             fi
+
+             for SHERPA_FILE in \
+               sherpa-onnx-asr.js \
+               sherpa-onnx-wasm-main-asr.js \
+               sherpa-onnx-wasm-main-asr.wasm \
+               sherpa-onnx-wasm-main-asr.data
+             do
+               SHERPA_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -I "https://wmof.sashort-apps.com/speech/sherpa/runtime/$SHERPA_FILE")
+               echo "Sherpa asset $SHERPA_FILE status: $SHERPA_STATUS"
+               if [ "$SHERPA_STATUS" != "200" ]; then
+                 exit 1
+               fi
+             done
+
+             for VAD_FILE in \
+               sherpa-onnx-vad.js \
+               sherpa-onnx-wasm-main-vad.js \
+               sherpa-onnx-wasm-main-vad.wasm \
+               sherpa-onnx-wasm-main-vad.data
+             do
+               VAD_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -I "https://wmof.sashort-apps.com/speech/sherpa/vad/$VAD_FILE")
+               echo "Silero VAD asset $VAD_FILE status: $VAD_STATUS"
+               if [ "$VAD_STATUS" != "200" ]; then
+                 exit 1
+               fi
+             done'

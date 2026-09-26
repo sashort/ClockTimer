@@ -1,8 +1,9 @@
 # Administrative permissions
 
-The users.permissions column stores three flags: create_users = 1,
-modify_users = 2, superuser = 4. Combine them with bitwise OR.
-Superuser implies all permissions. The explicitly authorized initial account
+The users.permissions column stores six flags: create_users = 1,
+modify_users = 2, superuser = 4, developer_preview = 8, developer = 16, and
+grant_token_access = 32. Combine them with bitwise OR. Superuser implies all
+permissions. The explicitly authorized initial account
 bobthebuilder (ID 2) receives a one-time superuser grant in migration 002.
 
 The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
@@ -69,3 +70,35 @@ After logging in to the app as a superuser, open /api/admin/sql/?console=1.
 The guarded form provides a SQL textbox, password confirmation, OK/Clear
 buttons, success/failure messages and JSON results. SQL executes by POST
 with the session CSRF token; input and results render as text.
+
+
+## Developer permissions
+
+`developer_preview` (8) and `developer` (16) grant access to developer tooling.
+The Speech Editor accepts either flag; superuser also qualifies because superuser implies
+all permissions. The browser opens the Speech Editor with a same-origin POST containing
+the current WMOF CSRF token, so direct GET navigation is rejected.
+
+The Speech Editor JSON/agent interface requires an authenticated WMOF session,
+`X-CSRF-Token`, and Developer Preview or Developer permission on every request.
+
+
+## Delegated access tokens
+
+`grant_token_access` (32) allows a signed-in user to create and manage temporary
+delegated-access tokens. A non-superuser may only grant a database permission they
+currently possess. Superusers may grant any row in the `permissions` table.
+
+The raw token is returned only at creation; the database stores its SHA-256 hash and a
+display hint. Each token has a name, one database-backed permission, a non-negative
+remaining-use counter, expiration time, `delete_on_deplete`, and
+`requires_authentication`.
+
+A token redemption decrements the counter exactly once. When the counter reaches zero,
+`delete_on_deplete = 1` removes the token immediately. When it is zero and
+`delete_on_deplete = 0`, the token remains manageable so its owner may raise the
+counter later.
+
+Token use is currently enabled only for the guarded Superuser SQL console and Speech
+Editor surfaces. Browser form redemption establishes a scoped temporary session grant,
+while Bearer-token API calls consume one use per authenticated request.
