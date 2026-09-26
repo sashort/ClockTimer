@@ -5851,6 +5851,123 @@ speech-command {
     opacity: 0.42;
 }
 
+.audio-announcement-page {
+    display: none;
+}
+
+.audio-announcement-event-list {
+    display: grid;
+    gap: 6px;
+}
+
+.audio-announcement-event-choice {
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 10px;
+    color: inherit;
+    background: rgb(0 30 96 / 62%);
+    text-align: left;
+}
+
+.audio-announcement-event-choice:first-child {
+    border-color: rgb(169 221 247 / 72%);
+    background: rgb(0 63 128 / 58%);
+}
+
+.audio-announcement-event-arrow {
+    font-size: 28px;
+    line-height: 1;
+    opacity: .72;
+}
+
+.audio-announcement-detail-heading {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.audio-announcement-detail-heading strong {
+    grid-column: 2;
+    text-align: center;
+    font-size: 18px;
+}
+
+.audio-announcement-back {
+    grid-column: 1;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--wm-blue-light);
+    background: transparent;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.audio-announcement-mobile-columns,
+.audio-announcement-mobile-attribute-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.audio-announcement-mobile-columns {
+    border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+
+.audio-announcement-mobile-columns label,
+.audio-announcement-mobile-attribute-row > label:not(.audio-announcement-mobile-enable) {
+    min-width: 0;
+    padding: 10px 4px;
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    text-align: center;
+}
+
+.audio-announcement-mobile-columns label + label,
+.audio-announcement-mobile-attribute-row > label:not(.audio-announcement-mobile-enable) + label {
+    border-left: 1px solid rgb(255 255 255 / 12%);
+}
+
+.audio-announcement-mobile-columns input,
+.audio-announcement-mobile-attribute-row input {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+}
+
+.audio-announcement-mobile-attribute-row {
+    position: relative;
+    padding-top: 48px;
+}
+
+.audio-announcement-mobile-enable {
+    position: absolute;
+    inset: 0 0 auto 0;
+    min-height: 48px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-bottom: 1px solid rgb(255 255 255 / 12%);
+}
+
+.audio-announcement-mobile-enable input {
+    width: 26px;
+    height: 26px;
+}
+
 .settings-submenu {
     display: grid;
     gap: 2px;
@@ -5858,6 +5975,34 @@ speech-command {
 }
 
 @media (max-width: 620px) {
+    .audio-settings-desktop-table {
+        display: none;
+    }
+
+    .audio-announcement-page {
+        display: block;
+        min-height: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .audio-announcement-page > [data-pane-view] {
+        height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .audio-announcement-list-view {
+        padding-bottom: 4px;
+    }
+
+    .audio-announcement-detail-view {
+        border: 1px solid rgb(255 255 255 / 24%);
+        border-radius: 10px;
+        background: rgb(0 30 96 / 46%);
+    }
+
     .audio-settings-dialog {
         position: fixed;
         inset: 0;
