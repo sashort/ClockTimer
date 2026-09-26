@@ -1096,7 +1096,22 @@ class SpeechMicBar extends HTMLElement {
         this.#bar
             ?.addEventListener(
                 "click",
-                () => {
+                event => {
+                    /*
+                     * The mic is always an operational control, including
+                     * while training. Everything else in the bar is the
+                     * training affordance for the Commands phrase.
+                     */
+                    if (
+                        event
+                            .composedPath?.()
+                            .includes(
+                                this.#mic
+                            )
+                    ) {
+                        return;
+                    }
+
                     if (
                         !this.trainingMode ||
                         this.trainingLocked
@@ -1143,7 +1158,13 @@ class SpeechMicBar extends HTMLElement {
         this.#mic = this.#shadow.querySelector("#mic");
         const toggleMic =
             event => {
+                /*
+                 * Never let a mic activation bubble into the training
+                 * surface. Wake/sleep remains available in every mode.
+                 */
+                event.preventDefault?.();
                 event.stopPropagation();
+                event.stopImmediatePropagation?.();
 
                 const speechMenu =
                     globalThis.SpeechMenu;
