@@ -16874,7 +16874,10 @@
 
     const confirmSettingChange =
         async (
-            value
+            value,
+            {
+                spokenValue
+            } = {}
         ) => {
             const response =
                 String(
@@ -16890,6 +16893,21 @@
             if (!response) {
                 return false;
             }
+
+            const spokenResponse =
+                String(
+                    spokenValue ??
+                    response
+                )
+                    .replace(
+                        /%/g,
+                        " percent"
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
 
             const audio =
                 globalThis
@@ -16919,10 +16937,7 @@
 
             audio
                 ?.speak?.(
-                    response.replace(
-                        /%/g,
-                        " percent"
-                    )
+                    spokenResponse
                 );
 
             return {
@@ -17118,7 +17133,15 @@
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
-                            formatted
+                            formatted,
+                            {
+                                spokenValue:
+                                    "Standard Time Set to " +
+                                    EnglishDurationParser
+                                        .describe(
+                                            duration
+                                        )
+                            }
                         );
                 }
 
@@ -17156,7 +17179,15 @@
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
-                            formatted
+                            formatted,
+                            {
+                                spokenValue:
+                                    "Standard Time Set to " +
+                                    EnglishDurationParser
+                                        .describe(
+                                            duration
+                                        )
+                            }
                         );
                 }
 
