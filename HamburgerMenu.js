@@ -5450,6 +5450,7 @@
             }
 
             event.preventDefault();
+            event.stopPropagation();
 
             const active =
                 this.#focusStack
