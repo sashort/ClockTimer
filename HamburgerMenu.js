@@ -137,7 +137,7 @@
             "  scroll-behavior: smooth;",
             "  overscroll-behavior-x: contain;",
             "  scrollbar-width: none;",
-            "  touch-action: pan-x pan-y;",
+            "  touch-action: pan-y;",
             "  box-sizing: border-box;",
             "  transition: height var(--hamburger-menu-layout-duration, 240ms) ease-in-out;",
             "}",
@@ -347,6 +347,13 @@
         #sizeTargets = new Set();
         #boundaryTrackFrame;
         #boundarySnapshot;
+        #swipePointerId;
+        #swipeStartX = 0;
+        #swipeStartY = 0;
+        #swipeStartScrollLeft = 0;
+        #swipeActive = false;
+        #suppressSwipeClick = false;
+        #suppressSwipeClickTimer;
 
         constructor() {
             super();
@@ -401,6 +408,16 @@
             }
 
             this.#cancelAnimations();
+
+            clearTimeout(
+                this.#suppressSwipeClickTimer
+            );
+            this.#swipePointerId =
+                undefined;
+            this.#swipeActive =
+                false;
+            this.#suppressSwipeClick =
+                false;
         }
 
         attributeChangedCallback(
@@ -1154,6 +1171,188 @@
                 );
         }
 
+        #beginPaneSwipe(
+            event
+        ) {
+            if (
+                this.#transitionBusy ||
+                this.#focusStack.length ||
+                this.pageCount <=
+                    1 ||
+                (
+                    event.pointerType &&
+                    event.pointerType !==
+                        "touch" &&
+                    event.pointerType !==
+                        "pen"
+                ) ||
+                event.target
+                    ?.closest?.(
+                        "select, input, textarea"
+                    )
+            ) {
+                return;
+            }
+
+            this.#swipePointerId =
+                event.pointerId;
+            this.#swipeStartX =
+                event.clientX;
+            this.#swipeStartY =
+                event.clientY;
+            this.#swipeStartScrollLeft =
+                this.#viewport.scrollLeft;
+            this.#swipeActive =
+                false;
+        }
+
+        #movePaneSwipe(
+            event
+        ) {
+            if (
+                event.pointerId !==
+                    this.#swipePointerId
+            ) {
+                return;
+            }
+
+            const deltaX =
+                event.clientX -
+                this.#swipeStartX;
+            const deltaY =
+                event.clientY -
+                this.#swipeStartY;
+
+            if (!this.#swipeActive) {
+                if (
+                    Math.abs(
+                        deltaX
+                    ) <
+                        8
+                ) {
+                    return;
+                }
+
+                if (
+                    Math.abs(
+                        deltaY
+                    ) >=
+                    Math.abs(
+                        deltaX
+                    )
+                ) {
+                    this.#swipePointerId =
+                        undefined;
+
+                    return;
+                }
+
+                this.#swipeActive =
+                    true;
+
+                try {
+                    this.#viewport
+                        .setPointerCapture(
+                            event.pointerId
+                        );
+                }
+                catch {}
+            }
+
+            event.preventDefault();
+
+            this.#viewport
+                .scrollLeft =
+                this.#swipeStartScrollLeft -
+                deltaX;
+
+            this.#updateIndicator();
+        }
+
+        #endPaneSwipe(
+            event
+        ) {
+            if (
+                event.pointerId !==
+                    this.#swipePointerId
+            ) {
+                return;
+            }
+
+            const wasActive =
+                this.#swipeActive;
+
+            this.#swipePointerId =
+                undefined;
+            this.#swipeActive =
+                false;
+
+            try {
+                this.#viewport
+                    .releasePointerCapture(
+                        event.pointerId
+                    );
+            }
+            catch {}
+
+            if (!wasActive) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const width =
+                this.#viewport
+                    .clientWidth ||
+                1;
+            const page =
+                Math.round(
+                    this.#viewport
+                        .scrollLeft /
+                    width
+                );
+
+            this.goToPage(
+                page
+            );
+
+            this.#suppressSwipeClick =
+                true;
+
+            clearTimeout(
+                this.#suppressSwipeClickTimer
+            );
+
+            this.#suppressSwipeClickTimer =
+                setTimeout(
+                    () => {
+                        this.#suppressSwipeClick =
+                            false;
+                    },
+                    350
+                );
+        }
+
+        #cancelPaneSwipe(
+            event
+        ) {
+            if (
+                event.pointerId !==
+                    this.#swipePointerId
+            ) {
+                return;
+            }
+
+            this.#swipePointerId =
+                undefined;
+            this.#swipeActive =
+                false;
+
+            this.goToPage(
+                this.#panelIndex
+            );
+        }
+
         #bind() {
             this.#trigger
                 .addEventListener(
@@ -1182,6 +1381,71 @@
                         this.#updateIndicator(),
                     {
                         passive:
+                            true
+                    }
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "pointerdown",
+                    event =>
+                        this.#beginPaneSwipe(
+                            event
+                        )
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "pointermove",
+                    event =>
+                        this.#movePaneSwipe(
+                            event
+                        ),
+                    {
+                        passive:
+                            false
+                    }
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "pointerup",
+                    event =>
+                        this.#endPaneSwipe(
+                            event
+                        )
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "pointercancel",
+                    event =>
+                        this.#cancelPaneSwipe(
+                            event
+                        )
+                );
+
+            this.#viewport
+                .addEventListener(
+                    "click",
+                    event => {
+                        if (
+                            !this.#suppressSwipeClick
+                        ) {
+                            return;
+                        }
+
+                        this.#suppressSwipeClick =
+                            false;
+                        clearTimeout(
+                            this.#suppressSwipeClickTimer
+                        );
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                    },
+                    {
+                        capture:
                             true
                     }
                 );
