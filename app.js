@@ -1192,6 +1192,9 @@
     const tripStartNowToggles = [...tripSettingsDialog.querySelectorAll("[data-trip-start-now-target]")];
     const audioSettingsDialog = $("#audioSettingsDialog");
     const audioSettingsForm = $("#audioSettingsForm");
+    const audioAnnouncementsDialog = $("#audioAnnouncementsDialog");
+    const audioAnnouncementsForm = $("#audioAnnouncementsForm");
+    const audioAnnouncementsOpen = $("#audioAnnouncementsOpen");
     const audioAnnouncementRows = $("#audioAnnouncementRows");
     const audioAnnouncementPage = $("#audioAnnouncementPage");
     const audioAnnouncementEventList = $("#audioAnnouncementEventList");
@@ -1827,21 +1830,29 @@
                     viewportTop
             );
 
-        audioSettingsDialog
-            .style
-            .setProperty(
-                "--audio-settings-safe-top",
-                viewportTop +
-                    "px"
-            );
+        for (
+            const dialog of
+            [
+                audioSettingsDialog,
+                audioAnnouncementsDialog
+            ]
+        ) {
+            if (!dialog) continue;
 
-        audioSettingsDialog
-            .style
-            .setProperty(
-                "--audio-settings-safe-height",
-                safeHeight +
-                    "px"
-            );
+            dialog.style
+                .setProperty(
+                    "--audio-settings-safe-top",
+                    viewportTop +
+                        "px"
+                );
+
+            dialog.style
+                .setProperty(
+                    "--audio-settings-safe-height",
+                    safeHeight +
+                        "px"
+                );
+        }
 
         return true;
     }
@@ -2147,14 +2158,24 @@
         audioToneVelocityValue.textContent =
             audioSettings.toneVelocity.toFixed(2) + "×";
 
-        for (const input of audioSettingsDialog.querySelectorAll("[data-audio-master]")) {
+        for (
+            const input of
+            document.querySelectorAll(
+                "#audioSettingsDialog [data-audio-master], #audioAnnouncementsDialog [data-audio-master]"
+            )
+        ) {
             input.checked =
                 audioSettings.masters[
                     input.dataset.audioMaster
                 ] !== false;
         }
 
-        for (const row of audioSettingsDialog?.querySelectorAll("[data-audio-announcement]") || []) {
+        for (
+            const row of
+            document.querySelectorAll(
+                "#audioSettingsDialog [data-audio-announcement], #audioAnnouncementsDialog [data-audio-announcement]"
+            )
+        ) {
             const key =
                 row.dataset.audioAnnouncement;
             const state =
@@ -2325,6 +2346,15 @@
         "opening",
         () => {
             refreshAudioSettingsBoundary();
+            void populateAudioInstrumentOptions();
+            renderAudioSettings();
+        }
+    );
+
+    audioAnnouncementsDialog?.addEventListener(
+        "opening",
+        () => {
+            refreshAudioSettingsBoundary();
             discardAudioAnnouncementDraft();
 
             audioAnnouncementPage
@@ -2341,10 +2371,24 @@
                 audioAnnouncementMobileOverrides.hidden =
                     true;
             }
-            void populateAudioInstrumentOptions();
+
             renderAudioSettings();
         }
     );
+
+    audioAnnouncementsOpen
+        ?.addEventListener(
+            "click",
+            () => {
+                openDialogElement(
+                    audioAnnouncementsDialog,
+                    {
+                        reason:
+                            "audio-announcements"
+                    }
+                );
+            }
+        );
 
     audioAnnouncementEventList
         ?.addEventListener(
@@ -2549,8 +2593,7 @@
             }
         );
 
-    audioSettingsForm?.addEventListener(
-        "input",
+    const handleAudioSettingsInput =
         event => {
             const target =
                 event.target;
@@ -2735,7 +2778,19 @@
                 saveAudioSettings();
             }
         }
-    );
+
+
+    audioSettingsForm
+        ?.addEventListener(
+            "input",
+            handleAudioSettingsInput
+        );
+
+    audioAnnouncementsForm
+        ?.addEventListener(
+            "input",
+            handleAudioSettingsInput
+        );
 
     audioInstrument
         ?.addEventListener(
