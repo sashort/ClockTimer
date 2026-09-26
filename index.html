@@ -780,6 +780,33 @@
                                 <input type="checkbox" data-audio-layer="details">
                             </label>
                         </div>
+
+                        <div id="audioAnnouncementMobileOverrides" class="audio-announcement-mobile-overrides" hidden>
+                            <label data-audio-custom-setting="speechVolume">
+                                <span>Speech Volume</span>
+                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech volume">
+                                <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
+                                <output data-audio-custom-output></output>
+                            </label>
+                            <label data-audio-custom-setting="toneVolume">
+                                <span>Tone Volume</span>
+                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone volume">
+                                <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
+                                <output data-audio-custom-output></output>
+                            </label>
+                            <label data-audio-custom-setting="speechVelocity">
+                                <span>Speech Velocity</span>
+                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech velocity">
+                                <input type="range" data-audio-custom-value min="0.5" max="4" step="0.05">
+                                <output data-audio-custom-output></output>
+                            </label>
+                            <label data-audio-custom-setting="toneVelocity">
+                                <span>Tone Velocity</span>
+                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone velocity">
+                                <input type="range" data-audio-custom-value min="0.5" max="1.5" step="0.05">
+                                <output data-audio-custom-output></output>
+                            </label>
+                        </div>
                     </div>
                 </pane-page>
             </section>
