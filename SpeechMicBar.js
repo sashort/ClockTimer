@@ -672,12 +672,22 @@ class SpeechMicBar extends HTMLElement {
                             --speech-mic-bar-radius-transition,
                             220ms
                         )
+                        cubic-bezier(.2,.8,.2,1),
+                        border-top-width
+                        var(
+                            --speech-mic-bar-radius-transition,
+                            220ms
+                        )
                         cubic-bezier(.2,.8,.2,1);
                 }
 
                 :host([options-open]) #bar,
                 :host([options-collapsed]) #bar {
                     --speech-mic-bar-radius: 0px;
+                }
+
+                :host([options-collapsed]) #bar {
+                    border-top-width: 0;
                 }
 
                 #bar::before {
