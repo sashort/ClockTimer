@@ -3352,20 +3352,40 @@
         const metrics =
             getAppContentMetrics();
 
-        const rowHeight =
-            Number.parseFloat(
-                getComputedStyle(app)
-                    .getPropertyValue(
-                        "--speech-mic-row-height"
-                    )
-            ) ||
-            0;
-
-        return (
+        const fallbackTop =
             metrics.rect.bottom -
             metrics.paddingBottom -
-            rowHeight
-        );
+            (
+                Number.parseFloat(
+                    getComputedStyle(app)
+                        .getPropertyValue(
+                            "--speech-mic-row-height"
+                        )
+                ) ||
+                0
+            );
+
+        const speechTop =
+            Number(
+                speechMicBar
+                    ?.getSafeTop?.()
+            );
+
+        if (
+            Number.isFinite(
+                speechTop
+            )
+        ) {
+            return Math.max(
+                metrics.rect.top,
+                Math.min(
+                    fallbackTop,
+                    speechTop
+                )
+            );
+        }
+
+        return fallbackTop;
     }
 
     function getTripLogBottomRect() {
@@ -3549,6 +3569,12 @@
             tripLogSettingsButton.style.color = getComputedStyle(tripLogButton).color;
         }
     }
+
+    speechMicBar
+        ?.addEventListener(
+            "speech-surface-boundary-change",
+            refreshTripLogBoundaryLayout
+        );
 
     globalThis.addEventListener(
         "resize",
@@ -4061,9 +4087,6 @@
         app.dataset.tripListState =
             "opening";
 
-        speechMicBar
-            ?.demoteTopLayer?.();
-
         tripLogButton.inert =
             true;
 
@@ -4256,9 +4279,6 @@
                 }
             )
         );
-
-        speechMicBar
-            ?.promoteTopLayer?.();
 
         return true;
     }
