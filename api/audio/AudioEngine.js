@@ -2562,6 +2562,7 @@
                                 event.rate
                             );
                         const speechVelocity =
+                            entry.speechVelocity ??
                             this.#outputSettings
                                 .speechVelocity;
 
@@ -2572,16 +2573,16 @@
                         ) {
                             utterance.rate =
                                 eventRate *
-                                speechVelocity;
+                                effectiveSpeechVelocity;
                         }
                         else if (
-                            speechVelocity !==
+                            effectiveSpeechVelocity !==
                                 1
                         ) {
                             // At exactly 1x, leave rate unset so the voice
                             // uses its true browser/native default.
                             utterance.rate =
-                                speechVelocity;
+                                effectiveSpeechVelocity;
                         }
 
                         if (
@@ -2613,7 +2614,10 @@
                                             )
                                             : 1
                                     ) *
-                                    this.#outputSettings.speechVolume
+                                    (
+                                        entry.speechVolume ??
+                                        this.#outputSettings.speechVolume
+                                    )
                                 )
                             );
 
@@ -2800,6 +2804,10 @@
             {
                 bpm,
                 volume = 1,
+                toneVolume,
+                toneVelocity,
+                speechVolume,
+                speechVelocity,
                 loop,
                 includeTones = true,
                 includeSpeech = true,
@@ -2825,9 +2833,65 @@
                 context
             );
 
+            const effectiveToneVelocity =
+                Number.isFinite(
+                    Number(toneVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            1.5,
+                            Number(toneVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .toneVelocity;
+
+            const effectiveToneVolume =
+                Number.isFinite(
+                    Number(toneVolume)
+                )
+                    ? Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(toneVolume)
+                        )
+                    )
+                    : this.#outputSettings
+                        .toneVolume;
+
+            const effectiveSpeechVelocity =
+                Number.isFinite(
+                    Number(speechVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            4,
+                            Number(speechVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVelocity;
+
+            const effectiveSpeechVolume =
+                Number.isFinite(
+                    Number(speechVolume)
+                )
+                    ? Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(speechVolume)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVolume;
+
             const tempo =
                 Number(bpm ?? song.bpm ?? 120) *
-                this.#outputSettings.toneVelocity;
+                effectiveToneVelocity;
 
             if (!Number.isFinite(tempo) || tempo <= 0) {
                 throw new RangeError("Song BPM must be greater than zero.");
@@ -2839,7 +2903,7 @@
                         ? Math.max(0, Number(volume))
                         : 1
                 ) *
-                this.#outputSettings.toneVolume;
+                effectiveToneVolume;
             const shouldLoop =
                 loop === undefined
                     ? Boolean(song.loop)
@@ -2936,6 +3000,14 @@
                     tempo,
                 volume:
                     songGain,
+                toneVelocity:
+                    effectiveToneVelocity,
+                toneVolume:
+                    effectiveToneVolume,
+                speechVelocity:
+                    effectiveSpeechVelocity,
+                speechVolume:
+                    effectiveSpeechVolume,
                 startedAt:
                     context.currentTime +
                     0.015,
@@ -3273,7 +3345,9 @@
                 lang = "en-US",
                 rate,
                 pitch,
-                volume
+                volume,
+                speechVolume,
+                speechVelocity
             } = {}
         ) {
             const text =
@@ -3314,9 +3388,19 @@
 
             const explicitRate =
                 Number(rate);
-            const speechVelocity =
-                this.#outputSettings
-                    .speechVelocity;
+            const effectiveSpeechVelocity =
+                Number.isFinite(
+                    Number(speechVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            4,
+                            Number(speechVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVelocity;
 
             if (
                 Number.isFinite(
@@ -3357,7 +3441,20 @@
                                 ? Number(volume)
                                 : 1
                         ) *
-                        this.#outputSettings.speechVolume
+                        (
+                            Number.isFinite(
+                                Number(speechVolume)
+                            )
+                                ? Math.max(
+                                    0,
+                                    Math.min(
+                                        1,
+                                        Number(speechVolume)
+                                    )
+                                )
+                                : this.#outputSettings
+                                    .speechVolume
+                        )
                     )
                 );
 
