@@ -2647,17 +2647,36 @@
                     );
             }
 
+            const preparedEvents =
+                (song.events || [])
+                    .map(
+                        event => ({
+                            event,
+                            offset:
+                                this.#beats(
+                                    event?.offset
+                                )
+                        })
+                    )
+                    .filter(
+                        record =>
+                            record.offset >=
+                            playbackStartBeat
+                    )
+                    .sort(
+                        (left, right) =>
+                            left.offset -
+                            right.offset
+                    );
+
             const hasChime =
                 Boolean(
                     suspendChimeListening &&
                     includeTones &&
-                    song.events?.some?.(
-                        event =>
-                            event?.tone &&
-                            this.#beats(
-                                event.offset
-                            ) >=
-                                playbackStartBeat
+                    preparedEvents.some(
+                        record =>
+                            record.event
+                                ?.tone
                     )
                 );
 
@@ -2678,138 +2697,234 @@
             );
 
             try {
+                const beatSeconds =
+                    60 /
+                    tempo;
+                const scheduleAheadSeconds =
+                    this.#isPhone()
+                        ? 1.8
+                        : 2.6;
+                const scheduleIntervalMilliseconds =
+                    this.#isPhone()
+                        ? 280
+                        : 360;
+
+                let eventIndex = 0;
                 let endAt =
                     entry.startedAt;
                 let chimeEndAt =
                     entry.startedAt;
+                let scheduleTimer;
+                let completionScheduled =
+                    false;
 
-                for (const event of song.events || []) {
-                    const eventOffset =
-                        this.#beats(
-                            event?.offset
+                const finishChimeSuspension =
+                    () => {
+                        if (
+                            !entry
+                                .chimeListeningSuspended
+                        ) {
+                            return;
+                        }
+
+                        const delayMilliseconds =
+                            Math.max(
+                                0,
+                                (
+                                    chimeEndAt -
+                                    context.currentTime
+                                ) *
+                                    1000
+                            );
+
+                        const timer =
+                            setTimeout(
+                                () => {
+                                    entry.timers.delete(
+                                        timer
+                                    );
+
+                                    if (
+                                        entry.released ||
+                                        !entry
+                                            .chimeListeningSuspended
+                                    ) {
+                                        return;
+                                    }
+
+                                    entry.chimeListeningSuspended =
+                                        false;
+
+                                    globalThis.SpeechMenu
+                                        ?.resumeListening?.(
+                                            "audio-chime:" +
+                                            name +
+                                            ":ended"
+                                        );
+                                },
+                                delayMilliseconds
+                            );
+
+                        entry.timers.add(
+                            timer
                         );
-
-                    if (
-                        eventOffset <
-                        playbackStartBeat
-                    ) {
-                        continue;
-                    }
-
-                    const playbackEvent = {
-                        ...event,
-                        offset:
-                            String(
-                                eventOffset -
-                                playbackStartBeat
-                            )
                     };
 
-                    if (includeTones && event?.tone) {
-                        const instrument =
-                            resolveInstrument(
-                                event.instrument
-                            );
-                        const toneEndAt =
-                            this.#scheduleTone(
-                                context,
-                                entry,
-                                playbackEvent,
-                                instrument,
-                                tempo,
-                                songGain
-                            );
+                const finishTimeline =
+                    () => {
+                        if (
+                            completionScheduled ||
+                            entry.released
+                        ) {
+                            return;
+                        }
 
-                        chimeEndAt =
+                        completionScheduled =
+                            true;
+                        finishChimeSuspension();
+
+                        const durationMilliseconds =
                             Math.max(
-                                chimeEndAt,
-                                toneEndAt
+                                0,
+                                (
+                                    endAt -
+                                    context.currentTime
+                                ) *
+                                    1000
                             );
-                        endAt =
-                            Math.max(
-                                endAt,
-                                toneEndAt
-                            );
-                    }
 
-                    if (includeSpeech && event?.speech) {
-                        endAt =
-                            Math.max(
-                                endAt,
-                                this.#scheduleSpeech(
-                                    context,
-                                    entry,
-                                    playbackEvent,
-                                    tempo
-                                )
-                            );
-                    }
-                }
+                        entry.endTimer =
+                            setTimeout(
+                                () => {
+                                    entry.timelineComplete =
+                                        true;
 
-                if (
-                    entry.chimeListeningSuspended
-                ) {
-                    const chimeDelayMilliseconds =
-                        Math.max(
-                            0,
-                            (
-                                chimeEndAt -
-                                context.currentTime
-                            ) *
-                                1000
-                        );
-
-                    const chimeResumeTimer =
-                        setTimeout(
-                            () => {
-                                entry.timers.delete(
-                                    chimeResumeTimer
-                                );
-
-                                if (
-                                    entry.released ||
-                                    !entry.chimeListeningSuspended
-                                ) {
-                                    return;
-                                }
-
-                                entry.chimeListeningSuspended =
-                                    false;
-
-                                globalThis.SpeechMenu
-                                    ?.resumeListening?.(
-                                        "audio-chime:" +
-                                        name +
-                                        ":ended"
+                                    this.#maybeComplete(
+                                        entry
                                     );
-                            },
-                            chimeDelayMilliseconds
-                        );
-
-                    entry.timers.add(
-                        chimeResumeTimer
-                    );
-                }
-
-                const durationMilliseconds =
-                    Math.max(
-                        0,
-                        (endAt - context.currentTime) *
-                            1000
-                    );
-
-                entry.endTimer =
-                    setTimeout(
-                        () => {
-                            entry.timelineComplete =
-                                true;
-
-                            this.#maybeComplete(
-                                entry
+                                },
+                                durationMilliseconds
                             );
-                        },
-                        durationMilliseconds
-                    );
+                    };
+
+                const scheduleWindow =
+                    () => {
+                        if (entry.released) {
+                            return;
+                        }
+
+                        if (scheduleTimer) {
+                            entry.timers.delete(
+                                scheduleTimer
+                            );
+                            scheduleTimer =
+                                undefined;
+                        }
+
+                        const elapsedSeconds =
+                            Math.max(
+                                0,
+                                context.currentTime -
+                                entry.startedAt
+                            );
+                        const horizonBeat =
+                            playbackStartBeat +
+                            (
+                                elapsedSeconds +
+                                scheduleAheadSeconds
+                            ) /
+                                beatSeconds;
+
+                        while (
+                            eventIndex <
+                                preparedEvents.length &&
+                            preparedEvents[
+                                eventIndex
+                            ].offset <=
+                                horizonBeat
+                        ) {
+                            const record =
+                                preparedEvents[
+                                    eventIndex++
+                                ];
+                            const event =
+                                record.event;
+                            const playbackEvent = {
+                                ...event,
+                                offset:
+                                    String(
+                                        record.offset -
+                                        playbackStartBeat
+                                    )
+                            };
+
+                            if (
+                                includeTones &&
+                                event?.tone
+                            ) {
+                                const instrument =
+                                    resolveInstrument(
+                                        event.instrument
+                                    );
+                                const toneEndAt =
+                                    this.#scheduleTone(
+                                        context,
+                                        entry,
+                                        playbackEvent,
+                                        instrument,
+                                        tempo,
+                                        songGain
+                                    );
+
+                                chimeEndAt =
+                                    Math.max(
+                                        chimeEndAt,
+                                        toneEndAt
+                                    );
+                                endAt =
+                                    Math.max(
+                                        endAt,
+                                        toneEndAt
+                                    );
+                            }
+
+                            if (
+                                includeSpeech &&
+                                event?.speech
+                            ) {
+                                endAt =
+                                    Math.max(
+                                        endAt,
+                                        this.#scheduleSpeech(
+                                            context,
+                                            entry,
+                                            playbackEvent,
+                                            tempo
+                                        )
+                                    );
+                            }
+                        }
+
+                        if (
+                            eventIndex >=
+                            preparedEvents.length
+                        ) {
+                            finishTimeline();
+                            return;
+                        }
+
+                        scheduleTimer =
+                            setTimeout(
+                                scheduleWindow,
+                                scheduleIntervalMilliseconds
+                            );
+
+                        entry.timers.add(
+                            scheduleTimer
+                        );
+                    };
+
+                scheduleWindow();
 
                 return Object.freeze({
                     id: entry.id,
