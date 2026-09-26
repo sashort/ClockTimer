@@ -1974,9 +1974,24 @@
                 document.createElement("input");
             master.type = "checkbox";
             master.dataset.audioRowMaster = "";
+
+            const detailButton =
+                document.createElement(
+                    "button"
+                );
+
+            detailButton.type =
+                "button";
+            detailButton.className =
+                "audio-announcement-desktop-detail";
+            detailButton.dataset.audioAnnouncementDesktopDetail =
+                key;
+            detailButton.textContent =
+                label + " ›";
+
             labelElement.append(
                 master,
-                document.createTextNode(" " + label)
+                detailButton
             );
             heading.append(labelElement);
             row.append(heading);
@@ -2484,42 +2499,91 @@
         }
     );
 
+    function openAudioAnnouncementsEditor(
+        selection,
+        source
+    ) {
+        const caller =
+            audioSettingsDialog?.open
+                ? {
+                    type: "dialog",
+                    element:
+                        audioSettingsDialog
+                }
+                : undefined;
+
+        if (caller) {
+            pushUIReturnFrame(
+                caller
+            );
+        }
+
+        const opened =
+            openDialogElement(
+                audioAnnouncementsDialog,
+                {
+                    reason:
+                        "audio-announcements"
+                }
+            );
+
+        if (
+            !opened &&
+            caller
+        ) {
+            popUIReturnFrame(
+                caller
+            );
+
+            return false;
+        }
+
+        if (
+            opened &&
+            selection
+        ) {
+            requestAnimationFrame(
+                () =>
+                    showAudioAnnouncementMobileDetail(
+                        selection,
+                        source
+                    )
+            );
+        }
+
+        return opened;
+    }
+
     audioAnnouncementsOpen
         ?.addEventListener(
             "click",
-            () => {
-                const caller =
-                    audioSettingsDialog?.open
-                        ? {
-                            type: "dialog",
-                            element:
-                                audioSettingsDialog
-                        }
-                        : undefined;
+            event => {
+                openAudioAnnouncementsEditor(
+                    undefined,
+                    event.currentTarget
+                );
+            }
+        );
 
-                if (caller) {
-                    pushUIReturnFrame(
-                        caller
-                    );
+    audioAnnouncementRows
+        ?.addEventListener(
+            "click",
+            event => {
+                const detailButton =
+                    event.target
+                        ?.closest?.(
+                            "[data-audio-announcement-desktop-detail]"
+                        );
+
+                if (!detailButton) {
+                    return;
                 }
 
-                const opened =
-                    openDialogElement(
-                        audioAnnouncementsDialog,
-                        {
-                            reason:
-                                "audio-announcements"
-                        }
-                    );
-
-                if (
-                    !opened &&
-                    caller
-                ) {
-                    popUIReturnFrame(
-                        caller
-                    );
-                }
+                openAudioAnnouncementsEditor(
+                    detailButton.dataset
+                        .audioAnnouncementDesktopDetail,
+                    detailButton
+                );
             }
         );
 
