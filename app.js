@@ -4061,6 +4061,9 @@
         app.dataset.tripListState =
             "opening";
 
+        speechMicBar
+            ?.demoteTopLayer?.();
+
         tripLogButton.inert =
             true;
 
@@ -4253,6 +4256,9 @@
                 }
             )
         );
+
+        speechMicBar
+            ?.promoteTopLayer?.();
 
         return true;
     }
