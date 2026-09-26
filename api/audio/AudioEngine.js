@@ -2869,116 +2869,44 @@
                             selectedInstrumentName
                         ]
                     : undefined;
-            const fallbackInstrument =
-                catalog?.instruments?.[
-                    "legacy-square"
-                ];
-            const warnedInstruments =
-                new Set();
+
+            if (
+                selectedInstrumentName &&
+                !selectedInstrument
+            ) {
+                throw new Error(
+                    "Unknown selected instrument: " +
+                    selectedInstrumentName
+                );
+            }
 
             const resolveInstrument =
                 eventInstrumentName => {
                     const requestedInstrumentName =
-                        selectedInstrument
-                            ? selectedInstrumentName
-                            : (
-                                eventInstrumentName ||
-                                song.instrument
-                            );
+                        selectedInstrumentName ||
+                        eventInstrumentName ||
+                        song.instrument;
                     const requestedInstrument =
                         selectedInstrument ||
                         catalog
                             ?.instruments?.[
                                 requestedInstrumentName
                             ];
-                    const phoneFallbackName =
-                        this.#isPhone()
-                            ? requestedInstrument
-                                ?.phoneFallback
-                            : undefined;
-                    const phoneFallbackInstrument =
-                        phoneFallbackName
-                            ? catalog
-                                ?.instruments?.[
-                                    phoneFallbackName
-                                ]
-                            : undefined;
-                    const resolvedInstrument =
-                        phoneFallbackInstrument ||
-                        requestedInstrument ||
-                        fallbackInstrument;
 
-                    if (!resolvedInstrument) {
+                    if (!requestedInstrument) {
                         throw new Error(
                             "Unknown instrument: " +
                             requestedInstrumentName
                         );
                     }
 
-                    if (
-                        phoneFallbackName &&
-                        !phoneFallbackInstrument &&
-                        !warnedInstruments.has(
-                            "phone:" +
-                            phoneFallbackName
-                        )
-                    ) {
-                        warnedInstruments.add(
-                            "phone:" +
-                            phoneFallbackName
-                        );
-
-                        console.warn(
-                            "Unknown phone fallback instrument; using original:",
-                            phoneFallbackName
-                        );
-                    }
-
-                    if (
-                        !requestedInstrument &&
-                        fallbackInstrument &&
-                        !warnedInstruments.has(
-                            "missing:" +
-                            requestedInstrumentName
-                        )
-                    ) {
-                        warnedInstruments.add(
-                            "missing:" +
-                            requestedInstrumentName
-                        );
-
-                        console.warn(
-                            "Unknown instrument; using legacy-square fallback:",
-                            requestedInstrumentName
-                        );
-                    }
-
-                    const resolvedName =
-                        phoneFallbackInstrument
-                            ? phoneFallbackName
-                            : (
-                                requestedInstrument
-                                    ? requestedInstrumentName
-                                    : "legacy-square"
-                            );
-
                     return {
                         name:
-                            resolvedName,
+                            requestedInstrumentName,
                         instrument:
-                            resolvedInstrument
+                            requestedInstrument
                     };
                 };
-
-            if (
-                selectedInstrumentName &&
-                !selectedInstrument
-            ) {
-                console.warn(
-                    "Unknown selected instrument; using song/event defaults:",
-                    selectedInstrumentName
-                );
-            }
 
             resolveInstrument();
 
