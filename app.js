@@ -507,6 +507,9 @@
         $("#developerDocsButton").hidden =
             !canUseDeveloperTools;
 
+        $("#easterEggToolsGroup").hidden =
+            !canUseDeveloperTools;
+
         $("#sqlConsoleButton").hidden =
             !canUseDeveloperTools;
 
@@ -526,6 +529,14 @@
     const menuAccountRow = $("#menuAccountRow");
     const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
+    const easterEggPlayButton =
+        $("#easterEggPlayButton");
+    const easterEggPauseButton =
+        $("#easterEggPauseButton");
+    const easterEggStopButton =
+        $("#easterEggStopButton");
+    const easterEggRewindButton =
+        $("#easterEggRewindButton");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
     const speechTrainingButton = $("#speechTrainingButton");
@@ -547,6 +558,316 @@
     const speechTrainingResults = $("#speechTrainingResults");
     const speechTrainingResultsCount = $("#speechTrainingResultsCount");
     const speechTrainingResultsList = $("#speechTrainingResultsList");
+
+    const EASTER_EGG_SONG =
+        "neon-afterglow";
+    let easterEggPlayback;
+    let easterEggPlaybackBeat = 0;
+    let easterEggPlaybackStartedAt;
+    let easterEggPlaybackTempo = 104;
+    let easterEggPlaybackGeneration = 0;
+    let easterEggPlaybackStarting = false;
+
+    const easterEggNow =
+        () =>
+            globalThis.performance
+                ?.now?.() ??
+            Date.now();
+
+    const updateEasterEggControls =
+        state => {
+            const playing =
+                state ===
+                "playing";
+            const paused =
+                state ===
+                "paused";
+
+            if (easterEggPlayButton) {
+                easterEggPlayButton.disabled =
+                    playing ||
+                    easterEggPlaybackStarting;
+                easterEggPlayButton.textContent =
+                    paused
+                        ? "Resume"
+                        : "Play";
+            }
+
+            if (easterEggPauseButton) {
+                easterEggPauseButton.disabled =
+                    !playing;
+            }
+
+            if (easterEggStopButton) {
+                easterEggStopButton.disabled =
+                    !playing &&
+                    !paused;
+            }
+
+            if (easterEggRewindButton) {
+                easterEggRewindButton.disabled =
+                    !playing &&
+                    !paused &&
+                    easterEggPlaybackBeat <=
+                        0;
+            }
+        };
+
+    const captureEasterEggPlaybackBeat =
+        () => {
+            if (
+                !easterEggPlayback ||
+                easterEggPlaybackStartedAt ===
+                    undefined
+            ) {
+                return;
+            }
+
+            const elapsedSeconds =
+                Math.max(
+                    0,
+                    (
+                        easterEggNow() -
+                        easterEggPlaybackStartedAt
+                    ) /
+                        1000
+                );
+
+            easterEggPlaybackBeat +=
+                elapsedSeconds *
+                easterEggPlaybackTempo /
+                60;
+
+            easterEggPlaybackStartedAt =
+                easterEggNow();
+        };
+
+    const startEasterEggPlayback =
+        async () => {
+            if (
+                easterEggPlayback ||
+                easterEggPlaybackStarting
+            ) {
+                return;
+            }
+
+            const audio =
+                globalThis.WMOFAudio;
+
+            if (!audio?.startSong) {
+                return;
+            }
+
+            easterEggPlaybackStarting =
+                true;
+            updateEasterEggControls(
+                easterEggPlaybackBeat >
+                    0
+                    ? "paused"
+                    : "stopped"
+            );
+
+            const generation =
+                ++easterEggPlaybackGeneration;
+
+            try {
+                const playback =
+                    await audio.startSong(
+                        EASTER_EGG_SONG,
+                        {
+                            startBeat:
+                                easterEggPlaybackBeat,
+                            includeSpeech:
+                                false,
+                            suspendChimeListening:
+                                false
+                        }
+                    );
+
+                if (
+                    generation !==
+                    easterEggPlaybackGeneration
+                ) {
+                    playback?.stop?.();
+                    return;
+                }
+
+                easterEggPlayback =
+                    playback;
+                easterEggPlaybackTempo =
+                    Number(
+                        playback?.bpm
+                    ) ||
+                    104;
+                easterEggPlaybackStartedAt =
+                    easterEggNow();
+
+                updateEasterEggControls(
+                    "playing"
+                );
+
+                void playback.finished
+                    .then(
+                        () => {
+                            if (
+                                easterEggPlayback
+                                    ?.id !==
+                                playback.id
+                            ) {
+                                return;
+                            }
+
+                            easterEggPlayback =
+                                undefined;
+                            easterEggPlaybackBeat =
+                                0;
+                            easterEggPlaybackStartedAt =
+                                undefined;
+
+                            updateEasterEggControls(
+                                "stopped"
+                            );
+                        }
+                    );
+            }
+            catch (error) {
+                console.error(
+                    "Easter egg playback failed:",
+                    error
+                );
+
+                easterEggPlayback =
+                    undefined;
+                easterEggPlaybackStartedAt =
+                    undefined;
+
+                updateEasterEggControls(
+                    easterEggPlaybackBeat >
+                        0
+                        ? "paused"
+                        : "stopped"
+                );
+            }
+            finally {
+                easterEggPlaybackStarting =
+                    false;
+
+                updateEasterEggControls(
+                    easterEggPlayback
+                        ? "playing"
+                        : (
+                            easterEggPlaybackBeat >
+                                0
+                                ? "paused"
+                                : "stopped"
+                        )
+                );
+            }
+        };
+
+    const pauseEasterEggPlayback =
+        () => {
+            if (!easterEggPlayback) {
+                return;
+            }
+
+            captureEasterEggPlaybackBeat();
+
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback.stop?.();
+
+            updateEasterEggControls(
+                "paused"
+            );
+        };
+
+    const stopEasterEggPlayback =
+        () => {
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackBeat =
+                0;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback?.stop?.();
+
+            updateEasterEggControls(
+                "stopped"
+            );
+        };
+
+    const rewindEasterEggPlayback =
+        async () => {
+            const wasPlaying =
+                Boolean(
+                    easterEggPlayback
+                );
+            const playback =
+                easterEggPlayback;
+
+            easterEggPlayback =
+                undefined;
+            easterEggPlaybackBeat =
+                0;
+            easterEggPlaybackStartedAt =
+                undefined;
+            ++easterEggPlaybackGeneration;
+
+            playback?.stop?.();
+
+            updateEasterEggControls(
+                "stopped"
+            );
+
+            if (wasPlaying) {
+                await startEasterEggPlayback();
+            }
+        };
+
+    easterEggPlayButton
+        ?.addEventListener(
+            "click",
+            () => {
+                void startEasterEggPlayback();
+            }
+        );
+
+    easterEggPauseButton
+        ?.addEventListener(
+            "click",
+            pauseEasterEggPlayback
+        );
+
+    easterEggStopButton
+        ?.addEventListener(
+            "click",
+            stopEasterEggPlayback
+        );
+
+    easterEggRewindButton
+        ?.addEventListener(
+            "click",
+            () => {
+                void rewindEasterEggPlayback();
+            }
+        );
+
+    updateEasterEggControls(
+        "stopped"
+    );
 
     let speechRecognitionLanguageAvailable = false;
     let speechTrainingConnectionAvailable = false;
