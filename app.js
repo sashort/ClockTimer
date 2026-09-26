@@ -1584,6 +1584,12 @@
                     "aria-label",
                     label + " " + layer
                 );
+                cell.dataset.audioLayerLabel =
+                    layer === "chime"
+                        ? "Chime"
+                        : layer === "summary"
+                            ? "Summary"
+                            : "Details";
                 cell.append(input);
                 row.append(cell);
             }
@@ -2366,6 +2372,35 @@
         };
     }
 
+    function refreshTripLogBoundaryLayout() {
+        if (
+            !tripLogBody ||
+            tripLogBody.hidden ||
+            app.dataset
+                .tripListState !==
+                "open"
+        ) {
+            return false;
+        }
+
+        const topRect =
+            getTripLogTopRect();
+        const bodyRect =
+            getTripLogBodyRect();
+
+        setFloatingTripLogRect(
+            topRect
+        );
+        setFloatingTripLogBodyRect(
+            bodyRect
+        );
+        positionTripLogCloseButton(
+            topRect
+        );
+
+        return true;
+    }
+
     function setFloatingTripLogBodyRect(rect) {
         if (!tripLogBody || !rect) return;
 
@@ -2424,6 +2459,32 @@
             tripLogSettingsButton.style.color = getComputedStyle(tripLogButton).color;
         }
     }
+
+    globalThis.addEventListener(
+        "resize",
+        refreshTripLogBoundaryLayout,
+        {
+            passive: true
+        }
+    );
+
+    globalThis.visualViewport
+        ?.addEventListener(
+            "resize",
+            refreshTripLogBoundaryLayout,
+            {
+                passive: true
+            }
+        );
+
+    globalThis.visualViewport
+        ?.addEventListener(
+            "scroll",
+            refreshTripLogBoundaryLayout,
+            {
+                passive: true
+            }
+        );
 
     async function dispatchTripListRequest(
         source = "button"
