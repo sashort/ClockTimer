@@ -736,7 +736,7 @@
                     </table>
                 </div>
 
-                <pane-page id="audioAnnouncementPage" class="audio-announcement-page">
+                <pane-page id="audioAnnouncementPage" class="audio-announcement-page" overflow="y">
                     <div class="audio-announcement-list-view" data-pane-view="list">
                         <div id="audioAnnouncementEventList" class="audio-announcement-event-list"></div>
                     </div>
@@ -782,6 +782,13 @@
                         </div>
 
                         <div id="audioAnnouncementMobileOverrides" class="audio-announcement-mobile-overrides" hidden>
+                            <div class="audio-announcement-preview-actions" role="group" aria-label="Announcement custom controls">
+                                <button id="audioAnnouncementPreview" type="button">Preview</button>
+                                <button id="audioAnnouncementApplyCustom" type="button" class="primary-action">Apply</button>
+                                <button id="audioAnnouncementResetCustom" type="button">Reset Custom</button>
+                                <button id="audioAnnouncementCancelCustom" type="button">Cancel</button>
+                            </div>
+
                             <label data-audio-custom-setting="speechVolume">
                                 <span>Speech Volume</span>
                                 <input type="checkbox" data-audio-custom-enabled aria-label="Use custom speech volume">
