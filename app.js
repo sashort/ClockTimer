@@ -1198,6 +1198,7 @@
     const audioAnnouncementBack = $("#audioAnnouncementBack");
     const audioAnnouncementSelectedLabel = $("#audioAnnouncementSelectedLabel");
     const audioAnnouncementMobileAttributeRow = $("#audioAnnouncementMobileAttributeRow");
+    const audioAnnouncementMobileOverrides = $("#audioAnnouncementMobileOverrides");
     const audioSpeechVolume = $("#audioSpeechVolume");
     const audioToneVolume = $("#audioToneVolume");
     const audioInstrument = $("#audioInstrument");
@@ -1304,6 +1305,7 @@
     const TRIP_LIST_BODY_DELAY = 125;
     const TRIP_LIST_BODY_DURATION = 425;
     const TRIP_LIST_MERGE_DURATION = 300;
+    const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;
     const TRIP_LOG_RANGES = new Set([
         "day",
         "week",
@@ -1403,6 +1405,86 @@
                         row[layer];
                 }
             }
+
+            if (
+                row.custom &&
+                typeof row.custom === "object"
+            ) {
+                const custom = {};
+
+                const copyCustom =
+                    (
+                        property,
+                        minimum,
+                        maximum
+                    ) => {
+                        if (
+                            !Object.prototype
+                                .hasOwnProperty
+                                .call(
+                                    row.custom,
+                                    property
+                                )
+                        ) {
+                            return;
+                        }
+
+                        const numeric =
+                            Number(
+                                row.custom[
+                                    property
+                                ]
+                            );
+
+                        if (
+                            !Number.isFinite(
+                                numeric
+                            )
+                        ) {
+                            return;
+                        }
+
+                        custom[property] =
+                            Math.max(
+                                minimum,
+                                Math.min(
+                                    maximum,
+                                    numeric
+                                )
+                            );
+                    };
+
+                copyCustom(
+                    "speechVolume",
+                    0,
+                    1
+                );
+                copyCustom(
+                    "toneVolume",
+                    0,
+                    1
+                );
+                copyCustom(
+                    "speechVelocity",
+                    0.5,
+                    4
+                );
+                copyCustom(
+                    "toneVelocity",
+                    0.5,
+                    1.5
+                );
+
+                if (
+                    Object.keys(
+                        custom
+                    ).length
+                ) {
+                    settings.rows[key]
+                        .custom =
+                        custom;
+                }
+            }
         }
 
         return settings;
@@ -1463,6 +1545,61 @@
             audioSettings.masters[layer] !== false &&
             row[layer] !== -1
         );
+    }
+
+    function audioAnnouncementOutput(
+        announcement
+    ) {
+        const custom =
+            audioSettings.rows[
+                announcement
+            ]?.custom ||
+            {};
+
+        const resolve =
+            property =>
+                Object.prototype
+                    .hasOwnProperty
+                    .call(
+                        custom,
+                        property
+                    )
+                    ? custom[
+                        property
+                    ]
+                    : audioSettings[
+                        property
+                    ];
+
+        const speechVelocity =
+            resolve(
+                "speechVelocity"
+            );
+
+        return {
+            speechVolume:
+                resolve(
+                    "speechVolume"
+                ),
+            toneVolume:
+                resolve(
+                    "toneVolume"
+                ),
+            speechVelocity,
+            toneVelocity:
+                resolve(
+                    "toneVelocity"
+                ),
+            speechDelayMs:
+                ANNOUNCEMENT_SPEECH_PAUSE_AT_1X /
+                Math.max(
+                    0.01,
+                    Number(
+                        speechVelocity
+                    ) ||
+                    1
+                )
+        };
     }
 
     async function populateAudioInstrumentOptions() {
