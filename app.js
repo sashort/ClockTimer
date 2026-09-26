@@ -24,23 +24,38 @@
         lateBreakBehavior: "showLateWindow",
         syncGoals: false
     };
-    const AUDIO_ANNOUNCEMENTS = Object.freeze([
-        ["trip-started", "Trip Started"],
-        ["trip-started-early", "Trip Started Early"],
-        ["trip-started-late", "Trip Started Late"],
-        ["break-started", "Break Started"],
-        ["short-break-started", "Short Break Started"],
-        ["lunch-started", "Lunch Started"],
-        ["trip-resumed-early", "Trip Resumed Early"],
-        ["trip-resumed-automatically", "Trip Resumed Automatically"],
-        ["trip-resumed-after-break", "Trip Resumed After Break"],
-        ["down-time-started", "Down Time Started"],
-        ["trip-resumed-from-down", "Trip Resumed From Down"],
-        ["trip-ended", "Trip Ended"],
-        ["goal-failed", "Goal Failed"],
-        ["lunch-clock-out", "Lunch Clock Out"],
-        ["lunch-clock-in", "Lunch Clock In"]
-    ]);
+    const ANNOUNCEMENT_CATALOG =
+        globalThis
+            .WMOFAnnouncementCatalog;
+
+    const AUDIO_ANNOUNCEMENTS =
+        Object.freeze(
+            (
+                ANNOUNCEMENT_CATALOG
+                    ?.list?.() ||
+                []
+            )
+                .map(
+                    entry => [
+                        entry.key,
+                        entry.label
+                    ]
+                )
+        );
+
+    const announcementDefinition =
+        key =>
+            ANNOUNCEMENT_CATALOG
+                ?.get?.(
+                    key
+                );
+
+    const announcementSongName =
+        key =>
+            announcementDefinition(
+                key
+            )?.song ||
+            key;
 
     const AUDIO_DEFAULTS = Object.freeze({
         speechVolume: 1,
@@ -2325,9 +2340,22 @@
                     input.dataset.audioLayer;
                 input.checked =
                     state[layer] !== -1;
+                const supportedLayers =
+                    announcementDefinition(
+                        key
+                    )?.layers;
+
                 input.disabled =
                     state.enabled === false ||
-                    audioSettings.masters[layer] === false;
+                    audioSettings.masters[layer] === false ||
+                    (
+                        Array.isArray(
+                            supportedLayers
+                        ) &&
+                        !supportedLayers.includes(
+                            layer
+                        )
+                    );
             }
         }
 
@@ -2671,7 +2699,9 @@
                     try {
                         const song =
                             await audio.startSong?.(
-                                announcement,
+                                announcementSongName(
+                                    announcement
+                                ),
                                 {
                                     bpm: 180,
                                     includeTones: true,
@@ -16285,7 +16315,9 @@
 
         void audio
             .startSong(
-                name,
+                announcementSongName(
+                    name
+                ),
                 {
                     bpm: 180,
                     includeTones:
@@ -16345,7 +16377,9 @@
                 const song =
                     await audio
                         ?.startSong?.(
-                            name,
+                            announcementSongName(
+                                name
+                            ),
                             {
                                 bpm: 180,
                                 includeSpeech: false,
@@ -18846,36 +18880,115 @@
                     )
                     .trim();
 
+            const announcement =
+                "setting-change";
             const audio =
                 globalThis
                     .WMOFAudio;
+            const chime =
+                consumeAnnouncementAction(
+                    announcement,
+                    "chime"
+                );
+            const summary =
+                consumeAnnouncementAction(
+                    announcement,
+                    "summary"
+                );
+            const output =
+                audioAnnouncementOutput(
+                    announcement
+                );
+            let speechStartDelayMs =
+                0;
 
-            try {
-                const cue =
-                    await audio
-                        ?.startSong?.(
-                            "info-tone",
-                            {
-                                bpm: 120
-                            }
-                        );
-
-                await cue
-                    ?.finished;
-            }
-            catch (
-                error
+            if (
+                chime.perform &&
+                audio?.startSong
             ) {
-                console.warn(
-                    "Setting confirmation cue failed:",
+                try {
+                    const cue =
+                        await audio
+                            .startSong(
+                                announcementSongName(
+                                    announcement
+                                ),
+                                {
+                                    bpm: 120,
+                                    includeSpeech:
+                                        false,
+                                    speechVolume:
+                                        output.speechVolume,
+                                    toneVolume:
+                                        output.toneVolume,
+                                    speechVelocity:
+                                        output.speechVelocity,
+                                    toneVelocity:
+                                        output.toneVelocity
+                                }
+                            );
+
+                    if (cue?.hasChime) {
+                        speechStartDelayMs =
+                            Math.max(
+                                0,
+                                Number(
+                                    cue
+                                        .chimeEndsInMs
+                                ) ||
+                                0
+                            ) +
+                            Math.max(
+                                0,
+                                output
+                                    .speechDelayMs
+                            );
+                    }
+                }
+                catch (
                     error
-                );
+                ) {
+                    console.warn(
+                        "Setting confirmation cue failed:",
+                        error
+                    );
+                }
             }
 
-            audio
-                ?.speak?.(
-                    spokenResponse
-                );
+            if (
+                summary.perform &&
+                audio?.speak
+            ) {
+                if (
+                    speechStartDelayMs >
+                        0
+                ) {
+                    setTimeout(
+                        () =>
+                            audio.speak(
+                                spokenResponse,
+                                {
+                                    speechVolume:
+                                        output.speechVolume,
+                                    speechVelocity:
+                                        output.speechVelocity
+                                }
+                            ),
+                        speechStartDelayMs
+                    );
+                }
+                else {
+                    audio.speak(
+                        spokenResponse,
+                        {
+                            speechVolume:
+                                output.speechVolume,
+                            speechVelocity:
+                                output.speechVelocity
+                        }
+                    );
+                }
+            }
 
             return {
                 speechResponse: {
