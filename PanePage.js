@@ -28,7 +28,10 @@
             "pane-page.pane-page-horizontal-item {",
             "  width: 100%;",
             "  min-width: 100%;",
+            "  height: var(--pane-page-height, auto);",
             "  flex: 0 0 100%;",
+            "  overflow: hidden;",
+            "  box-sizing: border-box;",
             "  scroll-snap-align: start;",
             "  scroll-snap-stop: always;",
             "}"
