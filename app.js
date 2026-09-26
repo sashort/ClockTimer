@@ -1866,6 +1866,14 @@
             audioAnnouncementMobileAttributeRow
                 .hidden =
                 true;
+
+            if (
+                audioAnnouncementMobileOverrides
+            ) {
+                audioAnnouncementMobileOverrides
+                    .hidden =
+                    true;
+            }
         }
         else {
             audioAnnouncementMobileAttributeRow
@@ -1875,6 +1883,14 @@
             audioAnnouncementMobileAttributeRow
                 .hidden =
                 false;
+
+            if (
+                audioAnnouncementMobileOverrides
+            ) {
+                audioAnnouncementMobileOverrides
+                    .hidden =
+                    false;
+            }
         }
 
         renderAudioSettings();
@@ -1937,8 +1953,15 @@
                 audioSettings.rows[key];
             if (!state) continue;
 
-            row.querySelector("[data-audio-row-master]").checked =
-                state.enabled !== false;
+            const rowMaster =
+                row.querySelector(
+                    "[data-audio-row-master]"
+                );
+
+            if (rowMaster) {
+                rowMaster.checked =
+                    state.enabled !== false;
+            }
 
             for (const input of row.querySelectorAll("[data-audio-layer]")) {
                 const layer =
@@ -1949,6 +1972,100 @@
                     state.enabled === false ||
                     audioSettings.masters[layer] === false;
             }
+        }
+
+        const selectedAnnouncement =
+            audioAnnouncementMobileAttributeRow
+                ?.dataset
+                .audioAnnouncement;
+        const selectedState =
+            selectedAnnouncement
+                ? audioSettings.rows[
+                    selectedAnnouncement
+                ]
+                : undefined;
+
+        for (
+            const control of
+            audioAnnouncementMobileOverrides
+                ?.querySelectorAll(
+                    "[data-audio-custom-setting]"
+                ) ||
+            []
+        ) {
+            const property =
+                control.dataset
+                    .audioCustomSetting;
+            const enabled =
+                control.querySelector(
+                    "[data-audio-custom-enabled]"
+                );
+            const slider =
+                control.querySelector(
+                    "[data-audio-custom-value]"
+                );
+            const output =
+                control.querySelector(
+                    "[data-audio-custom-output]"
+                );
+
+            if (
+                !property ||
+                !enabled ||
+                !slider ||
+                !output
+            ) {
+                continue;
+            }
+
+            const hasCustom =
+                Boolean(
+                    selectedState?.custom &&
+                    Object.prototype
+                        .hasOwnProperty
+                        .call(
+                            selectedState.custom,
+                            property
+                        )
+                );
+
+            const value =
+                hasCustom
+                    ? selectedState
+                        .custom[property]
+                    : audioSettings[
+                        property
+                    ];
+
+            enabled.checked =
+                hasCustom;
+            slider.disabled =
+                !hasCustom;
+            slider.value =
+                String(value);
+
+            output.textContent =
+                property.endsWith(
+                    "Volume"
+                )
+                    ? (
+                        hasCustom
+                            ? ""
+                            : "Global "
+                    ) +
+                        Math.round(
+                            Number(value) *
+                                100
+                        ) +
+                        "%"
+                    : (
+                        hasCustom
+                            ? ""
+                            : "Global "
+                    ) +
+                        Number(value)
+                            .toFixed(2) +
+                        "×";
         }
     }
 
@@ -2006,6 +2123,10 @@
                 );
             if (audioAnnouncementMobileAttributeRow) {
                 audioAnnouncementMobileAttributeRow.hidden =
+                    true;
+            }
+            if (audioAnnouncementMobileOverrides) {
+                audioAnnouncementMobileOverrides.hidden =
                     true;
             }
             void populateAudioInstrumentOptions();
