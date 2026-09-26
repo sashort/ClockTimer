@@ -712,11 +712,6 @@
                     <input id="audioToneVelocity" type="range" min="0.5" max="1.5" step="0.05" value="1">
                     <output id="audioToneVelocityValue">1.00×</output>
                 </label>
-                <label>
-                    <span>Chime → Speech Pause</span>
-                    <input id="audioChimeSpeechPause" type="range" min="0" max="3000" step="50" value="0">
-                    <output id="audioChimeSpeechPauseValue">0 ms</output>
-                </label>
                 <label class="audio-formal-time">
                     <span>Formal Time</span>
                     <input id="audioFormalTime" type="checkbox">
@@ -809,12 +804,6 @@
                                 <span>Tone Velocity</span>
                                 <input type="checkbox" data-audio-custom-enabled aria-label="Use custom tone velocity">
                                 <input type="range" data-audio-custom-value min="0.5" max="1.5" step="0.05">
-                                <output data-audio-custom-output></output>
-                            </label>
-                            <label data-audio-custom-setting="chimeSpeechPause">
-                                <span>Chime → Speech Pause</span>
-                                <input type="checkbox" data-audio-custom-enabled aria-label="Use custom chime to speech pause">
-                                <input type="range" data-audio-custom-value min="0" max="3000" step="50">
                                 <output data-audio-custom-output></output>
                             </label>
                         </div>
