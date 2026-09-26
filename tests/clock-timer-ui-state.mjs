@@ -140,5 +140,9 @@ assert.equal(canceledDownEvents,1,'canceling Down emits downTimeCanceled');
 assert.equal(resumedAfterCancel,1,'canceling Down resumes the trip');
 assert.notEqual(String(canceledDown.getActiveIntervalState()?.intervalType||'').toLowerCase(),'down','canceled Down is no longer active');
 canceledDown.remove();
+
+const clockTimerSource=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
+assert.match(clockTimerSource,/targetCombinedCounted[\s\S]*totals\.countedTimeMilliseconds/,'Total goal requirements use counted history, matching Total Percent');
+assert.doesNotMatch(clockTimerSource,/targetCombinedActual[\s\S]*totals\.actualTimeMilliseconds/,'Total goal requirements must not use aggregate actual time');
 console.log('PASS configure is partial and UI state describes values, state, and transitions');
 timer.remove();window.happyDOM.abort();
