@@ -2777,8 +2777,7 @@
             if (!selectedDraftRow) {
                 saveAudioSettings();
             }
-        }
-
+        };
 
     audioSettingsForm
         ?.addEventListener(
