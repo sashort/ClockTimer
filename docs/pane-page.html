@@ -90,7 +90,7 @@ th { background: #eaf3fb; color: var(--navy); }
 <p><strong>Reusable page/view container for drill-down interfaces.</strong> <code>PanePage.js</code> provides a lightweight custom element that can switch between direct child views, maintain a back stack, animate forward/back transitions, restore focus to the originating control, and act as a reusable full-width page shell inside another pager.</p>
 
 <div class="note">
-<strong>Important responsibility boundary:</strong> <code>&lt;pane-page&gt;</code> does <em>not</em> implement horizontal swipe, page packing, page indicators, safe-boundary geometry, popovers, or hamburger menu semantics. Those remain the responsibility of the owner, such as <code>&lt;hamburger-menu&gt;</code>.
+<strong>Important responsibility boundary:</strong> <code>&lt;pane-page&gt;</code> can optionally expose native content scrolling through its <code>overflow</code> attribute, but it does <em>not</em> implement sibling-page swipe navigation, page packing, page indicators, safe-boundary geometry, popovers, or hamburger menu semantics. Those remain the responsibility of the owner, such as <code>&lt;hamburger-menu&gt;</code>.
 </div>
 
 <h2>What PanePage owns</h2>
@@ -130,6 +130,22 @@ th { background: #eaf3fb; color: var(--navy); }
 &lt;script src="PanePage.js"&gt;&lt;/script&gt;</pre>
 
 <p>The first direct child view that is not hidden is the active view. Conventionally, only the initial view starts visible and all later views use the <code>hidden</code> attribute.</p>
+
+<h2>Overflow scrolling</h2>
+<p>PanePage can opt a view into native touch/pointer scrolling without requiring application CSS. Set the <code>overflow</code> attribute on the PanePage host:</p>
+<table>
+<thead><tr><th>Value</th><th>Behavior</th></tr></thead>
+<tbody>
+<tr><td><code>y</code></td><td>Vertical overflow scrolls; horizontal overflow is clipped. Touch uses <code>pan-y</code>.</td></tr>
+<tr><td><code>x</code></td><td>Horizontal content overflow scrolls; vertical overflow is clipped. Touch uses <code>pan-x</code>.</td></tr>
+<tr><td><code>both</code></td><td>Both axes may scroll and native touch panning is enabled on both axes.</td></tr>
+<tr><td>omitted</td><td>PanePage does not impose a content-overflow policy. The owner or application may provide its own layout.</td></tr>
+</tbody>
+</table>
+<pre>&lt;pane-page id="audioAnnouncementPage" overflow="y"&gt;
+    ...
+&lt;/pane-page&gt;</pre>
+<p>This feature is content scrolling only. Reaching an overflow edge does not switch to a sibling PanePage. A host that wants sibling-page navigation must implement that separately.</p>
 
 <h2>JavaScript API</h2>
 <table>
@@ -245,7 +261,7 @@ backButton.addEventListener("click", () =&gt; {
 <p>The relationship is intentionally one-directional: PanePage supplies the structural page shell; HamburgerMenu supplies the paging controller.</p>
 
 <div class="warning">
-<strong>Do not add swipe logic to PanePage.</strong> A PanePage may be used in a dialog, settings screen, wizard, hamburger panel, or any other host. Gesture ownership belongs to the host because only the host knows whether horizontal movement means paging, native browser navigation, carousel movement, or nothing at all.
+<strong>Do not confuse overflow panning with sibling-page navigation.</strong> PanePage may allow native <code>pan-x</code> or <code>pan-y</code> for overflowing content, but it does not decide that a gesture changes pages. A PanePage may be used in a dialog, settings screen, wizard, hamburger panel, or any other host, so sibling-navigation gesture ownership belongs to that host.
 </div>
 
 <h2>Hamburger parent promotion is different</h2>
@@ -254,7 +270,8 @@ backButton.addEventListener("click", () =&gt; {
 <p>For ordinary application drill-down interfaces—such as the mobile Audio Settings event list—use <code>PanePage.showView()</code> and <code>PanePage.back()</code>.</p>
 
 <h2>Current WMOF use</h2>
-<p>The mobile Audio Settings UI uses one PanePage with a list view and a detail view. Selecting <strong>Master</strong> or an announcement promotes the detail view; Back restores the event list. Per-announcement controls live inside the detail view while the desktop table remains independent.</p>
+<p>The mobile Audio Settings UI uses one <code>&lt;pane-page overflow="y"&gt;</code> with a list view and a detail view. Selecting <strong>Master</strong> or an announcement promotes the detail view; Back restores the event list. Long Audio Settings content therefore scrolls vertically using PanePage's overflow contract rather than Audio Settings implementing its own touch-scroll behavior.</p>
+<p>Per-announcement audio overrides are edited as a draft in the detail view. Preview uses the draft values, Apply persists the sparse overrides, Reset Custom removes the draft's custom properties so the announcement inherits globals again, and Cancel restores the last persisted row state.</p>
 
 <h2>Script order</h2>
 <p>Any component that constructs <code>&lt;pane-page&gt;</code> elements should load <code>PanePage.js</code> first.</p>
