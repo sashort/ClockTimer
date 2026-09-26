@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "notation": {
     "offset": "Beat offset from the beginning of the song.",
     "length": "One duration is the tone/effect length. Two comma-separated durations are effect length and post-effect sustain length.",
@@ -38,19 +38,85 @@
       "decay": "Seconds from the pitch-envelope peak back to base detune. Defaults to 0."
     },
     "velocitySensitivity": "How strongly event dynamics affect gain, from 0 through 1. Defaults to 1.",
-    "trillStep": "Beat subdivision used by trill effects. Defaults to 1/8."
+    "trillStep": "Beat subdivision used by trill effects. Defaults to 1/8.",
+    "reverb": {
+      "wet": "Reverb send level from 0 through 1. Zero or omission disables reverb.",
+      "decay": "Generated reverb impulse decay time in seconds. Defaults to 1.5."
+    },
+    "delay": {
+      "time": "Delay time in seconds. Zero or omission disables delay.",
+      "feedback": "Delay feedback from 0 through 0.95. Defaults to 0.",
+      "wet": "Delay send level from 0 through 1. Zero or omission disables delay."
+    },
+    "tremolo": {
+      "rate": "Tremolo LFO rate in Hz. Zero or omission disables tremolo.",
+      "depth": "Tremolo depth from 0 through 1."
+    },
+    "distortion": {
+      "amount": "Soft-clipping distortion amount from 0 through 1. Zero or omission disables distortion."
+    }
   },
   "instruments": {
     "legacy-square": {
       "type": "oscillator",
       "waveform": "square",
       "volume": 1
+    },
+    "eighties-poly": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.78,
+      "detune": 0,
+      "velocitySensitivity": 0.9,
+      "envelope": {
+        "attack": 0.035,
+        "decay": 0.24,
+        "sustain": 0.72,
+        "release": 0.55
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.68,
+          "detune": -6,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.32,
+          "detune": 6,
+          "waveform": "square"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4200,
+        "Q": 0.85,
+        "envelopeAmount": 900
+      },
+      "reverb": {
+        "wet": 0.18,
+        "decay": 1.8
+      },
+      "delay": {
+        "time": 0.22,
+        "feedback": 0.24,
+        "wet": 0.16
+      },
+      "tremolo": {
+        "rate": 5.2,
+        "depth": 0.06
+      },
+      "distortion": {
+        "amount": 0.04
+      },
+      "trillStep": "1/8"
     }
   },
   "songs": {
     "bend-down": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -62,7 +128,7 @@
     },
     "bend-up": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -74,7 +140,7 @@
     },
     "arpeggio-down": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -98,7 +164,7 @@
     },
     "arpeggio-up": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -122,7 +188,7 @@
     },
     "note-down": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -140,7 +206,7 @@
     },
     "note-down-long": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -158,7 +224,7 @@
     },
     "note-up": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -176,7 +242,7 @@
     },
     "note-up-long": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -194,7 +260,7 @@
     },
     "polyharmonic-triplet": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -236,7 +302,7 @@
     },
     "long-polyharmonic-triplet": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -260,7 +326,7 @@
     },
     "info-tone": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -278,7 +344,7 @@
     },
     "lunch-clock-out": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -306,7 +372,7 @@
     },
     "lunch-clock-in": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -334,7 +400,7 @@
     },
     "trip-started": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "2.25",
@@ -358,7 +424,7 @@
     },
     "trip-started-early": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "2.25",
@@ -382,7 +448,7 @@
     },
     "trip-started-late": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "2.25",
@@ -406,7 +472,7 @@
     },
     "break-started": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -435,7 +501,7 @@
     },
     "short-break-started": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -464,7 +530,7 @@
     },
     "lunch-started": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -493,7 +559,7 @@
     },
     "trip-resumed-early": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -522,7 +588,7 @@
     },
     "trip-resumed-automatically": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -551,7 +617,7 @@
     },
     "trip-resumed-after-break": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -580,7 +646,7 @@
     },
     "trip-ended": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -604,7 +670,7 @@
     },
     "trip-transition": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -640,7 +706,7 @@
     },
     "down-time-started": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -687,7 +753,7 @@
     },
     "trip-resumed-from-down": {
       "bpm": 120,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
@@ -710,7 +776,7 @@
     },
     "goal-failed": {
       "bpm": 100,
-      "instrument": "legacy-square",
+      "instrument": "eighties-poly",
       "events": [
         {
           "offset": "0",
