@@ -15596,18 +15596,12 @@
                     )
             );
 
-        tripTransitionOverlay.hidden =
-            false;
-
         try {
             if (
-                !tripTransitionOverlay
-                    .matches(
-                        ":popover-open"
-                    )
+                !tripTransitionOverlay.open
             ) {
                 tripTransitionOverlay
-                    .showPopover();
+                    .showModal();
             }
         } catch {}
 
@@ -15643,17 +15637,13 @@
                                 try {
                                     if (
                                         tripTransitionOverlay
-                                            .matches(
-                                                ":popover-open"
-                                            )
+                                            .open
                                     ) {
                                         tripTransitionOverlay
-                                            .hidePopover();
+                                            .close();
                                     }
                                 } catch {}
 
-                                tripTransitionOverlay.hidden =
-                                    true;
                                 tripTransitionOverlayActive =
                                     false;
 
