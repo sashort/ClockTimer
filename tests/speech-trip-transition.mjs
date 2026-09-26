@@ -174,7 +174,7 @@ console.log(
 
 assert.match(
     index,
-    /id="tripTransitionOverlay"[\s\S]*popover="manual"[\s\S]*id="tripTransitionOverlayDetails"/
+    /<dialog id="tripTransitionOverlay"[\s\S]*id="tripTransitionOverlayDetails"/
 );
 
 assert.match(
@@ -204,12 +204,12 @@ assert.match(
 
 assert.match(
     app,
-    /tripTransitionOverlay[\s\S]*showPopover\(\)/
+    /tripTransitionOverlay[\s\S]*showModal\(\)/
 );
 
 assert.match(
     app,
-    /tripTransitionOverlay[\s\S]*hidePopover\(\)/
+    /tripTransitionOverlay[\s\S]*\.close\(\)/
 );
 
 assert.match(
