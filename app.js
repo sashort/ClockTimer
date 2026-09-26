@@ -529,6 +529,8 @@
     const menuAccountRow = $("#menuAccountRow");
     const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
+    const easterEggSongSelect =
+        $("#easterEggSongSelect");
     const easterEggPlayButton =
         $("#easterEggPlayButton");
     const easterEggPauseButton =
@@ -559,7 +561,9 @@
     const speechTrainingResultsCount = $("#speechTrainingResultsCount");
     const speechTrainingResultsList = $("#speechTrainingResultsList");
 
-    const EASTER_EGG_SONG =
+    let easterEggSong =
+        easterEggSongSelect
+            ?.value ||
         "neon-afterglow";
     let easterEggPlayback;
     let easterEggPlaybackBeat = 0;
@@ -673,13 +677,15 @@
             try {
                 const playback =
                     await audio.startSong(
-                        EASTER_EGG_SONG,
+                        easterEggSong,
                         {
                             startBeat:
                                 easterEggPlaybackBeat,
                             includeSpeech:
                                 false,
                             suspendChimeListening:
+                                false,
+                            useSelectedInstrument:
                                 false
                         }
                     );
@@ -836,6 +842,24 @@
                 await startEasterEggPlayback();
             }
         };
+
+    easterEggSongSelect
+        ?.addEventListener(
+            "change",
+            () => {
+                stopEasterEggPlayback();
+
+                easterEggSong =
+                    easterEggSongSelect.value ||
+                    "neon-afterglow";
+
+                easterEggPlaybackTempo =
+                    easterEggSong ===
+                        "chrome-velocity"
+                        ? 156
+                        : 104;
+            }
+        );
 
     easterEggPlayButton
         ?.addEventListener(
