@@ -1980,14 +1980,31 @@
                 loop === undefined
                     ? Boolean(song.loop)
                     : Boolean(loop);
-            const instrument =
+            const requestedInstrument =
                 catalog?.instruments?.[
                     song.instrument
                 ];
+            const fallbackInstrument =
+                catalog?.instruments?.[
+                    "legacy-square"
+                ];
+            const instrument =
+                requestedInstrument ||
+                fallbackInstrument;
 
             if (!instrument) {
                 throw new Error(
                     "Unknown instrument: " +
+                    song.instrument
+                );
+            }
+
+            if (
+                !requestedInstrument &&
+                fallbackInstrument
+            ) {
+                console.warn(
+                    "Unknown instrument; using legacy-square fallback:",
                     song.instrument
                 );
             }
