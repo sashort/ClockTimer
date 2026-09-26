@@ -642,6 +642,11 @@ class SpeechMicBar extends HTMLElement {
 
                 #bar {
                     --speech-load-clip-right: 100%;
+                    --speech-mic-bar-radius:
+                        var(
+                            --speech-mic-bar-border-radius,
+                            14px
+                        );
                     position: relative;
                     isolation: isolate;
                     box-sizing: border-box;
@@ -654,10 +659,25 @@ class SpeechMicBar extends HTMLElement {
                     gap: 12px;
                     overflow: hidden;
                     border: 3px solid rgb(255 255 255 / 38%);
-                    border-radius: 14px;
+                    border-radius:
+                        var(
+                            --speech-mic-bar-radius
+                        );
                     background: linear-gradient(180deg, rgb(47 57 67 / 92%), rgb(34 43 51 / 92%));
                     box-shadow: inset 0 1px 0 rgb(255 255 255 / 14%), 0 7px 16px rgb(0 0 0 / 24%);
                     backdrop-filter: blur(7px);
+                    transition:
+                        border-radius
+                        var(
+                            --speech-mic-bar-radius-transition,
+                            220ms
+                        )
+                        cubic-bezier(.2,.8,.2,1);
+                }
+
+                :host([options-open]) #bar,
+                :host([options-collapsed]) #bar {
+                    --speech-mic-bar-radius: 0px;
                 }
 
                 #bar::before {
