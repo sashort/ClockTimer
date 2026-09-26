@@ -259,37 +259,37 @@
       "displayName": "Warm Chorus Poly",
       "type": "oscillator",
       "waveform": "triangle",
-      "volume": 0.78,
+      "volume": 1.18,
       "detune": 0,
-      "velocitySensitivity": 0.68,
+      "velocitySensitivity": 0.55,
       "envelope": {
-        "attack": 0.028,
-        "decay": 0.34,
-        "sustain": 0.66,
-        "release": 0.48
+        "attack": 0.012,
+        "decay": 0.26,
+        "sustain": 0.72,
+        "release": 0.42
       },
       "partials": [
         {
           "ratio": 1,
-          "gain": 0.4,
+          "gain": 0.48,
           "detune": -6,
           "waveform": "triangle"
         },
         {
           "ratio": 1,
-          "gain": 0.4,
+          "gain": 0.48,
           "detune": 6,
           "waveform": "triangle"
         },
         {
           "ratio": 1,
-          "gain": 0.16,
+          "gain": 0.18,
           "detune": 0,
           "waveform": "sine"
         },
         {
           "ratio": 2,
-          "gain": 0.08,
+          "gain": 0.1,
           "detune": 0,
           "waveform": "sine"
         }
@@ -319,7 +319,7 @@
         "depth": 0.035
       },
       "distortion": {
-        "amount": 0.012
+        "amount": 0.028
       },
       "noise": {
         "amount": 0,
