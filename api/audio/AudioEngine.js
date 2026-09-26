@@ -3307,13 +3307,55 @@
                                 includeSpeech &&
                                 event?.speech
                             ) {
+                                const speechEvent = {
+                                    ...playbackEvent
+                                };
+
+                                if (
+                                    hasChime &&
+                                    chimeEndAt >
+                                        entry.startedAt &&
+                                    effectiveSpeechVelocity !==
+                                        1
+                                ) {
+                                    const originalSpeechStartAt =
+                                        entry.startedAt +
+                                        (
+                                            record.offset -
+                                            playbackStartBeat
+                                        ) *
+                                            beatSeconds;
+                                    const postChimeGap =
+                                        Math.max(
+                                            0,
+                                            originalSpeechStartAt -
+                                                chimeEndAt
+                                        );
+
+                                    if (postChimeGap > 0) {
+                                        const scaledSpeechStartAt =
+                                            chimeEndAt +
+                                            postChimeGap /
+                                                effectiveSpeechVelocity;
+
+                                        speechEvent.offset =
+                                            String(
+                                                (
+                                                    scaledSpeechStartAt -
+                                                    entry.startedAt
+                                                ) /
+                                                    beatSeconds
+                                            );
+                                    }
+                                }
+
                                 endAt =
                                     Math.max(
                                         endAt,
                                         this.#scheduleSpeech(
                                             context,
                                             entry,
-                                            playbackEvent,
+                                            speechEvent,
                                             tempo
                                         )
                                     );
