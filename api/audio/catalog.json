@@ -15,6 +15,11 @@
     "instrumentEffects": "Instrument effects support reverb wet/decay, delay time/feedback/wet, tremolo rate/depth, distortion amount, pitchEnvelope amount/attack/decay, noise amount/decay, detune cents, and velocitySensitivity."
   },
   "instruments": {
+    "legacy-square": {
+      "type": "oscillator",
+      "waveform": "square",
+      "volume": 1
+    },
     "eighties-poly": {
       "type": "oscillator",
       "waveform": "sawtooth",
