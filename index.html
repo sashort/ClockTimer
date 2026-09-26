@@ -118,6 +118,15 @@
                                 <button id="speechEditorButton" type="button" hidden>Speech Editor</button>
                             </div>
                         </div>
+                        <div id="easterEggToolsGroup" class="easter-egg-tools-group" hidden>
+                            <button id="easterEggMenuButton" type="button" aria-expanded="false" aria-controls="easterEggSubmenu">Easter Egg</button>
+                            <div id="easterEggSubmenu" class="easter-egg-submenu" hidden>
+                                <button id="easterEggPlayButton" type="button">Play</button>
+                                <button id="easterEggPauseButton" type="button" disabled>Pause</button>
+                                <button id="easterEggStopButton" type="button" disabled>Stop</button>
+                                <button id="easterEggRewindButton" type="button">Rewind</button>
+                            </div>
+                        </div>
                         <button id="sqlConsoleButton" type="button" hidden>Database Access</button>
                     </div>
                 </div>
@@ -926,7 +935,7 @@
     <script src="ActionFunctions.js"></script>
     <script src="InteractionFunctions.js"></script>
     <script src="PresentationSetters.js"></script>
-    <script src="api/audio/AudioEngine.js?v=4"></script>
+    <script src="api/audio/AudioEngine.js?v=5"></script>
     <script src="HamburgerMenu.js"></script>
     <script src="app.js?v=speech-fast1"></script>
     <script src="SpeechEditorRuntime.js"></script>
