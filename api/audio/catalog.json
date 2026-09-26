@@ -55,13 +55,15 @@
     "distortion": {
       "amount": "Soft-clipping distortion amount from 0 through 1. Zero or omission disables distortion."
     },
-    "phoneFallback": "Optional instrument name used on phone-sized/mobile devices. The original instrument remains primary; legacy-square remains the final runtime fallback."
+    "phoneFallback": "Optional instrument name used on phone-sized/mobile devices. The original instrument remains primary; legacy-square remains the final runtime fallback.",
+    "displayName": "Optional user-facing name for instrument selectors."
   },
   "instruments": {
     "legacy-square": {
       "type": "oscillator",
       "waveform": "square",
-      "volume": 1
+      "volume": 1,
+      "displayName": "Legacy Square"
     },
     "eighties-poly": {
       "type": "oscillator",
@@ -111,7 +113,8 @@
       "distortion": {
         "amount": 0.04
       },
-      "trillStep": "1/8"
+      "trillStep": "1/8",
+      "displayName": "80s Poly"
     },
     "cinematic-pulse-bass": {
       "type": "oscillator",
@@ -183,7 +186,8 @@
         "decay": 0.03
       },
       "trillStep": "1/8",
-      "phoneFallback": "cinematic-pulse-bass-phone"
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Cinematic Pulse Bass"
     },
     "cinematic-pulse-bass-phone": {
       "type": "oscillator",
@@ -243,6 +247,79 @@
       },
       "distortion": {
         "amount": 0.018
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse Bass (Phone)"
+    },
+    "warm-chorus-poly": {
+      "displayName": "Warm Chorus Poly",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 0.62,
+      "detune": 0,
+      "velocitySensitivity": 0.68,
+      "envelope": {
+        "attack": 0.028,
+        "decay": 0.34,
+        "sustain": 0.66,
+        "release": 0.48
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.36,
+          "detune": -6,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.36,
+          "detune": 6,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.16,
+          "detune": 0,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 2650,
+        "Q": 0.62,
+        "envelopeAmount": 720
+      },
+      "pitchEnvelope": {
+        "amount": 3,
+        "attack": 0,
+        "decay": 0.07
+      },
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.45
+      },
+      "delay": {
+        "time": 0.095,
+        "feedback": 0.08,
+        "wet": 0.075
+      },
+      "tremolo": {
+        "rate": 4.7,
+        "depth": 0.035
+      },
+      "distortion": {
+        "amount": 0.012
       },
       "noise": {
         "amount": 0,
