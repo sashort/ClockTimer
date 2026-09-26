@@ -1652,7 +1652,12 @@
             const startAt =
                 entry.startedAt +
                 offsetBeats *
-                    beatSeconds;
+                    beatSeconds +
+                (
+                    entry.speechDelayMs ||
+                    0
+                ) /
+                    1000;
             const effectEnd =
                 startAt +
                 Math.max(
@@ -2453,6 +2458,8 @@
                     {
                         bpm,
                         volume,
+                        speechDelayMs:
+                            entry.speechDelayMs,
                         loop: true,
                         suspendListening:
                             entry
@@ -2808,6 +2815,7 @@
                 toneVelocity,
                 speechVolume,
                 speechVelocity,
+                speechDelayMs = 0,
                 loop,
                 includeTones = true,
                 includeSpeech = true,
@@ -3008,6 +3016,14 @@
                     effectiveSpeechVelocity,
                 speechVolume:
                     effectiveSpeechVolume,
+                speechDelayMs:
+                    Math.max(
+                        0,
+                        Number(
+                            speechDelayMs
+                        ) ||
+                        0
+                    ),
                 startedAt:
                     context.currentTime +
                     0.015,
