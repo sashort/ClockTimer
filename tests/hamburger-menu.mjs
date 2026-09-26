@@ -321,6 +321,9 @@ assert.equal(
 
 window.close();
 
+
+const hamburgerSource = fs.readFileSync(new URL('../HamburgerMenu.js',import.meta.url),'utf8');
+assert.match(hamburgerSource,/event\.preventDefault\(\);\s*event\.stopPropagation\(\);[\s\S]*#focusStack/,'submenu parent clicks are contained inside HamburgerMenu');
 console.log(
     "hamburger-menu tests passed"
 );
