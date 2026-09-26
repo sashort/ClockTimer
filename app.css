@@ -1202,17 +1202,6 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 
 .number-pad-dialog[open]::backdrop { opacity: 1; }
 
-.number-pad-dialog.trip-transition-suppressed {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-}
-
-.number-pad-dialog.trip-transition-suppressed::backdrop {
-    background: transparent !important;
-    opacity: 0 !important;
-}
-
 @starting-style {
     .number-pad-dialog[open],
     .number-pad-dialog[open]::backdrop { opacity: 0; }
@@ -2201,16 +2190,10 @@ body:has(.app[data-interval-state="down"])::after {
 .trip-transition-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2147483647;
-    width: 100vw;
-    height: 100dvh;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 18px;
-    border: 0;
-    background: transparent;
+    z-index: 2147483644;
+    display: grid;
     place-items: center;
+    padding: 18px;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
@@ -2219,12 +2202,8 @@ body:has(.app[data-interval-state="down"])::after {
         visibility 260ms step-end;
 }
 
-.trip-transition-overlay[open] {
-    display: grid;
-}
-
-.trip-transition-overlay::backdrop {
-    background: transparent;
+.trip-transition-overlay[hidden] {
+    display: none;
 }
 
 .trip-transition-overlay.is-visible {

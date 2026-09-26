@@ -19,7 +19,7 @@
             catch {}
         })();
     </script>
-    <link rel="stylesheet" href="app.css?v=trip-end-overlay-6">
+    <link rel="stylesheet" href="app.css?v=trip-end-overlay-2">
 </head>
 <body>
     <main id="app" class="app" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true">
@@ -904,12 +904,12 @@
         </form>
     </dialog>
 
-    <dialog id="tripTransitionOverlay" class="trip-transition-overlay" aria-labelledby="tripTransitionOverlayTitle">
-        <div class="trip-transition-overlay-panel" role="status" aria-live="polite" aria-atomic="true">
-            <h2 id="tripTransitionOverlayTitle">Trip Ended</h2>
+    <section id="tripTransitionOverlay" class="trip-transition-overlay" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <div class="trip-transition-overlay-panel">
+            <h2 id="tripTransitionOverlayTitle">Trip Started</h2>
             <div id="tripTransitionOverlayDetails" class="trip-transition-overlay-details"></div>
         </div>
-    </dialog>
+    </section>
 
     <dialog id="speechBreakConfirmDialog" class="app-dialog">
         <form method="dialog">
@@ -952,7 +952,7 @@
     <script src="PresentationSetters.js"></script>
     <script src="api/audio/AudioEngine.js?v=mobile-gesture-audio-fix-1"></script>
     <script src="HamburgerMenu.js?v=mobile-gesture-audio-fix-1"></script>
-    <script src="app.js?v=trip-end-overlay-7"></script>
+    <script src="app.js?v=trip-end-overlay-2"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
 </html>

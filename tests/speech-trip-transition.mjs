@@ -174,7 +174,7 @@ console.log(
 
 assert.match(
     index,
-    /<dialog id="tripTransitionOverlay"[\s\S]*id="tripTransitionOverlayDetails"/
+    /id="tripTransitionOverlay"[\s\S]*id="tripTransitionOverlayDetails"/
 );
 
 assert.match(
@@ -200,41 +200,6 @@ assert.match(
 assert.match(
     app,
     /document\.createElement\(\s*"code"\s*\)/
-);
-
-assert.match(
-    app,
-    /tripTransitionOverlay[\s\S]*showModal\(\)/
-);
-
-assert.match(
-    app,
-    /tripTransitionOverlay[\s\S]*\.close\(\)/
-);
-
-assert.match(
-    app,
-    /function promoteTripTransitionOverlayTopLayer\([\s\S]*tripTransitionOverlay\.close\(\)[\s\S]*tripTransitionOverlay\.showModal\(\)/
-);
-
-assert.match(
-    app,
-    /openNumberPad[\s\S]*speechMicBar[\s\S]*promoteTripTransitionOverlayTopLayer/
-);
-
-assert.match(
-    app,
-    /numberPadDialog[\s\S]*classList[\s\S]*add\([\s\S]*"trip-transition-suppressed"/
-);
-
-assert.match(
-    app,
-    /numberPadDialog[\s\S]*classList[\s\S]*remove\([\s\S]*"trip-transition-suppressed"/
-);
-
-assert.match(
-    css,
-    /\.number-pad-dialog\.trip-transition-suppressed[\s\S]*visibility:\s*hidden/
 );
 
 assert.match(

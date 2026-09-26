@@ -1219,7 +1219,6 @@
     let tripTransitionOverlayActive = false;
     let tripTransitionOverlayTimer;
     let tripTransitionOverlayHideTimer;
-    let tripTransitionOverlaySuppressedNumberPad = false;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
@@ -11676,14 +11675,9 @@
         }
 
         queueMicrotask(
-            () => {
+            () =>
                 speechMicBar
-                    ?.promoteTopLayer?.();
-
-                queueMicrotask(
-                    promoteTripTransitionOverlayTopLayer
-                );
-            }
+                    ?.promoteTopLayer?.()
         );
 
         startNumberPadAmbientTone();
@@ -11711,14 +11705,9 @@
         }
 
         queueMicrotask(
-            () => {
+            () =>
                 speechMicBar
-                    ?.promoteTopLayer?.();
-
-                queueMicrotask(
-                    promoteTripTransitionOverlayTopLayer
-                );
-            }
+                    ?.promoteTopLayer?.()
         );
 
         startNumberPadAmbientTone();
@@ -15557,24 +15546,6 @@
         };
     }
 
-    function promoteTripTransitionOverlayTopLayer() {
-        if (
-            !tripTransitionOverlayActive ||
-            !tripTransitionOverlay?.open
-        ) {
-            return false;
-        }
-
-        try {
-            tripTransitionOverlay.close();
-            tripTransitionOverlay.showModal();
-            return true;
-        }
-        catch {
-            return false;
-        }
-    }
-
     function renderTripTransitionOverlayItem(
         item
     ) {
@@ -15625,26 +15596,8 @@
                     )
             );
 
-        if (
-            numberPadDialog?.open
-        ) {
-            numberPadDialog
-                .classList
-                .add(
-                    "trip-transition-suppressed"
-                );
-            tripTransitionOverlaySuppressedNumberPad =
-                true;
-        }
-
-        try {
-            if (
-                !tripTransitionOverlay.open
-            ) {
-                tripTransitionOverlay
-                    .showModal();
-            }
-        } catch {}
+        tripTransitionOverlay.hidden =
+            false;
 
         requestAnimationFrame(
             () => {
@@ -15675,28 +15628,8 @@
                     tripTransitionOverlayHideTimer =
                         setTimeout(
                             () => {
-                                try {
-                                    if (
-                                        tripTransitionOverlay
-                                            .open
-                                    ) {
-                                        tripTransitionOverlay
-                                            .close();
-                                    }
-                                } catch {}
-
-                                if (
-                                    tripTransitionOverlaySuppressedNumberPad
-                                ) {
-                                    numberPadDialog
-                                        ?.classList
-                                        .remove(
-                                            "trip-transition-suppressed"
-                                        );
-                                    tripTransitionOverlaySuppressedNumberPad =
-                                        false;
-                                }
-
+                                tripTransitionOverlay.hidden =
+                                    true;
                                 tripTransitionOverlayActive =
                                     false;
 
