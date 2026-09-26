@@ -2926,7 +2926,7 @@ class RingContainer extends HTMLElement {
             fullWidth;
 
         let zIndex =
-            0;
+            25;
 
         if (
             layerName ===
