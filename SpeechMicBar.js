@@ -642,10 +642,15 @@ class SpeechMicBar extends HTMLElement {
 
                 #bar {
                     --speech-load-clip-right: 100%;
-                    --speech-mic-bar-radius:
+                    --speech-mic-bar-bottom-radius:
                         var(
                             --speech-mic-bar-border-radius,
                             14px
+                        );
+                    --speech-mic-bar-seam-width:
+                        var(
+                            --speech-mic-bar-collapsed-seam-width,
+                            1px
                         );
                     position: relative;
                     isolation: isolate;
@@ -660,33 +665,34 @@ class SpeechMicBar extends HTMLElement {
                     overflow: hidden;
                     border: 3px solid rgb(255 255 255 / 38%);
                     border-radius:
+                        0
+                        0
                         var(
-                            --speech-mic-bar-radius
+                            --speech-mic-bar-bottom-radius
+                        )
+                        var(
+                            --speech-mic-bar-bottom-radius
                         );
                     background: linear-gradient(180deg, rgb(47 57 67 / 92%), rgb(34 43 51 / 92%));
                     box-shadow: inset 0 1px 0 rgb(255 255 255 / 14%), 0 7px 16px rgb(0 0 0 / 24%);
                     backdrop-filter: blur(7px);
                     transition:
-                        border-radius
-                        var(
-                            --speech-mic-bar-radius-transition,
-                            220ms
-                        )
-                        cubic-bezier(.2,.8,.2,1),
                         border-top-width
                         var(
-                            --speech-mic-bar-radius-transition,
-                            220ms
+                            --speech-mic-bar-seam-transition,
+                            180ms
                         )
                         cubic-bezier(.2,.8,.2,1);
                 }
 
-                :host([options-open]) #bar,
                 :host([options-collapsed]) #bar {
-                    --speech-mic-bar-radius: 0px;
+                    border-top-width:
+                        var(
+                            --speech-mic-bar-seam-width
+                        );
                 }
 
-                :host([options-collapsed]) #bar {
+                :host([options-open]) #bar {
                     border-top-width: 0;
                 }
 
@@ -1807,6 +1813,25 @@ class SpeechMicBar extends HTMLElement {
         this.#subscribe();
         this.#observeHostBounds();
         this.#syncHostBounds();
+
+        if (
+            !this.optionsOpen &&
+            !this.optionsCollapsed
+        ) {
+            this.setAttribute(
+                "options-collapsed",
+                ""
+            );
+        }
+
+        this.#optionsPanel
+            ?.setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        this.#syncOptionsToggle();
+        this.#fitOptions();
         this.promoteTopLayer();
     }
 
@@ -2369,117 +2394,30 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
-    async hideOptions(
-        {
-            duration = 180
-        } = {}
-    ) {
-        if (
-            !this.optionsOpen &&
-            !this.optionsCollapsed
-        ) {
-            return false;
-        }
-
-        const currentStyle =
-            this.ownerDocument
-                ?.defaultView
-                ?.getComputedStyle?.(
-                    this.#optionsPanel
-                ) || {};
-
-        const currentClipPath =
-            currentStyle.clipPath ||
-            "inset(0 round 14px 14px 0 0)";
-
-        const currentOpacity =
-            Number(
-                currentStyle.opacity
-            );
-
-        this.#optionsAnimation?.cancel();
-        this.#optionsAnimation =
-            undefined;
-
+    async hideOptions() {
         /*
-         * The command surface is closed as soon as dismissal starts.
-         * Keep the visual collapse running independently so speech can
-         * begin a fresh utterance while the panel is still retracting.
+         * Commands is a permanent part of the mic surface.
+         * Legacy callers that request "hide" now collapse it instead.
          */
-        this.removeAttribute(
-            "options-open"
-        );
-        this.removeAttribute(
-            "options-collapsed"
-        );
-        this.#syncOptionsToggle();
-
-        this.#optionsPanel
-            .setAttribute(
-                "aria-hidden",
-                "true"
-            );
-
-        this.#dispatchSurfaceBoundaryChange();
-
-        if (
-            duration > 0 &&
-            typeof this.#optionsPanel
-                .animate ===
-            "function"
-        ) {
-            const animation =
-                this.#optionsPanel
-                    .animate(
-                        [
-                            {
-                                clipPath:
-                                    currentClipPath,
-                                opacity:
-                                    Number.isFinite(
-                                        currentOpacity
-                                    )
-                                        ? currentOpacity
-                                        : 1
-                            },
-                            {
-                                clipPath:
-                                    "inset(100% 0 0 0 round 14px 14px 0 0)",
-                                opacity: 0
-                            }
-                        ],
-                        {
-                            duration:
-                                Math.max(
-                                    0,
-                                    Number(
-                                        duration
-                                    ) || 0
-                                ),
-                            easing:
-                                "ease-in",
-                            fill: "both"
-                        }
-                    );
-
-            this.#optionsAnimation =
-                animation;
-
-            try {
-                await animation.finished;
-            }
-            catch {}
-
-            if (
-                this.#optionsAnimation ===
-                animation
-            ) {
-                animation.cancel();
-                this.#optionsAnimation =
-                    undefined;
-            }
+        if (this.optionsCollapsed) {
+            return true;
         }
 
+        if (this.optionsOpen) {
+            return this.collapseOptions();
+        }
+
+        this.setAttribute(
+            "options-collapsed",
+            ""
+        );
+        this.#optionsPanel
+            ?.setAttribute(
+                "aria-hidden",
+                "false"
+            );
+        this.#syncOptionsToggle();
+        this.#fitOptions();
         this.#dispatchSurfaceBoundaryChange();
 
         return true;
@@ -5858,9 +5796,7 @@ class SpeechMicBar extends HTMLElement {
                 break;
             case "stopped":
             case "speechCaptureEnded":
-                void this.hideOptions({
-                    duration: 0
-                });
+                void this.hideOptions();
                 this.#clearLoadingProgress();
                 this.setAttribute("state", "stopped");
                 this.clear();
