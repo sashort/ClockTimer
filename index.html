@@ -850,7 +850,7 @@
             </header>
             <section class="scheduled-start-content">
                 <div class="scheduled-start-countdown">
-                    <span>Time Until Start</span>
+                    <span id="scheduledStartCountdownLabel">Time Until ---</span>
                     <strong id="scheduledStartCountdown">0:00:00</strong>
                 </div>
                 <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" data-speech-target="#scheduledStartStandard" speech-pattern="^standard time (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue">
