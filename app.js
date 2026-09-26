@@ -11676,9 +11676,14 @@
         }
 
         queueMicrotask(
-            () =>
+            () => {
                 speechMicBar
-                    ?.promoteTopLayer?.()
+                    ?.promoteTopLayer?.();
+
+                queueMicrotask(
+                    promoteTripTransitionOverlayTopLayer
+                );
+            }
         );
 
         startNumberPadAmbientTone();
@@ -11706,9 +11711,14 @@
         }
 
         queueMicrotask(
-            () =>
+            () => {
                 speechMicBar
-                    ?.promoteTopLayer?.()
+                    ?.promoteTopLayer?.();
+
+                queueMicrotask(
+                    promoteTripTransitionOverlayTopLayer
+                );
+            }
         );
 
         startNumberPadAmbientTone();
@@ -15545,6 +15555,24 @@
             value:
                 text
         };
+    }
+
+    function promoteTripTransitionOverlayTopLayer() {
+        if (
+            !tripTransitionOverlayActive ||
+            !tripTransitionOverlay?.open
+        ) {
+            return false;
+        }
+
+        try {
+            tripTransitionOverlay.close();
+            tripTransitionOverlay.showModal();
+            return true;
+        }
+        catch {
+            return false;
+        }
     }
 
     function renderTripTransitionOverlayItem(
