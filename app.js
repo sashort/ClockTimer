@@ -16532,6 +16532,13 @@
             }
         }
 
+        const output =
+            audioAnnouncementOutput(
+                "trip-started"
+            );
+        let chimePlayed =
+            false;
+
         if (chime.perform) {
             try {
                 const song =
@@ -16539,10 +16546,35 @@
                         "trip-started",
                         {
                             bpm: 180,
-                            includeSpeech: false
+                            includeSpeech: false,
+                            speechVolume:
+                                output.speechVolume,
+                            toneVolume:
+                                output.toneVolume,
+                            speechVelocity:
+                                output.speechVelocity,
+                            toneVelocity:
+                                output.toneVelocity
                         }
                     );
-                await song?.finished;
+
+                chimePlayed =
+                    Boolean(
+                        song?.hasChime
+                    );
+
+                if (chimePlayed) {
+                    await song?.finished;
+
+                    if (
+                        output.speechDelayMs >
+                            0
+                    ) {
+                        await wait(
+                            output.speechDelayMs
+                        );
+                    }
+                }
             }
             catch (error) {
                 console.error(
@@ -16555,7 +16587,13 @@
 
         if (parts.length) {
             audio?.speak?.(
-                parts.join(" ")
+                parts.join(" "),
+                {
+                    speechVolume:
+                        output.speechVolume,
+                    speechVelocity:
+                        output.speechVelocity
+                }
             );
         }
     }
