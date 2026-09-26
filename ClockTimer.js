@@ -27201,8 +27201,8 @@
                 !totals ||
                 !Number.isFinite(totals.standardTimeMilliseconds) ||
                 totals.standardTimeMilliseconds < 0 ||
-                !Number.isFinite(totals.actualTimeMilliseconds) ||
-                totals.actualTimeMilliseconds < 0
+                !Number.isFinite(totals.countedTimeMilliseconds) ||
+                totals.countedTimeMilliseconds < 0
             ) {
                 return "missing-trip-totals";
             }
@@ -27222,7 +27222,7 @@
             const adjustedTimeElapsed =
                 combinedStandard /
                     totalGoal -
-                totals.actualTimeMilliseconds;
+                totals.countedTimeMilliseconds;
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -27286,7 +27286,7 @@
                     totals.standardTimeMilliseconds
                 ) ||
                 !Number.isFinite(
-                    totals.actualTimeMilliseconds
+                    totals.countedTimeMilliseconds
                 ) ||
                 !Number.isFinite(standardDuration) ||
                 standardDuration <= 0
@@ -27298,13 +27298,13 @@
                 totals.standardTimeMilliseconds +
                 standardDuration;
 
-            const targetCombinedActual =
+            const targetCombinedCounted =
                 combinedStandard /
                 totalGoal;
 
             const targetAdjustedTimeElapsed =
-                targetCombinedActual -
-                totals.actualTimeMilliseconds;
+                targetCombinedCounted -
+                totals.countedTimeMilliseconds;
 
             if (
                 !Number.isFinite(targetAdjustedTimeElapsed) ||
