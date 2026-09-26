@@ -1162,6 +1162,9 @@
         breakDialog,
         false
     );
+    const tripTransitionOverlay = $("#tripTransitionOverlay");
+    const tripTransitionOverlayTitle = $("#tripTransitionOverlayTitle");
+    const tripTransitionOverlayDetails = $("#tripTransitionOverlayDetails");
     const scheduledStartDialog = $("#scheduledStartDialog");
     const scheduledStartCountdownLabel = $("#scheduledStartCountdownLabel");
     const scheduledStartCountdown = $("#scheduledStartCountdown");
@@ -1212,6 +1215,10 @@
     let tripStartsNowState;
     let tripStartsNowExiting = false;
     let tripStartsNowExitTimer;
+    const tripTransitionOverlayQueue = [];
+    let tripTransitionOverlayActive = false;
+    let tripTransitionOverlayTimer;
+    let tripTransitionOverlayHideTimer;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
@@ -15409,7 +15416,458 @@
 
 
 
+    function formatTripTransitionMoment(
+        value
+    ) {
+        const date =
+            value instanceof Date
+                ? new Date(
+                    value.getTime()
+                )
+                : new Date(
+                    value
+                );
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "---";
+        }
+
+        const military =
+            clockTimer.getAttribute(
+                "military-time"
+            ) !==
+                "false";
+        const minutes =
+            String(
+                date.getMinutes()
+            )
+                .padStart(
+                    2,
+                    "0"
+                );
+        const seconds =
+            String(
+                date.getSeconds()
+            )
+                .padStart(
+                    2,
+                    "0"
+                );
+
+        if (military) {
+            return (
+                String(
+                    date.getHours()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    ) +
+                ":" +
+                minutes +
+                ":" +
+                seconds
+            );
+        }
+
+        const hours =
+            date.getHours();
+
+        return (
+            String(
+                hours %
+                    12 ||
+                12
+            ) +
+            ":" +
+            minutes +
+            ":" +
+            seconds +
+            " " +
+            (
+                hours >=
+                    12
+                    ? "PM"
+                    : "AM"
+            )
+        );
+    }
+
+    function formatTripTransitionDuration(
+        value
+    ) {
+        const milliseconds =
+            Number(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            )
+        ) {
+            return "---";
+        }
+
+        return formatDuration(
+            Math.abs(
+                milliseconds
+            )
+        );
+    }
+
+    function tripTransitionRow(
+        label,
+        value
+    ) {
+        const text =
+            String(
+                value ??
+                ""
+            )
+                .trim();
+
+        if (
+            !text ||
+            text ===
+                "---"
+        ) {
+            return undefined;
+        }
+
+        return {
+            label,
+            value:
+                text
+        };
+    }
+
+    function renderTripTransitionOverlayItem(
+        item
+    ) {
+        if (
+            !tripTransitionOverlay ||
+            !tripTransitionOverlayTitle ||
+            !tripTransitionOverlayDetails
+        ) {
+            tripTransitionOverlayActive =
+                false;
+            return;
+        }
+
+        tripTransitionOverlayTitle.textContent =
+            item.title;
+        tripTransitionOverlayDetails
+            .replaceChildren(
+                ...item.rows
+                    .map(
+                        row => {
+                            const element =
+                                document.createElement(
+                                    "div"
+                                );
+                            const label =
+                                document.createElement(
+                                    "span"
+                                );
+                            const value =
+                                document.createElement(
+                                    "code"
+                                );
+
+                            element.className =
+                                "trip-transition-overlay-row";
+                            label.textContent =
+                                row.label;
+                            value.textContent =
+                                row.value;
+
+                            element.append(
+                                label,
+                                value
+                            );
+
+                            return element;
+                        }
+                    )
+            );
+
+        tripTransitionOverlay.hidden =
+            false;
+
+        requestAnimationFrame(
+            () => {
+                tripTransitionOverlay
+                    .classList
+                    .add(
+                        "is-visible"
+                    );
+            }
+        );
+
+        clearTimeout(
+            tripTransitionOverlayTimer
+        );
+        clearTimeout(
+            tripTransitionOverlayHideTimer
+        );
+
+        tripTransitionOverlayTimer =
+            setTimeout(
+                () => {
+                    tripTransitionOverlay
+                        .classList
+                        .remove(
+                            "is-visible"
+                        );
+
+                    tripTransitionOverlayHideTimer =
+                        setTimeout(
+                            () => {
+                                tripTransitionOverlay.hidden =
+                                    true;
+                                tripTransitionOverlayActive =
+                                    false;
+
+                                const next =
+                                    tripTransitionOverlayQueue
+                                        .shift();
+
+                                if (next) {
+                                    tripTransitionOverlayActive =
+                                        true;
+                                    renderTripTransitionOverlayItem(
+                                        next
+                                    );
+                                }
+                            },
+                            280
+                        );
+                },
+                5000
+            );
+    }
+
+    function enqueueTripTransitionOverlay(
+        title,
+        rows
+    ) {
+        const item = {
+            title,
+            rows:
+                rows.filter(
+                    Boolean
+                )
+        };
+
+        if (
+            tripTransitionOverlayActive
+        ) {
+            tripTransitionOverlayQueue
+                .push(
+                    item
+                );
+            return;
+        }
+
+        tripTransitionOverlayActive =
+            true;
+
+        renderTripTransitionOverlayItem(
+            item
+        );
+    }
+
+    function showTripStartTransitionOverlay(
+        detail,
+        timing =
+            "on-time"
+    ) {
+        const summary =
+            detail?.summary;
+        const trip =
+            summary?.trip;
+        const total =
+            summary?.total;
+        const title =
+            timing ===
+                "early"
+                ? "Trip Started Early"
+                : timing ===
+                    "late"
+                    ? "Trip Started Late"
+                    : "Trip Started";
+        const timingLabel =
+            timing ===
+                "early"
+                ? "Started Early"
+                : timing ===
+                    "late"
+                    ? "Started Late"
+                    : undefined;
+
+        enqueueTripTransitionOverlay(
+            title,
+            [
+                timingLabel
+                    ? tripTransitionRow(
+                        timingLabel,
+                        formatTripTransitionDuration(
+                            detail
+                                ?.timeDifferenceMilliseconds
+                        )
+                    )
+                    : undefined,
+                tripTransitionRow(
+                    "Scheduled Start",
+                    formatTripTransitionMoment(
+                        detail
+                            ?.scheduledStartTime
+                    )
+                ),
+                tripTransitionRow(
+                    "Actual Start",
+                    formatTripTransitionMoment(
+                        detail
+                            ?.actualStartTime
+                    )
+                ),
+                tripTransitionRow(
+                    "Standard Time",
+                    trip
+                        ?.standardTime
+                ),
+                tripTransitionRow(
+                    "Trip Percent",
+                    formatSummaryPercent(
+                        trip
+                            ?.countedPercent
+                    )
+                ),
+                tripTransitionRow(
+                    "Trip Goal",
+                    formatSummaryPercent(
+                        trip
+                            ?.percentGoal
+                    )
+                ),
+                tripTransitionRow(
+                    totalScopeLabel() +
+                        " Percent",
+                    formatSummaryPercent(
+                        total
+                            ?.countedPercent
+                    )
+                )
+            ]
+        );
+    }
+
+    function showTripEndTransitionOverlay(
+        detail
+    ) {
+        const summary =
+            detail?.summary;
+        const trip =
+            summary?.trip;
+        const total =
+            summary?.total;
+        const remaining =
+            renderedGoalRemainingMilliseconds(
+                detail
+            );
+        const goalLabel =
+            renderedGoalLabel(
+                detail
+            );
+        let goalStateRow;
+
+        if (
+            Number.isFinite(
+                remaining
+            ) &&
+            goalLabel
+        ) {
+            goalStateRow =
+                tripTransitionRow(
+                    remaining >=
+                        0
+                        ? "Banked Toward " +
+                            goalLabel
+                        : "Over " +
+                            goalLabel,
+                    formatTripTransitionDuration(
+                        remaining
+                    )
+                );
+        }
+
+        enqueueTripTransitionOverlay(
+            "Trip Ended",
+            [
+                tripTransitionRow(
+                    "Stop Time",
+                    formatTripTransitionMoment(
+                        detail
+                            ?.stopTime
+                    )
+                ),
+                tripTransitionRow(
+                    "Actual Time",
+                    formatTripTransitionDuration(
+                        trip
+                            ?.actualTimeElapsedMilliseconds
+                    )
+                ),
+                tripTransitionRow(
+                    "Counted Time",
+                    formatTripTransitionDuration(
+                        trip
+                            ?.countedTimeElapsedMilliseconds
+                    )
+                ),
+                tripTransitionRow(
+                    "Standard Time",
+                    trip
+                        ?.standardTime
+                ),
+                tripTransitionRow(
+                    "Trip Percent",
+                    formatSummaryPercent(
+                        trip
+                            ?.countedPercent
+                    )
+                ),
+                tripTransitionRow(
+                    "Trip Goal",
+                    formatSummaryPercent(
+                        trip
+                            ?.percentGoal
+                    )
+                ),
+                tripTransitionRow(
+                    totalScopeLabel() +
+                        " Percent",
+                    formatSummaryPercent(
+                        total
+                            ?.countedPercent
+                    )
+                ),
+                goalStateRow
+            ]
+        );
+    }
+
     async function onTripStarted(event) {
+        showTripStartTransitionOverlay(
+            event.detail,
+            "on-time"
+        );
+
         reserveSemanticEvent(
             event,
             "Trip started on time"
@@ -15484,6 +15942,11 @@
     }
 
     function onTripStartedEarly(event) {
+        showTripStartTransitionOverlay(
+            event.detail,
+            "early"
+        );
+
         reserveSemanticEvent(event, "Trip started early");
 
         void playSemanticSongThenSpeak(
@@ -15498,6 +15961,11 @@
     }
 
     function onTripStartedLate(event) {
+        showTripStartTransitionOverlay(
+            event.detail,
+            "late"
+        );
+
         reserveSemanticEvent(event, "Trip started late");
 
         void playSemanticSongThenSpeak(
@@ -15585,6 +16053,10 @@
     }
 
     function onTripEnded(event) {
+        showTripEndTransitionOverlay(
+            event.detail
+        );
+
         reserveSemanticEvent(event, "Trip ended");
 
         const speech =
