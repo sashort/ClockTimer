@@ -2434,13 +2434,38 @@
         ?.addEventListener(
             "click",
             () => {
-                openDialogElement(
-                    audioAnnouncementsDialog,
-                    {
-                        reason:
-                            "audio-announcements"
-                    }
-                );
+                const caller =
+                    audioSettingsDialog?.open
+                        ? {
+                            type: "dialog",
+                            element:
+                                audioSettingsDialog
+                        }
+                        : undefined;
+
+                if (caller) {
+                    pushUIReturnFrame(
+                        caller
+                    );
+                }
+
+                const opened =
+                    openDialogElement(
+                        audioAnnouncementsDialog,
+                        {
+                            reason:
+                                "audio-announcements"
+                        }
+                    );
+
+                if (
+                    !opened &&
+                    caller
+                ) {
+                    popUIReturnFrame(
+                        caller
+                    );
+                }
             }
         );
 
