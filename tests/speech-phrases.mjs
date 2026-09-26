@@ -306,19 +306,22 @@ assert.deepEqual(
         ...SpeechMenu.phrases
     ],
     [
-        "wake",
-        "sleep",
-        "off"
+        "wake"
     ],
-    "sleeping should expose only system-modal phrases"
+    "sleeping should expose only the wake phrase"
 );
-assert.ok(
-    SpeechMenu.phraseGroups.every(
-        group =>
-            group.modal ===
-                "system"
-    ),
-    "sleeping phrase groups should all be system-modal"
+assert.equal(
+    SpeechMenu.phraseGroups.length,
+    1,
+    "sleeping should expose exactly one command group"
+);
+assert.equal(
+    SpeechMenu.phraseGroups[0]
+        ?.element
+        ?.dataset
+        ?.speechSystemCommand,
+    "wake",
+    "the only sleeping command group should be wake"
 );
 
 await SpeechMenu.wake();
