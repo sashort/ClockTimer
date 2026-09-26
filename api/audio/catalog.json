@@ -54,7 +54,8 @@
     },
     "distortion": {
       "amount": "Soft-clipping distortion amount from 0 through 1. Zero or omission disables distortion."
-    }
+    },
+    "phoneFallback": "Optional instrument name used on phone-sized/mobile devices. The original instrument remains primary; legacy-square remains the final runtime fallback."
   },
   "instruments": {
     "legacy-square": {
@@ -181,7 +182,8 @@
         "amount": 0,
         "decay": 0.03
       },
-      "trillStep": "1/8"
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone"
     },
     "cinematic-pulse-bass-phone": {
       "type": "oscillator",
