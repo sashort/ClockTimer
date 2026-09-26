@@ -1163,6 +1163,7 @@
         false
     );
     const scheduledStartDialog = $("#scheduledStartDialog");
+    const scheduledStartCountdownLabel = $("#scheduledStartCountdownLabel");
     const scheduledStartCountdown = $("#scheduledStartCountdown");
     const scheduledStartStandard = $("#scheduledStartStandard");
     const scheduledStartStandardValue = $("#scheduledStartStandardValue");
@@ -12318,7 +12319,87 @@
     function updateScheduledStartDialog() {
         const scheduled = tripDraftFutureStartDate();
         const remaining = scheduled ? scheduled.getTime() - Date.now() : 0;
-        scheduledStartCountdown.textContent = `${remaining < 0 ? "-" : ""}${formatDuration(Math.abs(remaining))}`;
+        const military =
+            clockTimer.getAttribute(
+                "military-time"
+            ) !==
+                "false";
+        let scheduledTimeLabel =
+            "---";
+
+        if (
+            scheduled &&
+            !Number.isNaN(
+                scheduled.getTime()
+            )
+        ) {
+            const hours =
+                scheduled.getHours();
+            const minutes =
+                String(
+                    scheduled.getMinutes()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    );
+            const seconds =
+                String(
+                    scheduled.getSeconds()
+                )
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+            scheduledTimeLabel =
+                military
+                    ? (
+                        String(hours)
+                            .padStart(
+                                2,
+                                "0"
+                            ) +
+                        ":" +
+                        minutes +
+                        ":" +
+                        seconds
+                    )
+                    : (
+                        String(
+                            hours %
+                                12 ||
+                            12
+                        ) +
+                        ":" +
+                        minutes +
+                        ":" +
+                        seconds +
+                        " " +
+                        (
+                            hours >=
+                                12
+                                ? "PM"
+                                : "AM"
+                        )
+                    );
+        }
+
+        scheduledStartCountdownLabel.textContent =
+            "Time Until " +
+            scheduledTimeLabel;
+        scheduledStartCountdown.textContent =
+            (
+                remaining <
+                    0
+                    ? "-"
+                    : ""
+            ) +
+            formatDuration(
+                Math.abs(
+                    remaining
+                )
+            );
         scheduledStartStandardValue.textContent = String(tripDraft?.standardTime || "").trim() || "---";
         const scheduledTimeReached = remaining <= 0;
         const canStart = tripDraftCanStart(tripDraft);
@@ -16577,7 +16658,24 @@
             },
 
             canStartDownTime() {
-                return !downButton?.disabled;
+                const activeIntervalType =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                new Date()
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                return (
+                    activeIntervalType !==
+                        "down" &&
+                    !downButton?.disabled
+                );
             },
 
             canOpenBreakEndMenu() {
@@ -17696,8 +17794,22 @@
             async startDownTime() {
                 const transactionTime =
                     speechTransactionDate();
+                const activeIntervalType =
+                    String(
+                        clockTimer
+                            .getActiveIntervalState
+                            ?.(
+                                transactionTime
+                            )
+                            ?.intervalType ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
 
                 if (
+                    activeIntervalType ===
+                        "down" ||
                     downButton?.disabled
                 ) {
                     return false;
