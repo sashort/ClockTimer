@@ -1713,10 +1713,6 @@
                 audioSettings.toneVolume =
                     Number(target.value);
             }
-            else if (target === audioInstrument) {
-                audioSettings.instrument =
-                    target.value;
-            }
             else if (target === audioMasterVelocity) {
                 shiftMasterVelocity(
                     target.value
@@ -1781,6 +1777,20 @@
             saveAudioSettings();
         }
     );
+
+    audioInstrument
+        ?.addEventListener(
+            "change",
+            () => {
+                audioSettings.instrument =
+                    audioInstrument.value;
+
+                saveAudioSettings();
+
+                globalThis.location
+                    ?.reload?.();
+            }
+        );
 
     audioSettingsReset?.addEventListener(
         "click",
