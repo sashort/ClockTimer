@@ -97,7 +97,7 @@ speech-mic-bar[popover] {
     overflow: visible;
     opacity: 0;
     pointer-events: none;
-    z-index: 2147483647;
+    z-index: 2147483645;
     transition:
         transform var(--trip-log-layout-duration) ease-in-out,
         opacity 250ms linear;
@@ -2190,7 +2190,7 @@ body:has(.app[data-interval-state="down"])::after {
 .trip-transition-overlay {
     position: fixed;
     inset: 0;
-    z-index: 6500;
+    z-index: 2147483644;
     display: grid;
     place-items: center;
     padding: 18px;
@@ -2266,9 +2266,9 @@ body:has(.app[data-interval-state="down"])::after {
 }
 
 .trip-transition-overlay-row code {
-    color: #fff;
-    background: rgb(169 221 247 / 13%);
-    border: 1px solid rgb(169 221 247 / 32%);
+    color: #111;
+    background: var(--wm-yellow, #ffc220);
+    border: 1px solid rgb(0 0 0 / 35%);
     border-radius: 8px;
     padding: 3px 8px;
     font-family:
@@ -2283,8 +2283,8 @@ body:has(.app[data-interval-state="down"])::after {
     font-weight: 900;
     line-height: 1.15;
     letter-spacing: .02em;
-    text-shadow: 0 1px 10px rgb(0 0 0 / 52%);
-    box-shadow: inset 0 0 14px rgb(169 221 247 / 8%);
+    text-shadow: none;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 24%);
 }
 
 @media (max-width: 520px) {
