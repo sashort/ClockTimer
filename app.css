@@ -1202,6 +1202,17 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 
 .number-pad-dialog[open]::backdrop { opacity: 1; }
 
+.number-pad-dialog.trip-transition-suppressed {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.number-pad-dialog.trip-transition-suppressed::backdrop {
+    background: transparent !important;
+    opacity: 0 !important;
+}
+
 @starting-style {
     .number-pad-dialog[open],
     .number-pad-dialog[open]::backdrop { opacity: 0; }
