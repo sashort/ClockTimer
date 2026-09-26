@@ -2191,9 +2191,16 @@ body:has(.app[data-interval-state="down"])::after {
     position: fixed;
     inset: 0;
     z-index: 2147483644;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 18px;
+    border: 0;
+    background: transparent;
     display: grid;
     place-items: center;
-    padding: 18px;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
