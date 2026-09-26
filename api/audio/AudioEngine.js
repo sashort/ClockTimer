@@ -3,12 +3,17 @@
 
     class WMOFAudioEngine {
         #catalogPromise;
+        #preparePromise;
         #context;
+        #catalogReady = false;
+        #audioResourcesReady = false;
+        #prepareError;
         #active = new Map();
         #sequence = 0;
         #reverbImpulses = new Map();
         #noiseBuffers = new Map();
         #distortionCurves = new Map();
+        #instrumentResources = new Map();
         #outputSettings = {
             speechVolume: 1,
             toneVolume: 1,
@@ -18,6 +23,16 @@
         };
 
         constructor() {
+            void this.prepare()
+                .catch(
+                    error => {
+                        console.warn(
+                            "Audio preload failed:",
+                            error
+                        );
+                    }
+                );
+
             const unlock = () => {
                 void this.unlock();
             };
@@ -47,6 +62,27 @@
 
         get outputSettings() {
             return {...this.#outputSettings};
+        }
+
+        get readiness() {
+            return Object.freeze({
+                catalog:
+                    this.#catalogReady,
+                audio:
+                    this.#audioResourcesReady,
+                ready:
+                    this.#catalogReady &&
+                    this.#audioResourcesReady &&
+                    !this.#prepareError,
+                error:
+                    this.#prepareError
+                        ? String(
+                            this.#prepareError
+                                ?.message ||
+                            this.#prepareError
+                        )
+                        : undefined
+            });
         }
 
         configureOutput(settings = {}) {
@@ -96,16 +132,224 @@
 
         async unlock() {
             try {
-                await this.#audioContext();
+                const context =
+                    await this.#audioContext();
+                const catalog =
+                    await this.prepare();
+
+                this.#prepareAudioResources(
+                    context,
+                    catalog
+                );
+
                 return true;
             }
             catch (error) {
+                this.#prepareError =
+                    error;
+
                 console.warn(
                     "Audio could not be unlocked:",
                     error
                 );
                 return false;
             }
+        }
+
+        async prepare() {
+            if (!this.#preparePromise) {
+                this.#preparePromise =
+                    this.load()
+                        .then(
+                            catalog => {
+                                this.#validateCatalog(
+                                    catalog
+                                );
+                                this.#prepareStaticResources(
+                                    catalog
+                                );
+                                this.#catalogReady =
+                                    true;
+                                this.#prepareError =
+                                    undefined;
+
+                                return catalog;
+                            }
+                        )
+                        .catch(
+                            error => {
+                                this.#prepareError =
+                                    error;
+                                this.#preparePromise =
+                                    undefined;
+                                throw error;
+                            }
+                        );
+            }
+
+            return this.#preparePromise;
+        }
+
+        #validateCatalog(catalog) {
+            const instruments =
+                catalog?.instruments;
+
+            if (
+                !instruments ||
+                typeof instruments !==
+                    "object"
+            ) {
+                throw new Error(
+                    "Audio catalog has no instruments."
+                );
+            }
+
+            for (
+                const [
+                    name,
+                    instrument
+                ] of Object.entries(
+                    instruments
+                )
+            ) {
+                const fallback =
+                    instrument
+                        ?.phoneFallback;
+
+                if (
+                    fallback &&
+                    !instruments[
+                        fallback
+                    ]
+                ) {
+                    throw new Error(
+                        "Unknown phone fallback: " +
+                        name +
+                        " -> " +
+                        fallback
+                    );
+                }
+            }
+
+            for (
+                const [
+                    songName,
+                    song
+                ] of Object.entries(
+                    catalog?.songs ||
+                    {}
+                )
+            ) {
+                const names =
+                    [
+                        song?.instrument,
+                        ...(song?.events || [])
+                            .map(
+                                event =>
+                                    event
+                                        ?.instrument
+                            )
+                    ]
+                        .filter(
+                            Boolean
+                        );
+
+                for (const name of names) {
+                    if (
+                        !instruments[
+                            name
+                        ]
+                    ) {
+                        throw new Error(
+                            "Unknown song instrument: " +
+                            songName +
+                            " -> " +
+                            name
+                        );
+                    }
+                }
+            }
+        }
+
+        #prepareStaticResources(catalog) {
+            for (
+                const instrument of
+                Object.values(
+                    catalog?.instruments ||
+                    {}
+                )
+            ) {
+                const distortionSource =
+                    instrument
+                        ?.distortion;
+                const amount =
+                    Number(
+                        typeof distortionSource ===
+                            "object"
+                            ? distortionSource
+                                ?.amount
+                            : distortionSource
+                    );
+
+                if (
+                    Number.isFinite(
+                        amount
+                    ) &&
+                    amount >
+                        0
+                ) {
+                    this.#distortionCurve(
+                        amount
+                    );
+                }
+            }
+        }
+
+        #prepareAudioResources(
+            context,
+            catalog
+        ) {
+            if (
+                this.#audioResourcesReady
+            ) {
+                return;
+            }
+
+            this.#noiseBuffer(
+                context,
+                0.25
+            );
+
+            for (
+                const [
+                    name,
+                    instrument
+                ] of Object.entries(
+                    catalog?.instruments ||
+                    {}
+                )
+            ) {
+                this.#instrumentResource(
+                    context,
+                    name,
+                    instrument
+                );
+            }
+
+            this.#audioResourcesReady =
+                true;
+            this.#prepareError =
+                undefined;
+
+            globalThis.dispatchEvent?.(
+                new CustomEvent(
+                    "wmof-audio-ready",
+                    {
+                        detail:
+                            this.readiness
+                    }
+                )
+            );
         }
 
         async load() {
