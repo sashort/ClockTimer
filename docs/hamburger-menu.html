@@ -131,6 +131,7 @@ kbd {
 <div class="card">
 <h3>Horizontal paging</h3>
 <p>Normal content never vertically scrolls. If it is too tall, the element packs top-level rows into horizontally swipeable <code>&lt;pane-page&gt;</code> elements. Every normal page uses the height of the tallest page in that layout. <strong>The left/right swipe gesture, current-page calculation, scroll snapping, and page indicator are HamburgerMenu behavior, not PanePage behavior.</strong></p>
+<p>Once a touch/pen gesture commits horizontally, the menu displays a vertical target strip at the destination edge: left edge for the next page, right edge for the previous page. The strip both confirms that the gesture has entered panel-swipe mode and marks the region the pointer must reach to complete the page switch. If the target is not reached, release returns to the current page. The cue is omitted when there is no sibling page in that direction.</p>
 </div>
 <div class="card">
 <h3>Parent promotion</h3>
@@ -246,6 +247,35 @@ kbd {
     inset: auto;
     align-self: start;
     justify-self: start;
+}</pre>
+
+<h2>Panel swipe target styling</h2>
+<p>The swipe target cue is intentionally themeable from outside <code>HamburgerMenu.js</code>. The component sets only the direction and a live progress value; applications can replace the visual treatment with CSS custom properties.</p>
+<table>
+<thead><tr><th>Custom property</th><th>Default / purpose</th></tr></thead>
+<tbody>
+<tr><td><code>--hamburger-menu-swipe-target-width</code></td><td><code>56px</code>. Width of the vertical completion zone at the pane edge.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-color</code></td><td><code>currentColor</code>. Base color used by the default gradients and shadows.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-opacity</code></td><td><code>.28</code>. Base opacity once a horizontal swipe is recognized.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-emphasis</code></td><td><code>.62</code>. Additional opacity applied as the pointer approaches the target.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-brightness</code></td><td><code>.45</code>. Additional brightness applied as approach progress increases.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-transition</code></td><td><code>90ms</code>. Transition time for emphasis changes.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-previous-gradient</code></td><td>Full background override for the right-edge target used when swiping toward the previous page.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-next-gradient</code></td><td>Full background override for the left-edge target used when swiping toward the next page.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-previous-shadow</code></td><td>Full box-shadow override for the previous-page target.</td></tr>
+<tr><td><code>--hamburger-menu-swipe-target-next-shadow</code></td><td>Full box-shadow override for the next-page target.</td></tr>
+</tbody>
+</table>
+
+<pre>hamburger-menu {
+    --hamburger-menu-swipe-target-width: 72px;
+    --hamburger-menu-swipe-target-color: #ffc220;
+    --hamburger-menu-swipe-target-opacity: .2;
+    --hamburger-menu-swipe-target-emphasis: .75;
+    --hamburger-menu-swipe-target-next-gradient:
+        linear-gradient(to right, rgb(255 194 32 / 80%), transparent);
+    --hamburger-menu-swipe-target-previous-gradient:
+        linear-gradient(to left, rgb(255 194 32 / 80%), transparent);
 }</pre>
 
 <h2>Opening lifecycle</h2>
