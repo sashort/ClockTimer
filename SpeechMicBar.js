@@ -2038,6 +2038,52 @@ class SpeechMicBar extends HTMLElement {
         );
     }
 
+    getSafeTop() {
+        const hostRect =
+            this.getBoundingClientRect();
+
+        if (
+            (
+                this.optionsOpen ||
+                this.optionsCollapsed
+            ) &&
+            this.#optionsPanel
+        ) {
+            const optionsRect =
+                this.#optionsPanel
+                    .getBoundingClientRect();
+
+            if (
+                Number.isFinite(
+                    optionsRect.top
+                )
+            ) {
+                return Math.min(
+                    hostRect.top,
+                    optionsRect.top
+                );
+            }
+        }
+
+        return hostRect.top;
+    }
+
+    #dispatchSurfaceBoundaryChange() {
+        this.dispatchEvent(
+            new CustomEvent(
+                "speech-surface-boundary-change",
+                {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        top:
+                            this.getSafeTop()
+                    }
+                }
+            )
+        );
+    }
+
     promoteTopLayer() {
         this.#syncHostBounds();
 
@@ -2118,6 +2164,12 @@ class SpeechMicBar extends HTMLElement {
                 "aria-hidden",
                 "false"
             );
+
+        requestAnimationFrame(
+            () =>
+                this
+                    .#dispatchSurfaceBoundaryChange()
+        );
 
         if (
             typeof this.#optionsPanel
@@ -2243,6 +2295,12 @@ class SpeechMicBar extends HTMLElement {
         this.#syncOptionsToggle();
         this.#fitOptions();
 
+        requestAnimationFrame(
+            () =>
+                this
+                    .#dispatchSurfaceBoundaryChange()
+        );
+
         return true;
     }
 
@@ -2311,6 +2369,8 @@ class SpeechMicBar extends HTMLElement {
                 "true"
             );
 
+        this.#dispatchSurfaceBoundaryChange();
+
         if (
             duration > 0 &&
             typeof this.#optionsPanel
@@ -2368,6 +2428,8 @@ class SpeechMicBar extends HTMLElement {
                     undefined;
             }
         }
+
+        this.#dispatchSurfaceBoundaryChange();
 
         return true;
     }
