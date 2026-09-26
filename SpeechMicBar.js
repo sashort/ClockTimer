@@ -2211,6 +2211,28 @@ class SpeechMicBar extends HTMLElement {
         }
     }
 
+    demoteTopLayer() {
+        try {
+            if (
+                this.matches?.(
+                    ":popover-open"
+                )
+            ) {
+                this.hidePopover();
+            }
+
+            this.removeAttribute(
+                "popover"
+            );
+
+            this.#syncHostBounds();
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
     showOptions(
         phraseGroups =
             globalThis.SpeechMenu
