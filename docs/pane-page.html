@@ -270,7 +270,8 @@ backButton.addEventListener("click", () =&gt; {
 <p>For ordinary application drill-down interfaces—such as the mobile Audio Settings event list—use <code>PanePage.showView()</code> and <code>PanePage.back()</code>.</p>
 
 <h2>Current WMOF use</h2>
-<p>The mobile Audio Settings UI uses one <code>&lt;pane-page overflow="y"&gt;</code> with a list view and a detail view. Selecting <strong>Master</strong> or an announcement promotes the detail view; Back restores the event list. Long Audio Settings content therefore scrolls vertically using PanePage's overflow contract rather than Audio Settings implementing its own touch-scroll behavior.</p>
+<p>On mobile, Audio Settings keeps global audio controls in its own vertically scrollable settings body and opens a dedicated <strong>Announcements</strong> dialog for announcement-specific configuration. That dialog contains one <code>&lt;pane-page overflow="y"&gt;</code> with a list view and a detail view. Selecting <strong>Master</strong> or an announcement promotes the detail view; Back restores the event list.</p>
+<p>The dedicated Announcements dialog and the parent Audio Settings dialog both clamp their usable height above the live speech surface, including the mic bar and expanded/collapsed Commands panel.</p>
 <p>Per-announcement audio overrides are edited as a draft in the detail view. Preview uses the draft values, Apply persists the sparse overrides, Reset Custom removes the draft's custom properties so the announcement inherits globals again, and Cancel restores the last persisted row state.</p>
 
 <h2>Script order</h2>
