@@ -2751,6 +2751,23 @@
             }
             entry.timers.clear();
 
+            if (
+                entry.instrumentResources &&
+                this.#context
+            ) {
+                for (
+                    const resource of
+                    entry.instrumentResources
+                ) {
+                    this.#releaseInstrumentResource(
+                        this.#context,
+                        resource
+                    );
+                }
+
+                entry.instrumentResources.clear();
+            }
+
             for (const node of entry.nodes) {
                 try { node.stop?.(); } catch {}
                 try { node.disconnect?.(); } catch {}
@@ -2813,7 +2830,7 @@
                 startBeat = 0
             } = {}
         ) {
-            const catalog = await this.load();
+            const catalog = await this.prepare();
             const song = catalog?.songs?.[name];
 
             if (!song) {
@@ -2821,6 +2838,12 @@
             }
 
             const context = await this.#audioContext();
+
+            this.#prepareAudioResources(
+                context,
+                catalog
+            );
+
             const tempo =
                 Number(bpm ?? song.bpm ?? 120) *
                 this.#outputSettings.toneVelocity;
@@ -2949,7 +2972,21 @@
                         );
                     }
 
-                    return resolvedInstrument;
+                    const resolvedName =
+                        phoneFallbackInstrument
+                            ? phoneFallbackName
+                            : (
+                                requestedInstrument
+                                    ? requestedInstrumentName
+                                    : "legacy-square"
+                            );
+
+                    return {
+                        name:
+                            resolvedName,
+                        instrument:
+                            resolvedInstrument
+                    };
                 };
 
             if (
@@ -2978,6 +3015,8 @@
                 id: ++this.#sequence,
                 name,
                 nodes: new Set(),
+                instrumentResources:
+                    new Set(),
                 timers: new Set(),
                 utterances: new Set(),
                 pendingSpeech: 0,
@@ -3224,18 +3263,26 @@
                                 includeTones &&
                                 event?.tone
                             ) {
-                                const instrument =
+                                const resolved =
                                     resolveInstrument(
                                         event.instrument
+                                    );
+                                const instrumentResource =
+                                    this.#acquireInstrumentResource(
+                                        entry,
+                                        context,
+                                        resolved.name,
+                                        resolved.instrument
                                     );
                                 const toneEndAt =
                                     this.#scheduleTone(
                                         context,
                                         entry,
                                         playbackEvent,
-                                        instrument,
+                                        resolved.instrument,
                                         tempo,
-                                        songGain
+                                        songGain,
+                                        instrumentResource
                                     );
 
                                 chimeEndAt =
