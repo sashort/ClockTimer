@@ -2289,11 +2289,11 @@
                     audioSettings.masters.summary !==
                         false;
 
-                try {
-                    let chimePlayed =
-                        false;
+                let chimePlayed =
+                    false;
 
-                    if (chimeEnabled) {
+                if (chimeEnabled) {
+                    try {
                         const song =
                             await audio.startSong?.(
                                 announcement,
@@ -2319,36 +2319,37 @@
 
                         if (chimePlayed) {
                             await song?.finished;
-
-                            if (
-                                speechEnabled &&
-                                output.speechDelayMs >
-                                    0
-                            ) {
-                                await wait(
-                                    output.speechDelayMs
-                                );
-                            }
                         }
                     }
-
-                    if (speechEnabled) {
-                        audio.speak?.(
-                            label,
-                            {
-                                speechVolume:
-                                    output.speechVolume,
-                                speechVelocity:
-                                    output.speechVelocity
-                            }
+                    catch (error) {
+                        console.warn(
+                            "Announcement has no preview chime:",
+                            announcement,
+                            error
                         );
                     }
                 }
-                catch (error) {
-                    console.error(
-                        "Audio preview failed:",
-                        announcement,
-                        error
+
+                if (
+                    speechEnabled &&
+                    chimePlayed &&
+                    output.speechDelayMs >
+                        0
+                ) {
+                    await wait(
+                        output.speechDelayMs
+                    );
+                }
+
+                if (speechEnabled) {
+                    audio.speak?.(
+                        label,
+                        {
+                            speechVolume:
+                                output.speechVolume,
+                            speechVelocity:
+                                output.speechVelocity
+                        }
                     );
                 }
             }
