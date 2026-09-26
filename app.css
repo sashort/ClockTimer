@@ -5760,6 +5760,53 @@ speech-command {
     min-height: 0;
 }
 
+.audio-announcements-launcher {
+    display: none;
+}
+
+.audio-announcements-dialog {
+    width: min(760px, calc(100vw - 32px));
+    max-height: min(88dvh, 820px);
+    margin: auto;
+    overflow: hidden;
+}
+
+.audio-announcements-dialog form {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+}
+
+.audio-announcements-window-back {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--wm-blue-light);
+    background: transparent;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.audio-announcements-dialog .dialog-header {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+}
+
+.audio-announcements-dialog .dialog-header h2 {
+    margin: 0;
+    text-align: center;
+}
+
+.audio-announcements-header-spacer {
+    width: 44px;
+    height: 1px;
+}
+
 .audio-settings-levels {
     display: grid;
     gap: 12px;
@@ -6015,20 +6062,40 @@ speech-command {
 }
 
 @media (max-width: 620px) {
-    .audio-settings-desktop-table {
+    .audio-settings-announcements-desktop {
         display: none;
     }
 
-    .audio-announcement-page {
-        display: block;
-        min-height: 0;
-        height: auto;
-        overflow: visible;
+    .audio-announcements-launcher {
+        width: calc(100% - 20px);
+        min-height: 52px;
+        margin: 0 10px 4px;
+        padding: 10px 14px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid rgb(169 221 247 / 42%);
+        border-radius: 10px;
+        color: inherit;
+        background: rgb(0 63 128 / 54%);
+        text-align: left;
+        font: inherit;
+        font-weight: 700;
     }
 
-    .audio-announcement-page > [data-pane-view] {
-        height: auto;
-        min-height: 0;
+    .audio-announcements-launcher > :last-child {
+        font-size: 28px;
+        line-height: 1;
+        opacity: .72;
+    }
+
+    .audio-settings-dialog .audio-announcement-page {
+        display: none;
+    }
+
+    .audio-announcements-dialog .audio-announcement-page {
+        display: block;
     }
 
     .audio-announcement-list-view {
@@ -6041,7 +6108,8 @@ speech-command {
         background: rgb(0 30 96 / 46%);
     }
 
-    .audio-settings-dialog {
+    .audio-settings-dialog,
+    .audio-announcements-dialog {
         position: fixed;
         top: var(--audio-settings-safe-top, 0px);
         right: 0;
@@ -6060,6 +6128,34 @@ speech-command {
             max(8px, env(safe-area-inset-left));
         border-radius: 0;
         overflow: hidden;
+    }
+
+    .audio-announcements-dialog {
+        box-sizing: border-box;
+        width: 100vw;
+        max-width: none;
+        height: var(--audio-settings-safe-height, 100dvh);
+        max-height: var(--audio-settings-safe-height, 100dvh);
+        margin: 0;
+        padding:
+            max(8px, env(safe-area-inset-top))
+            max(8px, env(safe-area-inset-right))
+            max(8px, env(safe-area-inset-bottom))
+            max(8px, env(safe-area-inset-left));
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    .audio-announcements-dialog .audio-announcement-page {
+        display: block;
+        min-height: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .audio-announcements-dialog .audio-announcement-page > [data-pane-view] {
+        height: 100%;
+        min-height: 0;
     }
 
     .audio-settings-dialog form {
