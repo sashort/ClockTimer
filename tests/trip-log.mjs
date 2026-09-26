@@ -135,5 +135,8 @@ view.options.refresh=async()=>view.render({trips:[]},calendar);
 await view.deleteTrip(trips[0]);
 assert.equal(root.querySelector('.trip-log-overview'),null);
 assert(root.querySelector('.trip-log-settings').classList.contains('is-open'));
+
+const appSource = fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+assert.match(appSource,/function getAppContentMetrics\([\s\S]*visualViewport[\s\S]*Math\.max\([\s\S]*viewportLeft[\s\S]*Math\.min\([\s\S]*viewportRight/,'Trip Log geometry is constrained to the visual viewport');
 console.log('PASS local offline trips and uncertain totals render, and deleting the only trip reveals filters');
 w.happyDOM.abort();
