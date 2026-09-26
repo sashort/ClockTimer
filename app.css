@@ -5917,6 +5917,30 @@ speech-command {
     display: none;
 }
 
+.audio-announcements-dialog .audio-announcement-page {
+    display: block;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.audio-announcement-desktop-detail {
+    min-width: 0;
+    padding: 4px 6px;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.audio-announcement-desktop-detail:hover,
+.audio-announcement-desktop-detail:focus-visible {
+    text-decoration: underline;
+}
+
 .audio-announcement-event-list {
     display: grid;
     gap: 6px;
