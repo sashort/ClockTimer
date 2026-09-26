@@ -984,6 +984,58 @@
                 }
             );
 
+    let tripLogSpeechLayoutAnimationFrame;
+
+    function animateTripLogSpeechBoundary() {
+        if (
+            tripLogSpeechLayoutAnimationFrame !==
+                undefined
+        ) {
+            cancelAnimationFrame(
+                tripLogSpeechLayoutAnimationFrame
+            );
+        }
+
+        const duration =
+            Number.parseFloat(
+                getComputedStyle(app)
+                    .getPropertyValue(
+                        "--trip-log-layout-duration"
+                    )
+            ) ||
+            1000;
+
+        const startedAt =
+            performance.now();
+
+        const frame =
+            now => {
+                refreshTripLogBoundaryLayout();
+
+                if (
+                    now - startedAt <
+                    duration + 34
+                ) {
+                    tripLogSpeechLayoutAnimationFrame =
+                        requestAnimationFrame(
+                            frame
+                        );
+
+                    return;
+                }
+
+                tripLogSpeechLayoutAnimationFrame =
+                    undefined;
+
+                refreshTripLogBoundaryLayout();
+            };
+
+        tripLogSpeechLayoutAnimationFrame =
+            requestAnimationFrame(
+                frame
+            );
+    }
+
     const setSpeechLayoutState =
         globalThis
             .WMOFPresentationSetters
@@ -997,6 +1049,8 @@
                                 enabled
                             )
                         );
+
+                    animateTripLogSpeechBoundary();
                 }
             );
 
