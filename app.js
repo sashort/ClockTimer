@@ -133,7 +133,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-26-8";
+        "2026-09-26-9";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -3368,7 +3368,7 @@
         const speechTop =
             Number(
                 speechMicBar
-                    ?.getSafeTop?.()
+                    ?.getCollapsedOptionsTop?.()
             );
 
         if (
