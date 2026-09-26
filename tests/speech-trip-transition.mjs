@@ -199,6 +199,16 @@ assert.match(
 
 assert.match(
     app,
+    /showTripEndTransitionOverlay\([\s\S]*totalScopeLabel\(\)[\s\S]*" Percent"[\s\S]*"Banked Toward "[\s\S]*"Over "/
+);
+
+assert.doesNotMatch(
+    app,
+    /showTripEndTransitionOverlay\([\s\S]*"Stop Time"[\s\S]*"Actual Time"[\s\S]*"Counted Time"[\s\S]*"Standard Time"[\s\S]*"Trip Percent"[\s\S]*"Trip Goal"/
+);
+
+assert.match(
+    app,
     /document\.createElement\(\s*"code"\s*\)/
 );
 
