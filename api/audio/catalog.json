@@ -259,7 +259,7 @@
       "displayName": "Warm Chorus Poly",
       "type": "oscillator",
       "waveform": "triangle",
-      "volume": 0.62,
+      "volume": 0.78,
       "detune": 0,
       "velocitySensitivity": 0.68,
       "envelope": {
@@ -271,13 +271,13 @@
       "partials": [
         {
           "ratio": 1,
-          "gain": 0.36,
+          "gain": 0.4,
           "detune": -6,
           "waveform": "triangle"
         },
         {
           "ratio": 1,
-          "gain": 0.36,
+          "gain": 0.4,
           "detune": 6,
           "waveform": "triangle"
         },
