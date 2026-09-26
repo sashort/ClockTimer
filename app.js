@@ -1962,6 +1962,41 @@
 
             const addChoice =
                 (key, label, master = false) => {
+                    const row =
+                        document.createElement(
+                            "div"
+                        );
+
+                    row.className =
+                        "audio-announcement-event-row";
+
+                    if (!master) {
+                        const enabled =
+                            document.createElement(
+                                "input"
+                            );
+
+                        enabled.type =
+                            "checkbox";
+                        enabled.className =
+                            "audio-announcement-event-enabled";
+                        enabled.dataset.audioAnnouncementEnabled =
+                            key;
+                        enabled.setAttribute(
+                            "aria-label",
+                            "Enable " + label
+                        );
+
+                        row.append(
+                            enabled
+                        );
+                    }
+                    else {
+                        row.classList.add(
+                            "audio-announcement-event-row-master"
+                        );
+                    }
+
                     const button =
                         document.createElement(
                             "button"
@@ -2003,8 +2038,12 @@
                         arrow
                     );
 
-                    mobileFragment.append(
+                    row.append(
                         button
+                    );
+
+                    mobileFragment.append(
+                        row
                     );
                 };
 
@@ -2168,6 +2207,21 @@
                 audioSettings.masters[
                     input.dataset.audioMaster
                 ] !== false;
+        }
+
+        for (
+            const input of
+            audioAnnouncementEventList
+                ?.querySelectorAll(
+                    "[data-audio-announcement-enabled]"
+                ) ||
+            []
+        ) {
+            input.checked =
+                audioSettings.rows[
+                    input.dataset
+                        .audioAnnouncementEnabled
+                ]?.enabled !== false;
         }
 
         for (
@@ -2720,6 +2774,22 @@
                     target.dataset.audioMaster
                 ] =
                     target.checked;
+            }
+            else if (
+                target.matches?.(
+                    "[data-audio-announcement-enabled]"
+                )
+            ) {
+                const state =
+                    audioSettings.rows[
+                        target.dataset
+                            .audioAnnouncementEnabled
+                    ];
+
+                if (state) {
+                    state.enabled =
+                        target.checked;
+                }
             }
             else {
                 const row =
