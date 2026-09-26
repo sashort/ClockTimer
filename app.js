@@ -1167,6 +1167,7 @@
     const audioAnnouncementRows = $("#audioAnnouncementRows");
     const audioSpeechVolume = $("#audioSpeechVolume");
     const audioToneVolume = $("#audioToneVolume");
+    const audioInstrument = $("#audioInstrument");
     const audioMasterVelocity = $("#audioMasterVelocity");
     const audioSpeechVelocity = $("#audioSpeechVelocity");
     const audioToneVelocity = $("#audioToneVelocity");
@@ -1300,6 +1301,7 @@
             masterVelocity: 1,
             speechVelocity: 1,
             toneVelocity: 1,
+            instrument: "",
             formalTime: false,
             masters: {
                 chime: true,
@@ -1334,6 +1336,11 @@
             clamp(value.speechVelocity, 0.5, 4, 1);
         settings.toneVelocity =
             clamp(value.toneVelocity, 0.5, 1.5, 1);
+        settings.instrument =
+            typeof value.instrument ===
+                "string"
+                ? value.instrument.trim()
+                : "";
         settings.formalTime =
             value.formalTime === true;
 
@@ -1398,7 +1405,9 @@
             speechVelocity:
                 audioSettings.speechVelocity,
             toneVelocity:
-                audioSettings.toneVelocity
+                audioSettings.toneVelocity,
+            instrument:
+                audioSettings.instrument
         });
     }
 
@@ -1417,6 +1426,89 @@
             audioSettings.masters[layer] !== false &&
             row[layer] !== -1
         );
+    }
+
+    async function populateAudioInstrumentOptions() {
+        if (!audioInstrument) return;
+
+        try {
+            const catalog =
+                await globalThis.WMOFAudio
+                    ?.load?.();
+            const instruments =
+                Object.entries(
+                    catalog?.instruments ||
+                    {}
+                );
+
+            const fragment =
+                document.createDocumentFragment();
+            const defaultOption =
+                document.createElement(
+                    "option"
+                );
+
+            defaultOption.value = "";
+            defaultOption.textContent =
+                "Song Default";
+            fragment.append(
+                defaultOption
+            );
+
+            for (
+                const [
+                    id,
+                    instrument
+                ] of instruments
+            ) {
+                if (
+                    instrument
+                        ?.selectable ===
+                        false
+                ) {
+                    continue;
+                }
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    id;
+                option.textContent =
+                    String(
+                        instrument
+                            ?.displayName ||
+                        id
+                    );
+
+                fragment.append(
+                    option
+                );
+            }
+
+            audioInstrument
+                .replaceChildren(
+                    fragment
+                );
+            audioInstrument.value =
+                audioSettings.instrument;
+
+            if (
+                audioInstrument.value !==
+                    audioSettings.instrument
+            ) {
+                audioInstrument.value =
+                    "";
+            }
+        }
+        catch (error) {
+            console.warn(
+                "Unable to load audio instruments:",
+                error
+            );
+        }
     }
 
     function buildAudioAnnouncementRows() {
@@ -1485,6 +1577,10 @@
             String(audioSettings.speechVelocity);
         audioToneVelocity.value =
             String(audioSettings.toneVelocity);
+        if (audioInstrument) {
+            audioInstrument.value =
+                audioSettings.instrument;
+        }
         audioFormalTime.checked =
             audioSettings.formalTime === true;
 
@@ -1567,12 +1663,16 @@
     }
 
     buildAudioAnnouncementRows();
+    void populateAudioInstrumentOptions();
     renderAudioSettings();
     applyAudioOutputSettings();
 
     audioSettingsDialog?.addEventListener(
         "opening",
-        renderAudioSettings
+        () => {
+            void populateAudioInstrumentOptions();
+            renderAudioSettings();
+        }
     );
 
     audioSettingsForm?.addEventListener(
@@ -1588,6 +1688,10 @@
             else if (target === audioToneVolume) {
                 audioSettings.toneVolume =
                     Number(target.value);
+            }
+            else if (target === audioInstrument) {
+                audioSettings.instrument =
+                    target.value;
             }
             else if (target === audioMasterVelocity) {
                 shiftMasterVelocity(
