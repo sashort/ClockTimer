@@ -5854,15 +5854,48 @@ speech-command {
 
 @media (max-width: 620px) {
     .audio-settings-dialog {
-        width: calc(100vw - 16px);
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    .audio-settings-dialog form {
+        height: 100%;
+        min-height: 0;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        gap: 10px;
+        overflow: hidden;
+    }
+
+    .audio-settings-dialog .dialog-header {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+    }
+
+    .audio-settings-levels {
+        margin-inline: 10px;
+        gap: 9px;
     }
 
     .audio-settings-levels > label {
-        grid-template-columns: 1fr 64px;
+        grid-template-columns: minmax(0, 1fr) 58px;
+        gap: 7px 10px;
     }
 
     .audio-settings-levels > label > span {
         grid-column: 1 / -1;
+    }
+
+    .audio-settings-levels input[type="range"] {
+        width: 100%;
+        min-width: 0;
     }
 
     .audio-instrument-setting select {
@@ -5871,6 +5904,73 @@ speech-command {
 
     .audio-instrument-setting .audio-setting-spacer {
         display: none;
+    }
+
+    .audio-settings-announcements {
+        min-height: 0;
+        margin-inline: 10px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .audio-settings-table-wrap {
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .audio-settings-table {
+        min-width: 0;
+        width: 100%;
+        display: block;
+    }
+
+    .audio-settings-table thead,
+    .audio-settings-table tbody {
+        display: block;
+    }
+
+    .audio-settings-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) repeat(3, 48px);
+        align-items: center;
+    }
+
+    .audio-settings-table th,
+    .audio-settings-table td {
+        min-width: 0;
+        padding: 8px 5px;
+    }
+
+    .audio-settings-table th:first-child {
+        overflow-wrap: anywhere;
+    }
+
+    .audio-settings-table thead th {
+        position: static;
+        font-size: 12px;
+    }
+
+    .audio-settings-table thead label {
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+        font-size: 11px;
+    }
+
+    .audio-settings-table input[type="checkbox"] {
+        width: 26px;
+        height: 26px;
+    }
+
+    .audio-settings-dialog .dialog-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        margin: 0 10px 10px;
+        padding-top: 8px;
+        background: var(--wm-blue-dark);
     }
 }
 
