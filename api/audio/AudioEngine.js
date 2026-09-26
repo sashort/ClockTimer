@@ -3079,6 +3079,68 @@
                     )
                 );
 
+            const beatSeconds =
+                60 /
+                tempo;
+
+            const chimeDurationBeats =
+                hasChime
+                    ? preparedEvents.reduce(
+                        (
+                            longest,
+                            record
+                        ) => {
+                            const event =
+                                record.event;
+
+                            if (!event?.tone) {
+                                return longest;
+                            }
+
+                            const lengthParts =
+                                String(
+                                    event.length ??
+                                    "1"
+                                )
+                                    .split(",")
+                                    .map(
+                                        part =>
+                                            part.trim()
+                                    );
+                            const effectBeats =
+                                this.#beats(
+                                    lengthParts[0]
+                                );
+                            const sustainBeats =
+                                lengthParts.length >
+                                    1
+                                    ? this.#beats(
+                                        lengthParts[1]
+                                    )
+                                    : 0;
+                            const relativeOffset =
+                                Math.max(
+                                    0,
+                                    record.offset -
+                                        playbackStartBeat
+                                );
+
+                            return Math.max(
+                                longest,
+                                relativeOffset +
+                                    effectBeats +
+                                    sustainBeats
+                            );
+                        },
+                        0
+                    )
+                    : 0;
+
+            const musicalChimeEndAt =
+                entry.startedAt +
+                chimeDurationBeats *
+                    beatSeconds;
+
             entry.speechDelayMs =
                 hasChime
                     ? entry.requestedSpeechDelayMs
@@ -3104,9 +3166,6 @@
             );
 
             try {
-                const beatSeconds =
-                    60 /
-                    tempo;
                 const scheduleAheadSeconds =
                     this.#isPhone()
                         ? 1.8
@@ -3391,6 +3450,19 @@
                     startBeat:
                         playbackStartBeat,
                     hasChime,
+                    chimeDurationMs:
+                        chimeDurationBeats *
+                        beatSeconds *
+                        1000,
+                    chimeEndsInMs:
+                        Math.max(
+                            0,
+                            (
+                                musicalChimeEndAt -
+                                context.currentTime
+                            ) *
+                                1000
+                        ),
                     finished,
                     stop: () =>
                         this.stopSong(
