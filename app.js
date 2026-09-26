@@ -15599,6 +15599,18 @@
         tripTransitionOverlay.hidden =
             false;
 
+        try {
+            if (
+                !tripTransitionOverlay
+                    .matches(
+                        ":popover-open"
+                    )
+            ) {
+                tripTransitionOverlay
+                    .showPopover();
+            }
+        } catch {}
+
         requestAnimationFrame(
             () => {
                 tripTransitionOverlay
@@ -15628,6 +15640,18 @@
                     tripTransitionOverlayHideTimer =
                         setTimeout(
                             () => {
+                                try {
+                                    if (
+                                        tripTransitionOverlay
+                                            .matches(
+                                                ":popover-open"
+                                            )
+                                    ) {
+                                        tripTransitionOverlay
+                                            .hidePopover();
+                                    }
+                                } catch {}
+
                                 tripTransitionOverlay.hidden =
                                     true;
                                 tripTransitionOverlayActive =
