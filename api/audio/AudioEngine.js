@@ -1026,6 +1026,310 @@
             }
         }
 
+        #instrumentResource(
+            context,
+            name,
+            instrument
+        ) {
+            if (
+                this.#instrumentResources.has(
+                    name
+                )
+            ) {
+                return this.#instrumentResources.get(
+                    name
+                );
+            }
+
+            const input =
+                context.createGain();
+            const dry =
+                context.createGain();
+            const outputs =
+                [
+                    dry
+                ];
+            let tail =
+                0;
+
+            input.connect(
+                dry
+            );
+
+            const delay =
+                instrument
+                    ?.delay;
+
+            if (
+                delay &&
+                typeof delay ===
+                    "object" &&
+                typeof context
+                    .createDelay ===
+                    "function"
+            ) {
+                const delayTime =
+                    Math.max(
+                        0,
+                        Math.min(
+                            5,
+                            Number(
+                                delay.time
+                            ) ||
+                            0
+                        )
+                    );
+                const feedback =
+                    Math.max(
+                        0,
+                        Math.min(
+                            0.95,
+                            Number(
+                                delay.feedback
+                            ) ||
+                            0
+                        )
+                    );
+                const wet =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(
+                                delay.wet
+                            ) ||
+                            0
+                        )
+                    );
+
+                if (
+                    delayTime >
+                        0 &&
+                    wet >
+                        0
+                ) {
+                    const delayNode =
+                        context.createDelay(
+                            5
+                        );
+                    const feedbackGain =
+                        context.createGain();
+                    const wetGain =
+                        context.createGain();
+
+                    delayNode.delayTime.value =
+                        delayTime;
+                    feedbackGain.gain.value =
+                        feedback;
+                    wetGain.gain.value =
+                        wet;
+
+                    input.connect(
+                        delayNode
+                    );
+                    delayNode.connect(
+                        feedbackGain
+                    );
+                    feedbackGain.connect(
+                        delayNode
+                    );
+                    delayNode.connect(
+                        wetGain
+                    );
+
+                    outputs.push(
+                        wetGain
+                    );
+
+                    tail =
+                        Math.max(
+                            tail,
+                            delayTime *
+                                (
+                                    1 +
+                                    feedback *
+                                        6
+                                )
+                        );
+                }
+            }
+
+            const reverb =
+                instrument
+                    ?.reverb;
+
+            if (
+                reverb &&
+                typeof reverb ===
+                    "object" &&
+                typeof context
+                    .createConvolver ===
+                    "function"
+            ) {
+                const wet =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(
+                                reverb.wet
+                            ) ||
+                            0
+                        )
+                    );
+                const decay =
+                    Math.max(
+                        0.05,
+                        Math.min(
+                            10,
+                            Number(
+                                reverb.decay
+                            ) ||
+                            1.5
+                        )
+                    );
+
+                if (
+                    wet >
+                        0
+                ) {
+                    const convolver =
+                        context.createConvolver();
+                    const wetGain =
+                        context.createGain();
+
+                    convolver.buffer =
+                        this.#reverbImpulse(
+                            context,
+                            decay
+                        );
+                    wetGain.gain.value =
+                        wet;
+
+                    input.connect(
+                        convolver
+                    );
+                    convolver.connect(
+                        wetGain
+                    );
+
+                    outputs.push(
+                        wetGain
+                    );
+                    tail =
+                        Math.max(
+                            tail,
+                            decay
+                        );
+                }
+            }
+
+            const resource = {
+                name,
+                input,
+                outputs,
+                tail,
+                refCount:
+                    0,
+                connected:
+                    false
+            };
+
+            this.#instrumentResources.set(
+                name,
+                resource
+            );
+
+            return resource;
+        }
+
+        #acquireInstrumentResource(
+            entry,
+            context,
+            name,
+            instrument
+        ) {
+            const resource =
+                this.#instrumentResource(
+                    context,
+                    name,
+                    instrument
+                );
+
+            if (
+                !entry.instrumentResources
+                    .has(
+                        resource
+                    )
+            ) {
+                entry.instrumentResources.add(
+                    resource
+                );
+
+                resource.refCount++;
+
+                if (!resource.connected) {
+                    for (
+                        const output of
+                        resource.outputs
+                    ) {
+                        output.connect(
+                            context.destination
+                        );
+                    }
+
+                    resource.connected =
+                        true;
+                }
+            }
+
+            return resource;
+        }
+
+        #releaseInstrumentResource(
+            context,
+            resource
+        ) {
+            if (!resource) {
+                return;
+            }
+
+            resource.refCount =
+                Math.max(
+                    0,
+                    resource.refCount -
+                        1
+                );
+
+            if (
+                resource.refCount >
+                    0 ||
+                !resource.connected
+            ) {
+                return;
+            }
+
+            for (
+                const output of
+                resource.outputs
+            ) {
+                try {
+                    output.disconnect(
+                        context.destination
+                    );
+                }
+                catch {
+                    try {
+                        output.disconnect();
+                    }
+                    catch {}
+                }
+            }
+
+            resource.connected =
+                false;
+        }
+
         #noiseBuffer(context, minimumSeconds = 0.25) {
             const sampleRate =
                 Math.max(
@@ -1297,7 +1601,15 @@
             return impulse;
         }
 
-        #scheduleTone(context, entry, event, instrument, bpm, songGain) {
+        #scheduleTone(
+            context,
+            entry,
+            event,
+            instrument,
+            bpm,
+            songGain,
+            instrumentResource
+        ) {
             const nodesBefore =
                 new Set(
                     entry.nodes
@@ -1836,214 +2148,20 @@
             }
 
             outputNode.connect(
+                instrumentResource
+                    ?.input ||
                 context.destination
             );
 
-            let effectTail =
-                0;
-            const delay =
-                instrument
-                    ?.delay;
-
-            if (
-                delay &&
-                typeof delay ===
-                    "object" &&
-                typeof context
-                    .createDelay ===
-                    "function"
-            ) {
-                const delayTime =
-                    Math.max(
-                        0,
-                        Math.min(
-                            5,
-                            Number(
-                                delay.time
-                            ) ||
-                            0
-                        )
-                    );
-                const feedback =
-                    Math.max(
-                        0,
-                        Math.min(
-                            0.95,
-                            Number(
-                                delay.feedback
-                            ) ||
-                            0
-                        )
-                    );
-                const wet =
-                    Math.max(
-                        0,
-                        Math.min(
-                            1,
-                            Number(
-                                delay.wet
-                            ) ||
-                            0
-                        )
-                    );
-
-                if (
-                    delayTime >
-                        0 &&
-                    wet >
-                        0
-                ) {
-                    const delayNode =
-                        context
-                            .createDelay(
-                                5
-                            );
-                    const feedbackGain =
-                        context
-                            .createGain();
-                    const wetGain =
-                        context
-                            .createGain();
-
-                    delayNode.delayTime
-                        .setValueAtTime(
-                            delayTime,
-                            startAt
-                        );
-                    feedbackGain.gain
-                        .setValueAtTime(
-                            feedback,
-                            startAt
-                        );
-                    wetGain.gain
-                        .setValueAtTime(
-                            wet,
-                            startAt
-                        );
-
-                    outputNode.connect(
-                        delayNode
-                    );
-                    delayNode.connect(
-                        feedbackGain
-                    );
-                    feedbackGain.connect(
-                        delayNode
-                    );
-                    delayNode.connect(
-                        wetGain
-                    );
-                    wetGain.connect(
-                        context.destination
-                    );
-
-                    effectTail =
-                        Math.max(
-                            effectTail,
-                            delayTime *
-                                (
-                                    1 +
-                                    feedback *
-                                        6
-                                )
-                        );
-
-                    entry.nodes.add(
-                        delayNode
-                    );
-                    entry.nodes.add(
-                        feedbackGain
-                    );
-                    entry.nodes.add(
-                        wetGain
-                    );
-                }
-            }
-
-            const reverb =
-                instrument
-                    ?.reverb;
-
-            if (
-                reverb &&
-                typeof reverb ===
-                    "object" &&
-                typeof context
-                    .createConvolver ===
-                    "function" &&
-                typeof context
-                    .createBuffer ===
-                    "function"
-            ) {
-                const wet =
-                    Math.max(
-                        0,
-                        Math.min(
-                            1,
-                            Number(
-                                reverb.wet
-                            ) ||
-                            0
-                        )
-                    );
-                const decay =
-                    Math.max(
-                        0.05,
-                        Math.min(
-                            10,
-                            Number(
-                                reverb.decay
-                            ) ||
-                            1.5
-                        )
-                    );
-
-                if (
-                    wet >
+            const effectTail =
+                Math.max(
+                    0,
+                    Number(
+                        instrumentResource
+                            ?.tail
+                    ) ||
                     0
-                ) {
-                    const convolver =
-                        context
-                            .createConvolver();
-                    const wetGain =
-                        context
-                            .createGain();
-
-                    convolver.buffer =
-                        this.#reverbImpulse(
-                            context,
-                            decay
-                        );
-                    wetGain.gain
-                        .setValueAtTime(
-                            wet,
-                            startAt
-                        );
-
-                    outputNode.connect(
-                        convolver
-                    );
-                    convolver.connect(
-                        wetGain
-                    );
-                    wetGain.connect(
-                        context.destination
-                    );
-
-                    effectTail =
-                        Math.max(
-                            effectTail,
-                            decay
-                        );
-
-                    entry.nodes.add(
-                        convolver
-                    );
-                    entry.nodes.add(
-                        wetGain
-                    );
-                }
-            }
+                );
 
             entry.nodes.add(
                 envelopeGain
