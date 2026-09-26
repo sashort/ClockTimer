@@ -6036,12 +6036,15 @@ speech-command {
 
     .audio-settings-dialog {
         position: fixed;
-        inset: 0;
+        top: var(--audio-settings-safe-top, 0px);
+        right: 0;
+        bottom: auto;
+        left: 0;
         box-sizing: border-box;
         width: 100vw;
         max-width: none;
-        height: 100dvh;
-        max-height: none;
+        height: var(--audio-settings-safe-height, 100dvh);
+        max-height: var(--audio-settings-safe-height, 100dvh);
         margin: 0;
         padding:
             max(8px, env(safe-area-inset-top))
