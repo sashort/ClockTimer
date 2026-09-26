@@ -1219,6 +1219,7 @@
     let tripTransitionOverlayActive = false;
     let tripTransitionOverlayTimer;
     let tripTransitionOverlayHideTimer;
+    let tripTransitionOverlaySuppressedNumberPad = false;
     let scheduledStartTicker;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
@@ -15596,6 +15597,18 @@
                     )
             );
 
+        if (
+            numberPadDialog?.open
+        ) {
+            numberPadDialog
+                .classList
+                .add(
+                    "trip-transition-suppressed"
+                );
+            tripTransitionOverlaySuppressedNumberPad =
+                true;
+        }
+
         try {
             if (
                 !tripTransitionOverlay.open
@@ -15643,6 +15656,18 @@
                                             .close();
                                     }
                                 } catch {}
+
+                                if (
+                                    tripTransitionOverlaySuppressedNumberPad
+                                ) {
+                                    numberPadDialog
+                                        ?.classList
+                                        .remove(
+                                            "trip-transition-suppressed"
+                                        );
+                                    tripTransitionOverlaySuppressedNumberPad =
+                                        false;
+                                }
 
                                 tripTransitionOverlayActive =
                                     false;
