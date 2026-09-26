@@ -15599,6 +15599,12 @@
 
             let transitionChimePlayed =
                 false;
+            let transitionSpeechDelayMs =
+                0;
+            const transitionSpeechOutput =
+                audioAnnouncementOutput(
+                    "trip-ended"
+                );
 
             if (
                 transitionSong &&
@@ -15616,8 +15622,28 @@
                             }
                         );
                     transitionChimePlayed =
-                        Boolean(song);
-                    await song?.finished;
+                        Boolean(
+                            song?.hasChime
+                        );
+
+                    if (
+                        transitionChimePlayed
+                    ) {
+                        transitionSpeechDelayMs =
+                            Math.max(
+                                0,
+                                Number(
+                                    song
+                                        ?.chimeEndsInMs
+                                ) ||
+                                0
+                            ) +
+                            Math.max(
+                                0,
+                                transitionSpeechOutput
+                                    .speechDelayMs
+                            );
+                    }
                 }
                 catch (error) {
                     console.error(
@@ -15629,9 +15655,39 @@
             }
 
             if (speech) {
-                audio?.speak?.(
-                    speech
-                );
+                if (
+                    transitionSpeechDelayMs >
+                        0
+                ) {
+                    setTimeout(
+                        () =>
+                            audio?.speak?.(
+                                speech,
+                                {
+                                    speechVolume:
+                                        transitionSpeechOutput
+                                            .speechVolume,
+                                    speechVelocity:
+                                        transitionSpeechOutput
+                                            .speechVelocity
+                                }
+                            ),
+                        transitionSpeechDelayMs
+                    );
+                }
+                else {
+                    audio?.speak?.(
+                        speech,
+                        {
+                            speechVolume:
+                                transitionSpeechOutput
+                                    .speechVolume,
+                            speechVelocity:
+                                transitionSpeechOutput
+                                    .speechVelocity
+                        }
+                    );
+                }
             }
 
             if (
