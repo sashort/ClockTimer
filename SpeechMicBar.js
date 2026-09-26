@@ -104,12 +104,25 @@ class SpeechMicBar extends HTMLElement {
                     position: absolute;
                     left: 0;
                     right: 0;
-                    bottom: 100%;
+                    bottom:
+                        calc(
+                            100% +
+                            var(
+                                --trip-log-row-height,
+                                0px
+                            )
+                        );
                     box-sizing: border-box;
                     height: auto;
                     max-height:
-                        var(
-                            --speech-options-max-height
+                        calc(
+                            var(
+                                --speech-options-max-height
+                            ) -
+                            var(
+                                --trip-log-row-height,
+                                0px
+                            )
                         );
                     padding: 42px 8px 8px;
                     overflow-y: auto;
