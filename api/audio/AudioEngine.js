@@ -134,6 +134,60 @@
             return this.#context;
         }
 
+        #isPhone() {
+            const userAgentData =
+                globalThis.navigator
+                    ?.userAgentData;
+
+            if (
+                typeof userAgentData
+                    ?.mobile ===
+                    "boolean"
+            ) {
+                return userAgentData.mobile;
+            }
+
+            const userAgent =
+                String(
+                    globalThis.navigator
+                        ?.userAgent ||
+                    ""
+                );
+
+            if (
+                /iPhone|iPod|Windows Phone|Android.*Mobile|Mobile Safari/i
+                    .test(
+                        userAgent
+                    )
+            ) {
+                return true;
+            }
+
+            const matches =
+                query => {
+                    try {
+                        return Boolean(
+                            globalThis
+                                .matchMedia
+                                ?.(query)
+                                ?.matches
+                        );
+                    }
+                    catch {
+                        return false;
+                    }
+                };
+
+            return (
+                matches(
+                    "(pointer: coarse)"
+                ) &&
+                matches(
+                    "(max-width: 600px)"
+                )
+            );
+        }
+
         #beats(value) {
             const text = String(value ?? "0").trim();
 
@@ -2267,11 +2321,24 @@
                 catalog?.instruments?.[
                     song.instrument
                 ];
+            const phoneFallbackName =
+                this.#isPhone()
+                    ? requestedInstrument
+                        ?.phoneFallback
+                    : undefined;
+            const phoneFallbackInstrument =
+                phoneFallbackName
+                    ? catalog
+                        ?.instruments?.[
+                            phoneFallbackName
+                        ]
+                    : undefined;
             const fallbackInstrument =
                 catalog?.instruments?.[
                     "legacy-square"
                 ];
             const instrument =
+                phoneFallbackInstrument ||
                 requestedInstrument ||
                 fallbackInstrument;
 
@@ -2279,6 +2346,16 @@
                 throw new Error(
                     "Unknown instrument: " +
                     song.instrument
+                );
+            }
+
+            if (
+                phoneFallbackName &&
+                !phoneFallbackInstrument
+            ) {
+                console.warn(
+                    "Unknown phone fallback instrument; using original:",
+                    phoneFallbackName
                 );
             }
 
