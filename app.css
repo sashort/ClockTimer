@@ -2201,7 +2201,7 @@ body:has(.app[data-interval-state="down"])::after {
 .trip-transition-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2147483644;
+    z-index: 2147483647;
     width: 100vw;
     height: 100dvh;
     max-width: none;
