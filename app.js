@@ -1705,6 +1705,10 @@
             const target =
                 event.target;
 
+            if (target === audioInstrument) {
+                return;
+            }
+
             if (target === audioSpeechVolume) {
                 audioSettings.speechVolume =
                     Number(target.value);
@@ -1787,8 +1791,14 @@
 
                 saveAudioSettings();
 
-                globalThis.location
-                    ?.reload?.();
+                audioInstrument.disabled =
+                    true;
+
+                requestAnimationFrame(
+                    () =>
+                        globalThis.location
+                            ?.reload?.()
+                );
             }
         );
 
