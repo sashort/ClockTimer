@@ -5922,6 +5922,24 @@ speech-command {
     gap: 6px;
 }
 
+.audio-announcement-event-row {
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.audio-announcement-event-row-master {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.audio-announcement-event-enabled {
+    width: 28px;
+    height: 28px;
+    margin: 0 0 0 4px;
+}
+
 .audio-announcement-event-choice {
     width: 100%;
     min-height: 52px;
@@ -5937,7 +5955,8 @@ speech-command {
     text-align: left;
 }
 
-.audio-announcement-event-choice:first-child {
+.audio-announcement-event-row:first-child
+.audio-announcement-event-choice {
     border-color: rgb(169 221 247 / 72%);
     background: rgb(0 63 128 / 58%);
 }
@@ -5988,7 +6007,7 @@ speech-command {
 }
 
 .audio-announcement-mobile-columns label,
-.audio-announcement-mobile-attribute-row > label:not(.audio-announcement-mobile-enable) {
+.audio-announcement-mobile-attribute-row > label {
     min-width: 0;
     padding: 10px 4px;
     display: grid;
@@ -5998,7 +6017,7 @@ speech-command {
 }
 
 .audio-announcement-mobile-columns label + label,
-.audio-announcement-mobile-attribute-row > label:not(.audio-announcement-mobile-enable) + label {
+.audio-announcement-mobile-attribute-row > label + label {
     border-left: 1px solid rgb(255 255 255 / 12%);
 }
 
@@ -6011,23 +6030,6 @@ speech-command {
 
 .audio-announcement-mobile-attribute-row {
     position: relative;
-    padding-top: 48px;
-}
-
-.audio-announcement-mobile-enable {
-    position: absolute;
-    inset: 0 0 auto 0;
-    min-height: 48px;
-    padding: 6px 10px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    border-bottom: 1px solid rgb(255 255 255 / 12%);
-}
-
-.audio-announcement-mobile-enable input {
-    width: 26px;
-    height: 26px;
 }
 
 .audio-announcement-mobile-overrides {
