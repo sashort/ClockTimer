@@ -1193,6 +1193,11 @@
     const audioSettingsDialog = $("#audioSettingsDialog");
     const audioSettingsForm = $("#audioSettingsForm");
     const audioAnnouncementRows = $("#audioAnnouncementRows");
+    const audioAnnouncementPage = $("#audioAnnouncementPage");
+    const audioAnnouncementEventList = $("#audioAnnouncementEventList");
+    const audioAnnouncementBack = $("#audioAnnouncementBack");
+    const audioAnnouncementSelectedLabel = $("#audioAnnouncementSelectedLabel");
+    const audioAnnouncementMobileAttributeRow = $("#audioAnnouncementMobileAttributeRow");
     const audioSpeechVolume = $("#audioSpeechVolume");
     const audioToneVolume = $("#audioToneVolume");
     const audioInstrument = $("#audioInstrument");
@@ -1600,6 +1605,154 @@
         audioAnnouncementRows.replaceChildren(
             fragment
         );
+
+        if (audioAnnouncementEventList) {
+            const mobileFragment =
+                document.createDocumentFragment();
+
+            const addChoice =
+                (key, label, master = false) => {
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
+
+                    button.type =
+                        "button";
+                    button.className =
+                        "audio-announcement-event-choice";
+                    button.dataset.audioAnnouncementSelect =
+                        master
+                            ? "master"
+                            : key;
+
+                    const text =
+                        document.createElement(
+                            "span"
+                        );
+
+                    text.textContent =
+                        label;
+
+                    const arrow =
+                        document.createElement(
+                            "span"
+                        );
+
+                    arrow.className =
+                        "audio-announcement-event-arrow";
+                    arrow.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+                    arrow.textContent =
+                        "›";
+
+                    button.append(
+                        text,
+                        arrow
+                    );
+
+                    mobileFragment.append(
+                        button
+                    );
+                };
+
+            addChoice(
+                "master",
+                "Master",
+                true
+            );
+
+            for (
+                const [
+                    key,
+                    label
+                ] of
+                AUDIO_ANNOUNCEMENTS
+            ) {
+                addChoice(
+                    key,
+                    label
+                );
+            }
+
+            audioAnnouncementEventList
+                .replaceChildren(
+                    mobileFragment
+                );
+        }
+    }
+
+    function showAudioAnnouncementMobileDetail(
+        selection,
+        source
+    ) {
+        if (
+            !audioAnnouncementPage ||
+            !audioAnnouncementSelectedLabel ||
+            !audioAnnouncementMobileAttributeRow
+        ) {
+            return false;
+        }
+
+        const master =
+            selection ===
+            "master";
+
+        const entry =
+            AUDIO_ANNOUNCEMENTS
+                .find(
+                    ([key]) =>
+                        key ===
+                        selection
+                );
+
+        if (
+            !master &&
+            !entry
+        ) {
+            return false;
+        }
+
+        audioAnnouncementSelectedLabel
+            .textContent =
+            master
+                ? "Master"
+                : entry[1];
+
+        if (master) {
+            audioAnnouncementMobileAttributeRow
+                .removeAttribute(
+                    "data-audio-announcement"
+                );
+            audioAnnouncementMobileAttributeRow
+                .hidden =
+                true;
+        }
+        else {
+            audioAnnouncementMobileAttributeRow
+                .dataset
+                .audioAnnouncement =
+                selection;
+            audioAnnouncementMobileAttributeRow
+                .hidden =
+                false;
+        }
+
+        renderAudioSettings();
+
+        void audioAnnouncementPage
+            .showView(
+                "detail",
+                {
+                    source,
+                    direction:
+                        "up"
+                }
+            );
+
+        return true;
     }
 
     function renderAudioSettings() {
@@ -1640,7 +1793,7 @@
                 ] !== false;
         }
 
-        for (const row of audioAnnouncementRows?.querySelectorAll("[data-audio-announcement]") || []) {
+        for (const row of audioSettingsDialog?.querySelectorAll("[data-audio-announcement]") || []) {
             const key =
                 row.dataset.audioAnnouncement;
             const state =
@@ -1708,10 +1861,51 @@
     audioSettingsDialog?.addEventListener(
         "opening",
         () => {
+            audioAnnouncementPage
+                ?.reset?.();
+            audioAnnouncementMobileAttributeRow
+                ?.removeAttribute(
+                    "data-audio-announcement"
+                );
+            if (audioAnnouncementMobileAttributeRow) {
+                audioAnnouncementMobileAttributeRow.hidden =
+                    true;
+            }
             void populateAudioInstrumentOptions();
             renderAudioSettings();
         }
     );
+
+    audioAnnouncementEventList
+        ?.addEventListener(
+            "click",
+            event => {
+                const choice =
+                    event.target
+                        ?.closest?.(
+                            "[data-audio-announcement-select]"
+                        );
+
+                if (!choice) {
+                    return;
+                }
+
+                showAudioAnnouncementMobileDetail(
+                    choice.dataset
+                        .audioAnnouncementSelect,
+                    choice
+                );
+            }
+        );
+
+    audioAnnouncementBack
+        ?.addEventListener(
+            "click",
+            () => {
+                void audioAnnouncementPage
+                    ?.back?.();
+            }
+        );
 
     audioSettingsForm?.addEventListener(
         "input",
