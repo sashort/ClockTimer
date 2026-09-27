@@ -30,6 +30,11 @@ const audioEngineSource = readFileSync(
     new URL("../api/audio/AudioEngine.js", import.meta.url),
     "utf8"
 );
+const speechMenuSource = readFileSync(
+    new URL("../SpeechMenu.js", import.meta.url),
+    "utf8"
+);
+
 
 test("value editor chooses voice for speech invocations and touch otherwise", () => {
     assert.match(
@@ -72,6 +77,53 @@ test("voice entry owns spoken value acceptance and navigation", () => {
     assert.match(parser, /touch\|keypad\|number pad/);
     assert.match(parser, /commitNumberPad/);
     assert.doesNotMatch(parser, /setTimeout\s*\(/);
+});
+
+test("system speech commands stay available above number-pad and voice-pad input", () => {
+    assert.match(
+        speechMenuSource,
+        /rightSystemExact[\s\S]*leftSystemExact[\s\S]*left\.depth/
+    );
+    assert.match(
+        speechMenuSource,
+        /exactIsSystem[\s\S]*candidate[\s\S]*\.continuation[\s\S]*#effectiveModal[\s\S]*"system"/
+    );
+    assert.match(
+        speechMenuSource,
+        /#shouldExecuteElement\([\s\S]*#systemExecutionPassthrough[\s\S]*#effectiveModal[\s\S]*"system"/
+    );
+});
+
+test("voice pad suspends normal execution but passes system commands through", () => {
+    const openVoice = appSource.slice(
+        appSource.indexOf("async function openVoiceValueEditor"),
+        appSource.indexOf("function openVoiceEntry")
+    );
+    const hideVoice = appSource.slice(
+        appSource.indexOf("function hideVoiceEntrySurface"),
+        appSource.indexOf("async function closeVoiceEntry")
+    );
+    const pipeVoice = appSource.slice(
+        appSource.indexOf("function voiceEntryTranscriptIsSystemCommand"),
+        appSource.indexOf("function bindVoiceEntryTranscriptPipe")
+    );
+
+    assert.match(
+        openVoice,
+        /systemExecutionPassthrough[\s\S]*true[\s\S]*executionEnabled[\s\S]*false/
+    );
+    assert.match(
+        hideVoice,
+        /systemExecutionPassthrough[\s\S]*voiceEntrySystemExecutionBeforeOpen/
+    );
+    assert.match(
+        pipeVoice,
+        /phraseGroups[\s\S]*group\.modal[\s\S]*"system"/
+    );
+    assert.match(
+        pipeVoice,
+        /voiceEntryTranscriptIsSystemCommand\([\s\S]*transcript[\s\S]*\)[\s\S]*return;/
+    );
 });
 
 test("English speech vocabulary includes the touch-keypad voice command", () => {
