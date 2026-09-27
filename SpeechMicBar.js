@@ -872,6 +872,12 @@ class SpeechMicBar extends HTMLElement {
                     background: rgb(70 76 83 / 82%);
                 }
 
+                :host([training-active]) #mic {
+                    opacity: .08;
+                    pointer-events: none !important;
+                    cursor: default;
+                }
+
                 #main {
                     min-width: 0;
                     flex: 1 1 auto;
@@ -1488,6 +1494,19 @@ class SpeechMicBar extends HTMLElement {
     set trainingLocked(value) {
         this.toggleAttribute(
             "training-locked",
+            Boolean(value)
+        );
+    }
+
+    get trainingActive() {
+        return this.hasAttribute(
+            "training-active"
+        );
+    }
+
+    set trainingActive(value) {
+        this.toggleAttribute(
+            "training-active",
             Boolean(value)
         );
     }
