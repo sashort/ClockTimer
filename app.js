@@ -1376,6 +1376,16 @@
     let numberPadDateRow;
     let numberPadAM;
     let numberPadPM;
+    const voiceEntrySurface = $("#voiceEntrySurface");
+    const voiceEntryTitle = $("#voiceEntryTitle");
+    const voiceEntryPrompt = $("#voiceEntryPrompt");
+    const voiceEntryExample = $("#voiceEntryExample");
+    const voiceEntryValue = $("#voiceEntryValue");
+    const voiceEntryTouch = $("#voiceEntryTouch");
+    const voiceEntryCancel = $("#voiceEntryCancel");
+    let voiceEntryState;
+    let voiceEntryExecutionBeforeOpen;
+    let voiceEntryAcceptTimer;
     const uiReturnStack = [];
     let tripSettingsNavigation = {
         returnTarget: "home",
@@ -13066,6 +13076,134 @@
         }
     }
 
+    function createNumberPadState({
+        mode,
+        source,
+        initialValue = "",
+        tripDefaults,
+        startsTripOnConfirm = false,
+        role = "root",
+        workflow,
+        cancelTarget,
+        confirmTarget,
+        backTarget,
+        onConfirm,
+        onCancel,
+        title,
+        allowEmpty = false
+    } = {}) {
+        if (
+            typeof confirmTarget !== "string" ||
+            !confirmTarget.trim() ||
+            typeof cancelTarget !== "string" ||
+            !cancelTarget.trim()
+        ) {
+            throw new TypeError(
+                "Input requires explicit confirmTarget and cancelTarget."
+            );
+        }
+
+        const normalizedMode =
+            mode === "percent"
+                ? "percent"
+                : mode === "absolute"
+                    ? "absolute"
+                    : "duration";
+        const normalizedRole =
+            role === "trip-settings-field"
+                ? "trip-settings-field"
+                : "root";
+
+        let initial;
+        let initialDate;
+        let initialMeridiem;
+
+        if (normalizedMode === "absolute") {
+            const absolute =
+                getAbsolutePadInitial(
+                    initialValue,
+                    tripDefaults?.creationDate
+                );
+
+            initial = absolute.digits;
+            initialDate = absolute.date;
+            initialMeridiem = absolute.meridiem;
+        }
+        else {
+            initial =
+                normalizedMode === "percent"
+                    ? normalizePercentDigits(
+                        initialValue
+                    )
+                    : durationValueToRawDigits(
+                        initialValue
+                    );
+        }
+
+        const state = {
+            mode: normalizedMode,
+            onConfirm,
+            onCancel,
+            source,
+            title:
+                title ||
+                getNumberPadTitle(
+                    source
+                ),
+            initial,
+            pending: initial,
+            initialDate,
+            pendingDate: initialDate,
+            initialMeridiem,
+            meridiem: initialMeridiem,
+            replaceOnNextDigit:
+                source !== "new-trip",
+            persistence:
+                source === "new-trip"
+                    ? "pending"
+                    : normalizedConnectionStatus(),
+            connectionPresentation:
+                source === "new-trip"
+                    ? "initial"
+                    : "settled",
+            connectionStatusToken:
+                ++numberPadConnectionSequence,
+            tripDefaults,
+            startsTripOnConfirm:
+                Boolean(
+                    startsTripOnConfirm
+                ),
+            role: normalizedRole,
+            workflow:
+                workflow ||
+                (
+                    source === "new-trip"
+                        ? "new-trip"
+                        : tripIsLive()
+                            ? "edit-trip"
+                            : null
+                ),
+            cancelTarget,
+            confirmTarget,
+            backTarget,
+            everEdited: false,
+            allowEmpty:
+                Boolean(
+                    allowEmpty
+                )
+        };
+
+        if (
+            source === "new-trip" &&
+            state.persistence === "pending"
+        ) {
+            state.connectionAnimationStartedAt =
+                performance.now();
+        }
+
+        return state;
+    }
+
     async function openNumberPad({
         mode,
         source,
@@ -13086,88 +13224,29 @@
             return false;
         }
 
-        if (
-            typeof confirmTarget !==
-                "string" ||
-            !confirmTarget.trim() ||
-            typeof cancelTarget !==
-                "string" ||
-            !cancelTarget.trim()
-        ) {
-            throw new TypeError(
-                "Number pad requires explicit confirmTarget and cancelTarget."
-            );
-        }
-
         await ensureNumberPadLoaded();
 
         if (signal?.aborted) {
             return false;
         }
-        const normalizedMode = mode === "percent"
-            ? "percent"
-            : mode === "absolute"
-                ? "absolute"
-                : "duration";
-        const normalizedRole = role === "trip-settings-field"
-            ? "trip-settings-field"
-            : "root";
-        let initial;
-        let initialDate;
-        let initialMeridiem;
-        if (normalizedMode === "absolute") {
-            const absolute = getAbsolutePadInitial(initialValue, tripDefaults?.creationDate);
-            initial = absolute.digits;
-            initialDate = absolute.date;
-            initialMeridiem = absolute.meridiem;
-        }
-        else {
-            initial = normalizedMode === "percent"
-                ? normalizePercentDigits(initialValue)
-                : durationValueToRawDigits(initialValue);
-        }
-        const state = {
-            mode: normalizedMode,
-            onConfirm, onCancel,
-            source,
-            title: title || getNumberPadTitle(source),
-            initial,
-            pending: initial,
-            initialDate,
-            pendingDate: initialDate,
-            initialMeridiem,
-            meridiem: initialMeridiem,
-            replaceOnNextDigit: source !== "new-trip",
-            persistence: source === "new-trip"
-                ? "pending"
-                : normalizedConnectionStatus(),
-            connectionPresentation: source === "new-trip"
-                ? "initial"
-                : "settled",
-            connectionStatusToken: ++numberPadConnectionSequence,
-            tripDefaults,
-            startsTripOnConfirm: Boolean(startsTripOnConfirm),
-            role: normalizedRole,
-            workflow: workflow || (
-                source === "new-trip"
-                    ? "new-trip"
-                    : tripIsLive()
-                        ? "edit-trip"
-                        : null
-            ),
-            cancelTarget,
-            confirmTarget,
-            backTarget,
-            everEdited: false,
-            allowEmpty: Boolean(allowEmpty)
-        };
-        if (
-            source === "new-trip" &&
-            state.persistence === "pending"
-        ) {
-            state.connectionAnimationStartedAt =
-                performance.now();
-        }
+
+        const state =
+            createNumberPadState({
+                mode,
+                source,
+                initialValue,
+                tripDefaults,
+                startsTripOnConfirm,
+                role,
+                workflow,
+                cancelTarget,
+                confirmTarget,
+                backTarget,
+                onConfirm,
+                onCancel,
+                title,
+                allowEmpty
+            });
         numberPadState = state;
         refreshNumberPad();
         mainMenu?.hidePopover?.();
