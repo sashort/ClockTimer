@@ -451,6 +451,10 @@ html[data-trip-log-startup="unpinned"] .app {
     place-items: center;
     overflow: hidden;
     container-type: size;
+    transition:
+        height var(--trip-log-layout-duration, 1000ms) ease-in-out,
+        transform var(--trip-log-layout-duration, 1000ms) ease-in-out;
+    will-change: height, transform;
 }
 
 clock-timer {
@@ -479,7 +483,9 @@ clock-timer {
     height: min(var(--home-clock-preferred-size), 100cqw, 100cqh);
     transition:
         width var(--trip-log-layout-duration, 1000ms) ease-in-out,
-        height var(--trip-log-layout-duration, 1000ms) ease-in-out;
+        height var(--trip-log-layout-duration, 1000ms) ease-in-out,
+        transform var(--trip-log-layout-duration, 1000ms) ease-in-out;
+    will-change: width, height, transform;
 }
 
 clock-timer::part(hour-hand),
