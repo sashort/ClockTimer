@@ -880,8 +880,6 @@
                                 easterEggPlaybackBeat,
                             includeSpeech:
                                 false,
-                            suspendChimeListening:
-                                false,
                             useSelectedInstrument:
                                 false
                         }
@@ -13720,8 +13718,6 @@
                     volume: 0.01,
                     reason:
                         "number-pad-ambient",
-                    suspendListening:
-                        false
                 }
             )
             .then(
@@ -17247,8 +17243,6 @@
                                         volume: 1,
                                         reason:
                                             "number-pad",
-                                        suspendListening:
-                                            false
                                     }
                                 )
                                 .then(

@@ -2455,10 +2455,7 @@
                         volume,
                         speechDelayMs:
                             entry.requestedSpeechDelayMs,
-                        loop: true,
-                        suspendListening:
-                            entry
-                                .suspendsListening
+                        loop: true
                     }
                 ).catch(
                     error =>
@@ -2797,30 +2794,6 @@
             entry.resolveFinished =
                 undefined;
 
-            if (
-                entry.chimeListeningSuspended
-            ) {
-                entry.chimeListeningSuspended =
-                    false;
-
-                globalThis.SpeechMenu
-                    ?.resumeListening?.(
-                        "audio-chime:" +
-                        entry.name +
-                        ":" +
-                        reason
-                    );
-            }
-
-            if (
-                entry.suspendsListening !==
-                    false
-            ) {
-                globalThis.SpeechMenu
-                    ?.resumeListening?.(
-                        "audio:" + entry.name + ":" + reason
-                    );
-            }
         }
 
         async startSong(
@@ -2837,10 +2810,6 @@
                 loop,
                 includeTones = true,
                 includeSpeech = true,
-                suspendListening =
-                    false,
-                suspendChimeListening =
-                    true,
                 useSelectedInstrument =
                     true,
                 startBeat = 0
@@ -3054,21 +3023,8 @@
                     0.015,
                 released: false,
                 endTimer: undefined,
-                chimeListeningSuspended:
-                    false,
-                suspendsListening:
-                    Boolean(
-                        suspendListening
-                    ),
                 resolveFinished
             };
-
-            if (suspendListening) {
-                globalThis.SpeechMenu
-                    ?.suspendListening?.(
-                        "audio:" + name
-                    );
-            }
 
             const preparedEvents =
                 (song.events || [])
@@ -3169,20 +3125,6 @@
                     ? entry.requestedSpeechDelayMs
                     : 0;
 
-            if (
-                hasChime &&
-                suspendChimeListening
-            ) {
-                entry.chimeListeningSuspended =
-                    true;
-
-                globalThis.SpeechMenu
-                    ?.suspendListening?.(
-                        "audio-chime:" +
-                        name
-                    );
-            }
-
             this.#active.set(
                 entry.id,
                 entry
@@ -3207,58 +3149,6 @@
                 let completionScheduled =
                     false;
 
-                const finishChimeSuspension =
-                    () => {
-                        if (
-                            !entry
-                                .chimeListeningSuspended
-                        ) {
-                            return;
-                        }
-
-                        const delayMilliseconds =
-                            Math.max(
-                                0,
-                                (
-                                    chimeEndAt -
-                                    context.currentTime
-                                ) *
-                                    1000
-                            );
-
-                        const timer =
-                            setTimeout(
-                                () => {
-                                    entry.timers.delete(
-                                        timer
-                                    );
-
-                                    if (
-                                        entry.released ||
-                                        !entry
-                                            .chimeListeningSuspended
-                                    ) {
-                                        return;
-                                    }
-
-                                    entry.chimeListeningSuspended =
-                                        false;
-
-                                    globalThis.SpeechMenu
-                                        ?.resumeListening?.(
-                                            "audio-chime:" +
-                                            name +
-                                            ":ended"
-                                        );
-                                },
-                                delayMilliseconds
-                            );
-
-                        entry.timers.add(
-                            timer
-                        );
-                    };
-
                 const finishTimeline =
                     () => {
                         if (
@@ -3270,7 +3160,6 @@
 
                         completionScheduled =
                             true;
-                        finishChimeSuspension();
 
                         const durationMilliseconds =
                             Math.max(
@@ -3720,8 +3609,7 @@
             {
                 waveform = "square",
                 volume = 1,
-                reason = "direct-tone",
-                suspendListening = true
+                reason = "direct-tone"
             } = {}
         ) {
             const values =
@@ -3759,18 +3647,6 @@
                 released: false,
                 endTimer: undefined
             };
-
-            if (suspendListening) {
-                globalThis.SpeechMenu
-                    ?.suspendListening?.(
-                        "audio:" + reason
-                    );
-            }
-
-            entry.suspendsListening =
-                Boolean(
-                    suspendListening
-                );
 
             this.#active.set(
                 entry.id,

@@ -1036,9 +1036,13 @@ assert.match(speechMenuSource, /static #executionEnabled = true;/);
 assert.match(speechMenuSource, /registerSynthesizedSpeech/);
 assert.match(speechMenuSource, /unregisterSynthesizedSpeech/);
 assert.match(speechMenuSource, /#stripSynthesizedSpeech/);
-assert.match(
+assert.doesNotMatch(
     audioEngineSource,
-    /startSong\([\s\S]*suspendListening\s*=\s*false/
+    /suspendChimeListening|suspendListening/
+);
+assert.doesNotMatch(
+    audioEngineSource,
+    /SpeechMenu[\s\S]{0,160}\?\.(?:suspendListening|resumeListening)/
 );
 assert.match(
     audioEngineSource,
