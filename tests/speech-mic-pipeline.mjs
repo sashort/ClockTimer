@@ -2454,7 +2454,7 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /const refreshSurfaceContext[\s\S]*#invalidateRecognitionContext\([\s\S]*"surface-context-change"[\s\S]*#schedulePhraseRefresh/
+    /const refreshSurfaceContext[\s\S]*#surfaceContextRefreshPending[\s\S]*true[\s\S]*#schedulePhraseRefresh/
 );
 assert.match(
     speechMenuSource,
@@ -2462,7 +2462,11 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /MutationObserver\([\s\S]*"open"[\s\S]*"hidden"[\s\S]*"inert"[\s\S]*"aria-hidden"[\s\S]*record\.attributeName[\s\S]*record\.target[\s\S]*matches[\s\S]*"dialog, \[popover\], details"[\s\S]*#invalidateRecognitionContext/
+    /MutationObserver\([\s\S]*"open"[\s\S]*"hidden"[\s\S]*"inert"[\s\S]*"aria-hidden"[\s\S]*record\.attributeName[\s\S]*record\.target[\s\S]*matches[\s\S]*"dialog, \[popover\], details"[\s\S]*#surfaceContextRefreshPending[\s\S]*true/
+);
+assert.match(
+    speechMenuSource,
+    /const speechContextChanged\s*=[\s\S]*phrasesChanged[\s\S]*groupsChanged[\s\S]*#surfaceContextRefreshPending[\s\S]*if \(speechContextChanged\)[\s\S]*#invalidateRecognitionContext\([\s\S]*"surface-context-change"/
 );
 assert.match(
     speechMenuSource,
