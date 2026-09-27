@@ -23518,11 +23518,26 @@
                     )
                         .trim()
                         .toLowerCase();
+                const rangeByMode = {
+                    day: "day",
+                    week: "week",
+                    check: "pay-period",
+                    month: "month",
+                    year: "year"
+                };
+                const requestedRange =
+                    rangeByMode[
+                        mode
+                    ];
+                const requestedMode =
+                    requestedRange
+                        ? "total"
+                        : mode;
 
                 if (
                     !PERCENT_MODES
                         .includes(
-                            mode
+                            requestedMode
                         )
                 ) {
                     return false;
@@ -23533,10 +23548,18 @@
                         clockTimer
                             .percentMode
                     );
+                const previousRange =
+                    getTripLogRange();
+
+                if (requestedRange) {
+                    setTripLogRange(
+                        requestedRange
+                    );
+                }
 
                 const appliedMode =
                     applyScope(
-                        mode
+                        requestedMode
                     );
 
                 syncScopeUI(true);
@@ -23548,14 +23571,21 @@
 
                 if (
                     appliedMode !==
-                    mode
+                    requestedMode
                 ) {
                     return false;
                 }
 
+                const rangeChanged =
+                    getTripLogRange() !==
+                    previousRange;
+                const modeChanged =
+                    previousMode !==
+                    appliedMode;
+
                 if (
-                    previousMode ===
-                    appliedMode
+                    !rangeChanged &&
+                    !modeChanged
                 ) {
                     return true;
                 }

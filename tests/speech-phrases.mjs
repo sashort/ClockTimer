@@ -174,6 +174,33 @@ assert.deepEqual(
         "total goal <percent>"
     ]
 );
+assert.deepEqual(
+    [
+        ...SpeechMenu
+            .extrapolatePattern(
+                "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$"
+            )
+    ],
+    [
+        "auto",
+        "auto mode",
+        "total",
+        "total mode",
+        "trip",
+        "trip mode",
+        "day",
+        "day mode",
+        "week",
+        "week mode",
+        "check",
+        "check mode",
+        "month",
+        "month mode",
+        "year",
+        "year mode"
+    ]
+);
+
 
 
 const reducedSyncPattern =
@@ -421,6 +448,15 @@ assert.match(
     speechMasterAppSource,
     /announcementOverridesMaster[\s\S]*?masterOverrides[\s\S]*?audioCellUserEnabled/
 );
+assert.match(
+    speechMasterAppSource,
+    /changeGoalMode[\s\S]*?rangeByMode[\s\S]*?day:[\s\S]*?"day"[\s\S]*?week:[\s\S]*?"week"[\s\S]*?check:[\s\S]*?"pay-period"[\s\S]*?month:[\s\S]*?"month"[\s\S]*?year:[\s\S]*?"year"[\s\S]*?requestedMode[\s\S]*?"total"/
+);
+assert.doesNotMatch(
+    speechMasterAppSource,
+    /rangeByMode\s*=\s*\{[^}]*custom:/s
+);
+
 
 assert.match(
     speechMasterAppSource,

@@ -50,7 +50,7 @@
                 totalGoal: "^total goal$",
                 changeGoal: "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|check|month|year)$",
                 readGoalMode: "^mode$",
-                goalMode: "^(?<goalMode>auto|total|trip)(?: mode)?$",
+                goalMode: "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$",
                 sync: "^(?:sync|sink|sin)(?: (?<syncAction>on|off))?$",
                 syncStatus: "^(?:sync|sink|sin) status$",
                 howLong: "^(?:how long|time)$",
