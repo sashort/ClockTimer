@@ -248,3 +248,116 @@ test("touch-to-voice handoff preserves the shared numberpad session across dialo
         /return;[\s\S]*?resetNumberPad/
     );
 });
+
+
+test("voice value grammar restores keypad preprocessing and open-ended recognition", () => {
+    const installer = appSource.slice(
+        appSource.indexOf("function installVoiceEntrySpeechCommands"),
+        appSource.indexOf("async function ensureNumberPadLoaded")
+    );
+
+    assert.match(
+        installer,
+        /"keypad"[\s\S]*?"spokenValue"/
+    );
+    assert.match(
+        installer,
+        /speech-open-ended/
+    );
+    assert.match(
+        installer,
+        /speechOptionsPhrase[\s\S]*?<spokenValue>/
+    );
+
+    const normalizer = appSource.slice(
+        appSource.indexOf('"normalizeSpeechValue"'),
+        appSource.indexOf("let pendingSpeechReady")
+    );
+
+    assert.match(
+        normalizer,
+        /!numberPadDialog[\s\S]*?\.open[\s\S]*?!voiceEntryState/
+    );
+});
+
+test("voice absolute-time parsing uses the keypad clock-parts parser", () => {
+    const parser = appSource.slice(
+        appSource.indexOf("function parseVoiceEntryTranscript"),
+        appSource.indexOf("async function openVoiceValueEditor")
+    );
+
+    assert.match(
+        parser,
+        /"clock-parts"/
+    );
+    assert.match(
+        parser,
+        /parts\.day/
+    );
+    assert.match(
+        parser,
+        /absoluteDigitsValid/
+    );
+});
+
+test("voice keypad grammar still recognizes representative value phrases", () => {
+    const match =
+        languageSource.match(
+            /const keypadValuePattern =\s*\n\s*"([^"]+)"\s*\+\s*\n\s*"([^"]+)"/
+        );
+
+    assert.ok(match);
+
+    // Evaluate the production language file instead of reconstructing the
+    // concatenated pattern from source fragments.
+    const scope = {};
+    Function(
+        "globalThis",
+        languageSource
+    )(scope);
+
+    const pattern =
+        new RegExp(
+            scope.WMOFLanguages["en-US"]
+                .speech.commands
+                .keypadValue,
+            "i"
+        );
+
+    for (const phrase of [
+        "one hundred ten percent",
+        "one hundred and twenty-five per cent",
+        "twenty minutes",
+        "an hour and five minutes",
+        "1:02:03",
+        "five thirty pm",
+        "5:30 p.m.",
+        "5:30 p m",
+        "a quarter past five tomorrow",
+        "noon",
+        "midnight",
+        "17:30"
+    ]) {
+        assert.equal(
+            pattern.test(phrase),
+            true,
+            phrase
+        );
+    }
+
+    for (const phrase of [
+        "ok",
+        "okay",
+        "cancel",
+        "close",
+        "ready",
+        "defer trip",
+        "banana"
+    ]) {
+        assert.equal(
+            pattern.test(phrase),
+            false,
+            phrase
+        );
+    }
+});

@@ -12449,18 +12449,42 @@
                 "voiceEntryDefer"
             ]
         ) {
+            const valueCommand =
+                key ===
+                    "keypadValue";
+
             const command =
                 installSpeechCommand(
                     key,
                     "handleVoiceEntrySpeech",
                     voiceEntrySurface,
-                    false
+                    false,
+                    ...(
+                        valueCommand
+                            ? [
+                                "keypad",
+                                "spokenValue"
+                            ]
+                            : []
+                    )
                 );
 
-            if (command) {
+            if (!command) {
+                continue;
+            }
+
+            command.dataset
+                .speechTarget =
+                "#voiceEntrySurface";
+
+            if (valueCommand) {
+                command.setAttribute(
+                    "speech-open-ended",
+                    ""
+                );
                 command.dataset
-                    .speechTarget =
-                    "#voiceEntrySurface";
+                    .speechOptionsPhrase =
+                    "<spokenValue>";
             }
         }
 
@@ -13664,9 +13688,10 @@
                     );
 
             if (
-                !Number.isFinite(
+                !Number.isInteger(
                     percent
-                )
+                ) ||
+                percent <= 0
             ) {
                 return false;
             }
@@ -13684,25 +13709,84 @@
                 "absolute"
         ) {
             const parts =
-                EnglishSpokenTimeParser
-                    .parseParts(
-                        text
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        text,
+                        "clock-parts"
                     );
 
             if (!parts) {
                 return false;
             }
 
-            numberPadState.pending =
-                absoluteDigits(
-                    parts.hour,
-                    parts.minute,
-                    parts.second || 0
-                );
-            numberPadState.meridiem =
-                parts.meridiem ||
+            let meridiem =
                 numberPadState
-                    .initialMeridiem;
+                    .meridiem;
+
+            if (parts.meridiem) {
+                meridiem =
+                    parts.meridiem
+                        .toUpperCase();
+            }
+            else if (
+                parts.hour > 12
+            ) {
+                meridiem =
+                    undefined;
+            }
+
+            const hour =
+                meridiem &&
+                parts.hour > 12
+                    ? (
+                        parts.hour %
+                            12 ||
+                        12
+                    )
+                    : parts.hour;
+
+            const pending =
+                absoluteDigits(
+                    hour,
+                    parts.minute,
+                    0
+                );
+
+            if (
+                !absoluteDigitsValid(
+                    pending,
+                    meridiem
+                )
+            ) {
+                return false;
+            }
+
+            numberPadState.pending =
+                pending;
+            numberPadState.meridiem =
+                meridiem;
+
+            if (parts.day) {
+                const date =
+                    new Date();
+
+                if (
+                    parts.day ===
+                        "tomorrow"
+                ) {
+                    date.setDate(
+                        date.getDate() +
+                            1
+                    );
+                }
+
+                numberPadState
+                    .pendingDate =
+                    formatDateInput(
+                        date
+                    );
+            }
+
             display =
                 renderAbsoluteDigits(
                     numberPadState.pending
@@ -13723,20 +13807,31 @@
                         text,
                         "duration"
                     );
-            const formatted =
-                EnglishDurationParser
-                    .format(
-                        duration
-                    );
 
-            if (!formatted) {
+            if (
+                !Number.isFinite(
+                    duration
+                ) ||
+                duration <= 0
+            ) {
                 return false;
             }
 
             numberPadState.pending =
                 durationValueToRawDigits(
-                    formatted
+                    formatTimelineMilliseconds(
+                        duration
+                    )
                 );
+
+            if (
+                !timeDigitsValid(
+                    numberPadState.pending
+                )
+            ) {
+                return false;
+            }
+
             display =
                 renderTimeDigits(
                     numberPadState.pending
@@ -19373,8 +19468,11 @@
             ) => {
                 if (kind === "keypad") {
                     if (
-                        !numberPadDialog
-                            ?.open ||
+                        (
+                            !numberPadDialog
+                                ?.open &&
+                            !voiceEntryState
+                        ) ||
                         !numberPadState
                     ) {
                         return text;
