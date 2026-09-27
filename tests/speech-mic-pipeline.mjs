@@ -1913,7 +1913,10 @@ assert.match(
     /setGoalPercentValue[\s\S]*"goal-change"[\s\S]*Goal Set to/
 );
 assert.match(
-    fs.readFileSync(new URL("\.\.\/AnnouncementCatalog\.js", import\.meta\.url), "utf8"),
+    fs.readFileSync(
+        new URL("../AnnouncementCatalog.js", import.meta.url),
+        "utf8"
+    ),
     /"goal-change"[\s\S]*song:[\s\S]*"info-tone"[\s\S]*"range-change"[\s\S]*song:[\s\S]*"info-tone"/
 );
 assert.match(
