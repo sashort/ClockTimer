@@ -13300,7 +13300,53 @@
             : undefined;
     }
 
+    function getEffectivePercentGoal(scope) {
+        let state;
+
+        try {
+            state =
+                clockTimer.getUIState?.(
+                    new Date()
+                ) ||
+                clockTimer.uiState;
+        }
+        catch {
+            state =
+                clockTimer.uiState;
+        }
+
+        const component =
+            scope === "total"
+                ? state?.total_goal_component
+                : state?.trip_goal_component;
+        const value =
+            Number(
+                component?.value
+            );
+
+        return Number.isFinite(value) &&
+            value > 0
+                ? value
+                : undefined;
+    }
+
     function getConfiguredGoalDisplay(scope) {
+        const effective =
+            getEffectivePercentGoal(
+                scope
+            );
+
+        if (
+            Number.isFinite(
+                effective
+            )
+        ) {
+            return formatSummaryPercent(
+                effective,
+                "100%"
+            );
+        }
+
         const attribute =
             getPercentGoalAttribute(scope);
 
@@ -13317,6 +13363,21 @@
     }
 
     function getPercentGoalValue(scope) {
+        const effective =
+            getEffectivePercentGoal(
+                scope
+            );
+
+        if (
+            Number.isFinite(
+                effective
+            )
+        ) {
+            return percentGoalAttribute(
+                effective
+            );
+        }
+
         const attribute =
             getPercentGoalAttribute(scope);
 
