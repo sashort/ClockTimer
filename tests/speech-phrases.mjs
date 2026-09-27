@@ -408,6 +408,31 @@ assert.match(
     /announcementOverridesMaster[\s\S]*?masterOverrides[\s\S]*?audioCellUserEnabled/
 );
 
+assert.match(
+    speechMasterAppSource,
+    /currentActionSignal[\s\S]*?invocationContext[\s\S]*?signal/
+);
+assert.match(
+    speechMasterAppSource,
+    /endCurrentIntervalOrTrip[\s\S]*?signal[\s\S]*?beginNewTripWorkflow\([\s\S]*?signal/
+);
+assert.match(
+    speechMasterAppSource,
+    /"openStartMenu"[\s\S]*?"endTrip"[\s\S]*?interruptGroup:[\s\S]*?"primary-surface"/
+);
+assert.match(
+    speechMasterAppSource,
+    /"handleVoiceEntrySpeech"[\s\S]*?"confirmNumberPad"[\s\S]*?"cancelNumberPadEdit"[\s\S]*?interruptGroup:[\s\S]*?"value-editor"/
+);
+assert.match(
+    speechMasterAppSource,
+    /confirmNumberPad[\s\S]*?currentActionSignal[\s\S]*?commitNumberPad\([\s\S]*?signal[\s\S]*?signal\?\.aborted/
+);
+assert.match(
+    speechMasterAppSource,
+    /parseVoiceEntryTranscript[\s\S]*?signal[\s\S]*?commitNumberPad\([\s\S]*?signal/
+);
+
 await SpeechMenu.sleep();
 SpeechMenu.extrapolatePhrases();
 
