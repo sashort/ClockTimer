@@ -11,7 +11,7 @@
     let invocationContext;
 
     const actionVerbs = Object.freeze([
-        "add","apply","begin","cancel","change","choose","clear","close",
+        "add","apply","backspace","begin","cancel","change","choose","clear","close",
         "confirm","connect","continue","create","cycle","delete","defer","disable","disconnect",
         "edit","enable","end","enter","handle","hide","load","lock","move","open",
         "prepare","read","release","remove","reorder","request","reset","resume","run",

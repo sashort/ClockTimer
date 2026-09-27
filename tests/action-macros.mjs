@@ -85,6 +85,7 @@ assert.equal(
 
 for (
     const name of [
+        "backspaceNumberPadValue",
         "continueMacroProbe",
         "cycleMacroProbe",
         "readMacroProbe",
