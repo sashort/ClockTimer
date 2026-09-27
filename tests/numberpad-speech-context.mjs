@@ -361,3 +361,101 @@ test("voice keypad grammar still recognizes representative value phrases", () =>
         );
     }
 });
+
+
+test("ready and ready-at lock New Trip until the workflow exits", () => {
+    assert.match(
+        appSource,
+        /let newTripWorkflowLocked = false/
+    );
+    assert.match(
+        appSource,
+        /function lockNewTripWorkflow\(\)[\s\S]*?newTripWorkflowLocked[\s\S]*?true[\s\S]*?syncNewTripButtonAvailability/
+    );
+    assert.match(
+        appSource,
+        /function releaseNewTripWorkflow\(\)[\s\S]*?newTripWorkflowLocked[\s\S]*?false[\s\S]*?syncNewTripButtonAvailability/
+    );
+
+    const readyWorkflow = appSource.slice(
+        appSource.indexOf("const openStartMenuWorkflow"),
+        appSource.indexOf("const closeActiveSpeechSurface")
+    );
+
+    assert.match(
+        readyWorkflow,
+        /inputMode ===[\s\S]*?"voice"[\s\S]*?lockNewTripWorkflow/
+    );
+    assert.match(
+        readyWorkflow,
+        /result === false[\s\S]*?releaseNewTripWorkflow/
+    );
+
+    const scheduled = appSource.slice(
+        appSource.indexOf("async scheduleStartAt"),
+        appSource.indexOf("continueStartAt", appSource.indexOf("async scheduleStartAt"))
+    );
+
+    assert.match(
+        scheduled,
+        /newTripWorkflowLocked/
+    );
+    assert.match(
+        scheduled,
+        /lockNewTripWorkflow/
+    );
+    assert.match(
+        scheduled,
+        /finally[\s\S]*?releaseNewTripWorkflow/
+    );
+});
+
+test("voice-pad at-time continuation is allowed while New Trip is locked", () => {
+    const parser = appSource.slice(
+        appSource.indexOf("function parseVoiceEntryTranscript"),
+        appSource.indexOf("async function openVoiceValueEditor")
+    );
+
+    assert.match(
+        parser,
+        /scheduleStartAt\([\s\S]*?fromReadyContinuation:[\s\S]*?true/
+    );
+});
+
+test("new-trip workflow lock releases on cancel, defer, schedule cancel, and successful start", () => {
+    const closePad = appSource.slice(
+        appSource.indexOf("async function closeNumberPad"),
+        appSource.indexOf("async function cancelNumberPad")
+    );
+    assert.match(
+        closePad,
+        /discardPrepared[\s\S]*?workflow === "new-trip"[\s\S]*?releaseNewTripWorkflow/
+    );
+
+    const scheduleCancel = appSource.slice(
+        appSource.indexOf("function cancelScheduledStartPrompt"),
+        appSource.indexOf("scheduledStartAuto.addEventListener")
+    );
+    assert.match(
+        scheduleCancel,
+        /releaseNewTripWorkflow/
+    );
+
+    const startDraft = appSource.slice(
+        appSource.indexOf("async function startTripDraft"),
+        appSource.indexOf("function cloneTripSettingsValues")
+    );
+    assert.match(
+        startDraft,
+        /tripDraft = undefined;[\s\S]*?releaseNewTripWorkflow/
+    );
+
+    const deferAction = appSource.slice(
+        appSource.indexOf("deferTrip()"),
+        appSource.indexOf("readEndTime()", appSource.indexOf("deferTrip()"))
+    );
+    assert.match(
+        deferAction,
+        /tripDraft\.deferred[\s\S]*?releaseNewTripWorkflow/
+    );
+});

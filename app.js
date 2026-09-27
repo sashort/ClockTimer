@@ -1344,6 +1344,42 @@
     let loginPending = false;
     let stagedStandardTime;
     let tripDraft;
+    let newTripWorkflowLocked = false;
+
+    function syncNewTripButtonAvailability() {
+        const button =
+            document.getElementById(
+                "newTripButton"
+            );
+
+        if (!button) {
+            return false;
+        }
+
+        button.disabled =
+            newTripWorkflowLocked ||
+            tripIsLive();
+
+        return !button.disabled;
+    }
+
+    function lockNewTripWorkflow() {
+        newTripWorkflowLocked =
+            true;
+
+        syncNewTripButtonAvailability();
+
+        return true;
+    }
+
+    function releaseNewTripWorkflow() {
+        newTripWorkflowLocked =
+            false;
+
+        syncNewTripButtonAvailability();
+
+        return true;
+    }
     let tripSettingsSession;
     let tripStartsNowState;
     let tripStartsNowExiting = false;
@@ -13619,7 +13655,11 @@
                     .resolve(
                         actions
                             .scheduleStartAt(
-                                spokenTime
+                                spokenTime,
+                                {
+                                    fromReadyContinuation:
+                                        true
+                                }
                             )
                     )
                     .catch(
@@ -14094,6 +14134,7 @@
             }
             if (discardPrepared && state.workflow === "new-trip") {
                 tripDraft = undefined;
+                releaseNewTripWorkflow();
                 renderDeferredTrip();
                 tripStartsNowState = undefined;
                 tripSettingsSession = undefined;
@@ -14864,6 +14905,7 @@
         scheduledStartAutoArmed = false;
         scheduledStartNeedsResolution = false;
         stopScheduledStartTicker();
+        releaseNewTripWorkflow();
         if (scheduledStartDialog.open) closeDialog(scheduledStartDialog, {reason:"scheduled-start-cancel"});
     }
 
@@ -15047,6 +15089,7 @@
 
         stagedStandardTime = standardTime;
         tripDraft = undefined;
+        releaseNewTripWorkflow();
         renderDeferredTrip();
         uiReturnStack.length = 0;
         return true;
@@ -16944,6 +16987,7 @@
         app.dataset.state = clockTimer.status;
         activeTripControls.hidden = !running;
         renderTripActionState();
+        syncNewTripButtonAvailability();
 
         if (stateChanged) {
             void app.offsetHeight;
@@ -19607,6 +19651,14 @@
                     ?.invocationContext
                     ?.signal;
 
+            const speechWorkflow =
+                inputMode ===
+                    "voice";
+
+            if (speechWorkflow) {
+                lockNewTripWorkflow();
+            }
+
             return Promise
                 .resolve(
                     beginNewTripWorkflow({
@@ -19617,16 +19669,37 @@
                     })
                 )
                 .then(
-                    result =>
-                        signal?.aborted
+                    result => {
+                        const aborted =
+                            Boolean(
+                                signal?.aborted
+                            );
+
+                        if (
+                            speechWorkflow &&
+                            (
+                                aborted ||
+                                result === false
+                            )
+                        ) {
+                            releaseNewTripWorkflow();
+                        }
+
+                        return aborted
                             ? true
-                            : result !== false
+                            : result !== false;
+                    }
                 )
                 .catch(
-                    () =>
-                        Boolean(
+                    () => {
+                        if (speechWorkflow) {
+                            releaseNewTripWorkflow();
+                        }
+
+                        return Boolean(
                             signal?.aborted
-                        )
+                        );
+                    }
                 );
         };
 
@@ -19718,6 +19791,15 @@
                 return cancelTripSettingsDialog(
                     "speech-close"
                 );
+            }
+
+            if (
+                dialog ===
+                scheduledStartDialog
+            ) {
+                cancelScheduledStartPrompt();
+
+                return true;
             }
 
             return closeDialogWithReturn(
@@ -20580,8 +20662,11 @@
             ) {
                 const continuingReady =
                     fromReadyContinuation &&
-                    pendingSpeechReady !==
-                        undefined;
+                    (
+                        pendingSpeechReady !==
+                            undefined ||
+                        newTripWorkflowLocked
+                    );
 
                 if (
                     tripIsLive() ||
@@ -20596,121 +20681,137 @@
                 }
 
                 cancelPendingSpeechReady();
+                lockNewTripWorkflow();
 
-                if (
-                    continuingReady &&
-                    numberPadDialog
-                        ?.open &&
-                    numberPadState
-                        ?.workflow ===
-                        "new-trip" &&
-                    numberPadState
-                        ?.role ===
-                        "root"
-                ) {
-                    await closeNumberPad({
-                        discardPrepared:
-                            false,
-                        allowChanged:
-                            true,
-                        immediate:
-                            true,
-                        destination:
-                            "home"
-                    });
-                }
-
-                const now =
-                    new Date();
-
-                const target =
-                    EnglishSpeechValuePreprocessor
-                        .parse(
-                            spokenTime,
-                            "clock",
-                            {
-                                baseDate:
-                                    now,
-                                preferFuture:
-                                    true
-                            }
-                        );
-
-                if (!target) {
-                    return false;
-                }
-
-                if (
-                    clockTimer.status ===
-                        "stopped"
-                ) {
-                    await clockTimer
-                        .resetCompletedTrip();
-                }
-
-                const defaults =
-                    getTripMomentDefaults(
-                        now
-                    );
-
-                if (!defaults) {
-                    return false;
-                }
-
-                const scheduledStart =
-                    formatTimelineDateTime(
-                        target,
-                        defaults
-                            .creationDate
-                    );
-
-                const preferences =
-                    getTripPreferences();
-
-                if (!scheduledStart) {
-                    return false;
-                }
-
-                uiReturnStack.length =
-                    0;
-
-                resetTripSettingsNavigation();
-
-                tripSettingsSession =
-                    undefined;
-
-                tripStartsNowState =
-                    undefined;
-
-                tripDraft = {
-                    ...defaults,
-                    standardTime: "",
-                    scheduledStart,
-                    startTime:
-                        scheduledStart,
-                    lateBreakBehavior:
-                        preferences
-                            .lateBreakBehavior,
-                    syncGoals:
-                        preferences
-                            .syncGoals
-                };
-
-                renderDeferredTrip();
+                let scheduledWorkflowOpened =
+                    false;
 
                 try {
-                    await clockTimer
-                        .prepareTrip({
-                            timeout:
-                                5000,
-                            at: now
+                    if (
+                        continuingReady &&
+                        numberPadDialog
+                            ?.open &&
+                        numberPadState
+                            ?.workflow ===
+                            "new-trip" &&
+                        numberPadState
+                            ?.role ===
+                            "root"
+                    ) {
+                        await closeNumberPad({
+                            discardPrepared:
+                                false,
+                            allowChanged:
+                                true,
+                            immediate:
+                                true,
+                            destination:
+                                "home"
                         });
+                    }
+
+                    const now =
+                        new Date();
+
+                    const target =
+                        EnglishSpeechValuePreprocessor
+                            .parse(
+                                spokenTime,
+                                "clock",
+                                {
+                                    baseDate:
+                                        now,
+                                    preferFuture:
+                                        true
+                                }
+                            );
+
+                    if (!target) {
+                        return false;
+                    }
+
+                    if (
+                        clockTimer.status ===
+                            "stopped"
+                    ) {
+                        await clockTimer
+                            .resetCompletedTrip();
+                    }
+
+                    const defaults =
+                        getTripMomentDefaults(
+                            now
+                        );
+
+                    if (!defaults) {
+                        return false;
+                    }
+
+                    const scheduledStart =
+                        formatTimelineDateTime(
+                            target,
+                            defaults
+                                .creationDate
+                        );
+
+                    const preferences =
+                        getTripPreferences();
+
+                    if (!scheduledStart) {
+                        return false;
+                    }
+
+                    uiReturnStack.length =
+                        0;
+
+                    resetTripSettingsNavigation();
+
+                    tripSettingsSession =
+                        undefined;
+
+                    tripStartsNowState =
+                        undefined;
+
+                    tripDraft = {
+                        ...defaults,
+                        standardTime: "",
+                        scheduledStart,
+                        startTime:
+                            scheduledStart,
+                        lateBreakBehavior:
+                            preferences
+                                .lateBreakBehavior,
+                        syncGoals:
+                            preferences
+                                .syncGoals
+                    };
+
+                    renderDeferredTrip();
+
+                    try {
+                        await clockTimer
+                            .prepareTrip({
+                                timeout:
+                                    5000,
+                                at: now
+                            });
+                    }
+                    catch {}
+
+                    showScheduledStartDialog();
+
+                    scheduledWorkflowOpened =
+                        true;
+
+                    return true;
                 }
-                catch {}
-
-                showScheduledStartDialog();
-
-                return true;
+                finally {
+                    if (
+                        !scheduledWorkflowOpened
+                    ) {
+                        releaseNewTripWorkflow();
+                    }
+                }
             },
 
             continueStartAt(
@@ -21610,6 +21711,7 @@
                 tripDraft.standardTime =
                     "";
 
+                releaseNewTripWorkflow();
                 renderDeferredTrip();
 
                 if (voiceEntryState) {
@@ -23595,6 +23697,8 @@
                     if (
                         tripDraft.deferred
                     ) {
+                        releaseNewTripWorkflow();
+
                         tripStartsNowState =
                             undefined;
 
