@@ -56,7 +56,7 @@
                 howLong: "^(?:how long|time)$",
                 when: "^when$",
                 lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
-                showTripLog: "^(?:show )?trip log$",
+                showTripLog: "^log$",
                 hideTripLog: "^(?:hide|close) trip log$",
                 deferTrip: "^defer trip$",
                 readRenderedTime: "^(?<timeMode>time remaining|time elapsed|end time)$",

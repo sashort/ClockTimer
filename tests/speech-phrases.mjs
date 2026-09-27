@@ -64,7 +64,7 @@ window.document.body.innerHTML = [
     '<speech-command speech-pattern="^sync(?: (?<syncAction>on|off))?$" speech-function="Commands.sync"></speech-command>',
     '<speech-command speech-index="10" speech-pattern="^priority$" speech-function="Commands.priority"></speech-command>',
     '</speech-menu>',
-    '<button id="page" speech-index="999" speech-pattern="^(?:show )?trip log$" speech-function="Commands.page">Trip Log</button>',
+    '<button id="page" speech-index="999" speech-pattern="^log$" speech-function="Commands.page">Trip Log</button>',
     '<details id="more" open>',
     '<button id="detailsCommand" speech-pattern="^details$" speech-function="Commands.details">Details</button>',
     '</details>',
@@ -154,12 +154,11 @@ assert.deepEqual(
     [
         ...SpeechMenu
             .extrapolatePattern(
-                "^(?:show )?trip log$"
+                "^log$"
             )
     ],
     [
-        "trip log",
-        "show trip log"
+        "log"
     ]
 );
 
@@ -265,8 +264,7 @@ assert.deepEqual(
         "sync off",
         "cancel",
         "details",
-        "trip log",
-        "show trip log"
+        "log"
     ],
     "without a modal, default then open context then page candidates should be available"
 );
@@ -518,7 +516,7 @@ assert.ok(
         "cancel"
     ) <
     SpeechMenu.phrases.indexOf(
-        "trip log"
+        "log"
     ),
     "speech-index must not override effective scope precedence"
 );
