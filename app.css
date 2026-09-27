@@ -4689,6 +4689,133 @@ clock-timer[hide-latency] time-range[type="latency"] {
     }
 }
 
+.voice-entry-surface {
+    position: fixed;
+    inset: 50% auto auto 50%;
+    z-index: 2147483647;
+    width: min(560px, calc(100vw - 24px));
+    min-width: 0;
+    margin: 0;
+    padding: 7px 9px 8px;
+    border: 2px solid rgb(255 255 255 / 44%);
+    border-radius: 12px;
+    color: var(--wm-white);
+    background: linear-gradient(180deg, rgb(47 57 67 / 97%), rgb(34 43 51 / 97%));
+    box-shadow: 0 9px 22px rgb(0 0 0 / 34%), inset 0 1px 0 rgb(255 255 255 / 12%);
+    backdrop-filter: blur(8px);
+    transform: translate(-50%, -50%);
+}
+
+.voice-entry-surface[hidden] {
+    display: none;
+}
+
+.voice-entry-surface[popover]:popover-open {
+    display: block;
+}
+
+.voice-entry-surface[popover]::backdrop {
+    display: none;
+}
+
+.voice-entry-header {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.voice-entry-header > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+}
+
+.voice-entry-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.voice-entry-touch,
+.voice-entry-close {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 35%);
+    border-radius: 50%;
+    color: white;
+    background: rgb(20 30 42 / 82%);
+    font: 700 18px/1 system-ui, sans-serif;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.voice-entry-copy {
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "prompt value"
+        "example value";
+    align-items: center;
+    gap: 1px 12px;
+    padding: 1px 2px 0;
+}
+
+.voice-entry-copy > strong {
+    grid-area: prompt;
+    font-size: 20px;
+    line-height: 1.1;
+}
+
+.voice-entry-example {
+    grid-area: example;
+}
+
+#voiceEntryExample {
+    grid-area: example;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: .72;
+}
+
+.voice-entry-value {
+    grid-area: value;
+    min-width: 86px;
+    text-align: right;
+    font: 700 26px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+    color: #a9ddf7;
+}
+
+@media (max-width: 520px) {
+    .voice-entry-surface {
+        width: calc(100vw - 16px);
+    }
+
+    .voice-entry-copy {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "prompt"
+            "example"
+            "value";
+    }
+
+    .voice-entry-value {
+        min-width: 0;
+        text-align: left;
+        margin-top: 3px;
+    }
+}
+
 .speech-training-widget {
     position: fixed;
     inset:
