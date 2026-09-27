@@ -1324,6 +1324,19 @@ assert.match(
 );
 
 assert.match(
+    app,
+    /function reserveSemanticSpeech\([\s\S]*queueMicrotask[\s\S]*chain\.last[\s\S]*return \(\) =>[\s\S]*chain\.last/
+);
+assert.match(
+    app,
+    /function playSemanticSong\([\s\S]*speechGuard[\s\S]*includeTones:[\s\S]*chime\.perform[\s\S]*includeSpeech:[\s\S]*summary\.perform/
+);
+assert.match(
+    audioEngineSource,
+    /speechGuard[\s\S]*entry\.speechGuard[\s\S]*entry\.speechGuard\(\) ===[\s\S]*false[\s\S]*#maybeComplete/
+);
+
+assert.match(
     speechMicBarSource,
     /family[\s\S]*#compareOptionItems[\s\S]*join\([\s\S]*"\\u00a0\\|\\u00a0"/
 );
