@@ -1374,6 +1374,15 @@ assert.match(
 
 assert.match(
     app,
+    /function getEffectivePercentGoal\(scope\)[\s\S]*getUIState\?\.\([\s\S]*total_goal_component[\s\S]*trip_goal_component/
+);
+assert.match(
+    app,
+    /function getPercentGoalValue\(scope\)[\s\S]*getEffectivePercentGoal[\s\S]*percentGoalAttribute\(/
+);
+
+assert.match(
+    app,
     /function reserveSemanticSpeech\([\s\S]*queueMicrotask[\s\S]*chain\.last[\s\S]*return \(\) =>[\s\S]*chain\.last/
 );
 assert.match(
