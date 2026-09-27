@@ -10704,6 +10704,8 @@
         speechTrainingPromptTimer =
             undefined;
 
+        speechMicBar.trainingActive =
+            false;
         speechMicBar.trainingLocked =
             false;
         speechMicBar.trainingMode =
@@ -10768,6 +10770,8 @@
             true;
         speechMicBar.trainingLocked =
             true;
+        speechMicBar.trainingActive =
+            true;
 
         setSpeechTrainingPrompt(
             "speak",
@@ -10798,6 +10802,8 @@
             undefined;
 
         speechTrainingActive =
+            false;
+        speechMicBar.trainingActive =
             false;
         speechMicBar.trainingLocked =
             false;
