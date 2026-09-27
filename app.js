@@ -20452,9 +20452,11 @@
                     );
 
                 const label =
-                    mode.charAt(0)
-                        .toUpperCase() +
-                    mode.slice(1);
+                    mode === "total"
+                        ? totalScopeLabel()
+                        : mode.charAt(0)
+                            .toUpperCase() +
+                            mode.slice(1);
 
                 return dictateSpeechMetric(
                     label,
@@ -20515,11 +20517,14 @@
                 }
 
                 const label =
-                    appliedMode
-                        .charAt(0)
-                        .toUpperCase() +
-                    appliedMode
-                        .slice(1);
+                    appliedMode ===
+                        "total"
+                        ? totalScopeLabel()
+                        : appliedMode
+                            .charAt(0)
+                            .toUpperCase() +
+                            appliedMode
+                                .slice(1);
 
                 return confirmSettingChange(
                     "Viewing " +
@@ -20554,11 +20559,14 @@
                     );
 
                 const label =
-                    applied
-                        .charAt(0)
-                        .toUpperCase() +
-                    applied
-                        .slice(1);
+                    applied ===
+                        "total"
+                        ? totalScopeLabel()
+                        : applied
+                            .charAt(0)
+                            .toUpperCase() +
+                            applied
+                                .slice(1);
 
                 return confirmSettingChange(
                     "Viewing " +
