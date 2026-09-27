@@ -13719,6 +13719,72 @@
         return true;
     }
 
+    voiceEntryCancel
+        ?.addEventListener(
+            "click",
+            () => {
+                void closeVoiceEntry({
+                    cancel: true
+                });
+            }
+        );
+
+    voiceEntryTouch
+        ?.addEventListener(
+            "click",
+            () => {
+                void switchVoiceEntryToTouch();
+            }
+        );
+
+    speechMicBar
+        ?.addEventListener(
+            "utteranceCommitted",
+            event => {
+                if (!voiceEntryState) {
+                    return;
+                }
+
+                const transcript =
+                    event.detail
+                        ?.transcript;
+
+                if (
+                    parseVoiceEntryTranscript(
+                        transcript
+                    )
+                ) {
+                    return;
+                }
+
+                renderVoiceEntry({
+                    prompt:
+                        "Say a Valid Value"
+                });
+            }
+        );
+
+    globalThis.WMOFVoiceEntry =
+        Object.freeze({
+            open:
+                options =>
+                    openVoiceEntry(
+                        options
+                    ),
+            close:
+                () =>
+                    closeVoiceEntry({
+                        cancel: true
+                    }),
+            switchToTouch:
+                switchVoiceEntryToTouch,
+            get active() {
+                return Boolean(
+                    voiceEntryState
+                );
+            }
+        });
+
     async function restoreNumberPadState(snapshot, { duration = 0 } = {}) {
         if (!snapshot) return;
         await ensureNumberPadLoaded();
