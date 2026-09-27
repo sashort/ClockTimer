@@ -1341,6 +1341,23 @@ assert.match(
     speechMicBarSource,
     /#mic\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
 );
+
+assert.match(
+    speechMicBarSource,
+    /:host\(\[training-active\]\) #mic\s*\{[\s\S]*opacity:\s*\.08[\s\S]*pointer-events:\s*none\s*!important/
+);
+assert.match(
+    speechMicBarSource,
+    /get trainingActive\(\)[\s\S]*training-active[\s\S]*set trainingActive\(value\)/
+);
+assert.match(
+    app,
+    /speechTrainingActive\s*=\s*true;[\s\S]*speechMicBar\.trainingLocked\s*=\s*true;[\s\S]*speechMicBar\.trainingActive\s*=\s*true;/
+);
+assert.match(
+    app,
+    /speechTrainingActive\s*=\s*false;[\s\S]*speechMicBar\.trainingActive\s*=\s*false;[\s\S]*speechMicBar\.trainingLocked\s*=\s*false;/
+);
 assert.match(
     speechMicBarSource,
     /addEventListener\([\s\S]*"click"[\s\S]*toggleOptions[\s\S]*capture:\s*true/
