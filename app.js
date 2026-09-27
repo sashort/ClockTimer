@@ -544,6 +544,57 @@
     const menuAccountRow = $("#menuAccountRow");
     const menuLogoutSlot = $("#menuLogoutSlot");
     const mainMenu = $("#mainMenu");
+    let hamburgerAnnouncementSilent = false;
+    let hamburgerAnnouncementSilenceToken = 0;
+
+    const markHamburgerAnnouncementSilent =
+        event => {
+            if (
+                !mainMenu ||
+                !event?.target ||
+                !mainMenu.contains(
+                    event.target
+                )
+            ) {
+                return;
+            }
+
+            const token =
+                ++hamburgerAnnouncementSilenceToken;
+
+            hamburgerAnnouncementSilent =
+                true;
+
+            setTimeout(
+                () => {
+                    if (
+                        hamburgerAnnouncementSilenceToken ===
+                            token
+                    ) {
+                        hamburgerAnnouncementSilent =
+                            false;
+                    }
+                },
+                0
+            );
+        };
+
+    for (
+        const type of
+            [
+                "click",
+                "change",
+                "input",
+                "submit",
+                "keydown"
+            ]
+    ) {
+        mainMenu?.addEventListener(
+            type,
+            markHamburgerAnnouncementSilent,
+            true
+        );
+    }
     const easterEggSongSelect =
         $("#easterEggSongSelect");
     const easterEggPlayButton =
@@ -16368,6 +16419,15 @@
         announcement,
         layer
     ) {
+        if (hamburgerAnnouncementSilent) {
+            return {
+                perform: false,
+                userDisabled: false,
+                runtimeSuppressed: true,
+                menuSuppressed: true
+            };
+        }
+
         if (
             !audioCellUserEnabled(
                 announcement,
@@ -20527,7 +20587,6 @@
                                 .slice(1);
 
                 return confirmSettingChange(
-                    "Viewing " +
                     label +
                     " Mode"
                 );
@@ -20569,7 +20628,6 @@
                                 .slice(1);
 
                 return confirmSettingChange(
-                    "Viewing " +
                     label +
                     " Mode"
                 );
