@@ -298,6 +298,52 @@ assert.equal(
 );
 
 
+const repeatableSystemCommandSource =
+    fs.readFileSync(
+        new URL(
+            "../SpeechMicBar.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+for (
+    const [
+        phrase,
+        action
+    ] of [
+        [
+            "faster",
+            "changeAudioRateFaster"
+        ],
+        [
+            "slower",
+            "changeAudioRateSlower"
+        ],
+        [
+            "louder",
+            "changeAudioVolumeLouder"
+        ],
+        [
+            "softer",
+            "changeAudioVolumeSofter"
+        ]
+    ]
+) {
+    assert.match(
+        repeatableSystemCommandSource,
+        new RegExp(
+            "\\"" +
+            phrase +
+            "\\"[\\s\\S]*?WMOFActions\\." +
+            action +
+            "[\\s\\S]*?speech-repeatable"
+        ),
+        phrase +
+            " should support rapid back-to-back execution"
+    );
+}
+
 await SpeechMenu.sleep();
 SpeechMenu.extrapolatePhrases();
 
