@@ -1371,6 +1371,7 @@
     let numberPadCancel;
     let numberPadConfirm;
     let numberPadVoice;
+    let preserveNumberPadStateOnClose = false;
     let numberPadContext;
     let numberPadReadout;
     let numberPadDate;
@@ -13484,15 +13485,25 @@
 
         stopAllNumberPadAudio();
 
-        closeDialog(
-            numberPadDialog,
-            {
-                reason:
-                    "number-pad-switch-voice",
-                immediate:
-                    true
-            }
-        );
+        preserveNumberPadStateOnClose =
+            true;
+
+        if (
+            !closeDialog(
+                numberPadDialog,
+                {
+                    reason:
+                        "number-pad-switch-voice",
+                    immediate:
+                        true
+                }
+            )
+        ) {
+            preserveNumberPadStateOnClose =
+                false;
+
+            return false;
+        }
 
         return openVoiceValueEditor(
             snapshot
@@ -15779,6 +15790,16 @@
 
         numberPadDialog.addEventListener("close", () => {
             stopAllNumberPadAudio();
+
+            if (
+                preserveNumberPadStateOnClose
+            ) {
+                preserveNumberPadStateOnClose =
+                    false;
+
+                return;
+            }
+
             resetNumberPad();
         });
 

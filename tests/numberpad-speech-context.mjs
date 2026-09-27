@@ -212,3 +212,39 @@ test("Trip Log uses the rendered speech surface safe top", () => {
         /collapsedTop/
     );
 });
+
+
+test("touch-to-voice handoff preserves the shared numberpad session across dialog close", () => {
+    assert.match(
+        appSource,
+        /let preserveNumberPadStateOnClose = false/
+    );
+
+    const switcher = appSource.slice(
+        appSource.indexOf("async function switchNumberPadToVoice"),
+        appSource.indexOf("async function switchVoiceEntryToTouch")
+    );
+
+    assert.match(
+        switcher,
+        /preserveNumberPadStateOnClose\s*=\s*true/
+    );
+    assert.match(
+        switcher,
+        /number-pad-switch-voice/
+    );
+
+    const closeListener = appSource.slice(
+        appSource.indexOf('numberPadDialog.addEventListener("close"'),
+        appSource.indexOf("tripSettingsDialog.addEventListener", appSource.indexOf('numberPadDialog.addEventListener("close"'))
+    );
+
+    assert.match(
+        closeListener,
+        /preserveNumberPadStateOnClose/
+    );
+    assert.match(
+        closeListener,
+        /return;[\s\S]*?resetNumberPad/
+    );
+});
