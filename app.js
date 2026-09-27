@@ -3275,6 +3275,8 @@
             notify = true
         } = {}
     ) {
+        const previousRange =
+            getTripLogRange();
         const range =
             normalizeTripLogRange(value);
 
@@ -3308,6 +3310,17 @@
         }
         if (notify) refreshTripLogSelection();
         else void resolveTripLogCalendar(range).catch(() => {});
+
+        if (
+            notify &&
+            range !== previousRange
+        ) {
+            void confirmInformationalChange(
+                "range-change",
+                "Viewing " +
+                    totalScopeLabel()
+            );
+        }
 
         return range;
     }
@@ -19039,8 +19052,9 @@
             };
         };
 
-    const confirmSettingChange =
+    const confirmInformationalChange =
         async (
+            announcement,
             value,
             {
                 spokenValue
@@ -19076,8 +19090,6 @@
                     )
                     .trim();
 
-            const announcement =
-                "setting-change";
             const audio =
                 globalThis
                     .WMOFAudio;
@@ -19149,7 +19161,7 @@
                     error
                 ) {
                     console.warn(
-                        "Setting confirmation cue failed:",
+                        "Informational announcement cue failed:",
                         error
                     );
                 }
@@ -19203,6 +19215,17 @@
                 }
             };
         };
+
+    const confirmSettingChange =
+        (
+            value,
+            options
+        ) =>
+            confirmInformationalChange(
+                "setting-change",
+                value,
+                options
+            );
 
     const goalPercentForScope =
         scope => {
@@ -19318,16 +19341,16 @@
             }
 
             const label =
-                normalizedScope
-                    .charAt(0)
-                    .toUpperCase() +
-                normalizedScope
-                    .slice(1);
+                normalizedScope ===
+                    "total"
+                    ? totalScopeLabel()
+                    : "Trip";
 
-            return confirmSettingChange(
+            return confirmInformationalChange(
+                "goal-change",
                 label +
-                " Goal Set to " +
-                after
+                    " Goal Set to " +
+                    after
             );
         };
 
