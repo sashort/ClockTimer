@@ -1652,6 +1652,7 @@
     const voiceEntryCancel = $("#voiceEntryCancel");
     let voiceEntryState;
     let voiceEntryExecutionBeforeOpen;
+    let voiceEntrySystemExecutionBeforeOpen;
     let voiceEntryAcceptTimer;
     let voiceEntryFeedbackSequence = 0;
     let voiceEntryHandledUtteranceId;
@@ -14951,16 +14952,30 @@
         }
 
         if (
-            globalThis.SpeechMenu &&
-            voiceEntryExecutionBeforeOpen !==
-                undefined
-        ) {
             globalThis.SpeechMenu
-                .executionEnabled =
-                voiceEntryExecutionBeforeOpen;
+        ) {
+            if (
+                voiceEntryExecutionBeforeOpen !==
+                    undefined
+            ) {
+                globalThis.SpeechMenu
+                    .executionEnabled =
+                    voiceEntryExecutionBeforeOpen;
+            }
+
+            if (
+                voiceEntrySystemExecutionBeforeOpen !==
+                    undefined
+            ) {
+                globalThis.SpeechMenu
+                    .systemExecutionPassthrough =
+                    voiceEntrySystemExecutionBeforeOpen;
+            }
         }
 
         voiceEntryExecutionBeforeOpen =
+            undefined;
+        voiceEntrySystemExecutionBeforeOpen =
             undefined;
         voiceEntryHandledUtteranceId =
             undefined;
@@ -15466,6 +15481,12 @@
             voiceEntryExecutionBeforeOpen =
                 globalThis.SpeechMenu
                     .executionEnabled;
+            voiceEntrySystemExecutionBeforeOpen =
+                globalThis.SpeechMenu
+                    .systemExecutionPassthrough;
+            globalThis.SpeechMenu
+                .systemExecutionPassthrough =
+                true;
             globalThis.SpeechMenu
                 .executionEnabled =
                 false;
@@ -15535,6 +15556,57 @@
             }
         );
 
+    function voiceEntryTranscriptIsSystemCommand(
+        transcript
+    ) {
+        const normalized =
+            String(
+                transcript ||
+                ""
+            )
+                .toLocaleLowerCase()
+                .trim()
+                .replace(
+                    /\s+/g,
+                    " "
+                );
+
+        if (!normalized) {
+            return false;
+        }
+
+        return Boolean(
+            globalThis
+                .SpeechMenu
+                ?.phraseGroups
+                ?.some(
+                    group =>
+                        group.modal ===
+                            "system" &&
+                        group.phrases
+                            ?.some(
+                                phrase =>
+                                    !String(
+                                        phrase
+                                    )
+                                        .includes(
+                                            "<"
+                                        ) &&
+                                    String(
+                                        phrase
+                                    )
+                                        .toLocaleLowerCase()
+                                        .trim()
+                                        .replace(
+                                            /\s+/g,
+                                            " "
+                                        ) ===
+                                        normalized
+                            )
+                )
+        );
+    }
+
     function pipeVoiceEntryTranscript(
         event
     ) {
@@ -15566,6 +15638,14 @@
             ).trim();
 
         if (!transcript) {
+            return;
+        }
+
+        if (
+            voiceEntryTranscriptIsSystemCommand(
+                transcript
+            )
+        ) {
             return;
         }
 
