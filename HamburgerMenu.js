@@ -1893,6 +1893,41 @@
             );
         }
 
+        #pinFocusLayerToVisiblePane() {
+            if (
+                !this.#focusLayer ||
+                !this.#viewport
+            ) {
+                return false;
+            }
+
+            const offset =
+                Math.max(
+                    0,
+                    Number(
+                        this.#viewport
+                            .scrollLeft
+                    ) ||
+                    0
+                );
+
+            this.#focusLayer
+                .style
+                .translate =
+                offset +
+                "px 0";
+
+            return true;
+        }
+
+        #releaseFocusLayerPin() {
+            this.#focusLayer
+                ?.style
+                .removeProperty(
+                    "translate"
+                );
+        }
+
         #paneWidthFromPopover() {
             const rect =
                 this.#popover
@@ -6275,13 +6310,39 @@
                 this.#focusStack
                     .at(-1);
 
+            const panels =
+                this.#panels();
+            const groupPanel =
+                current
+                    ? undefined
+                    : group.closest(
+                        ".hamburger-menu-panel"
+                    );
             const sourceRoot =
                 current
                     ?.group ||
+                groupPanel ||
                 this.#currentPanel();
 
             if (!sourceRoot) {
                 return false;
+            }
+
+            if (
+                !current &&
+                groupPanel
+            ) {
+                const actualPanelIndex =
+                    panels.indexOf(
+                        groupPanel
+                    );
+
+                if (
+                    actualPanelIndex >= 0
+                ) {
+                    this.#panelIndex =
+                        actualPanelIndex;
+                }
             }
 
             this.#transitionBusy =
@@ -6297,7 +6358,9 @@
                     .length
             ) {
                 this.#freezePane(
-                    this.#activePane()
+                    current
+                        ? this.#viewport
+                        : sourceRoot
                 );
             }
 
@@ -6392,6 +6455,16 @@
             // into the source panel makes the promoted group inherit panel
             // visibility/clipping when the source is hidden after promotion.
             this.#viewport.append(this.#focusLayer);
+
+            /*
+             * The viewport is horizontally scrolled when a later pane is
+             * visible. Absolutely positioned children are still rooted at
+             * the scroll origin, so pin the promotion layer back over the
+             * currently visible pane before moving the group into it.
+             */
+            this
+                .#pinFocusLayerToVisiblePane();
+
             this.#focusLayer.hidden =
                 false;
 
@@ -6999,6 +7072,8 @@
                 this.#viewport.append(this.#focusLayer);
                 this.#focusLayer.hidden =
                     true;
+                this
+                    .#releaseFocusLayerPin();
 
                 delete this.#popover
                     .dataset
@@ -7069,6 +7144,9 @@
             if (!current) {
                 return false;
             }
+
+            this
+                .#pinFocusLayerToVisiblePane();
 
             const safeHeight =
                 this.#safePanelHeight(
@@ -7329,6 +7407,8 @@
 
             this.#focusLayer.hidden =
                 true;
+            this
+                .#releaseFocusLayerPin();
 
             this.#focusLayer
                 .removeAttribute(

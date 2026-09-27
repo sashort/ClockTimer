@@ -329,3 +329,29 @@ console.log(
 );
 
 process.exit(0);
+
+
+assert.match(
+    componentSource,
+    /#pinFocusLayerToVisiblePane\(\)[\s\S]*scrollLeft[\s\S]*style[\s\S]*translate/
+);
+
+assert.match(
+    componentSource,
+    /const groupPanel =[\s\S]*group\.closest\([\s\S]*"\.hamburger-menu-panel"/
+);
+
+assert.match(
+    componentSource,
+    /actualPanelIndex[\s\S]*#panelIndex\s*=[\s\S]*actualPanelIndex/
+);
+
+assert.match(
+    componentSource,
+    /#freezePane\([\s\S]*current[\s\S]*\? this\.#viewport[\s\S]*: sourceRoot/
+);
+
+assert.match(
+    componentSource,
+    /#releaseFocusLayerPin\(\)[\s\S]*removeProperty\([\s\S]*"translate"/
+);
