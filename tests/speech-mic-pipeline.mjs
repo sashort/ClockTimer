@@ -1334,6 +1334,23 @@ assert.match(
 );
 
 assert.match(
+    speechMicBarSource,
+    /#optionsClose\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
+);
+assert.match(
+    speechMicBarSource,
+    /#mic\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
+);
+assert.match(
+    speechMicBarSource,
+    /addEventListener\([\s\S]*"click"[\s\S]*toggleOptions[\s\S]*capture:\s*true/
+);
+assert.match(
+    speechMicBarSource,
+    /addEventListener\([\s\S]*"click"[\s\S]*toggleMic[\s\S]*capture:\s*true/
+);
+
+assert.match(
     app,
     /function getSpeechMicTop\(\)[\s\S]*--speech-command-row-height[\s\S]*optionsCollapsed[\s\S]*micTop\s*-\s*[\s\S]*commandRowHeight/
 );
