@@ -186,6 +186,11 @@ class SpeechMenu {
                 .#exactCandidate(
                     utterance
                 );
+        const streamHead =
+            SpeechMenu
+                .#recognitionStreamHead(
+                    utterance
+                );
 
         return {
             ...timing,
@@ -193,21 +198,31 @@ class SpeechMenu {
                 utteranceId:
                     utterance?.id,
                 transcript:
+                    streamHead
+                        ?.transcript ||
                     utterance
                         ?.transcript ||
                     "",
                 exact:
+                    streamHead
+                        ?.exact ??
                     Boolean(exact),
                 canContinue:
+                    streamHead
+                        ?.canContinue ??
                     SpeechMenu
                         .#hasOpenContinuation(
                             utterance
                         ),
                 candidateCount:
-                    utterance
-                        ?.candidatePool
-                        ?.length ||
-                    0,
+                    streamHead
+                        ?.candidateCount ??
+                    (
+                        utterance
+                            ?.candidatePool
+                            ?.length ||
+                        0
+                    ),
                 silenceMilliseconds:
                     Math.round(
                         Number(
@@ -215,6 +230,38 @@ class SpeechMenu {
                                 ?.silenceMilliseconds
                         ) ||
                         0
+                    ),
+                streamDepth:
+                    utterance
+                        ?.streamStack
+                        ?.length ||
+                    0,
+                streams:
+                    (
+                        utterance
+                            ?.streamStack ||
+                        []
+                    ).map(
+                        stream => ({
+                            id:
+                                stream.id,
+                            transcript:
+                                stream.transcript,
+                            pauseMilliseconds:
+                                stream.pauseMilliseconds,
+                            source:
+                                stream.source,
+                            status:
+                                stream.status,
+                            exact:
+                                Boolean(
+                                    stream.exact
+                                ),
+                            canContinue:
+                                Boolean(
+                                    stream.canContinue
+                                )
+                        })
                     )
             }
         };
@@ -1685,9 +1732,11 @@ class SpeechMenu {
                     )
             ) {
                 SpeechMenu
-                    .#observeContinuationPause(
+                    .#pushRecognitionStream(
+                        utterance,
                         resumedPause,
-                        "raw"
+                        "raw",
+                        now
                     );
             }
 
@@ -1809,10 +1858,12 @@ class SpeechMenu {
                     )
                 ) {
                     SpeechMenu
-                        .#observeContinuationPause(
+                        .#pushRecognitionStream(
+                            utterance,
                             now -
                                 pauseStartedAt,
-                            "silero"
+                            "silero",
+                            now
                         );
                 }
 
@@ -2068,6 +2119,24 @@ class SpeechMenu {
                 undefined,
             continuationPauseTimer:
                 undefined,
+            streamSequence: 1,
+            streamStack: [
+                {
+                    id: 1,
+                    baseTranscript: "",
+                    transcript: "",
+                    pauseMilliseconds: 0,
+                    source: "initial",
+                    startedAt: now,
+                    wallStartedAt:
+                        wallStartedAt
+                            .toISOString(),
+                    status: "active",
+                    exact: false,
+                    canContinue: false,
+                    candidateCount: 0
+                }
+            ],
             lastExactCandidate:
                 undefined,
             committed: false,
@@ -2518,6 +2587,46 @@ class SpeechMenu {
         utterance.candidatePool =
             pool;
 
+        const streamResult =
+            await SpeechMenu
+                .#classifyRecognitionStreamHead(
+                    utterance,
+                    transcript,
+                    controller.signal
+                );
+
+        if (
+            controller.signal.aborted ||
+            SpeechMenu.#utterance !==
+                utterance ||
+            utterance.committed ||
+            revision !==
+                utterance.transcriptRevision ||
+            utterance.candidatePoolController !==
+                controller
+        ) {
+            return;
+        }
+
+        if (
+            streamResult
+                ?.terminal
+        ) {
+            const committed =
+                await SpeechMenu
+                    .#commitRecognitionStream(
+                        utterance,
+                        streamResult
+                            .stream,
+                        streamResult
+                            .exact
+                    );
+
+            if (committed) {
+                return;
+            }
+        }
+
         if (
             pool.length &&
             utterance.lastExactCandidate &&
@@ -2538,6 +2647,8 @@ class SpeechMenu {
 
         if (
             !pool.length &&
+            !streamResult
+                ?.viable &&
             !utterance.committing &&
             !utterance.lastExactCandidate
         ) {
@@ -2632,6 +2743,11 @@ class SpeechMenu {
                 );
 
             if (committed) {
+                SpeechMenu
+                    .#resolvePendingStreamsAsContinuation(
+                        utterance
+                    );
+
                 utterance.committed =
                     true;
 
@@ -2771,12 +2887,45 @@ class SpeechMenu {
             }
         );
 
+        const streamResult =
+            await SpeechMenu
+                .#classifyRecognitionStreamHead(
+                    utterance,
+                    transcript
+                );
+
+        if (
+            streamResult
+                ?.terminal
+        ) {
+            const streamMatched =
+                await SpeechMenu
+                    .#commitRecognitionStream(
+                        utterance,
+                        streamResult
+                            .stream,
+                        streamResult
+                            .exact
+                    );
+
+            if (streamMatched) {
+                return;
+            }
+        }
+
         let matched =
             await SpeechMenu.#processTranscript(
                 transcript,
                 utterance.id,
                 SpeechMenu.#executionEnabled
             );
+
+        if (matched) {
+            SpeechMenu
+                .#resolvePendingStreamsAsContinuation(
+                    utterance
+                );
+        }
 
         if (!matched) {
             const recovery =
@@ -2813,6 +2962,13 @@ class SpeechMenu {
                             SpeechMenu
                                 .#executionEnabled
                         );
+
+                if (matched) {
+                    SpeechMenu
+                        .#resolvePendingStreamsAsContinuation(
+                            utterance
+                        );
+                }
             }
         }
 
@@ -3262,6 +3418,478 @@ class SpeechMenu {
         return regex.test(text);
     }
 
+    static #recognitionStreamHead(
+        utterance
+    ) {
+        const stack =
+            utterance
+                ?.streamStack;
+
+        return Array.isArray(
+            stack
+        ) &&
+        stack.length
+            ? stack[
+                stack.length - 1
+            ]
+            : undefined;
+    }
+
+    static #pushRecognitionStream(
+        utterance,
+        pauseMilliseconds,
+        source,
+        now = performance.now()
+    ) {
+        if (!utterance) {
+            return undefined;
+        }
+
+        const baseTranscript =
+            SpeechMenu
+                .#normalizeTranscript(
+                    utterance
+                        .transcript
+                );
+
+        if (!baseTranscript) {
+            return undefined;
+        }
+
+        const current =
+            SpeechMenu
+                .#recognitionStreamHead(
+                    utterance
+                );
+
+        if (
+            current &&
+            current.status ===
+                "pending" &&
+            current.baseTranscript ===
+                baseTranscript
+        ) {
+            current.pauseMilliseconds =
+                Math.round(
+                    pauseMilliseconds
+                );
+
+            return current;
+        }
+
+        const wallStartedAt =
+            new Date(
+                performance.timeOrigin +
+                now
+            )
+                .toISOString();
+
+        const stream = {
+            id:
+                ++utterance
+                    .streamSequence,
+            baseTranscript,
+            transcript: "",
+            pauseMilliseconds:
+                Math.max(
+                    0,
+                    Math.round(
+                        Number(
+                            pauseMilliseconds
+                        ) ||
+                        0
+                    )
+                ),
+            source:
+                String(
+                    source ||
+                    "speech"
+                ),
+            startedAt:
+                now,
+            wallStartedAt,
+            status:
+                "pending",
+            exact:
+                false,
+            canContinue:
+                false,
+            candidateCount:
+                0
+        };
+
+        utterance
+            .streamStack
+            .push(
+                stream
+            );
+
+        if (
+            utterance
+                .streamStack
+                .length >
+            8
+        ) {
+            utterance
+                .streamStack
+                .splice(
+                    1,
+                    utterance
+                        .streamStack
+                        .length -
+                        8
+                );
+        }
+
+        SpeechMenu.#emit(
+            "speechStreamPushed",
+            {
+                utteranceId:
+                    utterance.id,
+                streamId:
+                    stream.id,
+                pauseMilliseconds:
+                    stream.pauseMilliseconds,
+                source:
+                    stream.source,
+                baseTranscript
+            }
+        );
+
+        return stream;
+    }
+
+    static #streamRemainder(
+        baseTranscript,
+        fullTranscript
+    ) {
+        const base =
+            SpeechMenu
+                .#normalizeTranscript(
+                    baseTranscript
+                );
+        const full =
+            SpeechMenu
+                .#normalizeTranscript(
+                    fullTranscript
+                );
+
+        if (!base) {
+            return full;
+        }
+
+        if (full === base) {
+            return "";
+        }
+
+        const prefix =
+            base + " ";
+
+        if (
+            !full.startsWith(
+                prefix
+            )
+        ) {
+            return undefined;
+        }
+
+        return full
+            .slice(
+                prefix.length
+            )
+            .trim();
+    }
+
+    static async #classifyRecognitionStreamHead(
+        utterance,
+        fullTranscript,
+        signal
+    ) {
+        const stream =
+            SpeechMenu
+                .#recognitionStreamHead(
+                    utterance
+                );
+
+        if (
+            !stream ||
+            stream.source ===
+                "initial" ||
+            stream.status ===
+                "separation" ||
+            stream.status ===
+                "continuation"
+        ) {
+            return undefined;
+        }
+
+        const text =
+            SpeechMenu
+                .#streamRemainder(
+                    stream
+                        .baseTranscript,
+                    fullTranscript
+                );
+
+        if (text === undefined) {
+            stream.status =
+                "revised";
+
+            return {
+                stream,
+                viable: false,
+                terminal: false
+            };
+        }
+
+        if (!text) {
+            return {
+                stream,
+                viable: true,
+                terminal: false
+            };
+        }
+
+        stream.transcript =
+            text;
+
+        const probe = {
+            id:
+                utterance.id,
+            candidatePool: [],
+            lastExactCandidate:
+                undefined
+        };
+
+        const pool =
+            await SpeechMenu
+                .#refreshCandidatePool(
+                    probe,
+                    text,
+                    signal
+                );
+
+        if (signal?.aborted) {
+            return undefined;
+        }
+
+        const exact =
+            SpeechMenu
+                .#exactCandidate(
+                    probe
+                );
+        const canContinue =
+            pool.some(
+                candidate =>
+                    candidate
+                        .continuation
+            );
+
+        stream.exact =
+            Boolean(exact);
+        stream.canContinue =
+            canContinue;
+        stream.candidateCount =
+            pool.length;
+        stream.status =
+            pool.length
+                ? "active"
+                : "pending";
+
+        return {
+            stream,
+            pool,
+            exact,
+            viable:
+                pool.length > 0,
+            terminal:
+                Boolean(
+                    exact &&
+                    !canContinue
+                )
+        };
+    }
+
+    static #resolvePendingStreamsAsContinuation(
+        utterance
+    ) {
+        let observed =
+            false;
+
+        for (
+            const stream of
+                utterance
+                    ?.streamStack ||
+                []
+        ) {
+            if (
+                stream.source ===
+                    "initial" ||
+                stream.status ===
+                    "continuation" ||
+                stream.status ===
+                    "separation" ||
+                !stream
+                    .pauseMilliseconds
+            ) {
+                continue;
+            }
+
+            stream.status =
+                "continuation";
+
+            observed =
+                SpeechMenu
+                    .#observeContinuationPause(
+                        stream
+                            .pauseMilliseconds,
+                        stream
+                            .source
+                    ) ||
+                observed;
+        }
+
+        return observed;
+    }
+
+    static #observeStreamSeparation(
+        milliseconds,
+        source
+    ) {
+        const accepted =
+            SpeechMenu
+                .#adaptiveTiming
+                ?.observeStreamSeparation(
+                    milliseconds,
+                    {
+                        source
+                    }
+                );
+
+        if (accepted) {
+            SpeechMenu.#emit(
+                "speechTimingChanged",
+                {
+                    reason:
+                        "stream-separation",
+                    source,
+                    pauseMilliseconds:
+                        Math.round(
+                            milliseconds
+                        ),
+                    snapshot:
+                        SpeechMenu
+                            .speechTimingSnapshot
+                }
+            );
+        }
+
+        return Boolean(
+            accepted
+        );
+    }
+
+    static async #commitRecognitionStream(
+        utterance,
+        stream,
+        candidate
+    ) {
+        if (
+            !utterance ||
+            !stream ||
+            !candidate ||
+            utterance.committed ||
+            utterance.committing
+        ) {
+            return false;
+        }
+
+        utterance.committing =
+            true;
+
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
+
+        if (
+            SpeechMenu
+                .#utterance ===
+            utterance
+        ) {
+            SpeechMenu
+                .#stopLiveRecognition(
+                    utterance,
+                    false
+                );
+        }
+
+        let committed =
+            false;
+
+        try {
+            committed =
+                Boolean(
+                    await SpeechMenu
+                        .#processElement(
+                            candidate
+                                .commandElement,
+                            stream
+                                .transcript,
+                            utterance.id,
+                            candidate
+                                .speechMenuElement,
+                            SpeechMenu
+                                .#executionEnabled,
+                            undefined,
+                            stream
+                                .wallStartedAt
+                        )
+                );
+
+            if (committed) {
+                stream.status =
+                    "separation";
+                utterance.committed =
+                    true;
+
+                SpeechMenu
+                    .#observeStreamSeparation(
+                        stream
+                            .pauseMilliseconds,
+                        stream
+                            .source
+                    );
+
+                SpeechMenu
+                    .#clearCandidatePool(
+                        utterance
+                    );
+
+                SpeechMenu.#emit(
+                    "utteranceCommitted",
+                    {
+                        id:
+                            utterance.id,
+                        transcript:
+                            stream
+                                .transcript,
+                        streamId:
+                            stream.id,
+                        stream:
+                            true
+                    }
+                );
+            }
+
+            return committed;
+        }
+        finally {
+            utterance.committing =
+                false;
+        }
+    }
+
     static #continuationGraceMilliseconds() {
         const adaptive =
             Number(
@@ -3523,8 +4151,23 @@ class SpeechMenu {
                 .#exactCandidate(
                     utterance
                 );
+        const streamHead =
+            SpeechMenu
+                .#recognitionStreamHead(
+                    utterance
+                );
 
         return Boolean(
+            (
+                streamHead &&
+                streamHead.source !==
+                    "initial" &&
+                (
+                    streamHead.status ===
+                        "pending" ||
+                    streamHead.canContinue
+                )
+            ) ||
             exactCandidate
                 ?.continuation ||
             (
@@ -5532,7 +6175,8 @@ class SpeechMenu {
         utteranceId,
         speechMenuElement,
         execute = true,
-        signal
+        signal,
+        executionStartedAt
     ) {
         if (signal?.aborted) {
             return false;
@@ -6046,6 +6690,7 @@ class SpeechMenu {
                     transcript:
                         text,
                     utteranceStartedAt:
+                        executionStartedAt ||
                         utterance
                             ?.wallStartedAt
                 });

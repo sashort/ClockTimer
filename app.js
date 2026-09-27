@@ -10525,6 +10525,13 @@
             .textContent =
             recognition.transcript
                 ? (
+                    "Stream " +
+                    String(
+                        recognition
+                            .streamDepth ||
+                        1
+                    ) +
+                    ": " +
                     recognition
                         .transcript +
                     (
@@ -10571,6 +10578,14 @@
                                         0
                                     ) +
                                     " ms · " +
+                                    (
+                                        entry
+                                            .type ===
+                                            "separation"
+                                            ? "new stream"
+                                            : "continuation"
+                                    ) +
+                                    " · " +
                                     String(
                                         entry
                                             .source ||

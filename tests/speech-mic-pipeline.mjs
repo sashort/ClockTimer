@@ -2904,3 +2904,33 @@ assert.match(
     app,
     /"speech-runtime-ready"[\s\S]*tripIsLive\(\)[\s\S]*beginSpeechTimingTrip/
 );
+
+
+assert.match(
+    speechMenuSource,
+    /streamStack:[\s\S]*source: "initial"/
+);
+assert.match(
+    speechMenuSource,
+    /#pushRecognitionStream[\s\S]*speechStreamPushed/
+);
+assert.match(
+    speechMenuSource,
+    /#classifyRecognitionStreamHead[\s\S]*terminal:[\s\S]*exact[\s\S]*!canContinue/
+);
+assert.match(
+    speechMenuSource,
+    /streamResult[\s\S]*#commitRecognitionStream/
+);
+assert.match(
+    speechMenuSource,
+    /#observeStreamSeparation[\s\S]*observeStreamSeparation/
+);
+assert.match(
+    speechMenuSource,
+    /#resolvePendingStreamsAsContinuation[\s\S]*#observeContinuationPause/
+);
+assert.match(
+    app,
+    /"Stream " \+[\s\S]*streamDepth/
+);
