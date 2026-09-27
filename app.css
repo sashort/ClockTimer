@@ -437,8 +437,24 @@ html[data-trip-log-startup="unpinned"] .app {
     min-height: 0;
     display: grid;
     place-items: center;
+    padding-bottom:
+        var(
+            --clock-speech-clearance,
+            0px
+        );
     overflow: hidden;
     container-type: size;
+    transition:
+        padding-bottom
+        var(
+            --trip-log-layout-duration,
+            1000ms
+        )
+        ease-in-out;
+}
+
+.app[data-speech-active="true"] {
+    --clock-speech-clearance: 42px;
 }
 
 clock-timer {
