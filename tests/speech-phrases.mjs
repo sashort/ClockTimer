@@ -486,6 +486,45 @@ assert.match(
         /WMOFActions\.toggleSpeechOptions/
     );
 
+    for (
+        const [
+            phrase,
+            action
+        ] of [
+            ["faster", "changeAudioRateFaster"],
+            ["slower", "changeAudioRateSlower"],
+            ["louder", "changeAudioVolumeLouder"],
+            ["softer", "changeAudioVolumeSofter"]
+        ]
+    ) {
+        assert.match(
+            micSource,
+            new RegExp(
+                "\\"" +
+                phrase +
+                "\\"[\\s\\S]*?\\^" +
+                phrase +
+                "\\\$[\\s\\S]*?WMOFActions\\\\." +
+                action
+            ),
+            phrase +
+                " should be a global System command"
+        );
+    }
+
+    assert.match(
+        appSource,
+        /changeGlobalAudioRate[\s\S]*?speechVelocity[\s\S]*?toneVelocity[\s\S]*?Speech Rate/
+    );
+    assert.match(
+        appSource,
+        /changeGlobalAudioVolume[\s\S]*?speechVolume[\s\S]*?toneVolume[\s\S]*?Speech Volume/
+    );
+    assert.match(
+        appSource,
+        /AUDIO_SPEECH_VELOCITY_MAX\s*=\s*4[\s\S]*?AUDIO_TONE_VELOCITY_MAX\s*=\s*1\.5/
+    );
+
     assert.match(
         appSource,
         /closeActiveSpeechSurface[\s\S]*?optionsOpen[\s\S]*?hideOptions[\s\S]*?getTripListState\(\) ===[\s\S]*?"open"[\s\S]*?closeTripList\([\s\S]*?"speech-close"/

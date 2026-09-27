@@ -70,6 +70,95 @@
         })
     });
 
+    const AUDIO_PERCENT_STEP = 5;
+    const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
+    const AUDIO_SPEECH_VELOCITY_MAX = 4;
+    const AUDIO_TONE_VELOCITY_MIN = 0.5;
+    const AUDIO_TONE_VELOCITY_MAX = 1.5;
+
+    function audioVelocityPercent(value, maximum) {
+        const numeric = Number(value);
+        const limit = Number(maximum);
+        if (!Number.isFinite(numeric) || !Number.isFinite(limit) || limit <= 0) {
+            return 0;
+        }
+
+        return Math.max(
+            0,
+            Math.min(
+                100,
+                numeric / limit * 100
+            )
+        );
+    }
+
+    function formatAudioVelocityPercent(value, maximum) {
+        return Math.round(
+            audioVelocityPercent(
+                value,
+                maximum
+            )
+        ) + "%";
+    }
+
+    function stepAudioVelocity(
+        value,
+        minimum,
+        maximum,
+        deltaPercent
+    ) {
+        const floorPercent =
+            Number(minimum) /
+            Number(maximum) *
+            100;
+        const nextPercent =
+            Math.max(
+                floorPercent,
+                Math.min(
+                    100,
+                    audioVelocityPercent(
+                        value,
+                        maximum
+                    ) +
+                    Number(deltaPercent)
+                )
+            );
+
+        return Number(
+            (
+                Number(maximum) *
+                nextPercent /
+                100
+            ).toFixed(6)
+        );
+    }
+
+    function stepAudioVolume(
+        value,
+        deltaPercent
+    ) {
+        const current =
+            Number.isFinite(
+                Number(value)
+            )
+                ? Number(value) * 100
+                : 100;
+        const next =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    current +
+                    Number(deltaPercent)
+                )
+            );
+
+        return Number(
+            (next / 100)
+                .toFixed(6)
+        );
+    }
+
     const GRAPHICAL_DEFAULTS = {
         timerType: "radial-overflow",
         timerMode: "elapsed",
@@ -2436,9 +2525,15 @@
         audioMasterVelocityValue.textContent =
             audioSettings.masterVelocity.toFixed(2) + "×";
         audioSpeechVelocityValue.textContent =
-            audioSettings.speechVelocity.toFixed(2) + "×";
+            formatAudioVelocityPercent(
+                audioSettings.speechVelocity,
+                AUDIO_SPEECH_VELOCITY_MAX
+            );
         audioToneVelocityValue.textContent =
-            audioSettings.toneVelocity.toFixed(2) + "×";
+            formatAudioVelocityPercent(
+                audioSettings.toneVelocity,
+                AUDIO_TONE_VELOCITY_MAX
+            );
 
         for (
             const input of
@@ -2582,28 +2677,37 @@
             slider.value =
                 String(value);
 
+            const prefix =
+                hasCustom
+                    ? ""
+                    : "Global ";
+
             output.textContent =
                 property.endsWith(
                     "Volume"
                 )
-                    ? (
-                        hasCustom
-                            ? ""
-                            : "Global "
-                    ) +
+                    ? prefix +
                         Math.round(
                             Number(value) *
                                 100
                         ) +
                         "%"
-                    : (
-                        hasCustom
-                            ? ""
-                            : "Global "
-                    ) +
-                        Number(value)
-                            .toFixed(2) +
-                        "×";
+                    : property ===
+                        "speechVelocity"
+                        ? prefix +
+                            formatAudioVelocityPercent(
+                                value,
+                                AUDIO_SPEECH_VELOCITY_MAX
+                            )
+                        : property ===
+                            "toneVelocity"
+                            ? prefix +
+                                formatAudioVelocityPercent(
+                                    value,
+                                    AUDIO_TONE_VELOCITY_MAX
+                                )
+                            : prefix +
+                                String(value);
         }
     }
 
@@ -21659,7 +21763,9 @@
             announcement,
             value,
             {
-                spokenValue
+                spokenValue,
+                useGlobalAudioSettings =
+                    false
             } = {}
         ) => {
             const response =
@@ -21707,7 +21813,10 @@
                 );
             const output =
                 audioAnnouncementOutput(
-                    announcement
+                    announcement,
+                    useGlobalAudioSettings
+                        ? {}
+                        : undefined
                 );
             const speechGuard =
                 summary.perform
@@ -21828,6 +21937,77 @@
                 value,
                 options
             );
+
+    const changeGlobalAudioRate =
+        deltaPercent => {
+            audioSettings.speechVelocity =
+                stepAudioVelocity(
+                    audioSettings
+                        .speechVelocity,
+                    AUDIO_SPEECH_VELOCITY_MIN,
+                    AUDIO_SPEECH_VELOCITY_MAX,
+                    deltaPercent
+                );
+            audioSettings.toneVelocity =
+                stepAudioVelocity(
+                    audioSettings
+                        .toneVelocity,
+                    AUDIO_TONE_VELOCITY_MIN,
+                    AUDIO_TONE_VELOCITY_MAX,
+                    deltaPercent
+                );
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                "Speech Rate " +
+                    formatAudioVelocityPercent(
+                        audioSettings
+                            .speechVelocity,
+                        AUDIO_SPEECH_VELOCITY_MAX
+                    ),
+                {
+                    useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
+
+    const changeGlobalAudioVolume =
+        deltaPercent => {
+            audioSettings.speechVolume =
+                stepAudioVolume(
+                    audioSettings
+                        .speechVolume,
+                    deltaPercent
+                );
+            audioSettings.toneVolume =
+                stepAudioVolume(
+                    audioSettings
+                        .toneVolume,
+                    deltaPercent
+                );
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                "Speech Volume " +
+                    Math.round(
+                        audioSettings
+                            .speechVolume *
+                        100
+                    ) +
+                    "%",
+                {
+                    useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
 
     const goalPercentForScope =
         scope => {
@@ -22116,6 +22296,30 @@
 
             disableSpeechRecognition() {
                 return disableSpeechRecognitionRuntime();
+            },
+
+            changeAudioRateFaster() {
+                return changeGlobalAudioRate(
+                    AUDIO_PERCENT_STEP
+                );
+            },
+
+            changeAudioRateSlower() {
+                return changeGlobalAudioRate(
+                    -AUDIO_PERCENT_STEP
+                );
+            },
+
+            changeAudioVolumeLouder() {
+                return changeGlobalAudioVolume(
+                    AUDIO_PERCENT_STEP
+                );
+            },
+
+            changeAudioVolumeSofter() {
+                return changeGlobalAudioVolume(
+                    -AUDIO_PERCENT_STEP
+                );
             },
 
             openSpeechOptions() {

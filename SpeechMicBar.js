@@ -1403,6 +1403,26 @@ class SpeechMicBar extends HTMLElement {
                 "^(?:(?:speech )?commands|choices|options)$",
                 "WMOFActions.openSpeechOptions"
             );
+        ensureCommand(
+            "faster",
+            "^faster$",
+            "WMOFActions.changeAudioRateFaster"
+        );
+        ensureCommand(
+            "slower",
+            "^slower$",
+            "WMOFActions.changeAudioRateSlower"
+        );
+        ensureCommand(
+            "louder",
+            "^louder$",
+            "WMOFActions.changeAudioVolumeLouder"
+        );
+        ensureCommand(
+            "softer",
+            "^softer$",
+            "WMOFActions.changeAudioVolumeSofter"
+        );
 
         return menu;
     }
