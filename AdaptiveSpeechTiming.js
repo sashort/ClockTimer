@@ -702,13 +702,29 @@ class AdaptiveSpeechTiming {
     }
 
     get snapshot() {
+        const pausePriorFactor =
+            this.#ttsPriorFactor(
+                4
+            );
         const continuation =
+            this.#effective(
+                "continuation",
+                {
+                    priorFactor:
+                        pausePriorFactor
+                }
+            );
+        const continuationDispatch =
             this.#effective(
                 "continuation"
             );
         const separation =
             this.#effective(
-                "separation"
+                "separation",
+                {
+                    priorFactor:
+                        pausePriorFactor
+                }
             );
         const continuationDeviation =
             Math.sqrt(
@@ -729,7 +745,8 @@ class AdaptiveSpeechTiming {
             ttsRate:
                 this.#ttsRate,
             ttsPriorFactor:
-                continuation.priorFactor,
+                continuationDispatch
+                    .priorFactor,
             continuationPauseBoundaryMs:
                 this.continuationPauseBoundaryMilliseconds,
             continuationDispatchDelayMs:
@@ -786,6 +803,7 @@ class AdaptiveSpeechTiming {
             },
             effective: {
                 continuation,
+                continuationDispatch,
                 separation
             },
             recentPauses:

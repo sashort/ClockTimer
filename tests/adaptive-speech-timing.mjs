@@ -81,6 +81,24 @@ assert.ok(
     "Very slow speech should allow a longer continuation dispatch hold."
 );
 
+const slowRateSnapshot =
+    timing.snapshot;
+
+timing.setTtsRate(4);
+const fastRateSnapshot =
+    timing.snapshot;
+
+assert.equal(
+    slowRateSnapshot.estimatedSpeechRate,
+    fastRateSnapshot.estimatedSpeechRate,
+    "Changing configured speech rate must not change the estimated user speech rate without new observations."
+);
+assert.notEqual(
+    slowRateSnapshot.ttsPriorFactor,
+    fastRateSnapshot.ttsPriorFactor,
+    "Configured speech rate should still change only the continuation dispatch prior."
+);
+
 timing.setTtsRate(2);
 
 assert.equal(
