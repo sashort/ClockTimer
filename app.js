@@ -13275,6 +13275,450 @@
         return true;
     }
 
+    function voiceEntryCopyForMode(mode) {
+        if (mode === "percent") {
+            return {
+                prompt: "Say a Number",
+                example: "Example: “eighty-five percent”"
+            };
+        }
+
+        if (mode === "absolute") {
+            return {
+                prompt: "Say a Time",
+                example: "Example: “eight thirty A M”"
+            };
+        }
+
+        return {
+            prompt: "Say a Duration",
+            example: "Example: “five minutes”"
+        };
+    }
+
+    function renderVoiceEntry({
+        prompt,
+        example,
+        value
+    } = {}) {
+        if (!voiceEntrySurface) {
+            return false;
+        }
+
+        voiceEntryTitle.textContent =
+            numberPadState?.title ||
+            "Voice Entry";
+
+        const copy =
+            voiceEntryCopyForMode(
+                numberPadState?.mode
+            );
+
+        voiceEntryPrompt.textContent =
+            prompt ||
+            copy.prompt;
+        voiceEntryExample.textContent =
+            example ||
+            copy.example;
+
+        const hasValue =
+            typeof value === "string" &&
+            value.trim();
+
+        voiceEntryValue.hidden =
+            !hasValue;
+        voiceEntryValue.textContent =
+            hasValue
+                ? value
+                : "";
+
+        return true;
+    }
+
+    function hideVoiceEntrySurface() {
+        clearTimeout(
+            voiceEntryAcceptTimer
+        );
+        voiceEntryAcceptTimer =
+            undefined;
+
+        try {
+            if (
+                voiceEntrySurface
+                    ?.matches?.(
+                        ":popover-open"
+                    )
+            ) {
+                voiceEntrySurface
+                    .hidePopover?.();
+            }
+        }
+        catch {}
+
+        if (voiceEntrySurface) {
+            voiceEntrySurface.hidden =
+                true;
+        }
+
+        if (
+            globalThis.SpeechMenu &&
+            voiceEntryExecutionBeforeOpen !==
+                undefined
+        ) {
+            globalThis.SpeechMenu
+                .executionEnabled =
+                voiceEntryExecutionBeforeOpen;
+        }
+
+        voiceEntryExecutionBeforeOpen =
+            undefined;
+        voiceEntryState =
+            undefined;
+    }
+
+    async function closeVoiceEntry({
+        cancel = false,
+        destination
+    } = {}) {
+        if (
+            !voiceEntryState ||
+            !numberPadState
+        ) {
+            return false;
+        }
+
+        const state =
+            numberPadState;
+
+        hideVoiceEntrySurface();
+
+        const closed =
+            await closeNumberPad({
+                destination:
+                    destination ??
+                    (
+                        cancel
+                            ? state.cancelTarget
+                            : state.confirmTarget
+                    ),
+                discardPrepared:
+                    cancel,
+                allowChanged:
+                    true,
+                immediate:
+                    true
+            });
+
+        resetNumberPad();
+
+        return closed;
+    }
+
+    async function switchVoiceEntryToTouch() {
+        if (
+            !voiceEntryState ||
+            !numberPadState
+        ) {
+            return false;
+        }
+
+        const snapshot = {
+            ...numberPadState
+        };
+
+        hideVoiceEntrySurface();
+
+        await restoreNumberPadState(
+            snapshot,
+            {
+                duration: 0
+            }
+        );
+
+        return true;
+    }
+
+    function parseVoiceEntryTranscript(
+        transcript
+    ) {
+        if (!numberPadState) {
+            return false;
+        }
+
+        const text =
+            String(
+                transcript ||
+                ""
+            )
+                .trim();
+
+        if (!text) {
+            return false;
+        }
+
+        if (
+            /^(?:cancel|close)$/
+                .test(
+                    text.toLowerCase()
+                )
+        ) {
+            void closeVoiceEntry({
+                cancel: true
+            });
+
+            return true;
+        }
+
+        if (
+            /^(?:touch|keypad|number pad)$/
+                .test(
+                    text.toLowerCase()
+                )
+        ) {
+            void switchVoiceEntryToTouch();
+
+            return true;
+        }
+
+        let display;
+
+        if (
+            numberPadState.mode ===
+                "percent"
+        ) {
+            const percent =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        text,
+                        "percent"
+                    );
+
+            if (
+                !Number.isFinite(
+                    percent
+                )
+            ) {
+                return false;
+            }
+
+            numberPadState.pending =
+                String(
+                    percent
+                );
+            display =
+                numberPadState.pending +
+                "%";
+        }
+        else if (
+            numberPadState.mode ===
+                "absolute"
+        ) {
+            const parts =
+                EnglishSpokenTimeParser
+                    .parseParts(
+                        text
+                    );
+
+            if (!parts) {
+                return false;
+            }
+
+            numberPadState.pending =
+                absoluteDigits(
+                    parts.hour,
+                    parts.minute,
+                    parts.second || 0
+                );
+            numberPadState.meridiem =
+                parts.meridiem ||
+                numberPadState
+                    .initialMeridiem;
+            display =
+                renderAbsoluteDigits(
+                    numberPadState.pending
+                ) +
+                (
+                    numberPadState
+                        .meridiem
+                        ? " " +
+                            numberPadState
+                                .meridiem
+                        : ""
+                );
+        }
+        else {
+            const duration =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        text,
+                        "duration"
+                    );
+            const formatted =
+                EnglishDurationParser
+                    .format(
+                        duration
+                    );
+
+            if (!formatted) {
+                return false;
+            }
+
+            numberPadState.pending =
+                durationValueToRawDigits(
+                    formatted
+                );
+            display =
+                renderTimeDigits(
+                    numberPadState.pending
+                );
+        }
+
+        numberPadState.replaceOnNextDigit =
+            false;
+        numberPadState.everEdited =
+            numberPadHasChanges();
+
+        if (!numberPadValueValid()) {
+            renderVoiceEntry({
+                prompt:
+                    "Say a Valid Value",
+                example:
+                    voiceEntryCopyForMode(
+                        numberPadState.mode
+                    ).example
+            });
+
+            return false;
+        }
+
+        renderVoiceEntry({
+            prompt: "Heard",
+            value: display
+        });
+
+        clearTimeout(
+            voiceEntryAcceptTimer
+        );
+
+        voiceEntryAcceptTimer =
+            setTimeout(
+                async () => {
+                    if (
+                        !voiceEntryState ||
+                        !numberPadState
+                    ) {
+                        return;
+                    }
+
+                    try {
+                        if (
+                            await commitNumberPad()
+                        ) {
+                            await closeVoiceEntry({
+                                cancel: false
+                            });
+                        }
+                    }
+                    catch {
+                        renderVoiceEntry({
+                            prompt:
+                                "Say a Valid Value"
+                        });
+                    }
+                },
+                350
+            );
+
+        return true;
+    }
+
+    async function openVoiceEntry({
+        mode,
+        source,
+        initialValue = "",
+        tripDefaults,
+        startsTripOnConfirm = false,
+        role = "root",
+        workflow,
+        cancelTarget,
+        confirmTarget,
+        backTarget,
+        onConfirm,
+        onCancel,
+        title,
+        allowEmpty = false,
+        signal
+    } = {}) {
+        if (
+            signal?.aborted ||
+            !voiceEntrySurface
+        ) {
+            return false;
+        }
+
+        numberPadState =
+            createNumberPadState({
+                mode,
+                source,
+                initialValue,
+                tripDefaults,
+                startsTripOnConfirm,
+                role,
+                workflow,
+                cancelTarget,
+                confirmTarget,
+                backTarget,
+                onConfirm,
+                onCancel,
+                title,
+                allowEmpty
+            });
+
+        voiceEntryState = {
+            source:
+                numberPadState.source,
+            openedAt:
+                performance.now()
+        };
+
+        if (
+            globalThis.SpeechMenu
+        ) {
+            voiceEntryExecutionBeforeOpen =
+                globalThis.SpeechMenu
+                    .executionEnabled;
+            globalThis.SpeechMenu
+                .executionEnabled =
+                false;
+        }
+
+        renderVoiceEntry();
+
+        voiceEntrySurface.hidden =
+            false;
+
+        try {
+            if (
+                !voiceEntrySurface
+                    .matches(
+                        ":popover-open"
+                    )
+            ) {
+                voiceEntrySurface
+                    .showPopover?.();
+            }
+        }
+        catch {}
+
+        queueMicrotask(
+            () =>
+                speechMicBar
+                    ?.promoteTopLayer?.()
+        );
+
+        return true;
+    }
+
     async function restoreNumberPadState(snapshot, { duration = 0 } = {}) {
         if (!snapshot) return;
         await ensureNumberPadLoaded();
