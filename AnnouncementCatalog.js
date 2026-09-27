@@ -170,6 +170,38 @@
         }
     );
 
+    register(
+        "goal-change",
+        {
+            label:
+                "Goal Changed",
+            group:
+                "Settings",
+            song:
+                "info-tone",
+            layers: [
+                "chime",
+                "summary"
+            ]
+        }
+    );
+
+    register(
+        "range-change",
+        {
+            label:
+                "Range Changed",
+            group:
+                "Settings",
+            song:
+                "info-tone",
+            layers: [
+                "chime",
+                "summary"
+            ]
+        }
+    );
+
     const api = {
         register,
         ensure,
