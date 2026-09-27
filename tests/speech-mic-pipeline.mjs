@@ -64,6 +64,19 @@ assert.equal(
     "function"
 );
 
+assert.equal(
+    SpeechMenu.systemExecutionPassthrough,
+    false
+);
+SpeechMenu.systemExecutionPassthrough =
+    true;
+assert.equal(
+    SpeechMenu.systemExecutionPassthrough,
+    true
+);
+SpeechMenu.systemExecutionPassthrough =
+    false;
+
 const systemSpeechMenu =
     bar.querySelector(
         ':scope > speech-menu[speech-modal="system"]'
