@@ -1074,6 +1074,26 @@ assert.match(
     /#beginUtterance\(now\)[\s\S]*#cancelPendingRecognitionForBargeIn\(\)/
 );
 assert.match(speechMenuSource, /#cancelCandidateWork[\s\S]*controller\.abort\(\)/);
+assert.match(
+    speechMenuSource,
+    /#candidateIsRepeatable[\s\S]*speech-repeatable/
+);
+assert.match(
+    speechMenuSource,
+    /#repeatableStreamHead[\s\S]*status ===[\s\S]*"command"[\s\S]*repeatable/
+);
+assert.match(
+    speechMenuSource,
+    /#commitRecognitionStream[\s\S]*#observeStreamSeparation/
+);
+assert.match(
+    speechMenuSource,
+    /#recoverBargeInTail[\s\S]*synthesizedSpeechActive[\s\S]*#refreshCandidatePool/
+);
+assert.match(
+    speechMenuSource,
+    /speechBargeInRecovered/
+);
 assert.match(speechMenuSource, /while\s*\([\s\S]*next\.shift\(\)/);
 assert.match(speechMenuSource, /await Promise\.resolve\([\s\S]*speechPreprocFunc[\s\S]*signal/s);
 assert.doesNotMatch(speechMenuSource, /SpeechRecognition|webkitSpeechRecognition|createScriptProcessor/);

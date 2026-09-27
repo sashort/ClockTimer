@@ -32,16 +32,39 @@ assert.equal(
 
 const neutralGrace =
     timing.continuationGraceMilliseconds;
+const neutralSeparation =
+    timing.streamSeparationMilliseconds;
 
 timing.setTtsRate(2);
 const fastTtsGrace =
     timing.continuationGraceMilliseconds;
+const fastTtsSeparation =
+    timing.streamSeparationMilliseconds;
 
 assert.ok(
     fastTtsGrace <
     neutralGrace,
-    "A faster TTS rate should shorten only the weak prior."
+    "A faster TTS rate should shorten the weak continuation prior."
 );
+assert.ok(
+    fastTtsSeparation <
+    neutralSeparation,
+    "A faster TTS rate should shorten the weak stream-separation prior."
+);
+
+timing.setTtsRate(0.5);
+assert.ok(
+    timing.continuationGraceMilliseconds >
+        neutralGrace,
+    "A slower TTS rate should lengthen the weak continuation prior."
+);
+assert.ok(
+    timing.streamSeparationMilliseconds >
+        neutralSeparation,
+    "A slower TTS rate should lengthen the weak stream-separation prior."
+);
+
+timing.setTtsRate(2);
 
 assert.equal(
     timing.startTrip(),

@@ -1407,22 +1407,38 @@ class SpeechMicBar extends HTMLElement {
             "faster",
             "^faster$",
             "WMOFActions.changeAudioRateFaster"
-        );
+        )
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
         ensureCommand(
             "slower",
             "^slower$",
             "WMOFActions.changeAudioRateSlower"
-        );
+        )
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
         ensureCommand(
             "louder",
             "^louder$",
             "WMOFActions.changeAudioVolumeLouder"
-        );
+        )
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
         ensureCommand(
             "softer",
             "^softer$",
             "WMOFActions.changeAudioVolumeSofter"
-        );
+        )
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
 
         return menu;
     }
