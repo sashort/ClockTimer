@@ -2454,7 +2454,35 @@ assert.match(
 
 assert.match(
     speechMenuSource,
-    /for \(const type of \["toggle", "close", "cancel", "okStatusChanged"\]\)[\s\S]*#schedulePhraseRefresh/
+    /const refreshSurfaceContext[\s\S]*#invalidateRecognitionContext\([\s\S]*"surface-context-change"[\s\S]*#schedulePhraseRefresh/
+);
+assert.match(
+    speechMenuSource,
+    /const type of \[[\s\S]*"toggle"[\s\S]*"close"[\s\S]*\][\s\S]*refreshSurfaceContext/
+);
+assert.match(
+    speechMenuSource,
+    /MutationObserver\([\s\S]*record\.attributeName[\s\S]*"open"[\s\S]*"hidden"[\s\S]*"inert"[\s\S]*"aria-hidden"[\s\S]*"dialog, \[popover\], details"[\s\S]*#invalidateRecognitionContext/
+);
+assert.match(
+    speechMenuSource,
+    /#invalidateRecognitionContext\([\s\S]*#contextGeneration\+\+[\s\S]*#preRollFrames[\s\S]*#cancelPendingRecognitionForBargeIn[\s\S]*#vad[\s\S]*reset/
+);
+assert.match(
+    speechMenuSource,
+    /contextGeneration:[\s\S]*SpeechMenu\.#contextGeneration/
+);
+assert.match(
+    speechMenuSource,
+    /#handleCompletedTranscript\([\s\S]*utterance\.contextGeneration !==[\s\S]*SpeechMenu\.#contextGeneration[\s\S]*return;/
+);
+assert.match(
+    speechMenuSource,
+    /#handleLiveTranscript\([\s\S]*utterance\.contextGeneration !==[\s\S]*SpeechMenu\.#contextGeneration/
+);
+assert.match(
+    speechMenuSource,
+    /#commitRecognitionStream\([\s\S]*utterance\.contextGeneration !==[\s\S]*SpeechMenu\.#contextGeneration/
 );
 assert.match(
     speechMenuSource,
