@@ -1727,13 +1727,15 @@ class SpeechMenu {
                         .silenceMilliseconds
                 ) ||
                 0;
-
-            if (
-                resumedPause >= 70 &&
+            const hadOpenContinuation =
                 SpeechMenu
                     .#hasOpenContinuation(
                         utterance
-                    )
+                    );
+
+            if (
+                resumedPause >= 70 &&
+                hadOpenContinuation
             ) {
                 SpeechMenu
                     .#pushRecognitionStream(
@@ -1744,88 +1746,109 @@ class SpeechMenu {
                     );
             }
 
+            if (
+                utterance
+                    .continuationPauseTimer !==
+                        undefined ||
+                utterance
+                    .continuationPauseStartedAt !==
+                        undefined
+            ) {
+                SpeechMenu
+                    .#cancelContinuationPause(
+                        utterance
+                    );
+            }
+
             utterance.silenceMilliseconds =
                 0;
         }
         else {
-            SpeechMenu.#utterance.silenceMilliseconds +=
+            const utterance =
+                SpeechMenu.#utterance;
+
+            utterance.silenceMilliseconds +=
                 frameMilliseconds;
 
             if (
-                !SpeechMenu.#utterance
-                    .committed &&
-                !SpeechMenu.#utterance
-                    .committing &&
-                SpeechMenu.#utterance
-                    .silenceMilliseconds >=
-                    (
-                        SpeechMenu
-                            .#repeatableStreamHead(
-                                SpeechMenu
-                                    .#utterance
-                            )
-                            ? SpeechMenu
-                                .#streamSeparationMilliseconds()
-                            : SpeechMenu
-                                .#hasOpenContinuation(
-                                    SpeechMenu
-                                        .#utterance
-                                )
-                                ? SpeechMenu
-                                    .#continuationGraceMilliseconds()
-                                : SpeechMenu
-                                    .#commitSilenceTimeout
-                    )
+                !utterance.committed &&
+                !utterance.committing
             ) {
-                const utterance =
-                    SpeechMenu.#utterance;
-                const exactCandidate =
+                const repeatable =
                     SpeechMenu
-                        .#exactCandidate(
+                        .#repeatableStreamHead(
                             utterance
                         );
-                if (
+                const openContinuation =
                     SpeechMenu
                         .#hasOpenContinuation(
                             utterance
-                        )
+                        );
+
+                if (
+                    repeatable &&
+                    utterance
+                        .silenceMilliseconds >=
+                        SpeechMenu
+                            .#streamSeparationMilliseconds()
                 ) {
-                    if (
-                        SpeechMenu
-                            .#repeatableStreamHead(
-                                utterance
-                            )
-                    ) {
-                        SpeechMenu
-                            .#finishUtterance(
-                                "repeatable-silence",
-                                false
-                            );
-
-                        return;
-                    }
-
-                    /*
-                     * Open-ended values (for example
-                     * "ready at five fif") often stop changing before
-                     * Sherpa emits the completed last word. Real silence
-                     * is the boundary; request the recognizer's final
-                     * decode instead of committing a stale interim.
-                     */
                     SpeechMenu
                         .#finishUtterance(
-                            "candidate-silence",
-                            true
+                            "repeatable-silence",
+                            false
                         );
 
                     return;
                 }
 
-                if (exactCandidate) {
-                    void SpeechMenu
-                        .#commitUtterance(
+                if (openContinuation) {
+                    if (
+                        utterance
+                            .continuationPauseTimer ===
+                                undefined &&
+                        utterance
+                            .silenceMilliseconds >=
+                            SpeechMenu
+                                .#continuationPauseBoundaryMilliseconds()
+                    ) {
+                        /*
+                         * The pause boundary is intentionally fast and
+                         * independent of speech rate. Crossing it starts
+                         * the continuation dispatch hold; it does not
+                         * end recognition. If speech resumes during the
+                         * hold, the timer is cancelled above and the
+                         * phrase keeps growing.
+                         */
+                        utterance
+                            .continuationPauseStartedAt =
+                            now -
                             utterance
-                        );
+                                .silenceMilliseconds;
+
+                        SpeechMenu
+                            .#armContinuationPauseDeadline(
+                                utterance
+                            );
+                    }
+                }
+                else if (
+                    utterance
+                        .silenceMilliseconds >=
+                        SpeechMenu
+                            .#commitSilenceTimeout
+                ) {
+                    const exactCandidate =
+                        SpeechMenu
+                            .#exactCandidate(
+                                utterance
+                            );
+
+                    if (exactCandidate) {
+                        void SpeechMenu
+                            .#commitUtterance(
+                                utterance
+                            );
+                    }
                 }
             }
 
@@ -1988,10 +2011,10 @@ class SpeechMenu {
                     )
             ) {
                 /*
-                 * A short pause can occur inside a continuation-capable
-                 * value, e.g. "ready at four ... fifteen". Keep the
-                 * recognizer stream alive only for this user's current
-                 * adaptive continuation grace.
+                 * Silero has already detected the pause quickly. Keep
+                 * recognition alive and let only the continuation
+                 * dispatch timer vary with speech rate. If speech resumes
+                 * first, #onVadSpeechStart cancels this pending dispatch.
                  */
                 utterance
                     .continuationPauseStartedAt =
@@ -4450,19 +4473,29 @@ class SpeechMenu {
                         startedAt
                 )
                 : 0;
-        const graceMilliseconds =
+        const repeatable =
             SpeechMenu
                 .#repeatableStreamHead(
                     utterance
-                )
+                );
+        const pauseBoundaryMilliseconds =
+            repeatable
                 ? SpeechMenu
                     .#streamSeparationMilliseconds()
                 : SpeechMenu
-                    .#continuationGraceMilliseconds();
+                    .#continuationPauseBoundaryMilliseconds();
+        const dispatchDelayMilliseconds =
+            repeatable
+                ? 0
+                : SpeechMenu
+                    .#continuationDispatchDelayMilliseconds();
+        const dispatchAtMilliseconds =
+            pauseBoundaryMilliseconds +
+            dispatchDelayMilliseconds;
         const delay =
             Math.max(
                 0,
-                graceMilliseconds -
+                dispatchAtMilliseconds -
                     elapsed
             );
 

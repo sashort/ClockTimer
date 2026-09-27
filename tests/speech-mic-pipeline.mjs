@@ -1108,6 +1108,22 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /silenceMilliseconds[\s\S]*#continuationPauseBoundaryMilliseconds\(\)[\s\S]*#armContinuationPauseDeadline/
+);
+assert.match(
+    speechMenuSource,
+    /#armContinuationPauseDeadline[\s\S]*pauseBoundaryMilliseconds[\s\S]*dispatchDelayMilliseconds[\s\S]*dispatchAtMilliseconds/
+);
+assert.match(
+    speechMenuSource,
+    /level >=[\s\S]*#speechThreshold[\s\S]*#cancelContinuationPause/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /silenceMilliseconds >=[\s\S]{0,260}#continuationGraceMilliseconds\(\)/
+);
+assert.match(
+    speechMenuSource,
     /#recoverBargeInTail[\s\S]*synthesizedSpeechActive[\s\S]*#refreshCandidatePool/
 );
 assert.match(
