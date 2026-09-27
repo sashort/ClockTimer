@@ -1550,6 +1550,14 @@
     let tripDraft;
     let newTripWorkflowLocked = false;
 
+    function refreshSpeechCommandContext() {
+        queueMicrotask(
+            () => globalThis
+                .SpeechMenu
+                ?.extrapolatePhrases?.()
+        );
+    }
+
     function syncNewTripButtonAvailability() {
         const button =
             document.getElementById(
@@ -1568,19 +1576,33 @@
     }
 
     function lockNewTripWorkflow() {
+        const changed =
+            !newTripWorkflowLocked;
+
         newTripWorkflowLocked =
             true;
 
         syncNewTripButtonAvailability();
 
+        if (changed) {
+            refreshSpeechCommandContext();
+        }
+
         return true;
     }
 
     function releaseNewTripWorkflow() {
+        const changed =
+            newTripWorkflowLocked;
+
         newTripWorkflowLocked =
             false;
 
         syncNewTripButtonAvailability();
+
+        if (changed) {
+            refreshSpeechCommandContext();
+        }
 
         return true;
     }
@@ -21409,10 +21431,11 @@
 
     const cancelPendingSpeechReady =
         () => {
-            if (
+            const changed =
                 pendingSpeechReady !==
-                    undefined
-            ) {
+                    undefined;
+
+            if (changed) {
                 clearTimeout(
                     pendingSpeechReady
                 );
@@ -21420,6 +21443,10 @@
 
             pendingSpeechReady =
                 undefined;
+
+            if (changed) {
+                refreshSpeechCommandContext();
+            }
         };
 
     const armSpeechReadyContinuation =
@@ -21431,9 +21458,12 @@
                     () => {
                         pendingSpeechReady =
                             undefined;
+                        refreshSpeechCommandContext();
                     },
                     SPEECH_READY_CONTINUATION_WINDOW
                 );
+
+            refreshSpeechCommandContext();
         };
 
     const openStartMenuWorkflow =
@@ -21664,8 +21694,11 @@
 
             canContinueStartAt() {
                 return (
-                    pendingSpeechReady !==
-                        undefined &&
+                    (
+                        pendingSpeechReady !==
+                            undefined ||
+                        newTripWorkflowLocked
+                    ) &&
                     !tripIsLive()
                 );
             },
