@@ -1899,6 +1899,23 @@ assert.match(
     app,
     /changeGoal\(\s*percent,\s*goalScope\s*\)[\s\S]*rangeByScope[\s\S]*check:\s*"pay-period"[\s\S]*setTripLogRange\([\s\S]*applyScope\(\s*"total"\s*\)[\s\S]*setGoalPercentValue\(\s*"total"/
 );
+
+assert.match(
+    app,
+    /confirmInformationalChange\([\s\S]*"setting-change"/
+);
+assert.match(
+    app,
+    /setTripLogRange\([\s\S]*previousRange[\s\S]*range !== previousRange[\s\S]*"range-change"[\s\S]*"Viewing "/
+);
+assert.match(
+    app,
+    /setGoalPercentValue[\s\S]*"goal-change"[\s\S]*Goal Set to/
+);
+assert.match(
+    fs.readFileSync(new URL("\.\.\/AnnouncementCatalog\.js", import\.meta\.url), "utf8"),
+    /"goal-change"[\s\S]*song:[\s\S]*"info-tone"[\s\S]*"range-change"[\s\S]*song:[\s\S]*"info-tone"/
+);
 assert.match(
     app,
     /normalizedScope ===[\s\S]*"trip"[\s\S]*applyScope\(\s*"trip"\s*\)[\s\S]*setGoalPercentValue\(\s*"trip"/
