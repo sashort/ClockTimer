@@ -3085,14 +3085,75 @@ class SpeechMicBar extends HTMLElement {
                 }
             );
 
-        return compacted.filter(
-            item =>
-                !suppressed.has(
-                    item.display
-                ) ||
-                item.optionalPrefix ||
-                item.optionalSuffix
-        );
+        const visible =
+            compacted.filter(
+                item =>
+                    !suppressed.has(
+                        item.display
+                    ) ||
+                    item.optionalPrefix ||
+                    item.optionalSuffix
+            );
+
+        if (visible.length <= 1) {
+            return visible;
+        }
+
+        const family =
+            visible.slice().sort(
+                (
+                    left,
+                    right
+                ) =>
+                    this
+                        .#compareOptionItems(
+                            left,
+                            right
+                        )
+            );
+
+        const primary =
+            family[0];
+
+        return [{
+            ...primary,
+            display:
+                family
+                    .map(
+                        item =>
+                            this
+                                .#optionItemText(
+                                    item
+                                )
+                    )
+                    .join(
+                        "\u00a0|\u00a0"
+                    ),
+            required:
+                family
+                    .map(
+                        item =>
+                            this
+                                .#optionItemText(
+                                    item
+                                )
+                    )
+                    .join(
+                        "\u00a0|\u00a0"
+                    ),
+            optionalPrefix: "",
+            optionalSuffix: "",
+            familyPhrases:
+                [
+                    ...new Set(
+                        family.flatMap(
+                            item =>
+                                item.familyPhrases ||
+                                [item.phrase]
+                        )
+                    )
+                ]
+        }];
     }
     #optionItemText(
         item
