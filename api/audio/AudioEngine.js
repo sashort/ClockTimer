@@ -2650,6 +2650,979 @@
                         );
 
                         let synthesizedSpeechToken;
+
+                        const finish =
+                            () => {
+                                if (
+                                    synthesizedSpeechToken !==
+                                    undefined
+                                ) {
+                                    globalThis
+                                        .SpeechMenu
+                                        ?.unregisterSynthesizedSpeech?.(
+                                            synthesizedSpeechToken
+                                        );
+
+                                    synthesizedSpeechToken =
+                                        undefined;
+                                }
+                                if (
+                                    !entry.utterances
+                                        .delete(
+                                            utterance
+                                        )
+                                ) {
+                                    return;
+                                }
+
+                                entry.pendingSpeech =
+                                    Math.max(
+                                        0,
+                                        entry.pendingSpeech -
+                                            1
+                                    );
+
+                                this.#maybeComplete(
+                                    entry
+                                );
+                            };
+
+                        utterance.addEventListener(
+                            "start",
+                            () => {
+                                synthesizedSpeechToken =
+                                    globalThis
+                                        .SpeechMenu
+                                        ?.registerSynthesizedSpeech?.(
+                                            text
+                                        );
+
+                                console.debug(
+                                    "Audio speech started:",
+                                    text
+                                );
+                            },
+                            {
+                                once: true
+                            }
+                        );
+
+                        utterance.addEventListener(
+                            "end",
+                            finish,
+                            {
+                                once: true
+                            }
+                        );
+
+                        utterance.addEventListener(
+                            "error",
+                            error => {
+                                console.warn(
+                                    "Audio speech failed:",
+                                    text,
+                                    error?.error ||
+                                        error
+                                );
+                                finish();
+                            },
+                            {
+                                once: true
+                            }
+                        );
+
+                        try {
+                            synthesis.resume();
+                        }
+                        catch {}
+
+                        synthesis.speak(
+                            utterance
+                        );
+                    },
+                    delay
+                );
+
+            entry.timers.add(
+                timer
+            );
+
+            return startAt;
+        }
+
+        #release(entry, reason) {
+            if (!entry || entry.released) return;
+
+            entry.released = true;
+            clearTimeout(entry.endTimer);
+
+            for (const timer of entry.timers) {
+                clearTimeout(timer);
+            }
+            entry.timers.clear();
+
+            if (
+                entry.instrumentResources &&
+                this.#context
+            ) {
+                for (
+                    const resource of
+                    entry.instrumentResources
+                ) {
+                    this.#releaseInstrumentResource(
+                        this.#context,
+                        resource
+                    );
+                }
+
+                entry.instrumentResources.clear();
+            }
+
+            for (const node of entry.nodes) {
+                try { node.stop?.(); } catch {}
+                try { node.disconnect?.(); } catch {}
+            }
+            entry.nodes.clear();
+
+            this.#active.delete(entry.id);
+
+            entry.resolveFinished?.({
+                id:
+                    entry.id,
+                name:
+                    entry.name,
+                reason
+            });
+
+            entry.resolveFinished =
+                undefined;
+
+            if (
+                entry.chimeListeningSuspended
+            ) {
+                entry.chimeListeningSuspended =
+                    false;
+
+                globalThis.SpeechMenu
+                    ?.resumeListening?.(
+                        "audio-chime:" +
+                        entry.name +
+                        ":" +
+                        reason
+                    );
+            }
+
+            if (
+                entry.suspendsListening !==
+                    false
+            ) {
+                globalThis.SpeechMenu
+                    ?.resumeListening?.(
+                        "audio:" + entry.name + ":" + reason
+                    );
+            }
+        }
+
+        async startSong(
+            name,
+            {
+                bpm,
+                volume = 1,
+                toneVolume,
+                toneVelocity,
+                speechVolume,
+                speechVelocity,
+                speechDelayMs = 0,
+                speechGuard,
+                loop,
+                includeTones = true,
+                includeSpeech = true,
+                suspendListening =
+                    false,
+                suspendChimeListening =
+                    true,
+                useSelectedInstrument =
+                    true,
+                startBeat = 0
+            } = {}
+        ) {
+            const catalog = await this.prepare();
+            const song = catalog?.songs?.[name];
+
+            if (!song) {
+                throw new Error("Unknown song: " + name);
+            }
+
+            const context = await this.#audioContext();
+
+            this.#prepareAudioResources(
+                context
+            );
+
+            const effectiveToneVelocity =
+                Number.isFinite(
+                    Number(toneVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            1.5,
+                            Number(toneVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .toneVelocity;
+
+            const effectiveToneVolume =
+                Number.isFinite(
+                    Number(toneVolume)
+                )
+                    ? Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(toneVolume)
+                        )
+                    )
+                    : this.#outputSettings
+                        .toneVolume;
+
+            const effectiveSpeechVelocity =
+                Number.isFinite(
+                    Number(speechVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            4,
+                            Number(speechVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVelocity;
+
+            const effectiveSpeechVolume =
+                Number.isFinite(
+                    Number(speechVolume)
+                )
+                    ? Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(speechVolume)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVolume;
+
+            const tempo =
+                Number(bpm ?? song.bpm ?? 120) *
+                effectiveToneVelocity;
+
+            if (!Number.isFinite(tempo) || tempo <= 0) {
+                throw new RangeError("Song BPM must be greater than zero.");
+            }
+
+            const songGain =
+                (
+                    Number.isFinite(Number(volume))
+                        ? Math.max(0, Number(volume))
+                        : 1
+                ) *
+                effectiveToneVolume;
+            const shouldLoop =
+                loop === undefined
+                    ? Boolean(song.loop)
+                    : Boolean(loop);
+            const requestedStartBeat =
+                Number(
+                    startBeat
+                );
+            const playbackStartBeat =
+                Number.isFinite(
+                    requestedStartBeat
+                )
+                    ? Math.max(
+                        0,
+                        requestedStartBeat
+                    )
+                    : 0;
+            const selectedInstrumentName =
+                useSelectedInstrument
+                    ? this.#outputSettings
+                        .instrument
+                    : "";
+            const selectedInstrument =
+                selectedInstrumentName
+                    ? catalog
+                        ?.instruments?.[
+                            selectedInstrumentName
+                        ]
+                    : undefined;
+
+            if (
+                selectedInstrumentName &&
+                !selectedInstrument
+            ) {
+                throw new Error(
+                    "Unknown selected instrument: " +
+                    selectedInstrumentName
+                );
+            }
+
+            const resolveInstrument =
+                eventInstrumentName => {
+                    const requestedInstrumentName =
+                        selectedInstrumentName ||
+                        eventInstrumentName ||
+                        song.instrument;
+                    const requestedInstrument =
+                        selectedInstrument ||
+                        catalog
+                            ?.instruments?.[
+                                requestedInstrumentName
+                            ];
+
+                    if (!requestedInstrument) {
+                        throw new Error(
+                            "Unknown instrument: " +
+                            requestedInstrumentName
+                        );
+                    }
+
+                    return {
+                        name:
+                            requestedInstrumentName,
+                        instrument:
+                            requestedInstrument
+                    };
+                };
+
+            resolveInstrument();
+
+            let resolveFinished;
+
+            const finished =
+                new Promise(
+                    resolve => {
+                        resolveFinished =
+                            resolve;
+                    }
+                );
+
+            const entry = {
+                id: ++this.#sequence,
+                name,
+                nodes: new Set(),
+                instrumentResources:
+                    new Set(),
+                timers: new Set(),
+                utterances: new Set(),
+                pendingSpeech: 0,
+                timelineComplete: false,
+                loop:
+                    shouldLoop,
+                bpm:
+                    tempo,
+                volume:
+                    songGain,
+                toneVelocity:
+                    effectiveToneVelocity,
+                toneVolume:
+                    effectiveToneVolume,
+                speechVelocity:
+                    effectiveSpeechVelocity,
+                speechVolume:
+                    effectiveSpeechVolume,
+                requestedSpeechDelayMs:
+                    Math.max(
+                        0,
+                        Number(
+                            speechDelayMs
+                        ) ||
+                        0
+                    ),
+                speechDelayMs:
+                    0,
+                speechGuard:
+                    typeof speechGuard ===
+                        "function"
+                        ? speechGuard
+                        : undefined,
+                startedAt:
+                    context.currentTime +
+                    0.015,
+                released: false,
+                endTimer: undefined,
+                chimeListeningSuspended:
+                    false,
+                suspendsListening:
+                    Boolean(
+                        suspendListening
+                    ),
+                resolveFinished
+            };
+
+            if (suspendListening) {
+                globalThis.SpeechMenu
+                    ?.suspendListening?.(
+                        "audio:" + name
+                    );
+            }
+
+            const preparedEvents =
+                (song.events || [])
+                    .map(
+                        event => ({
+                            event,
+                            offset:
+                                this.#beats(
+                                    event?.offset
+                                )
+                        })
+                    )
+                    .filter(
+                        record =>
+                            record.offset >=
+                            playbackStartBeat
+                    )
+                    .sort(
+                        (left, right) =>
+                            left.offset -
+                            right.offset
+                    );
+
+            const hasChime =
+                Boolean(
+                    includeTones &&
+                    preparedEvents.some(
+                        record =>
+                            record.event
+                                ?.tone
+                    )
+                );
+
+            const beatSeconds =
+                60 /
+                tempo;
+
+            const chimeDurationBeats =
+                hasChime
+                    ? preparedEvents.reduce(
+                        (
+                            longest,
+                            record
+                        ) => {
+                            const event =
+                                record.event;
+
+                            if (!event?.tone) {
+                                return longest;
+                            }
+
+                            const lengthParts =
+                                String(
+                                    event.length ??
+                                    "1"
+                                )
+                                    .split(",")
+                                    .map(
+                                        part =>
+                                            part.trim()
+                                    );
+                            const effectBeats =
+                                this.#beats(
+                                    lengthParts[0]
+                                );
+                            const sustainBeats =
+                                lengthParts.length >
+                                    1
+                                    ? this.#beats(
+                                        lengthParts[1]
+                                    )
+                                    : 0;
+                            const relativeOffset =
+                                Math.max(
+                                    0,
+                                    record.offset -
+                                        playbackStartBeat
+                                );
+
+                            return Math.max(
+                                longest,
+                                relativeOffset +
+                                    effectBeats +
+                                    sustainBeats
+                            );
+                        },
+                        0
+                    )
+                    : 0;
+
+            const musicalChimeEndAt =
+                entry.startedAt +
+                chimeDurationBeats *
+                    beatSeconds;
+
+            entry.speechDelayMs =
+                hasChime
+                    ? entry.requestedSpeechDelayMs
+                    : 0;
+
+            if (
+                hasChime &&
+                suspendChimeListening
+            ) {
+                entry.chimeListeningSuspended =
+                    true;
+
+                globalThis.SpeechMenu
+                    ?.suspendListening?.(
+                        "audio-chime:" +
+                        name
+                    );
+            }
+
+            this.#active.set(
+                entry.id,
+                entry
+            );
+
+            try {
+                const scheduleAheadSeconds =
+                    this.#isPhone()
+                        ? 1.8
+                        : 2.6;
+                const scheduleIntervalMilliseconds =
+                    this.#isPhone()
+                        ? 280
+                        : 360;
+
+                let eventIndex = 0;
+                let endAt =
+                    entry.startedAt;
+                let chimeEndAt =
+                    entry.startedAt;
+                let scheduleTimer;
+                let completionScheduled =
+                    false;
+
+                const finishChimeSuspension =
+                    () => {
+                        if (
+                            !entry
+                                .chimeListeningSuspended
+                        ) {
+                            return;
+                        }
+
+                        const delayMilliseconds =
+                            Math.max(
+                                0,
+                                (
+                                    chimeEndAt -
+                                    context.currentTime
+                                ) *
+                                    1000
+                            );
+
+                        const timer =
+                            setTimeout(
+                                () => {
+                                    entry.timers.delete(
+                                        timer
+                                    );
+
+                                    if (
+                                        entry.released ||
+                                        !entry
+                                            .chimeListeningSuspended
+                                    ) {
+                                        return;
+                                    }
+
+                                    entry.chimeListeningSuspended =
+                                        false;
+
+                                    globalThis.SpeechMenu
+                                        ?.resumeListening?.(
+                                            "audio-chime:" +
+                                            name +
+                                            ":ended"
+                                        );
+                                },
+                                delayMilliseconds
+                            );
+
+                        entry.timers.add(
+                            timer
+                        );
+                    };
+
+                const finishTimeline =
+                    () => {
+                        if (
+                            completionScheduled ||
+                            entry.released
+                        ) {
+                            return;
+                        }
+
+                        completionScheduled =
+                            true;
+                        finishChimeSuspension();
+
+                        const durationMilliseconds =
+                            Math.max(
+                                0,
+                                (
+                                    endAt -
+                                    context.currentTime
+                                ) *
+                                    1000
+                            );
+
+                        entry.endTimer =
+                            setTimeout(
+                                () => {
+                                    entry.timelineComplete =
+                                        true;
+
+                                    this.#maybeComplete(
+                                        entry
+                                    );
+                                },
+                                durationMilliseconds
+                            );
+                    };
+
+                const scheduleWindow =
+                    () => {
+                        if (entry.released) {
+                            return;
+                        }
+
+                        if (scheduleTimer) {
+                            entry.timers.delete(
+                                scheduleTimer
+                            );
+                            scheduleTimer =
+                                undefined;
+                        }
+
+                        const elapsedSeconds =
+                            Math.max(
+                                0,
+                                context.currentTime -
+                                entry.startedAt
+                            );
+                        const horizonBeat =
+                            playbackStartBeat +
+                            (
+                                elapsedSeconds +
+                                scheduleAheadSeconds
+                            ) /
+                                beatSeconds;
+
+                        while (
+                            eventIndex <
+                                preparedEvents.length &&
+                            preparedEvents[
+                                eventIndex
+                            ].offset <=
+                                horizonBeat
+                        ) {
+                            const record =
+                                preparedEvents[
+                                    eventIndex++
+                                ];
+                            const event =
+                                record.event;
+                            const playbackEvent = {
+                                ...event,
+                                offset:
+                                    String(
+                                        record.offset -
+                                        playbackStartBeat
+                                    )
+                            };
+
+                            if (
+                                includeTones &&
+                                event?.tone
+                            ) {
+                                const resolved =
+                                    resolveInstrument(
+                                        event.instrument
+                                    );
+                                const instrumentResource =
+                                    this.#acquireInstrumentResource(
+                                        entry,
+                                        context,
+                                        resolved.name,
+                                        resolved.instrument
+                                    );
+                                const toneEndAt =
+                                    this.#scheduleTone(
+                                        context,
+                                        entry,
+                                        playbackEvent,
+                                        resolved.instrument,
+                                        tempo,
+                                        songGain,
+                                        instrumentResource
+                                    );
+
+                                chimeEndAt =
+                                    Math.max(
+                                        chimeEndAt,
+                                        toneEndAt
+                                    );
+                                endAt =
+                                    Math.max(
+                                        endAt,
+                                        toneEndAt
+                                    );
+                            }
+
+                            if (
+                                includeSpeech &&
+                                event?.speech
+                            ) {
+                                const speechEvent = {
+                                    ...playbackEvent
+                                };
+
+                                if (
+                                    hasChime &&
+                                    chimeEndAt >
+                                        entry.startedAt &&
+                                    effectiveSpeechVelocity !==
+                                        1
+                                ) {
+                                    const originalSpeechStartAt =
+                                        entry.startedAt +
+                                        (
+                                            record.offset -
+                                            playbackStartBeat
+                                        ) *
+                                            beatSeconds;
+                                    const postChimeGap =
+                                        Math.max(
+                                            0,
+                                            originalSpeechStartAt -
+                                                chimeEndAt
+                                        );
+
+                                    if (postChimeGap > 0) {
+                                        const scaledSpeechStartAt =
+                                            chimeEndAt +
+                                            postChimeGap /
+                                                effectiveSpeechVelocity;
+
+                                        speechEvent.offset =
+                                            String(
+                                                (
+                                                    scaledSpeechStartAt -
+                                                    entry.startedAt
+                                                ) /
+                                                    beatSeconds
+                                            );
+                                    }
+                                }
+
+                                endAt =
+                                    Math.max(
+                                        endAt,
+                                        this.#scheduleSpeech(
+                                            context,
+                                            entry,
+                                            speechEvent,
+                                            tempo
+                                        )
+                                    );
+                            }
+                        }
+
+                        if (
+                            eventIndex >=
+                            preparedEvents.length
+                        ) {
+                            finishTimeline();
+                            return;
+                        }
+
+                        scheduleTimer =
+                            setTimeout(
+                                scheduleWindow,
+                                scheduleIntervalMilliseconds
+                            );
+
+                        entry.timers.add(
+                            scheduleTimer
+                        );
+                    };
+
+                scheduleWindow();
+
+                return Object.freeze({
+                    id: entry.id,
+                    name,
+                    bpm:
+                        tempo,
+                    startBeat:
+                        playbackStartBeat,
+                    hasChime,
+                    chimeDurationMs:
+                        chimeDurationBeats *
+                        beatSeconds *
+                        1000,
+                    chimeEndsInMs:
+                        Math.max(
+                            0,
+                            (
+                                musicalChimeEndAt -
+                                context.currentTime
+                            ) *
+                                1000
+                        ),
+                    finished,
+                    stop: () =>
+                        this.stopSong(
+                            entry.id
+                        )
+                });
+            }
+            catch (error) {
+                this.#release(
+                    entry,
+                    "error"
+                );
+                throw error;
+            }
+        }
+
+        speak(
+            value,
+            {
+                lang = "en-US",
+                rate,
+                pitch,
+                volume,
+                speechVolume,
+                speechVelocity,
+                onEnd
+            } = {}
+        ) {
+            const text =
+                String(
+                    value ??
+                    ""
+                ).trim();
+
+            if (!text) {
+                return false;
+            }
+
+            const synthesis =
+                globalThis.speechSynthesis;
+
+            const Utterance =
+                globalThis
+                    .SpeechSynthesisUtterance;
+
+            if (
+                !synthesis ||
+                typeof Utterance !==
+                    "function"
+            ) {
+                return false;
+            }
+
+            const utterance =
+                new Utterance(
+                    text
+                );
+
+            utterance.lang =
+                String(
+                    lang ||
+                    "en-US"
+                );
+
+            const explicitRate =
+                Number(rate);
+            const effectiveSpeechVelocity =
+                Number.isFinite(
+                    Number(speechVelocity)
+                )
+                    ? Math.max(
+                        0.5,
+                        Math.min(
+                            4,
+                            Number(speechVelocity)
+                        )
+                    )
+                    : this.#outputSettings
+                        .speechVelocity;
+
+            if (
+                Number.isFinite(
+                    explicitRate
+                )
+            ) {
+                utterance.rate =
+                    explicitRate *
+                    effectiveSpeechVelocity;
+            }
+            else if (
+                effectiveSpeechVelocity !==
+                    1
+            ) {
+                // Preserve the browser/voice native default at neutral 1x.
+                utterance.rate =
+                    effectiveSpeechVelocity;
+            }
+
+            if (
+                Number.isFinite(
+                    Number(pitch)
+                )
+            ) {
+                utterance.pitch =
+                    Number(pitch);
+            }
+
+            utterance.volume =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        (
+                            Number.isFinite(
+                                Number(volume)
+                            )
+                                ? Number(volume)
+                                : 1
+                        ) *
+                        (
+                            Number.isFinite(
+                                Number(speechVolume)
+                            )
+                                ? Math.max(
+                                    0,
+                                    Math.min(
+                                        1,
+                                        Number(speechVolume)
+                                    )
+                                )
+                                : this.#outputSettings
+                                    .speechVolume
+                        )
+                    )
+                );
+
+            let synthesizedSpeechToken;
             let speechFinished =
                 false;
 
@@ -2694,7 +3667,6 @@
                 };
 
             utterance.addEventListener(
-                "start",            utterance.addEventListener(
                 "start",
                 () => {
                     synthesizedSpeechToken =
