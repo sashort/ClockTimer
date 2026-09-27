@@ -2373,7 +2373,7 @@ assert.match(
 );
 assert.match(
     app,
-    /numberPadConfirm\.disabled\s*=\s*autocorrect[\s\S]*setOkAllowed\([\s\S]*numberPadDialog,[\s\S]*!numberPadConfirm\.disabled/
+    /numberPadConfirm\.disabled\s*=\s*!valid;[\s\S]*setOkAllowed\([\s\S]*numberPadDialog,[\s\S]*!numberPadConfirm\.disabled/
 );
 assert.match(
     app,
@@ -2775,6 +2775,27 @@ assert.match(
 assert.match(
     speechMicBarSource,
     /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"what"[\s\S]*"choices"[\s\S]*"options"/
+);
+
+assert.match(
+    app,
+    /function backspaceNumberPadPendingValue\(\)[\s\S]*\.slice\(\s*0,\s*-1\s*\)[\s\S]*replaceOnNextDigit\s*=\s*false/
+);
+assert.match(
+    app,
+    /backspaceNumberPadValue\(\)[\s\S]*backspaceNumberPadPendingValue\(\)/
+);
+assert.doesNotMatch(
+    app,
+    /clearNumberPadPointerDown|clearNumberPadPointerUp|clearNumberPadKeyboardClick/
+);
+assert.doesNotMatch(
+    app,
+    /dataset\s*\.action\s*===\s*"autocorrect"/
+);
+assert.match(
+    app,
+    /async function commitNumberPad\(\)[\s\S]*!numberPadHasChanges\(\)[\s\S]*!state\.startsTripOnConfirm[\s\S]*return true;[\s\S]*if \(state\.onConfirm\)/
 );
 
 assert.doesNotMatch(languageSource, /setTripGoal:/);
