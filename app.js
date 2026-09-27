@@ -148,7 +148,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-26-9";
+        "2026-09-26-10";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -335,7 +335,7 @@
 
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
-                                "SpeechMenu.js?v=sleep-wake-only-1"
+                                "SpeechMenu.js?v=sync-corrections-1"
                             );
                         }
 
