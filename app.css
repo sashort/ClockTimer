@@ -1207,10 +1207,43 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
     border: 0;
     background: transparent;
     opacity: 0;
-    transition-property: opacity, display, overlay;
-    transition-duration: var(--app-dialog-transition-duration, 250ms);
-    transition-timing-function: linear;
-    transition-behavior: normal, allow-discrete, allow-discrete;
+    transform:
+        translateY(
+            var(
+                --number-pad-summary-shift-y,
+                0px
+            )
+        )
+        scale(
+            var(
+                --number-pad-summary-scale,
+                1
+            )
+        );
+    transform-origin: center;
+    transition-property:
+        opacity,
+        transform,
+        display,
+        overlay;
+    transition-duration:
+        var(--app-dialog-transition-duration, 250ms),
+        280ms,
+        var(--app-dialog-transition-duration, 250ms),
+        var(--app-dialog-transition-duration, 250ms);
+    transition-timing-function:
+        linear,
+        ease,
+        linear,
+        linear;
+    transition-behavior:
+        normal,
+        normal,
+        allow-discrete,
+        allow-discrete;
+    will-change:
+        transform,
+        opacity;
 }
 
 .number-pad-dialog[open] { opacity: 1; }
@@ -2254,6 +2287,24 @@ body:has(.app[data-interval-state="down"])::after {
     display: none;
 }
 
+.trip-transition-overlay[popover] {
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    background: transparent;
+}
+
+.trip-transition-overlay[popover]:popover-open {
+    display: grid;
+}
+
+.trip-transition-overlay[popover]::backdrop {
+    display: none;
+}
+
 .trip-transition-overlay.is-visible {
     opacity: 1;
     visibility: visible;
@@ -2289,6 +2340,8 @@ body:has(.app[data-interval-state="down"])::after {
 }
 
 .trip-transition-overlay.has-voice-entry
+.trip-transition-overlay-panel,
+.trip-transition-overlay.has-number-pad
 .trip-transition-overlay-panel {
     max-height:
         var(
@@ -2374,7 +2427,8 @@ body:has(.app[data-interval-state="down"])::after {
 @media (prefers-reduced-motion: reduce) {
     .trip-transition-overlay,
     .trip-transition-overlay-panel,
-    .voice-entry-surface {
+    .voice-entry-surface,
+    .number-pad-dialog {
         transition: none;
     }
 

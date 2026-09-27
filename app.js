@@ -1437,6 +1437,7 @@
     let voiceEntryState;
     let voiceEntryExecutionBeforeOpen;
     let voiceEntryAcceptTimer;
+    let voiceEntryFeedbackSequence = 0;
     let voiceEntryHandledUtteranceId;
     let voiceEntryTranscriptPipeBound = false;
     const uiReturnStack = [];
@@ -13345,6 +13346,18 @@
             });
         }
 
+        requestAnimationFrame(
+            () => {
+                if (
+                    tripTransitionOverlayIsVisible()
+                ) {
+                    promoteTripTransitionOverlay();
+                }
+
+                syncTripTransitionEditorLayout();
+            }
+        );
+
         queueMicrotask(
             () =>
                 speechMicBar
@@ -13409,22 +13422,139 @@
     function voiceEntryCopyForMode(mode) {
         if (mode === "percent") {
             return {
-                prompt: "Say a Number",
+                prompt: "Say Percent",
                 example: "Example: “eighty-five percent”"
             };
         }
 
         if (mode === "absolute") {
             return {
-                prompt: "Say a Time",
+                prompt: "Say Time",
                 example: "Example: “eight thirty A M”"
             };
         }
 
         return {
-            prompt: "Say a Duration",
+            prompt: "Say Duration",
             example: "Example: “five minutes”"
         };
+    }
+
+    function voiceEntryDescriptor(
+        state = numberPadState
+    ) {
+        if (!state) {
+            return "";
+        }
+
+        const source =
+            String(
+                state.source ||
+                ""
+            );
+        const title =
+            String(
+                state.title ||
+                ""
+            ).trim();
+
+        if (
+            state.startsTripOnConfirm ||
+            source === "new-trip"
+        ) {
+            return "Standard Time";
+        }
+
+        if (source === "trip-goal") {
+            return "Trip Percent Goal";
+        }
+
+        if (source === "total-goal") {
+            return (
+                totalScopeLabel() +
+                " Percent Goal"
+            );
+        }
+
+        if (
+            source === "end-time-goal" ||
+            source === "end-time"
+        ) {
+            return "End Time";
+        }
+
+        if (source === "creation-time") {
+            return "Creation Time";
+        }
+
+        if (source === "scheduled-start") {
+            return "Scheduled Start";
+        }
+
+        if (source === "actual-start") {
+            return "Actual Start";
+        }
+
+        if (source === "standard-time") {
+            return "Standard Time";
+        }
+
+        if (state.mode === "percent") {
+            if (/percent/i.test(title)) {
+                return title;
+            }
+
+            if (/goal/i.test(title)) {
+                return title.replace(
+                    /goal/i,
+                    "Percent Goal"
+                );
+            }
+
+            return (
+                title
+                    ? title + " Percent"
+                    : "Percent"
+            );
+        }
+
+        return (
+            title ||
+            (
+                state.mode === "absolute"
+                    ? "Time"
+                    : "Duration"
+            )
+        );
+    }
+
+    function voiceEntryPromptForState(
+        state = numberPadState
+    ) {
+        const descriptor =
+            voiceEntryDescriptor(
+                state
+            );
+
+        return descriptor
+            ? "Say " + descriptor
+            : voiceEntryCopyForMode(
+                state?.mode
+            ).prompt;
+    }
+
+    function voiceEntryInvalidPrompt(
+        state = numberPadState
+    ) {
+        const descriptor =
+            voiceEntryDescriptor(
+                state
+            );
+
+        return descriptor
+            ? "Say a Valid " +
+                descriptor
+            : "Say a Valid Value";
     }
 
     function voiceEntryActionCopy(
@@ -13581,6 +13711,18 @@
         }
     }
 
+    function numberPadIsVisible() {
+        return Boolean(
+            numberPadDialog
+                ?.open &&
+            !numberPadDialog
+                .classList
+                .contains(
+                    "dialog-closing"
+                )
+        );
+    }
+
     function tripTransitionOverlayIsVisible() {
         return Boolean(
             tripTransitionOverlay &&
@@ -13593,45 +13735,110 @@
         );
     }
 
-    function syncTripTransitionVoiceEntryLayout(
+    function resetTripTransitionEditorLayout() {
+        voiceEntrySurface
+            ?.style
+            .removeProperty(
+                "--voice-entry-summary-shift-y"
+            );
+
+        numberPadDialog
+            ?.style
+            .removeProperty(
+                "--number-pad-summary-shift-y"
+            );
+        numberPadDialog
+            ?.style
+            .removeProperty(
+                "--number-pad-summary-scale"
+            );
+
+        tripTransitionOverlay
+            ?.style
+            .removeProperty(
+                "--trip-transition-summary-shift-y"
+            );
+        tripTransitionOverlay
+            ?.style
+            .removeProperty(
+                "--trip-transition-summary-max-height"
+            );
+        tripTransitionOverlay
+            ?.classList
+            .remove(
+                "has-voice-entry",
+                "has-number-pad"
+            );
+    }
+
+    function promoteTripTransitionOverlay() {
+        if (
+            !tripTransitionOverlayIsVisible() ||
+            !tripTransitionOverlay
+                ?.hasAttribute(
+                    "popover"
+                )
+        ) {
+            return false;
+        }
+
+        try {
+            if (
+                tripTransitionOverlay
+                    .matches(
+                        ":popover-open"
+                    )
+            ) {
+                tripTransitionOverlay
+                    .hidePopover?.();
+            }
+
+            tripTransitionOverlay.hidden =
+                false;
+            tripTransitionOverlay
+                .showPopover?.();
+
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
+    function syncTripTransitionEditorLayout(
         active =
             tripTransitionOverlayIsVisible()
     ) {
         if (
-            !voiceEntrySurface ||
-            !tripTransitionOverlay
+            !tripTransitionOverlay ||
+            !active
         ) {
+            resetTripTransitionEditorLayout();
             return false;
         }
+
+        const voiceVisible =
+            voiceEntryIsVisible();
+        const numberPadVisible =
+            !voiceVisible &&
+            numberPadIsVisible();
 
         if (
-            !active ||
-            !voiceEntryIsVisible()
+            !voiceVisible &&
+            !numberPadVisible
         ) {
-            voiceEntrySurface
-                .style
-                .removeProperty(
-                    "--voice-entry-summary-shift-y"
-                );
-            tripTransitionOverlay
-                .style
-                .removeProperty(
-                    "--trip-transition-summary-shift-y"
-                );
-            tripTransitionOverlay
-                .style
-                .removeProperty(
-                    "--trip-transition-summary-max-height"
-                );
-            tripTransitionOverlay
-                .classList
-                .remove(
-                    "has-voice-entry"
-                );
-
+            resetTripTransitionEditorLayout();
             return false;
         }
 
+        const type =
+            voiceVisible
+                ? "voice"
+                : "number-pad";
+        const editor =
+            voiceVisible
+                ? voiceEntrySurface
+                : numberPadDialog;
         const viewportHeight =
             Math.max(
                 0,
@@ -13646,34 +13853,138 @@
                     .clientHeight ||
                 0
             );
-        const voiceHeight =
+        const panel =
+            tripTransitionOverlay
+                .querySelector(
+                    ".trip-transition-overlay-panel"
+                );
+        const editorHeight =
             Math.ceil(
-                voiceEntrySurface
-                    .getBoundingClientRect()
-                    .height
+                editor?.offsetHeight ||
+                editor
+                    ?.getBoundingClientRect()
+                    .height ||
+                0
+            );
+        const naturalSummaryHeight =
+            Math.ceil(
+                panel?.scrollHeight ||
+                panel?.offsetHeight ||
+                0
             );
         const gap =
-            16;
+            type === "number-pad"
+                ? 12
+                : 16;
 
         if (
             !viewportHeight ||
-            !voiceHeight
+            !editorHeight ||
+            !naturalSummaryHeight
         ) {
             return false;
         }
 
-        const maxSummaryHeight =
-            Math.max(
-                96,
-                viewportHeight -
-                    voiceHeight -
-                    gap * 3
+        let editorScale =
+            1;
+        let maxSummaryHeight;
+
+        if (type === "number-pad") {
+            const preferredSummaryHeight =
+                Math.min(
+                    naturalSummaryHeight,
+                    Math.max(
+                        72,
+                        viewportHeight *
+                            0.26
+                    )
+                );
+            const editorRoom =
+                Math.max(
+                    1,
+                    viewportHeight -
+                        preferredSummaryHeight -
+                        gap * 3
+                );
+
+            editorScale =
+                Math.min(
+                    1,
+                    Math.max(
+                        0.4,
+                        editorRoom /
+                            editorHeight
+                    )
+                );
+
+            const scaledEditorHeight =
+                editorHeight *
+                editorScale;
+
+            maxSummaryHeight =
+                Math.max(
+                    64,
+                    viewportHeight -
+                        scaledEditorHeight -
+                        gap * 3
+                );
+        }
+        else {
+            maxSummaryHeight =
+                Math.max(
+                    96,
+                    viewportHeight -
+                        editorHeight -
+                        gap * 3
+                );
+        }
+
+        const summaryHeight =
+            Math.min(
+                naturalSummaryHeight,
+                maxSummaryHeight
             );
+        const scaledEditorHeight =
+            editorHeight *
+            editorScale;
+        const stackHeight =
+            summaryHeight +
+            gap +
+            scaledEditorHeight;
+        const stackTop =
+            Math.max(
+                gap,
+                (
+                    viewportHeight -
+                    stackHeight
+                ) /
+                    2
+            );
+        const viewportCenter =
+            viewportHeight /
+            2;
+        const summaryCenter =
+            stackTop +
+            summaryHeight /
+                2;
+        const editorCenter =
+            stackTop +
+            summaryHeight +
+            gap +
+            scaledEditorHeight /
+                2;
 
         tripTransitionOverlay
             .classList
-            .add(
-                "has-voice-entry"
+            .toggle(
+                "has-voice-entry",
+                type === "voice"
+            );
+        tripTransitionOverlay
+            .classList
+            .toggle(
+                "has-number-pad",
+                type === "number-pad"
             );
         tripTransitionOverlay
             .style
@@ -13683,78 +13994,46 @@
                     maxSummaryHeight
                 )}px`
             );
+        tripTransitionOverlay
+            .style
+            .setProperty(
+                "--trip-transition-summary-shift-y",
+                `${Math.round(
+                    summaryCenter -
+                    viewportCenter
+                )}px`
+            );
 
-        requestAnimationFrame(
-            () => {
-                if (
-                    !tripTransitionOverlayIsVisible() ||
-                    !voiceEntryIsVisible()
-                ) {
-                    return;
-                }
-
-                const panel =
-                    tripTransitionOverlay
-                        .querySelector(
-                            ".trip-transition-overlay-panel"
-                        );
-                const summaryHeight =
-                    Math.min(
-                        maxSummaryHeight,
-                        Math.ceil(
-                            panel
-                                ?.getBoundingClientRect()
-                                .height ||
-                            0
-                        )
-                    );
-                const stackHeight =
-                    summaryHeight +
-                    gap +
-                    voiceHeight;
-                const stackTop =
-                    Math.max(
-                        gap,
-                        (
-                            viewportHeight -
-                            stackHeight
-                        ) /
-                            2
-                    );
-                const viewportCenter =
-                    viewportHeight /
-                    2;
-                const summaryCenter =
-                    stackTop +
-                    summaryHeight /
-                        2;
-                const voiceCenter =
-                    stackTop +
-                    summaryHeight +
-                    gap +
-                    voiceHeight /
-                        2;
-
-                tripTransitionOverlay
-                    .style
-                    .setProperty(
-                        "--trip-transition-summary-shift-y",
-                        `${Math.round(
-                            summaryCenter -
+        if (type === "voice") {
+            voiceEntrySurface
+                .style
+                .setProperty(
+                    "--voice-entry-summary-shift-y",
+                    `${Math.round(
+                        editorCenter -
                             viewportCenter
-                        )}px`
-                    );
-                voiceEntrySurface
-                    .style
-                    .setProperty(
-                        "--voice-entry-summary-shift-y",
-                        `${Math.round(
-                            voiceCenter -
+                    )}px`
+                );
+        }
+        else {
+            numberPadDialog
+                .style
+                .setProperty(
+                    "--number-pad-summary-shift-y",
+                    `${Math.round(
+                        editorCenter -
                             viewportCenter
-                        )}px`
-                    );
-            }
-        );
+                    )}px`
+                );
+            numberPadDialog
+                .style
+                .setProperty(
+                    "--number-pad-summary-scale",
+                    String(
+                        editorScale
+                    )
+                );
+        }
 
         return true;
     }
@@ -13770,6 +14049,9 @@
         }
 
         voiceEntryTitle.textContent =
+            voiceEntryDescriptor(
+                numberPadState
+            ) ||
             numberPadState?.title ||
             "Voice Entry";
 
@@ -13780,6 +14062,9 @@
 
         voiceEntryPrompt.textContent =
             prompt ||
+            voiceEntryPromptForState(
+                numberPadState
+            ) ||
             copy.prompt;
         voiceEntryExample.textContent =
             example ||
@@ -13823,8 +14108,84 @@
         return true;
     }
 
+    function announceVoiceEntryPrompt() {
+        const prompt =
+            voiceEntryPromptForState(
+                numberPadState
+            );
+
+        if (!prompt) {
+            return false;
+        }
+
+        return Boolean(
+            globalThis
+                .WMOFAudio
+                ?.speak?.(
+                    prompt
+                )
+        );
+    }
+
+    function speakVoiceEntryFeedback(
+        spokenValue,
+        action,
+        sequence
+    ) {
+        const value =
+            String(
+                spokenValue ||
+                ""
+            ).trim();
+        const okAction =
+            String(
+                action ||
+                ""
+            ).trim();
+        const audio =
+            globalThis.WMOFAudio;
+
+        if (
+            !value ||
+            !okAction ||
+            !audio?.speak
+        ) {
+            return false;
+        }
+
+        return Boolean(
+            audio.speak(
+                value,
+                {
+                    onEnd:
+                        () => {
+                            setTimeout(
+                                () => {
+                                    if (
+                                        sequence !==
+                                            voiceEntryFeedbackSequence ||
+                                        !voiceEntryState
+                                    ) {
+                                        return;
+                                    }
+
+                                    audio.speak(
+                                        "OK to " +
+                                            okAction
+                                    );
+                                },
+                                220
+                            );
+                        }
+                }
+            )
+        );
+    }
+
     function hideVoiceEntrySurface() {
-        syncTripTransitionVoiceEntryLayout(
+        voiceEntryFeedbackSequence++;
+
+        syncTripTransitionEditorLayout(
             false
         );
 
@@ -14065,7 +14426,7 @@
             if (!numberPadValueValid()) {
                 renderVoiceEntry({
                     prompt:
-                        "Say a Valid Value"
+                        voiceEntryInvalidPrompt()
                 });
 
                 return false;
@@ -14274,17 +14635,53 @@
             return false;
         }
 
-        renderVoiceEntry({
-            prompt: "Heard",
-            value: display,
-            attention: true
-        });
+        const actionCopy =
+            voiceEntryActionCopy();
+        const feedbackSequence =
+            ++voiceEntryFeedbackSequence;
 
         clearTimeout(
             voiceEntryAcceptTimer
         );
+
+        renderVoiceEntry({
+            prompt:
+                display,
+            value:
+                display,
+            attention:
+                true
+        });
+
         voiceEntryAcceptTimer =
-            undefined;
+            setTimeout(
+                () => {
+                    if (
+                        feedbackSequence !==
+                            voiceEntryFeedbackSequence ||
+                        !voiceEntryState
+                    ) {
+                        return;
+                    }
+
+                    renderVoiceEntry({
+                        prompt:
+                            "OK to " +
+                            actionCopy.ok,
+                        value:
+                            display,
+                        attention:
+                            true
+                    });
+                },
+                360
+            );
+
+        speakVoiceEntryFeedback(
+            text,
+            actionCopy.ok,
+            feedbackSequence
+        );
 
         return true;
     }
@@ -14354,8 +14751,10 @@
         );
 
         requestAnimationFrame(
-            () =>
-                syncTripTransitionVoiceEntryLayout()
+            () => {
+                syncTripTransitionEditorLayout();
+                announceVoiceEntryPrompt();
+            }
         );
 
         return true;
@@ -14489,7 +14888,7 @@
             if (
                 tripTransitionOverlayIsVisible()
             ) {
-                syncTripTransitionVoiceEntryLayout(
+                syncTripTransitionEditorLayout(
                     true
                 );
             }
@@ -15518,6 +15917,19 @@
     async function startTripDraft() {
         const draft = tripDraft;
         if (draft?.deferred) return false;
+
+        if (
+            draft
+                ?.completedTripResetPromise
+        ) {
+            await draft
+                .completedTripResetPromise;
+
+            if (tripDraft !== draft) {
+                return false;
+            }
+        }
+
         const standardTime =
             canonicalClockTimerDuration(
                 String(
@@ -16415,6 +16827,9 @@
 
         numberPadDialog.addEventListener("close", () => {
             stopAllNumberPadAudio();
+            syncTripTransitionEditorLayout(
+                false
+            );
 
             if (
                 preserveNumberPadStateOnClose
@@ -16640,14 +17055,23 @@
         tripMoment,
         signal,
         inputMode,
-        endStartTransition = false
+        endStartTransition = false,
+        completedTripResetPromise
     } = {}) {
         if (signal?.aborted) {
             return false;
         }
 
-        if (clockTimer.status === "stopped") {
-            await clockTimer.resetCompletedTrip();
+        const resetPromise =
+            completedTripResetPromise;
+
+        if (
+            clockTimer.status ===
+                "stopped" &&
+            !resetPromise
+        ) {
+            await clockTimer
+                .resetCompletedTrip();
 
             if (signal?.aborted) {
                 return false;
@@ -16691,16 +17115,42 @@
                 )
         };
 
+        if (
+            resetPromise &&
+            tripDraft
+        ) {
+            tripDraft
+                .completedTripResetPromise =
+                resetPromise;
+        }
+
         renderDeferredTrip();
         let preparationPromise;
         try {
-            preparationPromise = Promise.resolve(
-                deferredDraft ? { pending: true } : clockTimer.prepareTrip({ timeout: 5000, at: moment })
-            ).catch(() => ({
-                persisted: false,
-                pending: true,
-                reason: "offline"
-            }));
+            preparationPromise = Promise
+                .resolve(
+                    resetPromise
+                )
+                .then(
+                    () =>
+                        deferredDraft
+                            ? {
+                                pending:
+                                    true
+                            }
+                            : clockTimer
+                                .prepareTrip({
+                                    timeout:
+                                        5000,
+                                    at:
+                                        moment
+                                })
+                )
+                .catch(() => ({
+                    persisted: false,
+                    pending: true,
+                    reason: "offline"
+                }));
         }
         catch {
             preparationPromise = Promise.resolve({
@@ -16728,6 +17178,10 @@
                     workflow: "new-trip",
                     cancelTarget: "home",
                     confirmTarget: "home",
+                    duration:
+                        endStartTransition
+                            ? 0
+                            : 250,
                     signal
                 },
                 inputMode
@@ -17131,18 +17585,51 @@
             "chime"
         );
 
-        try {
-            await clockTimer.stop(
+        const stopPromise =
+            clockTimer.stop(
                 transactionTime
             );
-        }
-        finally {
-            endingIntoNewTrip =
-                false;
+
+        if (
+            clockTimer.status !==
+                "stopped"
+        ) {
+            try {
+                await stopPromise;
+            }
+            finally {
+                endingIntoNewTrip =
+                    false;
+            }
+
+            return false;
         }
 
-        await clockTimer
-            .resetCompletedTrip();
+        const completedTripResetPromise =
+            Promise
+                .resolve(
+                    stopPromise
+                )
+                .finally(
+                    () => {
+                        endingIntoNewTrip =
+                            false;
+                    }
+                )
+                .then(
+                    () =>
+                        clockTimer
+                            .resetCompletedTrip()
+                );
+
+        completedTripResetPromise
+            .catch(
+                error =>
+                    console.error(
+                        "Completed trip reset failed:",
+                        error
+                    )
+            );
 
         const opened =
             await beginNewTripWorkflow({
@@ -17152,7 +17639,8 @@
                     speechRecognitionEnabled()
                         ? "voice"
                         : "touch",
-                endStartTransition: true
+                endStartTransition: true,
+                completedTripResetPromise
             });
 
         const speech =
@@ -18808,6 +19296,23 @@
         tripTransitionOverlay.hidden =
             false;
 
+        try {
+            if (
+                tripTransitionOverlay
+                    .hasAttribute(
+                        "popover"
+                    ) &&
+                !tripTransitionOverlay
+                    .matches(
+                        ":popover-open"
+                    )
+            ) {
+                tripTransitionOverlay
+                    .showPopover?.();
+            }
+        }
+        catch {}
+
         requestAnimationFrame(
             () => {
                 tripTransitionOverlay
@@ -18816,7 +19321,7 @@
                         "is-visible"
                     );
 
-                syncTripTransitionVoiceEntryLayout(
+                syncTripTransitionEditorLayout(
                     true
                 );
             }
@@ -18832,7 +19337,7 @@
         tripTransitionOverlayTimer =
             setTimeout(
                 () => {
-                    syncTripTransitionVoiceEntryLayout(
+                    syncTripTransitionEditorLayout(
                         false
                     );
 
@@ -18845,6 +19350,19 @@
                     tripTransitionOverlayHideTimer =
                         setTimeout(
                             () => {
+                                try {
+                                    if (
+                                        tripTransitionOverlay
+                                            .matches?.(
+                                                ":popover-open"
+                                            )
+                                    ) {
+                                        tripTransitionOverlay
+                                            .hidePopover?.();
+                                    }
+                                }
+                                catch {}
+
                                 tripTransitionOverlay.hidden =
                                     true;
                                 tripTransitionOverlayActive =

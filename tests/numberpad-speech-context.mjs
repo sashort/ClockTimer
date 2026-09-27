@@ -22,6 +22,14 @@ const cssSource = readFileSync(
     new URL("../app.css", import.meta.url),
     "utf8"
 );
+const clockTimerSource = readFileSync(
+    new URL("../ClockTimer.js", import.meta.url),
+    "utf8"
+);
+const audioEngineSource = readFileSync(
+    new URL("../api/audio/AudioEngine.js", import.meta.url),
+    "utf8"
+);
 
 test("value editor chooses voice for speech invocations and touch otherwise", () => {
     assert.match(
@@ -554,18 +562,34 @@ test("voice entry binds transcript routing after the lazy speech runtime loads",
 });
 
 
-test("voice entry shows context-aware OK and cancel guidance", () => {
+test("voice entry shows descriptive context-aware guidance and accepted-value feedback", () => {
     assert.match(
         indexSource,
         /id="voiceEntryInstructions"[\s\S]*?<strong>Say OK<\/strong> to[\s\S]*?<strong>Cancel<\/strong> to/
     );
     assert.match(
         appSource,
-        /function voiceEntryActionCopy\([\s\S]*?startsTripOnConfirm[\s\S]*?"start the trip"[\s\S]*?source === "trip-goal"[\s\S]*?source === "total-goal"[\s\S]*?source === "end-time-goal"/
+        /function voiceEntryDescriptor\([\s\S]*?"Trip Percent Goal"[\s\S]*?totalScopeLabel\(\)[\s\S]*?" Percent Goal"[\s\S]*?"Standard Time"/
     );
     assert.match(
         appSource,
-        /renderVoiceEntry\(\{[\s\S]*?prompt:\s*"Heard"[\s\S]*?attention:\s*true/
+        /function voiceEntryPromptForState\([\s\S]*?"Say " \+ descriptor/
+    );
+    assert.match(
+        appSource,
+        /function announceVoiceEntryPrompt\([\s\S]*?WMOFAudio[\s\S]*?\.speak/
+    );
+    assert.match(
+        appSource,
+        /function speakVoiceEntryFeedback\([\s\S]*?onEnd[\s\S]*?220[\s\S]*?"OK to "/
+    );
+    assert.match(
+        appSource,
+        /prompt:[\s\S]*?display[\s\S]*?360[\s\S]*?"OK to " \+[\s\S]*?actionCopy\.ok/
+    );
+    assert.match(
+        audioEngineSource,
+        /speechVelocity,[\s\S]*?onEnd[\s\S]*?finish\([\s\S]*?true/
     );
     assert.match(
         cssSource,
@@ -573,18 +597,70 @@ test("voice entry shows context-aware OK and cancel guidance", () => {
     );
 });
 
-test("voice entry and trip summary stack without overlap and animate apart", () => {
+test("trip summary and either editor appear together without overlap", () => {
     assert.match(
-        appSource,
-        /function syncTripTransitionVoiceEntryLayout\([\s\S]*?--voice-entry-summary-shift-y[\s\S]*?--trip-transition-summary-shift-y/
+        indexSource,
+        /id="tripTransitionOverlay"[\s\S]*?popover="manual"/
     );
     assert.match(
         appSource,
-        /tripTransitionOverlay[\s\S]*?classList[\s\S]*?add\([\s\S]*?"has-voice-entry"/
+        /function syncTripTransitionEditorLayout\([\s\S]*?"number-pad"[\s\S]*?--number-pad-summary-scale[\s\S]*?--trip-transition-summary-shift-y/
     );
     assert.match(
         appSource,
-        /syncTripTransitionVoiceEntryLayout\([\s\S]*?false[\s\S]*?\)[\s\S]*?classList[\s\S]*?remove\([\s\S]*?"is-visible"/
+        /function promoteTripTransitionOverlay\([\s\S]*?hidePopover[\s\S]*?showPopover/
+    );
+    assert.match(
+        cssSource,
+        /\.number-pad-dialog[\s\S]*?--number-pad-summary-shift-y[\s\S]*?--number-pad-summary-scale/
+    );
+    assert.match(
+        cssSource,
+        /\.trip-transition-overlay\.has-number-pad[\s\S]*?--trip-transition-summary-max-height/
+    );
+});
+
+test("end-trip presentation does not wait for sync or reset", () => {
+    const stopMethod = clockTimerSource.slice(
+        clockTimerSource.indexOf("async stop(stopTime)"),
+        clockTimerSource.indexOf("async resetCompletedTrip()")
+    );
+    assert.ok(
+        stopMethod.indexOf('"tripEnded"') <
+        stopMethod.indexOf("await this.#protectedSync")
+    );
+
+    const endFlow = appSource.slice(
+        appSource.indexOf("async function endCurrentIntervalOrTrip"),
+        appSource.indexOf("function openSpeechBreakPrompt")
+    );
+    assert.match(
+        endFlow,
+        /const stopPromise\s*=\s*[\s\S]*?clockTimer\.stop/
+    );
+    assert.match(
+        endFlow,
+        /completedTripResetPromise[\s\S]*?beginNewTripWorkflow/
+    );
+
+    const beginFlow = appSource.slice(
+        appSource.indexOf("async function beginNewTripWorkflow"),
+        appSource.indexOf("WMOFInteractionFunctions", appSource.indexOf("async function beginNewTripWorkflow"))
+    );
+    assert.match(
+        beginFlow,
+        /completedTripResetPromise/
+    );
+    assert.match(
+        beginFlow,
+        /duration:[\s\S]*?endStartTransition[\s\S]*?\? 0/
+    );
+});
+
+test("summary disappearance animates voice and touch editors back to normal", () => {
+    assert.match(
+        appSource,
+        /syncTripTransitionEditorLayout\([\s\S]*?false[\s\S]*?\)[\s\S]*?classList[\s\S]*?remove\([\s\S]*?"is-visible"/
     );
     assert.match(
         cssSource,
@@ -592,6 +668,6 @@ test("voice entry and trip summary stack without overlap and animate apart", () 
     );
     assert.match(
         cssSource,
-        /\.trip-transition-overlay\.has-voice-entry[\s\S]*?--trip-transition-summary-max-height/
+        /\.number-pad-dialog[\s\S]*?transition-duration:[\s\S]*?280ms/
     );
 });

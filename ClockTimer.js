@@ -5642,17 +5642,20 @@
                 }
             );
 
-            const synced = await this.#protectedSync(async () => {
-                await this.#syncTripEvents();
-            });
-            const result = this.#mutationResult(synced);
-            const summary = this.#buildSummarySnapshot(new Date());
+            const summary =
+                this.#buildSummarySnapshot(
+                    new Date()
+                );
             const stoppedDetail = {
-                ...result,
+                ...this.#mutationResult(
+                    false
+                ),
                 summary,
-                stopTime: persistedEnd
+                stopTime:
+                    persistedEnd
             };
 
+            // The visible end state is local and should never wait on sync.
             this.#emitClockTimerEvent(
                 "stopped",
                 stoppedDetail
@@ -5663,7 +5666,18 @@
                 stoppedDetail
             );
 
-            return result;
+            const synced =
+                await this.#protectedSync(
+                    async () => {
+                        await this
+                            .#syncTripEvents();
+                    }
+                );
+
+            return this
+                .#mutationResult(
+                    synced
+                );
         }
 
         async resetCompletedTrip() {
