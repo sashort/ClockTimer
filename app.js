@@ -4072,7 +4072,7 @@
             onRange:value=>setTripLogRange(value),
             onFilter:setTripProductionFilter,
             onDate:(key,value)=>{(key === "start" ? tripLogStartDate : tripLogEndDate).value=value;refreshTripLogSelection();},
-            numberPad:openNumberPad,
+            numberPad:options=>openValueEditor(options,"touch"),
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
                 if(change){
