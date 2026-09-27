@@ -36,6 +36,7 @@ class SpeechMenu {
     static #preRollSamples = 0;
     static #startPromise;
     static #sessionGeneration = 0;
+    static #contextGeneration = 0;
     static #lastLevelEventAt = 0;
     static #debug = false;
     static #debugFunction = data => console.log(data);
@@ -1595,6 +1596,8 @@ class SpeechMenu {
     static #invalidateRecognitionContext(
         reason = "speech-context-change"
     ) {
+        SpeechMenu.#contextGeneration++;
+
         SpeechMenu.#preRollFrames =
             [];
         SpeechMenu.#preRollSamples =
@@ -2293,6 +2296,8 @@ class SpeechMenu {
             id,
             sessionGeneration:
                 SpeechMenu.#sessionGeneration,
+            contextGeneration:
+                SpeechMenu.#contextGeneration,
             startedAt: now,
             wallStartedAt:
                 wallStartedAt.toISOString(),
@@ -2715,7 +2720,9 @@ class SpeechMenu {
             SpeechMenu.#utterance !==
                 utterance ||
             utterance.sessionGeneration !==
-                SpeechMenu.#sessionGeneration
+                SpeechMenu.#sessionGeneration ||
+            utterance.contextGeneration !==
+                SpeechMenu.#contextGeneration
         ) {
             return;
         }
@@ -3005,6 +3012,8 @@ class SpeechMenu {
             !utterance ||
             utterance.committed ||
             utterance.committing ||
+            utterance.contextGeneration !==
+                SpeechMenu.#contextGeneration ||
             !candidate
         ) {
             return false;
@@ -3228,6 +3237,14 @@ class SpeechMenu {
         utterance,
         transcript
     ) {
+        if (
+            !utterance ||
+            utterance.contextGeneration !==
+                SpeechMenu.#contextGeneration
+        ) {
+            return;
+        }
+
         SpeechMenu
             .#clearCandidatePool(
                 utterance
@@ -4347,7 +4364,9 @@ class SpeechMenu {
             !stream ||
             !candidate ||
             utterance.committed ||
-            utterance.committing
+            utterance.committing ||
+            utterance.contextGeneration !==
+                SpeechMenu.#contextGeneration
         ) {
             return false;
         }
