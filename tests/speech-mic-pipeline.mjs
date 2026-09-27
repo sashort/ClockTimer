@@ -1948,6 +1948,23 @@ assert.match(
     app,
     /cycleGoalMode\([\s\S]*applied ===[\s\S]*"total"[\s\S]*totalScopeLabel\(\)/
 );
+
+assert.match(
+    app,
+    /markHamburgerAnnouncementSilent[\s\S]*mainMenu\.contains\([\s\S]*hamburgerAnnouncementSilent\s*=\s*true/
+);
+assert.match(
+    app,
+    /function consumeAnnouncementAction\([\s\S]*hamburgerAnnouncementSilent[\s\S]*menuSuppressed:\s*true/
+);
+assert.doesNotMatch(
+    app,
+    /confirmSettingChange\(\s*"Viewing "\s*\+\s*label\s*\+\s*" Mode"/
+);
+assert.match(
+    app,
+    /confirmSettingChange\(\s*label\s*\+\s*" Mode"\s*\)/
+);
 assert.match(
     app,
     /readRenderedTime\([\s\S]*getRenderedTime\?\.\([\s\S]*dictateSpeechMetric\(/
