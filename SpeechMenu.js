@@ -120,7 +120,36 @@ class SpeechMenu {
         const refreshPhrases =
             () => SpeechMenu.#schedulePhraseRefresh();
 
-        for (const type of ["toggle", "close", "cancel", "okStatusChanged"]) {
+        const refreshSurfaceContext =
+            () => {
+                SpeechMenu
+                    .#invalidateRecognitionContext(
+                        "surface-context-change"
+                    );
+
+                SpeechMenu
+                    .#schedulePhraseRefresh();
+            };
+
+        for (
+            const type of [
+                "toggle",
+                "close"
+            ]
+        ) {
+            document.addEventListener(
+                type,
+                refreshSurfaceContext,
+                true
+            );
+        }
+
+        for (
+            const type of [
+                "cancel",
+                "okStatusChanged"
+            ]
+        ) {
             document.addEventListener(
                 type,
                 refreshPhrases,
@@ -129,7 +158,38 @@ class SpeechMenu {
         }
 
         if (typeof MutationObserver === "function") {
-            new MutationObserver(refreshPhrases)
+            new MutationObserver(
+                records => {
+                    const surfaceChanged =
+                        records.some(
+                            record =>
+                                record.type ===
+                                    "attributes" &&
+                                [
+                                    "open",
+                                    "hidden",
+                                    "inert",
+                                    "aria-hidden"
+                                ].includes(
+                                    record.attributeName
+                                ) &&
+                                record.target
+                                    ?.matches?.(
+                                        "dialog, [popover], details"
+                                    )
+                        );
+
+                    if (surfaceChanged) {
+                        SpeechMenu
+                            .#invalidateRecognitionContext(
+                                "surface-context-change"
+                            );
+                    }
+
+                    SpeechMenu
+                        .#schedulePhraseRefresh();
+                }
+            )
                 .observe(
                     document.documentElement,
                     {
@@ -1528,6 +1588,68 @@ class SpeechMenu {
             ?.setHotwords(
                 values
             );
+
+        return true;
+    }
+
+    static #invalidateRecognitionContext(
+        reason = "speech-context-change"
+    ) {
+        SpeechMenu.#preRollFrames =
+            [];
+        SpeechMenu.#preRollSamples =
+            0;
+
+        SpeechMenu
+            .#cancelPendingRecognitionForBargeIn();
+
+        if (
+            SpeechMenu.#pipeline ===
+                "silero"
+        ) {
+            SpeechMenu.#vad
+                ?.reset?.();
+        }
+
+        const utterance =
+            SpeechMenu.#utterance;
+
+        if (!utterance) {
+            return false;
+        }
+
+        SpeechMenu
+            .#cancelCandidateWork(
+                utterance
+            );
+        SpeechMenu
+            .#cancelContinuationPause(
+                utterance
+            );
+
+        /*
+         * A command may change the active surface while its action is still
+         * completing. Non-repeatable commands already stop recognition before
+         * running the action; repeatable commands do not. Mark either case as
+         * stopped so the next voiced frame must begin under the new context.
+         */
+        if (utterance.committing) {
+            utterance.contextInvalidated =
+                true;
+
+            SpeechMenu
+                .#stopLiveRecognition(
+                    utterance,
+                    false
+                );
+
+            return true;
+        }
+
+        SpeechMenu.#finishUtterance(
+            reason,
+            false
+        );
 
         return true;
     }
