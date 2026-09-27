@@ -459,3 +459,53 @@ test("new-trip workflow lock releases on cancel, defer, schedule cancel, and suc
         /tripDraft\.deferred[\s\S]*?releaseNewTripWorkflow/
     );
 });
+
+
+test("voice entry consumes final speech runtime transcripts directly", () => {
+    const routing = appSource.slice(
+        appSource.indexOf("function pipeVoiceEntryTranscript"),
+        appSource.indexOf("globalThis.WMOFVoiceEntry")
+    );
+
+    assert.match(
+        routing,
+        /SpeechMenu[\s\S]*?events[\s\S]*?addEventListener\([\s\S]*?"utteranceTranscribed"[\s\S]*?pipeVoiceEntryTranscript/
+    );
+
+    assert.match(
+        routing,
+        /"utteranceCommitted"[\s\S]*?pipeVoiceEntryTranscript/
+    );
+
+    assert.match(
+        routing,
+        /parseVoiceEntryTranscript\([\s\S]*?transcript/
+    );
+
+    assert.doesNotMatch(
+        routing,
+        /speechMicBar[\s\S]*?addEventListener\([\s\S]*?"utteranceCommitted"/
+    );
+});
+
+test("voice entry dedupes transcribed and committed events for the same utterance", () => {
+    assert.match(
+        appSource,
+        /let voiceEntryHandledUtteranceId/
+    );
+
+    const routing = appSource.slice(
+        appSource.indexOf("function pipeVoiceEntryTranscript"),
+        appSource.indexOf("globalThis.WMOFVoiceEntry")
+    );
+
+    assert.match(
+        routing,
+        /utteranceId ===[\s\S]*?voiceEntryHandledUtteranceId/
+    );
+
+    assert.match(
+        routing,
+        /voiceEntryHandledUtteranceId =\s*utteranceId/
+    );
+});

@@ -1424,6 +1424,7 @@
     let voiceEntryState;
     let voiceEntryExecutionBeforeOpen;
     let voiceEntryAcceptTimer;
+    let voiceEntryHandledUtteranceId;
     const uiReturnStack = [];
     let tripSettingsNavigation = {
         returnTarget: "home",
@@ -13488,6 +13489,8 @@
 
         voiceEntryExecutionBeforeOpen =
             undefined;
+        voiceEntryHandledUtteranceId =
+            undefined;
         voiceEntryState =
             undefined;
     }
@@ -13933,6 +13936,9 @@
                 performance.now()
         };
 
+        voiceEntryHandledUtteranceId =
+            undefined;
+
         if (
             globalThis.SpeechMenu
         ) {
@@ -13998,31 +14004,77 @@
             }
         );
 
-    speechMicBar
+    function pipeVoiceEntryTranscript(
+        event
+    ) {
+        if (!voiceEntryState) {
+            return;
+        }
+
+        const detail =
+            event?.detail ||
+            {};
+
+        const utteranceId =
+            detail.id ??
+            detail.utteranceId;
+
+        if (
+            utteranceId !==
+                undefined &&
+            utteranceId ===
+                voiceEntryHandledUtteranceId
+        ) {
+            return;
+        }
+
+        const transcript =
+            String(
+                detail.transcript ||
+                ""
+            ).trim();
+
+        if (!transcript) {
+            return;
+        }
+
+        const handled =
+            parseVoiceEntryTranscript(
+                transcript
+            );
+
+        if (
+            utteranceId !==
+                undefined
+        ) {
+            voiceEntryHandledUtteranceId =
+                utteranceId;
+        }
+
+        if (handled) {
+            return;
+        }
+
+        renderVoiceEntry({
+            prompt:
+                "Say a Valid Value"
+        });
+    }
+
+    globalThis
+        .SpeechMenu
+        ?.events
+        ?.addEventListener(
+            "utteranceTranscribed",
+            pipeVoiceEntryTranscript
+        );
+
+    globalThis
+        .SpeechMenu
+        ?.events
         ?.addEventListener(
             "utteranceCommitted",
-            event => {
-                if (!voiceEntryState) {
-                    return;
-                }
-
-                const transcript =
-                    event.detail
-                        ?.transcript;
-
-                if (
-                    parseVoiceEntryTranscript(
-                        transcript
-                    )
-                ) {
-                    return;
-                }
-
-                renderVoiceEntry({
-                    prompt:
-                        "Say a Valid Value"
-                });
-            }
+            pipeVoiceEntryTranscript
         );
 
     globalThis.WMOFVoiceEntry =
