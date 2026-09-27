@@ -38,6 +38,23 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `uq_users_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `user_speech_profiles` (
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `continuation_pause_mean_ms` SMALLINT UNSIGNED NULL,
+    `continuation_pause_variance_ms2` INT UNSIGNED NULL,
+    `continuation_pause_samples` INT UNSIGNED NOT NULL DEFAULT 0,
+    `stream_separation_mean_ms` SMALLINT UNSIGNED NULL,
+    `stream_separation_variance_ms2` INT UNSIGNED NULL,
+    `stream_separation_samples` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (`user_id`),
+    CONSTRAINT `fk_user_speech_profiles_user`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `permissions` (
     `value` BIGINT UNSIGNED NOT NULL,
     `name` VARCHAR(191) NOT NULL,

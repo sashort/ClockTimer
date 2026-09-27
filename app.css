@@ -6775,3 +6775,117 @@ speech-command {
             transparent calc(50% + .5px)
         );
 }
+
+
+/* adaptive-speech-timing-v1 */
+.speech-timing-dialog {
+    width: min(620px, calc(100vw - 28px));
+    max-height: min(88dvh, 760px);
+    margin: auto;
+    overflow: auto;
+}
+
+.speech-timing-dialog form {
+    display: grid;
+    gap: 14px;
+}
+
+.speech-timing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 16px 16px;
+}
+
+.speech-timing-primary {
+    min-width: 0;
+    padding: 14px;
+    display: grid;
+    gap: 5px;
+    border: 1px solid rgb(169 221 247 / 42%);
+    border-radius: 10px;
+    background: rgb(0 83 226 / 18%);
+    text-align: center;
+}
+
+.speech-timing-primary span,
+.speech-timing-stream > span,
+.speech-timing-recent > span {
+    font-size: 13px;
+    font-weight: 700;
+    opacity: .82;
+}
+
+.speech-timing-primary strong {
+    font-size: 30px;
+    font-variant-numeric: tabular-nums;
+}
+
+.speech-timing-grid dl {
+    grid-column: 1 / -1;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 9px;
+    background: rgb(255 255 255 / 10%);
+}
+
+.speech-timing-grid dl > div {
+    min-width: 0;
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    background: var(--wm-blue-dark);
+}
+
+.speech-timing-grid dt {
+    min-width: 0;
+    opacity: .76;
+}
+
+.speech-timing-grid dd {
+    margin: 0;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.speech-timing-stream,
+.speech-timing-recent {
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 9px;
+}
+
+#speechTimingStream {
+    overflow-wrap: anywhere;
+    font-weight: 750;
+}
+
+#speechTimingRecent {
+    margin: 0;
+    padding-left: 22px;
+    max-height: 150px;
+    overflow: auto;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+    .speech-timing-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .speech-timing-primary {
+        grid-column: 1;
+    }
+
+    .speech-timing-grid dl {
+        grid-template-columns: 1fr;
+    }
+}

@@ -9,7 +9,15 @@ class SpeechMenu {
     static #commitSilenceTimeout = 350;
     static #terminalCommitSilenceTimeout = 120;
     static #continuationSilenceTimeout = 900;
+    static #vadMinimumSilenceMilliseconds = 220;
     static #maximumCandidateHoldTimeout = 1200;
+    static #adaptiveTiming =
+        typeof globalThis
+            .AdaptiveSpeechTiming ===
+            "function"
+            ? new globalThis
+                .AdaptiveSpeechTiming()
+            : undefined;
     static #speechThreshold = 0.025;
     static #preRollMilliseconds = 350;
     static #stream;
@@ -164,6 +172,91 @@ class SpeechMenu {
     static get phraseGroups() { return SpeechMenu.#phraseGroups; }
     static get corrections() { return SpeechMenu.#corrections; }
     static get correctionsRevision() { return SpeechMenu.#correctionsRevision; }
+    static get speechTimingSnapshot() {
+        const timing =
+            SpeechMenu
+                .#adaptiveTiming
+                ?.snapshot || {};
+
+        const utterance =
+            SpeechMenu
+                .#utterance;
+        const exact =
+            SpeechMenu
+                .#exactCandidate(
+                    utterance
+                );
+
+        return {
+            ...timing,
+            recognition: {
+                utteranceId:
+                    utterance?.id,
+                transcript:
+                    utterance
+                        ?.transcript ||
+                    "",
+                exact:
+                    Boolean(exact),
+                canContinue:
+                    SpeechMenu
+                        .#hasOpenContinuation(
+                            utterance
+                        ),
+                candidateCount:
+                    utterance
+                        ?.candidatePool
+                        ?.length ||
+                    0,
+                silenceMilliseconds:
+                    Math.round(
+                        Number(
+                            utterance
+                                ?.silenceMilliseconds
+                        ) ||
+                        0
+                    )
+            }
+        };
+    }
+
+    static configureSpeechTimingProfile(
+        profile
+    ) {
+        return SpeechMenu
+            .#adaptiveTiming
+            ?.configureProfile(
+                profile
+            );
+    }
+
+    static setSpeechTimingTtsRate(
+        value
+    ) {
+        return SpeechMenu
+            .#adaptiveTiming
+            ?.setTtsRate(
+                value
+            );
+    }
+
+    static beginSpeechTimingTrip() {
+        return SpeechMenu
+            .#adaptiveTiming
+            ?.startTrip();
+    }
+
+    static finishSpeechTimingTrip() {
+        return SpeechMenu
+            .#adaptiveTiming
+            ?.finishTrip();
+    }
+
+    static resetSpeechTimingTrip() {
+        SpeechMenu
+            .#adaptiveTiming
+            ?.resetTrip();
+    }
 
     static async wake({
         utteranceId,
@@ -706,7 +799,7 @@ class SpeechMenu {
                             threshold: 0.5,
                             minSilenceDuration:
                                 SpeechMenu
-                                    .#commitSilenceTimeout /
+                                    .#vadMinimumSilenceMilliseconds /
                                 1000,
                             minSpeechDuration: 0.15,
                             maxSpeechDuration: 20
@@ -1575,7 +1668,30 @@ class SpeechMenu {
             level >=
             SpeechMenu.#speechThreshold
         ) {
-            SpeechMenu.#utterance.silenceMilliseconds =
+            const utterance =
+                SpeechMenu.#utterance;
+            const resumedPause =
+                Number(
+                    utterance
+                        .silenceMilliseconds
+                ) ||
+                0;
+
+            if (
+                resumedPause >= 70 &&
+                SpeechMenu
+                    .#hasOpenContinuation(
+                        utterance
+                    )
+            ) {
+                SpeechMenu
+                    .#observeContinuationPause(
+                        resumedPause,
+                        "raw"
+                    );
+            }
+
+            utterance.silenceMilliseconds =
                 0;
         }
         else {
@@ -1596,7 +1712,7 @@ class SpeechMenu {
                                     .#utterance
                             )
                             ? SpeechMenu
-                                .#continuationSilenceTimeout
+                                .#continuationGraceMilliseconds()
                             : SpeechMenu
                                 .#commitSilenceTimeout
                     )
@@ -1678,6 +1794,33 @@ class SpeechMenu {
                         SpeechMenu.#utterance
                     )
             ) {
+                const utterance =
+                    SpeechMenu
+                        .#utterance;
+                const pauseStartedAt =
+                    utterance
+                        .continuationPauseStartedAt;
+                const now =
+                    performance.now();
+
+                if (
+                    Number.isFinite(
+                        pauseStartedAt
+                    )
+                ) {
+                    SpeechMenu
+                        .#observeContinuationPause(
+                            now -
+                                pauseStartedAt,
+                            "silero"
+                        );
+                }
+
+                SpeechMenu
+                    .#cancelContinuationPause(
+                        utterance
+                    );
+
                 SpeechMenu.#emit(
                     "speechVadChanged",
                     {
@@ -1768,11 +1911,22 @@ class SpeechMenu {
                     )
             ) {
                 /*
-                 * A short pause can occur inside an open-ended value,
-                 * e.g. "ready at four ... fifteen". Keep Sherpa's
-                 * current stream alive so the next VAD speech segment
-                 * continues the same logical utterance.
+                 * A short pause can occur inside a continuation-capable
+                 * value, e.g. "ready at four ... fifteen". Keep the
+                 * recognizer stream alive only for this user's current
+                 * adaptive continuation grace.
                  */
+                utterance
+                    .continuationPauseStartedAt =
+                    performance.now() -
+                    SpeechMenu
+                        .#vadMinimumSilenceMilliseconds;
+
+                SpeechMenu
+                    .#armContinuationPauseDeadline(
+                        utterance
+                    );
+
                 return;
             }
 
@@ -1910,6 +2064,10 @@ class SpeechMenu {
                 undefined,
             candidateHardCommitAt:
                 undefined,
+            continuationPauseStartedAt:
+                undefined,
+            continuationPauseTimer:
+                undefined,
             lastExactCandidate:
                 undefined,
             committed: false,
@@ -1995,6 +2153,11 @@ class SpeechMenu {
             SpeechMenu.#utterance;
 
         if (!utterance) return;
+
+        SpeechMenu
+            .#cancelContinuationPause(
+                utterance
+            );
 
         if (
             recognize &&
@@ -3099,6 +3262,162 @@ class SpeechMenu {
         return regex.test(text);
     }
 
+    static #continuationGraceMilliseconds() {
+        const adaptive =
+            Number(
+                SpeechMenu
+                    .#adaptiveTiming
+                    ?.continuationGraceMilliseconds
+            );
+
+        return Number.isFinite(
+            adaptive
+        )
+            ? adaptive
+            : SpeechMenu
+                .#continuationSilenceTimeout;
+    }
+
+    static #observeContinuationPause(
+        milliseconds,
+        source
+    ) {
+        const accepted =
+            SpeechMenu
+                .#adaptiveTiming
+                ?.observeContinuationPause(
+                    milliseconds,
+                    {
+                        source
+                    }
+                );
+
+        if (accepted) {
+            SpeechMenu.#emit(
+                "speechTimingChanged",
+                {
+                    reason:
+                        "continuation-pause",
+                    source,
+                    pauseMilliseconds:
+                        Math.round(
+                            milliseconds
+                        ),
+                    snapshot:
+                        SpeechMenu
+                            .speechTimingSnapshot
+                }
+            );
+        }
+
+        return Boolean(
+            accepted
+        );
+    }
+
+    static #cancelContinuationPause(
+        utterance
+    ) {
+        if (!utterance) {
+            return false;
+        }
+
+        if (
+            utterance
+                .continuationPauseTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .continuationPauseTimer
+            );
+        }
+
+        utterance
+            .continuationPauseTimer =
+            undefined;
+        utterance
+            .continuationPauseStartedAt =
+            undefined;
+
+        return true;
+    }
+
+    static #armContinuationPauseDeadline(
+        utterance
+    ) {
+        if (!utterance) {
+            return false;
+        }
+
+        if (
+            utterance
+                .continuationPauseTimer !==
+            undefined
+        ) {
+            clearTimeout(
+                utterance
+                    .continuationPauseTimer
+            );
+        }
+
+        const startedAt =
+            Number(
+                utterance
+                    .continuationPauseStartedAt
+            );
+        const elapsed =
+            Number.isFinite(
+                startedAt
+            )
+                ? Math.max(
+                    0,
+                    performance.now() -
+                        startedAt
+                )
+                : 0;
+        const delay =
+            Math.max(
+                0,
+                SpeechMenu
+                    .#continuationGraceMilliseconds() -
+                    elapsed
+            );
+
+        utterance
+            .continuationPauseTimer =
+            setTimeout(
+                () => {
+                    utterance
+                        .continuationPauseTimer =
+                        undefined;
+
+                    if (
+                        SpeechMenu.#stopped ||
+                        SpeechMenu.#utterance !==
+                            utterance ||
+                        utterance.committed ||
+                        utterance.committing ||
+                        !SpeechMenu
+                            .#hasOpenContinuation(
+                                utterance
+                            )
+                    ) {
+                        return;
+                    }
+
+                    SpeechMenu
+                        .#finishUtterance(
+                            "candidate-silence",
+                            true
+                        );
+                },
+                delay
+            );
+
+        return true;
+    }
+
     static #cancelCandidateWork(
         utterance
     ) {
@@ -3140,6 +3459,10 @@ class SpeechMenu {
 
         SpeechMenu
             .#cancelCandidateWork(
+                utterance
+            );
+        SpeechMenu
+            .#cancelContinuationPause(
                 utterance
             );
 

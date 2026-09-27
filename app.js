@@ -148,7 +148,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-26-24";
+        "2026-09-27-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -318,6 +318,15 @@
                 Promise.resolve()
                     .then(async () => {
                         await speechAssetCacheReady;
+                        if (
+                            !globalThis
+                                .AdaptiveSpeechTiming
+                        ) {
+                            await loadClassicScript(
+                                "AdaptiveSpeechTiming.js"
+                            );
+                        }
+
                         if (!globalThis.SherpaRecognizer) {
                             await loadClassicScript(
                                 "SherpaRecognizer.js"
@@ -335,7 +344,7 @@
 
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
-                                "SpeechMenu.js?v=sync-corrections-1"
+                                "SpeechMenu.js?v=adaptive-timing-1"
                             );
                         }
 
@@ -519,6 +528,9 @@
         $("#speechEditorButton").hidden =
             !canUseSpeechEditor;
 
+        $("#speechTimingButton").hidden =
+            !canUseDeveloperTools;
+
         $("#developerDocsButton").hidden =
             !canUseDeveloperTools;
 
@@ -626,6 +638,36 @@
     const speechTrainingResults = $("#speechTrainingResults");
     const speechTrainingResultsCount = $("#speechTrainingResultsCount");
     const speechTrainingResultsList = $("#speechTrainingResultsList");
+    const speechTimingDialog = $("#speechTimingDialog");
+    const speechTimingValues = {
+        speechRate:
+            $("#speechTimingRate"),
+        grace:
+            $("#speechTimingGrace"),
+        ttsRate:
+            $("#speechTimingTtsRate"),
+        ttsAdjustment:
+            $("#speechTimingTtsAdjustment"),
+        confidence:
+            $("#speechTimingConfidence"),
+        tripMean:
+            $("#speechTimingTripMean"),
+        tripDeviation:
+            $("#speechTimingTripDeviation"),
+        tripSamples:
+            $("#speechTimingTripSamples"),
+        baselineMean:
+            $("#speechTimingBaselineMean"),
+        baselineDeviation:
+            $("#speechTimingBaselineDeviation"),
+        baselineSamples:
+            $("#speechTimingBaselineSamples"),
+        stream:
+            $("#speechTimingStream"),
+        recent:
+            $("#speechTimingRecent")
+    };
+    let speechTimingRenderTimer;
 
     let easterEggSong =
         easterEggSongSelect
@@ -1721,6 +1763,8 @@
             instrument:
                 audioSettings.instrument
         });
+
+        syncAdaptiveSpeechTimingRate();
     }
 
     function audioCellUserEnabled(
@@ -5226,6 +5270,9 @@
         $("#speechEditorButton").hidden =
             !canUseSpeechEditor;
 
+        $("#speechTimingButton").hidden =
+            !canUseDeveloperTools;
+
         $("#developerDocsButton").hidden =
             !canUseDeveloperTools;
 
@@ -5245,6 +5292,8 @@
 
         if (!canUseDeveloperTools) {
             $("#speechEditorButton").hidden =
+                true;
+            $("#speechTimingButton").hidden =
                 true;
             $("#developerDocsButton").hidden =
                 true;
@@ -10286,6 +10335,443 @@
         syncSpeechTrainingStartButton();
     }
 
+    function syncAdaptiveSpeechTimingRate() {
+        return globalThis
+            .SpeechMenu
+            ?.setSpeechTimingTtsRate?.(
+                audioSettings
+                    .speechVelocity
+            );
+    }
+
+    function speechTimingFormatMs(
+        value
+    ) {
+        const number =
+            Number(value);
+
+        return Number.isFinite(number)
+            ? Math.round(number) +
+                " ms"
+            : "—";
+    }
+
+    function renderSpeechTimingTool() {
+        if (!speechTimingDialog) {
+            return false;
+        }
+
+        const snapshot =
+            globalThis
+                .SpeechMenu
+                ?.speechTimingSnapshot;
+
+        if (!snapshot) {
+            if (
+                speechTimingValues
+                    .stream
+            ) {
+                speechTimingValues
+                    .stream
+                    .textContent =
+                    "Speech runtime not loaded";
+            }
+
+            return false;
+        }
+
+        const baseline =
+            snapshot.baseline ||
+            {};
+        const trip =
+            snapshot.trip ||
+            {};
+        const recognition =
+            snapshot.recognition ||
+            {};
+        const baselineDeviation =
+            Number.isFinite(
+                Number(
+                    baseline
+                        .continuationPauseVarianceMs2
+                )
+            )
+                ? Math.sqrt(
+                    Number(
+                        baseline
+                            .continuationPauseVarianceMs2
+                    )
+                )
+                : undefined;
+        const tripDeviation =
+            Number.isFinite(
+                Number(
+                    trip
+                        .continuationPauseVarianceMs2
+                )
+            )
+                ? Math.sqrt(
+                    Number(
+                        trip
+                            .continuationPauseVarianceMs2
+                    )
+                )
+                : undefined;
+
+        speechTimingValues
+            .speechRate
+            .textContent =
+            Number(
+                snapshot
+                    .estimatedSpeechRate ||
+                1
+            )
+                .toFixed(2) +
+            "×";
+
+        speechTimingValues
+            .grace
+            .textContent =
+            speechTimingFormatMs(
+                snapshot
+                    .continuationGraceMs
+            );
+
+        speechTimingValues
+            .ttsRate
+            .textContent =
+            Number(
+                snapshot
+                    .ttsRate ||
+                1
+            )
+                .toFixed(2) +
+            "×";
+
+        speechTimingValues
+            .ttsAdjustment
+            .textContent =
+            (
+                Number(
+                    snapshot
+                        .ttsPriorFactor ||
+                    1
+                ) *
+                100
+            )
+                .toFixed(0) +
+            "%";
+
+        speechTimingValues
+            .confidence
+            .textContent =
+            (
+                Number(
+                    snapshot
+                        .continuationConfidence ||
+                    0
+                ) *
+                100
+            )
+                .toFixed(0) +
+            "%";
+
+        speechTimingValues
+            .tripMean
+            .textContent =
+            speechTimingFormatMs(
+                trip
+                    .continuationPauseMeanMs
+            );
+        speechTimingValues
+            .tripDeviation
+            .textContent =
+            speechTimingFormatMs(
+                tripDeviation
+            );
+        speechTimingValues
+            .tripSamples
+            .textContent =
+            String(
+                trip
+                    .continuationPauseSamples ||
+                0
+            );
+
+        speechTimingValues
+            .baselineMean
+            .textContent =
+            speechTimingFormatMs(
+                baseline
+                    .continuationPauseMeanMs
+            );
+        speechTimingValues
+            .baselineDeviation
+            .textContent =
+            speechTimingFormatMs(
+                baselineDeviation
+            );
+        speechTimingValues
+            .baselineSamples
+            .textContent =
+            String(
+                baseline
+                    .continuationPauseSamples ||
+                0
+            );
+
+        speechTimingValues
+            .stream
+            .textContent =
+            recognition.transcript
+                ? (
+                    recognition
+                        .transcript +
+                    (
+                        recognition
+                            .canContinue
+                            ? "  • continuation"
+                            : recognition
+                                .exact
+                                ? "  • terminal"
+                                : "  • partial"
+                    )
+                )
+                : "Idle";
+
+        const recent =
+            Array.isArray(
+                snapshot.recentPauses
+            )
+                ? snapshot
+                    .recentPauses
+                    .slice(-8)
+                    .reverse()
+                : [];
+
+        speechTimingValues
+            .recent
+            .replaceChildren(
+                ...(
+                    recent.length
+                        ? recent.map(
+                            entry => {
+                                const item =
+                                    document
+                                        .createElement(
+                                            "li"
+                                        );
+
+                                item.textContent =
+                                    Math.round(
+                                        Number(
+                                            entry
+                                                .milliseconds
+                                        ) ||
+                                        0
+                                    ) +
+                                    " ms · " +
+                                    String(
+                                        entry
+                                            .source ||
+                                        "speech"
+                                    );
+
+                                return item;
+                            }
+                        )
+                        : [
+                            Object.assign(
+                                document
+                                    .createElement(
+                                        "li"
+                                    ),
+                                {
+                                    textContent:
+                                        "No continuation pauses observed this trip."
+                                }
+                            )
+                        ]
+                )
+            );
+
+        return true;
+    }
+
+    async function loadSpeechTimingProfile() {
+        if (!signedInProfile) {
+            return false;
+        }
+
+        await ensureSpeechRuntime();
+
+        const response =
+            await fetch(
+                API_BASE +
+                    "api/speech-timing/",
+                {
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to load speech timing profile."
+            );
+        }
+
+        globalThis
+            .SpeechMenu
+            ?.configureSpeechTimingProfile?.(
+                data.profile ||
+                {}
+            );
+
+        syncAdaptiveSpeechTimingRate();
+        renderSpeechTimingTool();
+
+        return true;
+    }
+
+    async function persistSpeechTimingProfile(
+        profile
+    ) {
+        if (
+            !signedInProfile ||
+            !profile
+        ) {
+            return false;
+        }
+
+        const csrf =
+            await ensureSpeechTrainingCsrfToken();
+
+        const response =
+            await fetch(
+                API_BASE +
+                    "api/speech-timing/",
+                {
+                    method:
+                        "PUT",
+                    credentials:
+                        "same-origin",
+                    cache:
+                        "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Content-Type":
+                            "application/json",
+                        "X-CSRF-Token":
+                            csrf
+                    },
+                    body:
+                        JSON.stringify({
+                            continuationPauseMeanMs:
+                                profile
+                                    .continuationPauseMeanMs,
+                            continuationPauseVarianceMs2:
+                                profile
+                                    .continuationPauseVarianceMs2,
+                            continuationPauseSamples:
+                                profile
+                                    .continuationPauseSamples,
+                            streamSeparationMeanMs:
+                                profile
+                                    .streamSeparationMeanMs,
+                            streamSeparationVarianceMs2:
+                                profile
+                                    .streamSeparationVarianceMs2,
+                            streamSeparationSamples:
+                                profile
+                                    .streamSeparationSamples
+                        })
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Unable to save speech timing profile."
+            );
+        }
+
+        globalThis
+            .SpeechMenu
+            ?.configureSpeechTimingProfile?.(
+                data.profile ||
+                profile
+            );
+
+        renderSpeechTimingTool();
+
+        return true;
+    }
+
+    function startSpeechTimingToolUpdates() {
+        clearInterval(
+            speechTimingRenderTimer
+        );
+
+        renderSpeechTimingTool();
+
+        speechTimingRenderTimer =
+            setInterval(
+                renderSpeechTimingTool,
+                100
+            );
+    }
+
+    function stopSpeechTimingToolUpdates() {
+        clearInterval(
+            speechTimingRenderTimer
+        );
+        speechTimingRenderTimer =
+            undefined;
+    }
+
+    speechTimingDialog
+        ?.addEventListener(
+            "close",
+            stopSpeechTimingToolUpdates
+        );
+
+    document.addEventListener(
+        "speech-runtime-ready",
+        () => {
+            syncAdaptiveSpeechTimingRate();
+
+            if (
+                speechTimingDialog
+                    ?.open
+            ) {
+                renderSpeechTimingTool();
+            }
+        }
+    );
+
     async function ensureSpeechTrainingCsrfToken() {
         if (speechTrainingCsrfToken) {
             return speechTrainingCsrfToken;
@@ -12338,6 +12824,21 @@
                 finish
             );
     }
+
+    globalThis
+        .WMOFInteractionFunctions
+        .bindAction({
+            element:
+                $("#speechTimingButton"),
+            event:
+                "click",
+            name:
+                "openSpeechTimingClick",
+            action:
+                "openSpeechTiming",
+            preventDefault:
+                true
+        });
 
     globalThis
         .WMOFInteractionFunctions
@@ -19495,6 +19996,10 @@
     }
 
     async function onTripStarted(event) {
+        globalThis
+            .SpeechMenu
+            ?.beginSpeechTimingTrip?.();
+
         reserveSemanticEvent(
             event,
             "Trip started on time"
@@ -19637,6 +20142,10 @@
     }
 
     function onTripStartedEarly(event) {
+        globalThis
+            .SpeechMenu
+            ?.beginSpeechTimingTrip?.();
+
         reserveSemanticEvent(event, "Trip started early");
 
         void playSemanticSongThenSpeak(
@@ -19651,6 +20160,10 @@
     }
 
     function onTripStartedLate(event) {
+        globalThis
+            .SpeechMenu
+            ?.beginSpeechTimingTrip?.();
+
         reserveSemanticEvent(event, "Trip started late");
 
         void playSemanticSongThenSpeak(
@@ -19738,6 +20251,23 @@
     }
 
     function onTripEnded(event) {
+        const speechTimingProfile =
+            globalThis
+                .SpeechMenu
+                ?.finishSpeechTimingTrip?.();
+
+        if (speechTimingProfile) {
+            void persistSpeechTimingProfile(
+                speechTimingProfile
+            ).catch(
+                error =>
+                    console.warn(
+                        "Speech timing profile was not saved:",
+                        error
+                    )
+            );
+        }
+
         showTripEndTransitionOverlay(
             event.detail
         );
@@ -20443,6 +20973,16 @@
 
     function onConnected(event) {
         populateProfile(event.detail?.user);
+
+        void loadSpeechTimingProfile()
+            .catch(
+                error =>
+                    console.warn(
+                        "Speech timing profile was not loaded:",
+                        error
+                    )
+            );
+
         reserveSemanticEvent(event, "ClockTimer connected");
     }
 
@@ -20458,6 +20998,9 @@
 
             signedInProfile = undefined;
             speechTrainingCsrfToken = undefined;
+            globalThis
+                .SpeechMenu
+                ?.resetSpeechTimingTrip?.();
             for (const id of ["profileUsername", "firstName", "lastName", "preferredName"]) $("#" + id).value = "";
             syncSpeechTrainingControls();
         }
@@ -23376,6 +23919,47 @@
                     );
 
                 return true;
+            },
+
+            async openSpeechTiming() {
+                const permissions =
+                    Number(
+                        signedInProfile
+                            ?.permissions
+                    ) ||
+                    0;
+
+                if (
+                    !(
+                        permissions &
+                        DEVELOPER_MENU_PERMISSION_MASK
+                    )
+                ) {
+                    throw new Error(
+                        "Developer or Developer Preview permission is required."
+                    );
+                }
+
+                await ensureSpeechRuntime();
+                syncAdaptiveSpeechTimingRate();
+
+                mainMenu
+                    ?.hidePopover?.();
+
+                const opened =
+                    openDialogElement(
+                        speechTimingDialog,
+                        {
+                            reason:
+                                "speech-timing"
+                        }
+                    );
+
+                if (opened) {
+                    startSpeechTimingToolUpdates();
+                }
+
+                return opened;
             },
 
             async openSpeechEditor() {

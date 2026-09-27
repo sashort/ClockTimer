@@ -2827,3 +2827,62 @@ assert.doesNotMatch(languageSource, /setTripGoal:/);
 assert.doesNotMatch(languageSource, /setTotalGoal:/);
 assert.doesNotMatch(html, /builtin:setTripGoal:page/);
 assert.doesNotMatch(html, /builtin:setTotalGoal:page/);
+
+
+const adaptiveTimingSource = fs.readFileSync(
+    new URL("../AdaptiveSpeechTiming.js", import.meta.url),
+    "utf8"
+);
+const speechTimingApiSource = fs.readFileSync(
+    new URL("../api/speech-timing/index.php", import.meta.url),
+    "utf8"
+);
+const databaseSource = fs.readFileSync(
+    new URL("../database/create_database.sql", import.meta.url),
+    "utf8"
+);
+
+assert.match(
+    adaptiveTimingSource,
+    /class AdaptiveSpeechTiming[\s\S]*continuationGraceMilliseconds[\s\S]*#ttsPriorFactor/
+);
+assert.match(
+    speechMenuSource,
+    /#adaptiveTiming[\s\S]*#observeContinuationPause[\s\S]*#continuationGraceMilliseconds/
+);
+assert.match(
+    speechMenuSource,
+    /#vadMinimumSilenceMilliseconds\s*=\s*220/
+);
+assert.match(
+    speechMenuSource,
+    /resumedPause[\s\S]*#observeContinuationPause/
+);
+assert.match(
+    speechMenuSource,
+    /#armContinuationPauseDeadline[\s\S]*candidate-silence/
+);
+assert.match(
+    app,
+    /speechTimingButton[\s\S]*openSpeechTiming/
+);
+assert.match(
+    app,
+    /loadSpeechTimingProfile[\s\S]*api\/speech-timing/
+);
+assert.match(
+    app,
+    /finishSpeechTimingTrip[\s\S]*persistSpeechTimingProfile/
+);
+assert.match(
+    html,
+    /id="speechTimingDialog"[\s\S]*Estimated Speech Rate[\s\S]*Continuation Grace/
+);
+assert.match(
+    speechTimingApiSource,
+    /user_speech_profiles[\s\S]*ON DUPLICATE KEY UPDATE/
+);
+assert.match(
+    databaseSource,
+    /CREATE TABLE IF NOT EXISTS `user_speech_profiles`/
+);

@@ -115,6 +115,7 @@
                             </button>
                             <div id="speechSubmenu" class="speech-submenu" hidden>
                                 <button id="speechTrainingButton" type="button" aria-pressed="false" disabled>Speech Training</button>
+                                <button id="speechTimingButton" type="button" hidden>Speech Timing</button>
                                 <button id="speechEditorButton" type="button" hidden>Speech Editor</button>
                             </div>
                         </div>
@@ -1017,6 +1018,44 @@
         </form>
     </dialog>
 
+    <dialog id="speechTimingDialog" class="app-dialog speech-timing-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2>Speech Timing</h2>
+                <button class="dialog-close" type="submit" aria-label="Close">×</button>
+            </header>
+            <section class="speech-timing-grid" aria-live="polite">
+                <article class="speech-timing-primary">
+                    <span>Estimated Speech Rate</span>
+                    <strong id="speechTimingRate">1.00×</strong>
+                </article>
+                <article class="speech-timing-primary">
+                    <span>Continuation Grace</span>
+                    <strong id="speechTimingGrace">—</strong>
+                </article>
+                <dl>
+                    <div><dt>TTS Rate</dt><dd id="speechTimingTtsRate">1.00×</dd></div>
+                    <div><dt>TTS Prior Weight</dt><dd id="speechTimingTtsAdjustment">100%</dd></div>
+                    <div><dt>Current Trip Confidence</dt><dd id="speechTimingConfidence">0%</dd></div>
+                    <div><dt>Trip Pause Mean</dt><dd id="speechTimingTripMean">—</dd></div>
+                    <div><dt>Trip Pause Deviation</dt><dd id="speechTimingTripDeviation">—</dd></div>
+                    <div><dt>Trip Samples</dt><dd id="speechTimingTripSamples">0</dd></div>
+                    <div><dt>Baseline Pause Mean</dt><dd id="speechTimingBaselineMean">—</dd></div>
+                    <div><dt>Baseline Deviation</dt><dd id="speechTimingBaselineDeviation">—</dd></div>
+                    <div><dt>Baseline Samples</dt><dd id="speechTimingBaselineSamples">0</dd></div>
+                </dl>
+                <div class="speech-timing-stream">
+                    <span>Recognition Head</span>
+                    <output id="speechTimingStream">Idle</output>
+                </div>
+                <div class="speech-timing-recent">
+                    <span>Recent Continuation Pauses</span>
+                    <ol id="speechTimingRecent"></ol>
+                </div>
+            </section>
+        </form>
+    </dialog>
+
     <section id="tripTransitionOverlay" class="trip-transition-overlay" popover="manual" role="status" aria-live="polite" aria-atomic="true" hidden>
         <div class="trip-transition-overlay-panel">
             <h2 id="tripTransitionOverlayTitle">Trip Started</h2>
@@ -1067,7 +1106,7 @@
     <script src="api/audio/AudioEngine.js?v=voice-entry-sequence-1"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=swipe-target-cue-1"></script>
-    <script src="app.js?v=post-trip-editor-2"></script>
+    <script src="app.js?v=adaptive-speech-timing-1"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
 </html>
