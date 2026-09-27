@@ -1322,6 +1322,11 @@ assert.match(
     speechMicBarSource,
     /group\?\.optionPhrases\s*\|\|[\s\S]*group\?\.phrases/
 );
+
+assert.match(
+    speechMicBarSource,
+    /family[\s\S]*#compareOptionItems[\s\S]*join\([\s\S]*"\\u00a0\\|\\u00a0"/
+);
 assert.match(
     app,
     /speechOptionsPhrase\s*=\s*[\s\S]*"<spokenValue>"/
