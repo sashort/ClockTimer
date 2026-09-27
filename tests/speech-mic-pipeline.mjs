@@ -2462,7 +2462,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /MutationObserver\([\s\S]*record\.attributeName[\s\S]*"open"[\s\S]*"hidden"[\s\S]*"inert"[\s\S]*"aria-hidden"[\s\S]*"dialog, \[popover\], details"[\s\S]*#invalidateRecognitionContext/
+    /MutationObserver\([\s\S]*"open"[\s\S]*"hidden"[\s\S]*"inert"[\s\S]*"aria-hidden"[\s\S]*record\.attributeName[\s\S]*record\.target[\s\S]*matches[\s\S]*"dialog, \[popover\], details"[\s\S]*#invalidateRecognitionContext/
 );
 assert.match(
     speechMenuSource,
