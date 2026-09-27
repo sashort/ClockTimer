@@ -3607,13 +3607,6 @@
                 )
             ) ||
             0;
-        const commandRowHeight =
-            Number.parseFloat(
-                appStyle.getPropertyValue(
-                    "--speech-command-row-height"
-                )
-            ) ||
-            0;
 
         const fallbackMicTop =
             metrics.rect.bottom -
@@ -3634,30 +3627,18 @@
                 ? hostTop
                 : fallbackMicTop;
 
-        const collapsedTop =
-            micTop -
-            (
-                speechMicBar
-                    ?.optionsCollapsed
-                    ? commandRowHeight
-                    : 0
-            );
-
-        const expandedTop =
+        const safeTop =
             Number(
                 speechMicBar
                     ?.getSafeTop?.()
             );
 
         const speechTop =
-            speechMicBar
-                ?.optionsCollapsed
-                ? collapsedTop
-                : Number.isFinite(
-                    expandedTop
-                )
-                    ? expandedTop
-                    : micTop;
+            Number.isFinite(
+                safeTop
+            )
+                ? safeTop
+                : micTop;
 
         return Math.max(
             metrics.rect.top,
@@ -12447,6 +12428,48 @@
         return true;
     }
 
+    function installVoiceEntrySpeechCommands() {
+        if (
+            !voiceEntrySurface
+                ?.isConnected ||
+            !englishSpeech ||
+            typeof installSpeechCommand !==
+                "function"
+        ) {
+            return false;
+        }
+
+        for (
+            const key of [
+                "keypadValue",
+                "voiceEntryConfirm",
+                "voiceEntryCancel",
+                "voiceEntryTouch",
+                "voiceEntryDefer"
+            ]
+        ) {
+            const command =
+                installSpeechCommand(
+                    key,
+                    "handleVoiceEntrySpeech",
+                    voiceEntrySurface,
+                    false
+                );
+
+            if (command) {
+                command.dataset
+                    .speechTarget =
+                    "#voiceEntrySurface";
+            }
+        }
+
+        globalThis
+            .SpeechMenu
+            ?.refresh?.();
+
+        return true;
+    }
+
     async function ensureNumberPadLoaded() {
         if (numberPadDialog?.isConnected) return;
         if (!numberPadLoadPromise) {
@@ -20284,6 +20307,15 @@
                 return false;
             },
 
+            handleVoiceEntrySpeech() {
+                return parseVoiceEntryTranscript(
+                    globalThis
+                        .SpeechMenu
+                        ?.executionContext
+                        ?.transcript
+                );
+            },
+
             openStartMenu() {
                 return openStartMenuWorkflow();
             },
@@ -24078,6 +24110,7 @@
             installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
             installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
             installNumberPadSpeechCommands();
+            installVoiceEntrySpeechCommands();
             speechMicBar
                 ?.setSystemSpeechPatterns?.({
                     wake:

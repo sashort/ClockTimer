@@ -140,3 +140,75 @@ test("Early Start bare standard command opens the shared voice editor", () => {
         /speechTarget[\s\S]*?#scheduledStartStandard/
     );
 });
+
+
+test("voice entry registers its own value and control speech candidates", () => {
+    const installer = appSource.slice(
+        appSource.indexOf("function installVoiceEntrySpeechCommands"),
+        appSource.indexOf("async function ensureNumberPadLoaded")
+    );
+
+    assert.match(
+        installer,
+        /keypadValue/
+    );
+    assert.match(
+        installer,
+        /voiceEntryConfirm/
+    );
+    assert.match(
+        installer,
+        /voiceEntryCancel/
+    );
+    assert.match(
+        installer,
+        /voiceEntryTouch/
+    );
+    assert.match(
+        installer,
+        /voiceEntryDefer/
+    );
+    assert.match(
+        installer,
+        /handleVoiceEntrySpeech/
+    );
+});
+
+test("voice-entry command grammar includes OK, cancel, touch, and defer", () => {
+    assert.match(
+        languageSource,
+        /voiceEntryConfirm:\s*"\^ok\(\?:ay\)\?\$"/
+    );
+    assert.match(
+        languageSource,
+        /voiceEntryCancel:\s*"\^\(\?:cancel\|close\)\$"/
+    );
+    assert.match(
+        languageSource,
+        /voiceEntryTouch:\s*"\^\(\?:touch\|keypad\|number pad\)\$"/
+    );
+    assert.match(
+        languageSource,
+        /voiceEntryDefer:\s*"\^defer trip\$"/
+    );
+});
+
+test("Trip Log uses the rendered speech surface safe top", () => {
+    const speechTop = appSource.slice(
+        appSource.indexOf("function getSpeechMicTop"),
+        appSource.indexOf("function getTripLogBottomRect")
+    );
+
+    assert.match(
+        speechTop,
+        /getSafeTop/
+    );
+    assert.doesNotMatch(
+        speechTop,
+        /--speech-command-row-height/
+    );
+    assert.doesNotMatch(
+        speechTop,
+        /collapsedTop/
+    );
+});
