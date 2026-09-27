@@ -249,6 +249,21 @@
         </details>
     </section>
 
+    <section id="voiceEntrySurface" class="voice-entry-surface" popover="manual" hidden aria-label="Voice Entry">
+        <header class="voice-entry-header">
+            <strong id="voiceEntryTitle">Number</strong>
+            <div class="voice-entry-actions">
+                <button id="voiceEntryTouch" class="voice-entry-touch" type="button" aria-label="Switch to touch numberpad" title="Switch to touch numberpad">⌨</button>
+                <button id="voiceEntryCancel" class="voice-entry-close" type="button" aria-label="Cancel">×</button>
+            </div>
+        </header>
+        <div class="voice-entry-copy">
+            <strong id="voiceEntryPrompt">Say a Number</strong>
+            <span id="voiceEntryExample">Example: “eighty-five percent”</span>
+            <output id="voiceEntryValue" class="voice-entry-value" aria-live="polite" hidden></output>
+        </div>
+    </section>
+
     <dialog id="speechTrainingChoiceDialog" class="app-dialog speech-training-choice-dialog">
         <header class="dialog-header">
             <h2>Speech Training</h2>
