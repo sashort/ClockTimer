@@ -40,6 +40,7 @@ class SpeechMenu {
     static #debug = false;
     static #debugFunction = data => console.log(data);
     static #executionEnabled = true;
+    static #systemExecutionPassthrough = false;
     static #executionContext;
     static #synthesizedSpeech = new Map();
     static #synthesizedSpeechSequence = 0;
@@ -160,6 +161,7 @@ class SpeechMenu {
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
+    static get systemExecutionPassthrough() { return SpeechMenu.#systemExecutionPassthrough; }
     static get executionContext() { return SpeechMenu.#executionContext; }
     static get synthesizedSpeechActive() { return SpeechMenu.#synthesizedSpeech.size > 0; }
     static get pipeline() { return SpeechMenu.#pipeline; }
@@ -547,6 +549,29 @@ class SpeechMenu {
 
         SpeechMenu.#emit(
             "speechExecutionChanged",
+            {
+                enabled:
+                    next
+            }
+        );
+    }
+
+    static set systemExecutionPassthrough(value) {
+        const next =
+            Boolean(value);
+
+        if (
+            next ===
+            SpeechMenu.#systemExecutionPassthrough
+        ) {
+            return;
+        }
+
+        SpeechMenu.#systemExecutionPassthrough =
+            next;
+
+        SpeechMenu.#emit(
+            "speechSystemExecutionPassthroughChanged",
             {
                 enabled:
                     next
@@ -2908,7 +2933,10 @@ class SpeechMenu {
                             candidate
                                 .speechMenuElement,
                             SpeechMenu
-                                .#executionEnabled
+                                .#shouldExecuteElement(
+                                    candidate
+                                        .commandElement
+                                )
                         )
                 );
 
@@ -3179,7 +3207,9 @@ class SpeechMenu {
                                     recovery.element
                                 ),
                             SpeechMenu
-                                .#executionEnabled
+                                .#shouldExecuteElement(
+                                    recovery.element
+                                )
                         );
 
                 if (matched) {
@@ -4243,7 +4273,10 @@ class SpeechMenu {
                             candidate
                                 .speechMenuElement,
                             SpeechMenu
-                                .#executionEnabled,
+                                .#shouldExecuteElement(
+                                    candidate
+                                        .commandElement
+                                ),
                             undefined,
                             stream
                                 .wallStartedAt
@@ -4631,6 +4664,14 @@ class SpeechMenu {
         utterance,
         exactCandidate
     ) {
+        const exactIsSystem =
+            SpeechMenu
+                .#effectiveModal(
+                    exactCandidate
+                        ?.commandElement
+                ) ===
+                "system";
+
         return Boolean(
             utterance
                 ?.candidatePool
@@ -4639,7 +4680,16 @@ class SpeechMenu {
                         candidate !==
                             exactCandidate &&
                         candidate
-                            .continuation
+                            .continuation &&
+                        (
+                            !exactIsSystem ||
+                            SpeechMenu
+                                .#effectiveModal(
+                                    candidate
+                                        .commandElement
+                                ) ===
+                                "system"
+                        )
                 )
         );
     }
@@ -5242,6 +5292,12 @@ class SpeechMenu {
                             exact:
                                 Boolean(exact),
                             continuation,
+                            system:
+                                SpeechMenu
+                                    .#effectiveModal(
+                                        element
+                                    ) ===
+                                    "system",
                             depth:
                                 continuationDepth ??
                                 (
@@ -5264,11 +5320,27 @@ class SpeechMenu {
             evaluated
                 .filter(Boolean)
                 .sort(
-                    (left, right) =>
-                        left.depth -
-                            right.depth ||
-                        left.order -
-                            right.order
+                    (left, right) => {
+                        const leftSystemExact =
+                            left.system &&
+                            left.exact
+                                ? 1
+                                : 0;
+                        const rightSystemExact =
+                            right.system &&
+                            right.exact
+                                ? 1
+                                : 0;
+
+                        return (
+                            rightSystemExact -
+                                leftSystemExact ||
+                            left.depth -
+                                right.depth ||
+                            left.order -
+                                right.order
+                        );
+                    }
                 );
 
         /*
@@ -5328,7 +5400,11 @@ class SpeechMenu {
                             .#candidateMenu(
                                 element
                             ),
-                        execute
+                        SpeechMenu
+                            .#shouldExecuteElement(
+                                element,
+                                execute
+                            )
                     );
 
             if (result) {
@@ -5368,6 +5444,25 @@ class SpeechMenu {
         }
 
         return undefined;
+    }
+
+    static #shouldExecuteElement(
+        element,
+        requested =
+            SpeechMenu.#executionEnabled
+    ) {
+        return Boolean(
+            requested ||
+            (
+                SpeechMenu
+                    .#systemExecutionPassthrough &&
+                SpeechMenu
+                    .#effectiveModal(
+                        element
+                    ) ===
+                    "system"
+            )
+        );
     }
 
     static #effectiveModal(element) {
