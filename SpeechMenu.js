@@ -260,6 +260,10 @@ class SpeechMenu {
                             canContinue:
                                 Boolean(
                                     stream.canContinue
+                                ),
+                            repeatable:
+                                Boolean(
+                                    stream.repeatable
                                 )
                         })
                     )
@@ -1756,14 +1760,21 @@ class SpeechMenu {
                     .silenceMilliseconds >=
                     (
                         SpeechMenu
-                            .#hasOpenContinuation(
+                            .#repeatableStreamHead(
                                 SpeechMenu
                                     .#utterance
                             )
                             ? SpeechMenu
-                                .#continuationGraceMilliseconds()
+                                .#streamSeparationMilliseconds()
                             : SpeechMenu
-                                .#commitSilenceTimeout
+                                .#hasOpenContinuation(
+                                    SpeechMenu
+                                        .#utterance
+                                )
+                                ? SpeechMenu
+                                    .#continuationGraceMilliseconds()
+                                : SpeechMenu
+                                    .#commitSilenceTimeout
                     )
             ) {
                 const utterance =
@@ -4295,6 +4306,22 @@ class SpeechMenu {
                 .#continuationSilenceTimeout;
     }
 
+    static #streamSeparationMilliseconds() {
+        const adaptive =
+            Number(
+                SpeechMenu
+                    .#adaptiveTiming
+                    ?.streamSeparationMilliseconds
+            );
+
+        return Number.isFinite(
+            adaptive
+        )
+            ? adaptive
+            : SpeechMenu
+                .#continuationSilenceTimeout;
+    }
+
     static #observeContinuationPause(
         milliseconds,
         source
@@ -4393,11 +4420,19 @@ class SpeechMenu {
                         startedAt
                 )
                 : 0;
+        const graceMilliseconds =
+            SpeechMenu
+                .#repeatableStreamHead(
+                    utterance
+                )
+                ? SpeechMenu
+                    .#streamSeparationMilliseconds()
+                : SpeechMenu
+                    .#continuationGraceMilliseconds();
         const delay =
             Math.max(
                 0,
-                SpeechMenu
-                    .#continuationGraceMilliseconds() -
+                graceMilliseconds -
                     elapsed
             );
 
