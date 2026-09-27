@@ -3521,40 +3521,73 @@
         const metrics =
             getAppContentMetrics();
 
-        const fallbackTop =
+        const appStyle =
+            getComputedStyle(
+                app
+            );
+        const micRowHeight =
+            Number.parseFloat(
+                appStyle.getPropertyValue(
+                    "--speech-mic-row-height"
+                )
+            ) ||
+            0;
+        const commandRowHeight =
+            Number.parseFloat(
+                appStyle.getPropertyValue(
+                    "--speech-command-row-height"
+                )
+            ) ||
+            0;
+
+        const fallbackMicTop =
             metrics.rect.bottom -
             metrics.paddingBottom -
+            micRowHeight;
+
+        const hostTop =
+            Number(
+                speechMicBar
+                    ?.getBoundingClientRect?.()
+                    ?.top
+            );
+
+        const micTop =
+            Number.isFinite(
+                hostTop
+            )
+                ? hostTop
+                : fallbackMicTop;
+
+        const collapsedTop =
+            micTop -
             (
-                Number.parseFloat(
-                    getComputedStyle(app)
-                        .getPropertyValue(
-                            "--speech-mic-row-height"
-                        )
-                ) ||
-                0
+                speechMicBar
+                    ?.optionsCollapsed
+                    ? commandRowHeight
+                    : 0
+            );
+
+        const expandedTop =
+            Number(
+                speechMicBar
+                    ?.getSafeTop?.()
             );
 
         const speechTop =
-            Number(
-                speechMicBar
-                    ?.getCollapsedOptionsTop?.()
-            );
-
-        if (
-            Number.isFinite(
-                speechTop
-            )
-        ) {
-            return Math.max(
-                metrics.rect.top,
-                Math.min(
-                    fallbackTop,
-                    speechTop
+            speechMicBar
+                ?.optionsCollapsed
+                ? collapsedTop
+                : Number.isFinite(
+                    expandedTop
                 )
-            );
-        }
+                    ? expandedTop
+                    : micTop;
 
-        return fallbackTop;
+        return Math.max(
+            metrics.rect.top,
+            speechTop
+        );
     }
 
     function getTripLogBottomRect() {
