@@ -753,6 +753,8 @@
             $("#speechTimingRate"),
         grace:
             $("#speechTimingGrace"),
+        dispatchDelay:
+            $("#speechTimingDispatchDelay"),
         ttsRate:
             $("#speechTimingTtsRate"),
         ttsAdjustment:
@@ -10576,7 +10578,15 @@
             .textContent =
             speechTimingFormatMs(
                 snapshot
-                    .continuationGraceMs
+                    .continuationPauseBoundaryMs
+            );
+
+        speechTimingValues
+            .dispatchDelay
+            .textContent =
+            speechTimingFormatMs(
+                snapshot
+                    .continuationDispatchDelayMs
             );
 
         speechTimingValues

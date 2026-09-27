@@ -313,12 +313,14 @@ class AdaptiveSpeechTiming {
         );
     }
 
-    #ttsPriorFactor() {
+    #ttsPriorFactor(
+        rate = this.#ttsRate
+    ) {
         const factor =
             1 -
             0.16 *
                 Math.log2(
-                    this.#ttsRate
+                    rate
                 );
 
         return Math.max(
@@ -330,7 +332,13 @@ class AdaptiveSpeechTiming {
         );
     }
 
-    #effective(type) {
+    #effective(
+        type,
+        {
+            priorFactor =
+                this.#ttsPriorFactor()
+        } = {}
+    ) {
         const isContinuation =
             type === "continuation";
         const baseline =
@@ -366,8 +374,6 @@ class AdaptiveSpeechTiming {
                 ? baseline.varianceMs2
                 : defaultVariance;
 
-        const priorFactor =
-            this.#ttsPriorFactor();
         const priorMean =
             baselineMean *
             priorFactor;
@@ -424,10 +430,15 @@ class AdaptiveSpeechTiming {
         };
     }
 
-    get continuationGraceMilliseconds() {
+    #continuationWindowMilliseconds(
+        priorFactor
+    ) {
         const effective =
             this.#effective(
-                "continuation"
+                "continuation",
+                {
+                    priorFactor
+                }
             );
         const deviation =
             Math.sqrt(
@@ -460,10 +471,61 @@ class AdaptiveSpeechTiming {
         );
     }
 
+    get continuationPauseBoundaryMilliseconds() {
+        /*
+         * Pause detection intentionally uses the fastest supported
+         * speech-rate prior. Changing TTS speed must not make the
+         * recognizer slower to notice that the user stopped speaking.
+         * Fresh user pause samples still adapt this boundary.
+         */
+        return this
+            .#continuationWindowMilliseconds(
+                this.#ttsPriorFactor(
+                    4
+                )
+            );
+    }
+
+    get continuationDispatchDelayMilliseconds() {
+        /*
+         * Slower speech changes only how long a continuation-capable
+         * exact phrase is held after the pause boundary. At 100% speech
+         * rate this delay is zero. This preserves immediate dispatch for
+         * fully-qualified terminal commands.
+         */
+        const rateWindow =
+            this
+                .#continuationWindowMilliseconds(
+                    this.#ttsPriorFactor()
+                );
+
+        return Math.max(
+            0,
+            rateWindow -
+                this
+                    .continuationPauseBoundaryMilliseconds
+        );
+    }
+
+    get continuationGraceMilliseconds() {
+        return (
+            this
+                .continuationPauseBoundaryMilliseconds +
+            this
+                .continuationDispatchDelayMilliseconds
+        );
+    }
+
     get streamSeparationMilliseconds() {
         const effective =
             this.#effective(
-                "separation"
+                "separation",
+                {
+                    priorFactor:
+                        this.#ttsPriorFactor(
+                            4
+                        )
+                }
             );
         const deviation =
             Math.sqrt(
@@ -668,6 +730,10 @@ class AdaptiveSpeechTiming {
                 this.#ttsRate,
             ttsPriorFactor:
                 continuation.priorFactor,
+            continuationPauseBoundaryMs:
+                this.continuationPauseBoundaryMilliseconds,
+            continuationDispatchDelayMs:
+                this.continuationDispatchDelayMilliseconds,
             continuationGraceMs:
                 this.continuationGraceMilliseconds,
             streamSeparationMs:

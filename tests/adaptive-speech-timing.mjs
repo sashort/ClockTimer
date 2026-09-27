@@ -30,38 +30,55 @@ assert.equal(
     false
 );
 
-const neutralGrace =
-    timing.continuationGraceMilliseconds;
-const neutralSeparation =
+timing.setTtsRate(4);
+const fastBoundary =
+    timing.continuationPauseBoundaryMilliseconds;
+const fastSeparation =
     timing.streamSeparationMilliseconds;
+const fastDispatchDelay =
+    timing.continuationDispatchDelayMilliseconds;
+
+assert.equal(
+    fastDispatchDelay,
+    0,
+    "At 100% speech rate continuation-capable phrases should have no extra dispatch delay."
+);
 
 timing.setTtsRate(2);
-const fastTtsGrace =
-    timing.continuationGraceMilliseconds;
-const fastTtsSeparation =
-    timing.streamSeparationMilliseconds;
+assert.equal(
+    timing.continuationPauseBoundaryMilliseconds,
+    fastBoundary,
+    "Changing speech rate must not change the pause boundary."
+);
+assert.equal(
+    timing.streamSeparationMilliseconds,
+    fastSeparation,
+    "Changing speech rate must not change repeatable-command stream separation."
+);
+assert.ok(
+    timing.continuationDispatchDelayMilliseconds >
+        fastDispatchDelay,
+    "Slower speech should add only continuation dispatch delay."
+);
 
-assert.ok(
-    fastTtsGrace <
-    neutralGrace,
-    "A faster TTS rate should shorten the weak continuation prior."
-);
-assert.ok(
-    fastTtsSeparation <
-    neutralSeparation,
-    "A faster TTS rate should shorten the weak stream-separation prior."
-);
+const mediumDispatchDelay =
+    timing.continuationDispatchDelayMilliseconds;
 
 timing.setTtsRate(0.5);
-assert.ok(
-    timing.continuationGraceMilliseconds >
-        neutralGrace,
-    "A slower TTS rate should lengthen the weak continuation prior."
+assert.equal(
+    timing.continuationPauseBoundaryMilliseconds,
+    fastBoundary,
+    "Very slow speech must retain the fast pause boundary."
+);
+assert.equal(
+    timing.streamSeparationMilliseconds,
+    fastSeparation,
+    "Very slow speech must retain fast stream separation."
 );
 assert.ok(
-    timing.streamSeparationMilliseconds >
-        neutralSeparation,
-    "A slower TTS rate should lengthen the weak stream-separation prior."
+    timing.continuationDispatchDelayMilliseconds >
+        mediumDispatchDelay,
+    "Very slow speech should allow a longer continuation dispatch hold."
 );
 
 timing.setTtsRate(2);

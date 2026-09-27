@@ -4290,12 +4290,12 @@ class SpeechMenu {
         }
     }
 
-    static #continuationGraceMilliseconds() {
+    static #continuationPauseBoundaryMilliseconds() {
         const adaptive =
             Number(
                 SpeechMenu
                     .#adaptiveTiming
-                    ?.continuationGraceMilliseconds
+                    ?.continuationPauseBoundaryMilliseconds
             );
 
         return Number.isFinite(
@@ -4303,7 +4303,37 @@ class SpeechMenu {
         )
             ? adaptive
             : SpeechMenu
-                .#continuationSilenceTimeout;
+                .#vadMinimumSilenceMilliseconds;
+    }
+
+    static #continuationDispatchDelayMilliseconds() {
+        const adaptive =
+            Number(
+                SpeechMenu
+                    .#adaptiveTiming
+                    ?.continuationDispatchDelayMilliseconds
+            );
+
+        return Number.isFinite(
+            adaptive
+        )
+            ? adaptive
+            : Math.max(
+                0,
+                SpeechMenu
+                    .#continuationSilenceTimeout -
+                SpeechMenu
+                    .#vadMinimumSilenceMilliseconds
+            );
+    }
+
+    static #continuationGraceMilliseconds() {
+        return (
+            SpeechMenu
+                .#continuationPauseBoundaryMilliseconds() +
+            SpeechMenu
+                .#continuationDispatchDelayMilliseconds()
+        );
     }
 
     static #streamSeparationMilliseconds() {
@@ -4846,7 +4876,8 @@ class SpeechMenu {
          * barge in even while the previous action is still finishing.
          *
          * Open/ambiguous phrases keep the normal hold above, preserving
-         * cases such as "ready" -> "ready at four fifteen".
+         * cases such as "ready" -> "ready at four fifteen". Speech rate
+         * changes that continuation dispatch hold, not pause detection.
          */
         void SpeechMenu
             .#commitUtterance(
