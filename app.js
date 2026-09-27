@@ -23994,6 +23994,23 @@
             installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
 
+            const earlyStartStandardEditorCommand =
+                installSpeechCommand(
+                    "standardTimeEditor",
+                    "openScheduledStandardTimeEditor",
+                    scheduledStartDialog,
+                    false
+                );
+
+            if (
+                earlyStartStandardEditorCommand
+            ) {
+                earlyStartStandardEditorCommand
+                    .dataset
+                    .speechTarget =
+                    "#scheduledStartStandard";
+            }
+
             installSpeechCommand(
                 "standardTimeEditor",
                 "openTripStandardTimeEditor",

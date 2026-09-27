@@ -123,3 +123,20 @@ test("Early Start standard command keeps spoken duration and makes time optional
 
     assert.equal(matches.length, 2);
 });
+
+
+test("Early Start bare standard command opens the shared voice editor", () => {
+    const runtimeInstall = appSource.slice(
+        appSource.indexOf("if (englishSpeech)"),
+        appSource.indexOf("speechRecognitionLanguageAvailable")
+    );
+
+    assert.match(
+        runtimeInstall,
+        /standardTimeEditor[\s\S]*?openScheduledStandardTimeEditor[\s\S]*?scheduledStartDialog/
+    );
+    assert.match(
+        runtimeInstall,
+        /speechTarget[\s\S]*?#scheduledStartStandard/
+    );
+});
