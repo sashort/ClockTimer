@@ -2844,11 +2844,11 @@ const databaseSource = fs.readFileSync(
 
 assert.match(
     adaptiveTimingSource,
-    /class AdaptiveSpeechTiming[\s\S]*continuationGraceMilliseconds[\s\S]*#ttsPriorFactor/
+    /class AdaptiveSpeechTiming[\s\S]*#ttsPriorFactor[\s\S]*continuationGraceMilliseconds/
 );
 assert.match(
     speechMenuSource,
-    /#adaptiveTiming[\s\S]*#observeContinuationPause[\s\S]*#continuationGraceMilliseconds/
+    /#adaptiveTiming[\s\S]*#continuationGraceMilliseconds[\s\S]*#observeContinuationPause/
 );
 assert.match(
     speechMenuSource,
@@ -2885,4 +2885,22 @@ assert.match(
 assert.match(
     databaseSource,
     /CREATE TABLE IF NOT EXISTS `user_speech_profiles`/
+);
+
+
+const speechAssetCacheWorkerSource = fs.readFileSync(
+    new URL("../SpeechAssetCacheWorker.js", import.meta.url),
+    "utf8"
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /"\/AdaptiveSpeechTiming\.js"/
+);
+assert.match(
+    adaptiveTimingSource,
+    /#record\(type, milliseconds, source\)[\s\S]*!this\.#tripActive[\s\S]*return false/
+);
+assert.match(
+    app,
+    /"speech-runtime-ready"[\s\S]*tripIsLive\(\)[\s\S]*beginSpeechTimingTrip/
 );

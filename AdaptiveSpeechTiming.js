@@ -208,6 +208,10 @@ class AdaptiveSpeechTiming {
     }
 
     #record(type, milliseconds, source) {
+        if (!this.#tripActive) {
+            return false;
+        }
+
         const value =
             Number(milliseconds);
 

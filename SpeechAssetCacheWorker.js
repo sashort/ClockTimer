@@ -17,6 +17,7 @@
     const cacheablePaths = [
         "/speech/",
         "/SherpaRecognizer.js",
+        "/AdaptiveSpeechTiming.js",
         "/SpeechMenu.js",
         "/SpeechMicBar.js",
         "/SileroVad.js"

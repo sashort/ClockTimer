@@ -10763,6 +10763,12 @@
         () => {
             syncAdaptiveSpeechTimingRate();
 
+            if (tripIsLive()) {
+                globalThis
+                    .SpeechMenu
+                    ?.beginSpeechTimingTrip?.();
+            }
+
             if (
                 speechTimingDialog
                     ?.open
