@@ -38,6 +38,7 @@ button {
 
 .app {
     --trip-log-row-height: 74px;
+    /* Reserved collapsed Commands footprint; expansion is overlay-only. */
     --speech-command-row-height: 0px;
     --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
@@ -569,10 +570,6 @@ clock-timer[hide-second-hand]::part(second-hand) {
     will-change: transform;
 }
 
-.app:has(> speech-mic-bar:is([options-collapsed], [options-open]))
-.trip-log-button:not(.trip-log-floating) {
-    transform: translateY(0);
-}
 
 .app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
     visibility: hidden;
