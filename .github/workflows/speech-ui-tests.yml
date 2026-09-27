@@ -49,6 +49,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check SpeechMenu.js
+          node --check AdaptiveSpeechTiming.js
           node --check SherpaRecognizer.js
           node --check SileroVad.js
           node --check SpeechDiagnostics.js
@@ -92,6 +93,7 @@ jobs:
         working-directory: tests
         run: |
           npm run test:speech-editor
+          node adaptive-speech-timing.mjs
           npm run test:speech-phrases
           npm run test:action-macros
           npm run test:editor-actions
