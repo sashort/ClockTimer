@@ -14996,8 +14996,14 @@
     }
 
     function parseVoiceEntryTranscript(
-        transcript
+        transcript,
+        {
+            signal
+        } = {}
     ) {
+        if (signal?.aborted) {
+            return false;
+        }
         if (!numberPadState) {
             return false;
         }
@@ -15020,20 +15026,16 @@
             /^(?:cancel|close)$/
                 .test(command)
         ) {
-            void closeVoiceEntry({
+            return closeVoiceEntry({
                 cancel: true
             });
-
-            return true;
         }
 
         if (
             /^(?:touch|keypad|number pad)$/
                 .test(command)
         ) {
-            void switchVoiceEntryToTouch();
-
-            return true;
+            return switchVoiceEntryToTouch();
         }
 
         if (
@@ -15094,25 +15096,34 @@
                 return false;
             }
 
-            void (async () => {
+            return (async () => {
                 try {
                     if (
-                        await commitNumberPad()
+                        !await commitNumberPad(
+                            signal
+                        ) ||
+                        signal?.aborted
                     ) {
-                        await closeVoiceEntry({
-                            cancel: false
-                        });
+                        return false;
                     }
+
+                    await closeVoiceEntry({
+                        cancel: false
+                    });
+
+                    return !signal?.aborted;
                 }
                 catch {
-                    renderVoiceEntry({
-                        prompt:
-                            "Say a Valid Value"
-                    });
+                    if (!signal?.aborted) {
+                        renderVoiceEntry({
+                            prompt:
+                                "Say a Valid Value"
+                        });
+                    }
+
+                    return false;
                 }
             })();
-
-            return true;
         }
 
         let display;
@@ -15935,8 +15946,16 @@
         });
     }
 
-    async function commitNumberPad() {
-        if (!numberPadState || !numberPadValueValid()) return false;
+    async function commitNumberPad(
+        signal
+    ) {
+        if (
+            signal?.aborted ||
+            !numberPadState ||
+            !numberPadValueValid()
+        ) {
+            return false;
+        }
         const state = { ...numberPadState };
 
         if (
@@ -15948,7 +15967,14 @@
 
         if (state.onConfirm) {
             const value = !state.pending ? undefined : state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
-            return await state.onConfirm(value) !== false;
+            const confirmed =
+                await state.onConfirm(value) !==
+                    false;
+
+            return (
+                !signal?.aborted &&
+                confirmed
+            );
         }
         if (state.mode === "percent") {
             const percent =
@@ -22374,7 +22400,11 @@
                     globalThis
                         .SpeechMenu
                         ?.executionContext
-                        ?.transcript
+                        ?.transcript,
+                    {
+                        signal:
+                            currentActionSignal()
+                    }
                 );
             },
 
@@ -24987,7 +25017,11 @@
             },
 
             async confirmNumberPad() {
+                const signal =
+                    currentActionSignal();
+
                 if (
+                    signal?.aborted ||
                     !numberPadState ||
                     numberPadConfirm
                         .disabled
@@ -24997,8 +25031,14 @@
 
                 try {
                     if (
-                        await commitNumberPad()
+                        await commitNumberPad(
+                            signal
+                        )
                     ) {
+                        if (signal?.aborted) {
+                            return false;
+                        }
+
                         const destination =
                             numberPadState
                                 ?.confirmTarget;
@@ -25015,7 +25055,7 @@
                             destination
                         });
 
-                        return true;
+                        return !signal?.aborted;
                     }
                 }
                 catch {
@@ -25155,13 +25195,15 @@
                 return true;
             },
 
-            cancelNumberPadEdit() {
-                void cancelNumberPad()
-                    .catch(
-                        () => {}
+            async cancelNumberPadEdit() {
+                try {
+                    return Boolean(
+                        await cancelNumberPad()
                     );
-
-                return true;
+                }
+                catch {
+                    return false;
+                }
             },
 
             async saveDownDetails(
@@ -25833,6 +25875,25 @@
                 {
                     interruptGroup:
                         "primary-surface"
+                }
+            );
+    }
+
+    for (
+        const actionName of
+        [
+            "handleVoiceEntrySpeech",
+            "confirmNumberPad",
+            "cancelNumberPadEdit"
+        ]
+    ) {
+        globalThis
+            .WMOFActionFunctions
+            .setMetadata(
+                actionName,
+                {
+                    interruptGroup:
+                        "value-editor"
                 }
             );
     }
