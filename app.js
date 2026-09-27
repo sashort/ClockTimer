@@ -16287,6 +16287,81 @@
         void purpose;
     }
 
+    let semanticSpeechChain;
+    let semanticSpeechSequence = 0;
+
+    function reserveSemanticSpeech() {
+        if (!semanticSpeechChain) {
+            const chain = {
+                last: 0
+            };
+
+            semanticSpeechChain =
+                chain;
+
+            queueMicrotask(
+                () => {
+                    if (
+                        semanticSpeechChain ===
+                            chain
+                    ) {
+                        semanticSpeechChain =
+                            undefined;
+                    }
+                }
+            );
+        }
+
+        const chain =
+            semanticSpeechChain;
+        const token =
+            ++semanticSpeechSequence;
+
+        chain.last =
+            token;
+
+        return () =>
+            chain.last ===
+                token;
+    }
+
+    function speakSemantic(
+        audio,
+        speech,
+        options,
+        guard,
+        delayMs = 0
+    ) {
+        const run =
+            () => {
+                if (
+                    guard &&
+                    guard() === false
+                ) {
+                    return;
+                }
+
+                audio?.speak?.(
+                    speech,
+                    options
+                );
+            };
+
+        if (
+            delayMs > 0
+        ) {
+            setTimeout(
+                run,
+                delayMs
+            );
+            return;
+        }
+
+        queueMicrotask(
+            run
+        );
+    }
+
     function playSemanticSong(name, options = {}) {
         const audio =
             globalThis.WMOFAudio;
@@ -16312,6 +16387,10 @@
             audioAnnouncementOutput(
                 name
             );
+        const speechGuard =
+            summary.perform
+                ? reserveSemanticSpeech()
+                : undefined;
 
         void audio
             .startSong(
@@ -16324,6 +16403,7 @@
                         chime.perform,
                     includeSpeech:
                         summary.perform,
+                    speechGuard,
                     speechVolume:
                         output.speechVolume,
                     toneVolume:
@@ -16366,6 +16446,10 @@
             audioAnnouncementOutput(
                 name
             );
+        const speechGuard =
+            speech
+                ? reserveSemanticSpeech()
+                : undefined;
         let played =
             false;
 
@@ -16432,27 +16516,31 @@
             ) {
                 setTimeout(
                     () =>
-                        audio.speak(
+                        speakSemantic(
+                            audio,
                             speech,
                             {
                                 speechVolume:
                                     output.speechVolume,
                                 speechVelocity:
                                     output.speechVelocity
-                            }
+                            },
+                            speechGuard
                         ),
                     speechStartDelayMs
                 );
             }
             else {
-                audio.speak(
+                speakSemantic(
+                    audio,
                     speech,
                     {
                         speechVolume:
                             output.speechVolume,
                         speechVelocity:
                             output.speechVelocity
-                    }
+                    },
+                    speechGuard
                 );
             }
         }
@@ -17366,6 +17454,10 @@
             audioAnnouncementOutput(
                 "trip-started"
             );
+        const speechGuard =
+            parts.length
+                ? reserveSemanticSpeech()
+                : undefined;
         let chimePlayed =
             false;
 
@@ -17411,14 +17503,16 @@
                     if (parts.length) {
                         setTimeout(
                             () =>
-                                audio?.speak?.(
+                                speakSemantic(
+                                    audio,
                                     parts.join(" "),
                                     {
                                         speechVolume:
                                             output.speechVolume,
                                         speechVelocity:
                                             output.speechVelocity
-                                    }
+                                    },
+                                    speechGuard
                                 ),
                             speechStartDelayMs
                         );
@@ -17438,14 +17532,16 @@
             parts.length &&
             !chimePlayed
         ) {
-            audio?.speak?.(
+            speakSemantic(
+                audio,
                 parts.join(" "),
                 {
                     speechVolume:
                         output.speechVolume,
                     speechVelocity:
                         output.speechVelocity
-                }
+                },
+                speechGuard
             );
         }
     }
@@ -18899,6 +18995,10 @@
                 audioAnnouncementOutput(
                     announcement
                 );
+            const speechGuard =
+                summary.perform
+                    ? reserveSemanticSpeech()
+                    : undefined;
             let speechStartDelayMs =
                 0;
 
@@ -18965,27 +19065,31 @@
                 ) {
                     setTimeout(
                         () =>
-                            audio.speak(
+                            speakSemantic(
+                                audio,
                                 spokenResponse,
                                 {
                                     speechVolume:
                                         output.speechVolume,
                                     speechVelocity:
                                         output.speechVelocity
-                                }
+                                },
+                                speechGuard
                             ),
                         speechStartDelayMs
                     );
                 }
                 else {
-                    audio.speak(
+                    speakSemantic(
+                        audio,
                         spokenResponse,
                         {
                             speechVolume:
                                 output.speechVolume,
                             speechVelocity:
                                 output.speechVelocity
-                        }
+                        },
+                        speechGuard
                     );
                 }
             }
