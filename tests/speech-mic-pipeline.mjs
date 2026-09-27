@@ -704,7 +704,27 @@ assert.match(
 );
 assert.match(
     app,
-    /canContinueStartAt\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined/
+    /canContinueStartAt\(\)[\s\S]*pendingSpeechReady\s*!==[\s\S]*undefined[\s\S]*newTripWorkflowLocked/
+);
+assert.match(
+    app,
+    /function refreshSpeechCommandContext\(\)[\s\S]*SpeechMenu[\s\S]*extrapolatePhrases/
+);
+assert.match(
+    app,
+    /function lockNewTripWorkflow\(\)[\s\S]*refreshSpeechCommandContext\(\)/
+);
+assert.match(
+    app,
+    /function releaseNewTripWorkflow\(\)[\s\S]*refreshSpeechCommandContext\(\)/
+);
+assert.match(
+    app,
+    /const armSpeechReadyContinuation[\s\S]*refreshSpeechCommandContext\(\)/
+);
+assert.match(
+    app,
+    /pendingSpeechReady\s*=\s*undefined;[\s\S]*refreshSpeechCommandContext\(\)/
 );
 
 assert.match(
