@@ -60,6 +60,29 @@
                     )
                 );
 
+            const masterOverrides =
+                Array.from(
+                    new Set(
+                        (
+                            Array.isArray(
+                                definition.masterOverrides
+                            )
+                                ? definition.masterOverrides
+                                : []
+                        )
+                            .filter(
+                                layer =>
+                                    [
+                                        "chime",
+                                        "summary",
+                                        "details"
+                                    ].includes(
+                                        layer
+                                    )
+                            )
+                    )
+                );
+
             return Object.freeze({
                 key:
                     normalizedKey,
@@ -83,6 +106,10 @@
                 layers:
                     Object.freeze(
                         layers
+                    ),
+                masterOverrides:
+                    Object.freeze(
+                        masterOverrides
                     )
             });
         };
@@ -121,9 +148,9 @@
             );
 
     const definitions = [
-        ["trip-started", "Trip Started"],
-        ["trip-started-early", "Trip Started Early"],
-        ["trip-started-late", "Trip Started Late"],
+        ["trip-started", "Trip Started", {masterOverrides: ["summary", "details"]}],
+        ["trip-started-early", "Trip Started Early", {masterOverrides: ["summary", "details"]}],
+        ["trip-started-late", "Trip Started Late", {masterOverrides: ["summary", "details"]}],
         ["break-started", "Break Started"],
         ["short-break-started", "Short Break Started"],
         ["lunch-started", "Lunch Started"],
@@ -132,7 +159,7 @@
         ["trip-resumed-after-break", "Trip Resumed After Break"],
         ["down-time-started", "Down Time Started"],
         ["trip-resumed-from-down", "Trip Resumed From Down"],
-        ["trip-ended", "Trip Ended"],
+        ["trip-ended", "Trip Ended", {masterOverrides: ["summary", "details"]}],
         ["goal-failed", "Goal Failed"],
         ["lunch-clock-out", "Lunch Clock Out"],
         ["lunch-clock-in", "Lunch Clock In"]
@@ -141,12 +168,14 @@
     for (
         const [
             key,
-            label
+            label,
+            options = {}
         ] of definitions
     ) {
         register(
             key,
             {
+                ...options,
                 label,
                 group:
                     "Trip Events"

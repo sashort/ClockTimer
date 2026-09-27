@@ -313,6 +313,10 @@ for (
         action
     ] of [
         [
+            "speech",
+            "setSpeechMaster"
+        ],
+        [
             "faster",
             "changeAudioRateFaster"
         ],
@@ -343,6 +347,44 @@ for (
             " should support rapid back-to-back execution"
     );
 }
+
+const speechMasterAppSource =
+    fs.readFileSync(
+        new URL(
+            "../app.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+const announcementCatalogSource =
+    fs.readFileSync(
+        new URL(
+            "../AnnouncementCatalog.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+assert.match(
+    repeatableSystemCommandSource,
+    /"speech"[\s\S]*?"\^speech \(\?:on\|off\)\$"[\s\S]*?WMOFActions\.setSpeechMaster[\s\S]*?speech-repeatable/
+);
+assert.match(
+    speechMasterAppSource,
+    /setMasterSpeech[\s\S]*?masters\.summary[\s\S]*?masters\.details[\s\S]*?Speech On[\s\S]*?Speech Off[\s\S]*?ignoreSummaryMaster/
+);
+assert.match(
+    announcementCatalogSource,
+    /trip-started"[\s\S]*?masterOverrides:[\s\S]*?"summary"[\s\S]*?"details"/
+);
+assert.match(
+    announcementCatalogSource,
+    /trip-ended"[\s\S]*?masterOverrides:[\s\S]*?"summary"[\s\S]*?"details"/
+);
+assert.match(
+    speechMasterAppSource,
+    /announcementOverridesMaster[\s\S]*?masterOverrides[\s\S]*?audioCellUserEnabled/
+);
 
 await SpeechMenu.sleep();
 SpeechMenu.extrapolatePhrases();

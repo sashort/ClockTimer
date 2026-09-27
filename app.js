@@ -57,6 +57,19 @@
             )?.song ||
             key;
 
+    const announcementOverridesMaster =
+        (
+            key,
+            layer
+        ) =>
+            announcementDefinition(
+                key
+            )
+                ?.masterOverrides
+                ?.includes?.(
+                    layer
+                ) === true;
+
     const AUDIO_DEFAULTS = Object.freeze({
         speechVolume: 1,
         toneVolume: 1,
@@ -1856,17 +1869,29 @@
 
     function audioCellUserEnabled(
         announcement,
-        layer
+        layer,
+        {
+            ignoreMaster = false
+        } = {}
     ) {
         const row =
             audioSettings.rows[
                 announcement
             ];
+        const masterEnabled =
+            ignoreMaster ||
+            announcementOverridesMaster(
+                announcement,
+                layer
+            ) ||
+            audioSettings.masters[
+                layer
+            ] !== false;
 
         return Boolean(
             row &&
             row.enabled !== false &&
-            audioSettings.masters[layer] !== false &&
+            masterEnabled &&
             row[layer] !== -1
         );
     }
@@ -2599,7 +2624,15 @@
 
                 input.disabled =
                     state.enabled === false ||
-                    audioSettings.masters[layer] === false ||
+                    (
+                        audioSettings.masters[
+                            layer
+                        ] === false &&
+                        !announcementOverridesMaster(
+                            key,
+                            layer
+                        )
+                    ) ||
                     (
                         Array.isArray(
                             supportedLayers
@@ -18930,7 +18963,8 @@
 
     function consumeAnnouncementAction(
         announcement,
-        layer
+        layer,
+        options
     ) {
         if (hamburgerAnnouncementSilent) {
             return {
@@ -18944,7 +18978,8 @@
         if (
             !audioCellUserEnabled(
                 announcement,
-                layer
+                layer,
+                options
             )
         ) {
             return {
@@ -21759,6 +21794,8 @@
             {
                 spokenValue,
                 useGlobalAudioSettings =
+                    false,
+                ignoreSummaryMaster =
                     false
             } = {}
         ) => {
@@ -21803,7 +21840,11 @@
             const summary =
                 consumeAnnouncementAction(
                     announcement,
-                    "summary"
+                    "summary",
+                    {
+                        ignoreMaster:
+                            ignoreSummaryMaster
+                    }
                 );
             const output =
                 audioAnnouncementOutput(
@@ -21964,6 +22005,33 @@
                     ),
                 {
                     useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
+
+    const setMasterSpeech =
+        enabled => {
+            const next =
+                Boolean(enabled);
+
+            audioSettings.masters.summary =
+                next;
+            audioSettings.masters.details =
+                next;
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                next
+                    ? "Speech On"
+                    : "Speech Off",
+                {
+                    useGlobalAudioSettings:
+                        true,
+                    ignoreSummaryMaster:
                         true
                 }
             );
@@ -22310,6 +22378,33 @@
 
             disableSpeechRecognition() {
                 return disableSpeechRecognitionRuntime();
+            },
+
+            setSpeechMaster() {
+                const transcript =
+                    String(
+                        globalThis
+                            .SpeechMenu
+                            ?.executionContext
+                            ?.transcript ||
+                        ""
+                    )
+                        .trim()
+                        .toLocaleLowerCase();
+
+                if (transcript === "speech on") {
+                    return setMasterSpeech(
+                        true
+                    );
+                }
+
+                if (transcript === "speech off") {
+                    return setMasterSpeech(
+                        false
+                    );
+                }
+
+                return false;
             },
 
             setChimeMaster() {
