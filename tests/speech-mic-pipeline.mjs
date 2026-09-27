@@ -1324,6 +1324,11 @@ assert.match(
 );
 
 assert.match(
+    speechMicBarSource,
+    /\.option-command-text\s*\{[\s\S]*flex:\s*0 1 auto[\s\S]*min-width:\s*0[\s\S]*max-width:\s*100%/
+);
+
+assert.match(
     app,
     /function reserveSemanticSpeech\([\s\S]*queueMicrotask[\s\S]*chain\.last[\s\S]*return \(\) =>[\s\S]*chain\.last/
 );
