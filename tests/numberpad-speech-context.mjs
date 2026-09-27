@@ -14,6 +14,14 @@ const numberPadSource = readFileSync(
     new URL("../numberpad.html", import.meta.url),
     "utf8"
 );
+const indexSource = readFileSync(
+    new URL("../index.html", import.meta.url),
+    "utf8"
+);
+const cssSource = readFileSync(
+    new URL("../app.css", import.meta.url),
+    "utf8"
+);
 
 test("value editor chooses voice for speech invocations and touch otherwise", () => {
     assert.match(
@@ -542,5 +550,48 @@ test("voice entry binds transcript routing after the lazy speech runtime loads",
     assert.match(
         appSource,
         /await ensureSpeechRuntime\(\);[\s\S]*?bindVoiceEntryTranscriptPipe\(\);/
+    );
+});
+
+
+test("voice entry shows context-aware OK and cancel guidance", () => {
+    assert.match(
+        indexSource,
+        /id="voiceEntryInstructions"[\s\S]*?<strong>Say OK<\/strong> to[\s\S]*?<strong>Cancel<\/strong> to/
+    );
+    assert.match(
+        appSource,
+        /function voiceEntryActionCopy\([\s\S]*?startsTripOnConfirm[\s\S]*?"start the trip"[\s\S]*?source === "trip-goal"[\s\S]*?source === "total-goal"[\s\S]*?source === "end-time-goal"/
+    );
+    assert.match(
+        appSource,
+        /renderVoiceEntry\(\{[\s\S]*?prompt:\s*"Heard"[\s\S]*?attention:\s*true/
+    );
+    assert.match(
+        cssSource,
+        /\.voice-entry-instructions\.is-attention[\s\S]*?voice-entry-instructions-attention/
+    );
+});
+
+test("voice entry and trip summary stack without overlap and animate apart", () => {
+    assert.match(
+        appSource,
+        /function syncTripTransitionVoiceEntryLayout\([\s\S]*?--voice-entry-summary-shift-y[\s\S]*?--trip-transition-summary-shift-y/
+    );
+    assert.match(
+        appSource,
+        /tripTransitionOverlay[\s\S]*?classList[\s\S]*?add\([\s\S]*?"has-voice-entry"/
+    );
+    assert.match(
+        appSource,
+        /syncTripTransitionVoiceEntryLayout\([\s\S]*?false[\s\S]*?\)[\s\S]*?classList[\s\S]*?remove\([\s\S]*?"is-visible"/
+    );
+    assert.match(
+        cssSource,
+        /\.voice-entry-surface[\s\S]*?transition:[\s\S]*?transform 280ms ease/
+    );
+    assert.match(
+        cssSource,
+        /\.trip-transition-overlay\.has-voice-entry[\s\S]*?--trip-transition-summary-max-height/
     );
 });

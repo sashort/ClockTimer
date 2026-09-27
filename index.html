@@ -19,7 +19,7 @@
             catch {}
         })();
     </script>
-    <link rel="stylesheet" href="app.css?v=value-editor-mode-1">
+    <link rel="stylesheet" href="app.css?v=voice-entry-guidance-1">
 </head>
 <body>
     <main id="app" class="app" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true">
@@ -261,6 +261,10 @@
             <strong id="voiceEntryPrompt">Say a Number</strong>
             <span id="voiceEntryExample">Example: “eighty-five percent”</span>
             <output id="voiceEntryValue" class="voice-entry-value" aria-live="polite" hidden></output>
+        </div>
+        <div id="voiceEntryInstructions" class="voice-entry-instructions" aria-live="polite">
+            <span><strong>Say OK</strong> to <span id="voiceEntryOkAction">confirm</span></span>
+            <span><strong>Cancel</strong> to <span id="voiceEntryCancelAction">go back</span></span>
         </div>
     </section>
 
@@ -1063,7 +1067,7 @@
     <script src="api/audio/AudioEngine.js?v=announcement-speech-chain-1"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=swipe-target-cue-1"></script>
-    <script src="app.js?v=trip-complete-input-mode-1"></script>
+    <script src="app.js?v=voice-entry-guidance-1"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
 </html>

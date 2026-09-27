@@ -2268,6 +2268,15 @@ body:has(.app[data-interval-state="down"])::after {
     overflow: hidden auto;
     padding: clamp(18px, 4vw, 30px);
     border: 5px solid rgb(169 221 247 / 92%);
+    transform:
+        translateY(
+            var(
+                --trip-transition-summary-shift-y,
+                0px
+            )
+        );
+    transition:
+        transform 280ms ease;
     border-radius: 24px;
     color: var(--wm-white);
     background: rgb(0 30 96 / 18%);
@@ -2277,6 +2286,15 @@ body:has(.app[data-interval-state="down"])::after {
         0 0 30px rgb(169 221 247 / 18%);
     -webkit-backdrop-filter: blur(10px) saturate(115%);
     backdrop-filter: blur(10px) saturate(115%);
+}
+
+.trip-transition-overlay.has-voice-entry
+.trip-transition-overlay-panel {
+    max-height:
+        var(
+            --trip-transition-summary-max-height,
+            82dvh
+        );
 }
 
 .trip-transition-overlay-panel h2 {
@@ -2354,8 +2372,16 @@ body:has(.app[data-interval-state="down"])::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .trip-transition-overlay {
+    .trip-transition-overlay,
+    .trip-transition-overlay-panel,
+    .voice-entry-surface {
         transition: none;
+    }
+
+    .voice-entry-instructions.is-attention {
+        animation: none;
+        border-color: rgb(255 194 32 / 92%);
+        background: rgb(255 194 32 / 18%);
     }
 }
 
@@ -4720,7 +4746,22 @@ clock-timer[hide-latency] time-range[type="latency"] {
     background: linear-gradient(180deg, rgb(47 57 67 / 97%), rgb(34 43 51 / 97%));
     box-shadow: 0 9px 22px rgb(0 0 0 / 34%), inset 0 1px 0 rgb(255 255 255 / 12%);
     backdrop-filter: blur(8px);
-    transform: translate(-50%, -50%);
+    transform:
+        translate(
+            -50%,
+            calc(
+                -50% +
+                var(
+                    --voice-entry-summary-shift-y,
+                    0px
+                )
+            )
+        );
+    transition:
+        transform 280ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+    will-change: transform;
 }
 
 .voice-entry-surface[hidden] {
@@ -4803,6 +4844,53 @@ clock-timer[hide-latency] time-range[type="latency"] {
     white-space: nowrap;
     font-size: 12px;
     opacity: .72;
+}
+
+.voice-entry-instructions {
+    margin: 7px 1px 0;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 14px;
+    border: 1px solid rgb(169 221 247 / 28%);
+    border-radius: 8px;
+    color: rgb(255 255 255 / 78%);
+    background: rgb(0 0 0 / 14%);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.voice-entry-instructions strong {
+    color: var(--wm-yellow, #ffc220);
+    font-weight: 900;
+}
+
+.voice-entry-instructions.is-ready {
+    border-color: rgb(255 194 32 / 52%);
+    color: rgb(255 255 255 / 92%);
+}
+
+.voice-entry-instructions.is-attention {
+    animation:
+        voice-entry-instructions-attention
+        620ms
+        ease-in-out
+        2;
+}
+
+@keyframes voice-entry-instructions-attention {
+    50% {
+        border-color: rgb(255 194 32 / 92%);
+        background: rgb(255 194 32 / 24%);
+        box-shadow:
+            0 0 0 3px rgb(255 194 32 / 12%),
+            0 0 16px rgb(255 194 32 / 22%);
+        transform: scale(1.015);
+    }
 }
 
 .voice-entry-value {

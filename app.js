@@ -1429,6 +1429,9 @@
     const voiceEntryPrompt = $("#voiceEntryPrompt");
     const voiceEntryExample = $("#voiceEntryExample");
     const voiceEntryValue = $("#voiceEntryValue");
+    const voiceEntryInstructions = $("#voiceEntryInstructions");
+    const voiceEntryOkAction = $("#voiceEntryOkAction");
+    const voiceEntryCancelAction = $("#voiceEntryCancelAction");
     const voiceEntryTouch = $("#voiceEntryTouch");
     const voiceEntryCancel = $("#voiceEntryCancel");
     let voiceEntryState;
@@ -13424,10 +13427,343 @@
         };
     }
 
+    function voiceEntryActionCopy(
+        state = numberPadState
+    ) {
+        const title =
+            String(
+                state?.title ||
+                "value"
+            ).trim() ||
+            "value";
+        const source =
+            String(
+                state?.source ||
+                ""
+            );
+
+        if (state?.startsTripOnConfirm) {
+            return {
+                ok: "start the trip",
+                cancel: "cancel the new trip"
+            };
+        }
+
+        if (source === "trip-goal") {
+            return {
+                ok: "set the Trip goal",
+                cancel: "keep the current Trip goal"
+            };
+        }
+
+        if (source === "total-goal") {
+            const scopeLabel =
+                totalScopeLabel();
+
+            return {
+                ok:
+                    `set the ${scopeLabel} goal`,
+                cancel:
+                    `keep the current ${scopeLabel} goal`
+            };
+        }
+
+        if (
+            source === "end-time-goal" ||
+            source === "end-time"
+        ) {
+            return {
+                ok: "set the End Time",
+                cancel: "keep the current End Time"
+            };
+        }
+
+        if (source === "creation-time") {
+            return {
+                ok: "set the Creation Time",
+                cancel: "keep the current Creation Time"
+            };
+        }
+
+        if (source === "scheduled-start") {
+            return {
+                ok: "set the Scheduled Start",
+                cancel: "keep the current Scheduled Start"
+            };
+        }
+
+        if (source === "actual-start") {
+            return {
+                ok: "set the Actual Start",
+                cancel: "keep the current Actual Start"
+            };
+        }
+
+        if (source === "standard-time") {
+            return {
+                ok: "set the Standard Time",
+                cancel: "keep the current Standard Time"
+            };
+        }
+
+        if (
+            state?.role ===
+                "trip-settings-field"
+        ) {
+            return {
+                ok:
+                    `set ${title}`,
+                cancel:
+                    `keep the current ${title}`
+            };
+        }
+
+        if (state?.onConfirm) {
+            return {
+                ok:
+                    `apply ${title}`,
+                cancel:
+                    "go back without changes"
+            };
+        }
+
+        return {
+            ok:
+                `save ${title}`,
+            cancel:
+                "go back without changes"
+        };
+    }
+
+    function pulseVoiceEntryInstructions() {
+        if (!voiceEntryInstructions) {
+            return;
+        }
+
+        voiceEntryInstructions
+            .classList
+            .remove(
+                "is-attention"
+            );
+
+        void voiceEntryInstructions
+            .offsetWidth;
+
+        voiceEntryInstructions
+            .classList
+            .add(
+                "is-attention"
+            );
+    }
+
+    function voiceEntryIsVisible() {
+        if (
+            !voiceEntrySurface ||
+            voiceEntrySurface.hidden
+        ) {
+            return false;
+        }
+
+        try {
+            return (
+                voiceEntrySurface
+                    .matches(
+                        ":popover-open"
+                    ) ||
+                !voiceEntrySurface
+                    .hasAttribute(
+                        "popover"
+                    )
+            );
+        }
+        catch {
+            return !voiceEntrySurface.hidden;
+        }
+    }
+
+    function tripTransitionOverlayIsVisible() {
+        return Boolean(
+            tripTransitionOverlay &&
+            !tripTransitionOverlay.hidden &&
+            tripTransitionOverlay
+                .classList
+                .contains(
+                    "is-visible"
+                )
+        );
+    }
+
+    function syncTripTransitionVoiceEntryLayout(
+        active =
+            tripTransitionOverlayIsVisible()
+    ) {
+        if (
+            !voiceEntrySurface ||
+            !tripTransitionOverlay
+        ) {
+            return false;
+        }
+
+        if (
+            !active ||
+            !voiceEntryIsVisible()
+        ) {
+            voiceEntrySurface
+                .style
+                .removeProperty(
+                    "--voice-entry-summary-shift-y"
+                );
+            tripTransitionOverlay
+                .style
+                .removeProperty(
+                    "--trip-transition-summary-shift-y"
+                );
+            tripTransitionOverlay
+                .style
+                .removeProperty(
+                    "--trip-transition-summary-max-height"
+                );
+            tripTransitionOverlay
+                .classList
+                .remove(
+                    "has-voice-entry"
+                );
+
+            return false;
+        }
+
+        const viewportHeight =
+            Math.max(
+                0,
+                Number(
+                    globalThis
+                        .visualViewport
+                        ?.height
+                ) ||
+                globalThis.innerHeight ||
+                document
+                    .documentElement
+                    .clientHeight ||
+                0
+            );
+        const voiceHeight =
+            Math.ceil(
+                voiceEntrySurface
+                    .getBoundingClientRect()
+                    .height
+            );
+        const gap =
+            16;
+
+        if (
+            !viewportHeight ||
+            !voiceHeight
+        ) {
+            return false;
+        }
+
+        const maxSummaryHeight =
+            Math.max(
+                96,
+                viewportHeight -
+                    voiceHeight -
+                    gap * 3
+            );
+
+        tripTransitionOverlay
+            .classList
+            .add(
+                "has-voice-entry"
+            );
+        tripTransitionOverlay
+            .style
+            .setProperty(
+                "--trip-transition-summary-max-height",
+                `${Math.floor(
+                    maxSummaryHeight
+                )}px`
+            );
+
+        requestAnimationFrame(
+            () => {
+                if (
+                    !tripTransitionOverlayIsVisible() ||
+                    !voiceEntryIsVisible()
+                ) {
+                    return;
+                }
+
+                const panel =
+                    tripTransitionOverlay
+                        .querySelector(
+                            ".trip-transition-overlay-panel"
+                        );
+                const summaryHeight =
+                    Math.min(
+                        maxSummaryHeight,
+                        Math.ceil(
+                            panel
+                                ?.getBoundingClientRect()
+                                .height ||
+                            0
+                        )
+                    );
+                const stackHeight =
+                    summaryHeight +
+                    gap +
+                    voiceHeight;
+                const stackTop =
+                    Math.max(
+                        gap,
+                        (
+                            viewportHeight -
+                            stackHeight
+                        ) /
+                            2
+                    );
+                const viewportCenter =
+                    viewportHeight /
+                    2;
+                const summaryCenter =
+                    stackTop +
+                    summaryHeight /
+                        2;
+                const voiceCenter =
+                    stackTop +
+                    summaryHeight +
+                    gap +
+                    voiceHeight /
+                        2;
+
+                tripTransitionOverlay
+                    .style
+                    .setProperty(
+                        "--trip-transition-summary-shift-y",
+                        `${Math.round(
+                            summaryCenter -
+                            viewportCenter
+                        )}px`
+                    );
+                voiceEntrySurface
+                    .style
+                    .setProperty(
+                        "--voice-entry-summary-shift-y",
+                        `${Math.round(
+                            voiceCenter -
+                            viewportCenter
+                        )}px`
+                    );
+            }
+        );
+
+        return true;
+    }
+
     function renderVoiceEntry({
         prompt,
         example,
-        value
+        value,
+        attention = false
     } = {}) {
         if (!voiceEntrySurface) {
             return false;
@@ -13449,6 +13785,30 @@
             example ||
             copy.example;
 
+        const actionCopy =
+            voiceEntryActionCopy();
+
+        if (voiceEntryOkAction) {
+            voiceEntryOkAction.textContent =
+                actionCopy.ok;
+        }
+
+        if (voiceEntryCancelAction) {
+            voiceEntryCancelAction.textContent =
+                actionCopy.cancel;
+        }
+
+        voiceEntryInstructions
+            ?.classList
+            .toggle(
+                "is-ready",
+                numberPadValueValid()
+            );
+
+        if (attention) {
+            pulseVoiceEntryInstructions();
+        }
+
         const hasValue =
             typeof value === "string" &&
             value.trim();
@@ -13464,6 +13824,10 @@
     }
 
     function hideVoiceEntrySurface() {
+        syncTripTransitionVoiceEntryLayout(
+            false
+        );
+
         clearTimeout(
             voiceEntryAcceptTimer
         );
@@ -13912,7 +14276,8 @@
 
         renderVoiceEntry({
             prompt: "Heard",
-            value: display
+            value: display,
+            attention: true
         });
 
         clearTimeout(
@@ -13961,7 +14326,10 @@
                 false;
         }
 
-        renderVoiceEntry();
+        renderVoiceEntry({
+            attention:
+                numberPadValueValid()
+        });
 
         voiceEntrySurface.hidden =
             false;
@@ -13983,6 +14351,11 @@
             () =>
                 speechMicBar
                     ?.promoteTopLayer?.()
+        );
+
+        requestAnimationFrame(
+            () =>
+                syncTripTransitionVoiceEntryLayout()
         );
 
         return true;
@@ -14110,6 +14483,34 @@
     );
 
     bindVoiceEntryTranscriptPipe();
+
+    const refreshVoiceEntrySummaryLayout =
+        () => {
+            if (
+                tripTransitionOverlayIsVisible()
+            ) {
+                syncTripTransitionVoiceEntryLayout(
+                    true
+                );
+            }
+        };
+
+    globalThis.addEventListener(
+        "resize",
+        refreshVoiceEntrySummaryLayout,
+        {
+            passive: true
+        }
+    );
+    globalThis
+        .visualViewport
+        ?.addEventListener(
+            "resize",
+            refreshVoiceEntrySummaryLayout,
+            {
+                passive: true
+            }
+        );
 
     globalThis.WMOFVoiceEntry =
         Object.freeze({
@@ -18414,6 +18815,10 @@
                     .add(
                         "is-visible"
                     );
+
+                syncTripTransitionVoiceEntryLayout(
+                    true
+                );
             }
         );
 
@@ -18427,6 +18832,10 @@
         tripTransitionOverlayTimer =
             setTimeout(
                 () => {
+                    syncTripTransitionVoiceEntryLayout(
+                        false
+                    );
+
                     tripTransitionOverlay
                         .classList
                         .remove(
