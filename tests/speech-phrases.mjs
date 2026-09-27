@@ -348,6 +348,28 @@ for (
     );
 }
 
+const speechMenuAsyncSource =
+    fs.readFileSync(
+        new URL(
+            "../SpeechMenu.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+assert.match(
+    speechMenuAsyncSource,
+    /#completeSpeechExecution[\s\S]*?await outcomeValue/
+);
+assert.match(
+    speechMenuAsyncSource,
+    /speechCommandDispatched[\s\S]*?void SpeechMenu[\s\S]*?#completeSpeechExecution/
+);
+assert.doesNotMatch(
+    speechMenuAsyncSource,
+    /static async #processElement[\s\S]*?const outcome\s*=\s*await outcomeValue[\s\S]*?static #list/
+);
+
 const speechMasterAppSource =
     fs.readFileSync(
         new URL(
