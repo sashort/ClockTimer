@@ -509,3 +509,38 @@ test("voice entry dedupes transcribed and committed events for the same utteranc
         /voiceEntryHandledUtteranceId =\s*utteranceId/
     );
 });
+
+
+test("voice entry binds transcript routing after the lazy speech runtime loads", () => {
+    assert.match(
+        appSource,
+        /let voiceEntryTranscriptPipeBound = false/
+    );
+
+    const binding = appSource.slice(
+        appSource.indexOf("function bindVoiceEntryTranscriptPipe"),
+        appSource.indexOf("globalThis.WMOFVoiceEntry")
+    );
+
+    assert.match(
+        binding,
+        /SpeechMenu[\s\S]*?events/
+    );
+    assert.match(
+        binding,
+        /"utteranceTranscribed"[\s\S]*?pipeVoiceEntryTranscript/
+    );
+    assert.match(
+        binding,
+        /"utteranceCommitted"[\s\S]*?pipeVoiceEntryTranscript/
+    );
+    assert.match(
+        binding,
+        /"speech-runtime-ready"[\s\S]*?bindVoiceEntryTranscriptPipe/
+    );
+
+    assert.match(
+        appSource,
+        /await ensureSpeechRuntime\(\);[\s\S]*?bindVoiceEntryTranscriptPipe\(\);/
+    );
+});

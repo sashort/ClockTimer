@@ -1425,6 +1425,7 @@
     let voiceEntryExecutionBeforeOpen;
     let voiceEntryAcceptTimer;
     let voiceEntryHandledUtteranceId;
+    let voiceEntryTranscriptPipeBound = false;
     const uiReturnStack = [];
     let tripSettingsNavigation = {
         returnTarget: "home",
@@ -14061,21 +14062,44 @@
         });
     }
 
-    globalThis
-        .SpeechMenu
-        ?.events
-        ?.addEventListener(
+    function bindVoiceEntryTranscriptPipe() {
+        if (
+            voiceEntryTranscriptPipeBound
+        ) {
+            return true;
+        }
+
+        const events =
+            globalThis
+                .SpeechMenu
+                ?.events;
+
+        if (!events) {
+            return false;
+        }
+
+        events.addEventListener(
             "utteranceTranscribed",
             pipeVoiceEntryTranscript
         );
 
-    globalThis
-        .SpeechMenu
-        ?.events
-        ?.addEventListener(
+        events.addEventListener(
             "utteranceCommitted",
             pipeVoiceEntryTranscript
         );
+
+        voiceEntryTranscriptPipeBound =
+            true;
+
+        return true;
+    }
+
+    document.addEventListener(
+        "speech-runtime-ready",
+        bindVoiceEntryTranscriptPipe
+    );
+
+    bindVoiceEntryTranscriptPipe();
 
     globalThis.WMOFVoiceEntry =
         Object.freeze({
@@ -24070,6 +24094,7 @@
     void (async () => {
         try {
             await ensureSpeechRuntime();
+            bindVoiceEntryTranscriptPipe();
         }
         catch (error) {
             console.error(error);
