@@ -1088,6 +1088,14 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /#streamSeparationMilliseconds[\s\S]*streamSeparationMilliseconds/
+);
+assert.match(
+    speechMenuSource,
+    /#repeatableStreamHead[\s\S]*#streamSeparationMilliseconds/
+);
+assert.match(
+    speechMenuSource,
     /#recoverBargeInTail[\s\S]*synthesizedSpeechActive[\s\S]*#refreshCandidatePool/
 );
 assert.match(
