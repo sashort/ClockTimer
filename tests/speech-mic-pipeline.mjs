@@ -510,8 +510,7 @@ const primedSpeechIds = [
     "cancelDown",
     "tripGoal",
     "totalGoal",
-    "setTripGoal",
-    "setTotalGoal",
+    "changeGoal",
     "readGoalMode",
     "goalMode",
     "sync",
@@ -1830,7 +1829,7 @@ assert.match(
 );
 assert.match(
     html,
-    /builtin:setTripGoal:page[^>]*speech-function="WMOFActions\.setTripGoal"/
+    /builtin:changeGoal:page[^>]*speech-function="WMOFActions\.changeGoal"/
 );
 assert.doesNotMatch(
     html,
@@ -1858,11 +1857,7 @@ assert.match(
 );
 assert.match(
     html,
-    /builtin:setTripGoal:page[^>]*data-speech-options-group="goals"/
-);
-assert.match(
-    html,
-    /builtin:setTotalGoal:page[^>]*data-speech-options-group="goals"/
+    /builtin:changeGoal:page[^>]*data-speech-options-group="goals"/
 );
 assert.match(
     html,
@@ -1902,11 +1897,15 @@ assert.match(
 );
 assert.match(
     app,
-    /setTripGoal\([\s\S]*setGoalPercentValue\(\s*"trip"/
+    /changeGoal\(\s*percent,\s*goalScope\s*\)[\s\S]*rangeByScope[\s\S]*check:\s*"pay-period"[\s\S]*setTripLogRange\([\s\S]*applyScope\(\s*"total"\s*\)[\s\S]*setGoalPercentValue\(\s*"total"/
 );
 assert.match(
     app,
-    /setTotalGoal\([\s\S]*setGoalPercentValue\(\s*"total"/
+    /normalizedScope ===[\s\S]*"trip"[\s\S]*applyScope\(\s*"trip"\s*\)[\s\S]*setGoalPercentValue\(\s*"trip"/
+);
+assert.match(
+    app,
+    /normalizedScope ===[\s\S]*"total"[\s\S]*applyScope\(\s*"total"\s*\)[\s\S]*setGoalPercentValue\(\s*"total"/
 );
 assert.match(
     app,
@@ -2727,3 +2726,8 @@ assert.match(
     speechMicBarSource,
     /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"what"[\s\S]*"choices"[\s\S]*"options"/
 );
+
+assert.doesNotMatch(englishSource, /setTripGoal:/);
+assert.doesNotMatch(englishSource, /setTotalGoal:/);
+assert.doesNotMatch(html, /builtin:setTripGoal:page/);
+assert.doesNotMatch(html, /builtin:setTotalGoal:page/);
