@@ -43,8 +43,8 @@ class SpeechMenu {
     static #corrections = Object.freeze([]);
     static #correctionsRevision = "empty";
     static #builtInCorrections =
-        Object.freeze(
-            [
+        Object.freeze([
+            ...[
                 ["red", -101],
                 ["redd", -102],
                 ["rudd", -103]
@@ -65,8 +65,38 @@ class SpeechMenu {
                             occurrences:
                                 1
                         })
-                )
-        );
+                ),
+            Object.freeze({
+                id: -104,
+                observed:
+                    "sinkon",
+                observedCompact:
+                    "sinkon",
+                canonical:
+                    "sync on",
+                canonicalCompact:
+                    "syncon",
+                matchType:
+                    "exact",
+                occurrences:
+                    1
+            }),
+            Object.freeze({
+                id: -105,
+                observed:
+                    "sinoff",
+                observedCompact:
+                    "sinoff",
+                canonical:
+                    "sync off",
+                canonicalCompact:
+                    "syncoff",
+                matchType:
+                    "exact",
+                occurrences:
+                    1
+            })
+        ]);
 
     static {
         document.addEventListener("visibilitychange", () => {
