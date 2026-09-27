@@ -1088,6 +1088,18 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
+    /#completeSpeechExecution[\s\S]*await outcomeValue/
+);
+assert.match(
+    speechMenuSource,
+    /speechCommandDispatched[\s\S]*void SpeechMenu[\s\S]*#completeSpeechExecution/
+);
+assert.doesNotMatch(
+    speechMenuSource,
+    /static async #processElement[\s\S]*?const outcome\s*=\s*await outcomeValue[\s\S]*?static #list/
+);
+assert.match(
+    speechMenuSource,
     /#streamSeparationMilliseconds[\s\S]*streamSeparationMilliseconds/
 );
 assert.match(

@@ -6614,6 +6614,165 @@ class SpeechMenu {
         }
     }
 
+    static async #completeSpeechExecution(
+        {
+            element,
+            speechMenuElement,
+            utteranceId,
+            transcript,
+            canonicalTranscript,
+            argumentValues,
+            target,
+            responseSession,
+            outcomeValue
+        }
+    ) {
+        try {
+            const outcome =
+                await outcomeValue;
+
+            if (outcome === false) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
+                SpeechMenu.#emit(
+                    "speechCommandRejected",
+                    {
+                        utteranceId,
+                        commandElement:
+                            element,
+                        speechMenuElement,
+                        transcript,
+                        canonicalTranscript
+                    }
+                );
+
+                return false;
+            }
+
+            const dictatedResponse =
+                outcome &&
+                typeof outcome ===
+                    "object" &&
+                outcome.speechResponse
+                    ?.type ===
+                    "dictation"
+                    ? String(
+                        outcome
+                            .speechResponse
+                            .value ??
+                        ""
+                    ).trim()
+                    : "";
+
+            if (dictatedResponse) {
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.cancelSpeechResponse?.(
+                        responseSession
+                    );
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.presentSpeechDictation?.(
+                        dictatedResponse,
+                        {
+                            commandElement:
+                                element,
+                            utteranceId
+                        }
+                    );
+            }
+            else {
+                await Promise.resolve();
+
+                if (
+                    target.element &&
+                    typeof requestAnimationFrame ===
+                        "function"
+                ) {
+                    await new Promise(
+                        resolve =>
+                            requestAnimationFrame(
+                                () =>
+                                    resolve()
+                            )
+                    );
+                }
+
+                globalThis
+                    .WMOFPresentationSetters
+                    ?.finishSpeechResponse?.(
+                        responseSession,
+                        {
+                            commandElement:
+                                element,
+                            targetSelector:
+                                target.selector,
+                            targetElements:
+                                target.elements,
+                            utteranceId
+                        }
+                    );
+            }
+
+            SpeechMenu.#emit(
+                "speechCommandExecuted",
+                {
+                    utteranceId,
+                    commandElement:
+                        element,
+                    speechMenuElement,
+                    transcript,
+                    canonicalTranscript,
+                    arguments:
+                        argumentValues.slice(),
+                    targetSelector:
+                        target.selector,
+                    targetElement:
+                        target.element,
+                    targetElements:
+                        target.elements.slice()
+                }
+            );
+
+            SpeechMenu.#emit(
+                "command",
+                {
+                    speechMenuElement:
+                        element,
+                    transcript,
+                    canonicalTranscript,
+                    utteranceId
+                }
+            );
+
+            return true;
+        }
+        catch (error) {
+            globalThis
+                .WMOFPresentationSetters
+                ?.cancelSpeechResponse?.(
+                    responseSession
+                );
+
+            SpeechMenu.#emit(
+                "speechMenuCommandError",
+                {
+                    speechMenuElement:
+                        element,
+                    error,
+                    utteranceId
+                }
+            );
+
+            return false;
+        }
+    }
+
     static async #processElement(
         element,
         transcript,
@@ -7156,10 +7315,7 @@ class SpeechMenu {
                     previousExecutionContext;
             }
 
-            const outcome =
-                await outcomeValue;
-
-            if (outcome === false) {
+            if (outcomeValue === false) {
                 globalThis
                     .WMOFPresentationSetters
                     ?.cancelSpeechResponse?.(
@@ -7169,74 +7325,8 @@ class SpeechMenu {
                 return false;
             }
 
-            const dictatedResponse =
-                outcome &&
-                typeof outcome ===
-                    "object" &&
-                outcome.speechResponse
-                    ?.type ===
-                    "dictation"
-                    ? String(
-                        outcome
-                            .speechResponse
-                            .value ??
-                        ""
-                    ).trim()
-                    : "";
-
-            if (dictatedResponse) {
-                globalThis
-                    .WMOFPresentationSetters
-                    ?.cancelSpeechResponse?.(
-                        responseSession
-                    );
-
-                globalThis
-                    .WMOFPresentationSetters
-                    ?.presentSpeechDictation?.(
-                        dictatedResponse,
-                        {
-                            commandElement:
-                                element,
-                            utteranceId
-                        }
-                    );
-            }
-            else {
-                await Promise.resolve();
-
-                if (
-                    target.element &&
-                    typeof requestAnimationFrame ===
-                        "function"
-                ) {
-                    await new Promise(
-                        resolve =>
-                            requestAnimationFrame(
-                                () =>
-                                    resolve()
-                            )
-                    );
-                }
-
-                globalThis
-                    .WMOFPresentationSetters
-                    ?.finishSpeechResponse?.(
-                        responseSession,
-                        {
-                            commandElement:
-                                element,
-                            targetSelector:
-                                target.selector,
-                            targetElements:
-                                target.elements,
-                            utteranceId
-                        }
-                    );
-            }
-
             SpeechMenu.#emit(
-                "speechCommandExecuted",
+                "speechCommandDispatched",
                 {
                     utteranceId,
                     commandElement:
@@ -7256,18 +7346,35 @@ class SpeechMenu {
                 }
             );
 
-            SpeechMenu.#emit(
-                "command",
-                {
-                    speechMenuElement:
-                        element,
+            void SpeechMenu
+                .#completeSpeechExecution({
+                    element,
+                    speechMenuElement,
+                    utteranceId,
                     transcript:
                         text,
                     canonicalTranscript,
-                    utteranceId
-                }
-            );
+                    argumentValues:
+                        argumentValues.slice(),
+                    target: {
+                        selector:
+                            target.selector,
+                        element:
+                            target.element,
+                        elements:
+                            target.elements.slice()
+                    },
+                    responseSession,
+                    outcomeValue
+                });
 
+            /*
+             * Recognition commitment ends at dispatch, not at action
+             * completion. The action promise may continue with UI work,
+             * chimes, TTS, network requests, or other asynchronous side
+             * effects while the recognizer accepts and commits later
+             * speech independently.
+             */
             return true;
         }
         catch (error) {
