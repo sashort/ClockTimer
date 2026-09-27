@@ -2798,6 +2798,31 @@ assert.match(
     /async function commitNumberPad\(\)[\s\S]*!numberPadHasChanges\(\)[\s\S]*!state\.startsTripOnConfirm[\s\S]*return true;[\s\S]*if \(state\.onConfirm\)/
 );
 
+assert.match(
+    html,
+    /id="voiceEntrySurface"[\s\S]*id="voiceEntryTouch"[\s\S]*Switch to touch numberpad[\s\S]*id="voiceEntryCancel"/
+);
+assert.match(
+    css,
+    /\.voice-entry-surface\s*\{[\s\S]*inset:\s*50% auto auto 50%[\s\S]*width:\s*min\(560px,[\s\S]*transform:\s*translate\(-50%, -50%\)/
+);
+assert.match(
+    app,
+    /function createNumberPadState\([\s\S]*function openVoiceEntry\([\s\S]*createNumberPadState\(/
+);
+assert.match(
+    app,
+    /function parseVoiceEntryTranscript\([\s\S]*EnglishSpeechValuePreprocessor[\s\S]*numberPadValueValid\(\)[\s\S]*commitNumberPad\(/
+);
+assert.match(
+    app,
+    /function switchVoiceEntryToTouch\([\s\S]*const snapshot = \{[\s\S]*\.\.\.numberPadState[\s\S]*restoreNumberPadState\(/
+);
+assert.match(
+    app,
+    /voiceEntryTouch[\s\S]*addEventListener\([\s\S]*switchVoiceEntryToTouch/
+);
+
 assert.doesNotMatch(languageSource, /setTripGoal:/);
 assert.doesNotMatch(languageSource, /setTotalGoal:/);
 assert.doesNotMatch(html, /builtin:setTripGoal:page/);
