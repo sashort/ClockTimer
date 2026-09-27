@@ -1337,6 +1337,15 @@ assert.match(
     speechMicBarSource,
     /#optionsClose\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
 );
+
+assert.doesNotMatch(
+    speechMicBarSource,
+    /\(\?:\(\?:speech \)\?commands\|what\|choices\|options\)/
+);
+assert.doesNotMatch(
+    speechMicBarSource,
+    /"speech commands",[\s\S]{0,80}"what"/
+);
 assert.match(
     speechMicBarSource,
     /#mic\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
