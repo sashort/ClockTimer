@@ -517,6 +517,13 @@
 
     const clockTimer = $("#clockTimer");
 
+    const currentActionSignal =
+        () =>
+            globalThis
+                .WMOFActionFunctions
+                ?.invocationContext
+                ?.signal;
+
     const speechTransactionDate =
         () => {
             const value =
@@ -18181,8 +18188,14 @@
 
     async function endCurrentIntervalOrTrip(
         transactionTime =
-            speechTransactionDate()
+            speechTransactionDate(),
+        {
+            signal
+        } = {}
     ) {
+        if (signal?.aborted) {
+            return false;
+        }
         const effectiveTime =
             transactionTime instanceof Date &&
             !Number.isNaN(
@@ -18213,6 +18226,11 @@
             await clockTimer.endInterval(
                 transactionTime
             );
+
+            if (signal?.aborted) {
+                return false;
+            }
+
             updateSummaryValues();
             renderTripActionState();
             return;
@@ -18222,6 +18240,11 @@
             await clockTimer.endInterval(
                 transactionTime
             );
+
+            if (signal?.aborted) {
+                return false;
+            }
+
             renderTripActionState();
             return;
         }
@@ -18255,6 +18278,12 @@
                     false;
             }
 
+            return false;
+        }
+
+        if (signal?.aborted) {
+            endingIntoNewTrip =
+                false;
             return false;
         }
 
@@ -18293,7 +18322,8 @@
                         ? "voice"
                         : "touch",
                 endStartTransition: true,
-                completedTripResetPromise
+                completedTripResetPromise,
+                signal
             });
 
         const speech =
@@ -18301,6 +18331,10 @@
 
         pendingEndStartTripSpeech =
             undefined;
+
+        if (signal?.aborted) {
+            return false;
+        }
 
         if (
             opened &&
@@ -22349,9 +22383,15 @@
             },
 
             async prepareReadyAction() {
+                const signal =
+                    currentActionSignal();
+
                 if (tripIsLive()) {
                     return endCurrentIntervalOrTrip(
-                        speechTransactionDate()
+                        speechTransactionDate(),
+                        {
+                            signal
+                        }
                     );
                 }
 
@@ -22976,9 +23016,14 @@
             async endTrip() {
                 const transactionTime =
                     speechTransactionDate();
+                const signal =
+                    currentActionSignal();
 
                 return endCurrentIntervalOrTrip(
-                    transactionTime
+                    transactionTime,
+                    {
+                        signal
+                    }
                 );
             },
 
@@ -25777,7 +25822,8 @@
             "openStartMenu",
             "prepareReadyAction",
             "prepareStartMenu",
-            "closeActiveSurface"
+            "closeActiveSurface",
+            "endTrip"
         ]
     ) {
         globalThis
