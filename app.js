@@ -16733,12 +16733,11 @@
         await clockTimer
             .resetCompletedTrip();
 
-        await waitForTripTransitionOverlay();
-
         const opened =
             await beginNewTripWorkflow({
                 initialValue: "",
                 tripMoment,
+                inputMode: "voice",
                 endStartTransition: true
             });
 
@@ -18446,20 +18445,6 @@
                 },
                 7000
             );
-    }
-
-    async function waitForTripTransitionOverlay() {
-        while (
-            tripTransitionOverlayActive
-        ) {
-            await new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        50
-                    )
-            );
-        }
     }
 
     function enqueueTripTransitionOverlay(

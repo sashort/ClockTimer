@@ -237,16 +237,26 @@ console.log(
 );
 
 
-assert.match(
+assert.doesNotMatch(
     app,
-    /async function waitForTripTransitionOverlay\([\s\S]*tripTransitionOverlayActive[\s\S]*setTimeout/
+    /waitForTripTransitionOverlay/
 );
 
 assert.match(
     app,
-    /resetCompletedTrip\(\)[\s\S]*await waitForTripTransitionOverlay\(\)[\s\S]*beginNewTripWorkflow/
+    /resetCompletedTrip\(\)[\s\S]*beginNewTripWorkflow\(\{[\s\S]*inputMode:\s*"voice"[\s\S]*endStartTransition:\s*true/
+);
+
+assert.match(
+    css,
+    /\.voice-entry-surface\s*\{[\s\S]*z-index:\s*2147483647/
+);
+
+assert.match(
+    css,
+    /\.trip-transition-overlay\s*\{[\s\S]*pointer-events:\s*none/
 );
 
 console.log(
-    "PASS new-trip keypad waits until the trip-end summary closes"
+    "PASS trip completion opens voice entry immediately while the seven-second summary remains visible"
 );
