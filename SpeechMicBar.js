@@ -215,7 +215,10 @@ class SpeechMicBar extends HTMLElement {
                     position: absolute;
                     top: 7px;
                     right: 9px;
-                    z-index: 5;
+                    z-index: 2147483647;
+                    pointer-events: auto !important;
+                    touch-action: manipulation;
+                    user-select: none;
                     width: 28px;
                     height: 28px;
                     padding: 0;
@@ -795,6 +798,10 @@ class SpeechMicBar extends HTMLElement {
 
                 #mic {
                     position: relative;
+                    z-index: 2147483647;
+                    pointer-events: auto !important;
+                    touch-action: manipulation;
+                    user-select: none;
                     width: 48px;
                     height: 48px;
                     flex: 0 0 48px;
@@ -1131,18 +1138,39 @@ class SpeechMicBar extends HTMLElement {
             this.#shadow.querySelector(
                 "#optionsGrid"
             );
+        const toggleOptions =
+            event => {
+                event.preventDefault?.();
+                event.stopPropagation();
+                event.stopImmediatePropagation?.();
+
+                if (
+                    this.optionsCollapsed
+                ) {
+                    this.expandOptions();
+                }
+                else {
+                    this.collapseOptions();
+                }
+            };
+
         this.#optionsClose
             ?.addEventListener(
                 "click",
-                () => {
-                    if (
-                        this.optionsCollapsed
-                    ) {
-                        this.expandOptions();
-                    }
-                    else {
-                        this.collapseOptions();
-                    }
+                toggleOptions,
+                {
+                    capture: true
+                }
+            );
+
+        this.#optionsClose
+            ?.addEventListener(
+                "pointerdown",
+                event => {
+                    event.stopPropagation();
+                },
+                {
+                    capture: true
                 }
             );
         this.#bar = this.#shadow.querySelector("#bar");
@@ -1237,7 +1265,21 @@ class SpeechMicBar extends HTMLElement {
         this.#mic
             ?.addEventListener(
                 "click",
-                toggleMic
+                toggleMic,
+                {
+                    capture: true
+                }
+            );
+
+        this.#mic
+            ?.addEventListener(
+                "pointerdown",
+                event => {
+                    event.stopPropagation();
+                },
+                {
+                    capture: true
+                }
             );
 
         this.#mic
