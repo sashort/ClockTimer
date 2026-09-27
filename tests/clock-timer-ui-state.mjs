@@ -178,9 +178,15 @@ timer.remove();window.happyDOM.abort();
 
 {
     const clockTimerSource=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
+    const renderedTimeDefinition=clockTimerSource.indexOf(
+        '\n        #calculateRenderedTime('
+    );
     const renderedTimeMethod=clockTimerSource.slice(
-        clockTimerSource.indexOf('#calculateRenderedTime('),
-        clockTimerSource.indexOf('#updateDisplay(',clockTimerSource.indexOf('#calculateRenderedTime('))
+        renderedTimeDefinition,
+        clockTimerSource.indexOf(
+            '\n        #updateDisplay(',
+            renderedTimeDefinition
+        )
     );
     assert.match(
         renderedTimeMethod,
