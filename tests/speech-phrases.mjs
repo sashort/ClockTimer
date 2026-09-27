@@ -445,3 +445,54 @@ assert.match(
     speechMenuSource,
     /target\.closest\?\.\(\s*"\[popover\]"\s*\)[\s\S]*#openPopover/
 );
+
+
+{
+    const appSource =
+        fs.readFileSync(
+            new URL(
+                "../app.js",
+                import.meta.url
+            ),
+            "utf8"
+        );
+
+    const micSource =
+        fs.readFileSync(
+            new URL(
+                "../SpeechMicBar.js",
+                import.meta.url
+            ),
+            "utf8"
+        );
+
+    assert.match(
+        appSource,
+        /openSpeechOptions\(\)[\s\S]*?optionsOpen[\s\S]*?return true;[\s\S]*?optionsCollapsed[\s\S]*?expandOptions/
+    );
+
+    assert.doesNotMatch(
+        appSource,
+        /toggleSpeechOptions\(\)/
+    );
+
+    assert.match(
+        micSource,
+        /"commands"[\s\S]*?"\^\(\?:\(\?:speech \)\?commands\|choices\|options\)\$"[\s\S]*?"WMOFActions\.openSpeechOptions"/
+    );
+
+    assert.doesNotMatch(
+        micSource,
+        /WMOFActions\.toggleSpeechOptions/
+    );
+
+    assert.match(
+        appSource,
+        /closeActiveSpeechSurface[\s\S]*?optionsOpen[\s\S]*?hideOptions[\s\S]*?getTripListState\(\) ===[\s\S]*?"open"[\s\S]*?closeTripList\([\s\S]*?"speech-close"/
+    );
+
+    assert.match(
+        appSource,
+        /canCloseSurface\(\)[\s\S]*?getTripListState\(\) ===[\s\S]*?"open"/
+    );
+}

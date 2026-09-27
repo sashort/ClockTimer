@@ -148,7 +148,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-26-23";
+        "2026-09-26-24";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -19546,6 +19546,17 @@
                 ].at(-1);
 
             if (!dialog) {
+                if (
+                    getTripListState() ===
+                        "open"
+                ) {
+                    await closeTripList(
+                        "speech-close"
+                    );
+
+                    return true;
+                }
+
                 return Boolean(
                     interruptedAction
                 );
@@ -19768,6 +19779,13 @@
                                 "dialog[open]"
                             )
                     ].length
+                ) {
+                    return true;
+                }
+
+                if (
+                    getTripListState() ===
+                        "open"
                 ) {
                     return true;
                 }
@@ -20302,15 +20320,12 @@
                 return disableSpeechRecognitionRuntime();
             },
 
-            toggleSpeechOptions() {
+            openSpeechOptions() {
                 if (
                     speechMicBar
                         ?.optionsOpen
                 ) {
-                    return Boolean(
-                        speechMicBar
-                            .collapseOptions?.()
-                    );
+                    return true;
                 }
 
                 if (
