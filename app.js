@@ -20352,11 +20352,71 @@
             },
 
             changeGoal(
-                goalScope,
-                percent
+                percent,
+                goalScope
             ) {
+                const normalizedScope =
+                    String(
+                        goalScope ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const rangeByScope = {
+                    day: "day",
+                    week: "week",
+                    check: "pay-period",
+                    month: "month",
+                    year: "year"
+                };
+
+                if (
+                    normalizedScope ===
+                        "trip"
+                ) {
+                    applyScope(
+                        "trip"
+                    );
+
+                    return setGoalPercentValue(
+                        "trip",
+                        percent
+                    );
+                }
+
+                if (
+                    normalizedScope ===
+                        "total"
+                ) {
+                    applyScope(
+                        "total"
+                    );
+
+                    return setGoalPercentValue(
+                        "total",
+                        percent
+                    );
+                }
+
+                const range =
+                    rangeByScope[
+                        normalizedScope
+                    ];
+
+                if (!range) {
+                    return false;
+                }
+
+                setTripLogRange(
+                    range
+                );
+                applyScope(
+                    "total"
+                );
+
                 return setGoalPercentValue(
-                    goalScope,
+                    "total",
                     percent
                 );
             },
@@ -23028,7 +23088,7 @@
                 readyAt:"#newTripButton", ready:"#newTripButton",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton",
-                setTripGoal:"#goalPercentValue", setTotalGoal:"#goalPercentValue",
+                changeGoal:"#goalPercentValue",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
@@ -23038,8 +23098,7 @@
             const speechOptionGroups = {
                 tripGoal: "goals",
                 totalGoal: "goals",
-                setTripGoal: "goals",
-                setTotalGoal: "goals",
+                changeGoal: "goals",
                 readGoalMode: "mode",
                 goalMode: "mode",
                 readRenderedTime: "time",
@@ -23061,8 +23120,7 @@
                 resume: "trip-actions",
                 tripGoal: "goals",
                 totalGoal: "goals",
-                setTripGoal: "goals",
-                setTotalGoal: "goals",
+                changeGoal: "goals",
                 readGoalMode: "settings",
                 goalMode: "settings",
                 readRenderedTime: "informational",
@@ -23185,7 +23243,7 @@
                 ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
                 ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"],
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
-                ["setTripGoal","setTripGoal"], ["setTotalGoal","setTotalGoal"],
+                ["changeGoal","changeGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["readRenderedTime","readRenderedTime"],
                 ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["howLong","readTimeRemaining"], ["when","readEndTime"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
@@ -23193,7 +23251,7 @@
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
-                    setTripGoal:["percent","percent"], setTotalGoal:["percent","percent"],
+                    changeGoal:["percent","percent"],
                     lockEndTime:["clock","spokenTime"]
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
