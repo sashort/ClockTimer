@@ -1102,6 +1102,16 @@
             );
     }
 
+    function speechRecognitionEnabled() {
+        return (
+            speechRecognitionButton
+                ?.getAttribute(
+                    "aria-pressed"
+                ) ===
+            "true"
+        );
+    }
+
     const setSpeechLayoutState =
         globalThis
             .WMOFPresentationSetters
@@ -16737,7 +16747,10 @@
             await beginNewTripWorkflow({
                 initialValue: "",
                 tripMoment,
-                inputMode: "voice",
+                inputMode:
+                    speechRecognitionEnabled()
+                        ? "voice"
+                        : "touch",
                 endStartTransition: true
             });
 

@@ -244,7 +244,12 @@ assert.doesNotMatch(
 
 assert.match(
     app,
-    /resetCompletedTrip\(\)[\s\S]*beginNewTripWorkflow\(\{[\s\S]*inputMode:\s*"voice"[\s\S]*endStartTransition:\s*true/
+    /function speechRecognitionEnabled\(\)[\s\S]*speechRecognitionButton[\s\S]*aria-pressed[\s\S]*"true"/
+);
+
+assert.match(
+    app,
+    /resetCompletedTrip\(\)[\s\S]*beginNewTripWorkflow\(\{[\s\S]*inputMode:[\s\S]*speechRecognitionEnabled\(\)[\s\S]*\? "voice"[\s\S]*: "touch"[\s\S]*endStartTransition:\s*true/
 );
 
 assert.match(
@@ -258,5 +263,5 @@ assert.match(
 );
 
 console.log(
-    "PASS trip completion opens voice entry immediately while the seven-second summary remains visible"
+    "PASS trip completion opens voice entry when speech is enabled, touch entry when speech is off, while the seven-second summary remains visible"
 );
