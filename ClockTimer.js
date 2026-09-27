@@ -26652,14 +26652,14 @@
 
             if (!Number.isFinite(totalGoal) || totalGoal <= 0 || !totals ||
                 !Number.isFinite(totals.standardTimeMilliseconds) ||
-                !Number.isFinite(totals.actualTimeMilliseconds) ||
+                !Number.isFinite(totals.countedTimeMilliseconds) ||
                 !Number.isFinite(this.#standardDuration) || this.#standardDuration <= 0) {
                 return undefined;
             }
 
             const adjusted =
                 (totals.standardTimeMilliseconds + this.#standardDuration) /
-                    totalGoal - totals.actualTimeMilliseconds;
+                    totalGoal - totals.countedTimeMilliseconds;
 
             return Number.isFinite(adjusted) && adjusted > 0 ? adjusted : undefined;
         }
@@ -26703,7 +26703,7 @@
                     this.#standardDuration
                 ) /
                     totalGoal -
-                totals.actualTimeMilliseconds;
+                totals.countedTimeMilliseconds;
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -26861,6 +26861,13 @@
                     return;
                 }
 
+                const countedElapsed =
+                    Number.isFinite(now)
+                        ? this.#getCountedTimeElapsed(
+                            now
+                        )
+                        : undefined;
+
                 candidates.push({
                     type,
                     percent,
@@ -26869,10 +26876,14 @@
                             deadline
                         ),
                     remainingMilliseconds:
-                        Number.isFinite(now)
+                        Number.isFinite(
+                            countedElapsed
+                        )
                             ? Math.max(
                                 0,
-                                deadline - now
+                                requirements
+                                    .adjustedTimeElapsed -
+                                countedElapsed
                             )
                             : undefined
                 });
@@ -32495,21 +32506,26 @@
                         allowMissed: true
                     })
                     : undefined;
-            const activeTripCountedMilliseconds =
-                activeTrip
-                    ? this.#getCountedTimeElapsed(
-                        timelineNow
-                    )
-                    : 0;
+            const targetTotalCountedMilliseconds =
+                activeTrip &&
+                Number.isFinite(percentGoal) &&
+                percentGoal > 0 &&
+                Number.isFinite(
+                    standardTimeMilliseconds
+                )
+                    ? standardTimeMilliseconds /
+                        percentGoal
+                    : undefined;
             const activeTripRemainingMilliseconds =
                 Number.isFinite(
-                    totalGoalRequirements
-                        ?.adjustedTimeElapsed
+                    targetTotalCountedMilliseconds
+                ) &&
+                Number.isFinite(
+                    countedTimeMilliseconds
                 )
                     ? (
-                        totalGoalRequirements
-                            .adjustedTimeElapsed -
-                        activeTripCountedMilliseconds
+                        targetTotalCountedMilliseconds -
+                        countedTimeMilliseconds
                     )
                     : undefined;
             const completedNetMilliseconds =
@@ -33513,10 +33529,18 @@
             if (
                 !this.#started ||
                 !Number.isFinite(
-                    this.#calculatedEnd
-                ) ||
-                !Number.isFinite(
                     this.#scheduledStartMilliseconds
+                )
+            ) {
+                return this.#formatClockDisplayTime(
+                    now
+                );
+            }
+
+            if (
+                mode === "calculated-end" &&
+                !Number.isFinite(
+                    this.#calculatedEnd
                 )
             ) {
                 return this.#formatClockDisplayTime(
@@ -33589,26 +33613,33 @@
                     );
             }
             else {
-                const difference =
-                    this.#calculatedEnd -
-                    timelineNow;
+                const goal =
+                    Number(
+                        this.#renderedPercentGoal
+                    );
+                const requiredCountedMilliseconds =
+                    Number.isFinite(goal) &&
+                    goal > 0 &&
+                    Number.isFinite(
+                        this.#standardDuration
+                    )
+                        ? this.#standardDuration /
+                            goal
+                        : undefined;
+                const countedElapsedMilliseconds =
+                    this.#getCountedTimeElapsed(
+                        timelineNow
+                    );
 
-                if (difference >= 0) {
-                    milliseconds =
-                        difference -
-                        this.#getClosedIntervalDuration(
-                            timelineNow,
-                            this.#calculatedEnd
-                        );
-                }
-                else {
-                    milliseconds =
-                        difference +
-                        this.#getClosedIntervalDuration(
-                            this.#calculatedEnd,
-                            timelineNow
-                        );
-                }
+                milliseconds =
+                    Number.isFinite(
+                        requiredCountedMilliseconds
+                    )
+                        ? (
+                            requiredCountedMilliseconds -
+                            countedElapsedMilliseconds
+                        )
+                        : undefined;
             }
 
             return mode === "elapsed"
