@@ -38,6 +38,7 @@ button {
 
 .app {
     --trip-log-row-height: 74px;
+    --speech-command-row-height: 0px;
     --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
     --trip-log-layout-duration: 1000ms;
@@ -48,7 +49,17 @@ button {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-rows: 52px 142px 62px 29px 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
+    grid-template-rows:
+        52px
+        142px
+        62px
+        29px
+        1fr
+        calc(
+            var(--trip-log-row-height) +
+            var(--speech-command-row-height)
+        )
+        var(--speech-mic-row-height);
     background: linear-gradient(180deg, var(--wm-blue-dark) 0%, var(--wm-blue-mid) 25%, var(--wm-blue) 55%, var(--wm-blue-mid) 100%);
     overflow: hidden;
     transition:
@@ -56,6 +67,7 @@ button {
 }
 
 .app[data-speech-active="true"] {
+    --speech-command-row-height: 42px;
     --speech-mic-row-height: 74px;
 }
 
@@ -437,24 +449,8 @@ html[data-trip-log-startup="unpinned"] .app {
     min-height: 0;
     display: grid;
     place-items: center;
-    padding-bottom:
-        var(
-            --clock-speech-clearance,
-            0px
-        );
     overflow: hidden;
     container-type: size;
-    transition:
-        padding-bottom
-        var(
-            --trip-log-layout-duration,
-            1000ms
-        )
-        ease-in-out;
-}
-
-.app[data-speech-active="true"] {
-    --clock-speech-clearance: 42px;
 }
 
 clock-timer {
@@ -555,7 +551,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
     height: 74px;
     margin: 0;
     padding: 0;
-    align-self: start;
+    align-self: end;
     border: 3px solid #000;
     border-radius: var(--trip-log-shell-radius);
     color: var(--wm-white);
@@ -569,7 +565,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
 
 .app:has(> speech-mic-bar:is([options-collapsed], [options-open]))
 .trip-log-button:not(.trip-log-floating) {
-    transform: translateY(-42px);
+    transform: translateY(0);
 }
 
 .app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
@@ -2057,7 +2053,17 @@ button:active:not(:disabled):not(#toggleSyncGoalButton) {
 }
 
 .app[data-interval-state="down"] {
-    grid-template-rows: 52px 142px 230px 0 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
+    grid-template-rows:
+        52px
+        142px
+        230px
+        0
+        1fr
+        calc(
+            var(--trip-log-row-height) +
+            var(--speech-command-row-height)
+        )
+        var(--speech-mic-row-height);
 }
 
 .app[data-interval-state="down"] .active-trip-controls {
