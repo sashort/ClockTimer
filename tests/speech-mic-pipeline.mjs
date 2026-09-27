@@ -1935,6 +1935,19 @@ assert.match(
     app,
     /readGoalMode\(\)[\s\S]*dictateSpeechMetric\(\s*label,\s*"Mode"/
 );
+
+assert.match(
+    app,
+    /readGoalMode\(\)[\s\S]*mode === "total"[\s\S]*totalScopeLabel\(\)/
+);
+assert.match(
+    app,
+    /changeGoalMode\([\s\S]*appliedMode ===[\s\S]*"total"[\s\S]*totalScopeLabel\(\)/
+);
+assert.match(
+    app,
+    /cycleGoalMode\([\s\S]*applied ===[\s\S]*"total"[\s\S]*totalScopeLabel\(\)/
+);
 assert.match(
     app,
     /readRenderedTime\([\s\S]*getRenderedTime\?\.\([\s\S]*dictateSpeechMetric\(/
