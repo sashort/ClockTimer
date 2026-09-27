@@ -2553,6 +2553,23 @@
                             return;
                         }
 
+                        if (
+                            entry.speechGuard &&
+                            entry.speechGuard() ===
+                                false
+                        ) {
+                            entry.pendingSpeech =
+                                Math.max(
+                                    0,
+                                    entry.pendingSpeech -
+                                        1
+                                );
+                            this.#maybeComplete(
+                                entry
+                            );
+                            return;
+                        }
+
                         const utterance =
                             new Utterance(
                                 text
@@ -2816,6 +2833,7 @@
                 speechVolume,
                 speechVelocity,
                 speechDelayMs = 0,
+                speechGuard,
                 loop,
                 includeTones = true,
                 includeSpeech = true,
@@ -3026,6 +3044,11 @@
                     ),
                 speechDelayMs:
                     0,
+                speechGuard:
+                    typeof speechGuard ===
+                        "function"
+                        ? speechGuard
+                        : undefined,
                 startedAt:
                     context.currentTime +
                     0.015,
