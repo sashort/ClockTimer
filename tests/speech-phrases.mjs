@@ -486,31 +486,22 @@ assert.match(
         /WMOFActions\.toggleSpeechOptions/
     );
 
-    for (
-        const [
-            phrase,
-            action
-        ] of [
-            ["faster", "changeAudioRateFaster"],
-            ["slower", "changeAudioRateSlower"],
-            ["louder", "changeAudioVolumeLouder"],
-            ["softer", "changeAudioVolumeSofter"]
-        ]
-    ) {
-        assert.match(
-            micSource,
-            new RegExp(
-                "\\"" +
-                phrase +
-                "\\"[\\s\\S]*?\\^" +
-                phrase +
-                "\\\$[\\s\\S]*?WMOFActions\\\\." +
-                action
-            ),
-            phrase +
-                " should be a global System command"
-        );
-    }
+    assert.match(
+        micSource,
+        /"faster"[\s\S]*?"\^faster\$"[\s\S]*?"WMOFActions\.changeAudioRateFaster"/
+    );
+    assert.match(
+        micSource,
+        /"slower"[\s\S]*?"\^slower\$"[\s\S]*?"WMOFActions\.changeAudioRateSlower"/
+    );
+    assert.match(
+        micSource,
+        /"louder"[\s\S]*?"\^louder\$"[\s\S]*?"WMOFActions\.changeAudioVolumeLouder"/
+    );
+    assert.match(
+        micSource,
+        /"softer"[\s\S]*?"\^softer\$"[\s\S]*?"WMOFActions\.changeAudioVolumeSofter"/
+    );
 
     assert.match(
         appSource,
