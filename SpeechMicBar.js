@@ -1404,6 +1404,15 @@ class SpeechMicBar extends HTMLElement {
                 "WMOFActions.openSpeechOptions"
             );
         ensureCommand(
+            "chime",
+            "^chime (?:on|off)$",
+            "WMOFActions.setChimeMaster"
+        )
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
+        ensureCommand(
             "faster",
             "^faster$",
             "WMOFActions.changeAudioRateFaster"

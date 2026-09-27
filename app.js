@@ -21969,6 +21969,26 @@
             );
         };
 
+    const setMasterChime =
+        enabled => {
+            audioSettings.masters.chime =
+                Boolean(enabled);
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                audioSettings.masters.chime
+                    ? "Chime On"
+                    : "Chime Off",
+                {
+                    useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
+
     const changeGlobalAudioVolume =
         deltaPercent => {
             audioSettings.speechVolume =
@@ -22290,6 +22310,33 @@
 
             disableSpeechRecognition() {
                 return disableSpeechRecognitionRuntime();
+            },
+
+            setChimeMaster() {
+                const transcript =
+                    String(
+                        globalThis
+                            .SpeechMenu
+                            ?.executionContext
+                            ?.transcript ||
+                        ""
+                    )
+                        .trim()
+                        .toLocaleLowerCase();
+
+                if (transcript === "chime on") {
+                    return setMasterChime(
+                        true
+                    );
+                }
+
+                if (transcript === "chime off") {
+                    return setMasterChime(
+                        false
+                    );
+                }
+
+                return false;
             },
 
             changeAudioRateFaster() {

@@ -488,6 +488,14 @@ assert.match(
 
     assert.match(
         micSource,
+        /"chime"[\s\S]*?"\^chime \(\?:on\|off\)\$"[\s\S]*?"WMOFActions\.setChimeMaster"/
+    );
+    assert.match(
+        appSource,
+        /setMasterChime[\s\S]*?audioSettings\.masters\.chime[\s\S]*?renderAudioSettings\(\)[\s\S]*?saveAudioSettings\(\)[\s\S]*?Chime On[\s\S]*?Chime Off/
+    );
+    assert.match(
+        micSource,
         /"faster"[\s\S]*?"\^faster\$"[\s\S]*?"WMOFActions\.changeAudioRateFaster"/
     );
     assert.match(
