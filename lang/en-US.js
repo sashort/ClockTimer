@@ -31,6 +31,7 @@
                 yes: "^yes$",
                 no: "^no$",
                 cancel: "^(?:cancel|close)$",
+                voice: "^voice$",
                 down: "^down(?: time)?$",
                 breakEnd: "^break end$",
                 resume: "^resume$",

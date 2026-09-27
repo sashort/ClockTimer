@@ -1370,6 +1370,7 @@
     let numberPadReset;
     let numberPadCancel;
     let numberPadConfirm;
+    let numberPadVoice;
     let numberPadContext;
     let numberPadReadout;
     let numberPadDate;
@@ -12433,15 +12434,8 @@
         }
 
         installSpeechCommand(
-            "confirm",
-            "confirmNumberPad",
-            numberPadDialog,
-            false
-        );
-
-        installSpeechCommand(
-            "cancel",
-            "cancelNumberPadEdit",
+            "voice",
+            "switchNumberPadToVoice",
             numberPadDialog,
             false
         );
@@ -12485,6 +12479,7 @@
                 numberPadReset = $("#numberPadReset");
                 numberPadCancel = $("#numberPadCancel");
                 numberPadConfirm = $("#numberPadConfirm");
+                numberPadVoice = $("#numberPadVoice");
                 numberPadContext = $("#numberPadContext");
                 numberPadReadout = $("#numberPadReadout");
                 numberPadDate = $("#numberPadDate");
@@ -13204,22 +13199,31 @@
         return state;
     }
 
-    async function openNumberPad({
-        mode,
-        source,
-        initialValue = "",
-        preparationPromise,
-        tripDefaults,
-        startsTripOnConfirm = false,
-        role = "root",
-        workflow,
-        cancelTarget,
-        confirmTarget,
-        backTarget,
-        duration = 250,
-        onConfirm, onCancel, title, allowEmpty = false,
-        signal
-    } = {}) {
+    function resolveValueEditorInputMode(
+        inputMode
+    ) {
+        if (
+            inputMode === "voice" ||
+            inputMode === "touch"
+        ) {
+            return inputMode;
+        }
+
+        return globalThis
+            .SpeechMenu
+            ?.executionContext
+                ? "voice"
+                : "touch";
+    }
+
+    async function openTouchValueEditor(
+        state,
+        {
+            preparationPromise,
+            duration = 250,
+            signal
+        } = {}
+    ) {
         if (signal?.aborted) {
             return false;
         }
@@ -13230,30 +13234,15 @@
             return false;
         }
 
-        const state =
-            createNumberPadState({
-                mode,
-                source,
-                initialValue,
-                tripDefaults,
-                startsTripOnConfirm,
-                role,
-                workflow,
-                cancelTarget,
-                confirmTarget,
-                backTarget,
-                onConfirm,
-                onCancel,
-                title,
-                allowEmpty
-            });
         numberPadState = state;
         refreshNumberPad();
         mainMenu?.hidePopover?.();
+
         if (!numberPadDialog.open) {
             openDialogElement(numberPadDialog, {
                 duration,
-                reason: `number-pad:${source}`
+                reason:
+                    `number-pad:${state.source}`
             });
         }
 
@@ -13265,14 +13254,57 @@
 
         startNumberPadAmbientTone();
 
-        if (source === "new-trip") {
+        if (state.source === "new-trip") {
             void settleInitialNumberPadConnection(
                 state,
-                preparationPromise ?? Promise.resolve()
+                preparationPromise ??
+                    Promise.resolve()
             );
         }
 
         return true;
+    }
+
+    async function openValueEditor(
+        options = {},
+        inputMode
+    ) {
+        if (options.signal?.aborted) {
+            return false;
+        }
+
+        const state =
+            createNumberPadState(
+                options
+            );
+
+        const mode =
+            resolveValueEditorInputMode(
+                inputMode
+            );
+
+        if (mode === "voice") {
+            return openVoiceValueEditor(
+                state,
+                {
+                    signal:
+                        options.signal
+                }
+            );
+        }
+
+        return openTouchValueEditor(
+            state,
+            options
+        );
+    }
+
+    function openNumberPad(
+        options = {}
+    ) {
+        return openValueEditor(
+            options
+        );
     }
 
     function voiceEntryCopyForMode(mode) {
@@ -13414,6 +13446,36 @@
         return closed;
     }
 
+    async function switchNumberPadToVoice() {
+        if (
+            !numberPadState ||
+            !numberPadDialog
+                ?.open
+        ) {
+            return false;
+        }
+
+        const snapshot = {
+            ...numberPadState
+        };
+
+        stopAllNumberPadAudio();
+
+        closeDialog(
+            numberPadDialog,
+            {
+                reason:
+                    "number-pad-switch-voice",
+                immediate:
+                    true
+            }
+        );
+
+        return openVoiceValueEditor(
+            snapshot
+        );
+    }
+
     async function switchVoiceEntryToTouch() {
         if (
             !voiceEntryState ||
@@ -13456,11 +13518,12 @@
             return false;
         }
 
+        const command =
+            text.toLowerCase();
+
         if (
             /^(?:cancel|close)$/
-                .test(
-                    text.toLowerCase()
-                )
+                .test(command)
         ) {
             void closeVoiceEntry({
                 cancel: true
@@ -13471,11 +13534,43 @@
 
         if (
             /^(?:touch|keypad|number pad)$/
-                .test(
-                    text.toLowerCase()
-                )
+                .test(command)
         ) {
             void switchVoiceEntryToTouch();
+
+            return true;
+        }
+
+        if (
+            /^(?:ok|okay)$/
+                .test(command)
+        ) {
+            if (!numberPadValueValid()) {
+                renderVoiceEntry({
+                    prompt:
+                        "Say a Valid Value"
+                });
+
+                return false;
+            }
+
+            void (async () => {
+                try {
+                    if (
+                        await commitNumberPad()
+                    ) {
+                        await closeVoiceEntry({
+                            cancel: false
+                        });
+                    }
+                }
+                catch {
+                    renderVoiceEntry({
+                        prompt:
+                            "Say a Valid Value"
+                    });
+                }
+            })();
 
             return true;
         }
@@ -13599,56 +13694,18 @@
         clearTimeout(
             voiceEntryAcceptTimer
         );
-
         voiceEntryAcceptTimer =
-            setTimeout(
-                async () => {
-                    if (
-                        !voiceEntryState ||
-                        !numberPadState
-                    ) {
-                        return;
-                    }
-
-                    try {
-                        if (
-                            await commitNumberPad()
-                        ) {
-                            await closeVoiceEntry({
-                                cancel: false
-                            });
-                        }
-                    }
-                    catch {
-                        renderVoiceEntry({
-                            prompt:
-                                "Say a Valid Value"
-                        });
-                    }
-                },
-                350
-            );
+            undefined;
 
         return true;
     }
 
-    async function openVoiceEntry({
-        mode,
-        source,
-        initialValue = "",
-        tripDefaults,
-        startsTripOnConfirm = false,
-        role = "root",
-        workflow,
-        cancelTarget,
-        confirmTarget,
-        backTarget,
-        onConfirm,
-        onCancel,
-        title,
-        allowEmpty = false,
-        signal
-    } = {}) {
+    async function openVoiceValueEditor(
+        state,
+        {
+            signal
+        } = {}
+    ) {
         if (
             signal?.aborted ||
             !voiceEntrySurface
@@ -13657,22 +13714,7 @@
         }
 
         numberPadState =
-            createNumberPadState({
-                mode,
-                source,
-                initialValue,
-                tripDefaults,
-                startsTripOnConfirm,
-                role,
-                workflow,
-                cancelTarget,
-                confirmTarget,
-                backTarget,
-                onConfirm,
-                onCancel,
-                title,
-                allowEmpty
-            });
+            state;
 
         voiceEntryState = {
             source:
@@ -13717,6 +13759,15 @@
         );
 
         return true;
+    }
+
+    function openVoiceEntry(
+        options = {}
+    ) {
+        return openValueEditor(
+            options,
+            "voice"
+        );
     }
 
     voiceEntryCancel
@@ -15301,19 +15352,6 @@
     }
 
     function bindNumberPadEvents() {
-        const keypadSpeechPattern = globalThis.WMOFLanguages?.["en-US"]?.speech?.commands?.keypadValue;
-        if (keypadSpeechPattern) {
-            const speechField = document.createElement("speech-command");
-            speechField.setAttribute("speech-pattern", keypadSpeechPattern);
-            speechField.setAttribute("speech-function", "WMOFActions.enterKeypadValue");
-            speechField.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
-            speechField.setAttribute("speech-preproc-field", "spokenValue");
-            speechField.setAttribute("speech-preproc-context", "keypad");
-            speechField.setAttribute("speech-open-ended", "");
-            speechField.dataset.speechOptionsPhrase =
-                "<spokenValue>";
-            ensureSpeechMenu(numberPadDialog).append(speechField);
-        }
         const backspace =
             $("#numberPadBackspace");
 
@@ -15529,6 +15567,19 @@
                         numberPadDate
                             .value
                     ]
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadVoice,
+                event:
+                    "pointerup",
+                name:
+                    "switchNumberPadToVoicePointerUp",
+                action:
+                    "switchNumberPadToVoice"
             });
 
         globalThis
@@ -20100,170 +20151,6 @@
                 return false;
             },
 
-            enterKeypadValue(
-                spokenValue
-            ) {
-                if (
-                    !numberPadDialog
-                        ?.open ||
-                    !numberPadState
-                ) {
-                    return false;
-                }
-
-                let pending;
-                let meridiem =
-                    numberPadState
-                        .meridiem;
-
-                if (
-                    numberPadState.mode ===
-                        "percent"
-                ) {
-                    const percent =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "percent"
-                            );
-
-                    if (
-                        !Number.isInteger(
-                            percent
-                        ) ||
-                        percent <= 0
-                    ) {
-                        return false;
-                    }
-
-                    pending =
-                        String(percent);
-                }
-                else if (
-                    numberPadState.mode ===
-                        "absolute"
-                ) {
-                    const parts =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "clock-parts"
-                            );
-
-                    if (!parts) {
-                        return false;
-                    }
-
-                    if (parts.meridiem) {
-                        meridiem =
-                            parts.meridiem
-                                .toUpperCase();
-                    }
-                    else if (
-                        parts.hour > 12
-                    ) {
-                        meridiem =
-                            undefined;
-                    }
-
-                    const hour =
-                        meridiem &&
-                        parts.hour > 12
-                            ? (
-                                parts.hour %
-                                    12 ||
-                                12
-                            )
-                            : parts.hour;
-
-                    pending =
-                        absoluteDigits(
-                            hour,
-                            parts.minute,
-                            0
-                        );
-
-                    if (parts.day) {
-                        const date =
-                            new Date();
-
-                        if (
-                            parts.day ===
-                                "tomorrow"
-                        ) {
-                            date.setDate(
-                                date.getDate() +
-                                    1
-                            );
-                        }
-
-                        numberPadState
-                            .pendingDate =
-                            formatDateInput(
-                                date
-                            );
-                    }
-
-                    if (
-                        !absoluteDigitsValid(
-                            pending,
-                            meridiem
-                        )
-                    ) {
-                        return false;
-                    }
-                }
-                else {
-                    const duration =
-                        EnglishSpeechValuePreprocessor
-                            .parse(
-                                spokenValue,
-                                "duration"
-                            );
-
-                    if (
-                        !Number.isFinite(
-                            duration
-                        ) ||
-                        duration <= 0
-                    ) {
-                        return false;
-                    }
-
-                    pending =
-                        durationValueToRawDigits(
-                            formatTimelineMilliseconds(
-                                duration
-                            )
-                        );
-
-                    if (
-                        !timeDigitsValid(
-                            pending
-                        )
-                    ) {
-                        return false;
-                    }
-                }
-
-                numberPadState.pending =
-                    pending;
-
-                numberPadState.meridiem =
-                    meridiem;
-
-                numberPadState
-                    .replaceOnNextDigit =
-                    false;
-
-                numberPadState.everEdited =
-                    true;
-
-                refreshNumberPad();
-
-                return true;
-            },
-
             openStartMenu() {
                 return openStartMenuWorkflow();
             },
@@ -22696,6 +22583,15 @@
                     next;
 
                 refreshNumberPad();
+
+                return true;
+            },
+
+            switchNumberPadToVoice() {
+                void switchNumberPadToVoice()
+                    .catch(
+                        () => {}
+                    );
 
                 return true;
             },
