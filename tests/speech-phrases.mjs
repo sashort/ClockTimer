@@ -337,11 +337,11 @@ for (
     assert.match(
         repeatableSystemCommandSource,
         new RegExp(
-            "\\"" +
+            '"' +
             phrase +
-            "\\"[\\s\\S]*?WMOFActions\\." +
+            '"[\\s\\S]*?WMOFActions\\.' +
             action +
-            "[\\s\\S]*?speech-repeatable"
+            '[\\s\\S]*?speech-repeatable'
         ),
         phrase +
             " should support rapid back-to-back execution"
