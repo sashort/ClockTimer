@@ -146,6 +146,49 @@
         );
     }
 
+    function audioVelocityAtPercent(
+        percent,
+        minimum,
+        maximum
+    ) {
+        const requested =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    Number(percent)
+                )
+            );
+
+        return Number(
+            Math.max(
+                Number(minimum),
+                Number(maximum) *
+                    requested /
+                    100
+            )
+                .toFixed(6)
+        );
+    }
+
+    function audioVolumeAtPercent(
+        percent
+    ) {
+        return Number(
+            (
+                Math.max(
+                    0,
+                    Math.min(
+                        100,
+                        Number(percent)
+                    )
+                ) /
+                100
+            )
+                .toFixed(6)
+        );
+    }
+
     function stepAudioVolume(
         value,
         deltaPercent
@@ -22080,6 +22123,54 @@
             );
         };
 
+    const setGlobalAudioRatePercent =
+        percent => {
+            const value =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        percent,
+                        "percent"
+                    );
+
+            if (
+                !Number.isFinite(value) ||
+                value < 0 ||
+                value > 100
+            ) {
+                return false;
+            }
+
+            audioSettings.speechVelocity =
+                audioVelocityAtPercent(
+                    value,
+                    AUDIO_SPEECH_VELOCITY_MIN,
+                    AUDIO_SPEECH_VELOCITY_MAX
+                );
+            audioSettings.toneVelocity =
+                audioVelocityAtPercent(
+                    value,
+                    AUDIO_TONE_VELOCITY_MIN,
+                    AUDIO_TONE_VELOCITY_MAX
+                );
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                "Speech Rate " +
+                    formatAudioVelocityPercent(
+                        audioSettings
+                            .speechVelocity,
+                        AUDIO_SPEECH_VELOCITY_MAX
+                    ),
+                {
+                    useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
+
     const setMasterSpeech =
         enabled => {
             const next =
@@ -22140,6 +22231,51 @@
                     audioSettings
                         .toneVolume,
                     deltaPercent
+                );
+
+            renderAudioSettings();
+            applyAudioOutputSettings();
+            saveAudioSettings();
+
+            return confirmSettingChange(
+                "Speech Volume " +
+                    Math.round(
+                        audioSettings
+                            .speechVolume *
+                        100
+                    ) +
+                    "%",
+                {
+                    useGlobalAudioSettings:
+                        true
+                }
+            );
+        };
+
+    const setGlobalAudioVolumePercent =
+        percent => {
+            const value =
+                EnglishSpeechValuePreprocessor
+                    .parse(
+                        percent,
+                        "percent"
+                    );
+
+            if (
+                !Number.isFinite(value) ||
+                value < 0 ||
+                value > 100
+            ) {
+                return false;
+            }
+
+            audioSettings.speechVolume =
+                audioVolumeAtPercent(
+                    value
+                );
+            audioSettings.toneVolume =
+                audioVolumeAtPercent(
+                    value
                 );
 
             renderAudioSettings();
@@ -22512,6 +22648,22 @@
                 }
 
                 return false;
+            },
+
+            setAudioRatePercent(
+                percent
+            ) {
+                return setGlobalAudioRatePercent(
+                    percent
+                );
+            },
+
+            setAudioVolumePercent(
+                percent
+            ) {
+                return setGlobalAudioVolumePercent(
+                    percent
+                );
             },
 
             changeAudioRateFaster() {

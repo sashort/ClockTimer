@@ -1421,6 +1421,78 @@ class SpeechMicBar extends HTMLElement {
                 "speech-repeatable",
                 ""
             );
+
+        const speechRatePercentCommand =
+            ensureCommand(
+                "speech-rate-percent",
+                "^speech (?!on$|off$)(?<percent>.+?)(?: percent|%)?$",
+                "WMOFActions.setAudioRatePercent"
+            );
+        speechRatePercentCommand
+            .setAttribute(
+                "speech-preproc",
+                "WMOFSpeechProcessing.normalizeSpeechValue"
+            );
+        speechRatePercentCommand
+            .setAttribute(
+                "speech-preproc-context",
+                "percent"
+            );
+        speechRatePercentCommand
+            .setAttribute(
+                "speech-preproc-field",
+                "percent"
+            );
+        speechRatePercentCommand
+            .setAttribute(
+                "speech-open-ended",
+                ""
+            );
+        speechRatePercentCommand
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
+        speechRatePercentCommand
+            .dataset
+            .speechOptionsPhrase =
+            "speech <percent>";
+
+        const volumePercentCommand =
+            ensureCommand(
+                "volume-percent",
+                "^volume (?<percent>.+?)(?: percent|%)?$",
+                "WMOFActions.setAudioVolumePercent"
+            );
+        volumePercentCommand
+            .setAttribute(
+                "speech-preproc",
+                "WMOFSpeechProcessing.normalizeSpeechValue"
+            );
+        volumePercentCommand
+            .setAttribute(
+                "speech-preproc-context",
+                "percent"
+            );
+        volumePercentCommand
+            .setAttribute(
+                "speech-preproc-field",
+                "percent"
+            );
+        volumePercentCommand
+            .setAttribute(
+                "speech-open-ended",
+                ""
+            );
+        volumePercentCommand
+            .setAttribute(
+                "speech-repeatable",
+                ""
+            );
+        volumePercentCommand
+            .dataset
+            .speechOptionsPhrase =
+            "volume <percent>";
         ensureCommand(
             "faster",
             "^faster$",

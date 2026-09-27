@@ -392,6 +392,22 @@ assert.match(
     /"speech"[\s\S]*?"\^speech \(\?:on\|off\)\$"[\s\S]*?WMOFActions\.setSpeechMaster[\s\S]*?speech-repeatable/
 );
 assert.match(
+    repeatableSystemCommandSource,
+    /"speech-rate-percent"[\s\S]*?\^speech \(\?!on\$\|off\$\)[\s\S]*?percent[\s\S]*?WMOFActions\.setAudioRatePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
+);
+assert.match(
+    repeatableSystemCommandSource,
+    /"volume-percent"[\s\S]*?\^volume [\s\S]*?percent[\s\S]*?WMOFActions\.setAudioVolumePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
+);
+assert.match(
+    speechMasterAppSource,
+    /setGlobalAudioRatePercent[\s\S]*?audioSettings\.speechVelocity[\s\S]*?audioSettings\.toneVelocity[\s\S]*?Speech Rate/
+);
+assert.match(
+    speechMasterAppSource,
+    /setGlobalAudioVolumePercent[\s\S]*?audioSettings\.speechVolume[\s\S]*?audioSettings\.toneVolume[\s\S]*?Speech Volume/
+);
+assert.match(
     speechMasterAppSource,
     /setMasterSpeech[\s\S]*?masters\.summary[\s\S]*?masters\.details[\s\S]*?Speech On[\s\S]*?Speech Off[\s\S]*?ignoreSummaryMaster/
 );
