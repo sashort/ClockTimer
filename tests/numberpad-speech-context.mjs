@@ -585,7 +585,7 @@ test("voice entry shows descriptive context-aware guidance and accepted-value fe
     );
     assert.match(
         appSource,
-        /prompt:[\s\S]*?display[\s\S]*?360[\s\S]*?"OK to " \+[\s\S]*?actionCopy\.ok/
+        /prompt:[\s\S]*?display[\s\S]*?"OK to " \+[\s\S]*?actionCopy\.ok[\s\S]*?360/
     );
     assert.match(
         audioEngineSource,
@@ -604,7 +604,7 @@ test("trip summary and either editor appear together without overlap", () => {
     );
     assert.match(
         appSource,
-        /function syncTripTransitionEditorLayout\([\s\S]*?"number-pad"[\s\S]*?--number-pad-summary-scale[\s\S]*?--trip-transition-summary-shift-y/
+        /function syncTripTransitionEditorLayout\([\s\S]*?"number-pad"[\s\S]*?--trip-transition-summary-shift-y[\s\S]*?--number-pad-summary-scale/
     );
     assert.match(
         appSource,
