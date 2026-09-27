@@ -2135,6 +2135,26 @@ class SpeechMicBar extends HTMLElement {
         const hostRect =
             this.getBoundingClientRect();
 
+        if (
+            this.optionsCollapsed &&
+            this.#optionsPanel
+        ) {
+            const optionsRect =
+                this.#optionsPanel
+                    .getBoundingClientRect();
+
+            if (
+                Number.isFinite(
+                    optionsRect.top
+                )
+            ) {
+                return Math.min(
+                    hostRect.top,
+                    optionsRect.top
+                );
+            }
+        }
+
         return hostRect.top - 42;
     }
 
