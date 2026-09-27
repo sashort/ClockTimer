@@ -1329,6 +1329,11 @@ assert.match(
 );
 
 assert.match(
+    speechMicBarSource,
+    /getCollapsedOptionsTop\(\)[\s\S]*optionsCollapsed[\s\S]*#optionsPanel[\s\S]*getBoundingClientRect\(\)[\s\S]*optionsRect\.top/
+);
+
+assert.match(
     app,
     /function reserveSemanticSpeech\([\s\S]*queueMicrotask[\s\S]*chain\.last[\s\S]*return \(\) =>[\s\S]*chain\.last/
 );
