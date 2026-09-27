@@ -13542,6 +13542,47 @@
         }
 
         if (
+            numberPadState.source ===
+                "new-trip"
+        ) {
+            const readyAtMatch =
+                command.match(
+                    /^at\s+(.+)$/
+                );
+
+            if (readyAtMatch) {
+                const spokenTime =
+                    readyAtMatch[1];
+
+                hideVoiceEntrySurface();
+                resetNumberPad();
+
+                void Promise
+                    .resolve(
+                        actions
+                            .scheduleStartAt(
+                                spokenTime
+                            )
+                    )
+                    .catch(
+                        () => {}
+                    );
+
+                return true;
+            }
+
+            if (
+                command ===
+                    "defer trip"
+            ) {
+                void actions
+                    .deferTrip();
+
+                return true;
+            }
+        }
+
+        if (
             /^(?:ok|okay)$/
                 .test(command)
         ) {
@@ -15351,6 +15392,69 @@
         });
     }
 
+    async function applyTripFieldSpeechValue(
+        field,
+        spokenValue
+    ) {
+        if (
+            !tripSettingsDialog
+                .open
+        ) {
+            return false;
+        }
+
+        try {
+            const opened =
+                await openTripFieldNumberPad(
+                    field
+                );
+
+            if (
+                !opened ||
+                !voiceEntryState ||
+                !numberPadState
+            ) {
+                return false;
+            }
+
+            if (
+                !parseVoiceEntryTranscript(
+                    spokenValue
+                ) ||
+                !numberPadValueValid()
+            ) {
+                await closeVoiceEntry({
+                    cancel: true
+                });
+
+                return false;
+            }
+
+            if (
+                !await commitNumberPad()
+            ) {
+                return false;
+            }
+
+            await closeVoiceEntry({
+                cancel: false
+            });
+
+            return true;
+        }
+        catch {
+            if (voiceEntryState) {
+                await closeVoiceEntry({
+                    cancel: true
+                }).catch(
+                    () => {}
+                );
+            }
+
+            return false;
+        }
+    }
+
     function bindNumberPadEvents() {
         const backspace =
             $("#numberPadBackspace");
@@ -15866,6 +15970,7 @@
         initialValue,
         tripMoment,
         signal,
+        inputMode,
         endStartTransition = false
     } = {}) {
         if (signal?.aborted) {
@@ -15937,19 +16042,27 @@
         }
 
         const opened =
-            await openNumberPad({
-                mode: "time",
-                source: "new-trip",
-                initialValue: deferredDraft ? tripDraft.standardTime : newTripInitialValue,
-                preparationPromise,
-                tripDefaults: tripDraft,
-                startsTripOnConfirm: true,
-                role: "root",
-                workflow: "new-trip",
-                cancelTarget: "home",
-                confirmTarget: "home",
-                signal
-            });
+            await openValueEditor(
+                {
+                    mode: "time",
+                    source: "new-trip",
+                    initialValue:
+                        deferredDraft
+                            ? tripDraft.standardTime
+                            : newTripInitialValue,
+                    preparationPromise,
+                    tripDefaults:
+                        tripDraft,
+                    startsTripOnConfirm:
+                        true,
+                    role: "root",
+                    workflow: "new-trip",
+                    cancelTarget: "home",
+                    confirmTarget: "home",
+                    signal
+                },
+                inputMode
+            );
 
         if (
             !opened &&
@@ -19329,7 +19442,8 @@
     const openStartMenuWorkflow =
         ({
             preserveSpeechContinuation =
-                false
+                false,
+            inputMode
         } = {}) => {
             if (
                 tripIsLive() ||
@@ -19356,7 +19470,8 @@
                     beginNewTripWorkflow({
                         tripMoment:
                             new Date(),
-                        signal
+                        signal,
+                        inputMode
                     })
                 )
                 .then(
@@ -20166,7 +20281,9 @@
 
                 return openStartMenuWorkflow({
                     preserveSpeechContinuation:
-                        true
+                        true,
+                    inputMode:
+                        "voice"
                 });
             },
 
@@ -20175,7 +20292,9 @@
 
                 return openStartMenuWorkflow({
                     preserveSpeechContinuation:
-                        true
+                        true,
+                    inputMode:
+                        "voice"
                 });
             },
 
@@ -21306,8 +21425,11 @@
 
             deferTrip() {
                 if (
-                    !numberPadDialog
-                        ?.open ||
+                    (
+                        !numberPadDialog
+                            ?.open &&
+                        !voiceEntryState
+                    ) ||
                     numberPadState
                         ?.workflow !==
                         "new-trip" ||
@@ -21324,16 +21446,25 @@
 
                 renderDeferredTrip();
 
-                void closeNumberPad({
-                    discardPrepared:
-                        false,
-                    allowChanged:
-                        true,
-                    immediate:
-                        true,
-                    destination:
-                        "home"
-                });
+                if (voiceEntryState) {
+                    void closeVoiceEntry({
+                        cancel: false,
+                        destination:
+                            "home"
+                    });
+                }
+                else {
+                    void closeNumberPad({
+                        discardPrepared:
+                            false,
+                        allowChanged:
+                            true,
+                        immediate:
+                            true,
+                        destination:
+                            "home"
+                    });
+                }
 
                 return true;
             },
@@ -22857,6 +22988,61 @@
                 return toggleClockTimerElapsedRemaining();
             },
 
+            openTripStandardTimeEditor() {
+                return actions
+                    .openTripTimeEditor(
+                        "standard-time"
+                    );
+            },
+
+            openTripScheduledStartEditor() {
+                return actions
+                    .openTripTimeEditor(
+                        "scheduled-start"
+                    );
+            },
+
+            openTripActualStartEditor() {
+                return actions
+                    .openTripTimeEditor(
+                        "actual-start"
+                    );
+            },
+
+            openTripCreationTimeEditor() {
+                return actions
+                    .openTripTimeEditor(
+                        "creation-time"
+                    );
+            },
+
+            changeScheduledStart(
+                spokenTime
+            ) {
+                return applyTripFieldSpeechValue(
+                    "scheduled-start",
+                    spokenTime
+                );
+            },
+
+            changeActualStart(
+                spokenTime
+            ) {
+                return applyTripFieldSpeechValue(
+                    "actual-start",
+                    spokenTime
+                );
+            },
+
+            changeCreationTime(
+                spokenTime
+            ) {
+                return applyTripFieldSpeechValue(
+                    "creation-time",
+                    spokenTime
+                );
+            },
+
             async openTripTimeEditor(
                 field
             ) {
@@ -22880,7 +23066,8 @@
 
                     if (
                         !numberPadDialog
-                            ?.open
+                            ?.open &&
+                        !voiceEntryState
                     ) {
                         return false;
                     }
@@ -22896,16 +23083,25 @@
                             }
                         )
                     ) {
-                        await closeNumberPad({
-                            discardPrepared:
-                                false,
-                            allowChanged:
-                                true,
-                            immediate:
-                                true,
-                            destination:
-                                "none"
-                        });
+                        if (voiceEntryState) {
+                            await closeVoiceEntry({
+                                cancel: true,
+                                destination:
+                                    "none"
+                            });
+                        }
+                        else {
+                            await closeNumberPad({
+                                discardPrepared:
+                                    false,
+                                allowChanged:
+                                    true,
+                                immediate:
+                                    true,
+                                destination:
+                                    "none"
+                            });
+                        }
                     }
 
                     return true;
@@ -23617,7 +23813,14 @@
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
-                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel"
+                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel",
+                standardTimeEditor:'#tripSettingsDialog [data-trip-time-field="standard-time"]',
+                scheduledStartEditor:'#tripSettingsDialog [data-trip-time-field="scheduled-start"]',
+                scheduledStart:'#tripSettingsDialog [data-trip-time-field="scheduled-start"]',
+                actualStartEditor:'#tripSettingsDialog [data-trip-time-field="actual-start"]',
+                actualStart:'#tripSettingsDialog [data-trip-time-field="actual-start"]',
+                creationTimeEditor:'#tripSettingsDialog [data-trip-time-field="creation-time"]',
+                creationTime:'#tripSettingsDialog [data-trip-time-field="creation-time"]'
             };
 
             const speechOptionGroups = {
@@ -23662,7 +23865,14 @@
                 confirm: "trip-actions",
                 yes: "trip-actions",
                 no: "trip-actions",
-                cancel: "trip-actions"
+                cancel: "trip-actions",
+                standardTimeEditor: "settings",
+                scheduledStartEditor: "settings",
+                scheduledStart: "settings",
+                actualStartEditor: "settings",
+                actualStart: "settings",
+                creationTimeEditor: "settings",
+                creationTime: "settings"
             };
 
             if (speechTargets[key]) {
@@ -23781,24 +23991,58 @@
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
-            const readyAtNumberPadCommand =
-                installSpeechCommand(
-                    "readyAtContinuation",
-                    "continueStartAt",
-                    numberPadDialog,
-                    false,
-                    "clock",
-                    "spokenTime"
-                );
-
-            readyAtNumberPadCommand
-                ?.setAttribute(
-                    "speech-index",
-                    "10"
-                );
-
             installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
             installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
+
+            installSpeechCommand(
+                "standardTimeEditor",
+                "openTripStandardTimeEditor",
+                tripSettingsDialog,
+                false
+            );
+            installSpeechCommand(
+                "scheduledStartEditor",
+                "openTripScheduledStartEditor",
+                tripSettingsDialog,
+                false
+            );
+            installSpeechCommand(
+                "scheduledStart",
+                "changeScheduledStart",
+                tripSettingsDialog,
+                false,
+                "clock",
+                "spokenTime"
+            );
+            installSpeechCommand(
+                "actualStartEditor",
+                "openTripActualStartEditor",
+                tripSettingsDialog,
+                false
+            );
+            installSpeechCommand(
+                "actualStart",
+                "changeActualStart",
+                tripSettingsDialog,
+                false,
+                "clock",
+                "spokenTime"
+            );
+            installSpeechCommand(
+                "creationTimeEditor",
+                "openTripCreationTimeEditor",
+                tripSettingsDialog,
+                false
+            );
+            installSpeechCommand(
+                "creationTime",
+                "changeCreationTime",
+                tripSettingsDialog,
+                false,
+                "clock",
+                "spokenTime"
+            );
+
             installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
             installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
             installNumberPadSpeechCommands();

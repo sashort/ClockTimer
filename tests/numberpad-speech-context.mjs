@@ -69,3 +69,57 @@ test("switch is an allowed action verb", () => {
     );
     assert.match(actionSource, /"switch"/);
 });
+
+
+test("ready explicitly routes the asynchronous new-trip workflow to voice entry", () => {
+    assert.match(
+        appSource,
+        /prepareStartMenu\(\)[\s\S]*?inputMode:\s*"voice"/
+    );
+    assert.match(
+        appSource,
+        /beginNewTripWorkflow\([\s\S]*?inputMode[\s\S]*?openValueEditor\([\s\S]*?inputMode/
+    );
+});
+
+test("ready-at continuation lives in the voice editor instead of the touch keypad", () => {
+    const parser = appSource.slice(
+        appSource.indexOf("function parseVoiceEntryTranscript"),
+        appSource.indexOf("async function openVoiceValueEditor")
+    );
+    assert.match(parser, /\^at\\s\+\(\.\+\)\$/);
+    assert.match(parser, /scheduleStartAt/);
+    assert.doesNotMatch(appSource, /readyAtNumberPadCommand/);
+});
+
+test("Trip Settings voice aliases cover standard, scheduled, actual, and creation time", () => {
+    assert.match(
+        languageSource,
+        /standardTime:\s*"\^standard\(\?: time\)\? /
+    );
+    assert.match(
+        languageSource,
+        /scheduledStartEditor:\s*"\^\(\?:scheduled start\|scheduled time\)\$"/
+    );
+    assert.match(
+        languageSource,
+        /actualStartEditor:\s*"\^\(\?:actual start\|start time\)\$"/
+    );
+    assert.match(
+        languageSource,
+        /creationTimeEditor:\s*"\^\(\?:creation time\|created\(\?: at\)\?\)\$"/
+    );
+});
+
+test("Early Start standard command keeps spoken duration and makes time optional", () => {
+    const indexSource = readFileSync(
+        new URL("../index.html", import.meta.url),
+        "utf8"
+    );
+    const matches =
+        indexSource.match(
+            /speech-pattern="\^standard\(\?: time\)\? \(\?&lt;timeValue&gt;\.\+\)\$"/g
+        ) || [];
+
+    assert.equal(matches.length, 2);
+});

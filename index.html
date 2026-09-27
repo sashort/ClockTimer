@@ -892,7 +892,7 @@
                         <span class="trip-time-description">Expected duration.</span>
                     </div>
                     <output id="tripStandardTime" class="trip-time-value">---</output>
-                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-options-category="settings" data-speech-options-category="settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-pattern="^standard time (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="Edit standard time" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-options-category="settings" data-speech-options-category="settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-pattern="^standard(?: time)? (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue"><span aria-hidden="true"></span></button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="scheduled-start">
                     <div class="trip-time-copy">
@@ -962,7 +962,7 @@
                     <span id="scheduledStartCountdownLabel">Time Until ---</span>
                     <strong id="scheduledStartCountdown">0:00:00</strong>
                 </div>
-                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" data-speech-target="#scheduledStartStandard" speech-pattern="^standard time (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue">
+                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" data-speech-target="#scheduledStartStandard" speech-pattern="^standard(?: time)? (?&lt;timeValue&gt;.+)$" speech-function="WMOFActions.changeStandardTime" speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="duration" speech-preproc-field="timeValue">
                     <span>Standard Time</span>
                     <strong id="scheduledStartStandardValue">---</strong>
                 </button>
@@ -1047,7 +1047,7 @@
     <script src="CalendarRange.js"></script>
     <script src="TripLog.js"></script>
     <script src="ParameterParser.js"></script>
-    <script src="lang/en-US.js?v=scoped-goal-speech-1"></script>
+    <script src="lang/en-US.js?v=trip-settings-voice-1"></script>
     <script src="lang/en-US/SpokenTimeParser.js"></script>
     <script src="lang/en-US/DurationParser.js?v=duration-readback-1"></script>
     <script src="lang/en-US/PercentParser.js"></script>
@@ -1063,7 +1063,7 @@
     <script src="api/audio/AudioEngine.js?v=announcement-speech-chain-1"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=swipe-target-cue-1"></script>
-    <script src="app.js?v=value-editor-mode-1"></script>
+    <script src="app.js?v=trip-settings-voice-1"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
 </html>
