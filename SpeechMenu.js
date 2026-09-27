@@ -49,6 +49,7 @@ class SpeechMenu {
     static #phrases = Object.freeze([]);
     static #phraseGroups = Object.freeze([]);
     static #phraseRefreshQueued = false;
+    static #surfaceContextRefreshPending = false;
     static #recognizerHotwordKey = "";
     static #corrections = Object.freeze([]);
     static #correctionsRevision = "empty";
@@ -124,9 +125,8 @@ class SpeechMenu {
         const refreshSurfaceContext =
             () => {
                 SpeechMenu
-                    .#invalidateRecognitionContext(
-                        "surface-context-change"
-                    );
+                    .#surfaceContextRefreshPending =
+                    true;
 
                 SpeechMenu
                     .#schedulePhraseRefresh();
@@ -182,9 +182,8 @@ class SpeechMenu {
 
                     if (surfaceChanged) {
                         SpeechMenu
-                            .#invalidateRecognitionContext(
-                                "surface-context-change"
-                            );
+                            .#surfaceContextRefreshPending =
+                            true;
                     }
 
                     SpeechMenu
@@ -1480,9 +1479,28 @@ class SpeechMenu {
                 }
             );
 
-        if (
+        const speechContextChanged =
             phrasesChanged ||
-            groupsChanged
+            groupsChanged;
+
+        if (
+            SpeechMenu
+                .#surfaceContextRefreshPending
+        ) {
+            SpeechMenu
+                .#surfaceContextRefreshPending =
+                false;
+
+            if (speechContextChanged) {
+                SpeechMenu
+                    .#invalidateRecognitionContext(
+                        "surface-context-change"
+                    );
+            }
+        }
+
+        if (
+            speechContextChanged
         ) {
             SpeechMenu.#emit(
                 "phrasesChanged",
