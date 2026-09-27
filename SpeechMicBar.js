@@ -526,8 +526,9 @@ class SpeechMicBar extends HTMLElement {
                 .option-command-text {
                     display: inline-flex;
                     align-items: baseline;
-                    flex: 0 0 auto;
-                    min-width: max-content;
+                    flex: 0 1 auto;
+                    min-width: 0;
+                    max-width: 100%;
                     white-space: nowrap;
                 }
 
