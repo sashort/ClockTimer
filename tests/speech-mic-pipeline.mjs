@@ -1751,7 +1751,7 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /setTripGoal:\s*"\^trip goal \(\?<percent>\.\+\)\$"/
+    /changeGoal:\s*"\^\(\?<percent>\.\+\?\)\(\?: percent\)\? \(\?<goalScope>day\|trip\|total\|week\|check\|month\|year\)\$"/
 );
 assert.match(
     languageSource,
@@ -2727,7 +2727,7 @@ assert.match(
     /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"what"[\s\S]*"choices"[\s\S]*"options"/
 );
 
-assert.doesNotMatch(englishSource, /setTripGoal:/);
-assert.doesNotMatch(englishSource, /setTotalGoal:/);
+assert.doesNotMatch(languageSource, /setTripGoal:/);
+assert.doesNotMatch(languageSource, /setTotalGoal:/);
 assert.doesNotMatch(html, /builtin:setTripGoal:page/);
 assert.doesNotMatch(html, /builtin:setTotalGoal:page/);
