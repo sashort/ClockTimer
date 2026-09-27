@@ -1335,6 +1335,11 @@ assert.match(
 
 assert.match(
     app,
+    /function getSpeechMicTop\(\)[\s\S]*--speech-command-row-height[\s\S]*optionsCollapsed[\s\S]*micTop\s*-\s*[\s\S]*commandRowHeight/
+);
+
+assert.match(
+    app,
     /function reserveSemanticSpeech\([\s\S]*queueMicrotask[\s\S]*chain\.last[\s\S]*return \(\) =>[\s\S]*chain\.last/
 );
 assert.match(
