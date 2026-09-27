@@ -12900,19 +12900,14 @@
         );
 
         const valid = numberPadValueValid();
-        const autocorrect = changed && !percentMode && numberPadState.pending !== "" && !valid;
         const startsTrip = Boolean(numberPadState.startsTripOnConfirm);
-        const confirmAction = autocorrect ? "autocorrect" : startsTrip ? "start" : "confirm";
+        const confirmAction = startsTrip ? "start" : "confirm";
         numberPadConfirm.dataset.action = confirmAction;
         numberPadConfirm.setAttribute(
             "aria-label",
-            autocorrect ? "Auto-Correct" : startsTrip ? "Start Trip" : "Confirm"
+            startsTrip ? "Start Trip" : "Confirm"
         );
-        numberPadConfirm.disabled = autocorrect
-            ? false
-            : startsTrip
-                ? !valid
-                : ((!changed && !numberPadState.allowEmpty) || !valid);
+        numberPadConfirm.disabled = !valid;
 
         setOkAllowed(
             numberPadDialog,
@@ -13544,11 +13539,18 @@
     async function commitNumberPad() {
         if (!numberPadState || !numberPadValueValid()) return false;
         const state = { ...numberPadState };
+
+        if (
+            !numberPadHasChanges() &&
+            !state.startsTripOnConfirm
+        ) {
+            return true;
+        }
+
         if (state.onConfirm) {
             const value = !state.pending ? undefined : state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
             return await state.onConfirm(value) !== false;
         }
-        if (!numberPadHasChanges() && !state.startsTripOnConfirm) return false;
         if (state.mode === "percent") {
             const percent =
                 Number(state.pending);
@@ -13707,6 +13709,30 @@
         numberPadState.replaceOnNextDigit = false;
         numberPadState.everEdited = true;
         refreshNumberPad();
+    }
+
+    function backspaceNumberPadPendingValue() {
+        if (
+            !numberPadState ||
+            !numberPadState.pending
+        ) {
+            return false;
+        }
+
+        numberPadState.pending =
+            String(
+                numberPadState.pending
+            ).slice(
+                0,
+                -1
+            );
+        numberPadState.replaceOnNextDigit =
+            false;
+        numberPadState.everEdited =
+            true;
+        refreshNumberPad();
+
+        return true;
     }
 
     function resetNumberPadPendingValue() {
@@ -14702,64 +14728,16 @@
         const backspace =
             $("#numberPadBackspace");
 
-        let deleteTimer;
-        let held = false;
-
-        backspace.addEventListener(
-            "pointerdown",
-            globalThis
-                .WMOFInteractionFunctions
-                .define(
-                    "clearNumberPadPointerDown",
-                    event => {
-                        held = false;
-
-                        backspace
-                            .setPointerCapture?.(
-                                event.pointerId
-                            );
-
-                        deleteTimer =
-                            setTimeout(
-                                () => {
-                                    held =
-                                        true;
-
-                                    globalThis
-                                        .WMOFActions
-                                        .clearNumberPadValue();
-                                },
-                                NUMBER_PAD_LONG_PRESS
-                            );
-                    }
-                )
-        );
-
         backspace.addEventListener(
             "pointerup",
             globalThis
                 .WMOFInteractionFunctions
                 .define(
-                    "clearNumberPadPointerUp",
-                    () => {
-                        clearTimeout(
-                            deleteTimer
-                        );
-
-                        if (!held) {
-                            globalThis
-                                .WMOFActions
-                                .clearNumberPadValue();
-                        }
-                    }
-                )
-        );
-
-        backspace.addEventListener(
-            "pointercancel",
-            () =>
-                clearTimeout(
-                    deleteTimer
+                    "backspaceNumberPadPointerUp",
+                    () =>
+                        globalThis
+                            .WMOFActions
+                            .backspaceNumberPadValue()
                 )
         );
 
@@ -14768,16 +14746,18 @@
             globalThis
                 .WMOFInteractionFunctions
                 .define(
-                    "clearNumberPadKeyboardClick",
+                    "backspaceNumberPadKeyboardClick",
                     event => {
                         if (
                             event.detail ===
                             0
                         ) {
-                            globalThis
+                            return globalThis
                                 .WMOFActions
-                                .clearNumberPadValue();
+                                .backspaceNumberPadValue();
                         }
+
+                        return false;
                     }
                 )
         );
@@ -22001,6 +21981,10 @@
                 );
             },
 
+            backspaceNumberPadValue() {
+                return backspaceNumberPadPendingValue();
+            },
+
             resetNumberPadValue() {
                 resetNumberPadPendingValue();
 
@@ -22134,39 +22118,6 @@
                         .disabled
                 ) {
                     return false;
-                }
-
-                if (
-                    numberPadConfirm
-                        .dataset
-                        .action ===
-                        "autocorrect"
-                ) {
-                    if (
-                        numberPadState
-                            .mode ===
-                            "absolute"
-                    ) {
-                        autocorrectAbsoluteState(
-                            numberPadState
-                        );
-                    }
-                    else {
-                        numberPadState
-                            .pending =
-                            autocorrectTimeDigits(
-                                numberPadState
-                                    .pending
-                            );
-                    }
-
-                    numberPadState
-                        .replaceOnNextDigit =
-                        false;
-
-                    refreshNumberPad();
-
-                    return true;
                 }
 
                 try {
