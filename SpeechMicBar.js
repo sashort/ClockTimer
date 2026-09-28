@@ -1232,7 +1232,8 @@ class SpeechMicBar extends HTMLElement {
                             "commands",
                             "speech commands",
                             "choices",
-                            "options"
+                            "options",
+                            "what"
                         ],
                         required:
                             "commands",
@@ -1400,7 +1401,7 @@ class SpeechMicBar extends HTMLElement {
         this.#commandsCommand =
             ensureCommand(
                 "commands",
-                "^(?:(?:speech )?commands|choices|options)$",
+                "^(?:(?:speech )?commands|choices|options|what)$",
                 "WMOFActions.openSpeechOptions"
             );
         ensureCommand(
