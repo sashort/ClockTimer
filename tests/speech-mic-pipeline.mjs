@@ -3080,6 +3080,15 @@ assert.match(
 
 assert.match(
     speechMenuSource,
+    /#recoverOpenContinuationTranscript\([\s\S]*#streamRemainder\([\s\S]*base[\s\S]*incoming[\s\S]*base \+[\s\S]*incoming[\s\S]*speechContinuationRecovered/
+);
+assert.match(
+    speechMenuSource,
+    /recognitionHotwords[\s\S]*#refreshRecognizerHotwords/
+);
+
+assert.match(
+    speechMenuSource,
     /#hasCompetingContinuation\([\s\S]*candidate !==[\s\S]*exactCandidate[\s\S]*candidate[\s\S]*\.continuation/
 );
 assert.match(
