@@ -7,7 +7,7 @@ const window = new Window({url:"https://wmof.example/"});
 window.document.body.innerHTML = [
     '<button id="breakButton">Break</button>',
     '<speech-menu id="topMenu" speech-modal="top-level">',
-    '<speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-pattern="^break start$" speech-function="WMOFActions.openBreakMenu"></speech-command>',
+    '<speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-target="#breakButton" speech-chain-next="break-choice" speech-pattern="^break start$" speech-function="WMOFActions.openBreakMenu"></speech-command>',
     '<speech-command data-speech-editor-id="builtin:breakStop:page" data-speech-target="#breakButton" speech-pattern="^break stop$" speech-function="WMOFActions.openBreakMenu"></speech-command>',
     '</speech-menu>'
 ].join("");
@@ -99,8 +99,7 @@ const entries = [
         attrs:{
             "speech-pattern":"^take a break$",
             "speech-function":"WMOFActions.openBreakMenu",
-            "speech-index":"2",
-            "speech-chain-next":"break-choice"
+            "speech-index":"2"
         }
     },
     {
