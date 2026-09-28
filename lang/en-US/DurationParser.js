@@ -323,6 +323,25 @@ class EnglishDurationParser {
             return undefined;
         }
 
+        /*
+         * Preserve the established "zero thirty" = 30 minutes reading.
+         * Explicit digit/group forms such as "0 30" are handled earlier
+         * by #groupedDuration and remain positional.
+         */
+        if (
+            chunks.length === 2 &&
+            chunks[0] === 0 &&
+            /^(?:zero|oh|o|naught|nought)\b/
+                .test(
+                    String(
+                        value ||
+                        ""
+                    ).trim()
+                )
+        ) {
+            return undefined;
+        }
+
         const [
             hours,
             minutes,
