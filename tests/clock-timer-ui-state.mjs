@@ -135,6 +135,8 @@ skippedBreak.remove();
 const threshold=window.document.createElement('clock-timer');window.document.body.append(threshold);
 await threshold.start({standardTime:'0:01:40'});
 window.__testTime+=90000;await new Promise(resolve=>setTimeout(resolve,1100));const aboveGoal=threshold.getSummarySnapshot().trip.countedPercent;
+assert.equal(threshold.getUIState(new window.Date()).current_percent_component.text,'111.11%','actual UI percent is display-rounded to hundredths');
+assert.equal(threshold.getUIState(new window.Date()).goal_component.text,'100%','goal display precision is unchanged');
 window.__testTime+=11000;await new Promise(resolve=>setTimeout(resolve,1100));const belowGoal=threshold.getSummarySnapshot().trip.countedPercent;
 window.__testTime+=9000;await new Promise(resolve=>setTimeout(resolve,1100));const laterBelowGoal=threshold.getSummarySnapshot().trip.countedPercent;
 assert(Math.abs(aboveGoal-(100/90))<1e-9);
