@@ -10,6 +10,16 @@ const app =
         "utf8"
     );
 
+const clockTimer =
+    fs.readFileSync(
+        new URL(
+            "../ClockTimer.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+
 const index =
     fs.readFileSync(
         new URL(
@@ -128,6 +138,25 @@ for (
         false
     );
 }
+
+assert.match(
+    clockTimer,
+    /async endInterval\([\s\S]*suppressTripResumed\s*=\s*false[\s\S]*#emitSemanticIntervalEnded\([\s\S]*suppressTripResumed/
+);
+
+assert.match(
+    clockTimer,
+    /intervalType === "down"[\s\S]*"downTimeEnded"[\s\S]*if \(suppressTripResumed\)[\s\S]*return true;[\s\S]*"tripResumed"/
+);
+
+assert.match(
+    app,
+    /async function startBreakInterval\([\s\S]*intervalType[\s\S]*"down"[\s\S]*\.endInterval\([\s\S]*transactionTime,[\s\S]*suppressTripResumed:[\s\S]*true[\s\S]*\.startInterval\(/
+);
+
+console.log(
+    "PASS down-to-break transition ends Down without emitting an intermediate Trip Resumed event"
+);
 
 console.log(
     "PASS standalone five-note transition suppresses the later start chime while preserving speech layers"
