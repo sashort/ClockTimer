@@ -77,6 +77,26 @@ assert.equal(
     "0:05"
 );
 assert.equal(
+    parse("12 17"),
+    "12:17"
+);
+assert.equal(
+    parse("7 56"),
+    "7:56"
+);
+assert.equal(
+    parse("2 o 4"),
+    "2:04"
+);
+assert.equal(
+    parse("22 56"),
+    "22:56"
+);
+assert.equal(
+    parse("1 17 0 9"),
+    "1:17:09"
+);
+assert.equal(
     Parser.parse(
         "1 6 0"
     ),
