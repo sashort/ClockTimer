@@ -232,6 +232,41 @@ class EnglishDurationParser {
             );
     }
 
+    static formatCanonical(milliseconds) {
+        if (
+            !Number.isFinite(milliseconds) ||
+            milliseconds <= 0
+        ) {
+            return undefined;
+        }
+
+        const total =
+            Math.round(
+                milliseconds /
+                1000
+            );
+        const hours =
+            Math.floor(
+                total /
+                3600
+            );
+        const minutes =
+            Math.floor(
+                (
+                    total %
+                    3600
+                ) /
+                60
+            );
+        const seconds =
+            total %
+            60;
+
+        return (
+            `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+        );
+    }
+
     static describe(milliseconds) {
         if (
             !Number.isFinite(
