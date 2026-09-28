@@ -20907,27 +20907,45 @@
             );
         }
 
-        if (
-            hours === 0 &&
-            minutes > 0 &&
-            seconds > 0
-        ) {
-            return (
-                goalFailureNumberWords(
-                    minutes
-                ) +
-                " " +
-                (
-                    seconds < 10
+        if (seconds > 0) {
+            const positionalPart =
+                value =>
+                    value < 10
                         ? "oh " +
                             goalFailureNumberWords(
-                                seconds
+                                value
                             )
                         : goalFailureNumberWords(
-                            seconds
-                        )
-                )
-            );
+                            value
+                        );
+
+            if (hours > 0) {
+                return (
+                    goalFailureNumberWords(
+                        hours
+                    ) +
+                    " " +
+                    positionalPart(
+                        minutes
+                    ) +
+                    " " +
+                    positionalPart(
+                        seconds
+                    )
+                );
+            }
+
+            if (minutes > 0) {
+                return (
+                    goalFailureNumberWords(
+                        minutes
+                    ) +
+                    " " +
+                    positionalPart(
+                        seconds
+                    )
+                );
+            }
         }
 
         const parts = [];
