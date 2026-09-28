@@ -1013,14 +1013,14 @@
                 <h2>Cancel Down Time</h2>
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
-            <p id="cancelDownConfirmMessage">Press/Say OK to Cancel your down time</p>
+            <p id="cancelDownConfirmMessage">Press/Say OK to Delete our down time</p>
             <div class="dialog-actions two-actions">
-                <button id="cancelDownConfirmYes" class="primary-action" type="button">Yes</button>
-                <button id="cancelDownConfirmNo" type="button">No</button>
+                <button id="cancelDownConfirmYes" class="primary-action" type="button">OK</button>
+                <button id="cancelDownConfirmNo" type="button">Cancel</button>
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
-                <speech-command data-speech-editor-id="builtin:yes:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^(?:yes|ok(?:ay)?)$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
-                <speech-command data-speech-editor-id="builtin:no:cancelDownConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmNo" speech-pattern="^no$" speech-function="WMOFActions.keepDownTime"></speech-command>
+                <speech-command data-speech-editor-id="builtin:confirm:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
+                <speech-command data-speech-editor-id="builtin:cancel:cancelDownConfirmDialog" data-speech-intent="cancel" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmNo" speech-pattern="^cancel$" speech-function="WMOFActions.continueDownTime"></speech-command>
             </speech-menu>
         </form>
     </dialog>
