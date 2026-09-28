@@ -16882,18 +16882,12 @@
     function scheduleScheduledStartSpeechPrompt() {
         cancelScheduledStartSpeechPrompt();
 
-        if (
-            String(
-                tripDraft
-                    ?.standardTime ||
-                ""
-            ).trim()
-        ) {
-            return false;
-        }
-
         const draft =
             tripDraft;
+
+        if (!draft) {
+            return false;
+        }
 
         scheduledStartSpeechPromptTimer =
             setTimeout(
@@ -16905,24 +16899,48 @@
                         !scheduledStartDialog
                             ?.open ||
                         tripDraft !==
-                            draft ||
-                        String(
-                            tripDraft
-                                ?.standardTime ||
-                            ""
-                        ).trim()
+                            draft
                     ) {
                         return;
                     }
 
+                    const hasStandardTime =
+                        Boolean(
+                            String(
+                                draft
+                                    .standardTime ||
+                                ""
+                            ).trim()
+                        );
+
                     globalThis
                         .WMOFAudio
                         ?.speak?.(
-                            "Say standard time"
+                            hasStandardTime
+                                ? "Say Start to start early"
+                                : "Say standard time"
                         );
                 },
                 180
             );
+
+        return true;
+    }
+
+    function armScheduledStartAutoFromVoice() {
+        if (
+            !tripDraft ||
+            !tripDraftHasFutureStart(
+                tripDraft
+            )
+        ) {
+            return false;
+        }
+
+        scheduledStartAutoArmed =
+            true;
+        scheduledStartAuto.checked =
+            true;
 
         return true;
     }
@@ -23114,6 +23132,12 @@
                     const previous =
                         tripDraft
                             .standardTime;
+                    const voiceSet =
+                        Boolean(
+                            globalThis
+                                .SpeechMenu
+                                ?.executionContext
+                        );
 
                     tripDraft.standardTime =
                         formatted;
@@ -23129,7 +23153,12 @@
                     scheduledStartMessage.hidden =
                         true;
 
+                    if (voiceSet) {
+                        armScheduledStartAutoFromVoice();
+                    }
+
                     updateScheduledStartDialog();
+                    scheduleScheduledStartSpeechPrompt();
 
                     return previous ===
                         formatted
@@ -25695,6 +25724,24 @@
                 );
             },
 
+            async startScheduledTripEarly() {
+                if (
+                    !scheduledStartDialog
+                        .open ||
+                    scheduledStartNow
+                        .disabled ||
+                    !tripDraftCanStart(
+                        tripDraft
+                    )
+                ) {
+                    return false;
+                }
+
+                return beginScheduledTrip(
+                    "now"
+                );
+            },
+
             cancelScheduledStart() {
                 cancelScheduledStartPrompt();
 
@@ -25748,10 +25795,25 @@
                                 return false;
                             }
 
+                            const voiceSet =
+                                Boolean(
+                                    voiceEntryState &&
+                                    voiceEntryState
+                                        .source ===
+                                        "standard-time"
+                                );
+
                             tripDraft
                                 .standardTime =
                                 value ||
                                 "";
+
+                            if (
+                                voiceSet &&
+                                value
+                            ) {
+                                armScheduledStartAutoFromVoice();
+                            }
 
                             return true;
                         }
@@ -27041,7 +27103,8 @@
                 actualStartEditor:'#tripSettingsDialog [data-trip-time-field="actual-start"]',
                 actualStart:'#tripSettingsDialog [data-trip-time-field="actual-start"]',
                 creationTimeEditor:'#tripSettingsDialog [data-trip-time-field="creation-time"]',
-                creationTime:'#tripSettingsDialog [data-trip-time-field="creation-time"]'
+                creationTime:'#tripSettingsDialog [data-trip-time-field="creation-time"]',
+                scheduledStartNow:"#scheduledStartNow"
             };
 
             const speechOptionGroups = {
@@ -27063,7 +27126,9 @@
                 breakChoice:
                     "break-choice",
                 confirm:
-                    "break-confirm"
+                    "break-confirm",
+                scheduledStartNow:
+                    "scheduled-start"
             };
 
             const speechChainNext = {
@@ -27109,7 +27174,8 @@
                 actualStartEditor: "settings",
                 actualStart: "settings",
                 creationTimeEditor: "settings",
-                creationTime: "settings"
+                creationTime: "settings",
+                scheduledStartNow: "trip-actions"
             };
 
             if (speechTargets[key]) {
@@ -27284,6 +27350,13 @@
                     .speechTarget =
                     "#scheduledStartStandard";
             }
+
+            installSpeechCommand(
+                "scheduledStartNow",
+                "startScheduledTripEarly",
+                scheduledStartDialog,
+                false
+            );
 
             installSpeechCommand(
                 "standardTimeEditor",
