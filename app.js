@@ -26467,6 +26467,22 @@
                 cancel: "cancel"
             };
 
+            const speechChainContexts = {
+                breakChoice:
+                    "break-choice",
+                confirm:
+                    "break-confirm"
+            };
+
+            const speechChainNext = {
+                readyAt:
+                    "scheduled-start",
+                breakStart:
+                    "break-choice",
+                breakChoice:
+                    "break-confirm"
+            };
+
             const speechOptionCategories = {
                 readyAt: "trip-actions",
                 readyAtContinuation: "trip-actions",
@@ -26580,6 +26596,31 @@
             element.dataset.speechOptionsCategory =
                 speechOptionCategories[key] ||
                 "settings";
+
+            if (speechChainContexts[key]) {
+                element.setAttribute(
+                    "speech-chain-context",
+                    speechChainContexts[key]
+                );
+            }
+            else {
+                element.removeAttribute(
+                    "speech-chain-context"
+                );
+            }
+
+            if (speechChainNext[key]) {
+                element.setAttribute(
+                    "speech-chain-next",
+                    speechChainNext[key]
+                );
+            }
+            else {
+                element.removeAttribute(
+                    "speech-chain-next"
+                );
+            }
+
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
@@ -26594,6 +26635,18 @@
             for (const element of [scheduledStartStandard, tripSettingsDialog.querySelector('[data-trip-time-field="standard-time"]')]) {
                 if (!element) continue;
                 element.dataset.speechEditorId = `builtin:standardTime:${element.id || "trip-settings"}`;
+
+                if (element === scheduledStartStandard) {
+                    element.setAttribute(
+                        "speech-chain-context",
+                        "scheduled-start"
+                    );
+                }
+                else {
+                    element.removeAttribute(
+                        "speech-chain-context"
+                    );
+                }
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
                 element.dataset.speechOptionsCategory =
                     "settings";
