@@ -654,6 +654,27 @@ test("voice entry shows descriptive context-aware guidance and accepted-value fe
     );
 });
 
+test("informal duration TTS uses positional minute-second and hour-minute-second speech", () => {
+    const formatter = appSource.slice(
+        appSource.indexOf("function formatGoalFailureDuration("),
+        appSource.indexOf("function buildGoalFailureSpeech(", appSource.indexOf("function formatGoalFailureDuration("))
+    );
+
+    assert.match(
+        formatter,
+        /audioSettings\.formalTime[\s\S]*?if \(seconds > 0\)[\s\S]*?positionalPart/
+    );
+    assert.match(
+        formatter,
+        /value === 0[\s\S]*?"oh oh"[\s\S]*?value < 10[\s\S]*?"oh "/
+    );
+    assert.match(
+        formatter,
+        /if \(hours > 0\)[\s\S]*?goalFailureNumberWords\([\s\S]*?hours[\s\S]*?positionalPart\([\s\S]*?minutes[\s\S]*?positionalPart\([\s\S]*?seconds/
+    );
+});
+
+
 test("duration TTS follows the Formal Time formatter across voice and informational paths", () => {
     const voiceParser = appSource.slice(
         appSource.indexOf("function parseVoiceEntryTranscript"),
