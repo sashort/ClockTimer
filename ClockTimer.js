@@ -1668,7 +1668,7 @@
                         ?.available === true
                 ),
                 current_percent_component: this.#component(
-                    Number.isFinite(countedPercent) ? `${Math.round(countedPercent * 100)}%` : undefined,
+                    Number.isFinite(countedPercent) ? `${(countedPercent * 100).toFixed(2)}%` : undefined,
                     countedPercent,
                     null,
                     Number.isFinite(countedPercent)
