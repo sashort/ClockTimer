@@ -870,9 +870,9 @@ assert.match(html, /builtin:yes:speechBreakConfirmDialog/);
 assert.match(html, /builtin:no:speechBreakConfirmDialog/);
 assert.match(html, /builtin:cancel:speechBreakConfirmDialog/);
 assert.match(html, /id="cancelDownConfirmDialog"/);
-assert.match(html, /Press\/Say OK to Cancel your down time/);
-assert.match(html, /builtin:yes:cancelDownConfirmDialog/);
-assert.match(html, /builtin:no:cancelDownConfirmDialog/);
+assert.match(html, /Press\\/Say OK to Delete our down time/);
+assert.match(html, /builtin:confirm:cancelDownConfirmDialog/);
+assert.match(html, /builtin:cancel:cancelDownConfirmDialog/);
 assert.match(
     html,
     /builtin:cancelDown:page[\s\S]*speech-available="WMOFSpeechAvailability\.canCancelDownTime"[\s\S]*speech-pattern="\^cancel\$"[\s\S]*WMOFActions\.cancelDownTime/
@@ -1020,7 +1020,7 @@ assert.match(
 );
 assert.match(
     app,
-    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\/Say OK to Cancel your down time[\s\S]*WMOFAudio[\s\S]*\.speak/
+    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\\/Say OK to Delete our down time[\s\S]*WMOFAudio[\s\S]*\.speak/
 );
 assert.match(
     app,
@@ -2957,7 +2957,7 @@ assert.match(
 
 assert.match(
     html,
-    /builtin:yes:cancelDownConfirmDialog[^>]*data-speech-intent="confirm"[^>]*speech-pattern="\^\(\?:yes\|ok\(\?:ay\)\?\)\$"/
+    /builtin:confirm:cancelDownConfirmDialog[^>]*data-speech-intent="confirm"[^>]*speech-pattern="\^ok\(\?:ay\)\?\$"/
 );
 assert.match(
     app,
