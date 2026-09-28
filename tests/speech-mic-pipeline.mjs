@@ -1870,7 +1870,7 @@ assert.match(
 );
 assert.match(
     app,
-    /function runSemanticAnnouncement\([\s\S]*activeSemanticAnnouncements[\s\S]*exclusiveSemanticAnnouncementTail[\s\S]*Promise[\s\S]*\.allSettled\([\s\S]*activeBefore/
+    /function runSemanticAnnouncement\([\s\S]*exclusiveSemanticAnnouncementTail[\s\S]*activeSemanticAnnouncements[\s\S]*\.allSettled\([\s\S]*activeBefore/
 );
 assert.match(
     app,
