@@ -70,6 +70,26 @@
                     layer
                 ) === true;
 
+    const announcementSpeechIgnoresMaster =
+        (
+            key,
+            {
+                ignoreSummaryMaster =
+                    false
+            } = {}
+        ) =>
+            Boolean(
+                ignoreSummaryMaster ||
+                announcementOverridesMaster(
+                    key,
+                    "summary"
+                ) ||
+                announcementOverridesMaster(
+                    key,
+                    "details"
+                )
+            );
+
     const AUDIO_DEFAULTS = Object.freeze({
         speechVolume: 1,
         toneVolume: 1,
@@ -19726,6 +19746,12 @@
 
     let semanticSpeechChain;
     let semanticSpeechSequence = 0;
+    const activeSemanticAnnouncements =
+        new Set();
+    let exclusiveSemanticAnnouncementTail =
+        Promise.resolve();
+    let exclusiveSemanticAnnouncementPending =
+        0;
 
     function reserveSemanticSpeech() {
         if (!semanticSpeechChain) {
@@ -19762,6 +19788,29 @@
                 token;
     }
 
+    function waitForAnnouncementDelay(
+        milliseconds
+    ) {
+        const delay =
+            Math.max(
+                0,
+                Number(
+                    milliseconds
+                ) ||
+                0
+            );
+
+        return delay > 0
+            ? new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        delay
+                    )
+            )
+            : Promise.resolve();
+    }
+
     function speakSemantic(
         audio,
         speech,
@@ -19796,6 +19845,183 @@
 
         queueMicrotask(
             run
+        );
+    }
+
+    function speakSemanticAndWait(
+        audio,
+        speech,
+        options,
+        guard
+    ) {
+        if (
+            guard &&
+            guard() === false
+        ) {
+            return Promise.resolve(
+                false
+            );
+        }
+
+        if (
+            !audio?.speak ||
+            !String(
+                speech ||
+                ""
+            ).trim()
+        ) {
+            return Promise.resolve(
+                false
+            );
+        }
+
+        return new Promise(
+            resolve => {
+                let settled =
+                    false;
+
+                const finish =
+                    () => {
+                        if (settled) {
+                            return;
+                        }
+
+                        settled =
+                            true;
+
+                        resolve(
+                            true
+                        );
+                    };
+
+                const started =
+                    audio.speak(
+                        speech,
+                        {
+                            ...(options || {}),
+                            onEnd:
+                                finish,
+                            onError:
+                                finish
+                        }
+                    );
+
+                if (!started) {
+                    finish();
+                }
+            }
+        );
+    }
+
+    function trackSemanticAnnouncement(
+        task
+    ) {
+        activeSemanticAnnouncements
+            .add(
+                task
+            );
+
+        task.then(
+            () =>
+                activeSemanticAnnouncements
+                    .delete(
+                        task
+                    ),
+            () =>
+                activeSemanticAnnouncements
+                    .delete(
+                        task
+                    )
+        );
+
+        return task;
+    }
+
+    function runSemanticAnnouncement(
+        announcement,
+        playback,
+        {
+            exclusive = false
+        } = {}
+    ) {
+        if (
+            typeof playback !==
+                "function"
+        ) {
+            return Promise.resolve(
+                false
+            );
+        }
+
+        if (exclusive) {
+            exclusiveSemanticAnnouncementPending++;
+
+            const previousExclusive =
+                exclusiveSemanticAnnouncementTail
+                    .catch(
+                        () => {}
+                    );
+            const activeBefore =
+                [
+                    ...activeSemanticAnnouncements
+                ];
+
+            const task =
+                previousExclusive
+                    .then(
+                        async () => {
+                            if (
+                                activeBefore
+                                    .length
+                            ) {
+                                await Promise
+                                    .allSettled(
+                                        activeBefore
+                                    );
+                            }
+
+                            return playback();
+                        }
+                    );
+
+            exclusiveSemanticAnnouncementTail =
+                task
+                    .catch(
+                        error => {
+                            console.error(
+                                "Exclusive announcement playback failed:",
+                                announcement,
+                                error
+                            );
+                        }
+                    )
+                    .finally(
+                        () => {
+                            exclusiveSemanticAnnouncementPending =
+                                Math.max(
+                                    0,
+                                    exclusiveSemanticAnnouncementPending -
+                                        1
+                                );
+                        }
+                    );
+
+            return task;
+        }
+
+        const blocker =
+            exclusiveSemanticAnnouncementPending >
+                0
+                ? exclusiveSemanticAnnouncementTail
+                    .catch(
+                        () => {}
+                    )
+                : Promise.resolve();
+
+        return trackSemanticAnnouncement(
+            blocker.then(
+                playback
+            )
         );
     }
 
