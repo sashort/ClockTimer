@@ -1178,7 +1178,8 @@
             {
                 automaticRestart = false,
                 actualEnd,
-                boundary
+                boundary,
+                suppressTripResumed = false
             } = {}
         ) {
             const intervalType =
@@ -1252,6 +1253,10 @@
                     "downTimeEnded",
                     semanticDetail
                 );
+
+                if (suppressTripResumed) {
+                    return true;
+                }
 
                 return this.#emitClockTimerEvent(
                     "tripResumed",
@@ -6079,7 +6084,12 @@
             return result;
         }
 
-        async endInterval(at) {
+        async endInterval(
+            at,
+            {
+                suppressTripResumed = false
+            } = {}
+        ) {
             const nowDate =
                 at === undefined
                     ? this.#transactionTimestamp(
@@ -6257,7 +6267,8 @@
                 },
                 {
                     automaticRestart: false,
-                    actualEnd: now
+                    actualEnd: now,
+                    suppressTripResumed
                 }
             );
 
