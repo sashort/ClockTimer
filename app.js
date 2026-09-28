@@ -17602,6 +17602,32 @@
             .WMOFInteractionFunctions
             .bindAction({
                 element:
+                    numberPadSettings,
+                event:
+                    "pointerup",
+                name:
+                    "openNumberPadSettingsPointerUp",
+                action:
+                    "openNumberPadSettings"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
+                    numberPadConnection,
+                event:
+                    "pointerup",
+                name:
+                    "resumeNumberPadConnectionPointerUp",
+                action:
+                    "resumeNumberPadConnection"
+            });
+
+        globalThis
+            .WMOFInteractionFunctions
+            .bindAction({
+                element:
                     numberPadVoice,
                 event:
                     "pointerup",
