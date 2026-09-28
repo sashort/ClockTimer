@@ -21148,6 +21148,7 @@
                 tripStartGoalDetailSpeech(
                     event.detail
                 );
+
             if (detailSpeech) {
                 parts.push(
                     detailSpeech
@@ -21163,92 +21164,87 @@
             parts.length
                 ? reserveSemanticSpeech()
                 : undefined;
-        let chimePlayed =
-            false;
 
-        if (chime.perform) {
-            try {
-                const song =
-                    await audio?.startSong?.(
-                        "trip-started",
-                        {
-                            bpm: 180,
-                            includeSpeech: false,
-                            speechVolume:
-                                output.speechVolume,
-                            toneVolume:
-                                output.toneVolume,
-                            speechVelocity:
-                                output.speechVelocity,
-                            toneVelocity:
-                                output.toneVelocity
-                        }
-                    );
+        return runSemanticAnnouncement(
+            "trip-started",
+            async () => {
+                let chimePlayed =
+                    false;
 
-                chimePlayed =
-                    Boolean(
-                        song?.hasChime
-                    );
-
-                if (chimePlayed) {
-                    const speechStartDelayMs =
-                        Math.max(
-                            0,
-                            Number(
-                                song
-                                    ?.chimeEndsInMs
-                            ) ||
-                            0
-                        ) +
-                        Math.max(
-                            0,
-                            output.speechDelayMs
-                        );
-
-                    if (parts.length) {
-                        setTimeout(
-                            () =>
-                                speakSemantic(
-                                    audio,
-                                    parts.join(" "),
+                if (
+                    chime.perform &&
+                    audio?.startSong
+                ) {
+                    try {
+                        const song =
+                            await audio
+                                .startSong(
+                                    "trip-started",
                                     {
+                                        bpm: 180,
+                                        includeSpeech:
+                                            false,
                                         speechVolume:
                                             output.speechVolume,
+                                        toneVolume:
+                                            output.toneVolume,
                                         speechVelocity:
-                                            output.speechVelocity
-                                    },
-                                    speechGuard
-                                ),
-                            speechStartDelayMs
+                                            output.speechVelocity,
+                                        toneVelocity:
+                                            output.toneVelocity
+                                    }
+                                );
+
+                        chimePlayed =
+                            Boolean(
+                                song?.hasChime
+                            );
+
+                        await song
+                            ?.finished;
+
+                        if (chimePlayed) {
+                            await waitForAnnouncementDelay(
+                                output
+                                    .speechDelayMs
+                            );
+                        }
+                    }
+                    catch (error) {
+                        console.error(
+                            "Audio playback failed:",
+                            "trip-started",
+                            error
                         );
                     }
                 }
-            }
-            catch (error) {
-                console.error(
-                    "Audio playback failed:",
-                    "trip-started",
-                    error
-                );
-            }
-        }
 
-        if (
-            parts.length &&
-            !chimePlayed
-        ) {
-            speakSemantic(
-                audio,
-                parts.join(" "),
-                {
-                    speechVolume:
-                        output.speechVolume,
-                    speechVelocity:
-                        output.speechVelocity
-                },
-                speechGuard
-            );
-        }
+                if (
+                    parts.length &&
+                    audio?.speak
+                ) {
+                    await speakSemanticAndWait(
+                        audio,
+                        parts.join(" "),
+                        {
+                            speechVolume:
+                                output.speechVolume,
+                            speechVelocity:
+                                output.speechVelocity
+                        },
+                        speechGuard
+                    );
+                }
+
+                return true;
+            },
+            {
+                exclusive:
+                    announcementSpeechIgnoresMaster(
+                        "trip-started"
+                    )
+            }
+        );
     }
 
     function onTripStartedEarly(event) {
