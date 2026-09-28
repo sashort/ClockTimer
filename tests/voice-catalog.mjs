@@ -184,6 +184,60 @@ assert.equal(
     true
 );
 
+const html =
+    fs.readFileSync(
+        new URL(
+            "../index.html",
+            import.meta.url
+        ),
+        "utf8"
+    );
+const app =
+    fs.readFileSync(
+        new URL(
+            "../app.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+const audioEngine =
+    fs.readFileSync(
+        new URL(
+            "../api/audio/AudioEngine.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
+
+assert.match(
+    html,
+    /id="audioVoice"[\s\S]*?<option value="system\|">System Default<\/option>/
+);
+assert.match(
+    html,
+    /VoiceCatalog\.js[\s\S]*AudioEngine\.js/
+);
+assert.match(
+    app,
+    /const AUDIO_LANGUAGE = "en-US"/
+);
+assert.match(
+    app,
+    /voices:\s*\{[\s\S]*\[AUDIO_LANGUAGE\][\s\S]*provider:[\s\S]*"system"[\s\S]*voice:[\s\S]*""/
+);
+assert.match(
+    app,
+    /populateAudioVoiceOptions[\s\S]*WMOFVoiceCatalog[\s\S]*\.load\?\.\([\s\S]*AUDIO_LANGUAGE/
+);
+assert.match(
+    audioEngine,
+    /voiceProvider:[\s\S]*"system"[\s\S]*voice:[\s\S]*""/
+);
+assert.match(
+    audioEngine,
+    /effectiveVoiceProvider ===[\s\S]*"system"[\s\S]*effectiveVoice[\s\S]*selectedVoice[\s\S]*utterance\.voice/
+);
+
 console.log(
     "PASS dynamic voice catalog filters by language and supports future providers"
 );
