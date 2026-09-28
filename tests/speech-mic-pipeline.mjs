@@ -1444,7 +1444,11 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /speechCommandDispatched[\s\S]*void SpeechMenu[\s\S]*#completeSpeechExecution/
+    /speechCommandDispatched[\s\S]*const completion\s*=[\s\S]*#completeSpeechExecution[\s\S]*if \(awaitCompletion\)[\s\S]*await completion[\s\S]*void completion/
+);
+assert.match(
+    speechMenuSource,
+    /#executeCommandChain\([\s\S]*#processElement\([\s\S]*startedAt,[\s\S]*true,[\s\S]*false/
 );
 assert.doesNotMatch(
     speechMenuSource,
