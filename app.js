@@ -13824,9 +13824,26 @@
     function renderTimeDigits(raw) {
         const parts = splitTimeDigits(raw);
         if (!parts) return "";
-        return parts.hoursText
-            ? `${parts.hoursText}:${parts.minutesText.padStart(2, "0")}:${parts.secondsText}`
-            : `${Number(parts.minutesText)}:${parts.secondsText}`;
+
+        return (
+            String(
+                Number(
+                    parts.hoursText ||
+                    0
+                )
+            ) +
+            ":" +
+            String(
+                Number(
+                    parts.minutesText
+                )
+            ).padStart(
+                2,
+                "0"
+            ) +
+            ":" +
+            parts.secondsText
+        );
     }
 
     function timeDigitsValid(raw) {
