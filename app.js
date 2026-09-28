@@ -15217,6 +15217,8 @@
         }
 
         let display;
+        let spokenFeedback =
+            text;
 
         if (
             numberPadState.mode ===
@@ -15378,6 +15380,10 @@
                 renderTimeDigits(
                     numberPadState.pending
                 );
+            spokenFeedback =
+                formatGoalFailureDuration(
+                    duration
+                );
         }
 
         numberPadState.replaceOnNextDigit =
@@ -15441,7 +15447,7 @@
             );
 
         speakVoiceEntryFeedback(
-            text,
+            spokenFeedback,
             actionCopy.ok,
             feedbackSequence
         );
@@ -21961,7 +21967,10 @@
     const dictateSpeechMetric =
         (
             label,
-            value
+            value,
+            {
+                spokenValue
+            } = {}
         ) => {
             const displayValue =
                 String(
@@ -21978,13 +21987,15 @@
                 return false;
             }
 
+            const labelText =
+                String(
+                    label ||
+                    ""
+                )
+                    .trim();
             const response =
                 (
-                    String(
-                        label ||
-                        ""
-                    )
-                        .trim() +
+                    labelText +
                     " " +
                     displayValue
                 )
@@ -21993,13 +22004,31 @@
                         " "
                     )
                     .trim();
-
+            const speechValue =
+                String(
+                    spokenValue ??
+                    displayValue
+                )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
             const spokenResponse =
-                response
+                (
+                    labelText +
+                    " " +
+                    speechValue
+                )
                     .replace(
                         /%/g,
                         " percent"
-                    );
+                    )
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .trim();
 
             globalThis
                 .WMOFAudio
@@ -22601,10 +22630,9 @@
                             {
                                 spokenValue:
                                     "Standard Time Set to " +
-                                    EnglishDurationParser
-                                        .describe(
-                                            duration
-                                        )
+                                    formatGoalFailureDuration(
+                                        duration
+                                    )
                             }
                         );
                 }
@@ -22647,10 +22675,9 @@
                             {
                                 spokenValue:
                                     "Standard Time Set to " +
-                                    EnglishDurationParser
-                                        .describe(
-                                            duration
-                                        )
+                                    formatGoalFailureDuration(
+                                        duration
+                                    )
                             }
                         );
                 }
@@ -24144,7 +24171,21 @@
 
                 return dictateSpeechMetric(
                     state.label,
-                    state.text
+                    state.text,
+                    {
+                        spokenValue:
+                            mode ===
+                                "calculated-end" ||
+                            !Number.isFinite(
+                                state.value
+                            )
+                                ? undefined
+                                : formatGoalFailureDuration(
+                                    Math.abs(
+                                        state.value
+                                    )
+                                )
+                    }
                 );
             },
 
