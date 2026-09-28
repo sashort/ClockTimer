@@ -18787,7 +18787,11 @@
             const ended =
                 await clockTimer
                     .endInterval(
-                        transactionTime
+                        transactionTime,
+                        {
+                            suppressTripResumed:
+                                true
+                        }
                     );
 
             updateSummaryValues();
