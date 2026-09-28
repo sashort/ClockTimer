@@ -1865,6 +1865,34 @@ assert.match(
     /function playSemanticSong\([\s\S]*speechGuard[\s\S]*includeTones:[\s\S]*chime\.perform[\s\S]*includeSpeech:[\s\S]*summary\.perform/
 );
 assert.match(
+    app,
+    /const announcementSpeechIgnoresMaster[\s\S]*ignoreSummaryMaster[\s\S]*announcementOverridesMaster\([\s\S]*"summary"[\s\S]*announcementOverridesMaster\([\s\S]*"details"/
+);
+assert.match(
+    app,
+    /function runSemanticAnnouncement\([\s\S]*activeSemanticAnnouncements[\s\S]*exclusiveSemanticAnnouncementTail[\s\S]*Promise[\s\S]*\.allSettled\([\s\S]*activeBefore/
+);
+assert.match(
+    app,
+    /function playSemanticSongThenSpeak\([\s\S]*runSemanticAnnouncement\([\s\S]*await song[\s\S]*\.finished[\s\S]*waitForAnnouncementDelay\([\s\S]*speakSemanticAndWait/
+);
+assert.match(
+    app,
+    /async function onTripStarted\([\s\S]*runSemanticAnnouncement\([\s\S]*"trip-started"[\s\S]*await song[\s\S]*\.finished[\s\S]*waitForAnnouncementDelay\([\s\S]*speakSemanticAndWait/
+);
+assert.match(
+    app,
+    /confirmInformationalChange[\s\S]*ignoreSummaryMaster[\s\S]*announcementSpeechIgnoresMaster\([\s\S]*runSemanticAnnouncement\([\s\S]*exclusive/
+);
+assert.match(
+    app,
+    /transitionChimeAllowed[\s\S]*runSemanticAnnouncement\([\s\S]*"trip-ended"[\s\S]*await song[\s\S]*\.finished[\s\S]*speakSemanticAndWait/
+);
+assert.match(
+    audioEngineSource,
+    /speak\([\s\S]*onEnd,[\s\S]*onError[\s\S]*completed[\s\S]*\? onEnd[\s\S]*: onError/
+);
+assert.match(
     audioEngineSource,
     /speechGuard[\s\S]*entry\.speechGuard[\s\S]*entry\.speechGuard\(\) ===[\s\S]*false[\s\S]*#maybeComplete/
 );
