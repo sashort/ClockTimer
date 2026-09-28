@@ -624,7 +624,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /if \(\s*phrasesChanged\s*\|\|\s*groupsChanged\s*\)/
+    /const speechContextChanged\s*=[\s\S]*phrasesChanged[\s\S]*groupsChanged[\s\S]*if \(\s*speechContextChanged\s*\)/
 );
 assert.match(
     speechMenuSource,
