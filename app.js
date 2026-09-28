@@ -1619,6 +1619,7 @@
     let audioAnnouncementDraft;
     let audioSettingsBoundaryResizeObserver;
     let scheduledStartTicker;
+    let scheduledStartSpeechPromptTimer;
     let scheduledStartAutoArmed = false;
     let scheduledStartNeedsResolution = false;
     let numberPadState;
@@ -16869,6 +16870,63 @@
         scheduledStartTicker = undefined;
     }
 
+    function cancelScheduledStartSpeechPrompt() {
+        clearTimeout(
+            scheduledStartSpeechPromptTimer
+        );
+
+        scheduledStartSpeechPromptTimer =
+            undefined;
+    }
+
+    function scheduleScheduledStartSpeechPrompt() {
+        cancelScheduledStartSpeechPrompt();
+
+        if (
+            String(
+                tripDraft
+                    ?.standardTime ||
+                ""
+            ).trim()
+        ) {
+            return false;
+        }
+
+        const draft =
+            tripDraft;
+
+        scheduledStartSpeechPromptTimer =
+            setTimeout(
+                () => {
+                    scheduledStartSpeechPromptTimer =
+                        undefined;
+
+                    if (
+                        !scheduledStartDialog
+                            ?.open ||
+                        tripDraft !==
+                            draft ||
+                        String(
+                            tripDraft
+                                ?.standardTime ||
+                            ""
+                        ).trim()
+                    ) {
+                        return;
+                    }
+
+                    globalThis
+                        .WMOFAudio
+                        ?.speak?.(
+                            "Say standard time"
+                        );
+                },
+                180
+            );
+
+        return true;
+    }
+
     function flagScheduledStandardTime() {
         scheduledStartStandard.classList.remove("needs-value");
         void scheduledStartStandard.offsetWidth;
@@ -17021,9 +17079,11 @@
         stopScheduledStartTicker();
         scheduledStartTicker = setInterval(updateScheduledStartDialog, 250);
         if (!scheduledStartDialog.open) openDialogElement(scheduledStartDialog, {reason:resolution?"scheduled-start-resolution":"early-start"});
+        scheduleScheduledStartSpeechPrompt();
     }
 
     function cancelScheduledStartPrompt() {
+        cancelScheduledStartSpeechPrompt();
         scheduledStartAutoArmed = false;
         scheduledStartNeedsResolution = false;
         stopScheduledStartTicker();
@@ -23057,6 +23117,8 @@
 
                     tripDraft.standardTime =
                         formatted;
+
+                    cancelScheduledStartSpeechPrompt();
 
                     scheduledStartStandard
                         .classList
