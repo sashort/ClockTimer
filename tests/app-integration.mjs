@@ -92,6 +92,8 @@ speechToggle.click();window.document.querySelector('#numberPadConfirm').dispatch
 assert.equal(c.getAttribute('trip-goal'),'105%');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
+say('seventeen thirty six.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:17:36');
+say('twenty two nineteen.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:22:19');
 say('forty five minutes.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:45:00');
 speechToggle.click();
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
