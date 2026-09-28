@@ -125,7 +125,7 @@ assert.equal(
     commandsSystemCommand.getAttribute(
         "speech-function"
     ),
-    "WMOFActions.toggleSpeechOptions"
+    "WMOFActions.openSpeechOptions"
 );
 assert.deepEqual(
     [
