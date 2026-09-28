@@ -2319,6 +2319,22 @@ assert.match(
     /renderedTimeMode:\s*"\^show \(\?<timeMode>time remaining\|time elapsed\|end time\)\$"/
 );
 assert.match(
+    app,
+    /readTimeRemaining\(\)[\s\S]*getRenderedTime\?\.\([\s\S]*"remaining"[\s\S]*startsWith\([\s\S]*"-"[\s\S]*"Over by " \+[\s\S]*spokenDuration/
+);
+const howLongReader = app.slice(
+    app.indexOf("readTimeRemaining()"),
+    app.indexOf("readRenderedTime(", app.indexOf("readTimeRemaining()"))
+);
+assert.doesNotMatch(
+    howLongReader,
+    /state\.mode|renderedTimeMode/
+);
+assert.match(
+    app,
+    /function onTripResumed\(event\)[\s\S]*suppressAnnouncement[\s\S]*return;[\s\S]*playSemanticSong\([\s\S]*"trip-resumed-from-down"/
+);
+assert.match(
     html,
     /builtin:tripGoal:page[^>]*speech-function="WMOFActions\.readTripGoal"/
 );
