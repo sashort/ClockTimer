@@ -22002,7 +22002,9 @@
             label,
             value,
             {
-                spokenValue
+                spokenValue,
+                codeValue =
+                    false
             } = {}
         ) => {
             const displayValue =
@@ -22074,7 +22076,16 @@
                     type:
                         "dictation",
                     value:
-                        response
+                        response,
+                    display:
+                        codeValue
+                            ? {
+                                prefix:
+                                    labelText,
+                                code:
+                                    displayValue
+                            }
+                            : undefined
                 }
             };
         };
@@ -22085,6 +22096,7 @@
             value,
             {
                 spokenValue,
+                responseDisplay,
                 useGlobalAudioSettings =
                     false,
                 ignoreSummaryMaster =
@@ -22249,7 +22261,9 @@
                     type:
                         "dictation",
                     value:
-                        response
+                        response,
+                    display:
+                        responseDisplay
                 }
             };
         };
@@ -22665,7 +22679,13 @@
                                     "Standard Time Set to " +
                                     formatGoalFailureDuration(
                                         duration
-                                    )
+                                    ),
+                                responseDisplay: {
+                                    prefix:
+                                        "Standard Time Set to",
+                                    code:
+                                        formatted
+                                }
                             }
                         );
                 }
@@ -22710,7 +22730,13 @@
                                     "Standard Time Set to " +
                                     formatGoalFailureDuration(
                                         duration
-                                    )
+                                    ),
+                                responseDisplay: {
+                                    prefix:
+                                        "Standard Time Set to",
+                                    code:
+                                        formatted
+                                }
                             }
                         );
                 }
@@ -24005,7 +24031,15 @@
 
                 return confirmSettingChange(
                     "End Time Locked to " +
-                    label
+                    label,
+                    {
+                        responseDisplay: {
+                            prefix:
+                                "End Time Locked to",
+                            code:
+                                label
+                        }
+                    }
                 );
             },
 
@@ -24111,7 +24145,11 @@
 
                 return dictateSpeechMetric(
                     "End Time",
-                    rendered
+                    rendered,
+                    {
+                        codeValue:
+                            true
+                    }
                 );
             },
 
@@ -24141,12 +24179,23 @@
                     return false;
                 }
 
-                return confirmSettingChange(
+                const spokenDuration =
                     formatGoalFailureDuration(
                         Math.abs(
                             state.value
                         )
-                    )
+                    );
+
+                return confirmSettingChange(
+                    state.text,
+                    {
+                        spokenValue:
+                            spokenDuration,
+                        responseDisplay: {
+                            code:
+                                state.text
+                        }
+                    }
                 );
             },
 
@@ -24217,7 +24266,9 @@
                                     Math.abs(
                                         state.value
                                     )
-                                )
+                                ),
+                        codeValue:
+                            true
                     }
                 );
             },
