@@ -2,14 +2,22 @@
     const node = (tag, text, className) => {const el=document.createElement(tag);if(text!==undefined) el.textContent=text;if(className) el.className=className;return el;};
     const clone = value => JSON.parse(JSON.stringify(value));
     const duration = ms => {const s=Math.floor(Math.max(0,Number(ms)||0)/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
-    const milliseconds = value => String(value||'').split(':').reduce((total,part)=>total*60+Number(part),0)*1000;
+    const parseClockTimerMilliseconds = value => {
+        const text=String(value||'').trim(),match=text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
+        if(!match)return 0;
+        const hours=Number(match[1]||0),minutes=Number(match[2]),seconds=Number(match[3]),fraction=Number(String(match[4]||'0').padEnd(3,'0'));
+        if(![hours,minutes,seconds,fraction].every(Number.isFinite)||minutes>59||seconds>59)return 0;
+        return (((hours*60)+minutes)*60+seconds)*1000+fraction;
+    };
+    const durationMilliseconds = value => parseClockTimerMilliseconds(value);
+    const timelineMilliseconds = value => parseClockTimerMilliseconds(value);
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
     const counted = trip => {
         const wall=Number(trip.actualTimeMilliseconds)||0,stored=Number.isFinite(Number(trip.countedTimeMilliseconds))?Number(trip.countedTimeMilliseconds):wall;
         if(trip.running||!Array.isArray(trip.events)||!Number.isFinite(wall)||wall<=0)return stored;
         const deleted=new Set(trip.events.filter(event=>event.event==='interval.deleted').map(event=>event.value?.intervalKey));
         const planned=trip.events.filter(event=>event.event==='interval.started'&&!deleted.has(event.value?.intervalKey)&&['break','lunch'].includes(String(event.value?.type||'').toLowerCase()))
-            .reduce((sum,event)=>sum+milliseconds(event.value?.length)+milliseconds(event.value?.startBuffer)+milliseconds(event.value?.endBuffer),0);
+            .reduce((sum,event)=>sum+durationMilliseconds(event.value?.length)+durationMilliseconds(event.value?.startBuffer)+durationMilliseconds(event.value?.endBuffer),0);
         if(planned<=0)return stored;
         const observedExcluded=Math.max(0,wall-stored);
         return Math.max(0,stored-Math.max(0,planned-observedExcluded));
@@ -153,10 +161,10 @@
             if(event.event==='trip.started')return 'Trip Started';if(event.event==='trip.stopped')return 'Trip Ended';
             const type=String(started?.value?.type||'Interval').toLowerCase(),title=this.entryKind(started)==='short-break'?'Short Break':type.charAt(0).toUpperCase()+type.slice(1);
             if(event.event==='interval.started')return `${title} Started`;
-            const planned=['break','lunch'].includes(type)?milliseconds(started.value?.length)+milliseconds(started.value?.startBuffer)+milliseconds(started.value?.endBuffer):0;
+            const planned=['break','lunch'].includes(type)?durationMilliseconds(started.value?.length)+durationMilliseconds(started.value?.startBuffer)+durationMilliseconds(started.value?.endBuffer):0;
             const actual=ended&&started?.timestamp?Date.parse(iso(ended.timestamp))-Date.parse(iso(started.timestamp)):NaN;
             const adjustment=value=>{const seconds=Math.floor(Math.abs(value)/1000),hours=Math.floor(seconds/3600);return `${hours?`${hours}:`:''}${String(Math.floor(seconds/60)%60).padStart(hours?2:1,'0')}:${String(seconds%60).padStart(2,'0')}`;};
-            if(type==='down'&&Number.isFinite(actual)){const approved=milliseconds(this.approvedTime(started,ended,events)),difference=approved-actual;if(difference!==0)return `${title} Ended · ${adjustment(difference)} Approval ${difference>0?'Surplus':'Deficit'}`;}
+            if(type==='down'&&Number.isFinite(actual)){const approved=durationMilliseconds(this.approvedTime(started,ended,events)),difference=approved-actual;if(difference!==0)return `${title} Ended · ${adjustment(difference)} Approval ${difference>0?'Surplus':'Deficit'}`;}
             if(planned>0&&Number.isFinite(actual)&&actual!==planned){const value=adjustment(actual-planned);return actual<planned?`${title} Ended Early · ${value} Gained`:`${title} Ended Late · ${value} Lost`;}
             return `${title} Ended`;
         }
@@ -237,9 +245,9 @@
         async openSettings(trip) {
             const data=await this.options.request(trip.id),settings={...data.settings};const {form}=this.modal('Edit Trip Settings');
             const original=new Date(settings.creationAnchor||iso(trip.startTime));let base=this.date(original);
-            this.timeField(form,'Standard time',settings.standardTime,'duration',v=>settings.standardTime=duration(milliseconds(v)));
+            this.timeField(form,'Standard time',settings.standardTime,'duration',v=>settings.standardTime=duration(durationMilliseconds(v)));
             for(const [label,field] of [['Scheduled start','scheduledStart'],['Actual start','startTime'],['Creation time','creationTime']]) {
-                const value=new Date(original.getTime()+milliseconds(settings[field])).toISOString();
+                const value=new Date(original.getTime()+timelineMilliseconds(settings[field])).toISOString();
                 this.timeField(form,label,value,'absolute',v=>{if(field==='creationTime'){base=this.date(v);settings.creationAnchor=new Date(base+'T00:00:00').toISOString();}settings[field]=this.clockValue(v,base);},base);
             }
             const productive=node('label');const check=node('input');check.type='checkbox';check.checked=!settings.nonProduction;check.addEventListener('change',()=>settings.nonProduction=!check.checked);productive.append(check,document.createTextNode(' Productive'));form.append(productive);
