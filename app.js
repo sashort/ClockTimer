@@ -20910,14 +20910,16 @@
         if (seconds > 0) {
             const positionalPart =
                 value =>
-                    value < 10
-                        ? "oh " +
-                            goalFailureNumberWords(
+                    value === 0
+                        ? "oh oh"
+                        : value < 10
+                            ? "oh " +
+                                goalFailureNumberWords(
+                                    value
+                                )
+                            : goalFailureNumberWords(
                                 value
-                            )
-                        : goalFailureNumberWords(
-                            value
-                        );
+                            );
 
             if (hours > 0) {
                 return (
