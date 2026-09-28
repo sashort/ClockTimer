@@ -97,6 +97,7 @@
                 standardTimeEditor: "^standard(?: time)?$",
                 scheduledStartEditor: "^(?:scheduled start|scheduled time)$",
                 scheduledStart: "^(?:scheduled start|scheduled time) (?<spokenTime>.+)$",
+                scheduledStartNow: "^start$",
                 actualStartEditor: "^(?:actual start|start time)$",
                 actualStart: "^(?:actual start|start time) (?<spokenTime>.+)$",
                 creationTimeEditor: "^(?:creation time|created(?: at)?)$",
