@@ -107,6 +107,43 @@ assert.equal(
 );
 paused.remove();
 
+const resumedEarlyBreak=window.document.createElement('clock-timer');window.document.body.append(resumedEarlyBreak);
+resumedEarlyBreak.configure({rendered_time_type:'time_remaining',goal_type:'trip',trip_goal:'100%'});
+await resumedEarlyBreak.start({standardTime:'0:30:00'});
+await resumedEarlyBreak.startInterval('break','15:00',{breakType:'break'});
+window.__testTime+=60000;
+await resumedEarlyBreak.endInterval();
+const earlyBreakRemaining=resumedEarlyBreak.getSummarySnapshot().trip.renderedTime;
+window.__testTime+=1000;
+assert.notEqual(
+    resumedEarlyBreak.getSummarySnapshot().trip.renderedTime,
+    earlyBreakRemaining,
+    'Time Remaining resumes immediately after an early break ends'
+);
+resumedEarlyBreak.remove();
+
+const resumedDown=window.document.createElement('clock-timer');window.document.body.append(resumedDown);
+resumedDown.configure({rendered_time_type:'time_remaining',goal_type:'trip',trip_goal:'100%'});
+await resumedDown.start({standardTime:'0:30:00'});
+let silentResumeDetail;
+resumedDown.addEventListener('tripResumed',event=>{silentResumeDetail=event.detail;});
+await resumedDown.startInterval('down');
+window.__testTime+=60000;
+await resumedDown.endInterval(undefined,{suppressTripResumed:true});
+assert.equal(
+    silentResumeDetail?.suppressAnnouncement,
+    true,
+    'Down handoff still emits tripResumed while suppressing only its announcement'
+);
+const downRemaining=resumedDown.getSummarySnapshot().trip.renderedTime;
+window.__testTime+=1000;
+assert.notEqual(
+    resumedDown.getSummarySnapshot().trip.renderedTime,
+    downRemaining,
+    'Time Remaining resumes immediately after Down ends'
+);
+resumedDown.remove();
+
 const pausedTotal=window.document.createElement('clock-timer');window.document.body.append(pausedTotal);
 pausedTotal.configure({
     rendered_time_type:'time_remaining',
