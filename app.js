@@ -21396,8 +21396,24 @@
     }
 
     function onTripResumed(event) {
-        reserveSemanticEvent(event, "Trip resumed from down time");
-        playSemanticSong("trip-resumed-from-down");
+        reserveSemanticEvent(
+            event,
+            event.detail
+                ?.suppressAnnouncement
+                ? "Trip resumed from down time during an interval handoff"
+                : "Trip resumed from down time"
+        );
+
+        if (
+            event.detail
+                ?.suppressAnnouncement
+        ) {
+            return;
+        }
+
+        playSemanticSong(
+            "trip-resumed-from-down"
+        );
     }
 
     function onTripEnded(event) {
