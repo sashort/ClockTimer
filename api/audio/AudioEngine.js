@@ -3425,7 +3425,8 @@
                 speechVelocity,
                 voiceProvider,
                 voice,
-                onEnd
+                onEnd,
+                onError
             } = {}
         ) {
             const text =
@@ -3586,7 +3587,10 @@
                 false;
 
             const finish =
-                completed => {
+                (
+                    completed,
+                    error
+                ) => {
                     if (speechFinished) {
                         return;
                     }
@@ -3608,18 +3612,26 @@
                             undefined;
                     }
 
+                    const callback =
+                        completed
+                            ? onEnd
+                            : onError;
+
                     if (
-                        completed &&
-                        typeof onEnd ===
+                        typeof callback ===
                             "function"
                     ) {
                         try {
-                            onEnd();
-                        }
-                        catch (error) {
-                            console.error(
-                                "Speech completion callback failed:",
+                            callback(
                                 error
+                            );
+                        }
+                        catch (callbackError) {
+                            console.error(
+                                completed
+                                    ? "Speech completion callback failed:"
+                                    : "Speech error callback failed:",
+                                callbackError
                             );
                         }
                     }
@@ -3653,9 +3665,10 @@
 
             utterance.addEventListener(
                 "error",
-                () =>
+                event =>
                     finish(
-                        false
+                        false,
+                        event
                     ),
                 {
                     once: true
@@ -3667,9 +3680,19 @@
             }
             catch {}
 
-            synthesis.speak(
-                utterance
-            );
+            try {
+                synthesis.speak(
+                    utterance
+                );
+            }
+            catch (error) {
+                finish(
+                    false,
+                    error
+                );
+
+                return false;
+            }
 
             return true;
         }
