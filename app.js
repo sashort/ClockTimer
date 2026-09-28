@@ -6860,6 +6860,13 @@
             : fallback;
     }
 
+    function formatActualPercent(value, fallback = "---") {
+        const numeric = Number(value);
+        return Number.isFinite(numeric)
+            ? `${(numeric * 100).toFixed(2)}%`
+            : fallback;
+    }
+
     function renderClockTimerUIState(state) {
         if (!state?.time_component || !state?.standard_time_component) return false;
         const tripStateChanged = app.dataset.tripState !== (state.trip_active ? "running" : "ready");
@@ -20325,7 +20332,7 @@
                 tripTransitionRow(
                     totalScopeLabel() +
                         " Percent",
-                    formatSummaryPercent(
+                    formatActualPercent(
                         countedPercent
                     )
                 )
