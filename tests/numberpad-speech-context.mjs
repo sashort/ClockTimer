@@ -654,6 +654,53 @@ test("voice entry shows descriptive context-aware guidance and accepted-value fe
     );
 });
 
+test("duration TTS follows the Formal Time formatter across voice and informational paths", () => {
+    const voiceParser = appSource.slice(
+        appSource.indexOf("function parseVoiceEntryTranscript"),
+        appSource.indexOf("async function openVoiceValueEditor")
+    );
+    assert.match(
+        voiceParser,
+        /spokenFeedback\s*=\s*formatGoalFailureDuration\([\s\S]*?duration[\s\S]*?\)/
+    );
+    assert.match(
+        voiceParser,
+        /speakVoiceEntryFeedback\([\s\S]*?spokenFeedback/
+    );
+
+    const standardTime = appSource.slice(
+        appSource.indexOf("changeStandardTime("),
+        appSource.indexOf("handleVoiceEntrySpeech()", appSource.indexOf("changeStandardTime("))
+    );
+    assert.doesNotMatch(
+        standardTime,
+        /EnglishDurationParser[\s\S]*?\.describe\(/
+    );
+    assert.match(
+        standardTime,
+        /spokenValue:[\s\S]*?formatGoalFailureDuration\([\s\S]*?duration/
+    );
+
+    const dictation = appSource.slice(
+        appSource.indexOf("const dictateSpeechMetric"),
+        appSource.indexOf("const confirmInformationalChange")
+    );
+    assert.match(
+        dictation,
+        /spokenValue[\s\S]*?spokenValue \?\?[\s\S]*?displayValue/
+    );
+
+    const renderedTime = appSource.slice(
+        appSource.indexOf("readRenderedTime("),
+        appSource.indexOf("toggleRenderedTime(", appSource.indexOf("readRenderedTime("))
+    );
+    assert.match(
+        renderedTime,
+        /spokenValue:[\s\S]*?formatGoalFailureDuration\([\s\S]*?Math\.abs\([\s\S]*?state\.value/
+    );
+});
+
+
 test("trip summary and either editor appear together without overlap", () => {
     assert.match(
         indexSource,
