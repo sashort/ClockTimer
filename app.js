@@ -24903,12 +24903,13 @@
             },
 
             readTimeRemaining() {
-                let state;
+                let rendered;
 
                 try {
-                    state =
+                    rendered =
                         clockTimer
-                            .getEffectiveTimeState?.(
+                            .getRenderedTime?.(
+                                "remaining",
                                 new Date()
                             );
                 }
@@ -24917,12 +24918,30 @@
                 }
 
                 if (
-                    !state ||
-                    state.mode !==
-                        "remaining" ||
-                    !state.available ||
+                    typeof rendered !==
+                        "string" ||
+                    !rendered
+                ) {
+                    return false;
+                }
+
+                const overBy =
+                    rendered
+                        .startsWith(
+                            "-"
+                        );
+                const absoluteRendered =
+                    overBy
+                        ? rendered.slice(1)
+                        : rendered;
+                const remainingMilliseconds =
+                    parseTimelineTime(
+                        absoluteRendered
+                    );
+
+                if (
                     !Number.isFinite(
-                        state.value
+                        remainingMilliseconds
                     )
                 ) {
                     return false;
@@ -24930,19 +24949,21 @@
 
                 const spokenDuration =
                     formatGoalFailureDuration(
-                        Math.abs(
-                            state.value
-                        )
+                        remainingMilliseconds
                     );
+                const spokenValue =
+                    overBy
+                        ? "Over by " +
+                            spokenDuration
+                        : spokenDuration;
 
                 return confirmSettingChange(
-                    state.text,
+                    rendered,
                     {
-                        spokenValue:
-                            spokenDuration,
+                        spokenValue,
                         responseDisplay: {
                             code:
-                                state.text
+                                rendered
                         }
                     }
                 );
