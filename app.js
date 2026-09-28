@@ -83,6 +83,7 @@
         })
     });
 
+    const AUDIO_LANGUAGE = "en-US";
     const AUDIO_PERCENT_STEP = 5;
     const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
     const AUDIO_SPEECH_VELOCITY_MAX = 4;
@@ -1532,6 +1533,7 @@
     const audioAnnouncementCancelCustom = $("#audioAnnouncementCancelCustom");
     const audioSpeechVolume = $("#audioSpeechVolume");
     const audioToneVolume = $("#audioToneVolume");
+    const audioVoice = $("#audioVoice");
     const audioInstrument = $("#audioInstrument");
     const audioMasterVelocity = $("#audioMasterVelocity");
     const audioSpeechVelocity = $("#audioSpeechVelocity");
@@ -1751,6 +1753,14 @@
             speechVelocity: 1,
             toneVelocity: 1,
             instrument: "",
+            voices: {
+                [AUDIO_LANGUAGE]: {
+                    provider:
+                        "system",
+                    voice:
+                        ""
+                }
+            },
             formalTime: false,
             masters: {
                 chime: true,
@@ -1790,6 +1800,64 @@
                 "string"
                 ? value.instrument.trim()
                 : "";
+
+        settings.voices = {};
+        const storedVoices =
+            value.voices &&
+            typeof value.voices ===
+                "object"
+                ? value.voices
+                : {};
+
+        for (
+            const [
+                language,
+                selection
+            ] of Object.entries(
+                storedVoices
+            )
+        ) {
+            if (
+                !language ||
+                !selection ||
+                typeof selection !==
+                    "object"
+            ) {
+                continue;
+            }
+
+            settings.voices[
+                language
+            ] = {
+                provider:
+                    typeof selection
+                        .provider ===
+                        "string" &&
+                    selection.provider
+                        .trim()
+                        ? selection
+                            .provider
+                            .trim()
+                        : "system",
+                voice:
+                    typeof selection
+                        .voice ===
+                        "string"
+                        ? selection.voice
+                            .trim()
+                        : ""
+            };
+        }
+
+        settings.voices[
+            AUDIO_LANGUAGE
+        ] ||= {
+            provider:
+                "system",
+            voice:
+                ""
+        };
+
         settings.formalTime =
             value.formalTime === true;
 
@@ -1925,7 +1993,101 @@
         );
     }
 
+    function getAudioVoiceSelection(
+        language =
+            AUDIO_LANGUAGE
+    ) {
+        const selection =
+            audioSettings.voices?.[
+                language
+            ];
+
+        return {
+            provider:
+                typeof selection
+                    ?.provider ===
+                    "string" &&
+                selection.provider
+                    .trim()
+                    ? selection.provider
+                        .trim()
+                    : "system",
+            voice:
+                typeof selection
+                    ?.voice ===
+                    "string"
+                    ? selection.voice
+                        .trim()
+                    : ""
+        };
+    }
+
+    function encodeAudioVoiceSelection(
+        provider,
+        voice
+    ) {
+        return (
+            String(
+                provider ||
+                "system"
+            ) +
+            "|" +
+            encodeURIComponent(
+                String(
+                    voice ||
+                    ""
+                )
+            )
+        );
+    }
+
+    function decodeAudioVoiceSelection(
+        value
+    ) {
+        const text =
+            String(
+                value ||
+                ""
+            );
+        const separator =
+            text.indexOf("|");
+
+        if (separator < 0) {
+            return {
+                provider:
+                    "system",
+                voice:
+                    ""
+            };
+        }
+
+        let voice = "";
+
+        try {
+            voice =
+                decodeURIComponent(
+                    text.slice(
+                        separator + 1
+                    )
+                );
+        }
+        catch {}
+
+        return {
+            provider:
+                text.slice(
+                    0,
+                    separator
+                ).trim() ||
+                "system",
+            voice
+        };
+    }
+
     function applyAudioOutputSettings() {
+        const voiceSelection =
+            getAudioVoiceSelection();
+
         globalThis.WMOFAudio?.configureOutput?.({
             speechVolume:
                 audioSettings.speechVolume,
@@ -1936,7 +2098,13 @@
             toneVelocity:
                 audioSettings.toneVelocity,
             instrument:
-                audioSettings.instrument
+                audioSettings.instrument,
+            speechLanguage:
+                AUDIO_LANGUAGE,
+            voiceProvider:
+                voiceSelection.provider,
+            voice:
+                voiceSelection.voice
         });
 
         syncAdaptiveSpeechTimingRate();
@@ -2091,6 +2259,159 @@
             undefined;
     }
 
+
+    async function populateAudioVoiceOptions() {
+        if (!audioVoice) return;
+
+        const selected =
+            getAudioVoiceSelection();
+        const selectedValue =
+            encodeAudioVoiceSelection(
+                selected.provider,
+                selected.voice
+            );
+        const fragment =
+            document
+                .createDocumentFragment();
+        const defaultOption =
+            document.createElement(
+                "option"
+            );
+
+        defaultOption.value =
+            encodeAudioVoiceSelection(
+                "system",
+                ""
+            );
+        defaultOption.textContent =
+            "System Default";
+        fragment.append(
+            defaultOption
+        );
+
+        try {
+            const catalog =
+                await globalThis
+                    .WMOFVoiceCatalog
+                    ?.load?.(
+                        AUDIO_LANGUAGE
+                    );
+
+            for (
+                const provider of
+                    catalog?.providers ||
+                    []
+            ) {
+                if (
+                    !provider?.voices
+                        ?.length
+                ) {
+                    continue;
+                }
+
+                const group =
+                    document.createElement(
+                        "optgroup"
+                    );
+
+                group.label =
+                    String(
+                        provider.label ||
+                        provider.id ||
+                        "Voices"
+                    );
+
+                for (
+                    const voice of
+                        provider.voices
+                ) {
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        encodeAudioVoiceSelection(
+                            voice.provider ||
+                                provider.id,
+                            voice.id
+                        );
+                    option.textContent =
+                        String(
+                            voice.name ||
+                            voice.id
+                        );
+
+                    if (
+                        voice.language &&
+                        String(
+                            voice.language
+                        ).toLowerCase() !==
+                            AUDIO_LANGUAGE
+                                .toLowerCase()
+                    ) {
+                        option.textContent +=
+                            " (" +
+                            voice.language +
+                            ")";
+                    }
+
+                    group.append(
+                        option
+                    );
+                }
+
+                fragment.append(
+                    group
+                );
+            }
+        }
+        catch (error) {
+            console.warn(
+                "Unable to load speech voices:",
+                error
+            );
+        }
+
+        audioVoice.replaceChildren(
+            fragment
+        );
+
+        const available =
+            [
+                ...audioVoice.options
+            ].some(
+                option =>
+                    option.value ===
+                    selectedValue
+            );
+
+        if (
+            !available &&
+            selected.voice
+        ) {
+            const unavailable =
+                document.createElement(
+                    "option"
+                );
+
+            unavailable.value =
+                selectedValue;
+            unavailable.textContent =
+                "Unavailable saved voice";
+            unavailable.disabled =
+                true;
+            audioVoice.append(
+                unavailable
+            );
+        }
+
+        audioVoice.value =
+            available ||
+            selected.voice
+                ? selectedValue
+                : defaultOption.value;
+    }
 
     async function populateAudioInstrumentOptions() {
         if (!audioInstrument) return;
@@ -2613,6 +2934,16 @@
             audioInstrument.value =
                 audioSettings.instrument;
         }
+        if (audioVoice) {
+            const selection =
+                getAudioVoiceSelection();
+
+            audioVoice.value =
+                encodeAudioVoiceSelection(
+                    selection.provider,
+                    selection.voice
+                );
+        }
         audioFormalTime.checked =
             audioSettings.formalTime === true;
 
@@ -2858,6 +3189,7 @@
     buildAudioAnnouncementRows();
     bindAudioSettingsBoundary();
     refreshAudioSettingsBoundary();
+    void populateAudioVoiceOptions();
     void populateAudioInstrumentOptions();
     renderAudioSettings();
     applyAudioOutputSettings();
@@ -2866,6 +3198,7 @@
         "opening",
         () => {
             refreshAudioSettingsBoundary();
+            void populateAudioVoiceOptions();
             void populateAudioInstrumentOptions();
             renderAudioSettings();
         }
@@ -3215,7 +3548,12 @@
             const target =
                 event.target;
 
-            if (target === audioInstrument) {
+            if (
+                target ===
+                    audioInstrument ||
+                target ===
+                    audioVoice
+            ) {
                 return;
             }
 
@@ -3422,6 +3760,31 @@
         ?.addEventListener(
             "input",
             handleAudioSettingsInput
+        );
+
+    audioVoice
+        ?.addEventListener(
+            "change",
+            () => {
+                const selection =
+                    decodeAudioVoiceSelection(
+                        audioVoice.value
+                    );
+
+                audioSettings.voices[
+                    AUDIO_LANGUAGE
+                ] = selection;
+
+                saveAudioSettings();
+                applyAudioOutputSettings();
+            }
+        );
+
+    globalThis
+        .WMOFVoiceCatalog
+        ?.onChanged?.(
+            () =>
+                void populateAudioVoiceOptions()
         );
 
     audioInstrument
