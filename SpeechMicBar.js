@@ -1054,6 +1054,19 @@ class SpeechMicBar extends HTMLElement {
                     transform-origin: center;
                 }
 
+                #responseContent .speech-response-dictation {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 5px;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                }
+
+                #responseContent .speech-response-dictation code {
+                    max-width: min(180px, 24vw);
+                }
+
                 .response-transition-stage {
                     width: 100%;
                     height: 50px;
