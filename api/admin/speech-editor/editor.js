@@ -149,7 +149,9 @@
         "speech-preproc-field",
         "speech-response-timeout",
         "speech-modal",
-        "speech-index"
+        "speech-index",
+        "speech-chain-context",
+        "speech-chain-next"
     ];
 
     const ignoredNavigatorTags =
@@ -7335,6 +7337,8 @@
                         "speech-pattern",
                         "speech-modal",
                         "speech-index",
+                        "speech-chain-context",
+                        "speech-chain-next",
                         "open",
                         "hidden",
                         "disabled"
