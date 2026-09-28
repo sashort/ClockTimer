@@ -23942,7 +23942,7 @@
                 }
 
                 const prompt =
-                    "Press/Say OK to Delete our down time";
+                    "Press/Say OK to Delete your down time";
 
                 setOkAllowed(
                     dialog,
