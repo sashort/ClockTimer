@@ -28,7 +28,7 @@ class EnglishSpeechValuePreprocessor {
         switch (kind) {
             case "duration": {
                 const duration = EnglishDurationParser.parse(phrase);
-                return EnglishDurationParser.format(duration);
+                return EnglishDurationParser.formatCanonical(duration);
             }
             case "clock":
             case "clock-parts": {
