@@ -19068,109 +19068,117 @@
                     "trip-started";
             }
 
-            let transitionChimePlayed =
-                false;
-            let transitionSpeechDelayMs =
-                0;
             const transitionSpeechOutput =
                 audioAnnouncementOutput(
                     "trip-ended"
                 );
+            const transitionChimeAllowed =
+                Boolean(
+                    transitionSong &&
+                    consumeSemanticAction(
+                        "chime"
+                    )
+                );
+            const reserveStartChime =
+                transitionChimeAllowed &&
+                startChimeEnabled;
 
-            if (
-                transitionSong &&
-                consumeSemanticAction(
-                    "chime"
-                )
-            ) {
-                try {
-                    const song =
-                        await audio?.startSong?.(
-                            transitionSong,
-                            {
-                                bpm: 180,
-                                includeSpeech: false
-                            }
-                        );
-                    transitionChimePlayed =
-                        Boolean(
-                            song?.hasChime
-                        );
-
-                    if (
-                        transitionChimePlayed
-                    ) {
-                        transitionSpeechDelayMs =
-                            Math.max(
-                                0,
-                                Number(
-                                    song
-                                        ?.chimeEndsInMs
-                                ) ||
-                                0
-                            ) +
-                            Math.max(
-                                0,
-                                transitionSpeechOutput
-                                    .speechDelayMs
-                            );
-                    }
-                }
-                catch (error) {
-                    console.error(
-                        "Audio playback failed:",
-                        transitionSong,
-                        error
-                    );
-                }
-            }
-
-            if (speech) {
-                if (
-                    transitionSpeechDelayMs >
-                        0
-                ) {
-                    setTimeout(
-                        () =>
-                            audio?.speak?.(
-                                speech,
-                                {
-                                    speechVolume:
-                                        transitionSpeechOutput
-                                            .speechVolume,
-                                    speechVelocity:
-                                        transitionSpeechOutput
-                                            .speechVelocity
-                                }
-                            ),
-                        transitionSpeechDelayMs
-                    );
-                }
-                else {
-                    audio?.speak?.(
-                        speech,
-                        {
-                            speechVolume:
-                                transitionSpeechOutput
-                                    .speechVolume,
-                            speechVelocity:
-                                transitionSpeechOutput
-                                    .speechVelocity
-                        }
-                    );
-                }
-            }
-
-            if (
-                transitionChimePlayed &&
-                startChimeEnabled
-            ) {
-                // Start's chime has already been represented by either
-                // the 5-tone segue or the standalone Start cue.
+            if (reserveStartChime) {
+                // Reserve this immediately so a very fast Start action cannot
+                // consume its own chime before the queued transition begins.
                 incrementSemanticDisable(
                     "chime"
                 );
             }
+
+            void runSemanticAnnouncement(
+                "trip-ended",
+                async () => {
+                    let transitionChimePlayed =
+                        false;
+
+                    if (
+                        transitionChimeAllowed &&
+                        audio?.startSong
+                    ) {
+                        try {
+                            const song =
+                                await audio
+                                    .startSong(
+                                        transitionSong,
+                                        {
+                                            bpm: 180,
+                                            includeSpeech:
+                                                false
+                                        }
+                                    );
+
+                            transitionChimePlayed =
+                                Boolean(
+                                    song?.hasChime
+                                );
+
+                            await song
+                                ?.finished;
+
+                            if (
+                                transitionChimePlayed
+                            ) {
+                                await waitForAnnouncementDelay(
+                                    transitionSpeechOutput
+                                        .speechDelayMs
+                                );
+                            }
+                        }
+                        catch (error) {
+                            console.error(
+                                "Audio playback failed:",
+                                transitionSong,
+                                error
+                            );
+                        }
+                    }
+
+                    if (
+                        reserveStartChime &&
+                        !transitionChimePlayed
+                    ) {
+                        cancelSemanticDisable(
+                            "chime"
+                        );
+                    }
+
+                    if (speech) {
+                        await speakSemanticAndWait(
+                            audio,
+                            speech,
+                            {
+                                speechVolume:
+                                    transitionSpeechOutput
+                                        .speechVolume,
+                                speechVelocity:
+                                    transitionSpeechOutput
+                                        .speechVelocity
+                            }
+                        );
+                    }
+
+                    return true;
+                },
+                {
+                    exclusive:
+                        announcementSpeechIgnoresMaster(
+                            "trip-ended"
+                        )
+                }
+            )
+                .catch(
+                    error =>
+                        console.error(
+                            "Trip transition announcement failed:",
+                            error
+                        )
+                );
         }
         else if (speech) {
             await playSemanticSongThenSpeak(
