@@ -1622,6 +1622,46 @@ class SpeechMenu {
         const values = [];
         const seen =
             new Set();
+        const append =
+            raw => {
+                const value =
+                    String(
+                        raw ||
+                        ""
+                    ).trim();
+
+                if (
+                    !value ||
+                    seen.has(
+                        value
+                    )
+                ) {
+                    return;
+                }
+
+                seen.add(
+                    value
+                );
+                values.push(
+                    value
+                );
+            };
+
+        for (
+            const value of
+                globalThis
+                    .WMOFLanguages?.[
+                        SpeechMenu
+                            .#language
+                    ]
+                    ?.speech
+                    ?.recognitionHotwords ||
+                []
+        ) {
+            append(
+                value
+            );
+        }
 
         for (
             const element of
@@ -1651,19 +1691,7 @@ class SpeechMenu {
                         ""
                     ).trim();
 
-                if (
-                    !value ||
-                    seen.has(
-                        value
-                    )
-                ) {
-                    continue;
-                }
-
-                seen.add(
-                    value
-                );
-                values.push(
+                append(
                     value
                 );
             }
@@ -2815,6 +2843,98 @@ class SpeechMenu {
         }
     }
 
+    static #recoverOpenContinuationTranscript(
+        utterance,
+        transcript
+    ) {
+        const incoming =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                );
+        const stream =
+            SpeechMenu
+                .#recognitionStreamHead(
+                    utterance
+                );
+        const base =
+            SpeechMenu
+                .#normalizeTranscript(
+                    stream
+                        ?.baseTranscript
+                );
+
+        if (
+            !incoming ||
+            !base ||
+            !stream ||
+            stream.source ===
+                "initial" ||
+            !SpeechMenu
+                .#hasOpenContinuation(
+                    utterance
+                ) ||
+            SpeechMenu
+                .#streamRemainder(
+                    base,
+                    incoming
+                ) !==
+                undefined
+        ) {
+            return incoming;
+        }
+
+        const baseFirst =
+            base.split(/\s+/)[0] ||
+            "";
+        const incomingFirst =
+            incoming.split(/\s+/)[0] ||
+            "";
+        const looksLikeRevision =
+            baseFirst ===
+                incomingFirst ||
+            baseFirst.startsWith(
+                incomingFirst
+            ) ||
+            incomingFirst.startsWith(
+                baseFirst
+            );
+
+        if (looksLikeRevision) {
+            return incoming;
+        }
+
+        const recovered =
+            (
+                base +
+                " " +
+                incoming
+            )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .trim();
+
+        SpeechMenu.#emit(
+            "speechContinuationRecovered",
+            {
+                utteranceId:
+                    utterance.id,
+                streamId:
+                    stream.id,
+                baseTranscript:
+                    base,
+                observedTranscript:
+                    incoming,
+                recoveredTranscript:
+                    recovered
+            }
+        );
+
+        return recovered;
+    }
+
     static async #handleLiveTranscript(
         utterance,
         transcript,
@@ -2834,6 +2954,13 @@ class SpeechMenu {
         ) {
             return;
         }
+
+        transcript =
+            SpeechMenu
+                .#recoverOpenContinuationTranscript(
+                    utterance,
+                    transcript
+                );
 
         if (
             transcript ===
