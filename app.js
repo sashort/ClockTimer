@@ -20907,6 +20907,29 @@
             );
         }
 
+        if (
+            hours === 0 &&
+            minutes > 0 &&
+            seconds > 0
+        ) {
+            return (
+                goalFailureNumberWords(
+                    minutes
+                ) +
+                " " +
+                (
+                    seconds < 10
+                        ? "oh " +
+                            goalFailureNumberWords(
+                                seconds
+                            )
+                        : goalFailureNumberWords(
+                            seconds
+                        )
+                )
+            );
+        }
+
         const parts = [];
 
         if (hours > 0) {
@@ -21039,28 +21062,6 @@
                 " " +
                 goalFailureNumberWords(
                     minutes
-                ) +
-                " and " +
-                goalFailureNumberWords(
-                    seconds
-                )
-            );
-        }
-
-        if (
-            hours === 0 &&
-            minutes > 0 &&
-            seconds > 0
-        ) {
-            return (
-                goalFailureNumberWords(
-                    minutes
-                ) +
-                " minute" +
-                (
-                    minutes === 1
-                        ? ""
-                        : "s"
                 ) +
                 " and " +
                 goalFailureNumberWords(
