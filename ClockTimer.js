@@ -1244,7 +1244,11 @@
                         record,
                         {
                             ...detail,
-                            resumedFrom: "down"
+                            resumedFrom: "down",
+                            suppressAnnouncement:
+                                Boolean(
+                                    suppressTripResumed
+                                )
                         }
                     );
 
@@ -1254,10 +1258,8 @@
                     semanticDetail
                 );
 
-                if (suppressTripResumed) {
-                    return true;
-                }
-
+                // A Down -> Break handoff still resumes the trip logically.
+                // Suppress only the announcement, not the lifecycle event.
                 return this.#emitClockTimerEvent(
                     "tripResumed",
                     semanticDetail
@@ -32304,6 +32306,7 @@
             if (!Number.isFinite(timelineNow)) return 0;
 
             const countedTypes = new Set([
+                "earlystart",
                 "trip",
                 "tolerance",
                 "latency",
