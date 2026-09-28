@@ -1167,7 +1167,7 @@ assert.match(
 );
 assert.match(
     app,
-    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*hideOptions[\s\S]*showOptions/
+    /openSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*return true;[\s\S]*optionsCollapsed[\s\S]*expandOptions/
 );
 assert.match(
     app,
@@ -1399,7 +1399,7 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /ensureCommand\(\s*"commands",[\s\S]*\^\(\?:speech \)\?commands\$[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /ensureCommand\(\s*"commands",[\s\S]*commands\|choices\|options\|what[\s\S]*WMOFActions\.openSpeechOptions/
 );
 const presentationSource = fs.readFileSync(new URL("../PresentationSetters.js", import.meta.url), "utf8");
 const speechEditorConfigSource = fs.readFileSync(new URL("../api/speech-editor-config/index.php", import.meta.url), "utf8");
@@ -1797,13 +1797,13 @@ assert.match(
     /#optionsClose\s*\{[\s\S]*pointer-events:\s*auto\s*!important[\s\S]*touch-action:\s*manipulation/
 );
 
-assert.doesNotMatch(
+assert.match(
     speechMicBarSource,
-    /\(\?:\(\?:speech \)\?commands\|what\|choices\|options\)/
+    /commands\|choices\|options\|what/
 );
-assert.doesNotMatch(
+assert.match(
     speechMicBarSource,
-    /"speech commands",[\s\S]{0,80}"what"/
+    /"speech commands",[\s\S]{0,120}"choices"[\s\S]{0,120}"options"[\s\S]{0,120}"what"/
 );
 assert.match(
     speechMicBarSource,
@@ -2065,7 +2065,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*speechOptionsCategory[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /#ensureSystemSpeechMenu\(\)[\s\S]*speech-modal[\s\S]*system[\s\S]*speechOptionsCategory[\s\S]*system[\s\S]*SpeechMenu\.wake[\s\S]*SpeechMenu\.sleep[\s\S]*WMOFActions\.openSpeechOptions/
 );
 assert.match(
     speechMicBarSource,
@@ -2816,7 +2816,7 @@ assert.doesNotMatch(
 );
 assert.match(
     app,
-    /toggleSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*collapseOptions[\s\S]*optionsCollapsed[\s\S]*expandOptions/
+    /openSpeechOptions\(\)[\s\S]*optionsOpen[\s\S]*return true;[\s\S]*optionsCollapsed[\s\S]*expandOptions/
 );
 
 assert.match(
@@ -3262,11 +3262,11 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /"commands",[\s\S]*what\|choices\|options[\s\S]*WMOFActions\.toggleSpeechOptions/
+    /"commands",[\s\S]*commands\|choices\|options\|what[\s\S]*WMOFActions\.openSpeechOptions/
 );
 assert.match(
     speechMicBarSource,
-    /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"what"[\s\S]*"choices"[\s\S]*"options"/
+    /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"choices"[\s\S]*"options"[\s\S]*"what"/
 );
 
 assert.match(
