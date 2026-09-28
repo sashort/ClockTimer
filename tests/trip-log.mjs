@@ -11,6 +11,18 @@ view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip su
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.00%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.00%');
+const compactDurationTrip={
+ standardTimeMilliseconds:600000,
+ actualTimeMilliseconds:600000,
+ countedTimeMilliseconds:600000,
+ events:[{event:'interval.started',value:{intervalKey:'compact',type:'break',length:'4:12'}}]
+};
+const canonicalDurationTrip={
+ ...compactDurationTrip,
+ events:[{event:'interval.started',value:{intervalKey:'canonical',type:'break',length:'0:04:12'}}]
+};
+assert.equal(w.TripLog.counted(compactDurationTrip),348000,'Trip Log interprets two-part duration values as mm:ss');
+assert.equal(w.TripLog.counted(canonicalDurationTrip),348000,'Trip Log interprets canonical h:mm:ss duration values identically');
 const skippedBreakEvents=[
  {event:'interval.started',timestamp:'2026-09-20 17:31:32.751',value:{intervalKey:'skip',type:'break',length:'10:00',startBuffer:'2:30',endBuffer:'2:30'}},
  {event:'interval.ended',timestamp:'2026-09-20 17:31:45.017',value:{intervalKey:'skip'}}
