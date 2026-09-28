@@ -20043,7 +20043,9 @@
             (!chime.perform && !summary.perform) ||
             !audio?.startSong
         ) {
-            return;
+            return Promise.resolve(
+                false
+            );
         }
 
         const output =
@@ -20054,45 +20056,68 @@
             summary.perform
                 ? reserveSemanticSpeech()
                 : undefined;
+        const exclusive =
+            announcementSpeechIgnoresMaster(
+                name
+            );
 
-        void audio
-            .startSong(
-                announcementSongName(
-                    name
-                ),
-                {
-                    bpm: 180,
-                    includeTones:
-                        chime.perform,
-                    includeSpeech:
-                        summary.perform,
-                    speechGuard,
-                    speechVolume:
-                        output.speechVolume,
-                    toneVolume:
-                        output.toneVolume,
-                    speechVelocity:
-                        output.speechVelocity,
-                    toneVelocity:
-                        output.toneVelocity,
-                    speechDelayMs:
-                        chime.perform
-                            ? output.speechDelayMs
-                            : 0,
-                    ...options
+        return runSemanticAnnouncement(
+            name,
+            async () => {
+                try {
+                    const song =
+                        await audio
+                            .startSong(
+                                announcementSongName(
+                                    name
+                                ),
+                                {
+                                    bpm: 180,
+                                    includeTones:
+                                        chime.perform,
+                                    includeSpeech:
+                                        summary.perform,
+                                    speechGuard,
+                                    speechVolume:
+                                        output.speechVolume,
+                                    toneVolume:
+                                        output.toneVolume,
+                                    speechVelocity:
+                                        output.speechVelocity,
+                                    toneVelocity:
+                                        output.toneVelocity,
+                                    speechDelayMs:
+                                        chime.perform
+                                            ? output.speechDelayMs
+                                            : 0,
+                                    ...options
+                                }
+                            );
+
+                    await song
+                        ?.finished;
+
+                    return Boolean(
+                        song
+                    );
                 }
-            )
-            .catch(
-                error =>
+                catch (error) {
                     console.error(
                         "Audio playback failed:",
                         name,
                         error
-                    )
-            );
+                    );
+
+                    return false;
+                }
+            },
+            {
+                exclusive
+            }
+        );
     }
 
-    async function playSemanticSongThenSpeak(
+    function playSemanticSongThenSpeak(
         name,
         speech,
         options = {}
@@ -20113,105 +20138,94 @@
             speech
                 ? reserveSemanticSpeech()
                 : undefined;
-        let played =
-            false;
+        const exclusive =
+            announcementSpeechIgnoresMaster(
+                name
+            );
 
-        let speechStartDelayMs =
-            0;
+        return runSemanticAnnouncement(
+            name,
+            async () => {
+                let played =
+                    false;
 
-        if (chime.perform) {
-            try {
-                const song =
-                    await audio
-                        ?.startSong?.(
-                            announcementSongName(
-                                name
-                            ),
-                            {
-                                bpm: 180,
-                                includeSpeech: false,
-                                speechVolume:
-                                    output.speechVolume,
-                                toneVolume:
-                                    output.toneVolume,
-                                speechVelocity:
-                                    output.speechVelocity,
-                                toneVelocity:
-                                    output.toneVelocity,
-                                ...options
-                            }
+                if (
+                    chime.perform &&
+                    audio?.startSong
+                ) {
+                    try {
+                        const song =
+                            await audio
+                                .startSong(
+                                    announcementSongName(
+                                        name
+                                    ),
+                                    {
+                                        bpm: 180,
+                                        speechVolume:
+                                            output.speechVolume,
+                                        toneVolume:
+                                            output.toneVolume,
+                                        speechVelocity:
+                                            output.speechVelocity,
+                                        toneVelocity:
+                                            output.toneVelocity,
+                                        ...options,
+                                        includeSpeech:
+                                            false
+                                    }
+                                );
+
+                        played =
+                            Boolean(
+                                song?.hasChime
+                            );
+
+                        await song
+                            ?.finished;
+
+                        if (played) {
+                            await waitForAnnouncementDelay(
+                                output
+                                    .speechDelayMs
+                            );
+                        }
+                    }
+                    catch (error) {
+                        console.error(
+                            "Audio playback failed:",
+                            name,
+                            error
                         );
-
-                played =
-                    Boolean(
-                        song?.hasChime
-                    );
-
-                if (played) {
-                    speechStartDelayMs =
-                        Math.max(
-                            0,
-                            Number(
-                                song
-                                    ?.chimeEndsInMs
-                            ) ||
-                            0
-                        ) +
-                        Math.max(
-                            0,
-                            output.speechDelayMs
-                        );
+                    }
                 }
-            }
-            catch (error) {
-                console.error(
-                    "Audio playback failed:",
-                    name,
-                    error
-                );
-            }
-        }
 
-        if (speech && audio?.speak) {
-            if (
-                speechStartDelayMs >
-                    0
-            ) {
-                setTimeout(
-                    () =>
-                        speakSemantic(
-                            audio,
-                            speech,
-                            {
-                                speechVolume:
-                                    output.speechVolume,
-                                speechVelocity:
-                                    output.speechVelocity
-                            },
-                            speechGuard
-                        ),
-                    speechStartDelayMs
-                );
-            }
-            else {
-                speakSemantic(
-                    audio,
-                    speech,
-                    {
-                        speechVolume:
-                            output.speechVolume,
-                        speechVelocity:
-                            output.speechVelocity
-                    },
-                    speechGuard
-                );
-            }
-        }
+                if (
+                    speech &&
+                    audio?.speak
+                ) {
+                    await speakSemanticAndWait(
+                        audio,
+                        speech,
+                        {
+                            speechVolume:
+                                output.speechVolume,
+                            speechVelocity:
+                                output.speechVelocity
+                        },
+                        speechGuard
+                    );
+                }
 
-        return {
-            played,
-            chime
-        };
+                return {
+                    played,
+                    chime
+                };
+            },
+            {
+                exclusive
+            }
+        );
     }
 
     // Early/late announcements are about the timing gain or loss for
