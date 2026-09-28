@@ -1110,7 +1110,7 @@ assert.match(
 
 assert.match(
     app,
-    /installSpeechCommand\([\s\S]*"readyAtContinuation"[\s\S]*"continueStartAt"[\s\S]*numberPadDialog[\s\S]*false[\s\S]*"clock"[\s\S]*"spokenTime"[\s\S]*speech-index[\s\S]*"10"/
+    /\["readyAtContinuation","continueStartAt"\][\s\S]*readyAtContinuation:\["clock","spokenTime"\][\s\S]*installSpeechCommand\(key, fn, document\.body, true/
 );
 assert.match(
     app,
@@ -1127,7 +1127,7 @@ assert.match(
 );
 assert.match(
     app,
-    /key ===[\s\S]*"readyAtContinuation"[\s\S]*speech-available[\s\S]*WMOFActions\.canContinueStartAt/
+    /readyAtContinuation:[\s\S]*"WMOFSpeechAvailability\.canContinueStartAt"[\s\S]*if \(availability\)[\s\S]*"speech-available"/
 );
 assert.doesNotMatch(
     app,
