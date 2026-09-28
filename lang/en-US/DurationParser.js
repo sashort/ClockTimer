@@ -337,48 +337,90 @@ class EnglishDurationParser {
                 .split(/\s+/)
                 .filter(Boolean);
 
-        if (tokens.length !== 2) {
+        if (tokens.length < 2) {
             return undefined;
         }
 
-        const values =
-            tokens.map(
-                token => {
-                    if (/^\d{1,2}$/.test(token)) {
-                        return Number(token);
-                    }
+        const rawGroups = [];
 
-                    if (
-                        token === "oh" ||
-                        token === "o" ||
-                        token === "zero" ||
-                        token === "naught" ||
-                        token === "nought"
-                    ) {
-                        return 0;
-                    }
+        for (
+            let index = 0;
+            index < tokens.length;
+            index++
+        ) {
+            const token =
+                tokens[index];
+            const zeroToken =
+                token === "oh" ||
+                token === "o" ||
+                token === "zero" ||
+                token === "naught" ||
+                token === "nought";
 
-                    return undefined;
-                }
-            );
+            if (
+                zeroToken &&
+                index + 1 < tokens.length &&
+                /^\d$/.test(
+                    tokens[index + 1]
+                )
+            ) {
+                rawGroups.push(
+                    Number(
+                        "0" +
+                        tokens[++index]
+                    )
+                );
+                continue;
+            }
+
+            if (/^\d{1,2}$/.test(token)) {
+                rawGroups.push(
+                    Number(token)
+                );
+                continue;
+            }
+
+            return undefined;
+        }
 
         if (
-            values.some(
-                value =>
-                    !Number.isInteger(value)
-            ) ||
-            values[0] < 0 ||
-            values[0] > 59 ||
-            values[1] < 0 ||
-            values[1] > 59
+            rawGroups.length < 2 ||
+            rawGroups.length > 3
+        ) {
+            return undefined;
+        }
+
+        const [
+            hours,
+            minutes,
+            seconds
+        ] =
+            rawGroups.length === 3
+                ? rawGroups
+                : [
+                    0,
+                    rawGroups[0],
+                    rawGroups[1]
+                ];
+
+        if (
+            !Number.isInteger(hours) ||
+            hours < 0 ||
+            !Number.isInteger(minutes) ||
+            minutes < 0 ||
+            minutes > 59 ||
+            !Number.isInteger(seconds) ||
+            seconds < 0 ||
+            seconds > 59
         ) {
             return undefined;
         }
 
         const total =
             (
-                values[0] * 60 +
-                values[1]
+                hours * 3600 +
+                minutes * 60 +
+                seconds
             ) *
             1000;
 
