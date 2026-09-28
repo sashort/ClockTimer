@@ -149,6 +149,16 @@ class EnglishDurationParser {
             return explicit;
         }
 
+        const positional =
+            EnglishDurationParser
+                .#parsePositionalNumberGroups(
+                    text
+                );
+
+        if (positional !== undefined) {
+            return positional;
+        }
+
         const cardinalText =
             text
                 .replace(/\band\b/g, " ")
@@ -294,6 +304,62 @@ class EnglishDurationParser {
         return parts.join(
             " "
         );
+    }
+
+    static #parsePositionalNumberGroups(
+        value
+    ) {
+        const chunks =
+            EnglishDurationParser
+                .#numberChunks(
+                    value
+                );
+
+        if (
+            !chunks ||
+            chunks.length < 2 ||
+            chunks.length > 3
+        ) {
+            return undefined;
+        }
+
+        const [
+            hours,
+            minutes,
+            seconds
+        ] =
+            chunks.length === 3
+                ? chunks
+                : [
+                    0,
+                    chunks[0],
+                    chunks[1]
+                ];
+
+        if (
+            !Number.isInteger(hours) ||
+            hours < 0 ||
+            !Number.isInteger(minutes) ||
+            minutes < 0 ||
+            minutes > 59 ||
+            !Number.isInteger(seconds) ||
+            seconds < 0 ||
+            seconds > 59
+        ) {
+            return undefined;
+        }
+
+        const total =
+            (
+                hours * 3600 +
+                minutes * 60 +
+                seconds
+            ) *
+            1000;
+
+        return total > 0
+            ? total
+            : undefined;
     }
 
     static #parseClockStyleHourMinute(
@@ -845,6 +911,42 @@ class EnglishDurationParser {
         ) {
             const token =
                 tokens[index];
+
+            if (
+                (
+                    token === "oh" ||
+                    token === "o" ||
+                    token === "zero" ||
+                    token === "naught" ||
+                    token === "nought"
+                ) &&
+                index + 1 <
+                    tokens.length
+            ) {
+                const next =
+                    tokens[
+                        index + 1
+                    ];
+                const nextDigit =
+                    EnglishDurationParser
+                        .#small[
+                            next
+                        ];
+
+                if (
+                    Number.isInteger(
+                        nextDigit
+                    ) &&
+                    nextDigit >= 0 &&
+                    nextDigit < 10
+                ) {
+                    values.push(
+                        nextDigit
+                    );
+                    index++;
+                    continue;
+                }
+            }
 
             if (
                 Object.hasOwn(
