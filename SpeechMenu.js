@@ -5418,6 +5418,51 @@ class SpeechMenu {
         );
     }
 
+    static #hasExactLiteralPhrase(
+        phrases,
+        transcript
+    ) {
+        const spoken =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                );
+
+        if (!spoken) {
+            return false;
+        }
+
+        return (
+            phrases || []
+        )
+            .some(
+                phrase => {
+                    const value =
+                        String(
+                            phrase ||
+                            ""
+                        )
+                            .trim();
+
+                    if (
+                        !value ||
+                        /<[A-Za-z_$][\w$]*>/
+                            .test(value)
+                    ) {
+                        return false;
+                    }
+
+                    return (
+                        SpeechMenu
+                            .#normalizeTranscript(
+                                value
+                            ) ===
+                        spoken
+                    );
+                }
+            );
+    }
+
     static #elementContinuationDepth(
         element,
         transcript
@@ -5431,6 +5476,20 @@ class SpeechMenu {
                 );
 
         if (!group) {
+            return undefined;
+        }
+
+        if (
+            !element
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                ) &&
+            SpeechMenu
+                .#hasExactLiteralPhrase(
+                    group.phrases,
+                    transcript
+                )
+        ) {
             return undefined;
         }
 
@@ -5482,15 +5541,29 @@ class SpeechMenu {
             return undefined;
         }
 
-        let depth;
-
-        for (
-            const phrase of
+        const phrases =
             SpeechMenu
                 .#expandRegexSource(
                     pattern
+                );
+
+        if (
+            !element
+                ?.hasAttribute?.(
+                    "speech-open-ended"
+                ) &&
+            SpeechMenu
+                .#hasExactLiteralPhrase(
+                    phrases,
+                    transcript
                 )
         ) {
+            return undefined;
+        }
+
+        let depth;
+
+        for (const phrase of phrases) {
             if (
                 !SpeechMenu
                     .#phraseCanContinue(
