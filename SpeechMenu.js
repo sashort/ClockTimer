@@ -1229,6 +1229,94 @@ class SpeechMenu {
         );
     }
 
+    static async planCommandChain(
+        transcript
+    ) {
+        SpeechMenu.extrapolatePhrases();
+
+        const probe = {
+            id: -1,
+            candidatePool: [],
+            lastExactCandidate:
+                undefined
+        };
+
+        const candidate =
+            await SpeechMenu
+                .#planCommandChain(
+                    probe,
+                    transcript
+                );
+
+        if (!candidate) {
+            return undefined;
+        }
+
+        return Object.freeze({
+            exact:
+                Boolean(
+                    candidate.exact
+                ),
+            continuation:
+                Boolean(
+                    candidate
+                        .continuation
+                ),
+            terminal:
+                Boolean(
+                    candidate.terminal
+                ),
+            pending:
+                candidate.pending
+                    ? Object.freeze({
+                        editorId:
+                            candidate
+                                .pending
+                                .element
+                                ?.dataset
+                                ?.speechEditorId ||
+                            undefined,
+                        transcript:
+                            candidate
+                                .pending
+                                .transcript
+                    })
+                    : undefined,
+            steps:
+                Object.freeze(
+                    candidate.chain
+                        .map(
+                            step =>
+                                Object.freeze({
+                                    editorId:
+                                        step
+                                            .commandElement
+                                            ?.dataset
+                                            ?.speechEditorId ||
+                                        undefined,
+                                    transcript:
+                                        step
+                                            .segmentTranscript ||
+                                        step
+                                            .transcript,
+                                    canonicalTranscript:
+                                        step
+                                            .canonicalTranscript,
+                                    arguments:
+                                        Object.freeze(
+                                            (
+                                                step
+                                                    .arguments ||
+                                                []
+                                            )
+                                                .slice()
+                                        )
+                                })
+                        )
+                )
+        });
+    }
+
     static extrapolatePhrases() {
         const groups = [];
         const intentGroups =
