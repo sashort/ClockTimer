@@ -870,7 +870,7 @@ assert.match(html, /builtin:yes:speechBreakConfirmDialog/);
 assert.match(html, /builtin:no:speechBreakConfirmDialog/);
 assert.match(html, /builtin:cancel:speechBreakConfirmDialog/);
 assert.match(html, /id="cancelDownConfirmDialog"/);
-assert.match(html, /Press\\/Say OK to Delete our down time/);
+assert.match(html, /Press\\/Say OK to Delete your down time/);
 assert.match(html, /builtin:confirm:cancelDownConfirmDialog/);
 assert.match(html, /builtin:cancel:cancelDownConfirmDialog/);
 assert.match(
@@ -1020,7 +1020,7 @@ assert.match(
 );
 assert.match(
     app,
-    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\\/Say OK to Delete our down time[\s\S]*WMOFAudio[\s\S]*\.speak/
+    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\\/Say OK to Delete your down time[\s\S]*WMOFAudio[\s\S]*\.speak/
 );
 assert.match(
     app,
