@@ -6973,7 +6973,22 @@
             if (value === this.#nonProduction) return;
             this.#nonProduction = value;
             if (this.#hasStartProperties() && !this.#replayingTripEvents) {
-                this.#queueTripEvent("trip.standard-time-changed", new Date(), {value:this.standardTime,nonProduction:value});
+                this.#queueTripEvent(
+                    "trip.standard-time-changed",
+                    new Date(),
+                    {
+                        value:
+                            this.#formatStandardTime(
+                                this.#standardDuration,
+                                {
+                                    includeHours:
+                                        true
+                                }
+                            ),
+                        nonProduction:
+                            value
+                    }
+                );
                 this.#scheduleTripEventSync();
             }
         }
