@@ -155,46 +155,17 @@ class EnglishDurationParser {
                 .replace(/\s+/g, " ")
                 .trim();
 
-        const pieces =
-            cardinalText
-                .split(" ")
-                .filter(Boolean);
-
-        for (
-            let split = 1;
-            split < pieces.length;
-            split++
-        ) {
-            const hours =
-                EnglishDurationParser
-                    .#number(
-                        pieces
-                            .slice(0, split)
-                            .join(" ")
-                    );
-            const minutes =
-                EnglishDurationParser
-                    .#number(
-                        pieces
-                            .slice(split)
-                            .join(" ")
-                    );
-
-            if (
-                Number.isInteger(hours) &&
-                hours >= 0 &&
-                Number.isInteger(minutes) &&
-                minutes >= 0 &&
-                minutes < 60
-            ) {
-                return (
-                    (
-                        hours * 3600 +
-                        minutes * 60
-                    ) *
-                    1000
+        const clockStyleHourMinute =
+            EnglishDurationParser
+                .#parseClockStyleHourMinute(
+                    cardinalText
                 );
-            }
+
+        if (
+            clockStyleHourMinute !==
+                undefined
+        ) {
+            return clockStyleHourMinute;
         }
 
         const minutes =
@@ -323,6 +294,58 @@ class EnglishDurationParser {
         return parts.join(
             " "
         );
+    }
+
+    static #parseClockStyleHourMinute(
+        value
+    ) {
+        const pieces =
+            String(
+                value ||
+                ""
+            )
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean);
+
+        for (
+            let split = 1;
+            split < pieces.length;
+            split++
+        ) {
+            const hours =
+                EnglishDurationParser
+                    .#number(
+                        pieces
+                            .slice(0, split)
+                            .join(" ")
+                    );
+            const minutes =
+                EnglishDurationParser
+                    .#number(
+                        pieces
+                            .slice(split)
+                            .join(" ")
+                    );
+
+            if (
+                Number.isInteger(hours) &&
+                hours >= 0 &&
+                Number.isInteger(minutes) &&
+                minutes >= 0 &&
+                minutes < 60
+            ) {
+                return (
+                    (
+                        hours * 3600 +
+                        minutes * 60
+                    ) *
+                    1000
+                );
+            }
+        }
+
+        return undefined;
     }
 
     static #groupedDuration(
