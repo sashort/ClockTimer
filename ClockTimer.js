@@ -5454,13 +5454,29 @@
                 startEventTime,
                 {
                     standardTime:
-                        this.#standardTime,
-                    creationTime:
-                        this.#creationTime,
-                    scheduledStart:
-                        this.#formatStandardTime(this.#scheduledStartMilliseconds),
-                    startTime:
                         this.#formatStandardTime(
+                            this.#standardDuration,
+                            {
+                                includeHours:
+                                    true
+                            }
+                        ),
+                    creationTime:
+                        this.#formatStandardTime(
+                            this.#creationMilliseconds,
+                            {
+                                clock:
+                                    true,
+                                includeHours:
+                                    true
+                            }
+                        ),
+                    scheduledStart:
+                        this.#formatTimelineTime(
+                            this.#scheduledStartMilliseconds
+                        ),
+                    startTime:
+                        this.#formatTimelineTime(
                             startEventTimeline
                         ),
                     creationAnchor:
@@ -7515,7 +7531,13 @@
                 new Date(),
                 {
                     value:
-                        this.#standardTime
+                        this.#formatStandardTime(
+                            this.#standardDuration,
+                            {
+                                includeHours:
+                                    true
+                            }
+                        )
                 }
             );
 
@@ -7591,7 +7613,15 @@
                     new Date(),
                     {
                         value:
-                            currentValue
+                            this.#formatStandardTime(
+                                this.#creationMilliseconds,
+                                {
+                                    clock:
+                                        true,
+                                    includeHours:
+                                        true
+                                }
+                            )
                     }
                 );
 
