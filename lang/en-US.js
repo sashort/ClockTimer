@@ -11,12 +11,84 @@
         "^(?<spokenValue>" + keypadToken +
         "(?:[\\s\\-\\u2013\\u2014]+" + keypadToken + ")*)$";
 
+    const smallNumberHotwords =
+        [
+            "zero",
+            "one",
+            "two",
+            "three",
+            "four",
+            "five",
+            "six",
+            "seven",
+            "eight",
+            "nine",
+            "ten",
+            "eleven",
+            "twelve",
+            "thirteen",
+            "fourteen",
+            "fifteen",
+            "sixteen",
+            "seventeen",
+            "eighteen",
+            "nineteen"
+        ];
+    const tensHotwords =
+        [
+            "twenty",
+            "thirty",
+            "forty",
+            "fifty",
+            "sixty",
+            "seventy",
+            "eighty",
+            "ninety"
+        ];
+    const numberValueHotwords =
+        [
+            ...smallNumberHotwords,
+            "oh",
+            "o",
+            "naught",
+            "nought",
+            "double",
+            "triple"
+        ];
+
+    for (
+        const tens of tensHotwords
+    ) {
+        numberValueHotwords.push(
+            tens
+        );
+
+        for (
+            let digit = 1;
+            digit <= 9;
+            digit++
+        ) {
+            numberValueHotwords.push(
+                tens +
+                " " +
+                smallNumberHotwords[
+                    digit
+                ]
+            );
+        }
+    }
+
     const language = Object.freeze({
         code: "en-US",
         name: "English (United States)",
         direction: "ltr",
         speechRecognitionLanguage: "en-US",
         speech: Object.freeze({
+            recognitionHotwords:
+                Object.freeze(
+                    numberValueHotwords
+                        .slice()
+                ),
             wakePhrase: "^wake$",
             sleepPhrase: "^sleep$",
             offPhrase: "^off$",
