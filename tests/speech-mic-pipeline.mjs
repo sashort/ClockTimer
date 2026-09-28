@@ -188,6 +188,325 @@ assert.deepEqual(
     ]
 );
 
+globalThis.ChainTestActions =
+    window.ChainTestActions = {
+        breakStart() {
+            return true;
+        },
+        breakChoice(
+            breakChoice
+        ) {
+            return Boolean(
+                breakChoice
+            );
+        },
+        confirmBreak() {
+            return true;
+        },
+        readyAt(
+            time
+        ) {
+            return Boolean(time);
+        },
+        standardTime(
+            duration
+        ) {
+            return Boolean(
+                duration
+            );
+        }
+    };
+
+const chainRootMenu =
+    document.createElement(
+        "speech-menu"
+    );
+const breakStartChainCommand =
+    document.createElement(
+        "speech-command"
+    );
+breakStartChainCommand.dataset
+    .speechEditorId =
+    "test:break-start";
+breakStartChainCommand
+    .setAttribute(
+        "speech-pattern",
+        "^break start$"
+    );
+breakStartChainCommand
+    .setAttribute(
+        "speech-function",
+        "ChainTestActions.breakStart"
+    );
+breakStartChainCommand
+    .setAttribute(
+        "speech-chain-next",
+        "test-break-choice"
+    );
+
+const readyAtChainCommand =
+    document.createElement(
+        "speech-command"
+    );
+readyAtChainCommand.dataset
+    .speechEditorId =
+    "test:ready-at";
+readyAtChainCommand
+    .setAttribute(
+        "speech-pattern",
+        "^ready at (?<time>.+)$"
+    );
+readyAtChainCommand
+    .setAttribute(
+        "speech-function",
+        "ChainTestActions.readyAt"
+    );
+readyAtChainCommand
+    .setAttribute(
+        "speech-chain-next",
+        "test-scheduled-start"
+    );
+
+chainRootMenu.append(
+    breakStartChainCommand,
+    readyAtChainCommand
+);
+document.body.append(
+    chainRootMenu
+);
+
+const futureChainDialog =
+    document.createElement(
+        "dialog"
+    );
+const futureChainMenu =
+    document.createElement(
+        "speech-menu"
+    );
+
+const breakChoiceChainCommand =
+    document.createElement(
+        "speech-command"
+    );
+breakChoiceChainCommand.dataset
+    .speechEditorId =
+    "test:break-choice";
+breakChoiceChainCommand
+    .setAttribute(
+        "speech-pattern",
+        "^(?<breakChoice>lunch|short)$"
+    );
+breakChoiceChainCommand
+    .setAttribute(
+        "speech-function",
+        "ChainTestActions.breakChoice"
+    );
+breakChoiceChainCommand
+    .setAttribute(
+        "speech-chain-context",
+        "test-break-choice"
+    );
+breakChoiceChainCommand
+    .setAttribute(
+        "speech-chain-next",
+        "test-break-confirm"
+    );
+
+const breakConfirmChainCommand =
+    document.createElement(
+        "speech-command"
+    );
+breakConfirmChainCommand.dataset
+    .speechEditorId =
+    "test:break-confirm";
+breakConfirmChainCommand
+    .setAttribute(
+        "speech-pattern",
+        "^ok(?:ay)?$"
+    );
+breakConfirmChainCommand
+    .setAttribute(
+        "speech-function",
+        "ChainTestActions.confirmBreak"
+    );
+breakConfirmChainCommand
+    .setAttribute(
+        "speech-chain-context",
+        "test-break-confirm"
+    );
+
+const standardTimeChainCommand =
+    document.createElement(
+        "speech-command"
+    );
+standardTimeChainCommand.dataset
+    .speechEditorId =
+    "test:standard-time";
+standardTimeChainCommand
+    .setAttribute(
+        "speech-pattern",
+        "^standard(?: time)? (?<duration>.+)$"
+    );
+standardTimeChainCommand
+    .setAttribute(
+        "speech-function",
+        "ChainTestActions.standardTime"
+    );
+standardTimeChainCommand
+    .setAttribute(
+        "speech-chain-context",
+        "test-scheduled-start"
+    );
+
+futureChainMenu.append(
+    breakChoiceChainCommand,
+    breakConfirmChainCommand,
+    standardTimeChainCommand
+);
+futureChainDialog.append(
+    futureChainMenu
+);
+document.body.append(
+    futureChainDialog
+);
+
+SpeechMenu.refresh();
+
+const breakChainPlan =
+    await SpeechMenu
+        .planCommandChain(
+            "break start lunch ok"
+        );
+
+assert.ok(
+    breakChainPlan
+);
+assert.equal(
+    breakChainPlan.exact,
+    true
+);
+assert.equal(
+    breakChainPlan.terminal,
+    true
+);
+assert.equal(
+    breakChainPlan.continuation,
+    false
+);
+assert.deepEqual(
+    breakChainPlan.steps.map(
+        step =>
+            step.editorId
+    ),
+    [
+        "test:break-start",
+        "test:break-choice",
+        "test:break-confirm"
+    ]
+);
+assert.deepEqual(
+    breakChainPlan.steps.map(
+        step =>
+            step.transcript
+    ),
+    [
+        "break start",
+        "lunch",
+        "ok"
+    ]
+);
+
+const lunchChainPlan =
+    await SpeechMenu
+        .planCommandChain(
+            "break start lunch"
+        );
+
+assert.equal(
+    lunchChainPlan?.exact,
+    true
+);
+assert.equal(
+    lunchChainPlan
+        ?.continuation,
+    true
+);
+assert.deepEqual(
+    lunchChainPlan
+        ?.steps
+        ?.map(
+            step =>
+                step.editorId
+        ),
+    [
+        "test:break-start",
+        "test:break-choice"
+    ]
+);
+
+const readyChainPlan =
+    await SpeechMenu
+        .planCommandChain(
+            "ready at five thirty standard time one hour"
+        );
+
+assert.ok(
+    readyChainPlan
+);
+assert.equal(
+    readyChainPlan.exact,
+    true
+);
+assert.deepEqual(
+    readyChainPlan.steps.map(
+        step =>
+            step.editorId
+    ),
+    [
+        "test:ready-at",
+        "test:standard-time"
+    ]
+);
+assert.deepEqual(
+    readyChainPlan.steps.map(
+        step =>
+            step.transcript
+    ),
+    [
+        "ready at five thirty",
+        "standard time one hour"
+    ]
+);
+
+const partialReadyChainPlan =
+    await SpeechMenu
+        .planCommandChain(
+            "ready at five thirty standard"
+        );
+
+assert.equal(
+    partialReadyChainPlan
+        ?.exact,
+    false
+);
+assert.equal(
+    partialReadyChainPlan
+        ?.continuation,
+    true
+);
+assert.equal(
+    partialReadyChainPlan
+        ?.pending
+        ?.editorId,
+    "test:standard-time"
+);
+
+futureChainDialog.remove();
+chainRootMenu.remove();
+delete globalThis.ChainTestActions;
+delete window.ChainTestActions;
+SpeechMenu.refresh();
+
 bar.remove();
 
 assert.equal(
