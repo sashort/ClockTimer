@@ -56,7 +56,7 @@ window.Commands = {
 
 window.document.body.innerHTML = [
     '<speech-menu id="system" speech-modal="system">',
-    '<speech-command id="wakeCommand" speech-pattern="^wake$" speech-function="Commands.wake"></speech-command>',
+    '<speech-command id="wakeCommand" data-speech-system-command="wake" speech-pattern="^wake$" speech-function="Commands.wake"></speech-command>',
     '<speech-command id="sleepCommand" speech-pattern="^sleep$" speech-function="Commands.sleep"></speech-command>',
     '<speech-command id="offCommand" speech-pattern="^off$" speech-function="Commands.off"></speech-command>',
     '</speech-menu>',
