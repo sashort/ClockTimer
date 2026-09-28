@@ -22886,100 +22886,103 @@
                 summary.perform
                     ? reserveSemanticSpeech()
                     : undefined;
-            let speechStartDelayMs =
-                0;
 
-            if (
-                chime.perform &&
-                audio?.startSong
-            ) {
-                try {
-                    const cue =
-                        await audio
-                            .startSong(
-                                announcementSongName(
-                                    announcement
-                                ),
-                                {
-                                    bpm: 120,
-                                    includeSpeech:
-                                        false,
-                                    speechVolume:
-                                        output.speechVolume,
-                                    toneVolume:
-                                        output.toneVolume,
-                                    speechVelocity:
-                                        output.speechVelocity,
-                                    toneVelocity:
-                                        output.toneVelocity
-                                }
-                            );
-
-                    if (cue?.hasChime) {
-                        speechStartDelayMs =
-                            Math.max(
-                                0,
-                                Number(
-                                    cue
-                                        .chimeEndsInMs
-                                ) ||
-                                0
-                            ) +
-                            Math.max(
-                                0,
-                                output
-                                    .speechDelayMs
-                            );
+            const exclusive =
+                announcementSpeechIgnoresMaster(
+                    announcement,
+                    {
+                        ignoreSummaryMaster
                     }
-                }
-                catch (
-                    error
-                ) {
-                    console.warn(
-                        "Informational announcement cue failed:",
-                        error
-                    );
-                }
-            }
+                );
 
-            if (
-                summary.perform &&
-                audio?.speak
-            ) {
-                if (
-                    speechStartDelayMs >
-                        0
-                ) {
-                    setTimeout(
-                        () =>
-                            speakSemantic(
-                                audio,
-                                spokenResponse,
-                                {
-                                    speechVolume:
-                                        output.speechVolume,
-                                    speechVelocity:
-                                        output.speechVelocity
-                                },
-                                speechGuard
-                            ),
-                        speechStartDelayMs
-                    );
+            void runSemanticAnnouncement(
+                announcement,
+                async () => {
+                    let chimePlayed =
+                        false;
+
+                    if (
+                        chime.perform &&
+                        audio?.startSong
+                    ) {
+                        try {
+                            const cue =
+                                await audio
+                                    .startSong(
+                                        announcementSongName(
+                                            announcement
+                                        ),
+                                        {
+                                            bpm: 120,
+                                            includeSpeech:
+                                                false,
+                                            speechVolume:
+                                                output.speechVolume,
+                                            toneVolume:
+                                                output.toneVolume,
+                                            speechVelocity:
+                                                output.speechVelocity,
+                                            toneVelocity:
+                                                output.toneVelocity
+                                        }
+                                    );
+
+                            chimePlayed =
+                                Boolean(
+                                    cue?.hasChime
+                                );
+
+                            await cue
+                                ?.finished;
+
+                            if (chimePlayed) {
+                                await waitForAnnouncementDelay(
+                                    output
+                                        .speechDelayMs
+                                );
+                            }
+                        }
+                        catch (
+                            error
+                        ) {
+                            console.warn(
+                                "Informational announcement cue failed:",
+                                error
+                            );
+                        }
+                    }
+
+                    if (
+                        summary.perform &&
+                        audio?.speak
+                    ) {
+                        await speakSemanticAndWait(
+                            audio,
+                            spokenResponse,
+                            {
+                                speechVolume:
+                                    output.speechVolume,
+                                speechVelocity:
+                                    output.speechVelocity
+                            },
+                            speechGuard
+                        );
+                    }
+
+                    return true;
+                },
+                {
+                    exclusive
                 }
-                else {
-                    speakSemantic(
-                        audio,
-                        spokenResponse,
-                        {
-                            speechVolume:
-                                output.speechVolume,
-                            speechVelocity:
-                                output.speechVelocity
-                        },
-                        speechGuard
-                    );
-                }
-            }
+            )
+                .catch(
+                    error =>
+                        console.warn(
+                            "Informational announcement playback failed:",
+                            announcement,
+                            error
+                        )
+                );
 
             return {
                 speechResponse: {
