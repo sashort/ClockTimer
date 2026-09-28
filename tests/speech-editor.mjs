@@ -99,7 +99,8 @@ const entries = [
         attrs:{
             "speech-pattern":"^take a break$",
             "speech-function":"WMOFActions.openBreakMenu",
-            "speech-index":"2"
+            "speech-index":"2",
+            "speech-chain-next":"break-choice"
         }
     },
     {
@@ -128,7 +129,8 @@ const entries = [
         parentId:"edit:group:1",
         attrs:{
             "speech-pattern":"^pause$",
-            "speech-function":"WMOFActions.openBreakMenu"
+            "speech-function":"WMOFActions.openBreakMenu",
+            "speech-chain-context":"break-choice"
         }
     },
     {
@@ -168,6 +170,17 @@ assert.equal(
             "speech-index"
         ),
     "2"
+);
+
+assert.equal(
+    window.document
+        .querySelector(
+            '[data-speech-editor-id="builtin:breakStart:page"]'
+        )
+        .getAttribute(
+            "speech-chain-next"
+        ),
+    "break-choice"
 );
 
 assert.deepEqual(
@@ -240,6 +253,17 @@ assert.equal(
             "speech-pattern"
         ),
     "^pause$"
+);
+
+assert.equal(
+    createdMenu
+        .querySelector(
+            "speech-command"
+        )
+        .getAttribute(
+            "speech-chain-context"
+        ),
+    "break-choice"
 );
 
 assert.equal(
