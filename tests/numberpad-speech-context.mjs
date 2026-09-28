@@ -701,6 +701,10 @@ test("duration TTS follows the Formal Time formatter across voice and informatio
         standardTime,
         /spokenValue:[\s\S]*?formatGoalFailureDuration\([\s\S]*?duration/
     );
+    assert.match(
+        standardTime,
+        /formatCanonical\([\s\S]*?duration[\s\S]*?displayFormatted[\s\S]*?\.format\([\s\S]*?duration/
+    );
 
     const dictation = appSource.slice(
         appSource.indexOf("const dictateSpeechMetric"),
