@@ -9,7 +9,9 @@
         "speech-preproc-context",
         "speech-preproc-field",
         "speech-modal",
-        "speech-index"
+        "speech-index",
+        "speech-chain-context",
+        "speech-chain-next"
     ];
     const created = new Map();
 
