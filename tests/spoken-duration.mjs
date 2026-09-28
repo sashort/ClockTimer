@@ -11,6 +11,11 @@ const source = fs.readFileSync(
 const Parser = Function(
     `${source};return EnglishDurationParser;`
 )();
+
+assert.match(
+    source,
+    /#parseClockStyleHourMinute\([\s\S]*?clockStyleHourMinute/
+);
 const parse =
     value =>
         Parser.format(
