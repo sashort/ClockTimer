@@ -9,15 +9,15 @@ const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00
 const trips=[{id:2,startTime:'2026-09-17 09:00:00',endTime:'2026-09-17 09:30:00',standardTimeMilliseconds:1800000,actualTimeMilliseconds:1800000,events:[]},{id:1,startTime:'2026-09-18 12:00:00',endTime:'2026-09-18 12:20:00',standardTimeMilliseconds:1200000,actualTimeMilliseconds:1200000,events}];
 view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip summary strong').textContent,'12:00');assert(!root.textContent.includes('September 2026'));assert.equal(root.querySelectorAll('.trip-log-overview').length,1);assert(root.textContent.includes('Standard 0:50:00'));assert(root.querySelectorAll('.trip-log-group').length>=3);
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
-assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.0%');
-assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.0%');
+assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.00%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.00%');
 const skippedBreakEvents=[
  {event:'interval.started',timestamp:'2026-09-20 17:31:32.751',value:{intervalKey:'skip',type:'break',length:'10:00',startBuffer:'2:30',endBuffer:'2:30'}},
  {event:'interval.ended',timestamp:'2026-09-20 17:31:45.017',value:{intervalKey:'skip'}}
 ];
 const skippedBreak={standardTimeMilliseconds:3383000,actualTimeMilliseconds:3665607,countedTimeMilliseconds:3653341,events:skippedBreakEvents};
 assert.equal(w.TripLog.counted(skippedBreak),2765607);
-assert.equal(w.TripLog.percent([skippedBreak]),'122.3%');
+assert.equal(w.TripLog.percent([skippedBreak]),'122.32%');
 assert.equal(w.TripLog.counted({...skippedBreak,countedTimeMilliseconds:2765607}),2765607,'already-correct scheduled break allowance is not subtracted twice');
 // Production regression: wall time is 10:03:36, but excluded intervals reduce
 // counted time to 9:05:01. The Trip Log must show the counted-time result.
@@ -25,10 +25,10 @@ assert.equal(w.TripLog.percent([{
  standardTimeMilliseconds:28421000,
  actualTimeMilliseconds:36216727,
  countedTimeMilliseconds:32701965
-}]),'86.9%');
-assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
-assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.0%');
-assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.0%');
+}]),'86.91%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.00%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.00%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.00%');
 assert.equal(view.entryLabel(events[2],events[1],events[2]),'Break Ended');
 assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:06:00'},events[1],{...events[2],timestamp:'2026-09-18 12:06:00'}),'Break Ended Early · 1:00 Gained');
 assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:08:30'},events[1],{...events[2],timestamp:'2026-09-18 12:08:30'}),'Break Ended Late · 1:30 Lost');
@@ -40,8 +40,8 @@ const downEnd={id:5,event:'interval.ended',timestamp:'2026-09-18 12:16:30',value
 assert.equal(view.entryLabel(downEnd,downStart,downEnd,[downStart,downEnd]),'Down Ended · 1:30 Approval Deficit');
 downStart.value.approvedTime='0:07:30';
 assert.equal(view.entryLabel(downEnd,downStart,downEnd,[downStart,downEnd]),'Down Ended · 1:00 Approval Surplus');
-assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'100.0%');
-assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,includeInParentPercent:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'150.0%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'100.00%');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,includeInParentPercent:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'150.00%');
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
 const collapsed=root.querySelector('.trip-log-group');collapsed.open=false;collapsed.dispatchEvent(new w.Event('toggle'));
 let includeActive=false;
