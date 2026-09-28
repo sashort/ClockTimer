@@ -667,7 +667,7 @@ assert.match(
 
     assert.match(
         micSource,
-        /"commands"[\s\S]*?"\^\(\?:\(\?:speech \)\?commands\|choices\|options\)\$"[\s\S]*?"WMOFActions\.openSpeechOptions"/
+        /"commands"[\s\S]*?"\^\(\?:\(\?:speech \)\?commands\|choices\|options\|what\)\$"[\s\S]*?"WMOFActions\.openSpeechOptions"/
     );
 
     assert.doesNotMatch(
