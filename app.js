@@ -19181,7 +19181,7 @@
                 );
         }
         else if (speech) {
-            await playSemanticSongThenSpeak(
+            void playSemanticSongThenSpeak(
                 "trip-ended",
                 speech
             );
