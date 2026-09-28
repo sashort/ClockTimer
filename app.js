@@ -14908,7 +14908,7 @@
                                     }
 
                                     audio.speak(
-                                        "OK to " +
+                                        "Say OK to " +
                                             okAction
                                     );
                                 },
@@ -15429,7 +15429,7 @@
 
                     renderVoiceEntry({
                         prompt:
-                            "OK to " +
+                            "Say OK to " +
                             actionCopy.ok,
                         value:
                             display,
