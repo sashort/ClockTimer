@@ -2580,6 +2580,35 @@ assert.match(
 
 assert.match(
     speechMenuSource,
+    /const dictatedResponse[\s\S]*outcome[\s\S]*\.speechResponse[\s\S]*presentSpeechDictation\?\.\([\s\S]*dictatedResponse/
+);
+assert.match(
+    presentationSource,
+    /response\.display[\s\S]*document\.createElement\(\s*"code"\s*\)[\s\S]*speechResponseSnapshot[\s\S]*bar\.setResponse/
+);
+assert.match(
+    speechMicBarSource,
+    /#responseContent \.speech-response-dictation[\s\S]*display:\s*inline-flex[\s\S]*#responseContent \.speech-response-dictation code/
+);
+assert.match(
+    app,
+    /readEndTime\(\)[\s\S]*dictateSpeechMetric\([\s\S]*"End Time"[\s\S]*codeValue:[\s\S]*true/
+);
+assert.match(
+    app,
+    /readRenderedTime\([\s\S]*dictateSpeechMetric\([\s\S]*codeValue:[\s\S]*true/
+);
+assert.match(
+    app,
+    /"End Time Locked to " \+[\s\S]*responseDisplay:[\s\S]*prefix:[\s\S]*"End Time Locked to"[\s\S]*code:[\s\S]*label/
+);
+assert.match(
+    app,
+    /"Standard Time Set to " \+[\s\S]*responseDisplay:[\s\S]*prefix:[\s\S]*"Standard Time Set to"[\s\S]*code:[\s\S]*formatted/
+);
+
+assert.match(
+    speechMenuSource,
     /#commitUtterance\([\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)[\s\S]*let committed/
 );
 
