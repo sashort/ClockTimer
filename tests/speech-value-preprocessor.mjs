@@ -7,6 +7,8 @@ const source = ["DurationParser", "SpokenTimeParser", "PercentParser", "SpeechVa
 const Preprocessor = Function(`${source}; return EnglishSpeechValuePreprocessor;`)();
 assert.equal(Preprocessor.parse("forty five minutes", "duration"), 45 * 60000);
 assert.equal(Preprocessor.normalize("forty five minutes", "duration"), "0:45:00");
+assert.equal(Preprocessor.normalize("4 12", "duration"), "0:04:12");
+assert.equal(Preprocessor.normalize("22 56", "duration"), "0:22:56");
 assert.equal(Preprocessor.normalize("an hour", "duration"), "1:00:00");
 assert.equal(Preprocessor.normalize("a hour", "duration"), "1:00:00");
 assert.equal(Preprocessor.normalize("1 hour and a minute", "duration"), "1:01:00");
