@@ -60,6 +60,8 @@ jobs:
           node --check ActionFunctions.js
           node --check HamburgerMenu.js
           node --check app.js
+          node --check api/audio/VoiceCatalog.js
+          node --check api/audio/AudioEngine.js
           node --check api/admin/speech-editor/EditorActionFunctions.js
           node --check api/admin/speech-editor/RegexBuilder.js
           node --check api/admin/speech-editor/editor.js
@@ -111,3 +113,4 @@ jobs:
           node speech-value-preprocessor.mjs
           node speech-training-model.mjs
           node spoken-duration.mjs
+          node voice-catalog.mjs
