@@ -952,6 +952,13 @@ assert.match(
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const languageSource = fs.readFileSync(new URL("../lang/en-US.js", import.meta.url), "utf8");
+const actionFunctionsSource = fs.readFileSync(
+    new URL(
+        "../ActionFunctions.js",
+        import.meta.url
+    ),
+    "utf8"
+);
 assert.match(app, /speechRecognitionButton\?\.addEventListener[\s\S]*setSpeechLayoutState\(true\);[\s\S]*ensureSpeechRuntime/);
 assert.match(
     app,
@@ -2624,14 +2631,6 @@ assert.match(
 assert.doesNotMatch(
     speechMenuSource,
     /silenceMilliseconds\s*>=\s*SpeechMenu[\s\S]{0,220}#candidateCommitTimeout/
-);
-
-const actionFunctionsSource = fs.readFileSync(
-    new URL(
-        "../ActionFunctions.js",
-        import.meta.url
-    ),
-    "utf8"
 );
 
 assert.match(
