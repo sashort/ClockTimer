@@ -208,7 +208,9 @@ class SpeechMenu {
                             "inert",
                             "aria-hidden",
                             "speech-available",
-                            "speech-open-ended"
+                            "speech-open-ended",
+                            "speech-chain-context",
+                            "speech-chain-next"
                         ]
                     }
                 );
@@ -3017,6 +3019,61 @@ class SpeechMenu {
             );
     }
 
+    static async #executeCommandChain(
+        candidate,
+        utterance
+    ) {
+        const steps =
+            candidate
+                ?.chain || [];
+
+        if (
+            !steps.length ||
+            !utterance
+        ) {
+            return false;
+        }
+
+        utterance.commandChainExecuting =
+            true;
+
+        const startedAt =
+            utterance.wallStartedAt;
+
+        try {
+            for (const step of steps) {
+                const committed =
+                    await SpeechMenu
+                        .#processElement(
+                            step.commandElement,
+                            step.segmentTranscript ||
+                                step.transcript,
+                            utterance.id,
+                            step.speechMenuElement,
+                            SpeechMenu
+                                .#shouldExecuteElement(
+                                    step
+                                        .commandElement
+                                ),
+                            undefined,
+                            startedAt,
+                            true,
+                            false
+                        );
+
+                if (!committed) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        finally {
+            utterance.commandChainExecuting =
+                false;
+        }
+    }
+
     static async #commitUtterance(
         utterance
     ) {
@@ -3073,20 +3130,27 @@ class SpeechMenu {
         try {
             committed =
                 Boolean(
-                    await SpeechMenu
-                        .#processElement(
-                            candidate
-                                .commandElement,
-                            transcript,
-                            utterance.id,
-                            candidate
-                                .speechMenuElement,
-                            SpeechMenu
-                                .#shouldExecuteElement(
-                                    candidate
-                                        .commandElement
-                                )
-                        )
+                    candidate.kind ===
+                        "chain"
+                        ? await SpeechMenu
+                            .#executeCommandChain(
+                                candidate,
+                                utterance
+                            )
+                        : await SpeechMenu
+                            .#processElement(
+                                candidate
+                                    .commandElement,
+                                transcript,
+                                utterance.id,
+                                candidate
+                                    .speechMenuElement,
+                                SpeechMenu
+                                    .#shouldExecuteElement(
+                                        candidate
+                                            .commandElement
+                                    )
+                            )
                 );
 
             if (committed) {
@@ -5317,12 +5381,642 @@ class SpeechMenu {
         return depth;
     }
 
+    static #elementDirectContinuationDepth(
+        element,
+        transcript
+    ) {
+        const pattern =
+            element?.getAttribute?.(
+                "speech-pattern"
+            );
+
+        if (!pattern) {
+            return undefined;
+        }
+
+        let depth;
+
+        for (
+            const phrase of
+            SpeechMenu
+                .#expandRegexSource(
+                    pattern
+                )
+        ) {
+            if (
+                !SpeechMenu
+                    .#phraseCanContinue(
+                        transcript,
+                        phrase
+                    )
+            ) {
+                continue;
+            }
+
+            const words =
+                String(phrase)
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .length;
+
+            depth =
+                depth === undefined
+                    ? words
+                    : Math.min(
+                        depth,
+                        words
+                    );
+        }
+
+        return depth;
+    }
+
+    static #chainNextContext(
+        element
+    ) {
+        return String(
+            element
+                ?.getAttribute?.(
+                    "speech-chain-next"
+                ) ||
+            ""
+        )
+            .trim() ||
+            undefined;
+    }
+
+    static #chainContextTokens(
+        element
+    ) {
+        return String(
+            element
+                ?.getAttribute?.(
+                    "speech-chain-context"
+                ) ||
+            ""
+        )
+            .split(/[\s,]+/)
+            .map(
+                value =>
+                    value.trim()
+            )
+            .filter(Boolean);
+    }
+
+    static #chainContextCandidates(
+        context
+    ) {
+        const key =
+            String(
+                context ||
+                ""
+            ).trim();
+
+        if (!key) {
+            return [];
+        }
+
+        return SpeechMenu
+            .#sortCandidates(
+                [
+                    ...document
+                        .querySelectorAll(
+                            "[speech-pattern][speech-chain-context]"
+                        )
+                ]
+                    .filter(
+                        element =>
+                            SpeechMenu
+                                .#chainContextTokens(
+                                    element
+                                )
+                                .includes(
+                                    key
+                                )
+                    )
+            );
+    }
+
+    static #chainPlanScore(
+        plan
+    ) {
+        if (!plan) {
+            return -1;
+        }
+
+        return (
+            (
+                plan.steps
+                    ?.length ||
+                0
+            ) *
+                10000 +
+            (
+                plan.pending
+                    ? 4000
+                    : 0
+            ) +
+            (
+                plan.exact
+                    ? 2000
+                    : 0
+            ) +
+            (
+                plan.terminal
+                    ? 1000
+                    : 0
+            ) +
+            (
+                plan.consumedWords ||
+                0
+            )
+        );
+    }
+
+    static #bestChainPlan(
+        current,
+        candidate
+    ) {
+        if (!candidate) {
+            return current;
+        }
+
+        if (!current) {
+            return candidate;
+        }
+
+        return (
+            SpeechMenu
+                .#chainPlanScore(
+                    candidate
+                ) >
+            SpeechMenu
+                .#chainPlanScore(
+                    current
+                )
+        )
+            ? candidate
+            : current;
+    }
+
+    static async #probeChainElement(
+        element,
+        transcript,
+        utterance,
+        signal
+    ) {
+        if (signal?.aborted) {
+            return undefined;
+        }
+
+        return SpeechMenu
+            .#processElement(
+                element,
+                transcript,
+                utterance.id,
+                SpeechMenu
+                    .#candidateMenu(
+                        element
+                    ),
+                false,
+                signal,
+                undefined,
+                false,
+                true
+            );
+    }
+
+    static async #planChainContext(
+        context,
+        words,
+        utterance,
+        signal,
+        depth = 0
+    ) {
+        if (
+            signal?.aborted ||
+            !context ||
+            !words?.length ||
+            depth > 8
+        ) {
+            return undefined;
+        }
+
+        const candidates =
+            SpeechMenu
+                .#chainContextCandidates(
+                    context
+                );
+
+        if (!candidates.length) {
+            return undefined;
+        }
+
+        let best;
+
+        for (const element of candidates) {
+            if (signal?.aborted) {
+                return undefined;
+            }
+
+            for (
+                let end = 1;
+                end <= words.length;
+                end++
+            ) {
+                const segment =
+                    words
+                        .slice(
+                            0,
+                            end
+                        )
+                        .join(" ");
+
+                const probe =
+                    await SpeechMenu
+                        .#probeChainElement(
+                            element,
+                            segment,
+                            utterance,
+                            signal
+                        );
+
+                if (!probe) {
+                    continue;
+                }
+
+                const nextContext =
+                    SpeechMenu
+                        .#chainNextContext(
+                            element
+                        );
+                const remaining =
+                    words.slice(end);
+                const step = {
+                    ...probe,
+                    segmentTranscript:
+                        segment
+                };
+
+                if (
+                    remaining.length &&
+                    nextContext
+                ) {
+                    const tail =
+                        await SpeechMenu
+                            .#planChainContext(
+                                nextContext,
+                                remaining,
+                                utterance,
+                                signal,
+                                depth + 1
+                            );
+
+                    if (tail) {
+                        best =
+                            SpeechMenu
+                                .#bestChainPlan(
+                                    best,
+                                    {
+                                        ...tail,
+                                        steps: [
+                                            step,
+                                            ...tail
+                                                .steps
+                                        ],
+                                        consumedWords:
+                                            end +
+                                            (
+                                                tail
+                                                    .consumedWords ||
+                                                0
+                                            )
+                                    }
+                                );
+                    }
+
+                    continue;
+                }
+
+                if (remaining.length) {
+                    continue;
+                }
+
+                const future =
+                    nextContext
+                        ? SpeechMenu
+                            .#chainContextCandidates(
+                                nextContext
+                            )
+                        : [];
+                const directContinuation =
+                    SpeechMenu
+                        .#elementDirectContinuationDepth(
+                            element,
+                            segment
+                        ) !==
+                        undefined;
+
+                best =
+                    SpeechMenu
+                        .#bestChainPlan(
+                            best,
+                            {
+                                steps: [
+                                    step
+                                ],
+                                exact: true,
+                                continuation:
+                                    future.length >
+                                        0 ||
+                                    directContinuation,
+                                terminal:
+                                    future.length ===
+                                        0,
+                                pending:
+                                    undefined,
+                                consumedWords:
+                                    end,
+                                depth:
+                                    directContinuation
+                                        ? SpeechMenu
+                                            .#elementDirectContinuationDepth(
+                                                element,
+                                                segment
+                                            )
+                                        : Number
+                                            .MAX_SAFE_INTEGER
+                            }
+                        );
+            }
+
+            const partialText =
+                words.join(" ");
+            const partialDepth =
+                SpeechMenu
+                    .#elementDirectContinuationDepth(
+                        element,
+                        partialText
+                    );
+
+            if (
+                partialDepth !==
+                undefined
+            ) {
+                best =
+                    SpeechMenu
+                        .#bestChainPlan(
+                            best,
+                            {
+                                steps: [],
+                                exact: false,
+                                continuation:
+                                    true,
+                                terminal:
+                                    false,
+                                pending: {
+                                    element,
+                                    transcript:
+                                        partialText
+                                },
+                                consumedWords:
+                                    words.length,
+                                depth:
+                                    partialDepth
+                            }
+                        );
+            }
+        }
+
+        return best;
+    }
+
+    static async #planCommandChain(
+        utterance,
+        transcript,
+        signal
+    ) {
+        const normalized =
+            SpeechMenu
+                .#normalizeTranscript(
+                    transcript
+                );
+        const words =
+            normalized
+                .split(" ")
+                .filter(Boolean);
+
+        if (!words.length) {
+            return undefined;
+        }
+
+        const roots =
+            SpeechMenu
+                .#availableCandidates()
+                .filter(
+                    element =>
+                        Boolean(
+                            SpeechMenu
+                                .#chainNextContext(
+                                    element
+                                )
+                        )
+                );
+
+        let best;
+
+        for (const element of roots) {
+            if (signal?.aborted) {
+                return undefined;
+            }
+
+            for (
+                let end = 1;
+                end <= words.length;
+                end++
+            ) {
+                const segment =
+                    words
+                        .slice(
+                            0,
+                            end
+                        )
+                        .join(" ");
+                const probe =
+                    await SpeechMenu
+                        .#probeChainElement(
+                            element,
+                            segment,
+                            utterance,
+                            signal
+                        );
+
+                if (!probe) {
+                    continue;
+                }
+
+                const nextContext =
+                    SpeechMenu
+                        .#chainNextContext(
+                            element
+                        );
+                const remaining =
+                    words.slice(end);
+                const rootStep = {
+                    ...probe,
+                    segmentTranscript:
+                        segment
+                };
+
+                if (remaining.length) {
+                    const tail =
+                        await SpeechMenu
+                            .#planChainContext(
+                                nextContext,
+                                remaining,
+                                utterance,
+                                signal,
+                                1
+                            );
+
+                    if (!tail) {
+                        continue;
+                    }
+
+                    best =
+                        SpeechMenu
+                            .#bestChainPlan(
+                                best,
+                                {
+                                    ...tail,
+                                    steps: [
+                                        rootStep,
+                                        ...tail.steps
+                                    ],
+                                    consumedWords:
+                                        end +
+                                        (
+                                            tail
+                                                .consumedWords ||
+                                            0
+                                        )
+                                }
+                            );
+                    continue;
+                }
+
+                const future =
+                    SpeechMenu
+                        .#chainContextCandidates(
+                            nextContext
+                        );
+                const directContinuation =
+                    SpeechMenu
+                        .#elementDirectContinuationDepth(
+                            element,
+                            segment
+                        ) !==
+                        undefined;
+
+                best =
+                    SpeechMenu
+                        .#bestChainPlan(
+                            best,
+                            {
+                                steps: [
+                                    rootStep
+                                ],
+                                exact: true,
+                                continuation:
+                                    future.length >
+                                        0 ||
+                                    directContinuation,
+                                terminal: false,
+                                pending:
+                                    undefined,
+                                consumedWords:
+                                    end,
+                                depth:
+                                    directContinuation
+                                        ? SpeechMenu
+                                            .#elementDirectContinuationDepth(
+                                                element,
+                                                segment
+                                            )
+                                        : Number
+                                            .MAX_SAFE_INTEGER
+                            }
+                        );
+            }
+        }
+
+        if (!best) {
+            return undefined;
+        }
+
+        const root =
+            best.steps?.[0];
+
+        return {
+            kind: "chain",
+            utteranceId:
+                utterance.id,
+            commandElement:
+                root
+                    ?.commandElement,
+            speechMenuElement:
+                root
+                    ?.speechMenuElement,
+            transcript:
+                normalized,
+            exact:
+                Boolean(
+                    best.exact
+                ),
+            continuation:
+                Boolean(
+                    best.continuation
+                ),
+            system: false,
+            depth:
+                best.depth ??
+                Number.MAX_SAFE_INTEGER,
+            order: -1,
+            chain:
+                best.steps || [],
+            pending:
+                best.pending,
+            terminal:
+                Boolean(
+                    best.terminal
+                )
+        };
+    }
+
     static async #refreshCandidatePool(
         utterance,
         transcript,
         signal
     ) {
         SpeechMenu.extrapolatePhrases();
+
+        const chain =
+            await SpeechMenu
+                .#planCommandChain(
+                    utterance,
+                    transcript,
+                    signal
+                );
+
+        if (
+            chain &&
+            !signal?.aborted
+        ) {
+            return [
+                chain
+            ];
+        }
 
         const previous =
             utterance.candidatePool ||
@@ -7098,7 +7792,9 @@ class SpeechMenu {
         speechMenuElement,
         execute = true,
         signal,
-        executionStartedAt
+        executionStartedAt,
+        awaitCompletion = false,
+        quietProvisional = false
     ) {
         if (signal?.aborted) {
             return false;
@@ -7482,7 +8178,10 @@ class SpeechMenu {
                 !execute
         };
 
-        if (correction) {
+        if (
+            correction &&
+            !quietProvisional
+        ) {
             SpeechMenu.#emit(
                 "speechCorrectionApplied",
                 {
@@ -7506,23 +8205,25 @@ class SpeechMenu {
             );
         }
 
-        SpeechMenu.#emit(
-            "speechCommandMatched",
-            matchDetail
-        );
-
-        if (speechMenuElement) {
+        if (!quietProvisional) {
             SpeechMenu.#emit(
-                "speechMenuMatched",
+                "speechCommandMatched",
                 matchDetail
             );
-        }
 
-        if (preprocessing) {
-            SpeechMenu.#emit(
-                "speechPreprocessed",
-                preprocessing
-            );
+            if (speechMenuElement) {
+                SpeechMenu.#emit(
+                    "speechMenuMatched",
+                    matchDetail
+                );
+            }
+
+            if (preprocessing) {
+                SpeechMenu.#emit(
+                    "speechPreprocessed",
+                    preprocessing
+                );
+            }
         }
 
         const argumentValues =
@@ -7534,10 +8235,11 @@ class SpeechMenu {
                     element
                 );
 
-        SpeechMenu.#emit(
-            "speechArgumentsPrepared",
-            {
-                utteranceId,
+        if (!quietProvisional) {
+            SpeechMenu.#emit(
+                "speechArgumentsPrepared",
+                {
+                    utteranceId,
                 commandElement:
                     element,
                 speechMenuElement,
@@ -7552,10 +8254,11 @@ class SpeechMenu {
                     target.element,
                 targetElements:
                     target.elements.slice(),
-                provisional:
-                    !execute
-            }
-        );
+                    provisional:
+                        !execute
+                }
+            );
+        }
 
         if (!execute) {
             return {
@@ -7664,27 +8367,36 @@ class SpeechMenu {
                 }
             );
 
-            void SpeechMenu
-                .#completeSpeechExecution({
-                    element,
-                    speechMenuElement,
-                    utteranceId,
-                    transcript:
-                        text,
-                    canonicalTranscript,
-                    argumentValues:
-                        argumentValues.slice(),
-                    target: {
-                        selector:
-                            target.selector,
-                        element:
-                            target.element,
-                        elements:
-                            target.elements.slice()
-                    },
-                    responseSession,
-                    outcomeValue
-                });
+            const completion =
+                SpeechMenu
+                    .#completeSpeechExecution({
+                        element,
+                        speechMenuElement,
+                        utteranceId,
+                        transcript:
+                            text,
+                        canonicalTranscript,
+                        argumentValues:
+                            argumentValues.slice(),
+                        target: {
+                            selector:
+                                target.selector,
+                            element:
+                                target.element,
+                            elements:
+                                target.elements.slice()
+                        },
+                        responseSession,
+                        outcomeValue
+                    });
+
+            if (awaitCompletion) {
+                return Boolean(
+                    await completion
+                );
+            }
+
+            void completion;
 
             /*
              * Recognition commitment ends at dispatch, not at action
