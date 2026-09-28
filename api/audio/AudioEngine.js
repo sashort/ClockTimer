@@ -19,7 +19,13 @@
             toneVolume: 1,
             speechVelocity: 1,
             toneVelocity: 1,
-            instrument: ""
+            instrument: "",
+            speechLanguage:
+                "en-US",
+            voiceProvider:
+                "system",
+            voice:
+                ""
         };
 
         constructor() {
@@ -124,7 +130,24 @@
                     typeof settings.instrument ===
                         "string"
                         ? settings.instrument.trim()
-                        : current.instrument
+                        : current.instrument,
+                speechLanguage:
+                    typeof settings.speechLanguage ===
+                        "string" &&
+                    settings.speechLanguage.trim()
+                        ? settings.speechLanguage.trim()
+                        : current.speechLanguage,
+                voiceProvider:
+                    typeof settings.voiceProvider ===
+                        "string" &&
+                    settings.voiceProvider.trim()
+                        ? settings.voiceProvider.trim()
+                        : current.voiceProvider,
+                voice:
+                    typeof settings.voice ===
+                        "string"
+                        ? settings.voice.trim()
+                        : current.voice
             };
 
             return this.outputSettings;
@@ -3394,12 +3417,14 @@
         speak(
             value,
             {
-                lang = "en-US",
+                lang,
                 rate,
                 pitch,
                 volume,
                 speechVolume,
                 speechVelocity,
+                voiceProvider,
+                voice,
                 onEnd
             } = {}
         ) {
@@ -3433,11 +3458,56 @@
                     text
                 );
 
-            utterance.lang =
+            const effectiveLanguage =
                 String(
                     lang ||
+                    this.#outputSettings
+                        .speechLanguage ||
                     "en-US"
                 );
+
+            utterance.lang =
+                effectiveLanguage;
+
+            const effectiveVoiceProvider =
+                typeof voiceProvider ===
+                    "string" &&
+                voiceProvider.trim()
+                    ? voiceProvider.trim()
+                    : this.#outputSettings
+                        .voiceProvider;
+            const effectiveVoice =
+                typeof voice ===
+                    "string"
+                    ? voice.trim()
+                    : this.#outputSettings
+                        .voice;
+
+            if (
+                effectiveVoiceProvider ===
+                    "system" &&
+                effectiveVoice
+            ) {
+                const selectedVoice =
+                    synthesis
+                        .getVoices?.()
+                        .find(
+                            candidate =>
+                                candidate
+                                    .voiceURI ===
+                                    effectiveVoice ||
+                                candidate.name ===
+                                    effectiveVoice
+                        );
+
+                if (selectedVoice) {
+                    utterance.voice =
+                        selectedVoice;
+                    utterance.lang =
+                        selectedVoice.lang ||
+                        effectiveLanguage;
+                }
+            }
 
             const explicitRate =
                 Number(rate);
