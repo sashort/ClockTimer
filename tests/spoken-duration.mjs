@@ -102,6 +102,22 @@ assert.equal(
     "1:17:09"
 );
 assert.equal(
+    parse("seventeen thirty six"),
+    "17:36"
+);
+assert.equal(
+    parse("twenty two nineteen"),
+    "22:19"
+);
+assert.equal(
+    parse("seven twenty six"),
+    "7:26"
+);
+assert.equal(
+    parse("one seventeen oh nine"),
+    "1:17:09"
+);
+assert.equal(
     Parser.parse(
         "1 6 0"
     ),
