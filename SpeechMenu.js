@@ -7833,15 +7833,17 @@ class SpeechMenu {
                 outcome.speechResponse
                     ?.type ===
                     "dictation"
-                    ? String(
-                        outcome
-                            .speechResponse
-                            .value ??
-                        ""
-                    ).trim()
-                    : "";
+                    ? outcome
+                        .speechResponse
+                    : undefined;
+            const dictatedText =
+                String(
+                    dictatedResponse
+                        ?.value ??
+                    ""
+                ).trim();
 
-            if (dictatedResponse) {
+            if (dictatedText) {
                 globalThis
                     .WMOFPresentationSetters
                     ?.cancelSpeechResponse?.(
