@@ -2608,6 +2608,19 @@ assert.match(
 );
 
 assert.match(
+    app,
+    /function scheduleScheduledStartSpeechPrompt\(\)[\s\S]*tripDraft[\s\S]*standardTime[\s\S]*setTimeout\([\s\S]*scheduledStartDialog[\s\S]*\.open[\s\S]*WMOFAudio[\s\S]*\.speak\?\.\([\s\S]*"Say standard time"/
+);
+assert.match(
+    app,
+    /showScheduledStartDialog\([\s\S]*scheduleScheduledStartSpeechPrompt\(\)/
+);
+assert.match(
+    app,
+    /tripDraft\.standardTime\s*=\s*formatted[\s\S]*cancelScheduledStartSpeechPrompt\(\)/
+);
+
+assert.match(
     speechMenuSource,
     /#commitUtterance\([\s\S]*#stopLiveRecognition\(\s*utterance,\s*false\s*\)[\s\S]*let committed/
 );
