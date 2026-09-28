@@ -60,6 +60,18 @@
                     attrs?.[name];
 
                 if (
+                    (
+                        name ===
+                            "speech-chain-context" ||
+                        name ===
+                            "speech-chain-next"
+                    ) &&
+                    value === undefined
+                ) {
+                    continue;
+                }
+
+                if (
                     name === "speech-modal" &&
                     value === ""
                 ) {
