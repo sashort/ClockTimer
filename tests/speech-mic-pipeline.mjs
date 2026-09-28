@@ -903,26 +903,6 @@ assert.match(
     html,
     /builtin:confirm:breakDialog[^>]*speech-chain-context="break-confirm"/
 );
-assert.match(
-    speechMenuSource,
-    /static async planCommandChain\([\s\S]*#planCommandChain/
-);
-assert.match(
-    speechMenuSource,
-    /#refreshCandidatePool\([\s\S]*#planCommandChain\([\s\S]*return \[[\s\S]*chain/
-);
-assert.match(
-    speechMenuSource,
-    /candidate\.kind ===[\s\S]*"chain"[\s\S]*#executeCommandChain/
-);
-assert.match(
-    app,
-    /const speechChainContexts =[\s\S]*breakChoice:[\s\S]*"break-choice"[\s\S]*confirm:[\s\S]*"break-confirm"/
-);
-assert.match(
-    app,
-    /const speechChainNext =[\s\S]*readyAt:[\s\S]*"scheduled-start"[\s\S]*breakStart:[\s\S]*"break-choice"[\s\S]*breakChoice:[\s\S]*"break-confirm"/
-);
 
 const recognitionIndex = html.indexOf('id="speechRecognitionButton"');
 const developerIndex = html.indexOf('id="developerMenuButton"');
@@ -1383,6 +1363,27 @@ assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{
 
 const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
 const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
+
+assert.match(
+    speechMenuSource,
+    /static async planCommandChain\([\s\S]*#planCommandChain/
+);
+assert.match(
+    speechMenuSource,
+    /#refreshCandidatePool\([\s\S]*#planCommandChain\([\s\S]*return \[[\s\S]*chain/
+);
+assert.match(
+    speechMenuSource,
+    /candidate\.kind ===[\s\S]*"chain"[\s\S]*#executeCommandChain/
+);
+assert.match(
+    app,
+    /const speechChainContexts =[\s\S]*breakChoice:[\s\S]*"break-choice"[\s\S]*confirm:[\s\S]*"break-confirm"/
+);
+assert.match(
+    app,
+    /const speechChainNext =[\s\S]*readyAt:[\s\S]*"scheduled-start"[\s\S]*breakStart:[\s\S]*"break-choice"[\s\S]*breakChoice:[\s\S]*"break-confirm"/
+);
 
 assert.match(
     speechMicBarSource,
