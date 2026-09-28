@@ -14,7 +14,7 @@
         const observedExcluded=Math.max(0,wall-stored);
         return Math.max(0,stored-Math.max(0,planned-observedExcluded));
     };
-    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+counted(t),0);return actual>0?`${(standard/actual*100).toFixed(1)}%`:'—';};
+    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+counted(t),0);return actual>0?`${(standard/actual*100).toFixed(2)}%`:'—';};
     const parentTrips = trips => trips.filter(trip=>!trip.running||trip.includeInParentPercent);
     const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     const uncertainIcon = () => {
