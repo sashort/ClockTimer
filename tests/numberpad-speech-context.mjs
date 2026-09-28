@@ -638,11 +638,11 @@ test("voice entry shows descriptive context-aware guidance and accepted-value fe
     );
     assert.match(
         appSource,
-        /function speakVoiceEntryFeedback\([\s\S]*?onEnd[\s\S]*?220[\s\S]*?"OK to "/
+        /function speakVoiceEntryFeedback\([\s\S]*?onEnd[\s\S]*?220[\s\S]*?"Say OK to "/
     );
     assert.match(
         appSource,
-        /prompt:[\s\S]*?display[\s\S]*?"OK to " \+[\s\S]*?actionCopy\.ok[\s\S]*?360/
+        /prompt:[\s\S]*?display[\s\S]*?"Say OK to " \+[\s\S]*?actionCopy\.ok[\s\S]*?360/
     );
     assert.match(
         audioEngineSource,
