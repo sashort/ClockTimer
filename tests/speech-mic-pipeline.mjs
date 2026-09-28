@@ -3380,10 +3380,6 @@ assert.match(
 );
 
 
-const speechAssetCacheWorkerSource = fs.readFileSync(
-    new URL("../SpeechAssetCacheWorker.js", import.meta.url),
-    "utf8"
-);
 assert.match(
     speechAssetCacheWorkerSource,
     /"\/AdaptiveSpeechTiming\.js"/
