@@ -22019,43 +22019,53 @@
             buildGoalFailureSpeech(
                 detail
             );
-
-        if (
+        const chime =
             consumeAnnouncementAction(
                 "goal-failed",
                 "chime"
-            ).perform
-        ) {
-            try {
-                const song =
-                    await audio
-                        ?.startSong?.(
+            );
+
+        return runSemanticAnnouncement(
+            "goal-failed",
+            async () => {
+                if (
+                    chime.perform &&
+                    audio?.startSong
+                ) {
+                    try {
+                        const song =
+                            await audio
+                                .startSong(
+                                    "goal-failed",
+                                    {
+                                        bpm: 100
+                                    }
+                                );
+
+                        await song
+                            ?.finished;
+                    }
+                    catch (
+                        error
+                    ) {
+                        console.error(
+                            "Audio playback failed:",
                             "goal-failed",
-                            {
-                                bpm: 100
-                            }
+                            error
                         );
+                    }
+                }
 
-                await song
-                    ?.finished;
-            }
-            catch (
-                error
-            ) {
-                console.error(
-                    "Audio playback failed:",
-                    "goal-failed",
-                    error
-                );
-            }
-        }
+                if (speech) {
+                    await speakSemanticAndWait(
+                        audio,
+                        speech
+                    );
+                }
 
-        if (speech) {
-            audio
-                ?.speak?.(
-                    speech
-                );
-        }
+                return true;
+            }
+        );
     }
 
     function onGoalFail(event) {
