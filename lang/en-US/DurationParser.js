@@ -109,6 +109,24 @@ class EnglishDurationParser {
         }
 
         /*
+         * Grouped numeric duration speech is positional.  Two numeric
+         * groups are minutes + seconds, while individual spoken digits
+         * above have already been handled as raw keypad input.
+         *
+         * "22 56" -> 0:22:56
+         * "7 56"  -> 0:07:56
+         */
+        const groupedDuration =
+            EnglishDurationParser
+                .#groupedDuration(
+                    text
+                );
+
+        if (groupedDuration !== undefined) {
+            return groupedDuration;
+        }
+
+        /*
          * A contiguous run keeps the existing raw-duration semantics.
          */
         if (
@@ -305,6 +323,68 @@ class EnglishDurationParser {
         return parts.join(
             " "
         );
+    }
+
+    static #groupedDuration(
+        value
+    ) {
+        const tokens =
+            String(
+                value ||
+                ""
+            )
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean);
+
+        if (tokens.length !== 2) {
+            return undefined;
+        }
+
+        const values =
+            tokens.map(
+                token => {
+                    if (/^\d{1,2}$/.test(token)) {
+                        return Number(token);
+                    }
+
+                    if (
+                        token === "oh" ||
+                        token === "o" ||
+                        token === "zero" ||
+                        token === "naught" ||
+                        token === "nought"
+                    ) {
+                        return 0;
+                    }
+
+                    return undefined;
+                }
+            );
+
+        if (
+            values.some(
+                value =>
+                    !Number.isInteger(value)
+            ) ||
+            values[0] < 0 ||
+            values[0] > 59 ||
+            values[1] < 0 ||
+            values[1] > 59
+        ) {
+            return undefined;
+        }
+
+        const total =
+            (
+                values[0] * 60 +
+                values[1]
+            ) *
+            1000;
+
+        return total > 0
+            ? total
+            : undefined;
     }
 
     static #rawDigitDuration(
