@@ -937,9 +937,17 @@
                 utteranceId
             } = {}
         ) => {
+            const response =
+                value &&
+                typeof value ===
+                    "object"
+                    ? value
+                    : {
+                        value
+                    };
             const text =
                 String(
-                    value ??
+                    response.value ??
                     ""
                 ).trim();
 
@@ -961,8 +969,80 @@
                 return false;
             }
 
+            let visual =
+                text;
+            const display =
+                response.display;
+
+            if (
+                display &&
+                typeof display ===
+                    "object" &&
+                display.code !==
+                    undefined &&
+                display.code !==
+                    null &&
+                String(
+                    display.code
+                ).trim()
+            ) {
+                const container =
+                    document.createElement(
+                        "span"
+                    );
+
+                container.dataset
+                    .speechResponseSnapshot =
+                    "";
+                container.className =
+                    "speech-response-dictation";
+
+                const prefix =
+                    String(
+                        display.prefix ??
+                        ""
+                    ).trim();
+
+                if (prefix) {
+                    container.append(
+                        prefix,
+                        " "
+                    );
+                }
+
+                const code =
+                    document.createElement(
+                        "code"
+                    );
+
+                code.textContent =
+                    String(
+                        display.code
+                    ).trim();
+
+                container.append(
+                    code
+                );
+
+                const suffix =
+                    String(
+                        display.suffix ??
+                        ""
+                    ).trim();
+
+                if (suffix) {
+                    container.append(
+                        " ",
+                        suffix
+                    );
+                }
+
+                visual =
+                    container;
+            }
+
             bar.setResponse?.(
-                text
+                visual
             );
 
             scheduleDismissal(
