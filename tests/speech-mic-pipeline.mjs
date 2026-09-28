@@ -952,6 +952,8 @@ assert.match(
 
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const languageSource = fs.readFileSync(new URL("../lang/en-US.js", import.meta.url), "utf8");
+const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
+const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
 const actionFunctionsSource = fs.readFileSync(
     new URL(
         "../ActionFunctions.js",
@@ -1367,9 +1369,6 @@ assert.match(html, /class="speech-build-crane"/);
 assert.match(css, /\.speech-build-crane\{opacity:0/);
 assert.match(css, /stroke:#003b73/);
 assert.match(css, /#speechMenuButton\.speech-build-active \.speech-build-crane\{opacity:1/);
-
-const speechMenuSource = fs.readFileSync(new URL("../SpeechMenu.js", import.meta.url), "utf8");
-const speechMicBarSource = fs.readFileSync(new URL("../SpeechMicBar.js", import.meta.url), "utf8");
 
 assert.match(
     speechMenuSource,
