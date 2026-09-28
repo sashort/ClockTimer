@@ -13813,6 +13813,35 @@
         );
     }
 
+    function displayClockTimerDuration(
+        value
+    ) {
+        const milliseconds =
+            parseTimelineTime(
+                value
+            );
+
+        if (
+            !Number.isFinite(
+                milliseconds
+            ) ||
+            milliseconds <= 0
+        ) {
+            return "";
+        }
+
+        return (
+            EnglishDurationParser
+                ?.format?.(
+                    milliseconds
+                ) ||
+            formatTimelineMilliseconds(
+                milliseconds
+            ) ||
+            ""
+        );
+    }
+
     function parseTimelineTime(value) {
         const text = String(value || "").trim();
         const match = text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
@@ -17072,7 +17101,12 @@
                     remaining
                 )
             );
-        scheduledStartStandardValue.textContent = String(tripDraft?.standardTime || "").trim() || "---";
+        scheduledStartStandardValue.textContent =
+            displayClockTimerDuration(
+                tripDraft
+                    ?.standardTime
+            ) ||
+            "---";
         const scheduledTimeReached = remaining <= 0;
         const canStart = tripDraftCanStart(tripDraft);
         if (scheduledTimeReached && scheduledStartAutoArmed && canStart) {
@@ -17668,7 +17702,9 @@
                 : "---",
             "standard-time": settingsValues?.deferred
                 ? "---"
-                : settingsValues?.standardTime || "---"
+                : displayClockTimerDuration(
+                    settingsValues?.standardTime
+                ) || "---"
         };
 
         $("#tripCreationTime").textContent = values["creation-time"];
@@ -23371,11 +23407,19 @@
 
                 const formatted =
                     EnglishDurationParser
+                        .formatCanonical(
+                            duration
+                        );
+                const displayFormatted =
+                    EnglishDurationParser
                         .format(
                             duration
                         );
 
-                if (!formatted) {
+                if (
+                    !formatted ||
+                    !displayFormatted
+                ) {
                     return false;
                 }
 
@@ -23422,7 +23466,7 @@
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
-                            formatted,
+                            displayFormatted,
                             {
                                 spokenValue:
                                     "Standard Time Set to " +
@@ -23433,7 +23477,7 @@
                                     prefix:
                                         "Standard Time Set to",
                                     code:
-                                        formatted
+                                        displayFormatted
                                 }
                             }
                         );
@@ -23473,7 +23517,7 @@
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
-                            formatted,
+                            displayFormatted,
                             {
                                 spokenValue:
                                     "Standard Time Set to " +
@@ -23484,7 +23528,7 @@
                                     prefix:
                                         "Standard Time Set to",
                                     code:
-                                        formatted
+                                        displayFormatted
                                 }
                             }
                         );
