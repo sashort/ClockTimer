@@ -2092,7 +2092,11 @@ assert.doesNotMatch(
 );
 assert.match(
     speechMicBarSource,
-    /#optionCategoryDefinitions\(\)[\s\S]*key:\s*"trip-actions"[\s\S]*key:\s*"goals"[\s\S]*key:\s*"settings"[\s\S]*key:\s*"system"/
+    /#optionCategories\s*=\s*\[[\s\S]*key:\s*"trip-actions"[\s\S]*key:\s*"goals"[\s\S]*key:\s*"settings"[\s\S]*key:\s*"system"/
+);
+assert.match(
+    speechMicBarSource,
+    /#optionCategoryDefinitions\(\)[\s\S]*#optionCategories\.map/
 );
 assert.match(
     speechMicBarSource,
@@ -2144,7 +2148,7 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /#optionMutationDuration\(\)[\s\S]*\? 750\s*:\s*0/
+    /#optionMutationDuration\(\)[\s\S]*return 0;/
 );
 assert.match(
     speechMicBarSource,
