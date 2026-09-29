@@ -918,6 +918,36 @@
                     );
                 }
             }
+
+            for (
+                const message of
+                data.messages ||
+                []
+            ) {
+                this.#publisherSignalId =
+                    Math.max(
+                        this
+                            .#publisherSignalId,
+                        Number(
+                            message.id
+                        ) ||
+                        0
+                    );
+
+                this.#emit(
+                    "publisherMessage",
+                    {
+                        peerId:
+                            Number(
+                                message.peerId
+                            ),
+                        type:
+                            message.type,
+                        payload:
+                            message.payload
+                    }
+                );
+            }
         }
 
         async #createPublisherPeer(
@@ -998,8 +1028,7 @@
 
                     this
                         .#configurePublisherChannel(
-                            entry.channel,
-                            entry
+                            entry.channel
                         );
                 }
             );
@@ -1140,8 +1169,7 @@
         }
 
         #configurePublisherChannel(
-            channel,
-            entry
+            channel
         ) {
             channel.addEventListener(
                 "open",
@@ -1152,45 +1180,6 @@
                             "snapshot",
                             this.#snapshot()
                         );
-                }
-            );
-
-            channel.addEventListener(
-                "message",
-                event => {
-                    try {
-                        const envelope =
-                            JSON.parse(
-                                event.data
-                            );
-
-                        if (
-                            !envelope ||
-                            typeof envelope !==
-                                "object"
-                        ) {
-                            return;
-                        }
-
-                        this.#emit(
-                            "publisherMessage",
-                            {
-                                viewerUserId:
-                                    entry
-                                        ?.viewerUserId,
-                                viewerName:
-                                    entry
-                                        ?.viewerName,
-                                ...envelope
-                            }
-                        );
-                    }
-                    catch (error) {
-                        console.warn(
-                            "Invalid viewer live stream message:",
-                            error
-                        );
-                    }
                 }
             );
         }
@@ -1989,30 +1978,64 @@
             );
         }
 
-        sendToPublisher(
+        async sendToPublisher(
             type,
             payload
         ) {
-            const channel =
-                this.#viewerDataChannel;
-
             if (
                 !this.#viewing ||
-                !channel ||
-                channel.readyState !==
-                    "open"
+                !this.#viewerPeerId ||
+                !this.#targetUserId
             ) {
                 throw new Error(
                     "The live stream is not connected."
                 );
             }
 
-            return this
-                .#sendChannelEnvelope(
-                    channel,
-                    type,
-                    payload
+            if (
+                type !==
+                    "trainer.tts"
+            ) {
+                throw new TypeError(
+                    "Unsupported viewer message type."
                 );
+            }
+
+            const text =
+                String(
+                    payload?.text ||
+                    ""
+                )
+                    .trim()
+                    .slice(
+                        0,
+                        500
+                    );
+
+            if (!text) {
+                throw new TypeError(
+                    "Trainer TTS text is required."
+                );
+            }
+
+            return this.#request(
+                "POST",
+                {
+                    body: {
+                        action:
+                            "trainer-message",
+                        targetUserId:
+                            this
+                                .#targetUserId,
+                        peerId:
+                            this
+                                .#viewerPeerId,
+                        type:
+                            "trainer.tts",
+                        text
+                    }
+                }
+            );
         }
 
         #handleEnvelope(
