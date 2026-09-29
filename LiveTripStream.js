@@ -1403,6 +1403,14 @@
                 Number(
                     data.peerId
                 );
+            this.#viewerMessageId =
+                Math.max(
+                    0,
+                    Number(
+                        data.messageCursor
+                    ) ||
+                    0
+                );
             this.#viewing =
                 true;
 
