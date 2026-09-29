@@ -15,13 +15,13 @@ const bindings = {
     openNumberPad: options => { frame = options; return true; }
 };
 const controller = new Function(...Object.keys(bindings), `
-    let tripDraft, tripSettingsSession, tripStartsNowState, stagedStandardTime;
+    let tripDraft, tripSettingsSession, tripStartsNowState, stagedStandardTimeMilliseconds;
     ${section('    function tripDraftCanStart(', '    function cloneTripSettingsValues(')}
     ${section('    function resumedTripStarts(', '    $("#newTripButton").addEventListener(')}
     return {beginNewTripWorkflow, startTripDraft, tripDraftCanStart,
         draft: () => tripDraft, defer() { tripDraft.deferred=true; tripDraft.startTime=undefined; tripDraft.scheduledStart=tripDraft.creationTime; }};
 `)(...Object.values(bindings));
-await controller.beginNewTripWorkflow({ initialValue: '0:30:00', tripMoment: new Date('2026-09-18T12:00:00') });
+await controller.beginNewTripWorkflow({ initialValue: 1800000, tripMoment: new Date('2026-09-18T12:00:00') });
 assert.equal(prepared, 1);
 controller.defer();
 const creation = controller.draft().creationTime;
@@ -38,7 +38,7 @@ assert.equal(controller.draft().creationDate, '2026-09-18');
 assert.equal(controller.draft().startTime, '57:05:00');
 assert.equal(controller.draft().scheduledStart, creation);
 assert.equal(controller.draft().deferred, false);
-assert.equal(frame.initialValue, '0:30:00');
+assert.equal(frame.initialValue, 1800000);
 console.log('PASS resume reuses reservation and creation time across days');
 controller.draft().scheduledStart = '56:30:00';
 assert.equal(controller.draft().scheduledStart, '56:30:00');

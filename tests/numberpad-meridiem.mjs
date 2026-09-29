@@ -99,7 +99,7 @@ const returnController = new Function(`
     let tripSettingsNavigation = {returnTarget:'number-pad', numberPadState:{
         mode:'duration', source:'standard-time', initial:'003000', pending:'003000', everEdited:false
     }};
-    const tripSettingsSession = {values:{standardTime:'0:45:00'}};
+    const tripSettingsSession = {values:{standardTimeMilliseconds:2700000}};
     function getTripSettingsReturnNumberPadState() { return tripSettingsNavigation.numberPadState; }
     ${section('    function normalizeTimeDigits(', '    function normalizePercentDigits(')}
     ${section('    function syncTripSettingsCallerAfterSave(', '    async function closeTripSettingsToNavigation(')}

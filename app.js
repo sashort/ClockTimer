@@ -1568,7 +1568,7 @@
 
     let loginPromptTimeout;
     let loginPending = false;
-    let stagedStandardTime;
+    let stagedStandardTimeMilliseconds;
     let tripDraft;
     let newTripWorkflowLocked = false;
 
@@ -16760,25 +16760,29 @@
                     state.pending
                 )
                 : undefined;
-        const formatted =
+        if (
             durationMilliseconds ===
-                undefined
-                ? ""
-                : canonicalClockTimerDuration(
-                    durationMilliseconds
-                ) || "";
-        if (!formatted && !state.allowEmpty) return false;
+                undefined &&
+            !state.allowEmpty
+        ) {
+            return false;
+        }
         if (tripSettingsSession && state.source === "standard-time") {
-            tripSettingsSession.values.standardTime = formatted;
+            tripSettingsSession.values.standardTimeMilliseconds =
+                durationMilliseconds;
             refreshTripSettingsValues();
             return true;
         }
-        stagedStandardTime = formatted;
+        stagedStandardTimeMilliseconds =
+            durationMilliseconds;
 
         if (!tripIsLive() && tripDraft) {
-            tripDraft.standardTime = formatted;
+            tripDraft.standardTimeMilliseconds =
+                durationMilliseconds;
             if (state.source === "standard-time") {
-                syncDraftStandardTimeReturnFrame(formatted);
+                syncDraftStandardTimeReturnFrame(
+                    durationMilliseconds
+                );
             }
             if (state.startsTripOnConfirm) {
                 return startTripDraft();
@@ -16789,12 +16793,13 @@
         if (state.startsTripOnConfirm) {
             tripDraft = {
                 ...(state.tripDefaults || {}),
-                standardTime: formatted
+                standardTimeMilliseconds:
+                    durationMilliseconds
             };
             return startTripDraft();
         }
 
-        if (clockTimer.standardTime !== undefined) {
+        if (clockTimer.standardTimeMilliseconds !== undefined) {
             if (
                 !Number.isSafeInteger(
                     durationMilliseconds
@@ -16959,13 +16964,13 @@
         );
     }
 
-    function syncDraftStandardTimeReturnFrame(formatted) {
+    function syncDraftStandardTimeReturnFrame(
+        standardTimeMilliseconds
+    ) {
         const state = getTripSettingsReturnNumberPadState();
         if (!state || state.source !== "new-trip") return;
         const digits = durationValueToRawDigits(
-            parseTimelineTime(
-                formatted
-            )
+            standardTimeMilliseconds
         );
         state.initial = digits;
         state.pending = digits;
@@ -17050,13 +17055,13 @@
                     }
 
                     const hasStandardTime =
-                        Boolean(
-                            String(
-                                draft
-                                    .standardTime ||
-                                ""
-                            ).trim()
-                        );
+                        Number.isSafeInteger(
+                            draft
+                                .standardTimeMilliseconds
+                        ) &&
+                        draft
+                            .standardTimeMilliseconds >
+                            0;
 
                     globalThis
                         .WMOFAudio
@@ -17199,10 +17204,8 @@
             );
         scheduledStartStandardValue.textContent =
             displayClockTimerDuration(
-                parseTimelineTime(
-                    tripDraft
-                        ?.standardTime
-                )
+                tripDraft
+                    ?.standardTimeMilliseconds
             ) ||
             "---";
         const scheduledTimeReached = remaining <= 0;
@@ -17368,12 +17371,21 @@
 
     function tripDraftCanStart(draft = tripDraft) {
         if (!draft || !parseDateInput(draft.creationDate)) return false;
-        const standardTime = parseTimelineTime(draft.standardTime);
+        const standardTimeMilliseconds =
+            draft.standardTimeMilliseconds;
         const creationTime = parseTimelineTime(draft.creationTime);
         const scheduledStart = parseTimelineTime(draft.scheduledStart);
         const actualStart = parseTimelineTime(draft.startTime);
         return (
-            (draft.deferred || (Number.isFinite(standardTime) && standardTime > 0)) &&
+            (
+                draft.deferred ||
+                (
+                    Number.isSafeInteger(
+                        standardTimeMilliseconds
+                    ) &&
+                    standardTimeMilliseconds > 0
+                )
+            ) &&
             Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 24 * 60 * 60 * 1000 &&
             (draft.deferred || (Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
             Number.isFinite(actualStart) && actualStart >= 0))
@@ -17397,19 +17409,13 @@
         }
 
         const standardTimeMilliseconds =
-            parseTimelineTime(
-                String(
-                    draft?.standardTime ||
-                    ""
-                ).trim()
-            );
-        const standardTime =
-            canonicalClockTimerDuration(
-                standardTimeMilliseconds
-            );
+            draft?.standardTimeMilliseconds;
 
         if (
-            !standardTime ||
+            !Number.isSafeInteger(
+                standardTimeMilliseconds
+            ) ||
+            standardTimeMilliseconds <= 0 ||
             !tripDraftCanStart(draft)
         ) {
             return false;
@@ -17456,7 +17462,8 @@
             clockTimer.creationDate = draft.creationDate;
         }
 
-        stagedStandardTime = standardTime;
+        stagedStandardTimeMilliseconds =
+            standardTimeMilliseconds;
         tripDraft = undefined;
         releaseNewTripWorkflow();
         renderDeferredTrip();
@@ -17474,7 +17481,9 @@
         const draft = !live ? tripDraft : undefined;
         if (!live && !draft) return undefined;
         return {
-            standardTime: live ? (clockTimer.standardTime || "") : (draft.standardTime || ""),
+            standardTimeMilliseconds: live
+                ? clockTimer.standardTimeMilliseconds
+                : draft.standardTimeMilliseconds,
             creationTime: live ? (clockTimer.creationTime || "") : (draft.creationTime || ""),
             creationDate: live ? (clockTimer.creationDate || "") : (draft.creationDate || ""),
             scheduledStart: live ? (clockTimer.scheduledStart || "") : (draft.scheduledStart || ""),
@@ -17508,7 +17517,7 @@
             ...tripDraft,
             deferred: Boolean(values.deferred),
             nonProduction: values.nonProduction === true,
-            standardTime: values.standardTime,
+            standardTimeMilliseconds: values.standardTimeMilliseconds,
             creationTime: values.creationTime,
             creationDate: values.creationDate,
             scheduledStart: values.scheduledStart,
@@ -17677,7 +17686,7 @@
         Object.assign(tripDraft, {
             deferred: Boolean(values.deferred),
             nonProduction: values.nonProduction === true,
-            standardTime: values.standardTime,
+            standardTimeMilliseconds: values.standardTimeMilliseconds,
             creationTime: values.creationTime,
             creationDate: values.creationDate,
             scheduledStart: values.scheduledStart,
@@ -17696,7 +17705,7 @@
             Object.assign(tripDraft, {
                 deferred: Boolean(values.deferred),
                 nonProduction: values.nonProduction === true,
-                standardTime: values.standardTime,
+                standardTimeMilliseconds: values.standardTimeMilliseconds,
                 creationTime: values.creationTime,
                 creationDate: values.creationDate,
                 scheduledStart: values.scheduledStart,
@@ -17716,13 +17725,11 @@
             if (clockTimer.scheduledStart !== values.scheduledStart) clockTimer.scheduledStart = values.scheduledStart;
             if (clockTimer.startTime !== values.startTime) clockTimer.startTime = values.startTime;
             if (
-                clockTimer.standardTime !==
-                    values.standardTime
+                clockTimer.standardTimeMilliseconds !==
+                    values.standardTimeMilliseconds
             ) {
                 const standardTimeMilliseconds =
-                    parseTimelineTime(
-                        values.standardTime
-                    );
+                    values.standardTimeMilliseconds;
 
                 if (
                     !Number.isSafeInteger(
@@ -17738,7 +17745,9 @@
             }
             clockTimer.nonProduction = values.nonProduction === true;
             clockTimer.configure({auto_goal: Boolean(values.syncGoals)});
-            stagedStandardTime = values.standardTime || stagedStandardTime;
+            stagedStandardTimeMilliseconds =
+                values.standardTimeMilliseconds ??
+                stagedStandardTimeMilliseconds;
             return true;
         }
         catch {
@@ -17748,12 +17757,21 @@
 
     function syncTripSettingsCallerAfterSave() {
         const state = getTripSettingsReturnNumberPadState();
-        const standardTime = tripSettingsSession?.values?.standardTime;
-        if (!state || state.source !== "standard-time" || !standardTime) return;
-        const digits = durationValueToRawDigits(
-            parseTimelineTime(
-                standardTime
+        const standardTimeMilliseconds =
+            tripSettingsSession
+                ?.values
+                ?.standardTimeMilliseconds;
+        if (
+            !state ||
+            state.source !== "standard-time" ||
+            !Number.isSafeInteger(
+                standardTimeMilliseconds
             )
+        ) {
+            return;
+        }
+        const digits = durationValueToRawDigits(
+            standardTimeMilliseconds
         );
         if (!digits) return;
         const changed = digits !== state.initial;
@@ -17814,9 +17832,8 @@
             "standard-time": settingsValues?.deferred
                 ? "---"
                 : displayClockTimerDuration(
-                    parseTimelineTime(
-                        settingsValues?.standardTime
-                    )
+                    settingsValues
+                        ?.standardTimeMilliseconds
                 ) || "---"
         };
 
@@ -17917,7 +17934,7 @@
         if (field === "creation-time") return values.creationTime || "";
         if (field === "scheduled-start") return values.scheduledStart || "";
         if (field === "actual-start") return values.startTime || "";
-        if (field === "standard-time") return values.standardTime || "";
+        if (field === "standard-time") return values.standardTimeMilliseconds;
         return "";
     }
 
@@ -18598,11 +18615,34 @@
             : new Date();
         const tripDefaults = getTripMomentDefaults(moment);
         const tripPreferences = getTripPreferences();
-        const newTripInitialValue = initialValue ?? (
-            clockTimer.status === "stopped"
-                ? ""
-                : (stagedStandardTime || "")
-        );
+        let initialStandardTimeMilliseconds;
+
+        if (
+            initialValue !==
+                undefined &&
+            initialValue !==
+                null
+        ) {
+            initialStandardTimeMilliseconds =
+                Number.isSafeInteger(
+                    initialValue
+                )
+                    ? initialValue
+                    : typeof initialValue ===
+                        "string" &&
+                        initialValue.trim()
+                        ? parseTimelineTime(
+                            initialValue
+                        )
+                        : undefined;
+        }
+        else if (
+            clockTimer.status !==
+                "stopped"
+        ) {
+            initialStandardTimeMilliseconds =
+                stagedStandardTimeMilliseconds;
+        }
         tripDraft = deferredDraft ? {
             ...deferredDraft,
             deferred: false,
@@ -18613,7 +18653,8 @@
             ...resumedTripStarts(deferredDraft, moment)
         } : {
             ...tripDefaults,
-            standardTime: newTripInitialValue || "",
+            standardTimeMilliseconds:
+                initialStandardTimeMilliseconds,
             lateBreakBehavior: tripPreferences.lateBreakBehavior,
             syncGoals: tripPreferences.syncGoals,
             endStartTransition:
@@ -18674,8 +18715,8 @@
                     source: "new-trip",
                     initialValue:
                         deferredDraft
-                            ? tripDraft.standardTime
-                            : newTripInitialValue,
+                            ? tripDraft.standardTimeMilliseconds
+                            : initialStandardTimeMilliseconds,
                     preparationPromise,
                     tripDefaults:
                         tripDraft,
@@ -19682,7 +19723,8 @@
             undefined;
         releaseEndTimeGoalOverride();
         setTripControlState(false);
-        stagedStandardTime = undefined;
+        stagedStandardTimeMilliseconds =
+            undefined;
         updateSummaryValues();
     });
 
@@ -23596,7 +23638,7 @@
                 ) {
                     const previous =
                         tripDraft
-                            .standardTime;
+                            .standardTimeMilliseconds;
                     const voiceSet =
                         Boolean(
                             globalThis
@@ -23604,8 +23646,8 @@
                                 ?.executionContext
                         );
 
-                    tripDraft.standardTime =
-                        formatted;
+                    tripDraft.standardTimeMilliseconds =
+                        duration;
 
                     cancelScheduledStartSpeechPrompt();
 
@@ -23626,7 +23668,7 @@
                     scheduleScheduledStartSpeechPrompt();
 
                     return previous ===
-                        formatted
+                        duration
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
@@ -23668,16 +23710,16 @@
 
                     const previous =
                         session.values
-                            .standardTime;
+                            .standardTimeMilliseconds;
 
                     session.values
-                        .standardTime =
-                        formatted;
+                        .standardTimeMilliseconds =
+                        duration;
 
                     refreshTripSettingsValues();
 
                     return previous ===
-                        formatted
+                        duration
                         ? true
                         : confirmSettingChange(
                             "Standard Time Set to " +
@@ -24071,7 +24113,8 @@
 
                     tripDraft = {
                         ...defaults,
-                        standardTime: "",
+                        standardTimeMilliseconds:
+                            undefined,
                         scheduledStart,
                         startTime:
                             scheduledStart,
@@ -25048,8 +25091,8 @@
                 tripDraft.deferred =
                     true;
 
-                tripDraft.standardTime =
-                    "";
+                tripDraft.standardTimeMilliseconds =
+                    undefined;
 
                 releaseNewTripWorkflow();
                 renderDeferredTrip();
@@ -26257,8 +26300,7 @@
                         "standard-time",
                     initialValue:
                         tripDraft
-                            ?.standardTime ||
-                        "",
+                            ?.standardTimeMilliseconds,
                     role:
                         "trip-settings-field",
                     workflow:
@@ -26281,18 +26323,15 @@
                                 return false;
                             }
 
-                            const value =
-                                durationMilliseconds ===
-                                    undefined
-                                    ? ""
-                                    : canonicalClockTimerDuration(
-                                        durationMilliseconds
-                                    );
-
                             if (
                                 durationMilliseconds !==
                                     undefined &&
-                                !value
+                                (
+                                    !Number.isSafeInteger(
+                                        durationMilliseconds
+                                    ) ||
+                                    durationMilliseconds <= 0
+                                )
                             ) {
                                 return false;
                             }
@@ -26306,13 +26345,15 @@
                                 );
 
                             tripDraft
-                                .standardTime =
-                                value ||
-                                "";
+                                .standardTimeMilliseconds =
+                                durationMilliseconds;
 
                             if (
                                 voiceSet &&
-                                value
+                                Number.isSafeInteger(
+                                    durationMilliseconds
+                                ) &&
+                                durationMilliseconds > 0
                             ) {
                                 armScheduledStartAutoFromVoice();
                             }
@@ -26583,16 +26624,20 @@
                         "new-trip" &&
                     numberPadValueValid()
                 ) {
-                    const formatted =
-                        renderTimeDigits(
+                    const standardTimeMilliseconds =
+                        timeDigitsToMilliseconds(
                             numberPadState
                                 .pending
                         );
 
-                    if (formatted) {
+                    if (
+                        Number.isSafeInteger(
+                            standardTimeMilliseconds
+                        )
+                    ) {
                         tripDraft
-                            .standardTime =
-                            formatted;
+                            .standardTimeMilliseconds =
+                            standardTimeMilliseconds;
                     }
                 }
 

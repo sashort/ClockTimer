@@ -109,6 +109,8 @@ jobs:
           node regex-builder.mjs
           node trip-log.mjs
           node offline-trip-buffer.mjs
+          node deferred-trip.mjs
+          node numberpad-meridiem.mjs
           php trip_editor.php
           node speech-mic-pipeline.mjs
           node speech-goal-fail.mjs
