@@ -790,7 +790,7 @@ if ($method === 'POST') {
         $statement = $pdo->prepare(
             'INSERT INTO live_stream_signals '
             . '(peer_id, sender, payload, created_at) '
-            . 'VALUES (:peer_id, 'viewer', :payload, :created_at)'
+            . 'VALUES (:peer_id, \'viewer\', :payload, :created_at)'
         );
         $statement->execute([
             ':peer_id' => $peerId,
