@@ -1087,6 +1087,15 @@
                     </div>
                     <p class="dialog-helper">Authorized viewers can join any connected ClockTimer client. No action is required on the remote client.</p>
 
+                    <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
+                        <legend>Trainer message</legend>
+                        <div class="live-stream-trainer-message-row">
+                            <input id="liveStreamTrainerMessageText" type="text" maxlength="500" autocomplete="off" aria-label="Message to speak on the remote client" placeholder="Message to speak">
+                            <button id="liveStreamTrainerMessageSend" class="primary-action" type="button">Send TTS</button>
+                        </div>
+                        <p id="liveStreamTrainerMessageStatus" class="live-stream-status" aria-live="polite"></p>
+                    </fieldset>
+
                     <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
                         <legend>Viewer audio</legend>
                         <label class="live-stream-mute">
