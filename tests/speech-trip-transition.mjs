@@ -174,7 +174,7 @@ assert.match(
 
 assert.match(
     clockTimer,
-    /intervalType === "down"[\s\S]*"downTimeEnded"[\s\S]*if \(suppressTripResumed\)[\s\S]*return true;[\s\S]*"tripResumed"/
+    /intervalType === "down"[\s\S]*suppressAnnouncement:[\s\S]*Boolean\([\s\S]*suppressTripResumed[\s\S]*"downTimeEnded"[\s\S]*"tripResumed"/
 );
 
 assert.match(
@@ -183,7 +183,7 @@ assert.match(
 );
 
 console.log(
-    "PASS down-to-break transition ends Down without emitting an intermediate Trip Resumed event"
+    "PASS down-to-break transition preserves Trip Resumed lifecycle while suppressing its announcement"
 );
 
 console.log(
