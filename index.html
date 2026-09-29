@@ -57,6 +57,9 @@
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">i</button>
                 </div>
+                <div class="main-menu-row live-stream-menu-row">
+                    <button id="liveStreamButton" type="button" data-dialog="liveStreamDialog" hidden>Live Stream</button>
+                </div>
                 <div class="trip-menu-group">
                 <div class="main-menu-row trip-list-menu-row">
                     <button id="tripListMenuButton" class="trip-list-menu-button" type="button">Trip Log</button>
@@ -1064,6 +1067,63 @@
         </form>
     </dialog>
 
+    <dialog id="liveStreamDialog" class="app-dialog live-stream-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2>Live Stream</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+            <div class="live-stream-layout">
+                <section class="live-stream-section" aria-labelledby="liveStreamPublishTitle">
+                    <h3 id="liveStreamPublishTitle">Broadcast this client</h3>
+                    <p id="liveStreamPublishStatus" class="live-stream-status">Not broadcasting.</p>
+                    <button id="liveStreamPublishButton" class="primary-action" type="button">Start Broadcast</button>
+                    <p class="dialog-helper">Microphone speech and ClockTimer program audio are sent with WebRTC. TTS metadata is mirrored so viewers hear the same announcement.</p>
+                </section>
+
+                <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle" hidden>
+                    <h3 id="liveStreamViewerTitle">View another user</h3>
+                    <div class="live-stream-target-row">
+                        <label for="liveStreamTarget">Target</label>
+                        <select id="liveStreamTarget" aria-label="Live stream target"></select>
+                        <button id="liveStreamRefreshTargets" type="button">Refresh</button>
+                    </div>
+                    <div class="live-stream-view-actions">
+                        <button id="liveStreamWatchButton" class="primary-action" type="button">Watch</button>
+                        <span id="liveStreamViewerStatus" class="live-stream-status">Not viewing.</span>
+                    </div>
+
+                    <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
+                        <legend>Viewer audio</legend>
+                        <label class="live-stream-mute">
+                            <input id="liveStreamMute" type="checkbox">
+                            <span>Mute</span>
+                        </label>
+                        <label>
+                            <span>Master <output id="liveStreamMasterVolumeValue">100%</output></span>
+                            <input id="liveStreamMasterVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span>Microphone <output id="liveStreamMicVolumeValue">100%</output></span>
+                            <input id="liveStreamMicVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span>ClockTimer/TTS <output id="liveStreamProgramVolumeValue">100%</output></span>
+                            <input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                    </fieldset>
+
+                    <div class="live-stream-readout" aria-live="polite">
+                        <div><span>State</span><strong id="liveStreamRemoteState">—</strong></div>
+                        <div><span>Time</span><strong id="liveStreamRemoteTime">—</strong></div>
+                        <div><span>Goal</span><strong id="liveStreamRemoteGoal">—</strong></div>
+                        <div class="live-stream-transcript"><span>Speech</span><strong id="liveStreamRemoteSpeech">—</strong></div>
+                    </div>
+                </section>
+            </div>
+        </form>
+    </dialog>
+
     <section id="tripTransitionOverlay" class="trip-transition-overlay" popover="manual" role="status" aria-live="polite" aria-atomic="true" hidden>
         <div class="trip-transition-overlay-panel">
             <h2 id="tripTransitionOverlayTitle">Trip Started</h2>
@@ -1113,6 +1173,7 @@
     <script src="AnnouncementCatalog.js?v=goal-range-announcements-1"></script>
     <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1"></script>
     <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1"></script>
+    <script src="LiveTripStream.js?v=webrtc-live-1"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=multi-pane-promotion-1"></script>
     <script src="app.js?v=adaptive-speech-timing-1"></script>
