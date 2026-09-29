@@ -7299,3 +7299,5 @@ speech-command {
         text-align: center;
     }
 }
+
+.login-dialog .dialog-header { grid-template-columns: 1fr; }

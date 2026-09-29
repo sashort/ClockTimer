@@ -2999,10 +2999,9 @@
             ) ===
         "1";
 
-    let initialLoginSuppressed =
-        speechEditorPreview;
+    let loginConfirmedThisLoad = false;
+    let fullscreenLoginAttempt;
     let deliberatelyLoggedOut = safeStorageGet("wmof.deliberatelyLoggedOut") === "true";
-    let initialLoginAttemptPending = true;
     let numberPadConnectionSequence = 0;
     let connectionResumePromise;
     let connectionCloudPhase = "settled";
@@ -3024,7 +3023,6 @@
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
     const CLOCK_TIMER_DOUBLE_PRESS = 350;
-    const STARTUP_CONNECTION_DELAY = 2000;
     const CONNECTION_UI_TRANSITION_DURATION = 750;
     const BUTTON_PRESS_IN_DURATION = 120;
     const BUTTON_PRESS_OUT_DURATION = 140;
@@ -8487,9 +8485,6 @@
     });
 
     document.addEventListener("pointerdown", event => {
-        if (initialLoginAttemptPending && !loginDialog.open) {
-            initialLoginSuppressed = true;
-        }
         const trigger = event.target.closest?.("[data-dialog], [popovertarget]");
         const sourcePopover = trigger?.closest?.("[popover]");
         if (sourcePopover && trigger !== $("#menuButton")) {
@@ -8497,11 +8492,8 @@
         }
     }, true);
 
-    loginDialog.addEventListener("opening", event => {
+    loginDialog.addEventListener("opening", () => {
         loginDialogFullyOpen = false;
-        if (event.detail?.reason === "initial-login" && initialLoginSuppressed) {
-            event.preventDefault();
-        }
     });
 
     loginDialog.addEventListener("opened", () => {
@@ -8519,14 +8511,23 @@
         }
     });
 
-    loginDialog.addEventListener("closing", () => {
+    loginDialog.addEventListener("closing", event => {
+        if (!loginConfirmedThisLoad && !speechEditorPreview) {
+            event.preventDefault();
+            return;
+        }
         loginDialogFullyOpen = false;
+    });
+
+    loginDialog.addEventListener("cancel", event => {
+        if (!loginConfirmedThisLoad && !speechEditorPreview) {
+            event.preventDefault();
+        }
     });
 
     function showConnectionRetryLoginDialog() {
         clearTimeout(loginPromptTimeout);
         loginPromptTimeout = undefined;
-        initialLoginAttemptPending = false;
 
         if (speechEditorPreview) {
             return false;
@@ -8547,20 +8548,13 @@
     }
 
     function showInitialLoginDialog() {
-        if (speechEditorPreview) {
-            initialLoginAttemptPending =
-                false;
+        if (speechEditorPreview) return false;
 
-            return false;
-        }
-
-        if (deliberatelyLoggedOut) return;
         if (loginDialog.open) return;
         const opened = openDialogElement(loginDialog, {
             duration: CONNECTION_UI_TRANSITION_DURATION,
             reason: "initial-login"
         });
-        initialLoginAttemptPending = false;
         if (!opened) return;
 
         requestAnimationFrame(() => {
@@ -8595,22 +8589,13 @@
         syncScopeConnectionCloud(networkStatus);
 
         if (offline) {
-            if (deliberatelyLoggedOut) return;
-            if (connectionCloudPhase === "settled") {
-                loginPromptTimeout = setTimeout(() => {
-                    loginPromptTimeout = undefined;
-                    if (
-                        clockTimer.networkStatus === "offline" &&
-                        !loginDialog.open
-                    ) {
-                        showInitialLoginDialog();
-                    }
-                }, STARTUP_CONNECTION_DELAY);
+            if (!speechEditorPreview && !loginDialog.open) {
+                showInitialLoginDialog();
             }
             return;
         }
 
-        if (loginDialog.open) {
+        if (loginConfirmedThisLoad && loginDialog.open) {
             void closeDialogWithReturn(
                 loginDialog,
                 { reason: "login-connected" }
@@ -14270,6 +14255,38 @@
             )
     );
 
+    // Fullscreen must begin inside the Login click's user activation.
+    function enterPortraitFullscreen() {
+        if (fullscreenLoginAttempt || speechEditorPreview) return;
+
+        const fullscreen = document.fullscreenElement
+            ? Promise.resolve()
+            : document.documentElement.requestFullscreen?.();
+
+        fullscreenLoginAttempt = Promise.resolve(fullscreen)
+            .then(async () => {
+                if (document.fullscreenElement && screen.orientation?.lock) {
+                    await screen.orientation.lock("portrait");
+                }
+            })
+            .catch(error => {
+                console.warn("Portrait fullscreen is unavailable:", error);
+            })
+            .finally(() => {
+                // The fullscreen element may be placed above an existing
+                // modal in the top layer. Keep Login in front until it succeeds.
+                if (document.fullscreenElement && loginDialog.open &&
+                    !loginConfirmedThisLoad) {
+                    loginDialog.close();
+                    loginDialog.showModal();
+                    $("#loginUsername")?.focus({preventScroll: true});
+                }
+                fullscreenLoginAttempt = undefined;
+            });
+    }
+
+    $("#loginButton").addEventListener("click", enterPortraitFullscreen);
+
     $("#loginForm").addEventListener(
         "submit",
         globalThis
@@ -14278,6 +14295,7 @@
                 "connectUserSubmit",
                 async event => {
                     event.preventDefault();
+                    enterPortraitFullscreen();
 
                     const error =
                         $("#loginError");
@@ -14323,9 +14341,6 @@
 
                         loginPromptTimeout =
                             undefined;
-
-                        initialLoginAttemptPending =
-                            false;
 
                         openDialog(
                             "loginDialog",
@@ -27415,6 +27430,7 @@
                     populateProfile(
                         result.user
                     );
+                    loginConfirmedThisLoad = true;
 
                     for (
                         let index =
@@ -27791,6 +27807,7 @@
 
                 deliberatelyLoggedOut =
                     true;
+                loginConfirmedThisLoad = false;
 
                 safeStorageSet(
                     "wmof.deliberatelyLoggedOut",
@@ -29927,6 +29944,7 @@
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
     syncNetworkStatusUI({ startup: true });
+    showInitialLoginDialog();
     void (async () => {
         try {
             const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});
