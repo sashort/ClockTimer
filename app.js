@@ -1000,31 +1000,44 @@
                                 ?.id,
                     onLiveStream:
                         () => {
-                            const dialog =
-                                $("#userLookupDialog");
+                            void (
+                                async () => {
+                                    const dialog =
+                                        $("#userLookupDialog");
 
-                            if (
-                                dialog
-                                    ?.open
-                            ) {
-                                closeDialog(
-                                    dialog,
-                                    {
-                                        reason:
-                                            "identity-live-stream",
-                                        immediate:
-                                            true
+                                    if (
+                                        dialog
+                                            ?.open
+                                    ) {
+                                        const closed =
+                                            await closeDialogWithReturn(
+                                                dialog,
+                                                {
+                                                    reason:
+                                                        "identity-live-stream",
+                                                    immediate:
+                                                        true
+                                                }
+                                            );
+
+                                        if (!closed) {
+                                            return;
+                                        }
                                     }
-                                );
-                            }
 
-                            openDialog(
-                                "liveStreamDialog",
-                                {
-                                    reason:
-                                        "identity-live-stream"
+                                    openDialog(
+                                        "liveStreamDialog",
+                                        {
+                                            fromPopover:
+                                                popoverIsOpen(
+                                                    mainMenu
+                                                ),
+                                            reason:
+                                                "identity-live-stream"
+                                        }
+                                    );
                                 }
-                            );
+                            )();
                         }
                 })
             : undefined;
@@ -1611,20 +1624,29 @@
                         liveStreamDialog
                             ?.open
                     ) {
-                        closeDialog(
-                            liveStreamDialog,
-                            {
-                                reason:
-                                    "live-stream-user-lookup",
-                                immediate:
-                                    true
-                            }
-                        );
+                        const closed =
+                            await closeDialogWithReturn(
+                                liveStreamDialog,
+                                {
+                                    reason:
+                                        "live-stream-user-lookup",
+                                    immediate:
+                                        true
+                                }
+                            );
+
+                        if (!closed) {
+                            return;
+                        }
                     }
 
                     openDialog(
                         "userLookupDialog",
                         {
+                            fromPopover:
+                                popoverIsOpen(
+                                    mainMenu
+                                ),
                             reason:
                                 "live-stream-user-lookup"
                         }
