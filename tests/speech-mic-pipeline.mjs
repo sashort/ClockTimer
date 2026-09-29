@@ -2270,7 +2270,7 @@ assert.match(
 );
 assert.match(
     languageSource,
-    /goalMode:\s*"\^\(\?:auto\|total\|trip\)\(\?: mode\)\?\$"/
+    /goalMode:\s*"\^\(\?<goalMode>auto\|total\|trip\|day\|week\|check\|month\|year\)\(\?: mode\)\?\$"/
 );
 
 assert.match(
@@ -2647,7 +2647,7 @@ assert.match(
 );
 assert.match(
     presentationSource,
-    /response\.display[\s\S]*document\.createElement\(\s*"code"\s*\)[\s\S]*speechResponseSnapshot[\s\S]*bar\.setResponse/
+    /response\.display[\s\S]*speechResponseSnapshot[\s\S]*document\.createElement\(\s*"code"\s*\)[\s\S]*bar\.setResponse/
 );
 assert.match(
     speechMicBarSource,
