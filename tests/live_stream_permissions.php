@@ -68,6 +68,8 @@ foreach (
         "require_positive_int(\$input, 'targetUserId')",
         "require_positive_int(\$_GET, 'targetUserId')",
         'PERMISSION_VIEW_LIVE_STREAMS',
+        'PERMISSION_LOOKUP_USERS',
+        'User lookup and live stream permissions are required.',
         'live_stream_require_viewer',
         "if (\$action === 'trainer-message')",
         "if (\$action === 'socket-token')",
