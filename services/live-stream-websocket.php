@@ -671,7 +671,31 @@ function live_ws_handle_message(
     $client =& $clients[$clientId];
     $type = (string) ($message['type'] ?? '');
     $requestId = $message['requestId'] ?? null;
-    $user = live_ws_current_user($pdo, $client);
+    $user =
+        is_array(
+            $client['user'] ??
+            null
+        )
+            ? $client['user']
+            : null;
+
+    if (
+        in_array(
+            $type,
+            [
+                'targets.request',
+                'peer.join',
+                'trainer.tts',
+            ],
+            true
+        )
+    ) {
+        $user =
+            live_ws_current_user(
+                $pdo,
+                $client
+            );
+    }
 
     if ($user === null) {
         live_ws_send_error($client, $requestId, 'unauthorized', 'Authentication is required.');
