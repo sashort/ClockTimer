@@ -1902,7 +1902,11 @@ assert.match(
 );
 assert.match(
     audioEngineSource,
-    /speechGuard[\s\S]*entry\.speechGuard[\s\S]*entry\.speechGuard\(\) ===[\s\S]*false[\s\S]*#maybeComplete/
+    /speechGuard:\s*[\s\S]*typeof speechGuard ===[\s\S]*"function"[\s\S]*\? speechGuard[\s\S]*: undefined/
+);
+assert.match(
+    audioEngineSource,
+    /entry\.speechGuard &&[\s\S]*entry\.speechGuard\(\) ===[\s\S]*false[\s\S]*this\.#maybeComplete/
 );
 
 assert.match(
