@@ -402,7 +402,10 @@
             return targets;
         }
 
-        async #acquirePublisherMedia() {
+        async #acquirePublisherMedia({
+            requestMicrophone =
+                true
+        } = {}) {
             let microphoneStream =
                 globalThis
                     .SpeechMenu
@@ -413,6 +416,7 @@
 
             if (
                 !microphoneStream &&
+                requestMicrophone &&
                 navigator.mediaDevices
                     ?.getUserMedia
             ) {
@@ -492,7 +496,158 @@
                 false;
         }
 
-        async startPublishing() {
+        async refreshPublisherMicrophone() {
+            if (!this.#publishing) {
+                return false;
+            }
+
+            const stream =
+                globalThis
+                    .SpeechMenu
+                    ?.createMicrophoneStream?.();
+
+            const track =
+                stream
+                    ?.getAudioTracks?.()[0];
+
+            if (!track) {
+                for (
+                    const mediaTrack of
+                    stream?.getTracks?.() ||
+                    []
+                ) {
+                    try {
+                        mediaTrack.stop();
+                    }
+                    catch {}
+                }
+
+                await this
+                    .clearPublisherMicrophone();
+
+                return false;
+            }
+
+            const previous =
+                this.#publisherMicrophoneStream;
+
+            this.#publisherMicrophoneStream =
+                stream;
+            this.#publisherOwnMicrophone =
+                false;
+
+            for (
+                const entry of
+                this.#publisherPeers
+                    .values()
+            ) {
+                try {
+                    await entry
+                        .microphoneSender
+                        ?.replaceTrack(
+                            track
+                        );
+                }
+                catch (error) {
+                    console.warn(
+                        "Unable to refresh live microphone track:",
+                        error
+                    );
+                }
+            }
+
+            if (
+                previous &&
+                previous !==
+                    stream
+            ) {
+                for (
+                    const mediaTrack of
+                    previous.getTracks?.() ||
+                    []
+                ) {
+                    try {
+                        mediaTrack.stop();
+                    }
+                    catch {}
+                }
+            }
+
+            this.#emit(
+                "publisherMediaChanged",
+                {
+                    microphone:
+                        true,
+                    programAudio:
+                        Boolean(
+                            this
+                                .#publisherProgramStream
+                                ?.getAudioTracks?.()
+                                .length
+                        )
+                }
+            );
+
+            return true;
+        }
+
+        async clearPublisherMicrophone() {
+            for (
+                const entry of
+                this.#publisherPeers
+                    .values()
+            ) {
+                try {
+                    await entry
+                        .microphoneSender
+                        ?.replaceTrack(
+                            null
+                        );
+                }
+                catch {}
+            }
+
+            const stream =
+                this.#publisherMicrophoneStream;
+
+            this.#publisherMicrophoneStream =
+                undefined;
+            this.#publisherOwnMicrophone =
+                false;
+
+            for (
+                const track of
+                stream?.getTracks?.() ||
+                []
+            ) {
+                try {
+                    track.stop();
+                }
+                catch {}
+            }
+
+            this.#emit(
+                "publisherMediaChanged",
+                {
+                    microphone:
+                        false,
+                    programAudio:
+                        Boolean(
+                            this
+                                .#publisherProgramStream
+                                ?.getAudioTracks?.()
+                                .length
+                        )
+                }
+            );
+
+            return true;
+        }
+
+        async startPublishing({
+            requestMicrophone =
+                true
+        } = {}) {
             if (
                 typeof globalThis
                     .RTCPeerConnection !==
@@ -508,7 +663,9 @@
             }
 
             await this
-                .#acquirePublisherMedia();
+                .#acquirePublisherMedia({
+                    requestMicrophone
+                });
 
             let data;
 
@@ -781,6 +938,10 @@
                 pc,
                 channel:
                     undefined,
+                microphoneSender:
+                    undefined,
+                programSender:
+                    undefined,
                 viewerUserId:
                     Number(
                         peer.viewerUserId
@@ -926,6 +1087,18 @@
                         track ||
                         null
                     );
+
+                if (index === 0) {
+                    entry.microphoneSender =
+                        transceiver.sender;
+                }
+                else if (
+                    index ===
+                        1
+                ) {
+                    entry.programSender =
+                        transceiver.sender;
+                }
             }
 
             const answer =
