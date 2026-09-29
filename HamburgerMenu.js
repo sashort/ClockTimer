@@ -168,7 +168,7 @@
             "}",
             ":where(hamburger-menu) .hamburger-menu-swipe-target {",
             "  position: absolute;",
-            "  top: var(--hamburger-menu-swipe-target-top, 0px);",
+            "  top: 0;",
             "  bottom: auto;",
             "  z-index: 7;",
             "  width: var(--hamburger-menu-swipe-target-width, 56px);",
@@ -185,16 +185,22 @@
             ":where(hamburger-menu) .hamburger-menu-swipe-target[data-direction=\"previous\"] {",
             "  left: auto;",
             "  right: 0;",
-            "  border-radius: 0 var(--hamburger-menu-swipe-target-radius, 12px) var(--hamburger-menu-swipe-target-radius, 12px) 0;",
+            "  border-radius: 0 var(--hamburger-menu-swipe-target-radius, 12px) 0 0;",
             "  background: var(--hamburger-menu-swipe-target-previous-gradient, linear-gradient(to left, color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 20%, transparent), transparent));",
             "  box-shadow: var(--hamburger-menu-swipe-target-previous-shadow, inset -6px 0 18px color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 15%, transparent));",
             "}",
             ":where(hamburger-menu) .hamburger-menu-swipe-target[data-direction=\"next\"] {",
             "  left: 0;",
             "  right: auto;",
-            "  border-radius: var(--hamburger-menu-swipe-target-radius, 12px) 0 0 var(--hamburger-menu-swipe-target-radius, 12px);",
+            "  border-radius: var(--hamburger-menu-swipe-target-radius, 12px) 0 0 0;",
             "  background: var(--hamburger-menu-swipe-target-next-gradient, linear-gradient(to right, color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 20%, transparent), transparent));",
             "  box-shadow: var(--hamburger-menu-swipe-target-next-shadow, inset 6px 0 18px color-mix(in srgb, var(--hamburger-menu-swipe-target-color, currentColor) 15%, transparent));",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target[data-track-side=\"top\"][data-direction=\"previous\"] {",
+            "  border-radius: 0 0 var(--hamburger-menu-swipe-target-radius, 12px) 0;",
+            "}",
+            ":where(hamburger-menu) .hamburger-menu-swipe-target[data-track-side=\"top\"][data-direction=\"next\"] {",
+            "  border-radius: 0 0 0 var(--hamburger-menu-swipe-target-radius, 12px);",
             "}",
             ":where(hamburger-menu) .hamburger-menu-indicator-thumb {",
             "  position: absolute;",
@@ -1261,6 +1267,10 @@
                 .removeAttribute(
                     "data-direction"
                 );
+            this.#swipeTarget
+                .removeAttribute(
+                    "data-track-side"
+                );
             this.#swipeTarget.style
                 .removeProperty(
                     "--hamburger-menu-swipe-target-progress"
@@ -1299,6 +1309,18 @@
             this.#swipeTarget.dataset
                 .direction =
                 direction;
+            const indicatorRect =
+                this.#indicator
+                    .getBoundingClientRect();
+            const viewportRect =
+                this.#viewport
+                    .getBoundingClientRect();
+            this.#swipeTarget.dataset
+                .trackSide =
+                indicatorRect.bottom <=
+                    viewportRect.top
+                    ? "top"
+                    : "bottom";
             this.#swipeTarget.hidden =
                 false;
             this.#swipeTarget.style

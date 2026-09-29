@@ -632,8 +632,7 @@ hamburger-menu.main-menu {
     --hamburger-menu-indicator-color: var(--wm-blue-light, #a9ddf7);
     --hamburger-menu-focus-background: rgb(0 30 96 / 96%);
     --hamburger-menu-mask-background: rgb(0 30 96);
-    --hamburger-menu-swipe-target-top: 8px;
-    --hamburger-menu-swipe-target-radius: 10px;
+    --hamburger-menu-swipe-target-radius: 18px;
 }
 
 hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
